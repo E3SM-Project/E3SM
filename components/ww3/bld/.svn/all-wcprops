@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/89229/ww3/release_tags/ww3_cesm2_0_rel_01/bld
+END
+ww3.buildlib
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/!svn/ver/89229/ww3/release_tags/ww3_cesm2_0_rel_01/bld/ww3.buildlib
+END
+ww3.buildnml
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/!svn/ver/89229/ww3/release_tags/ww3_cesm2_0_rel_01/bld/ww3.buildnml
+END
+user_nl_ww3
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/!svn/ver/89229/ww3/release_tags/ww3_cesm2_0_rel_01/bld/user_nl_ww3
+END

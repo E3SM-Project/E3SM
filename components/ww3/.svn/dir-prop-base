@@ -1,0 +1,16 @@
+K 13
+svn:mergeinfo
+V 603
+/ww3/branch_tags/buildnml_update_tags/buildnml_update_n01_ww3_161208:82562-82581
+/ww3/branch_tags/cime_refactor_tags/cime_refactor_n04_ww3_150925:73567-74287
+/ww3/branch_tags/cplupa_tags/cplupa_n01_ww3_130314:50129-50854
+/ww3/branch_tags/newtesting_tags/newtesting_n02_ww3_130905:68579-68995
+/ww3/branches/buildnml_update:82558-82561
+/ww3/branches/cime_refactor:72369-73566
+/ww3/branches/cplupa:50125-50128
+/ww3/branches/newtesting:66930-68578
+/ww3/branches/ww3_170516_ninst:85914-85917
+/ww3/trunk_tags/ww3_130905:50856-66929
+/ww3/trunk_tags/ww3_150311:68997-72368
+/ww3/trunk_tags/ww3_150818:72409-73316
+END

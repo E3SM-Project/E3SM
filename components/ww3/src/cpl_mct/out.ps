@@ -1,0 +1,7091 @@
+%!PS-Adobe-3.0
+%%Title: wav_comp_mct.F90
+%%For: sbrus
+%%Creator: VIM - Vi IMproved 7.4 (2013 Aug 10)
+%%CreationDate: Thu Sep 20 09:19:07 2018
+%%DocumentData: Clean8Bit
+%%Orientation: Portrait
+%%Pages: (atend)
+%%PageOrder: Ascend
+%%BoundingBox: 59 49 564 800
+%%DocumentMedia: A4 595 842 0 () ()
+%%DocumentNeededResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-Oblique
+%%+ font Courier-BoldOblique
+%%DocumentSuppliedResources: procset VIM-Prolog 1.4 1
+%%+ encoding VIM-latin1 1.0 0
+%%Requirements: duplex collate color
+%%EndComments
+%%BeginDefaults
+%%PageResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-Oblique
+%%+ font Courier-BoldOblique
+%%PageMedia: A4
+%%EndDefaults
+%%BeginProlog
+%%BeginResource: procset VIM-Prolog
+%%BeginDocument: /usr/share/vim/vim74/print/prolog.ps
+%!PS-Adobe-3.0 Resource-ProcSet
+%%Title: VIM-Prolog
+%%Version: 1.4 1
+%%EndComments
+% Editing of this file is NOT RECOMMENDED.  You run a very good risk of causing
+% all PostScript printing from VIM failing if you do.  PostScript is not called
+% a write-only language for nothing!
+/packedarray where not{userdict begin/setpacking/pop load def/currentpacking
+false def end}{pop}ifelse/CP currentpacking def true setpacking
+/bd{bind def}bind def/ld{load def}bd/ed{exch def}bd/d/def ld
+/db{dict begin}bd/cde{currentdict end}bd
+/T true d/F false d
+/SO null d/sv{/SO save d}bd/re{SO restore}bd
+/L2 systemdict/languagelevel 2 copy known{get exec}{pop pop 1}ifelse 2 ge d
+/m/moveto ld/s/show ld /ms{m s}bd /g/setgray ld/r/setrgbcolor ld/sp{showpage}bd
+/gs/gsave ld/gr/grestore ld/cp/currentpoint ld
+/ul{gs UW setlinewidth cp UO add 2 copy newpath m 3 1 roll add exch lineto
+stroke gr}bd
+/bg{gs r cp BO add 4 -2 roll rectfill gr}bd
+/sl{90 rotate 0 exch translate}bd
+L2{
+/sspd{mark exch{setpagedevice}stopped cleartomark}bd
+/nc{1 db/NumCopies ed cde sspd}bd
+/sps{3 db/Orientation ed[3 1 roll]/PageSize ed/ImagingBBox null d cde sspd}bd
+/dt{2 db/Tumble ed/Duplex ed cde sspd}bd
+/c{1 db/Collate ed cde sspd}bd
+}{
+/nc{/#copies ed}bd
+/sps{statusdict/setpage get exec}bd
+/dt{statusdict/settumble 2 copy known{get exec}{pop pop pop}ifelse
+statusdict/setduplexmode 2 copy known{get exec}{pop pop pop}ifelse}bd
+/c{pop}bd
+}ifelse
+/ffs{findfont exch scalefont d}bd/sf{setfont}bd
+/ref{1 db findfont dup maxlength dict/NFD ed{exch dup/FID ne{exch NFD 3 1 roll
+put}{pop pop}ifelse}forall/Encoding findresource dup length 256 eq{NFD/Encoding
+3 -1 roll put}{pop}ifelse NFD dup/FontType get 3 ne{/CharStrings}{/CharProcs}
+ifelse 2 copy known{2 copy get dup maxlength dict copy[/questiondown/space]{2
+copy known{2 copy get 2 index/.notdef 3 -1 roll put pop exit}if pop}forall put
+}{pop pop}ifelse dup NFD/FontName 3 -1 roll put NFD definefont pop end}bd
+CP setpacking
+(\004)cvn{}bd
+% vim:ff=unix:
+%%EOF
+%%EndDocument
+%%EndResource
+%%BeginResource: encoding VIM-latin1
+%%BeginDocument: /usr/share/vim/vim74/print/latin1.ps
+%!PS-Adobe-3.0 Resource-Encoding
+%%Title: VIM-latin1
+%%Version: 1.0 0
+%%EndComments
+/VIM-latin1[
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quotesingle
+/parenleft /parenright /asterisk /plus /comma /minus /period /slash
+/zero /one /two /three /four /five /six /seven
+/eight /nine /colon /semicolon /less /equal /greater /question
+/at /A /B /C /D /E /F /G
+/H /I /J /K /L /M /N /O
+/P /Q /R /S /T /U /V /W
+/X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore
+/grave /a /b /c /d /e /f /g
+/h /i /j /k /l /m /n /o
+/p /q /r /s /t /u /v /w
+/x /y /z /braceleft /bar /braceright /asciitilde /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/space /exclamdown /cent /sterling /currency /yen /brokenbar /section
+/dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron
+/degree /plusminus /twosuperior /threesuperior /acute /mu /paragraph /periodcentered
+/cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown
+/Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla
+/Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis
+/Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis /multiply
+/Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn /germandbls
+/agrave /aacute /acircumflex /atilde /adieresis /aring /ae /ccedilla
+/egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis
+/eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide
+/oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis]
+/Encoding defineresource pop
+% vim:ff=unix:
+%%EOF
+%%EndDocument
+%%EndResource
+%%EndProlog
+%%BeginSetup
+595 842 0 sps
+1 nc
+T F dt
+T c
+%%IncludeResource: font Courier
+/_F0 /VIM-latin1 /Courier ref
+/F0 10 /_F0 ffs
+%%IncludeResource: font Courier-Bold
+/_F1 /VIM-latin1 /Courier-Bold ref
+/F1 10 /_F1 ffs
+%%IncludeResource: font Courier-Oblique
+/_F2 /VIM-latin1 /Courier-Oblique ref
+/F2 10 /_F2 ffs
+%%IncludeResource: font Courier-BoldOblique
+/_F3 /VIM-latin1 /Courier-BoldOblique ref
+/F3 10 /_F3 ffs
+/UO -1 d
+/UW 0.5 d
+/BO -2.5 d
+%%EndSetup
+%%Page: 1 1
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 1)59.5 792.4 ms
+F0 sf
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)59.5 772.4 ms
+0 g
+(      )59.5 762.4 ms
+0.753 0 0.753 r
+(MODULE)s
+0 g
+( WAV_COMP_MCT)s
+0.753 0 0 r
+(!/)59.5 752.4 ms
+(!/                  +-----------------------------------+)59.5 742.4 ms
+(!/                  | WAVEWATCH III           NOAA/NCEP |)59.5 732.4 ms
+(!/                  |           H. L. Tolman            |)59.5 722.4 ms
+(!/                  |                        FORTRAN 90 |)59.5 712.4 ms
+(!/                  | Last update :         29-May-2009 |)59.5 702.4 ms
+(!/                  +-----------------------------------+)59.5 692.4 ms
+(!/)59.5 682.4 ms
+(!/    Copyright 2009 National Weather Service \(NWS\),)59.5 672.4 ms
+(!/       National Oceanic and Atmospheric Administration.  All rights)59.5 662.4 ms
+(!/       reserved.  WAVEWATCH III is a trademark of the NWS.)59.5 652.4 ms
+(!/       No unauthorized use without permission.)59.5 642.4 ms
+(!/)59.5 632.4 ms
+(!  1. Purpose :)59.5 622.4 ms
+(!)59.5 612.4 ms
+(!     A generic cpl7 interface for WAVEWATCH III)59.5 602.4 ms
+(!     using input fields from cpl7.)59.5 592.4 ms
+(!)59.5 582.4 ms
+(!  2. Method :)59.5 572.4 ms
+(!)59.5 562.4 ms
+(!     MCT component for the actual wave model \(W3WAVE\).)59.5 552.4 ms
+(!)59.5 542.4 ms
+(!  3. Parameters :)59.5 532.4 ms
+(!)59.5 522.4 ms
+(!     Local parameters.)59.5 512.4 ms
+(!     ----------------------------------------------------------------)59.5 502.4 ms
+(!       NHMAX   I.P.  Maximum number of homogeneous fields.)59.5 492.4 ms
+(!)59.5 482.4 ms
+(!       NDSO    Int.  General output unit number \(shell only\).)59.5 472.4 ms
+(!       NDSE    Int.  Error output unit number \(shell only\).)59.5 462.4 ms
+(!       NDST    Int.  Test output unit number \(shell only\).)59.5 452.4 ms
+(!       FLH     L.A.  Flags for homogeneous fields.)59.5 442.4 ms
+(!       NH      I.A.  Number of times for homogeneous fields.)59.5 432.4 ms
+(!       THO     I.A.  Times of homogeneous fields.)59.5 422.4 ms
+(!       TIME0   I.A.  Starting time.)59.5 412.4 ms
+(!       TIMEN   I.A.  Ending time.)59.5 402.4 ms
+(!     ----------------------------------------------------------------)59.5 392.4 ms
+(!)59.5 382.4 ms
+(!       NDS, NTRACE, ..., see W3WAVE)59.5 372.4 ms
+(!)59.5 362.4 ms
+(!  4. Subroutines used :)59.5 352.4 ms
+(!)59.5 342.4 ms
+(!      Name      Type  Module   Description)59.5 332.4 ms
+(!     ----------------------------------------------------------------)59.5 322.4 ms
+(!      W3NMOD    Subr. W3GDATMD Set nummber of data structures)59.5 312.4 ms
+(!      W3SETG    Subr.   Id.    Point to data structure.)59.5 302.4 ms
+(!      W3NDAT    Subr. W3WDATMD Set nummber of data structures)59.5 292.4 ms
+(!      W3SETW    Subr.   Id.    Point to data structure.)59.5 282.4 ms
+(!      W3NMOD    Subr. W3ADATMD Set nummber of data structures)59.5 272.4 ms
+(!      W3NAUX    Subr.   Id.    Point to data structure.)59.5 262.4 ms
+(!      W3NOUT    Subr. W3ODATMD Set nummber of data structures)59.5 252.4 ms
+(!      W3SETO    Subr.   Id.    Point to data structure.)59.5 242.4 ms
+(!      W3NINP    Subr. W3IDATMD Set nummber of data structures)59.5 232.4 ms
+(!      W3SETI    Subr.   Id.    Point to data structure.)59.5 222.4 ms
+(!)59.5 212.4 ms
+(!      STME21    Subr. W3TIMEMD Print date and time readable.)59.5 202.4 ms
+(!      DSEC21    Func.   Id.    Difference between times.)59.5 192.4 ms
+(!      TICK21    Subr.   Id.    Increment time.)59.5 182.4 ms
+(!)59.5 172.4 ms
+(!      W3INIT    Subr. W3INITMD Wave model initialization.)59.5 162.4 ms
+(!      W3WAVE    Subr. W3WAVEMD Wave model.)59.5 152.4 ms
+(!     ----------------------------------------------------------------)59.5 142.4 ms
+(!)59.5 132.4 ms
+(!  5. Called by :)59.5 122.4 ms
+(!)59.5 112.4 ms
+(!     None, stand-alone program.)59.5 102.4 ms
+(!)59.5 92.4 ms
+(!  6. Error messages :)59.5 82.4 ms
+(!)59.5 72.4 ms
+(!     - Checks on I-O.)59.5 62.4 ms
+(!     - Check on time interval.)59.5 52.4 ms
+re sp
+%%PageTrailer
+%%Page: 2 2
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 2)59.5 792.4 ms
+F0 sf
+0.753 0 0 r
+(!)59.5 772.4 ms
+(!  7. Remarks :)59.5 762.4 ms
+(!)59.5 752.4 ms
+(!     - A rigourous input check is made in W3INIT.)59.5 742.4 ms
+(!     - See W3WDAS for documentation on the set-up of the data)59.5 732.4 ms
+(!       assimilation.)59.5 722.4 ms
+(!)59.5 712.4 ms
+(!  8. Structure :)59.5 702.4 ms
+(!)59.5 692.4 ms
+(!     ----------------------------------------------------------------)59.5 682.4 ms
+(!)59.5 672.4 ms
+(!     wav_comp_init)59.5 662.4 ms
+(!)59.5 652.4 ms
+(!        0.   Set up data structures.                \( W3NMOD, etc. \))59.5 642.4 ms
+(!        1.   I-O setup.)59.5 632.4 ms
+(!          a  For shell.)59.5 622.4 ms
+(!          b  For WAVEWATCH III.)59.5 612.4 ms
+(!          c  Local parameters.)59.5 602.4 ms
+(!        2.   Define input fields)59.5 592.4 ms
+(!        3.   Set time frame.)59.5 582.4 ms
+(!        4.   Define output)59.5 572.4 ms
+(!          a  Loop over types, do)59.5 562.4 ms
+(!        +--------------------------------------------------------+)59.5 552.4 ms
+(!        | b    Process standard line                             |)59.5 542.4 ms
+(!        | c    If type 1: fields of mean wave parameters         |)59.5 532.4 ms
+(!        | d    If type 2: point output                           |)59.5 522.4 ms
+(!        | e    If type 3: track output                           |)59.5 512.4 ms
+(!        | f    If type 4: restart files                          |)59.5 502.4 ms
+(!        | g    If type 5: boundary output                        |)59.5 492.4 ms
+(!        | h    If type 6: separated wave fields                  |)59.5 482.4 ms
+(!        +--------------------------------------------------------+)59.5 472.4 ms
+(!        5.   Initialzations)59.5 462.4 ms
+(!          a  Wave model.                              \( W3INIT \))59.5 452.4 ms
+(!          d  Set field times.)59.5 442.4 ms
+(!)59.5 432.4 ms
+(!     wav_comp_run)59.5 422.4 ms
+(!)59.5 412.4 ms
+(!        7.   Run model with input)59.5 402.4 ms
+(!             Do until end time is reached)59.5 392.4 ms
+(!        +--------------------------------------------------------+)59.5 382.4 ms
+(!        | a  Determine next time interval and input fields.      |)59.5 372.4 ms
+(!        |   1  Preparation                                       |)59.5 362.4 ms
+(!        |      Loop over input fields                            |)59.5 352.4 ms
+(!        | +------------------------------------------------------|)59.5 342.4 ms
+(!        | | 2  Check if update is needed                         |)59.5 332.4 ms
+(!        | | 4  Update next ending time                           |)59.5 322.4 ms
+(!        | +------------------------------------------------------|)59.5 312.4 ms
+(!        | b  Run wave model.                          \( W3WAVE \) |)59.5 302.4 ms
+(!        | c  If requested, data assimilation.         \( W3WDAS \) |)59.5 292.4 ms
+(!        | d  Final output if needed.                  \( W3WAVE \) |)59.5 282.4 ms
+(!        | e  Check time                                          |)59.5 272.4 ms
+(!        +--------------------------------------------------------+)59.5 262.4 ms
+(!)59.5 252.4 ms
+(!     wav_comp_fin)59.5 242.4 ms
+(!)59.5 232.4 ms
+(!     ----------------------------------------------------------------)59.5 222.4 ms
+(!)59.5 212.4 ms
+(!  9. Switches :)59.5 202.4 ms
+(!)59.5 192.4 ms
+(!       !/SHRD  Switch for shared / distributed memory architecture.)59.5 182.4 ms
+(!       !/DIST  Id.)59.5 172.4 ms
+(!       !/MPI   Id.)59.5 162.4 ms
+(!)59.5 152.4 ms
+(!       !/LLG   Spherical grid.)59.5 142.4 ms
+(!       !/XYG   Cartesian grid.)59.5 132.4 ms
+(!       !/MGW   Moving grid wind correction.)59.5 122.4 ms
+(!       !/MGP   Moving grid propagation correction.)59.5 112.4 ms
+(!)59.5 102.4 ms
+(!       !/T     Enable test output.)59.5 92.4 ms
+(!       !/O7    Echo input homogeneous fields.)59.5 82.4 ms
+(!)59.5 72.4 ms
+(!       !/NCO   NCEP NCO modifications for operational implementation.)59.5 62.4 ms
+(!)59.5 52.4 ms
+re sp
+%%PageTrailer
+%%Page: 3 3
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 3)59.5 792.4 ms
+F0 sf
+0.753 0 0 r
+(!       !/F90   Timer function included for F90.)59.5 772.4 ms
+(!)59.5 762.4 ms
+(! 10. Source code :)59.5 752.4 ms
+(!)59.5 742.4 ms
+(!/ ------------------------------------------------------------------- /)59.5 732.4 ms
+0 g
+(      )59.5 722.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3gdatmd)s
+(      )59.5 712.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3wdatmd, )s
+0.753 0 0.753 r
+(only)s
+0 g
+(: time, w3ndat, w3dimw, w3setw)s
+(      )59.5 702.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3adatmd)s
+(      )59.5 692.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3idatmd, )s
+0.753 0 0.753 r
+(only)s
+0 g
+(: flags, w3seti, w3ninp)s
+(      )59.5 682.4 ms
+0.753 0 0.753 r
+(USE)s
+0 g
+( W3IDATMD, )s
+0.753 0 0.753 r
+(ONLY)s
+0 g
+(: TC0, CX0, CY0, TCN, CXN, CYN)s
+(      )59.5 672.4 ms
+0.753 0 0.753 r
+(USE)s
+0 g
+( W3IDATMD, )s
+0.753 0 0.753 r
+(ONLY)s
+0 g
+(: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN)s
+(      )59.5 662.4 ms
+0.753 0 0.753 r
+(USE)s
+0 g
+( W3IDATMD, )s
+0.753 0 0.753 r
+(ONLY)s
+0 g
+(: TIN, ICEI)s
+(      )59.5 652.4 ms
+0.753 0 0.753 r
+(USE)s
+0 g
+( W3IDATMD, )s
+0.753 0 0.753 r
+(ONLY)s
+0 g
+(: TLN, WLEV)s
+(      )59.5 642.4 ms
+0.753 0 0.753 r
+(USE)s
+0 g
+( W3IDATMD, )s
+0.753 0 0.753 r
+(ONLY)s
+0 g
+(: HML   )s
+0.753 0 0 r
+(! QL, 150525, mixing layer depth)s
+0 g
+(      )59.5 632.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3odatmd, )s
+0.753 0 0.753 r
+(only)s
+0 g
+(: w3nout, w3seto, naproc, iaproc, napout, naperr,           )s
+(  )59.5 622.4 ms
+0.753 0 0.753 r
+(&)s
+0 g
+(                          nogrd, idout, fnmpre, iostyp)59.5 612.4 ms
+0.753 0 0 r
+(!/)59.5 602.4 ms
+0 g
+(      )59.5 592.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3initmd)s
+(      )59.5 582.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3wavemd)s
+0.753 0 0 r
+(!/)59.5 572.4 ms
+0 g
+(      )59.5 562.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3iopomd)s
+(      )59.5 552.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3timemd)s
+(      )59.5 542.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3cesmmd, )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : casename, initfile, rstwr, runtype, histwr, outfreq)s
+(      )59.5 532.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( w3cesmmd, )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : inst_index, inst_name, inst_suffix)s
+(      )59.5 512.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( esmf)s
+(      )59.5 502.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( mct_mod)s
+(      )59.5 492.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( seq_flds_mod)s
+(      )59.5 472.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( ww3_cpl_indices  , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : ww3_cpl_indices_set)s
+(      )59.5 462.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( ww3_cpl_indices  , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : index_x2w_Sa_u, index_x2w_Sa_v, index_x2w_Sa_tbo)s
+(t, index_x2w_Si_ifrac)59.5 452.4 ms
+(      )59.5 442.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( ww3_cpl_indices  , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, )s
+(index_x2w_So_bldepth)59.5 432.4 ms
+(      )59.5 422.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( ww3_cpl_indices  , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : index_w2x_Sw_lamult, index_w2x_Sw_ustokes)s
+(      )59.5 412.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( ww3_cpl_indices  , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : index_w2x_Sw_vstokes, index_w2x_Sw_hstokes)s
+(      )59.5 392.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( shr_sys_mod      , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : shr_sys_flush, shr_sys_abort)s
+(      )59.5 382.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( shr_kind_mod     , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : )s
+0 0.502 0 r
+(in=>)s
+0 g
+(shr_kind_in, r8)s
+0 0.502 0 r
+(=>)s
+0 g
+(shr_kind_r8, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    cs)59.5 372.4 ms
+0 0.502 0 r
+(=>)s
+0 g
+(shr_kind_cs, cl)s
+0 0.502 0 r
+(=>)s
+0 g
+(shr_kind_cl)s
+(      )59.5 362.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( seq_cdata_mod    , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : seq_cdata, seq_cdata_setptrs)s
+(      )59.5 352.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( seq_timemgr_mod  , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : seq_timemgr_eclockgetdata, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    seq_timemgr_RestartAlarmIsOn, )59.5 342.4 ms
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    seq_timemgr_historyAlarmIsOn)59.5 332.4 ms
+(      )59.5 322.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( seq_infodata_mod , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : seq_infodata_type, seq_infodata_getdata, seq_inf)s
+(odata_putdata, )59.5 312.4 ms
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    seq_infodata_start_type_start, seq_infodata_star)59.5 302.4 ms
+(t_type_cont,   )59.5 292.4 ms
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    seq_infodata_start_type_brnch)59.5 282.4 ms
+(      )59.5 272.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( seq_comm_mct     , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : seq_comm_inst, seq_comm_name, seq_comm_suffix)s
+(      )59.5 262.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( shr_file_mod     , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : shr_file_setlogunit, shr_file_setloglevel, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    shr_file_getlogunit, shr_file_getloglevel, )59.5 252.4 ms
+0.753 0 0.753 r
+(&)s
+0 g
+(                                    shr_file_getunit, shr_file_freeunit, shr_file_se)59.5 242.4 ms
+(tio)59.5 232.4 ms
+(      )59.5 222.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( shr_nl_mod       , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : shr_nl_find_group_name)s
+(      )59.5 212.4 ms
+0.753 0 0.753 r
+(use)s
+0 g
+( shr_mpi_mod      , )s
+0.753 0 0.753 r
+(only)s
+0 g
+( : shr_mpi_bcast)s
+0.753 0 0 r
+(!)59.5 192.4 ms
+0 g
+(      )59.5 182.4 ms
+0 0.502 0 r
+(implicit)s
+0 g
+( )s
+0 0.502 0 r
+(none)s
+0.753 0 0 r
+(!)59.5 172.4 ms
+0 g
+(      )59.5 162.4 ms
+0 0.502 0 r
+(public)s
+0 g
+( :: wav_init_mct)s
+(      )59.5 152.4 ms
+0 0.502 0 r
+(public)s
+0 g
+( :: wav_run_mct)s
+(      )59.5 142.4 ms
+0 0.502 0 r
+(public)s
+0 g
+( :: wav_final_mct)s
+(      )59.5 122.4 ms
+0 0.502 0 r
+(private)s
+0 g
+(      )59.5 102.4 ms
+0 0.502 0 r
+(private)s
+0 g
+( :: wav_setgsmap_mct)s
+(      )59.5 92.4 ms
+0 0.502 0 r
+(private)s
+0 g
+( :: wav_domain_mct)s
+(      )59.5 72.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(,)s
+0 0.502 0 r
+(save)s
+0 g
+( :: stdout)s
+(      )59.5 52.4 ms
+0.753 0 0.753 r
+(include)s
+0 g
+( )s
+0 0 0.753 r
+("mpif.h")s
+re sp
+%%PageTrailer
+%%Page: 4 4
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 4)59.5 792.4 ms
+F0 sf
+0.753 0 0 r
+(!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -)59.5 772.4 ms
+0.753 0 0.753 r
+(CONTAINS)59.5 762.4 ms
+0.753 0 0 r
+(!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -)59.5 752.4 ms
+0 g
+(    )59.5 732.4 ms
+0.753 0 0.753 r
+(SUBROUTINE)s
+0 g
+( WAV_INIT_MCT\( EClock, cdata, x2w_w, w2x_w, NLFilename \))s
+(      )59.5 712.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 702.4 ms
+0.753 0 0 r
+(!/ Parameter list)s
+0 g
+(      )59.5 692.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 672.4 ms
+0 0.502 0 r
+(implicit)s
+0 g
+( )s
+0 0.502 0 r
+(none)s
+0 g
+(      )59.5 662.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(esmf_clock\), )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: eclock)s
+(      )59.5 652.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(seq_cdata\) , )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: cdata)s
+(      )59.5 642.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_avect\) , )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: x2w_w, w2x_w)s
+(      )59.5 632.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=*)s
+0 g
+(\), )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(in)s
+0 g
+(\), )s
+0 0.502 0 r
+(optional)s
+0 g
+( :: nlfilename )s
+0.753 0 0 r
+(! namelist filename)s
+0 g
+(      )59.5 612.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 602.4 ms
+0.753 0 0 r
+(!/ Local PARAMETER statements)s
+0 g
+(      )59.5 592.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 572.4 ms
+0 0.502 0 r
+(INTEGER)s
+0 g
+(, )s
+0 0.502 0 r
+(PARAMETER)s
+0 g
+(  :: NHMAX )s
+0 0.502 0 r
+(=)s
+0 g
+(    )s
+0 0 0.753 r
+(200)s
+0 g
+(      )59.5 552.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 542.4 ms
+0.753 0 0 r
+(!/ Local parameters)s
+0 g
+(      )59.5 532.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 512.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: n)s
+(      )59.5 502.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: compid)s
+(      )59.5 492.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: mpi_comm)s
+(      )59.5 482.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: lsize)s
+(      )59.5 472.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: shrlogunit, shrloglev)s
+(      )59.5 462.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: hh,mm,ss)s
+(      )59.5 452.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: dtime_sync        )s
+0.753 0 0 r
+(! integer timestep size)s
+0 g
+(      )59.5 442.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: start_ymd         )s
+0.753 0 0 r
+(! start date \(yyyymmdd\))s
+0 g
+(      )59.5 432.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: start_tod         )s
+0.753 0 0 r
+(! start time of day \(sec\))s
+0 g
+(      )59.5 422.4 ms
+0.753 0 0 r
+(! QL, 150629, calculating restart interval)s
+0 g
+(      )59.5 412.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: stop_ymd          )s
+0.753 0 0 r
+(! stop date \(yyyymmdd\))s
+0 g
+(      )59.5 402.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: stop_tod          )s
+0.753 0 0 r
+(! stop time of day \(sec\))s
+0 g
+(      )59.5 392.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: ix, iy)s
+(      )59.5 372.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\(CL\)            :: starttype)s
+(      )59.5 362.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_gsmap\), )s
+0 0.502 0 r
+(pointer)s
+0 g
+( :: gsmap)s
+(      )59.5 352.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_ggrid\), )s
+0 0.502 0 r
+(pointer)s
+0 g
+( :: dom)s
+(      )59.5 342.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(seq_infodata_type\), )s
+0 0.502 0 r
+(pointer)s
+0 g
+( :: infodata   )s
+0.753 0 0 r
+(! input init object)s
+0 g
+(      )59.5 322.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(             :: unitn            )s
+0.753 0 0 r
+(! namelist unit number)s
+0 g
+(      )59.5 312.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(             :: ndso, ndse, nds\()s
+0 0 0.753 r
+(13)s
+0 g
+(\), ntrace\()s
+0 0 0.753 r
+(2)s
+0 g
+(\), time0\()s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(      )59.5 302.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(             :: timen\()s
+0 0 0.753 r
+(2)s
+0 g
+(\), odat\()s
+0 0 0.753 r
+(30)s
+0 g
+(\), nh\()s
+0 0 0.753 r
+(4)s
+0 g
+(\), iprt\()s
+0 0 0.753 r
+(6)s
+0 g
+(\))s
+(      )59.5 292.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(             :: i,j,npts)s
+(      )59.5 282.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(             :: ierr)s
+(      )59.5 272.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(             :: jsea,isea)s
+0 0.502 0 r
+(      real)59.5 262.4 ms
+0 g
+(                :: a\(nhmax,)s
+0 0 0.753 r
+(4)s
+0 g
+(\))s
+0 0.502 0 r
+(      real)59.5 252.4 ms
+0 g
+(, )s
+0 0.502 0 r
+(allocatable)s
+0 g
+(   :: x\(:\), y\(:\))s
+0 0.502 0 r
+(      logical)59.5 242.4 ms
+0 g
+(             :: flgrd\(nogrd\), prtfrm, flt)s
+(      )59.5 232.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=*)s
+0 g
+(\),)s
+0 0.502 0 r
+(parameter)s
+0 g
+( :: subname )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+('\(wav_init_mct\)')s
+0 g
+(      )59.5 212.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(3)s
+0 g
+(\)    :: idstr\()s
+0 0 0.753 r
+(8)s
+0 g
+(\), idtst)s
+(      )59.5 202.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(10)s
+0 g
+(\)   :: pn)s
+(      )59.5 192.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(13)s
+0 g
+(\)   :: idflds\()s
+0 0 0.753 r
+(8)s
+0 g
+(\))s
+(      )59.5 182.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(20)s
+0 g
+(\)   :: strng)s
+(      )59.5 172.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(23)s
+0 g
+(\)   :: dtme21)s
+(      )59.5 162.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(30)s
+0 g
+(\)   :: idotyp\()s
+0 0 0.753 r
+(6)s
+0 g
+(\))s
+(      )59.5 152.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=)s
+0 0 0.753 r
+(10)s
+0 g
+(\), )s
+0 0.502 0 r
+(allocatable)s
+0 g
+( :: pnames\(:\))s
+(      )59.5 132.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 112.4 ms
+0 0.502 0 r
+(DATA)s
+0 g
+( IDFLDS )s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0 0 0.753 r
+('water levels ')s
+0 g
+( , )s
+0 0 0.753 r
+('currents     ')s
+0 g
+( ,               )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 102.4 ms
+0 0 0.753 r
+('winds        ')s
+0 g
+( , )s
+0 0 0.753 r
+('ice fields   ')s
+0 g
+( ,               )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 92.4 ms
+0 0 0.753 r
+('mean param.  ')s
+0 g
+( , )s
+0 0 0.753 r
+('1D spectra   ')s
+0 g
+( ,               )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 82.4 ms
+0 0 0.753 r
+('2D spectra   ')s
+0 g
+( , )s
+0 0 0.753 r
+('moving grid  ')s
+0 g
+( )s
+0 0.502 0 r
+(/)s
+0 g
+(      )59.5 72.4 ms
+0 0.502 0 r
+(DATA)s
+0 g
+( IDOTYP )s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0 0 0.753 r
+('Fields of mean wave parameters')s
+0 g
+( ,                )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 62.4 ms
+0 0 0.753 r
+('Point output                  ')s
+0 g
+( ,                )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 52.4 ms
+0 0 0.753 r
+('Track point output            ')s
+0 g
+( ,                )s
+0.753 0 0.753 r
+(&)s
+re sp
+%%PageTrailer
+%%Page: 5 5
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 5)59.5 792.4 ms
+F0 sf
+(                    )59.5 772.4 ms
+0 0 0.753 r
+('Restart files                 ')s
+0 g
+( ,                )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 762.4 ms
+0 0 0.753 r
+('Nesting data                  ')s
+0 g
+( ,                )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 752.4 ms
+0 0 0.753 r
+('Partitioned wave field data   ')s
+0 g
+( )s
+0 0.502 0 r
+(/)s
+0 g
+(      )59.5 742.4 ms
+0 0.502 0 r
+(DATA)s
+0 g
+( IDSTR  )s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0 0 0.753 r
+('LEV')s
+0 g
+(, )s
+0 0 0.753 r
+('CUR')s
+0 g
+(, )s
+0 0 0.753 r
+('WND')s
+0 g
+(, )s
+0 0 0.753 r
+('ICE')s
+0 g
+(, )s
+0 0 0.753 r
+('DT0')s
+0 g
+(, )s
+0 0 0.753 r
+('DT1')s
+0 g
+(, )s
+0 0 0.753 r
+('DT2')s
+0 g
+(,  )s
+0.753 0 0.753 r
+(&)s
+0 g
+(                    )59.5 732.4 ms
+0 0 0.753 r
+('MOV')s
+0 g
+( )s
+0 0.502 0 r
+(/)s
+0 g
+(      )59.5 712.4 ms
+0 0.502 0 r
+(namelist)s
+0 g
+( )s
+0 0.502 0 r
+(/)s
+0 g
+(ww3_inparm)s
+0 0.502 0 r
+(/)s
+0 g
+( initfile, outfreq)s
+(      )59.5 692.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 682.4 ms
+0.753 0 0 r
+(! Set up data structures)s
+0 g
+(      )59.5 672.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 652.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3nmod \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 642.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3ndat \(    )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 632.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3naux \(    )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 622.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3nout \(    )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 612.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3ninp \(    )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 592.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3setg \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 582.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3setw \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 572.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3seta \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 562.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3seto \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 552.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3seti \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+( \))s
+(      )59.5 532.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 522.4 ms
+0.753 0 0 r
+(! Initialize mpi)s
+0 g
+(      )59.5 512.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 492.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_cdata_setptrs\(cdata, id)s
+0 0.502 0 r
+(=)s
+0 g
+(compid, mpicom)s
+0 0.502 0 r
+(=)s
+0 g
+(mpi_comm, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           gsmap)59.5 482.4 ms
+0 0.502 0 r
+(=)s
+0 g
+(gsmap, dom)s
+0 0.502 0 r
+(=)s
+0 g
+(dom, infodata)s
+0 0.502 0 r
+(=)s
+0 g
+(infodata\))s
+(      inst_name   )59.5 472.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( seq_comm_name\(compid\))s
+(      inst_index  )59.5 462.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( seq_comm_inst\(compid\))s
+(      inst_suffix )59.5 452.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( seq_comm_suffix\(compid\))s
+(      )59.5 442.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( ww3_cpl_indices_set\(\))s
+(      )59.5 422.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mpi_comm_size\(mpi_comm, naproc, ierr\))s
+(      )59.5 412.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mpi_comm_rank\(mpi_comm, iaproc, ierr\))s
+(      iaproc )59.5 402.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(      )59.5 382.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 372.4 ms
+0.753 0 0 r
+(! Initialize run type)s
+0 g
+(      )59.5 362.4 ms
+0.753 0 0 r
+(! QL, 150525)s
+0 g
+(      )59.5 352.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 332.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_infodata_GetData\( infodata, start_type)s
+0 0.502 0 r
+(=)s
+0 g
+(starttype\))s
+(      )59.5 312.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(     )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(starttype\) )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_infodata_start_type_start\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         runtype )59.5 302.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+("initial")s
+0 g
+(      )59.5 292.4 ms
+0 0.502 0 r
+(else)s
+0 g
+( )s
+0 0.502 0 r
+(if)s
+0 g
+( \()s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(starttype\) )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_infodata_start_type_cont\) \) )s
+0 0.502 0 r
+(then)s
+0 g
+(         runtype )59.5 282.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+("continue")s
+0 g
+(      )59.5 272.4 ms
+0 0.502 0 r
+(else)s
+0 g
+( )s
+0 0.502 0 r
+(if)s
+0 g
+( \()s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(starttype\) )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_infodata_start_type_brnch\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         runtype )59.5 262.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+("branch")s
+0 g
+(      )59.5 252.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(      )59.5 232.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 222.4 ms
+0.753 0 0 r
+(! IO set-up)s
+0 g
+(      )59.5 212.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      napout )59.5 192.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(      naperr )59.5 182.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(      )59.5 162.4 ms
+0.753 0 0 r
+(! 1.b For WAVEWATCH III \(See W3INIT\) ??? ask adrean if i am missing something)s
+0 g
+(      )59.5 152.4 ms
+0.753 0 0 r
+(!)s
+0 g
+(      )59.5 142.4 ms
+0.753 0 0 r
+(! The following units are referenced in module w3initmd)s
+0 g
+(      )59.5 132.4 ms
+0.753 0 0 r
+(! NDS\(1\) ! OUTPUT LOG: General output unit number \("log file"\) \(NDS0\))s
+0 g
+(      )59.5 122.4 ms
+0.753 0 0 r
+(! NDS\(2\) ! OUTPUT LOG: Error output unit number \(NDSE\))s
+0 g
+(      )59.5 112.4 ms
+0.753 0 0 r
+(! NDS\(3\) ! OUTPUT LOG: Test output unit number \(NDST\))s
+0 g
+(      )59.5 102.4 ms
+0.753 0 0 r
+(! NDS\(4\) ! OUTPUT LOG: Unit for 'direct' output \(SCREEN\))s
+0 g
+(      )59.5 92.4 ms
+0.753 0 0 r
+(!)s
+0 g
+(      )59.5 82.4 ms
+0.753 0 0 r
+(! NDS\(5\) ! INPUT: mod_def.ww3 file \(model definition\) unit number)s
+0 g
+(      )59.5 72.4 ms
+0.753 0 0 r
+(! NDS\(9\) ! INPUT: unit for read in boundary conditions \(based on FLBPI\))s
+0 g
+(      )59.5 62.4 ms
+0.753 0 0 r
+(!)s
+0 g
+(      )59.5 52.4 ms
+0.753 0 0 r
+(! The following units are referenced in module w3wavemd for output)s
+re sp
+%%PageTrailer
+%%Page: 6 6
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 6)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0.753 0 0 r
+(! NDS\( 6\) ! OUTPUT DATA: restart\(N\).ww3 file \(model restart\) unit number)s
+0 g
+(      )59.5 762.4 ms
+0.753 0 0 r
+(! NDS\( 7\) ! unit for output for FLOUT\(1\) flag)s
+0 g
+(      )59.5 752.4 ms
+0.753 0 0 r
+(! NDS\( 8\) ! unit for output for FLOUT\(2\) flag)s
+0 g
+(      )59.5 742.4 ms
+0.753 0 0 r
+(! NDS\(11\) ! unit for output for FLOUT\(3\) flag)s
+0 g
+(      )59.5 732.4 ms
+0.753 0 0 r
+(! NDS\(12\) ! unit for output for FLOUT\(3\) flag)s
+0 g
+(      )59.5 722.4 ms
+0.753 0 0 r
+(! NDS\(13\) ! unit for output for FLOUT\(6\) flag)s
+0 g
+(      )59.5 712.4 ms
+0.753 0 0 r
+(! NDS\(10\) ! unit for output for FLOUT\(5\) flag)s
+0 g
+(      )59.5 692.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         stdout )59.5 682.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(         )59.5 672.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setio\()s
+0 0 0.753 r
+('wav_modelio.nml')s
+0 0.502 0 r
+(//)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(inst_suffix\),stdout\))s
+(      )59.5 662.4 ms
+0 0.502 0 r
+(else)s
+0 g
+(         stdout )59.5 652.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(6)s
+0 g
+(      )59.5 642.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      nds\( )59.5 622.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( stdout)s
+(      nds\( )59.5 612.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( stdout)s
+(      nds\( )59.5 602.4 ms
+0 0 0.753 r
+(3)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( stdout)s
+(      nds\( )59.5 592.4 ms
+0 0 0.753 r
+(4)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( stdout)s
+(      nds\( )59.5 582.4 ms
+0 0 0.753 r
+(5)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\( )59.5 572.4 ms
+0 0 0.753 r
+(6)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\( )59.5 562.4 ms
+0 0 0.753 r
+(7)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\( )59.5 552.4 ms
+0 0 0.753 r
+(8)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\( )59.5 542.4 ms
+0 0 0.753 r
+(9)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\()59.5 532.4 ms
+0 0 0.753 r
+(10)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\()59.5 522.4 ms
+0 0 0.753 r
+(11)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\()59.5 512.4 ms
+0 0 0.753 r
+(12)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      nds\()59.5 502.4 ms
+0 0 0.753 r
+(13)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(      ndso      )59.5 482.4 ms
+0 0.502 0 r
+(=)s
+0 g
+(  stdout)s
+(      ndse      )59.5 472.4 ms
+0 0.502 0 r
+(=)s
+0 g
+(  stdout)s
+(      ntrace\()59.5 462.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+(  nds\()s
+0 0 0.753 r
+(3)s
+0 g
+(\))s
+(      ntrace\()59.5 452.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+(  )s
+0 0 0.753 r
+(10)s
+0 g
+(      )59.5 432.4 ms
+0.753 0 0 r
+(! Redirect share output to wav log)s
+0 g
+(      )59.5 422.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_getLogUnit \(shrlogunit\))s
+(      )59.5 412.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_getLogLevel\(shrloglev\))s
+(      )59.5 402.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setLogUnit \(ndso\))s
+(      )59.5 382.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(900)s
+0 g
+(\))s
+(      )59.5 372.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 352.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(     )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(starttype\) )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_infodata_start_type_start\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         )59.5 342.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0 0 0.753 r
+('starttype: initial')s
+0 g
+(      )59.5 332.4 ms
+0 0.502 0 r
+(else)s
+0 g
+( )s
+0 0.502 0 r
+(if)s
+0 g
+( \()s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(starttype\) )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_infodata_start_type_cont\) \) )s
+0 0.502 0 r
+(then)s
+0 g
+(         )59.5 322.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0 0 0.753 r
+('starttype: continue')s
+0 g
+(      )59.5 312.4 ms
+0 0.502 0 r
+(else)s
+0 g
+( )s
+0 0.502 0 r
+(if)s
+0 g
+( \()s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(starttype\) )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_infodata_start_type_brnch\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         )59.5 302.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0 0 0.753 r
+('starttype: branch')s
+0 g
+(      )59.5 292.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(      )59.5 282.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(==)s
+0 g
+( napout\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         )59.5 272.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(subname\),)s
+0 0 0.753 r
+(' inst_name   = ')s
+0 g
+(,)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(inst_name\))s
+(         )59.5 262.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(subname\),)s
+0 0 0.753 r
+(' inst_index  = ')s
+0 g
+(,inst_index)s
+(         )59.5 252.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(subname\),)s
+0 0 0.753 r
+(' inst_suffix = ')s
+0 g
+(,)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(inst_suffix\))s
+(      )59.5 242.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      )59.5 232.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 222.4 ms
+0.753 0 0 r
+(! Define input fields)s
+0 g
+(      )59.5 212.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      flags )59.5 192.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(      )59.5 182.4 ms
+0.753 0 0 r
+(! QL, 150525, flags for passing variables from coupler to ww3,)s
+0 g
+(      )59.5 172.4 ms
+0.753 0 0 r
+(!             lev, curr, wind, ice and mixing layer depth on)s
+0 g
+(      flags\()59.5 162.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(:)s
+0 0 0.753 r
+(5)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0.753 0 0 r
+(!      flags\(1:4\) = .true.   !changed by Adrean \(lev,curr,wind,ice on\))59.5 152.4 ms
+(!      flags\(3:4\) = .true.   !changed by Adrean \(wind,ice on\))59.5 142.4 ms
+0 g
+(      )59.5 122.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 112.4 ms
+0.753 0 0 r
+(! Set time frame)s
+0 g
+(      )59.5 102.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 82.4 ms
+0.753 0 0 r
+(! TIME0 = from ESMF clock)s
+0 g
+(      )59.5 72.4 ms
+0.753 0 0 r
+(! NOTE - are not setting TIMEN here)s
+0 g
+(      )59.5 52.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(930)s
+0 g
+(\))s
+re sp
+%%PageTrailer
+%%Page: 7 7
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 7)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 752.4 ms
+0.753 0 0 r
+(! QL, 150525, initial run or restart run)s
+0 g
+(      )59.5 742.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( runtype )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( )s
+0 0 0.753 r
+("initial")s
+0 g
+(\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         )59.5 732.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_timemgr_EClockGetData\(EClock, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(              start_ymd)59.5 722.4 ms
+0 0.502 0 r
+(=)s
+0 g
+(start_ymd, start_tod)s
+0 0.502 0 r
+(=)s
+0 g
+(start_tod\))s
+(      )59.5 712.4 ms
+0 0.502 0 r
+(else)s
+0 g
+(         )59.5 702.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_timemgr_EClockGetData\(EClock, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(              curr_ymd)59.5 692.4 ms
+0 0.502 0 r
+(=)s
+0 g
+(start_ymd, curr_tod)s
+0 0.502 0 r
+(=)s
+0 g
+(start_tod\))s
+(      )59.5 682.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      hh )59.5 662.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( start_tod)s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(3600)s
+0 g
+(      mm )59.5 652.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( \(start_tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh )s
+0 0.502 0 r
+(*)s
+0 g
+( )s
+0 0 0.753 r
+(3600)s
+0 g
+(\)\))s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(60)s
+0 g
+(      ss )59.5 642.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( start_tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(3600)s
+0 g
+(\) )s
+0 0.502 0 r
+(-)s
+0 g
+( \(mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(60)s
+0 g
+(\))s
+(      time0\()59.5 622.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( start_ymd)s
+(      time0\()59.5 612.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(10000)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(100)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( ss)s
+(      )59.5 592.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_timemgr_EClockGetData\(EClock, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           stop_ymd)59.5 582.4 ms
+0 0.502 0 r
+(=)s
+0 g
+(stop_ymd, stop_tod)s
+0 0.502 0 r
+(=)s
+0 g
+(stop_tod\))s
+(      hh )59.5 562.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( stop_tod)s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(3600)s
+0 g
+(      mm )59.5 552.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( \(stop_tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh )s
+0 0.502 0 r
+(*)s
+0 g
+( )s
+0 0 0.753 r
+(3600)s
+0 g
+(\)\))s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(60)s
+0 g
+(      ss )59.5 542.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( stop_tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(3600)s
+0 g
+(\) )s
+0 0.502 0 r
+(-)s
+0 g
+( \(mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(60)s
+0 g
+(\))s
+(      timen\()59.5 522.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( stop_ymd)s
+(      timen\()59.5 512.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(10000)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(100)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( ss)s
+(      )59.5 492.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( stme21 \( time0 , dtme21 \))s
+(      )59.5 482.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(931)s
+0 g
+(\) dtme21)s
+(      )59.5 472.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      time )59.5 462.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( time0)s
+(      )59.5 442.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 432.4 ms
+0.753 0 0 r
+(! Define output type and fields)s
+0 g
+(      )59.5 422.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      iostyp )59.5 402.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(        )s
+0.753 0 0 r
+(! gridded field)s
+0 g
+(      )59.5 392.4 ms
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(940)s
+0 g
+(\) )s
+0 0 0.753 r
+('no dedicated output process, any file system ')s
+0 g
+(      )59.5 382.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 362.4 ms
+0.753 0 0 r
+(! )s
+0 g
+(TODO)s
+0.753 0 0 r
+( - need to enable restart files in run)s
+0 g
+(      )59.5 352.4 ms
+0.753 0 0 r
+(! Actually will need a new restart flag - since all of the ODAT)s
+0 g
+(      )59.5 342.4 ms
+0.753 0 0 r
+(! should be set to 0 - since they are initializated in w3initmd)s
+0 g
+(      )59.5 332.4 ms
+0.753 0 0 r
+(! ODAT    I.A.   I   Output data, five parameters per output type)s
+0 g
+(      )59.5 322.4 ms
+0.753 0 0 r
+(!                          1 YYYMMDD for first output.)s
+0 g
+(      )59.5 312.4 ms
+0.753 0 0 r
+(!                          2 HHMMSS for first output.)s
+0 g
+(      )59.5 302.4 ms
+0.753 0 0 r
+(!                          3 Output interval in seconds.)s
+0 g
+(      )59.5 292.4 ms
+0.753 0 0 r
+(!                          4 YYYMMDD for last output.)s
+0 g
+(      )59.5 282.4 ms
+0.753 0 0 r
+(!                          5 HHMMSS for last output.)s
+0 g
+(      )59.5 272.4 ms
+0.753 0 0 r
+(!                     1-5  Data for OTYPE = 1; gridded fields.)s
+0 g
+(      )59.5 262.4 ms
+0.753 0 0 r
+(!                     6-10 Id.  for OTYPE = 2; point output.)s
+0 g
+(      )59.5 252.4 ms
+0.753 0 0 r
+(!                    11-15 Id.  for OTYPE = 3; track point output.)s
+0 g
+(      )59.5 242.4 ms
+0.753 0 0 r
+(!                    16-20 Id.  for OTYPE = 4; restart files.)s
+0 g
+(      )59.5 232.4 ms
+0.753 0 0 r
+(!                    21-25 Id.  for OTYPE = 5; boundary data.)s
+0 g
+(      )59.5 222.4 ms
+0.753 0 0 r
+(! FLGRD   L.A.   I   Flags for gridded output.)s
+0 g
+(      )59.5 212.4 ms
+0.753 0 0 r
+(! NPT     Int.   I   Number of output points)s
+0 g
+(      )59.5 202.4 ms
+0.753 0 0 r
+(! X/YPT   R.A.   I   Coordinates of output points.)s
+0 g
+(      )59.5 192.4 ms
+0.753 0 0 r
+(! PNAMES  C.A.   I   Output point names.)s
+0 g
+(      npts )59.5 172.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(      )59.5 162.4 ms
+0 0.502 0 r
+(allocate)s
+0 g
+( \( x\()s
+0 0 0.753 r
+(1)s
+0 g
+(\), y\()s
+0 0 0.753 r
+(1)s
+0 g
+(\), pnames\()s
+0 0 0.753 r
+(1)s
+0 g
+(\) \))s
+(      pnames\()59.5 152.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(' ')s
+0 g
+(      )59.5 132.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( j)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+(6)s
+0 g
+(         odat\()59.5 122.4 ms
+0 0 0.753 r
+(5)s
+0 0.502 0 r
+(*)s
+0 g
+(\(j)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(+)s
+0 0 0.753 r
+(3)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(      )59.5 112.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(      )59.5 92.4 ms
+0.753 0 0 r
+(! QL, 160823, initialize flag for restart)s
+0 g
+(      rstwr )59.5 82.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(      )59.5 72.4 ms
+0.753 0 0 r
+(! QL, 160601, initialize flag for history file)s
+0 g
+(      histwr )59.5 62.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+re sp
+%%PageTrailer
+%%Page: 8 8
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 8)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0.753 0 0 r
+(! QL, 160601, get coupling interval)s
+0 g
+(      )59.5 762.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_timemgr_eclockgetdata\(eclock, dtime)s
+0 0.502 0 r
+(=)s
+0 g
+(dtime_sync \))s
+(      )59.5 752.4 ms
+0.753 0 0 r
+(!DEBUG)s
+0 g
+(      )59.5 742.4 ms
+0.753 0 0 r
+(! Hardwire gridded output for now)s
+0 g
+(      )59.5 732.4 ms
+0.753 0 0 r
+(! first output time stamp is now read from file)s
+0 g
+(      )59.5 722.4 ms
+0.753 0 0 r
+(! QL, 150525, 1-5 for history files, 16-20 for restart files)s
+0 g
+(      )59.5 712.4 ms
+0.753 0 0 r
+(!     150629, restart output interval is set to the total time of run)s
+0 g
+(      )59.5 702.4 ms
+0.753 0 0 r
+(!     150823, restart is taken over by rstwr)s
+0 g
+(      )59.5 692.4 ms
+0.753 0 0 r
+(!     160601, output interval is set to coupling interval, so that)s
+0 g
+(      )59.5 682.4 ms
+0.753 0 0 r
+(!             variables calculated in W3IOGO could be updated at)s
+0 g
+(      )59.5 672.4 ms
+0.753 0 0 r
+(!             every coupling interval)s
+0 g
+(      odat\()59.5 662.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( time\()s
+0 0 0.753 r
+(1)s
+0 g
+(\)     )s
+0.753 0 0 r
+(! YYYYMMDD for first output)s
+0 g
+(      odat\()59.5 652.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( time\()s
+0 0 0.753 r
+(2)s
+0 g
+(\)     )s
+0.753 0 0 r
+(! HHMMSS for first output)s
+0 g
+(      odat\()59.5 642.4 ms
+0 0 0.753 r
+(3)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( dtime_sync  )s
+0.753 0 0 r
+(! output interval in sec ! changed by Adrean)s
+0 g
+(      odat\()59.5 632.4 ms
+0 0 0.753 r
+(4)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(99990101)s
+0 g
+(    )s
+0.753 0 0 r
+(! YYYYMMDD for last output)s
+0 g
+(      odat\()59.5 622.4 ms
+0 0 0.753 r
+(5)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(           )s
+0.753 0 0 r
+(! HHMMSS for last output)s
+0 g
+(      odat\()59.5 612.4 ms
+0 0 0.753 r
+(16)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( time\()s
+0 0 0.753 r
+(1)s
+0 g
+(\)    )s
+0.753 0 0 r
+(! YYYYMMDD for first output)s
+0 g
+(      odat\()59.5 602.4 ms
+0 0 0.753 r
+(17)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( time\()s
+0 0 0.753 r
+(2)s
+0 g
+(\)    )s
+0.753 0 0 r
+(! HHMMSS for first output)s
+0 g
+(      odat\()59.5 592.4 ms
+0 0 0.753 r
+(18)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( dtime_sync )s
+0.753 0 0 r
+(! output interval in sec)s
+0 g
+(      odat\()59.5 582.4 ms
+0 0 0.753 r
+(19)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(99990101)s
+0 g
+(   )s
+0.753 0 0 r
+(! YYYYMMDD for last output)s
+0 g
+(      odat\()59.5 572.4 ms
+0 0 0.753 r
+(20)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(          )s
+0.753 0 0 r
+(! HHMMSS for last output)s
+0 g
+(      )59.5 562.4 ms
+0.753 0 0 r
+(!DEBUG)s
+0 g
+(      )59.5 542.4 ms
+0.753 0 0 r
+(! Output Type 1: fields of mean wave parameters gridded output)s
+0 g
+(      flgrd\( )59.5 522.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!   1. depth \(m\))s
+0 g
+(      flgrd\( )59.5 512.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!   2. mean current vel \(vec, m/s\))s
+0 g
+(      flgrd\( )59.5 502.4 ms
+0 0 0.753 r
+(3)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0 g
+(  )s
+0.753 0 0 r
+(!   3. mean wind vel \(vec, m/s\))s
+0 g
+(      flgrd\( )59.5 492.4 ms
+0 0 0.753 r
+(4)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!   4. air-sea temp diff \(deg C\))s
+0 g
+(      flgrd\( )59.5 482.4 ms
+0 0 0.753 r
+(5)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!   5. skin friction vel \(scalar, m/s\))s
+0 g
+(      flgrd\( )59.5 472.4 ms
+0 0 0.753 r
+(6)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0 g
+(  )s
+0.753 0 0 r
+(!   6. significant wave height \(m\))s
+0 g
+(      flgrd\( )59.5 462.4 ms
+0 0 0.753 r
+(7)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!   7. mean wave length \(m\))s
+0 g
+(      flgrd\( )59.5 452.4 ms
+0 0 0.753 r
+(8)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0 g
+(  )s
+0.753 0 0 r
+(!   8. mean wave period \(Tn1, s\))s
+0 g
+(      flgrd\( )59.5 442.4 ms
+0 0 0.753 r
+(9)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0 g
+(  )s
+0.753 0 0 r
+(!   9. mean wave dir \(deg: met conv\))s
+0 g
+(      flgrd\()59.5 432.4 ms
+0 0 0.753 r
+(10)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  10. mean dir spread \(deg: \))s
+0 g
+(      flgrd\()59.5 422.4 ms
+0 0 0.753 r
+(11)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  11. peak freq \(Hz\))s
+0 g
+(      flgrd\()59.5 412.4 ms
+0 0 0.753 r
+(12)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  12. peak dir \(deg: \))s
+0 g
+(      flgrd\()59.5 402.4 ms
+0 0 0.753 r
+(13)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  13. peak freq of wind-sea part)s
+0 g
+(      flgrd\()59.5 392.4 ms
+0 0 0.753 r
+(14)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  14. wind-sea dir \(deg: met conv\))s
+0 g
+(      flgrd\()59.5 382.4 ms
+0 0 0.753 r
+(15)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  15. wave height of partitions)s
+0 g
+(      flgrd\()59.5 372.4 ms
+0 0 0.753 r
+(16)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  16. peak periods of partitions)s
+0 g
+(      flgrd\()59.5 362.4 ms
+0 0 0.753 r
+(17)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  17. peak wave length of partitions)s
+0 g
+(      flgrd\()59.5 352.4 ms
+0 0 0.753 r
+(18)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  18. mean dir of partitions)s
+0 g
+(      flgrd\()59.5 342.4 ms
+0 0 0.753 r
+(19)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  19. dir spread of partitions)s
+0 g
+(      flgrd\()59.5 332.4 ms
+0 0 0.753 r
+(20)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  20. wind-sea frac of partitions)s
+0 g
+(      flgrd\()59.5 322.4 ms
+0 0 0.753 r
+(21)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  21. wind-sea frac of entire spec)s
+0 g
+(      flgrd\()59.5 312.4 ms
+0 0 0.753 r
+(22)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  22. number of partitions)s
+0 g
+(      flgrd\()59.5 302.4 ms
+0 0 0.753 r
+(23)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  23. average time step \(s\))s
+0 g
+(      flgrd\()59.5 292.4 ms
+0 0 0.753 r
+(24)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  24. cut-off freq \(Hz\))s
+0 g
+(      flgrd\()59.5 282.4 ms
+0 0 0.753 r
+(25)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  25. ice concentration \(frac\))s
+0 g
+(      flgrd\()59.5 272.4 ms
+0 0 0.753 r
+(26)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  26. water level \(m?\))s
+0 g
+(      flgrd\()59.5 262.4 ms
+0 0 0.753 r
+(27)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  27. near-bottom rms exclusion amp)s
+0 g
+(      flgrd\()59.5 252.4 ms
+0 0 0.753 r
+(28)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  28. near-bottom rms orbital vel)s
+0 g
+(      flgrd\()59.5 242.4 ms
+0 0 0.753 r
+(29)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  29. radiation stresses)s
+0 g
+(      flgrd\()59.5 232.4 ms
+0 0 0.753 r
+(30)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  30. user defined \(1\))s
+0 g
+(      flgrd\()59.5 222.4 ms
+0 0 0.753 r
+(31)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+( )s
+0.753 0 0 r
+(!  31. user defined \(2\))s
+0 g
+(      )59.5 212.4 ms
+0.753 0 0 r
+(! QL, 150525, new output)s
+0 g
+(      flgrd\()59.5 202.4 ms
+0 0 0.753 r
+(32)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  32. Stokes drift at z=0)s
+0 g
+(      flgrd\()59.5 192.4 ms
+0 0 0.753 r
+(33)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  33. Turbulent Langmuir number \(La_t\))s
+0 g
+(      flgrd\()59.5 182.4 ms
+0 0 0.753 r
+(34)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  34. Langmuir number \(La_Proj\))s
+0 g
+(      flgrd\()59.5 172.4 ms
+0 0 0.753 r
+(35)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  35. Angle between wind and LC direction)s
+0 g
+(      flgrd\()59.5 162.4 ms
+0 0 0.753 r
+(36)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  36. Depth averaged Stokes drift \(0-H_0.2ML\))s
+0 g
+(      flgrd\()59.5 152.4 ms
+0 0 0.753 r
+(37)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  37. Langmuir number \(La_SL\))s
+0 g
+(      flgrd\()59.5 142.4 ms
+0 0 0.753 r
+(38)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  38. Langmuir number \(La_SL,Proj\))s
+0 g
+(      flgrd\()59.5 132.4 ms
+0 0 0.753 r
+(39)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+0 g
+(  )s
+0.753 0 0 r
+(!  39. Enhancement factor with La_SL,Proj)s
+0 g
+(      )59.5 112.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(then)s
+0 g
+(         flt )59.5 102.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0 g
+(         )59.5 92.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( i)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nogrd)s
+(            )59.5 82.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( flgrd\(i\) \) )s
+0 0.502 0 r
+(then)s
+0 g
+(               )59.5 72.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( flt \) )s
+0 0.502 0 r
+(then)s
+0 g
+(                  )59.5 62.4 ms
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(1945)s
+0 g
+(\) idout\(i\))s
+(                  flt    )59.5 52.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.false.)s
+re sp
+%%PageTrailer
+%%Page: 9 9
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                              Page 9)59.5 792.4 ms
+F0 sf
+(               )59.5 772.4 ms
+0 0.502 0 r
+(else)s
+0 g
+(                  )59.5 762.4 ms
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(1946)s
+0 g
+(\) idout\(i\))s
+(               )59.5 752.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(            )59.5 742.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(         )59.5 732.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(         )59.5 722.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( flt \) )s
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(1945)s
+0 g
+(\) )s
+0 0 0.753 r
+('no fields defined')s
+0 g
+(      )59.5 712.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(      )59.5 702.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 682.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 672.4 ms
+0.753 0 0 r
+(! Wave model initializations)s
+0 g
+(      )59.5 662.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 642.4 ms
+0.753 0 0 r
+(! Notes on ww3 initialization:)s
+0 g
+(      )59.5 632.4 ms
+0.753 0 0 r
+(! ww3 read initialization occurs in w3iors \(which is called by initmd\))s
+0 g
+(      )59.5 622.4 ms
+0.753 0 0 r
+(! For a startup \(including hybrid\) or branch run the initial datafile is)s
+0 g
+(      )59.5 612.4 ms
+0.753 0 0 r
+(! set in namelist input 'initfile')s
+0 g
+(      )59.5 602.4 ms
+0.753 0 0 r
+(! For a continue run - the initfile vluae is created from the time\(1:2\))s
+0 g
+(      )59.5 592.4 ms
+0.753 0 0 r
+(! array set below)s
+0 g
+(      )59.5 572.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(950)s
+0 g
+(\))s
+(      )59.5 562.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(write)s
+0 g
+( \(ndso,)s
+0 0 0.753 r
+(951)s
+0 g
+(\) )s
+0 0 0.753 r
+('wave model ...')s
+0 g
+(      )59.5 552.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 532.4 ms
+0.753 0 0 r
+(! Read namelist \(set initfile in w3cesmmd\))s
+0 g
+(      )59.5 522.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \( iaproc )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( napout \) )s
+0 0.502 0 r
+(then)s
+0 g
+(         unitn )59.5 512.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( shr_file_getunit\(\))s
+(         )59.5 502.4 ms
+0 0.502 0 r
+(write)s
+0 g
+(\(ndso,)s
+0 0.502 0 r
+(*)s
+0 g
+(\) )s
+0 0 0.753 r
+('Read in ww3_inparm namelist from wav_in')s
+0 0.502 0 r
+(//)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(inst_suffix\))s
+(         )59.5 482.4 ms
+0 0.502 0 r
+(open)s
+0 g
+(\( unitn, )s
+0 0.502 0 r
+(file=)s
+0 0 0.753 r
+('wav_in')s
+0 0.502 0 r
+(//)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(inst_suffix\), )s
+0 0.502 0 r
+(status=)s
+0 0 0.753 r
+('old')s
+0 g
+( \))s
+(         )59.5 462.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_nl_find_group_name\(unitn, )s
+0 0 0.753 r
+('ww3_inparm')s
+0 g
+(, )s
+0 0.502 0 r
+(status=)s
+0 g
+(ierr\))s
+(         )59.5 452.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(ierr )s
+0 0.502 0 r
+(==)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            )59.5 442.4 ms
+0 0.502 0 r
+(read)s
+0 g
+( \(unitn, ww3_inparm, )s
+0 0.502 0 r
+(iostat=)s
+0 g
+(ierr\))s
+(            )59.5 432.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(ierr )s
+0 0.502 0 r
+(/=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(\) )s
+0 0.502 0 r
+(then)s
+0 g
+(               )59.5 422.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_abort\()s
+0 0 0.753 r
+('problem reading ww3_inparm namelist')s
+0 g
+(\))s
+(            )59.5 412.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(         )59.5 402.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(         )59.5 392.4 ms
+0 0.502 0 r
+(close)s
+0 g
+(\( unitn \))s
+(         )59.5 382.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_freeUnit\( unitn \))s
+(      )59.5 372.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(      )59.5 362.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_mpi_bcast\(initfile, mpi_comm\))s
+(      )59.5 352.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_mpi_bcast\(outfreq, mpi_comm\))s
+(      )59.5 332.4 ms
+0.753 0 0 r
+(! Set casename \(in w3cesmmd\))s
+0 g
+(      )59.5 322.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_infodata_GetData\(infodata,case_name)s
+0 0.502 0 r
+(=)s
+0 g
+(casename\))s
+(      )59.5 302.4 ms
+0.753 0 0 r
+(! Read in input data and initialize the model)s
+0 g
+(      )59.5 292.4 ms
+0.753 0 0 r
+(! w3init calls w3iors which:)s
+0 g
+(      )59.5 282.4 ms
+0.753 0 0 r
+(! - reads either the initfile if the run is startup or branch)s
+0 g
+(      )59.5 272.4 ms
+0.753 0 0 r
+(! - constructs the filename from the casename variable and the time\(:\) array)s
+0 g
+(      )59.5 262.4 ms
+0.753 0 0 r
+(!   which is set above)s
+0 g
+(      )59.5 252.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3init \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, )s
+0 0 0.753 r
+('ww3')s
+0 g
+(, nds, ntrace, odat, flgrd, npts, x, y,   )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           pnames, iprt, prtfrm, mpi_comm \))59.5 242.4 ms
+(      )59.5 232.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 212.4 ms
+0.753 0 0 r
+(! overwrite dt values with variables from coupler)s
+0 g
+(      )59.5 202.4 ms
+0.753 0 0 r
+(! is this a problem with any things being set in w3init?)s
+0 g
+(      dtmax  )59.5 192.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(dtime_sync\))s
+(      dtcfl  )59.5 182.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(dtime_sync\) )s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0 0 0.753 r
+(2)s
+0 g
+(. )s
+0.753 0 0 r
+(!checked by adrean)s
+0 g
+(      dtcfli )59.5 172.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(dtime_sync\)      )s
+0.753 0 0 r
+(!checked by adrean)s
+0 g
+(      dtmin  )59.5 162.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(dtime_sync\) )s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0 0 0.753 r
+(12)s
+0 g
+( )s
+0.753 0 0 r
+(!checked by adrean)s
+0 g
+(      )59.5 142.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mpi_barrier \( mpi_comm, ierr \))s
+(      )59.5 122.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 112.4 ms
+0.753 0 0 r
+(! cpl7/mct initialization)s
+0 g
+(      )59.5 102.4 ms
+0.753 0 0 r
+(!--------------------------------------------------------------------)s
+0 g
+(      )59.5 82.4 ms
+0.753 0 0 r
+(! initialize mct gsmap)s
+0 g
+(      )59.5 62.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( wav_setgsmap_mct\(mpi_comm, compid, gsmap\))s
+(      lsize )59.5 52.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mct_gsmap_lsize\(gsmap, mpi_comm\))s
+re sp
+%%PageTrailer
+%%Page: 10 10
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 10)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 752.4 ms
+0.753 0 0 r
+(! initialize mct domain)s
+0 g
+(      )59.5 732.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( wav_domain_mct\(lsize, gsmap, dom\))s
+(      )59.5 712.4 ms
+0.753 0 0 r
+(! set flags in infodata)s
+0 g
+(      )59.5 702.4 ms
+0.753 0 0 r
+(! wav_prognostic is set to .false. for debugging purposes only)s
+0 g
+(      )59.5 682.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_infodata_putdata\(infodata, wav_present)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(.true.)s
+0 g
+(, )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           wav_prognostic)59.5 672.4 ms
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(.true.)s
+0 g
+(, wav_nx)s
+0 0.502 0 r
+(=)s
+0 g
+(nx, wav_ny)s
+0 0.502 0 r
+(=)s
+0 g
+(ny\))s
+(      )59.5 652.4 ms
+0.753 0 0 r
+(! initialize mct attribute vectors)s
+0 g
+(      )59.5 632.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_avect_init\(w2x_w, rlist)s
+0 0.502 0 r
+(=)s
+0 g
+(seq_flds_w2x_fields, lsize)s
+0 0.502 0 r
+(=)s
+0 g
+(lsize\))s
+(      )59.5 622.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_avect_zero\(w2x_w\))s
+(      )59.5 602.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_avect_init\(x2w_w, rlist)s
+0 0.502 0 r
+(=)s
+0 g
+(seq_flds_x2w_fields, lsize)s
+0 0.502 0 r
+(=)s
+0 g
+(lsize\))s
+(      )59.5 592.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_avect_zero\(x2w_w\))s
+(      )59.5 572.4 ms
+0.753 0 0 r
+(! add call to gptl timer)s
+0 g
+(      )59.5 552.4 ms
+0.753 0 0 r
+(! QL, 150823, send initial state to driver)s
+0 g
+(      )59.5 542.4 ms
+0.753 0 0 r
+(! QL, 160611, initial values for lamult, ustokes and vstokes)s
+0 g
+(      )59.5 532.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nseal)s
+(          w2x_w%rattr\(index_w2x_Sw_lamult,jsea\) )59.5 522.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(.)s
+(          w2x_w%rattr\(index_w2x_Sw_ustokes,jsea\) )59.5 512.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(.)s
+(          w2x_w%rattr\(index_w2x_Sw_vstokes,jsea\) )59.5 502.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(.)s
+(          )59.5 492.4 ms
+0.753 0 0 r
+(!w2x_w%rattr\(index_w2x_Sw_hstokes,jsea\) = ??)s
+0 g
+(      )59.5 482.4 ms
+0 0.502 0 r
+(enddo)s
+0 g
+(      )59.5 462.4 ms
+0.753 0 0 r
+(! end redirection of share output to wav log)s
+0 g
+(      )59.5 442.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(ndso\))s
+(      )59.5 432.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setlogunit \(shrlogunit\))s
+(      )59.5 422.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setloglevel\(shrloglev\))s
+0.753 0 0.753 r
+(900)59.5 392.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \()s
+0 0.502 0 r
+(/)s
+0.502 0.502 0 r
+(15X)s
+0 g
+(,)s
+0 0 0.753 r
+('      *** WAVEWATCH III Program shell ***      ')s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0.753 0 0.753 r
+(&)s
+0 g
+(               )59.5 382.4 ms
+0.502 0.502 0 r
+(15X)s
+0 g
+(,)s
+0 0 0.753 r
+('===============================================')s
+0 0.502 0 r
+(/)s
+0 g
+(\))s
+0.753 0 0.753 r
+(901)59.5 372.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \( )s
+0 0 0.753 r
+('  Comment character is ''')s
+0 g
+(,A,)s
+0 0 0.753 r
+('''')s
+0 0.502 0 r
+(/)s
+0 g
+(\))s
+0.753 0 0.753 r
+(930)59.5 352.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \()s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+('  Time interval : ')s
+0 0.502 0 r
+(/)s
+0 g
+(                                  )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           )59.5 342.4 ms
+0 0 0.753 r
+(' --------------------------------------------------')s
+0 g
+(\))s
+0.753 0 0.753 r
+(931)59.5 332.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \( )s
+0 0 0.753 r
+('       Starting time : ')s
+0 g
+(,A\))s
+0.753 0 0.753 r
+(940)59.5 312.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \()s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+('  Output requests : ')s
+0 0.502 0 r
+(/)s
+0 g
+(                                )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           )59.5 302.4 ms
+0 0 0.753 r
+(' --------------------------------------------------')s
+0 0.502 0 r
+(/)s
+0 g
+( )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           )59.5 292.4 ms
+0 0 0.753 r
+('       ')s
+0 g
+(,A\))s
+0.753 0 0.753 r
+(950)59.5 272.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \()s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+('  Initializations :')s
+0 0.502 0 r
+(/)s
+0 g
+(                                 )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           )59.5 262.4 ms
+0 0 0.753 r
+(' --------------------------------------------------')s
+0 g
+(\))s
+0.753 0 0.753 r
+(951)59.5 252.4 ms
+0 g
+(   )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \( )s
+0 0 0.753 r
+('       ')s
+0 g
+(,A\))s
+0.753 0 0.753 r
+(1945)59.5 242.4 ms
+0 g
+(  )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \( )s
+0 0 0.753 r
+('            Fields   : ')s
+0 g
+(,A\))s
+0.753 0 0.753 r
+(1946)59.5 232.4 ms
+0 g
+(  )s
+0 0.502 0 r
+(FORMAT)s
+0 g
+( \( )s
+0 0 0.753 r
+('                       ')s
+0 g
+(,A\))s
+(    )59.5 212.4 ms
+0.753 0 0.753 r
+(END SUBROUTINE)s
+0 g
+( WAV_INIT_MCT)s
+0.753 0 0 r
+(!=====================================================================)59.5 192.4 ms
+(!=====================================================================)59.5 182.4 ms
+(!=====================================================================)59.5 172.4 ms
+0 g
+(    )59.5 152.4 ms
+0.753 0 0.753 r
+(SUBROUTINE)s
+0 g
+( WAV_RUN_MCT\(EClock, cdata_w, x2w_w, w2x_w\))s
+(      )59.5 132.4 ms
+0.753 0 0 r
+(! Parameters)s
+0 g
+(      )59.5 112.4 ms
+0 0.502 0 r
+(implicit)s
+0 g
+( )s
+0 0.502 0 r
+(none)s
+0 g
+(      )59.5 102.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(ESMF_Clock\)            ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: EClock)s
+(      )59.5 92.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(seq_cdata\)             ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: cdata_w)s
+(      )59.5 82.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_aVect\)             ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: x2w_w)s
+(      )59.5 72.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_aVect\)             ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: w2x_w)s
+re sp
+%%PageTrailer
+%%Page: 11 11
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 11)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 762.4 ms
+0.753 0 0 r
+(!/ Local parameters)s
+0 g
+(      )59.5 742.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: time0\()s
+0 0 0.753 r
+(2)s
+0 g
+(\), timen\()s
+0 0 0.753 r
+(2)s
+0 g
+(\), ierr, i, j, ix, iy)s
+(      )59.5 732.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: ymd              )s
+0.753 0 0 r
+(! current year-month-day)s
+0 g
+(      )59.5 722.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: tod              )s
+0.753 0 0 r
+(! current time of day \(sec\))s
+0 g
+(      )59.5 712.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: hh,mm,ss)s
+(      )59.5 702.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: n,jsea,isea)s
+(      )59.5 692.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: mpi_comm)s
+(      )59.5 682.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: gindex)s
+(      )59.5 672.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(\()s
+0 0.502 0 r
+(IN)s
+0 g
+(\)   :: shrlogunit, shrloglev )s
+0.753 0 0 r
+(! original log unit and level)s
+0 g
+(      )59.5 662.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_aVect\) :: x2w0)s
+(      )59.5 652.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_gsmap\),)s
+0 0.502 0 r
+(pointer)s
+0 g
+( :: gsmap)s
+0 0.502 0 r
+(      real)59.5 642.4 ms
+0 g
+( :: def_value)s
+(      )59.5 622.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=*)s
+0 g
+(\),)s
+0 0.502 0 r
+(parameter)s
+0 g
+( :: subname )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+('\(wav_run_mct\)')s
+0 g
+(      )59.5 602.4 ms
+0.753 0 0 r
+(!----------------------------------------------------------------------------)s
+0 g
+(      )59.5 592.4 ms
+0.753 0 0 r
+(! Reset shr logging to my log file)s
+0 g
+(      )59.5 582.4 ms
+0.753 0 0 r
+(!----------------------------------------------------------------------------)s
+0 g
+(      )59.5 572.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_getLogUnit \(shrlogunit\))s
+(      )59.5 562.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_getLogLevel\(shrloglev\))s
+(      )59.5 552.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setLogUnit \(stdout\))s
+(      )59.5 532.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_timemgr_EClockGetData\( EClock, curr_ymd)s
+0 0.502 0 r
+(=)s
+0 g
+(ymd, curr_tod)s
+0 0.502 0 r
+(=)s
+0 g
+(tod \))s
+(      hh )59.5 512.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( tod)s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(3600)s
+0 g
+(      mm )59.5 502.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( \(tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh )s
+0 0.502 0 r
+(*)s
+0 g
+( )s
+0 0 0.753 r
+(3600)s
+0 g
+(\)\))s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(60)s
+0 g
+(      ss )59.5 492.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(3600)s
+0 g
+(\) )s
+0 0.502 0 r
+(-)s
+0 g
+( \(mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(60)s
+0 g
+(\))s
+(      timen\()59.5 472.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( ymd)s
+(      timen\()59.5 462.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(10000)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(100)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( ss)s
+(      )59.5 442.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_timemgr_EClockGetData\( EClock, prev_ymd)s
+0 0.502 0 r
+(=)s
+0 g
+(ymd, prev_tod)s
+0 0.502 0 r
+(=)s
+0 g
+(tod \))s
+(      )59.5 422.4 ms
+0.753 0 0 r
+(! QL, 171107, output every outfreq hours)s
+0 g
+(      )59.5 412.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(outfreq )s
+0 0.502 0 r
+(.gt.)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+( )s
+0 0.502 0 r
+(.and.)s
+0 g
+( )s
+0.502 0.502 0 r
+(mod)s
+0 g
+(\(hh, outfreq\) )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+( \) )s
+0 0.502 0 r
+(then)s
+0 g
+(          histwr )59.5 402.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(.true.)s
+0 g
+(      )59.5 392.4 ms
+0 0.502 0 r
+(else)s
+0 g
+(          histwr )59.5 382.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( seq_timemgr_historyAlarmIsOn\(EClock\))s
+(      )59.5 372.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(      hh )59.5 342.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( tod)s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(3600)s
+0 g
+(      mm )59.5 332.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( \(tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh )s
+0 0.502 0 r
+(*)s
+0 g
+( )s
+0 0 0.753 r
+(3600)s
+0 g
+(\)\))s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(60)s
+0 g
+(      ss )59.5 322.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( tod )s
+0 0.502 0 r
+(-)s
+0 g
+( \(hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(3600)s
+0 g
+(\) )s
+0 0.502 0 r
+(-)s
+0 g
+( \(mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(60)s
+0 g
+(\))s
+(      time0\()59.5 302.4 ms
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( ymd)s
+(      time0\()59.5 292.4 ms
+0 0 0.753 r
+(2)s
+0 g
+(\) )s
+0 0.502 0 r
+(=)s
+0 g
+( hh)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(10000)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( mm)s
+0 0.502 0 r
+(*)s
+0 0 0.753 r
+(100)s
+0 g
+( )s
+0 0.502 0 r
+(+)s
+0 g
+( ss)s
+(      time )59.5 272.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( time0)s
+(      )59.5 252.4 ms
+0.753 0 0 r
+(! QL, 150823, set flag for writing restart file)s
+0 g
+(      rstwr )59.5 242.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( seq_timemgr_RestartAlarmIsOn\(EClock\))s
+(      )59.5 222.4 ms
+0.753 0 0 r
+(!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -)s
+0 g
+(      )59.5 212.4 ms
+0.753 0 0 r
+(! 7.  Model with input)s
+0 g
+(      )59.5 202.4 ms
+0.753 0 0 r
+(! 7.a Determine next time interval and input fields)s
+0 g
+(      )59.5 192.4 ms
+0.753 0 0 r
+(! 7.a.1 Preparation)s
+0 g
+(      )59.5 182.4 ms
+0.753 0 0 r
+(! 7.a.3 Update time and fields / data)s
+0 g
+(      )59.5 162.4 ms
+0.753 0 0 r
+(!--- input fields associated with W3FLDG calls in ww3_shel.ftn)s
+0 g
+(      )59.5 152.4 ms
+0.753 0 0 r
+(!--- these arrays are global, just fill the local cells for use later)s
+0 g
+(      )59.5 142.4 ms
+0.753 0 0 r
+(!--- fill both the lower \(0\) and upper \(N\) bound data with the same values)s
+0 g
+(      )59.5 132.4 ms
+0.753 0 0 r
+(!--- fill with special values as default, these should not be used in practice)s
+0 g
+(      )59.5 122.4 ms
+0.753 0 0 r
+(!--- set time for input data to time0 and timen \(shouldn't matter\))s
+0 g
+(      )59.5 102.4 ms
+0.753 0 0 r
+(! def_value = -1.0e36)s
+0 g
+(      def_value )59.5 92.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0.0)s
+0 g
+(      )59.5 72.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(1)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         TLN  )59.5 62.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( timen)s
+(         WLEV )59.5 52.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! ssh)s
+re sp
+%%PageTrailer
+%%Page: 12 12
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 12)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      )59.5 752.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(2)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         TC0  )59.5 742.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( time0)s
+(         TCN  )59.5 732.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( timen)s
+(         CX0  )59.5 722.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! ocn u current)s
+0 g
+(         CXN  )59.5 712.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value)s
+(         CY0  )59.5 702.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! ocn v current)s
+0 g
+(         CYN  )59.5 692.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value)s
+(      )59.5 682.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      )59.5 662.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(3)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         TW0  )59.5 652.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( time0)s
+(         TWN  )59.5 642.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( timen)s
+(         WX0  )59.5 632.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! atm u wind)s
+0 g
+(         WXN  )59.5 622.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value)s
+(         WY0  )59.5 612.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! atm v wind)s
+0 g
+(         WYN  )59.5 602.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value)s
+(         DT0  )59.5 592.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! air temp - ocn temp)s
+0 g
+(         DTN  )59.5 582.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value)s
+(      )59.5 572.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      )59.5 552.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(4)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(         TIN  )59.5 542.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( timen)s
+(         ICEI )59.5 532.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( def_value   )s
+0.753 0 0 r
+(! ice frac)s
+0 g
+(      )59.5 522.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(      )59.5 502.4 ms
+0.753 0 0 r
+(! this is the global fill)s
+0 g
+(      )59.5 492.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( seq_cdata_setptrs\(cdata_w,gsmap)s
+0 0.502 0 r
+(=)s
+0 g
+(gsmap,mpicom)s
+0 0.502 0 r
+(=)s
+0 g
+(mpi_comm\))s
+(      )59.5 482.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_aVect_gather\(x2w_w,x2w0,gsmap,)s
+0 0 0.753 r
+(0)s
+0 g
+(,mpi_comm\))s
+(      )59.5 472.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_aVect_bcast\(x2w0,)s
+0 0 0.753 r
+(0)s
+0 g
+(,mpi_comm\))s
+(      )59.5 452.4 ms
+0.753 0 0 r
+(! use these loops for global copy)s
+0 g
+(      gindex )59.5 442.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(      )59.5 432.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( IY )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(,NY)s
+(      )59.5 422.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( IX )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(,NX)s
+(         gindex )59.5 412.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( gindex )s
+0 0.502 0 r
+(+)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(         )59.5 402.4 ms
+0.753 0 0 r
+(! use this loop to do local copy)s
+0 g
+(         )59.5 392.4 ms
+0.753 0 0 r
+(!      do jsea=1, nseal)s
+0 g
+(         )59.5 382.4 ms
+0.753 0 0 r
+(!         isea = iaproc + \(jsea-1\)*naproc)s
+0 g
+(         )59.5 372.4 ms
+0.753 0 0 r
+(!         IX  = MAPSF\(ISEA,1\))s
+0 g
+(         )59.5 362.4 ms
+0.753 0 0 r
+(!         IY  = MAPSF\(ISEA,2\))s
+0 g
+(         )59.5 352.4 ms
+0.753 0 0 r
+(!         gindex = ix + \(iy-1\)*nx)s
+0 g
+(         )59.5 332.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(1)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            WLEV\(IX,IY\) )59.5 322.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0.0)s
+0 g
+(         )59.5 312.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(         )59.5 292.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(2)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            CX0\(IX,IY\)  )59.5 282.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x2w0%rattr\(index_x2w_so_u,gindex\))s
+(            CXN\(IX,IY\)  )59.5 272.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( CX0\(IX,IY\))s
+(            CY0\(IX,IY\)  )59.5 262.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x2w0%rattr\(index_x2w_so_v,gindex\))s
+(            CYN\(IX,IY\)  )59.5 252.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( CY0\(IX,IY\))s
+(         )59.5 242.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(         )59.5 222.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(3)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            WX0\(IX,IY\)  )59.5 212.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x2w0%rattr\(index_x2w_sa_u,gindex\))s
+(            WXN\(IX,IY\)  )59.5 202.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( WX0\(IX,IY\))s
+(            WY0\(IX,IY\)  )59.5 192.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x2w0%rattr\(index_x2w_sa_v,gindex\))s
+(            WYN\(IX,IY\)  )59.5 182.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( WY0\(IX,IY\))s
+(            DT0\(IX,IY\)  )59.5 172.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x2w0%rattr\(index_x2w_sa_tbot,gindex\) )s
+0 0.502 0 r
+(-)s
+0 g
+( x2w0%rattr\(index_x2)s
+(w_so_t,gindex\))59.5 162.4 ms
+(            DTN\(IX,IY\)  )59.5 152.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( DT0\(IX,IY\))s
+(         )59.5 142.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(         )59.5 122.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(4)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            ICEI\(IX,IY\) )59.5 112.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x2w0%rattr\(index_x2w_si_ifrac,gindex\))s
+(         )59.5 102.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(         )59.5 82.4 ms
+0.753 0 0 r
+(! QL, 150525, get mixing layer depth from coupler)s
+0 g
+(         )59.5 72.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(flags\()s
+0 0 0.753 r
+(5)s
+0 g
+(\)\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            HML\(IX,IY\) )59.5 62.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0.502 0.502 0 r
+(max)s
+0 g
+(\(x2w0%rattr\(index_x2w_so_bldepth,gindex\), )s
+0 0 0.753 r
+(5)s
+0 g
+(.\))s
+(         )59.5 52.4 ms
+0 0.502 0 r
+(endif)s
+re sp
+%%PageTrailer
+%%Page: 13 13
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 13)59.5 792.4 ms
+F0 sf
+(      )59.5 762.4 ms
+0 0.502 0 r
+(enddo)s
+0 g
+(      )59.5 752.4 ms
+0 0.502 0 r
+(enddo)s
+0 g
+(      )59.5 732.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_aVect_clean\(x2w0\))s
+(      )59.5 712.4 ms
+0.753 0 0 r
+(! 7.b Run the wave model for the given interval)s
+0 g
+(      )59.5 692.4 ms
+0.753 0 0 r
+(!      write\(stdout,*\) 'wrm tcx7')s
+0 g
+(      )59.5 682.4 ms
+0.753 0 0 r
+(!      call shr_sys_flush\(stdout\))s
+0 g
+(      )59.5 672.4 ms
+0.753 0 0 r
+(!      call mpi_barrier\(mpi_comm,ierr\))s
+0 g
+(      )59.5 662.4 ms
+0.753 0 0 r
+(!      write\(stdout,*\) 'wrm tcx7a')s
+0 g
+(      )59.5 652.4 ms
+0.753 0 0 r
+(!      call shr_sys_flush\(stdout\))s
+0 g
+(      )59.5 632.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( w3wave \( )s
+0 0 0.753 r
+(1)s
+0 g
+(, timen \))s
+(      )59.5 612.4 ms
+0.753 0 0 r
+(! copy ww3 data to coupling datatype)s
+0 g
+(      )59.5 602.4 ms
+0.753 0 0 r
+(! QL, 150612, copy enhancement factor, uStokes, vStokes to coupler)s
+0 g
+(      )59.5 592.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nseal)s
+(         isea )59.5 582.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( \(jsea)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(naproc)s
+(         IX  )59.5 572.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( MAPSF\(ISEA,)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+(         IY  )59.5 562.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( MAPSF\(ISEA,)s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(         )59.5 552.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(MAPSTA\(IY,IX\) )s
+0 0.502 0 r
+(.eq.)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(\) )s
+0 0.502 0 r
+(then)s
+0 g
+(             )59.5 542.4 ms
+0.753 0 0 r
+(! QL, 160530, LAMULT now calculated in WW3 \(w3iogomd.f90\))s
+0 g
+(             w2x_w%rattr\(index_w2x_Sw_lamult,jsea\) )59.5 532.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( LAMULT\(ISEA\))s
+(             w2x_w%rattr\(index_w2x_Sw_ustokes,jsea\) )59.5 522.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( USSX\(ISEA\))s
+(             w2x_w%rattr\(index_w2x_Sw_vstokes,jsea\) )59.5 512.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( USSY\(ISEA\))s
+(          )59.5 502.4 ms
+0 0.502 0 r
+(else)s
+0 g
+(             w2x_w%rattr\(index_w2x_Sw_lamult,jsea\) )59.5 492.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(.)s
+(             w2x_w%rattr\(index_w2x_Sw_ustokes,jsea\) )59.5 482.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(.)s
+(             w2x_w%rattr\(index_w2x_Sw_vstokes,jsea\) )59.5 472.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(.)s
+(          )59.5 462.4 ms
+0 0.502 0 r
+(endif)s
+0 g
+(          )59.5 452.4 ms
+0.753 0 0 r
+(! w2x_w%rattr\(index_w2x_Sw_hstokes,jsea\) = ??)s
+0 g
+(      )59.5 442.4 ms
+0 0.502 0 r
+(enddo)s
+0 g
+(      )59.5 422.4 ms
+0.753 0 0 r
+(!      write\(stdout,*\) 'wrm tcx8')s
+0 g
+(      )59.5 412.4 ms
+0.753 0 0 r
+(!      call shr_sys_flush\(stdout\))s
+0 g
+(      )59.5 392.4 ms
+0.753 0 0 r
+(!----------------------------------------------------------------------------)s
+0 g
+(      )59.5 382.4 ms
+0.753 0 0 r
+(! Reset shr logging to original values)s
+0 g
+(      )59.5 372.4 ms
+0.753 0 0 r
+(!----------------------------------------------------------------------------)s
+0 g
+(      )59.5 362.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setLogUnit \(shrlogunit\))s
+(      )59.5 352.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_file_setLogLevel\(shrloglev\))s
+(      )59.5 342.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( shr_sys_flush\(stdout\))s
+(      )59.5 322.4 ms
+0.753 0 0 r
+(! write\(stdout,*\) 'wrm tcx9')s
+0 g
+(      )59.5 312.4 ms
+0.753 0 0 r
+(! call shr_sys_flush\(stdout\))s
+0 g
+(      )59.5 292.4 ms
+0.753 0 0 r
+(! )s
+0 g
+(TODO)s
+0.753 0 0 r
+( Put in gptl timer calls)s
+0 g
+(      )59.5 272.4 ms
+0.753 0 0 r
+(! Formats)s
+0 g
+(    )59.5 252.4 ms
+0.753 0 0.753 r
+(END SUBROUTINE)s
+0 g
+( WAV_RUN_MCT)s
+0.753 0 0 r
+(!=====================================================================)59.5 232.4 ms
+(!=====================================================================)59.5 222.4 ms
+(!=====================================================================)59.5 212.4 ms
+0 g
+(    )59.5 192.4 ms
+0.753 0 0.753 r
+(SUBROUTINE)s
+0 g
+( WAV_FINAL_MCT\(EClock, cdata_w, x2w_w, w2x_w\))s
+(      )59.5 172.4 ms
+0.753 0 0 r
+(! Parameters)s
+0 g
+(      )59.5 152.4 ms
+0 0.502 0 r
+(implicit)s
+0 g
+( )s
+0 0.502 0 r
+(none)s
+0 g
+(      )59.5 142.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(ESMF_Clock\)            ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: EClock)s
+(      )59.5 132.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(seq_cdata\)             ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: cdata_w)s
+(      )59.5 122.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_aVect\)             ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: x2w_w)s
+(      )59.5 112.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_aVect\)             ,)s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\) :: w2x_w)s
+(      )59.5 92.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=*)s
+0 g
+(\),)s
+0 0.502 0 r
+(parameter)s
+0 g
+( :: subname )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+('\(wav_final_mct\)')s
+0 g
+(      )59.5 72.4 ms
+0.753 0 0 r
+(! do nothing now)s
+0 g
+(    )59.5 52.4 ms
+0.753 0 0.753 r
+(END SUBROUTINE)s
+0 g
+( WAV_FINAL_MCT)s
+re sp
+%%PageTrailer
+%%Page: 14 14
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 14)59.5 792.4 ms
+F0 sf
+0.753 0 0 r
+(!=====================================================================)59.5 762.4 ms
+(!=====================================================================)59.5 752.4 ms
+(!=====================================================================)59.5 742.4 ms
+0 g
+(    )59.5 722.4 ms
+0.753 0 0.753 r
+(subroutine)s
+0 g
+( wav_setgsmap_mct\(mpi_comm, compid, gsmap\))s
+(      )59.5 702.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 692.4 ms
+0.753 0 0 r
+(!use w3gdatmd, only: nx, ny, nseal)s
+0 g
+(      )59.5 682.4 ms
+0.753 0 0 r
+(!use w3odatmd, only: naproc)s
+0 g
+(      )59.5 672.4 ms
+0 0.502 0 r
+(implicit)s
+0 g
+( )s
+0 0.502 0 r
+(none)s
+0 g
+(      )59.5 662.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 652.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 642.4 ms
+0.753 0 0 r
+(!/ parameter list)s
+0 g
+(      )59.5 632.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 622.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(        , )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(in)s
+0 g
+(\)  :: mpi_comm)s
+(      )59.5 612.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(        , )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(in)s
+0 g
+(\)  :: compid)s
+(      )59.5 602.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_gsmap\), )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(out)s
+0 g
+(\) :: gsmap)s
+(      )59.5 592.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 582.4 ms
+0.753 0 0 r
+(!/ ------------------------------------------------------------------- /)s
+0 g
+(      )59.5 572.4 ms
+0.753 0 0 r
+(!/ local parameters)s
+0 g
+(      )59.5 562.4 ms
+0.753 0 0 r
+(!/)s
+0 g
+(      )59.5 552.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(, )s
+0 0.502 0 r
+(allocatable)s
+0 g
+( :: gindex\(:\))s
+(      )59.5 542.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( :: n,jsea,isea,ix,iy)s
+(      )59.5 532.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=*)s
+0 g
+(\),)s
+0 0.502 0 r
+(parameter)s
+0 g
+( :: subname )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+('\(wav_setgsmap_mct\)')s
+0 g
+(      )59.5 522.4 ms
+0.753 0 0 r
+(! -------------------------------------------------------------------- /)s
+0 g
+(      )59.5 502.4 ms
+0 0.502 0 r
+(allocate)s
+0 g
+(\(gindex\(nseal\)\))s
+(      )59.5 492.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nseal)s
+(         isea )59.5 482.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( \(jsea)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(naproc)s
+(         ix )59.5 472.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+(         iy )59.5 462.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(         gindex\(jsea\) )59.5 452.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( ix )s
+0 0.502 0 r
+(+)s
+0 g
+( \(iy)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(nx)s
+(      )59.5 442.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(      )59.5 432.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_gsmap_init\( gsmap, gindex, mpi_comm, compid, nseal, nx)s
+0 0.502 0 r
+(*)s
+0 g
+(ny\))s
+(      )59.5 422.4 ms
+0 0.502 0 r
+(deallocate)s
+0 g
+(\(gindex\))s
+(    )59.5 402.4 ms
+0.753 0 0.753 r
+(end subroutine)s
+0 g
+( wav_setgsmap_mct)s
+0.753 0 0 r
+(!=====================================================================)59.5 382.4 ms
+(!=====================================================================)59.5 372.4 ms
+(!=====================================================================)59.5 362.4 ms
+0 g
+(    )59.5 342.4 ms
+0.753 0 0.753 r
+(subroutine)s
+0 g
+( wav_domain_mct\(lsize, gsmap, dom\))s
+(      )59.5 322.4 ms
+0 0.502 0 r
+(implicit)s
+0 g
+( )s
+0 0.502 0 r
+(none)s
+0 g
+(      )59.5 312.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(        , )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(in)s
+0 g
+(\)   :: lsize)s
+(      )59.5 302.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_gsmap\), )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(in)s
+0 g
+(\)   :: gsmap)s
+(      )59.5 292.4 ms
+0 0.502 0 r
+(type)s
+0 g
+(\(mct_ggrid\), )s
+0 0.502 0 r
+(intent)s
+0 g
+(\()s
+0 0.502 0 r
+(inout)s
+0 g
+(\):: dom)s
+(      )59.5 272.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+(  :: n,i,ix,iy,isea,jsea   )s
+0.753 0 0 r
+(! indices)s
+0 0.502 0 r
+(      real)59.5 262.4 ms
+0 g
+(\(r8\) :: lon, lat, mask)s
+0 0.502 0 r
+(      real)59.5 252.4 ms
+0 g
+(\(r8\), )s
+0 0.502 0 r
+(pointer)s
+0 g
+(  :: )s
+0 0.502 0 r
+(data)s
+0 g
+(\(:\)     )s
+0.753 0 0 r
+(! temporary)s
+0 g
+(      )59.5 242.4 ms
+0 0.502 0 r
+(integer)s
+0 g
+( , )s
+0 0.502 0 r
+(pointer)s
+0 g
+(  :: idata\(:\)    )s
+0.753 0 0 r
+(! temporary)s
+0 0.502 0 r
+(      real)59.5 232.4 ms
+0 g
+(\(r8\), )s
+0 0.502 0 r
+(parameter)s
+0 g
+(:: rad2deg )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(180.0_r8)s
+0 0.502 0 r
+(/)s
+0 g
+(shr_const_pi)s
+0 0.502 0 r
+(      real)59.5 222.4 ms
+0 g
+(\(r8\), )s
+0 0.502 0 r
+(parameter)s
+0 g
+(:: deg2rad )s
+0 0.502 0 r
+(=)s
+0 g
+( shr_const_pi)s
+0 0.502 0 r
+(/)s
+0 0 0.753 r
+(180.0_r8)s
+0 g
+(      )59.5 212.4 ms
+0 0.502 0 r
+(character)s
+0 g
+(\()s
+0 0.502 0 r
+(len=*)s
+0 g
+(\),)s
+0 0.502 0 r
+(parameter)s
+0 g
+( :: subname )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+('\(wav_domain_mct\)')s
+0 g
+(      )59.5 192.4 ms
+0.753 0 0 r
+(! initialize mct domain type)s
+0 g
+(      )59.5 182.4 ms
+0.753 0 0 r
+(! lat/lon in degrees,  area in radians^2, mask is 1 \(land\), 0 \(non-land\))s
+0 g
+(      )59.5 172.4 ms
+0.753 0 0 r
+(! note that in addition land carries around landfrac for the purposes of domai)s
+(n checking)59.5 162.4 ms
+0 g
+(      )59.5 142.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_init\( ggrid)s
+0 0.502 0 r
+(=)s
+0 g
+(dom, coordchars)s
+0 0.502 0 r
+(=)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_flds_dom_coord\), )s
+0.753 0 0.753 r
+(&)s
+0 g
+(           otherchars)59.5 132.4 ms
+0 0.502 0 r
+(=)s
+0.502 0.502 0 r
+(trim)s
+0 g
+(\(seq_flds_dom_other\), lsize)s
+0 0.502 0 r
+(=)s
+0 g
+(lsize \))s
+(      )59.5 112.4 ms
+0.753 0 0 r
+(! allocate memory)s
+0 g
+(      )59.5 92.4 ms
+0 0.502 0 r
+(allocate)s
+0 g
+(\()s
+0 0.502 0 r
+(data)s
+0 g
+(\(lsize\)\))s
+(      )59.5 72.4 ms
+0.753 0 0 r
+(! determine global gridpoint number attribute, globgridnum, which is set autom)s
+(atically by mct)59.5 62.4 ms
+re sp
+%%PageTrailer
+%%Page: 15 15
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 15)59.5 792.4 ms
+F0 sf
+(      )59.5 772.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_gsMap_orderedPoints\(gsmap, iaproc)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(, idata\))s
+(      )59.5 762.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_gGrid_importIattr\(dom,)s
+0 0 0.753 r
+('GlobGridNum')s
+0 g
+(,idata,lsize\))s
+(      )59.5 742.4 ms
+0.753 0 0 r
+(! determine domain \(numbering scheme is: west to east and south to north to so)s
+(uth pole\))59.5 732.4 ms
+0 g
+(      )59.5 722.4 ms
+0.753 0 0 r
+(! initialize attribute vector with special value)s
+0 g
+(      )59.5 702.4 ms
+0 0.502 0 r
+(data)s
+0 g
+(\(:\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(9999.0_r8)s
+0 g
+(      )59.5 692.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("lat")s
+0 g
+(  ,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 682.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("lon")s
+0 g
+(  ,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 672.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("area")s
+0 g
+( ,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 662.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("aream")s
+0 g
+(,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 652.4 ms
+0 0.502 0 r
+(data)s
+0 g
+(\(:\) )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0.0_r8)s
+0 g
+(      )59.5 642.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("mask")s
+0 g
+( ,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 622.4 ms
+0.753 0 0 r
+(! fill in correct values for domain components)s
+0 g
+(      )59.5 612.4 ms
+0.753 0 0 r
+(! note aream will be filled in in the atm-lnd mapper)s
+0 g
+(      )59.5 602.4 ms
+0.753 0 0 r
+(! sx, sy  real  i  grid increments \(deg.\).)s
+0 g
+(      )59.5 572.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nseal)s
+(         isea )59.5 562.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( \(jsea)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(naproc)s
+(         ix )59.5 552.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+(         iy )59.5 542.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(         lon )59.5 532.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( x0 )s
+0 0.502 0 r
+(+)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(ix)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(sx)s
+(         )59.5 522.4 ms
+0 0.502 0 r
+(data)s
+0 g
+(\(jsea\) )s
+0 0.502 0 r
+(=)s
+0 g
+( lon)s
+(         )59.5 512.4 ms
+0.753 0 0 r
+(!write\(stdout,*\)' jsea= ',jsea,' lon is ',data\(jsea\))s
+0 g
+(      )59.5 502.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(      )59.5 492.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("lon")s
+0 g
+(,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 472.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nseal)s
+(         isea )59.5 462.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( \(jsea)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(naproc)s
+(         ix )59.5 452.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+(         iy )59.5 442.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(         lat )59.5 432.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( y0 )s
+0 0.502 0 r
+(+)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(iy)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(sy)s
+(         )59.5 422.4 ms
+0 0.502 0 r
+(data)s
+0 g
+(\(jsea\) )s
+0 0.502 0 r
+(=)s
+0 g
+( lat)s
+(         )59.5 412.4 ms
+0.753 0 0 r
+(!write\(stdout,*\)' jsea= ',jsea,' lat is ',data\(jsea\))s
+0 g
+(      )59.5 402.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(      )59.5 392.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("lat")s
+0 g
+(,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 372.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea )s
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1)s
+0 g
+(,nseal)s
+(         isea )59.5 362.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( \(jsea)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(naproc)s
+(         ix )59.5 352.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+(         iy )59.5 342.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(         lat )59.5 332.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( y0 )s
+0 0.502 0 r
+(+)s
+0 g
+( )s
+0.502 0.502 0 r
+(real)s
+0 g
+(\(iy)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(sy)s
+(         )59.5 322.4 ms
+0 0.502 0 r
+(data)s
+0 g
+(\(jsea\) )s
+0 0.502 0 r
+(=)s
+0 g
+( sx)s
+0 0.502 0 r
+(*)s
+0 g
+(deg2rad)s
+0 0.502 0 r
+(*)s
+0 g
+(sy)s
+0 0.502 0 r
+(*)s
+0 g
+(deg2rad)s
+0 0.502 0 r
+(*)s
+0.502 0.502 0 r
+(cos)s
+0 g
+(\(lat)s
+0 0.502 0 r
+(*)s
+0 g
+(deg2rad\))s
+(         )59.5 312.4 ms
+0.753 0 0 r
+(!write\(stdout,*\)' jsea= ',jsea,' area is ',data\(jsea\))s
+0 g
+(      )59.5 302.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(      )59.5 292.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("area")s
+0 g
+(,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 272.4 ms
+0 0.502 0 r
+(do)s
+0 g
+( jsea)s
+0 0.502 0 r
+(=)s
+0 0 0.753 r
+(1)s
+0 g
+(, nseal)s
+(         isea )59.5 262.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( iaproc )s
+0 0.502 0 r
+(+)s
+0 g
+( \(jsea)s
+0 0.502 0 r
+(-)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+0 0.502 0 r
+(*)s
+0 g
+(naproc)s
+(         ix )59.5 252.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(1)s
+0 g
+(\))s
+(         iy )59.5 242.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mapsf\(isea,)s
+0 0 0.753 r
+(2)s
+0 g
+(\))s
+(         )59.5 232.4 ms
+0.753 0 0 r
+(! QL, 150827, should be 1 for all sea point)s
+0 g
+(         )59.5 222.4 ms
+0.753 0 0 r
+(!mask = mapsta\(iy,ix\))s
+0 g
+(         )59.5 212.4 ms
+0 0.502 0 r
+(if)s
+0 g
+( \(mapsta\(iy,ix\) )s
+0 0.502 0 r
+(.ne.)s
+0 g
+( )s
+0 0 0.753 r
+(0)s
+0 g
+(\) )s
+0 0.502 0 r
+(then)s
+0 g
+(            mask )59.5 202.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(1.0_r8)s
+0 g
+(         )59.5 192.4 ms
+0 0.502 0 r
+(else)s
+0 g
+(            mask )59.5 182.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( )s
+0 0 0.753 r
+(0.0_r8)s
+0 g
+(         )59.5 172.4 ms
+0 0.502 0 r
+(end if)s
+0 g
+(         )59.5 162.4 ms
+0 0.502 0 r
+(data)s
+0 g
+(\(jsea\) )s
+0 0.502 0 r
+(=)s
+0 g
+( mask)s
+(         )59.5 152.4 ms
+0.753 0 0 r
+(!write\(stdout,*\)' jsea= ',jsea,' mask is ',data\(jsea\))s
+0 g
+(      )59.5 142.4 ms
+0 0.502 0 r
+(end do)s
+0 g
+(      )59.5 132.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("mask")s
+0 g
+(,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      )59.5 122.4 ms
+0.502 0.502 0 r
+(call)s
+0 g
+( mct_ggrid_importrattr\(dom,)s
+0 0 0.753 r
+("frac")s
+0 g
+(,)s
+0 0.502 0 r
+(data)s
+0 g
+(,lsize\))s
+(      n )59.5 102.4 ms
+0 0.502 0 r
+(=)s
+0 g
+( mct_aVect_lSize\(dom%)s
+0 0.502 0 r
+(data)s
+0 g
+(\))s
+(      )59.5 82.4 ms
+0 0.502 0 r
+(deallocate)s
+0 g
+(\()s
+0 0.502 0 r
+(data)s
+0 g
+(\))s
+(      )59.5 72.4 ms
+0 0.502 0 r
+(deallocate)s
+0 g
+(\(idata\))s
+(    )59.5 52.4 ms
+0.753 0 0.753 r
+(end subroutine)s
+0 g
+( wav_domain_mct)s
+re sp
+%%PageTrailer
+%%Page: 16 16
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(wav_comp_mct.F90                                                             Page 16)59.5 792.4 ms
+F0 sf
+(  )59.5 762.4 ms
+0.753 0 0.753 r
+(END MODULE)s
+0 g
+( WAV_COMP_MCT)s
+re sp
+%%PageTrailer
+%%Trailer
+%%Pages: 16
+%%EOF
+

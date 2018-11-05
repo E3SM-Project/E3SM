@@ -1,0 +1,43 @@
+#! /usr/bin/env perl
+use strict;
+
+# QL, 150629, fixed some typos
+if ($#ARGV == -1) {
+    die " ERROR ww3.buildlib: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEROOT		= `./xmlquery CASEROOT       -value`;
+my $CASETOOLS		= `./xmlquery CASETOOLS      -value`;
+my $CCSMROOT		= `./xmlquery CCSMROOT       -value`;
+my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE -value`;
+my $MACH		= `./xmlquery MACH           -value`;
+my $OBJROOT		= `./xmlquery OBJROOT        -value`;
+my $LIBROOT		= `./xmlquery LIBROOT        -value`;
+my $GMAKE_J		= `./xmlquery GMAKE_J        -value`;
+my $GMAKE		= `./xmlquery GMAKE          -value`;
+
+my $comp = 'unknown';
+if ("$COMP_INTERFACE" eq 'MCT' ) {
+    $comp = "mct";
+}
+if ("$COMP_INTERFACE" eq 'ESMF') {
+    $comp = "esmf";
+}
+
+chdir "$OBJROOT/wav/obj";
+
+open(file,">Filepath") or die "Could not open file Filepath to write";
+print file "${CASEROOT}/SourceMods/src.ww3\n";
+print file "${CCSMROOT}/components/ww3/src/source\n";
+print file "${CCSMROOT}/components/ww3/src/cpl_share\n";
+print file "${CCSMROOT}/components/ww3/src/cpl_$comp\n";
+close(file);
+
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile MACFILE=$CASEROOT/Macros.$MACH";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+exit(0);
+
+

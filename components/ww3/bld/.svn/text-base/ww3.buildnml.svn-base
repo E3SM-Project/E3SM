@@ -1,0 +1,34 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR ww3.buildnml: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $RUNDIR	 = `./xmlquery  RUNDIR	     -value`;
+my $DIN_LOC_ROOT = `./xmlquery  DIN_LOC_ROOT -value`;
+my $CONTINUE_RUN = `./xmlquery  CONTINUE_RUN -value`;
+my $CASE = `./xmlquery  CASE -value`;
+
+
+if (-d "$RUNDIR") {
+    # QL, 150526, no copy of restart.ww3 if CONTINUE_RUN is TRUE, fixed some typos in the error message
+    #     150629, it seems that restart.ww3 is no longer needed for initial run
+    #     150823, still need the initial condition
+    if ($CONTINUE_RUN eq 'FALSE') {
+        my $sysmod = "cp $DIN_LOC_ROOT/wav/ww3/restart.ww3.init.seed                $RUNDIR/$CASE.ww3.r.0001-01-01-00000";
+        system($sysmod) == 0 or die "ERROR ww3.buildnml: $sysmod failed: $?\n";
+    }
+
+    my $sysmod = "cp $DIN_LOC_ROOT/wav/ww3/core2_G4_wns_30min_20000601_to_05.nc $RUNDIR/wind.ww3";
+    system($sysmod) == 0 or die "ERROR ww3.buildnml: $sysmod failed: $?\n";
+
+    my $sysmod = "cp $DIN_LOC_ROOT/wav/ww3/G4L1.mod_def.ww3.121031              $RUNDIR/mod_def.ww3";
+    system($sysmod) == 0 or die "ERROR ww3.buildnml: $sysmod failed: $?\n";
+}
+
+exit(0);
+

@@ -1,0 +1,299 @@
+================================================================================
+ww3 ChangeLog
+================================================================================
+Originator: altuntas
+Date: 15 Jan 2018
+Model: ww3
+Version: ww3_180115
+One-line summary: set restart file write frequency to waw_cpl_dt
+  Restart file output interval was hard-coded to be exactly one day. The interval
+  is now changed to be equal to coupling interval. This allows ww3 to write restart
+  files at any coupling interval at which the restart alarm is turned on by CIME.
+
+Testing: aux_pop. bit for bit.
+
+File Mods:
+M       cpl_mct/wav_comp_mct.F90
+
+================================================================================
+Originator: altuntas
+Date: 11 Dec 2017
+Model: ww3
+Version: ww3_171211
+One-line summary: enable better control on the WW3 output frequency.
+  The output frequency is now set by 'outfreq' in the ‘wav_in' namelist and can be
+  modified in the user specific namelist ‘user_nl_ww’. The default value is set
+  to 0, which turns WW3 output off. As for the metadata, the units and long name
+  for each variables are now saved. (lat and lon are not saved in each file but
+  may be retrieved during post-processing.)
+
+Testing: aux_pop. bit for bit.
+
+File Mods:
+M       cime_config/namelist_definition_ww3.xml
+M       cime_config/user_nl_ww
+M       src/cpl_mct/wav_comp_mct.F90
+M       src/source/w3cesmmd.f90
+M       src/source/w3iogomd.f90
+
+
+================================================================================
+Originator: jedwards
+Date: 31 July 2017
+Model: ww3
+Version: ww3_170731
+One-line summary: update config_component.xml to version 3.0
+
+File Mods:
+  cime_config/config_component.xml
+
+================================================================================
+Originator: jedwards
+Date: 30 June 2017
+Model: ww3
+Version: ww3_170630
+One-line summary: add multi-instance support
+
+Testing:  NCK.T62_g16.G.cheyenne_intel.pop-cice, NCK.T62_g16.C.cheyenne_intel.pop-default
+
+File Mods:   cime_config/buildlib
+  cime_config/buildnml
+  src/source/w3iorsmd.f90
+  src/source/w3cesmmd.f90
+  src/source/w3iogomd.f90
+  src/cpl_mct/wav_comp_mct.F90
+
+================================================================================
+Originator: klindsay,jet
+Date: 16 May 2017
+Model: ww3
+Version: ww3_170516
+One-line summary: lengthen char arrays for path lengths from 128 to 256
+
+Testing:  Ran aux_pop against baseline.  Everything passed.
+
+File Mods:
+
+	M       ChangeLog
+	M       src/source/w3iogomd.f90
+	M       src/source/w3iorsmd.f90
+================================================================================
+Originator: mvertens
+Date: 14 May 2017
+Model: ww3
+Version: ww3_170514
+One-line summary: New logic in buildnml to have ww3.input_data_list created
+
+This fixes CIME issue #1168
+
+A  namelist group was also introduced to ensure that files that are copied
+to $RUNDIR from $DIN_LOC_ROOT but with generic names in $RUNDIR are listed in the
+ww3.input_data_list.
+
+================================================================================
+Originator: jedwards
+Date: 02 May 2017
+Model: ww3
+Version: ww3_170502
+One-line summary: Update to nmlgen interface change in cime5.3.0-alpha.10
+
+Update to work with cime5.3.0-alpha.10 and later (this change is backward compatible)
+
+M       cime_config/buildnml
+================================================================================
+Originator: mvertens
+Date: 03 Jan 2017
+Model: ww3
+Version: ww3_170103
+One-line summary: Update to nmlgen interface change in cime5.2.0-alpha.14
+
+Update to work with cime5.2.0-alpha.14 and later
+
+M       cime_config/buildnml
+
+================================================================================
+Originator: mvertens,jet
+Date: 08 Dec 2016
+Model: ww3
+Version: ww3_161208
+One-line summary: Fix ERI bug due to ww3.  Add new ww3 namelist
+
+	Ran aux-pop tests:
+	   ERI passes but different from baseline (expected)
+	   namelist comparison to baseline fails due to new ww3 namelist (expected)
+	   still failing STS memory limit tests.
+	   Everything else BFB to alpha05a.
+
+A       cime_config/namelist_definition_ww3.xml
+M       cime_config/buildlib
+M       cime_config/buildnml
+M       src/source/w3cesmmd.f90
+M       src/source/w3iorsmd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+M       ChangeLog
+
+================================================================================
+
+Originator: mlevy,jet
+Date: 14 Oct 2016
+Model: ww3
+Version: ww3_161014
+One-line summary: Replace nonstandard Fortran syntax for NAG compiler
+
+M       src/source/w3servmd.f90
+
+================================================================================
+Originator: jedwards
+Date: 24 Aug 2016
+Model: ww3
+Version: ww3_160824
+One-line summary: Cray syntax fix
+
+M       src/source/w3iogomd.f90
+
+================================================================================
+Originator: qing
+Date: 11 Jun 2016
+Model: ww3
+Version: ww3_160611
+One-line summary: bug fixes for exact restart and uninitialized coupler fields.
+
+	Now the calculation of lamult is moved into WW3. A cap of 5 is
+	applied to lamult (occasionally at some grid point lamult gets
+	very big and causes POP to crash)
+
+	The the 6-hour delay in duplicability is due to the 6-hourly
+	output frequency hard-coded in wav_comp_mct.F90. The variables
+	lamult, as well as ustokes and vstokes, were diagnosed from the
+	wave spectrum before writing out the output file, so they were
+	updated every 6 hours instead of every atmosphere coupling time
+	step, though WW3 was running at a time step whose maximum equals
+	to the atmospheric coupling time step. Now the WW3 output
+	frequency is set to equal to the WW3 coupling frequency, so that
+	lamult can get updated whenever WW3 is talking to the coupler. And
+	another flag listening to seq_timemgr_historyAlarmIsOn(EClock) is
+	added to determine when to write out the output file, so WW3
+	wont generate a large number of output files. (We should
+	probably discuss more on what variables to save for WW3, snapshots
+	vs. time average... )
+
+	After these modifications, the ERS test is running fine
+
+M       cime_config/buildnml
+M       src/source/w3odatmd.f90
+M       src/source/w3cesmmd.f90
+M       src/source/w3iogomd.f90
+M       src/source/w3initmd.f90
+M       src/source/w3wavemd.f90
+M       src/source/w3adatmd.f90
+M       src/source/w3iorsmd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+
+================================================================================
+Originator: jedwards
+Date: 16 Oct 2015
+Model: ww3
+Version: ww3_151016
+One-line summary: bring cime refactor to trunk
+
+================================================================================
+Originator: tcraig
+Date: 25 Sep 2015
+Model: ww3
+Version: ww3_150925
+One-line summary:  update from Qing Li from September 23 2015,
+  fix exact restart + DEBUG
+M       src/source/w3cesmmd.f90
+M       src/source/w3srcemd.f90
+M       src/source/w3initmd.f90
+D       src/source/w3flx1md.f90
+M       src/source/w3iorsmd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Originator: tcraig
+Date: 23 Sep 2015
+Model: ww3
+Version: ww3_150923
+One-line summary:  update from Qing Li from September 23 2015, fix coupling mask
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Originator: tcraig
+Date: 26 Aug 2015
+Model: ww3
+Version: ww3_150826
+One-line summary:  update from Qing Li from August 2015
+M       bld/ww3.buildnml
+M       src/source/w3cesmmd.f90
+M       src/source/w3initmd.f90
+M       src/source/w3wavemd.f90
+M       src/source/w3iorsmd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Originator: tcraig
+Date: 18 Aug 2015
+Model: ww3
+Version: ww3_150818
+One-line summary:  update from Qing Li from July 2015
+
+M       bld/ww3.buildlib
+M       bld/ww3.buildnml
+M       src/source/w3odatmd.f90
+M       src/source/w3iogomd.f90
+M       src/source/w3initmd.f90
+M       src/source/w3adatmd.f90
+M       src/source/w3iorsmd.f90
+M       src/source/w3idatmd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Originator: mvertens
+Date: 11 Mar 2015
+Model: ww3
+Version: ww3_150311
+One-line summary:  updates needed for introduction of cime
+
+A       bld/ww3.buildlib
+A       bld/ww3.buildnml
+
+D       bld/ww3.buildexe.csh
+D       bld/ww3.buildnml.csh
+D       bld/ww3.cpl7.template
+
+================================================================================
+Originator: tcraig
+Date: 05 Sep 2013
+Model: ww3
+Version: ww3_130905
+One-line summary:  modify coupling interface intents
+
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Originator: tcraig
+Date: 14 Mar 2013
+Model: ww3
+Version: ww3_130314
+One-line summary:  remove debug write statements
+
+M       src/source/w3iogomd.f90
+M       src/source/w3wavemd.f90
+================================================================================
+Originator: tcraig
+Date: 13 Mar 2013
+Model: ww3
+Version: ww3_130313
+One-line summary:  update ww3 to cesm1_2_beta02, merge adrean's mods
+
+A       bld/ww3.buildnml.csh
+A       bld/user_nl_ww3
+A       bld/ww3.buildexe.csh
+M       bld/ww3.cpl7.template
+M       src/cpl_share/ww3_cpl_indices.f90
+M       src/source/w3iogomd.f90
+M       src/source/w3wavemd.f90
+M       src/cpl_mct/wav_comp_mct.F90
+================================================================================
+Version: ww3_120308
+================================================================================
+Version: ww3_120227
+================================================================================
+Version: ww3_111230
+================================================================================
