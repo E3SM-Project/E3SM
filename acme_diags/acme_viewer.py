@@ -298,10 +298,10 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
                 baseline_text = 'E3SMv0_B1850'
                 ax.text(0.6, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
 
-        model_text = 'test model: ' + test_name
+        model_text = 'Test Model: ' + test_name
         ax.text(0.6, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
         if run_type == 'model_vs_model':
-            ax.text(0.6, 0.95, 'ref. model: '+ref_name, ha='left', va='center', transform=ax.transAxes,color='k', fontsize=12)
+            ax.text(0.6, 0.95, 'Ref. Model: ' + ref_name, ha='left', va='center', transform=ax.transAxes, color='k', fontsize=12)
 
         plt.title(season + ': Spatial Variability', y = 1.08)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
@@ -478,12 +478,12 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
         os.mkdir(table_dir)
 
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name, parameters[0].run_type)
         test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
         if parameters[0].run_type == 'model_vs_obs':
             ref_name = 'Observation and Reanalysis'
         else:
             ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
+        csv_path = _create_csv_from_dict(table_dir, season, test_name, parameters[0].run_type)
         html_path = _cvs_to_html(csv_path, season, test_name, ref_name)
 
         # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
@@ -503,7 +503,13 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
 
     season_to_png = {}
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name, parameters[0].run_type, getattr(parameters[0], 'ref_name', ''))
+        test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
+        if parameters[0].run_type == 'model_vs_obs':
+            ref_name = 'Observation and Reanalysis'
+        else:
+            ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
+
+        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, test_name, parameters[0].run_type, ref_name)
         # Remove any reference to the results_dir when inserting the links into HTML pages.
         # This is because that folder can be renamed.
         csv_path = csv_path.split('viewer')[-1]
