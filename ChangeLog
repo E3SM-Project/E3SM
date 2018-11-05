@@ -2,7 +2,7 @@
 
 Originator: Chris Fischer 
 Date: 11-5-2018
-Tag: cime_cesm2_1_rel03
+Tag: cime_cesm2_1_rel_03
 Answer Changes: None
 Tests: code_checker, stand-alone tests, scripts_regression_tests
 Dependencies:
