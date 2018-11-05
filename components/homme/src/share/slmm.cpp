@@ -4407,8 +4407,16 @@ struct CslMpi {
     const Int nrmtrank = static_cast<Int>(ranks.n()) - 1;
     for (Int ri = 0; ri < nrmtrank; ++ri) {
       auto&& locks = ri_lidi_locks(ri);
-      for (auto& lock: locks)
-        omp_destroy_lock(&lock);  
+      for (auto& lock: locks) {
+        // The following call is causing a seg fault on at least one Cray KNL
+        // system. It doesn't kill the run b/c it occurs after main exits. Not
+        // calling this is a memory leak, but it's innocuous in this case. Thus,
+        // comment it out:
+        //omp_destroy_lock(&lock);
+        // It's possible that something in the OpenMP runtime shuts down before
+        // this call, and that's the problem. If that turns out to be it, I
+        // should make a compose_finalize() call somewhere.
+      }
     }
 #endif
   }

@@ -166,6 +166,7 @@ contains
          semi_lagrange_nearest_point_lev
     use scalable_grid_init_mod, only : sgi_is_initialized, sgi_get_rank2sfc, &
          sgi_gid2igv
+    use perf_mod, only: t_startf, t_stopf
 
     type (parallel_t), intent(in) :: par
     type (element_t), intent(in) :: elem(:)
@@ -179,6 +180,7 @@ contains
     integer, allocatable :: owned_ids(:)
     integer, pointer :: rank2sfc(:) => null()
 
+    call t_startf('compose_init')
     use_sgi = sgi_is_initialized()
 
     if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20) then
@@ -239,6 +241,7 @@ contains
             nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
        deallocate(nbr_id_rank, nirptr)
     end if
+    call t_stopf('compose_init')
   end subroutine compose_init
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)

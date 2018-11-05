@@ -61,12 +61,15 @@ subroutine sl_init1(par, elem)
        nu_q, semi_lagrange_hv_q_all
   use element_state,          only : timelevels
   use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
+  use perf_mod, only : t_startf, t_stopf
+
   type (parallel_t) :: par
   type (element_t) :: elem(:)
   type (cartesian3D_t) :: pinside
   integer :: nslots, ie, num_neighbors, need_conservation, i, j
   logical :: slmm, cisl, qos, sl_test
-  
+
+  call t_startf('sl_init1')
   if (transport_alg > 0) then
      call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
      if (par%masterproc .and. nu_q > 0) &
@@ -111,6 +114,7 @@ subroutine sl_init1(par, elem)
         call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
      end if
   endif
+  call t_stopf('sl_init1')
 end subroutine
 
 subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord, hybrid , dt , tl , nets , nete )

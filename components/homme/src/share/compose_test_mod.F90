@@ -150,6 +150,7 @@ contains
     use control_mod, only: qsplit, statefreq
     use time_mod, only: nmax
     use hybvcoord_mod, only: hvcoord_t
+    use perf_mod
     use sl_advection
     implicit none
 
@@ -165,6 +166,7 @@ contains
     integer :: nsteps, n0_qdp, np1_qdp, ie, i, j
     real (kind=real_kind) :: dt, tprev, t
   
+    call t_startf('compose_stt')
     ! Set up time stepping and initialize q and density.
     call timelevel_init_default(tl)
     call timelevel_qdp(tl, qsplit, np1_qdp, n0_qdp)
@@ -186,6 +188,7 @@ contains
        print *, 'COMPOSE> nsteps', nsteps
     end if
     dt = twelve_days / nsteps
+    call t_startf('compose_stt_step')
     do i = 1, nsteps
        tprev = dt*(i-1)
        t = dt*i
@@ -201,6 +204,7 @@ contains
           call print_software_statistics(hybrid, nets, nete)
        end if
     end do
+    call t_stopf('compose_stt_step')
     ! Record final q values.
     call compose_stt_begin_record()
     call timelevel_qdp(tl, qsplit, n0_qdp, np1_qdp)
@@ -210,6 +214,7 @@ contains
     end do
     ! Do the global reductions, print diagnostic information, and clean up.
     call compose_stt_finish(hybrid%par%comm, hybrid%par%root, hybrid%par%rank)
+    call t_stopf('compose_stt')
   end subroutine compose_stt
 
 end module compose_test_mod
