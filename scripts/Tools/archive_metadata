@@ -411,16 +411,20 @@ def get_pp_status(case_dict):
     case_dict['timeseries_size'] = 0
     case_dict['timeseries_dates'] = '{0}-{1}'.format(case_dict['RUN_STARTDATE'].replace("-", ""),
                                                      case_dict['RUN_STARTDATE'].replace("-", ""))
+    case_dict['timeseries_total_time'] = 0
     tseries_logs = list()
     tseries_file_pattern = ("{0}/timeseries.log.*".format(pp_log_dir))
     tseries_logs = glob.glob(tseries_file_pattern)
-    case_dict['timeseries_size'] = 0
     if tseries_logs:
         log_file = max(tseries_logs, key=os.path.getctime)
         if is_last_process_complete(filepath=log_file,
                                     expect_text='Successfully completed',
                                     fail_text='opening'):
             case_dict['timeseries_status'] = 'Succeeded'
+            with open(log_file, 'r') as fname:
+                log_content = fname.readlines()
+            total_time = [line for line in log_content if 'Total Time:' in line]
+            case_dict['timeseries_total_time'] = ' '.join(total_time[0].split())
         else:
             case_dict['timeseries_status'] = 'Started'
         sta_dates = case_dict['sta_last_date'].split("-")
@@ -434,7 +438,6 @@ def get_pp_status(case_dict):
     case_dict['iconform_status'] = 'Unknown'
     case_dict['iconform_path'] = ''
     case_dict['iconform_size'] = 0
-    # TODO - check the date ranges once we have conformed data
     case_dict['iconform_dates'] = case_dict['timeseries_dates']
 
     iconform_logs = list()
@@ -455,9 +458,8 @@ def get_pp_status(case_dict):
         case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], str(case_dict['case_id']))
     case_dict['xconform_status'] = 'Unknown'
     case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
-
-    # TODO - check the date ranges once we have conformed data
     case_dict['xconform_dates'] = case_dict['timeseries_dates']
+    case_dict['xconform_total_time'] = 0
 
     xconform_logs = list()
     xconform_file_pattern = ("{0}/xconform.log.*".format(pp_log_dir))
@@ -469,6 +471,10 @@ def get_pp_status(case_dict):
                                      'cesm_conform_generator INFO')):
             case_dict['xconform_status'] = 'Succeeded'
             case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
+            with open(log_file, 'r') as fname:
+                log_content = fname.readlines()
+            total_time = [line for line in log_content if 'Total Time:' in line]
+            case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
         else:
             case_dict['xconform_status'] = 'Started'
 
