@@ -137,13 +137,13 @@ def _extras(root_dir, parameters):
 
     for f in index_files:
         path = _get_acme_logo_path(root_dir, f)
-        if parameters[0].run_type == 'model_vs_model':
-            _add_header(f, acme_diags.__version__, parameters[0].test_name,
-                parameters[0].ref_name, dt, path)
-        elif parameters[0].run_type == 'model_vs_obs':
-            ref = 'Observation and Reanalysis'
-            _add_header(f, acme_diags.__version__, parameters[0].test_name,
-                ref, dt, path)
+
+        test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
+        if parameters[0].run_type == 'model_vs_obs':
+            ref_name = 'Observation and Reanalysis'
+        else:
+            ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
+        _add_header(f, acme_diags.__version__, test_name, ref_name, dt, path)
         h1_to_h3(f)
 
     _edit_table_html(root_dir)
@@ -479,8 +479,11 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
 
     for season in LAT_LON_TABLE_INFO:
         csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name, parameters[0].run_type)
-        test_name = parameters[0].test_name
-        ref_name = 'Observation and Reanalysis' if parameters[0].run_type == 'model_vs_obs' else parameters[0].ref_name
+        test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
+        if parameters[0].run_type == 'model_vs_obs':
+            ref_name = 'Observation and Reanalysis'
+        else:
+            ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
         html_path = _cvs_to_html(csv_path, season, test_name, ref_name)
 
         # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
@@ -673,3 +676,4 @@ def create_viewer(root_dir, parameters, ext):
     generate_lat_lon_taylor_diag(viewer, root_dir, parameters)
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
+
