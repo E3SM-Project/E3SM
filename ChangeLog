@@ -1,7 +1,51 @@
 ======================================================================
 
 Originator: Chris Fischer 
-Date: 11-12-2018
+Date: 11-5-2018
+Tag: cime_cesm2_1_rel03
+Answer Changes: None
+Tests: code_checker, stand-alone tests, scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Add Total Time parsing for timeseries and xconform to archive_metadata
+    - Fine tuning for CMIP6 cases in archive_metadata.
+    - CESM-CECT update.
+    - Python3 compatibility update for archive_metadata.
+    - Remove reference to deleted testmods directories.
+    - Compute tasks_per_node via floor division.
+    - Response to review comments of pr 2844 and remove user-grid option.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+c515c37 Merge pull request #2900 from bertinia/maint-5.6_archive_metadata
+47f3970 Merge pull request #2884 from bertinia/maint-5.6_archive_metadata
+3ad6a6e Merge pull request #2866 from jedwards4b/set_update
+a2b6885 Merge pull request #2865 from bertinia/maint-5.6_archive_metadata
+b56664c Merge pull request #2862 from billsacks/doc_testmods
+ad361d2 Merge pull request #2860 from jedwards4b/py3fix
+7e82e9b Merge pull request #2853 from jedwards4b/cleanuppr
+
+
+Modified files: git diff --name-status [previous_tag]
+M       doc/source/users_guide/testing.rst
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       tools/statistical_ensemble_test/README
+M       tools/statistical_ensemble_test/ensemble.py
+D       tools/statistical_ensemble_test/ensemble.sh
+M       tools/statistical_ensemble_test/single_run.py
+D       tools/statistical_ensemble_test/single_run.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 10-12-2018
 Tag: cime_cesm2_1_rel_02
 Answer Changes: None
 Tests: Z_FullSystemTest, scripts_regression_tests, hand tests
