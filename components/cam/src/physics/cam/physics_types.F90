@@ -577,8 +577,12 @@ contains
 
 !===============================================================================
 
-  subroutine r4_update_col(state_r8(:),ptend_r8(:),dt, ncol)
+  subroutine r4_update_col(state_r8,ptend_r8,dt, ncol)
     
+    !------------------------------------------------------
+    !reduce precision of a column
+    !------------------------------------------------------
+
     !arguments
     !intent-ins
     integer,  intent(in)    :: ncol
@@ -586,10 +590,10 @@ contains
     
     !intent-inouts
     real(r8), intent(inout) :: state_r8(:)
-    logical, save :: printed = .true.
 
     !local
     real(r4) :: state_r4(ncol), ptend_r4(ncol)
+    logical, save :: printed = .true.
 
     state_r4(:ncol)    = real(state_r8(:ncol), kind=r4) + real(ptend_r8(:ncol), kind=r4) * real(dt, kind=r4)
     state_r8(:ncol)    = real(state_r4(:ncol), kind=r8)
