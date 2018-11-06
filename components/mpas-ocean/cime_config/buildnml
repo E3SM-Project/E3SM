@@ -31,6 +31,8 @@ def buildnml(case, caseroot, compname):
     ocn_grid          = case.get_value("OCN_GRID")
     ocn_mask          = case.get_value("MASK_GRID")
     ocn_forcing       = case.get_value("MPASO_FORCING")
+    ocn_iceberg       = case.get_value("MPASO_ICEBERG")
+    ocn_ismf          = case.get_value("MPASO_ISMF")
     ocn_bgc           = case.get_value("MPASO_BGC")
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
@@ -158,7 +160,7 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'oRRS30to10v3wLI'
         decomp_date += '171109'
         decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3wLI.nc'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.180503.nc'
         analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
     elif ocn_grid == 'oRRS18to6':
         ic_date += '160830'
@@ -265,6 +267,8 @@ def buildnml(case, caseroot, compname):
         sysmod += " -date_stamp '{}'".format(decomp_date)
         sysmod += " -ocn_grid '{}'".format(ocn_mask)
         sysmod += " -ocn_forcing '{}'".format(ocn_forcing)
+        sysmod += " -ocn_iceberg '{}'".format(ocn_iceberg)
+        sysmod += " -ocn_ismf '{}'".format(ocn_ismf)
         sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
         sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
         sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
@@ -852,6 +856,10 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityMeridionalSquared"/>')
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        if ocn_iceberg == 'true':
+            lines.append('    <var name="icebergHeatFlux"/>')
+            lines.append('    <var name="icebergFreshWaterFlux"/>')
+
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             lines.append('    <var name="PH_PREV_ALT_CO2_3D"/>')
             lines.append('    <var name="dust_FLUX_IN"/>')

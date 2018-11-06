@@ -5,6 +5,8 @@
 !
 !  Man dynamics routines for "theta" nonhydrostatic model
 !  Original version: Mark Taylor 2017/1
+!  
+!  2018/8 TOM sponger layer scaling from P. Lauritzen
 !
 module prim_advance_mod
 
@@ -15,13 +17,13 @@ module prim_advance_mod
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
-  use dimensions_mod,     only: max_corner_elem, nelemd, nlev, nlevp, np, qsize
+  use dimensions_mod,     only: max_corner_elem, nlev, nlevp, np, qsize
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
-  use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
+  use eos,                only: get_pnh_and_exner,get_theta_from_T,get_phinh,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -29,7 +31,7 @@ module prim_advance_mod
   use parallel_mod,       only: abortmp, global_shared_buf, global_shared_sum, iam, parallel_t
   use physical_constants, only: Cp, cp, cpwater_vapor, g, kappa, Rgas, Rwater_vapor, p0 
   use physics_mod,        only: virtual_specific_heat, virtual_temperature
-  use prim_si_mod,        only: preq_vertadv_v1, preq_omega_ps
+  use prim_si_mod,        only: preq_vertadv_v1
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
   use test_mod,           only: set_prescribed_wind
@@ -45,9 +47,9 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
        applycamforcing_ps, applycamforcing_dp3d, &
-       applyCAMforcing_dynamics, vertical_mesh_init2
+       applyCAMforcing_dynamics
 
-  real (kind=real_kind), allocatable :: ur_weights(:)
+
 
 contains
 
@@ -63,37 +65,9 @@ contains
     integer :: i
     integer :: ie
 
-    ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
-    allocate(ur_weights(qsplit))
-    ur_weights(:)=0.0d0
-
-    if(mod(qsplit,2).NE.0)then
-       ur_weights(1)=1.0d0/qsplit
-       do i=3,qsplit,2
-        ur_weights(i)=2.0d0/qsplit
-       enddo
-    else
-       do i=2,qsplit,2
-         ur_weights(i)=2.0d0/qsplit
-       enddo
-    endif
 
   end subroutine prim_advance_init1
 
-
-
-
-
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
-
-  end subroutine vertical_mesh_init2
 
 
 
@@ -174,6 +148,22 @@ contains
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))                                                     
        call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&                                               
             deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)                                                             
+
+
+    else if (tstep_type==4) then ! explicit table from IMEX-KG254  method                                                              
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/6,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,3*dt/8,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w*1d0,1.d0,1.d0,1.d0)
+
+
+
     else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
@@ -268,30 +258,43 @@ contains
       max_itercnt_perstep = 0
       max_itererr_perstep = 0.0
 
-      a1 = 1./4.
-      a2 = 1./6.
-      a3 = 3./8.
-      a4 = 1./2.
+      a1 = 1/4d0
+      a2 = 1/6d0
+      a3 = 3/8d0
+      a4 = 1/2d0
       a5 = 1
-      ahat1 = 0.
-      ahat5 = 1.
+      ahat1 = 0
+      ahat5 = 1
 
-      ! IMEX-KGO254c coefficients
-      dhat2 = 5./6.
-      dhat3 = 5./6.
-      dhat4 = 2./3.
-      ahat4 = 1./2.-dhat4
-       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+#if 1
+      ! IMEX-KGO254 most stable coefficients
+      dhat2 = 1d0
+      dhat3 = 1d0
+      dhat4 = 1d0
+      ahat4 = 1d0/2d0-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
         (ahat5-dhat3-dhat2-dhat4)
+#endif
 
+#if 0
+      ! IMEX-KGO254c coefficients
+      dhat2 = 5/6d0
+      dhat3 = 5/6d0
+      dhat4 = 2/3d0
+      ahat4 = 1/2d0-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+           (ahat5-dhat3-dhat2-dhat4)
+#endif
+
+#if 0
       ! IMEX-KGO254b coefficients NOT GOOD
-!      dhat2 = 1./6.
-!      dhat3 = 1./6.
-!      dhat4 = 1./6.
-!      ahat4 = 1./2.-dhat4
-!!      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-!       (ahat5-dhat3-dhat2-dhat4)
-
+      dhat2 = 1./6.
+      dhat3 = 1./6.
+      dhat4 = 1./6.
+      ahat4 = 1./2.-dhat4
+      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
+           (ahat5-dhat3-dhat2-dhat4)
+#endif
 
       ! IMEX-KG254
       ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
@@ -405,17 +408,11 @@ contains
 
      ! apply forcing to temperature
      call get_temperature(elem(ie),temperature,hvcoord,np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
      do k=1,nlev
         temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
      enddo
 
-     
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,v1)
-#endif
+
      do q=1,qsize
         do k=1,nlev
            do j=1,np
@@ -449,16 +446,10 @@ contains
 
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
-#endif
      do k=1,nlev
         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
      enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
-#endif
      do q=1,qsize
         do k=1,nlev
            elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
@@ -466,13 +457,10 @@ contains
      enddo
 
      ! now that we have updated Qdp and dp, compute vtheta_dp from temperature
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
-         elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
-
      call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = &
-          (Rstar(:,:,:)/Rgas)*temperature(:,:,:)*&
-          dp(:,:,:)/exner(:,:,:)
+     call get_theta_from_T(hvcoord,Rstar,temperature,dp,&
+          elem(ie)%state%phinh_i(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1))
+
 
   enddo
   call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
@@ -526,7 +514,6 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: nu_scale_top
   integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
@@ -585,22 +572,36 @@ contains
              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
      enddo
 
-     call get_phinh(hvcoord,elem(ie)%state%phis,&
-          elem(ie)%state%vtheta_dp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
-          phi_ref(:,:,:,ie))
 
-     do k=1,nlev
-        ! convert vtheta_dp -> theta
-        elem(ie)%state%vtheta_dp(:,:,k,nt)=&
-             elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
-     enddo
+#if 0
+     ! phi_ref,theta_ref depend only on ps:
+     call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
+     exner(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) ! use as temp array
+     call get_phinh(hvcoord,elem(ie)%state%phis,&
+          exner(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
+#endif
+#if 1
+     ! phi_ref depends only on ps, theta_ref depends on dp3d
+     call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
+     exner(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) ! use as temp array
+     call get_phinh(hvcoord,elem(ie)%state%phis,&
+          exner(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 
      call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
+#endif
 #if 0
+     ! no reference state, for testing
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
      dp_ref(:,:,:,ie)=0
 #endif
+
+
+     ! convert vtheta_dp -> theta
+     do k=1,nlev
+        elem(ie)%state%vtheta_dp(:,:,k,nt)=&
+             elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
+     enddo
   enddo
 
 
@@ -634,34 +635,25 @@ contains
            elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                 eta_ave_w*stens(:,:,:,1,ie)/hypervis_subcycle
         endif
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,lap_s,lap_v,nu_scale_top)
-#endif
            do k=1,nlev
               ! advace in time.
               ! note: DSS commutes with time stepping, so we can time advance and then DSS.
               ! note: weak operators alreayd have mass matrix "included"
 
-              ! add regular diffusion in top 3 layers:
-              if (nu_top>0 .and. k<=3) then
+              ! biharmonic terms need a negative sign:
+              if (nu_top>0 .and. nu_scale_top(k)>1) then
+                 ! add regular diffusion near top
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              endif
 
-              nu_scale_top = 1
-              if (k==1) nu_scale_top=4
-              if (k==2) nu_scale_top=2
-
-              ! biharmonic terms need a negative sign:
-              if (nu_top>0 .and. k<=3) then
-                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top*nu_top*lap_v(:,:,:)) ! u and v
-                 stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top*nu_top*lap_s(:,:,1)) ! dp3d
-                 stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top*nu_top*lap_s(:,:,2)) ! theta
-                 stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top*nu_top*lap_s(:,:,3)) ! w
-                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top*nu_top*lap_s(:,:,4)) ! phi
+                 vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top(k)*nu_top*lap_v(:,:,:)) ! u and v
+                 stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,1)) ! dp3d
+                 stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,2)) ! theta
+                 stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,3)) ! w
+                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,4)) ! phi
               else
                  vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
                  stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
@@ -742,19 +734,15 @@ contains
         ! we want exner*cp*dp3d*heating = dp3d*U dot diss(U)
         ! and thus heating =  U dot diss(U) / exner*cp
         ! 
-        ! PE dissipation
-        ! d(PE)/dt = dp3d diss(phi) 
-        !     we want dp3d diss(phi) = exner*cp*dp3d*heating
-        !     heating = diss(phi) / exner*cp
-        !
         ! use hydrostatic pressure for simplicity
         p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
         do k=1,nlev
            p_i(:,:,k+1)=p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
         enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k,k2)
-#endif
+        !call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
+        !     elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
+        !     pnh,exner,dpnh_dp_i)
+
         do k=1,nlev
            ! for w averaging, we didn't compute dissipation at surface, so just use one level
            k2=max(k,nlev)
@@ -769,14 +757,13 @@ contains
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
                    (elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
-                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2  +&
-                   stens(:,:,k,4,ie) ) / &
+                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2 ) /  +&
                    (exner(:,:,k)*Cp)  
            endif
            
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt))&
-                -heating(:,:,k)
+                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt)&
+                ) ! -heating(:,:,k)
         enddo
         
      enddo
@@ -989,7 +976,8 @@ contains
    
   real (kind=real_kind) :: vtheta(np,np,nlev)
   real (kind=real_kind) :: vtheta_i(np,np,nlevp)
-  real (kind=real_kind) :: omega_p(np,np,nlev)
+  real (kind=real_kind) :: omega_i(np,np,nlevp)
+  real (kind=real_kind) :: omega(np,np,nlev)
   real (kind=real_kind) :: vort(np,np,nlev)           ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
   real (kind=real_kind) :: phi(np,np,nlev)
@@ -1038,8 +1026,6 @@ contains
   integer :: i,j,k,kptr,ie, nlyr_tot
 
 
-  real (kind=real_kind) ::  wtemp(np,np,nelemd)
-
   call t_startf('compute_andor_apply_rhs')
 
   if (theta_hydrostatic_mode) then
@@ -1050,6 +1036,7 @@ contains
      
 
   do ie=nets,nete
+#if 0
      if (.not. theta_hydrostatic_mode) then
         temp(:,:,1) =  (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
@@ -1063,14 +1050,13 @@ contains
         elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
              elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
      endif
-
+#endif
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
-     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,&
-             pnh,exner,dpnh_dp_i)
+     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i)
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -1112,23 +1098,21 @@ contains
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
      enddo
 
-     ! Compute omega_p = 1/pi Dpi/Dt
-     ! first compute hydrostatic pressure
+     ! Compute omega =  Dpi/Dt   Used only as a DIAGNOSTIC
+     ! for historical reasons, we actually compute w/pi
      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     omega_i(:,:,1)=0
      do k=1,nlev
         pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+        omega_i(:,:,k+1)=omega_i(:,:,k)+divdp(:,:,k)
      enddo
      do k=1,nlev
         pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
-     enddo
-     do k=1,nlev
-        ! get hydrostatic pressure flux to compute omega=dp/dt
         vtemp(:,:,:,k) = gradient_sphere( pi(:,:,k), deriv, elem(ie)%Dinv);
         vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1,k)+&
              elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2,k)
+        omega(:,:,k) = (vgrad_p(:,:,k) - ( omega_i(:,:,k)+omega_i(:,:,k+1))/2) 
      enddo        
-     call preq_omega_ps(omega_p,hvcoord,pi,vgrad_p,divdp)
-
 
      ! ==================================================
      ! Compute eta_dot_dpdn
@@ -1226,7 +1210,7 @@ contains
         elem(ie)%derived%eta_dot_dpdn(:,:,k) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
         elem(ie)%derived%omega_p(:,:,k) = &
-             elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+             elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega(:,:,k)
      enddo
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
              elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
@@ -1630,7 +1614,6 @@ contains
   real (kind=real_kind) :: phi_n0(np,np,nlevp)    
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)
   real (kind=real_kind) :: itererr,itererrtemp(np,np)
   real (kind=real_kind) :: itercountmax,itererrmax
   real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
@@ -1658,8 +1641,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,&
-         pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
+    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i)
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -1705,6 +1687,7 @@ contains
     maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
     itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
 
+
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
@@ -1729,8 +1712,7 @@ contains
       end do
       end do
 
-      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,&
-        pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
+      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i)
 
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &

@@ -18,7 +18,7 @@ module restFileMod
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_betr
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
-  use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
+  use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use ch4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
@@ -855,6 +855,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: dimid               ! netCDF dimension id
     integer :: numg                ! total number of gridcells across all processors
+    integer :: numt                ! total number of topounits across all processors
     integer :: numl                ! total number of landunits across all processors
     integer :: numc                ! total number of columns across all processors
     integer :: nump                ! total number of pfts across all processors
@@ -867,11 +868,12 @@ contains
     character(len= 32) :: subname='restFile_dimset' ! subroutine name
     !------------------------------------------------------------------------
 
-    call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
+    call get_proc_global(ng=numg, nt=numt, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
 
     ! Define dimensions
 
     call ncd_defdim(ncid , nameg      , numg           ,  dimid)
+    call ncd_defdim(ncid , namet      , numt           ,  dimid)
     call ncd_defdim(ncid , namel      , numl           ,  dimid)
     call ncd_defdim(ncid , namec      , numc           ,  dimid)
     call ncd_defdim(ncid , namep      , nump           ,  dimid)
@@ -1031,6 +1033,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: numg      ! total number of gridcells across all processors
+    integer :: numt      ! total number of topounits across all processors
     integer :: numl      ! total number of landunits across all processors
     integer :: numc      ! total number of columns across all processors
     integer :: nump      ! total number of pfts across all processors
@@ -1041,8 +1044,9 @@ contains
     ! Get relevant sizes
 
     if ( .not. single_column .or. nsrest /= nsrStartup )then
-       call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
+       call get_proc_global(ng=numg, nt=numt, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
        call check_dim(ncid, nameg, numg)
+       call check_dim(ncid, namet, numt)
        call check_dim(ncid, namel, numl)
        call check_dim(ncid, namec, numc)
        call check_dim(ncid, namep, nump)
