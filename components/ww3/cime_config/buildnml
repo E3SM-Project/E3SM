@@ -68,7 +68,7 @@ def buildnml(case, caseroot, compname):
     """Build the ww3 namelist """
 
     # Build the component namelist
-    if compname != "ww":
+    if compname != "ww3":
         raise AttributeError
 
     srcroot = case.get_value("SRCROOT")
@@ -123,7 +123,7 @@ def buildnml(case, caseroot, compname):
             inst_string_label = "\"\""
 
         # create namelist_infile using user_nl_file as input
-        user_nl_file = os.path.join(caseroot, "user_nl_ww" + inst_string)
+        user_nl_file = os.path.join(caseroot, "user_nl_ww3" + inst_string)
         expect(os.path.isfile(user_nl_file),
                "Missing required user_nl_file %s " %(user_nl_file))
         infile = os.path.join(confdir, "namelist_infile")
@@ -168,7 +168,7 @@ def _main_func():
 
     caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
-        buildnml(case, caseroot, "ww")
+        buildnml(case, caseroot, "ww3")
 
 
 ###############################################################################

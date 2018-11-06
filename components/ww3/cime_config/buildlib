@@ -24,7 +24,7 @@ print file "${SRCROOT}/components/ww3/src/source\n";
 print file "${SRCROOT}/components/ww3/src/cpl\n";
 close(file);
 
-my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile 
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 exit(0);
