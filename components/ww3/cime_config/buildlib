@@ -21,11 +21,10 @@ chdir "$OBJROOT/wav/obj";
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.ww3\n";
 print file "${SRCROOT}/components/ww3/src/source\n";
-print file "${SRCROOT}/components/ww3/src/cpl_share\n";
-print file "${SRCROOT}/components/ww3/src/cpl_mct\n";
+print file "${SRCROOT}/components/ww3/src/cpl\n";
 close(file);
 
-my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile MACFILE=$CASEROOT/Macros.$MACH";
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 exit(0);
