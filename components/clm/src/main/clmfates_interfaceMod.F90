@@ -467,7 +467,7 @@ contains
          call this%init_soil_depths(nc)
          
          if (use_fates_planthydro) then
-            call InitHydrSites(this%fates(nc)%sites,this%fates(nc)%bc_in)
+            call InitHydrSites(this%fates(nc)%sites,this%fates(nc)%bc_in,numpft_fates)
          end if
 
          if( this%fates(nc)%nsites == 0 ) then
