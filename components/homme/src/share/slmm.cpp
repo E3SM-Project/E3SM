@@ -5,8 +5,8 @@
 # define NDEBUG
 #endif
 #include <mpi.h>
-#pragma message "We want assertions"
-#undef NDEBUG
+//#pragma message "We want assertions"
+//#undef NDEBUG
 
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
@@ -5134,32 +5134,38 @@ void set_elem_data (CslMpi& cm, const Int ie, const Real* metdet, const Real* qd
   e.q = q;
 }
 
-void setup_irecv (CslMpi& cm) {
+void setup_irecv (CslMpi& cm, const bool skip_if_empty = false) {
 #ifdef HORIZ_OPENMP
 # pragma omp master
 #endif
   {
     const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+    cm.recvreq.clear();
     for (Int ri = 0; ri < nrmtrank; ++ri) {
+      if (skip_if_empty && cm.nx_in_rank(ri) == 0) continue;
       auto&& recvbuf = cm.recvbuf(ri);
       // The count is just the number of slots available, which can be larger
       // than what is actually being received.
+      cm.recvreq.inc();
       mpi::irecv(*cm.p, recvbuf.data(), recvbuf.n(), cm.ranks(ri), 42,
-                 &cm.recvreq(ri));
+                 &cm.recvreq.back());
     }
-  }  
+  }
 }
 
-void isend (CslMpi& cm, const bool want_req = true) {
+void isend (CslMpi& cm, const bool want_req = true, const bool skip_if_empty = false) {
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
 # pragma omp master
 #endif
   {
+    slmm_assert( ! (skip_if_empty && want_req));
     const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
-    for (Int ri = 0; ri < nrmtrank; ++ri)
+    for (Int ri = 0; ri < nrmtrank; ++ri) {
+      if (skip_if_empty && cm.sendcount(ri) == 0) continue;
       mpi::isend(*cm.p, cm.sendbuf(ri).data(), cm.sendcount(ri),
                  cm.ranks(ri), 42, want_req ? &cm.sendreq(ri) : nullptr);
+    }
   }
 }
 
@@ -5176,7 +5182,7 @@ void recv_and_wait_on_send (CslMpi& cm) {
 #endif
 }
 
-void recv (CslMpi& cm) {
+void recv (CslMpi& cm, const bool skip_if_empty = false) {
 #ifdef HORIZ_OPENMP
 # pragma omp master
 #endif
@@ -5480,7 +5486,10 @@ void calc_rmt_q (CslMpi& cm) {
     auto&& qs = cm.sendbuf(ri);
     Int xos = 0, qos = 0, nx_in_rank, padding;
     xos += getbuf(xs, xos, nx_in_rank, padding);
-    if (nx_in_rank == 0) continue;
+    if (nx_in_rank == 0) {
+      cm.sendcount(ri) = 0;
+      continue; 
+    }
     // The upper bound is to prevent an inf loop if the msg is corrupted.
     for (Int lidi = 0; lidi < cm.nelemd; ++lidi) {
       Int lid, nx_in_lid;
@@ -5603,16 +5612,16 @@ void step (
   // Compute the requested q for departure points from remotes.
   calc_rmt_q<np>(cm);
   // Send q data.
-  isend(cm, false);
+  isend(cm, false /* want_req */, true /* skip_if_empty */);
   // Set up to receive q for each of my departure point requests sent to
   // remotes. We can't do this until the OpenMP barrier in isend assures that
   // all threads are done with the receive buffer's departure points.
-  setup_irecv(cm);
+  setup_irecv(cm, true /* skip_if_empty */);
   // While waiting to get my data from remotes, compute q for departure points
   // that have remained in my elements.
   calc_own_q<np>(cm, nets, nete, dep_points, q_min, q_max);
   // Receive remote q data and use this to fill in the rest of my fields.
-  recv(cm);
+  recv(cm, true /* skip_if_empty */);
   copy_q(cm, nets, q_min, q_max);
   // Don't need to wait on send buffer again because MPI-level synchronization
   // outside of SL transport assures the send buffer is ready at the next call
