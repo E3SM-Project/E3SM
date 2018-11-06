@@ -34,7 +34,8 @@ module ch4Mod
   use TemperatureType    , only : temperature_type
   use WaterfluxType      , only : waterflux_type
   use WaterstateType     , only : waterstate_type
-  use GridcellType       , only : grc_pp                
+  use GridcellType       , only : grc_pp
+  use TopounitType       , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use VegetationType          , only : veg_pp                
@@ -1306,7 +1307,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: sat                                    ! 0 = unsatured, 1 = saturated
     logical  :: lake                                   ! lake or not lake
-    integer  :: j,fc,c,g,fp,p                          ! indices
+    integer  :: j,fc,c,g,fp,p,t                        ! indices
     real(r8) :: dtime                                  ! land model time step (sec)
     real(r8) :: dtime_ch4                              ! ch4 model time step (sec)
     integer  :: nstep
@@ -1339,11 +1340,11 @@ contains
          zi                   =>   col_pp%zi                                    , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
          z                    =>   col_pp%z                                     , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)            
 
-         forc_t               =>   atm2lnd_vars%forc_t_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
-         forc_pbot            =>   atm2lnd_vars%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_po2             =>   atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  O2 partial pressure (Pa)                          
-         forc_pco2            =>   atm2lnd_vars%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
-         forc_pch4            =>   atm2lnd_vars%forc_pch4_grc                , & ! Input:  [real(r8) (:)   ]  CH4 partial pressure (Pa)                         
+         forc_t               =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
+         forc_pbot            =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
+         forc_po2             =>   top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  O2 partial pressure (Pa)                          
+         forc_pco2            =>   top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  CO2 partial pressure (Pa)                         
+         forc_pch4            =>   top_as%pch4bot                            , & ! Input:  [real(r8) (:)   ]  CH4 partial pressure (Pa)                         
 
          zwt                  =>   soilhydrology_vars%zwt_col                , & ! Input:  [real(r8) (:)   ]  water table depth (m) 
          zwt_perched          =>   soilhydrology_vars%zwt_perched_col        , & ! Input:  [real(r8) (:)   ]  perched water table depth (m)                     
@@ -1430,20 +1431,23 @@ contains
       nem_col(begc:endc)           = 0._r8
 
       do g= begg, endg
+         ! using the first topounit on this gridcell for access to atmospheric forcing
+         ! PET 8/10/2018 - replace this later once gas concentrations (c_atm) are also being tracked at
+         ! topounit level
+         t = grc_pp%topi(g)
          if (ch4offline) then
-            forc_pch4(g) = atmch4*forc_pbot(g)
+            forc_pch4(t) = atmch4*forc_pbot(t)
          else
-            if (forc_pch4(g) == 0._r8) then
+            if (forc_pch4(t) == 0._r8) then
                write(iulog,*)'not using ch4offline, but methane concentration not passed from the atmosphere', &
                     'to land model! CLM Model is stopping.'
                call endrun(msg=' ERROR: Methane not being passed to atmosphere'//&
                     errMsg(__FILE__, __LINE__))
             end if
          end if
-
-         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(g) ! [mol/m3 air]
-         c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(g) ! [mol/m3 air]
-         c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(g) ! [mol/m3 air]
+         c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,2) =  forc_po2(t)  / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air]
       end do
 
       ! Initialize CH4 balance and calculate finundated
@@ -1576,9 +1580,13 @@ contains
          c = filter_soilc(fc)
          g = col_pp%gridcell(c)
 
-         c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(g) ! [mol/m3 air]
-         c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(g) ! [mol/m3 air]
-        !c_atm(g,3) =  forc_pco2(g) / rgasm / forc_t(g) ! [mol/m3 air] - Not currently used
+         ! using the first topounit on this gridcell for access to atmospheric forcing
+         ! PET 8/10/2018 - replace this later once gas concentrations (c_atm) are also being tracked at
+         ! topounit level
+         t = grc_pp%topi(g)
+         c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
+         c_atm(g,2) =  forc_po2(t)  / rgasm / forc_t(t) ! [mol/m3 air]
+        !c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
       enddo
 
       !-------------------------------------------------
@@ -2656,7 +2664,7 @@ contains
     type(ch4_type)         , intent(inout) :: ch4_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: c,j      ! indices
+    integer :: c,j,t    ! indices
     integer :: fc       ! soil filter column index
     integer :: fp       ! soil filter pft index
     real(r8) :: dtime   ! land model time step (sec)
@@ -2680,19 +2688,14 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                      & 
-         z            =>    col_pp%z                                 , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)                            
-         dz           =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
-         zi           =>    col_pp%zi                                , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         lakedepth    =>    col_pp%lakedepth                         , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                             
-
-         forc_pbot    =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-
+         z            =>    col_pp%z                              , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)                            
+         dz           =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+         zi           =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         lakedepth    =>    col_pp%lakedepth                      , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                             
+         forc_pbot    =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          t_soisno     =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
-
          lake_icefrac =>    lakestate_vars%lake_icefrac_col       , & ! Input:  [real(r8) (:,:) ]  mass fraction of lake layer that is frozen      
-
          watsat       =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-
          h2osoi_vol   =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osfc       =>    waterstate_vars%h2osfc_col            , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
          frac_h2osfc  =>    waterstate_vars%frac_h2osfc_col         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
@@ -2724,6 +2727,7 @@ contains
       do j=1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
+            t = col_pp%topounit(c)
 
             if (j  >  jwt(c) .and. t_soisno(c,j) > tfrz) then ! Ebullition occurs only below the water table
 
@@ -2732,13 +2736,13 @@ contains
                k_h_cc = t_soisno(c,j) * k_h * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)] 
 
                if (.not. lake) then
-                  pressure = forc_pbot(c) + denh2o * grav * (z(c,j)-zi(c,jwt(c))) ! (Pa)
+                  pressure = forc_pbot(t) + denh2o * grav * (z(c,j)-zi(c,jwt(c))) ! (Pa)
                   if (sat == 1 .and. frac_h2osfc(c) > 0._r8) then ! Add ponding pressure head
                      pressure = pressure + denh2o * grav * h2osfc(c)/1000._r8/frac_h2osfc(c)
                      ! mm     / mm/m
                   end if
                else
-                  pressure = forc_pbot(c) + denh2o * grav * (z(c,j) + lakedepth(c))
+                  pressure = forc_pbot(t) + denh2o * grav * (z(c,j) + lakedepth(c))
                end if
 
                ! Compare partial pressure to ambient pressure.
