@@ -747,7 +747,7 @@ contains
     call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , snow_area)
     call this%thermal_mpp%MeshComputeVolume          (imesh)
 
-    call this%thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
+    call this%thermal_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
          snow_conn_id_up, snow_conn_id_dn, snow_conn_dist_up, snow_conn_dist_dn, &
          snow_conn_area, snow_conn_type)
 
@@ -796,7 +796,7 @@ contains
     call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , soil_area)
     call this%thermal_mpp%MeshComputeVolume          (imesh)
 
-    call this%thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
+    call this%thermal_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
          soil_conn_id_up, soil_conn_id_dn, soil_conn_dist_up, soil_conn_dist_dn, &
          soil_conn_area, soil_conn_type)
 
