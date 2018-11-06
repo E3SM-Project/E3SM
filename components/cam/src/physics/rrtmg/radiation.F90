@@ -383,7 +383,7 @@ end function radiation_nextsw_cday
 ! 
 !-----------------------------------------------------------------------
     use physics_buffer, only: pbuf_get_index
-    use phys_grid,      only: npchunks, get_ncols_p, chunks, knuhcs, ngcols_p, latlon_to_dyn_gcol_map
+    use phys_grid,      only: npchunks, get_ncols_p, chunks, knuhcs, ngcols, dyn_to_latlon_gcol_map
     use cam_history,    only: addfld, horiz_only, add_default
     use constituents,   only: cnst_get_ind
     use physconst,      only: gravit, stebol, &
@@ -424,7 +424,7 @@ end function radiation_nextsw_cday
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
     integer, allocatable, dimension(:,:) :: clm_id
     integer :: id, lchnk, ncol, ilchnk, astat, iseed, ipes, ipes_tmp
-    integer :: igcol, imap, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
+    integer :: igcol, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
     !-----------------------------------------------------------------------
     
     call rrtmg_state_init()
@@ -515,13 +515,14 @@ end function radiation_nextsw_cday
        end if
        !compute all clm ids on masterproc and then scatter it ....
        if(masterproc) then
-          do igcol = 1, ngcols_p
-             imap = latlon_to_dyn_gcol_map(igcol)
-             chunkid  = knuhcs(imap)%chunkid
-             icol = knuhcs(imap)%col
-             iown  = chunks(chunkid)%owner
-             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-             clm_id_mstr(icol,ilchnk,iown+1) = igcol
+          do igcol = 1, ngcols
+             if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then                
+                chunkid  = knuhcs(igcol)%chunkid
+                icol = knuhcs(igcol)%col
+                iown  = chunks(chunkid)%owner
+                ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+                clm_id_mstr(icol,ilchnk,iown+1) = igcol
+             endif
           enddo
        endif
        
@@ -530,7 +531,7 @@ end function radiation_nextsw_cday
        tot_cols = pcols*max_chnks_in_blk
        call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
             clm_id,    tot_cols,  mpi_integer, 0,             &
-            MPI_COMM_WORLD,ierr)
+            mpicom,ierr)
 #else
        !BSINGH - Haven't tested it.....               
        call endrun('radiation.F90(rrtmg)-radiation_init: non-mpi compiles are not tested yet for pergro test...')
