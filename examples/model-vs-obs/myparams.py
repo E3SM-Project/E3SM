@@ -1,3 +1,4 @@
+# Location of the data.
 reference_data_path = '/p/cscratch/acme/data/obs_for_acme_diags/'
 test_data_path = '/p/cscratch/acme/data/test_model_data_for_acme_diags/'
 # Name of the test model data, used to find the climo files.
