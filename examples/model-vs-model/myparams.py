@@ -21,6 +21,7 @@ results_dir = 'model_to_model'
 run_type = 'model_vs_model' 
 
 # Below are more optional arguments.
+
 # 'mpl' is to create matplotlib plots, 'vcs' is for vcs plots.
 backend = 'mpl'
 # Title of the difference plots.

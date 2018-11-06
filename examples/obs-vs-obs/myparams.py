@@ -14,6 +14,7 @@ results_dir = 'obs_vs_obs'
 sets = ['lat_lon']
 
 # Below are more optional arguments.
+
 # What seasons to run the diags on.
 # If not defined, diags is ran on ['ANN', 'DJF', 'MAM', 'JJA', 'SON'].
 seasons = ['ANN']
