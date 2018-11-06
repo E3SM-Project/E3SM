@@ -1468,7 +1468,6 @@ contains
     use prim_advance_mod,   only: prim_advance_exp
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-!    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)

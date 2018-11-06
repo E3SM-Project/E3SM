@@ -547,60 +547,6 @@ contains
 !pw call t_adj_detailf(-1)
   end subroutine prim_advance_exp
 
-#if 0
-!ftype logic
-!should be called with dt_remap, on 'eulerian' levels, only before homme remap timestep
-  subroutine applyCAMforcing_ps(elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
-  use control_mod, only : ftype
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_remap
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: dyn_timelev,tr_timelev,nets,nete
-
-  call t_startf("ApplyCAMForcing")
-  if (ftype==0) then
-    call applyCAMforcing_dynamics(elem,hvcoord,dyn_timelev,           dt_remap,nets,nete)
-    call applyCAMforcing_tracers (elem,hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
-  elseif (ftype==2) then
-    call ApplyCAMForcing_dynamics(elem,hvcoord,dyn_timelev,           dt_remap,nets,nete)
-  endif
-#ifndef CAM
-  ! for standalone homme, we need tracer tendencies injected similarly to CAM
-  ! for ftypes of interest, 2,3,4.
-  ! standalone homme does not support ftype=1 (because in standalone version,
-  ! it is identical to ftype=0).
-  ! leaving option ftype=-1 for standalone homme when no forcing is applied ever
-  if ((ftype /= 0 ).and.(ftype > 0)) then
-    call ApplyCAMForcing_tracers (elem, hvcoord,dyn_timelev,tr_timelev,dt_remap,nets,nete)
-  endif
-#endif
-  call t_stopf("ApplyCAMForcing")
-  end subroutine applyCAMforcing_ps
-
-
-!ftype logic
-!should be called with dt_dynamics timestep. 
-!if called on eulerian levels (like at the very beginning, in first of qsplit calls of
-!prim_step), make sure that dp3d is updated before, based on ps_v.
-!if called within lagrangian step, it uses lagrangian dp3d
-  subroutine applyCAMforcing_dp3d(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
-  use control_mod, only : ftype
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_dyn
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: dyn_timelev,nets,nete
-
-  call t_startf("ApplyCAMForcing")
-  if (ftype == 3) then
-    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
-  elseif (ftype == 4) then
-    call ApplyCAMForcing_dynamics   (elem,hvcoord,dyn_timelev,dt_dyn,nets,nete)
-  endif
-  call t_stopf("ApplyCAMForcing")
-  end subroutine applyCAMforcing_dp3d
-#endif
 
 !applies tracer tendencies and adjusts ps depending on moisture
   subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
@@ -616,7 +562,6 @@ contains
   ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
-!  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -629,18 +574,13 @@ contains
            do j=1,np
               do i=1,np
                  v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
                  if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
                     if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
                        v1=0  ! Q already negative, dont make it more so
                     else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
                        v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
                     endif
                  endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
-                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
                  elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
                  if (q==1) then
                     elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
@@ -718,8 +658,6 @@ contains
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1) + & 
                                     dt*elem(ie)%derived%FT(:,:,:)/elem(ie)%state%dp3d(:,:,:,np1)
-!vel indices are np,np,2,k,time
-!use omp parallel for k here?
      do k=1,nlev
        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) + &
                                        dt*elem(ie)%derived%FM(:,:,1,k)/elem(ie)%state%dp3d(:,:,k,np1)

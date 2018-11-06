@@ -367,10 +367,12 @@ contains
 
 !----------------------------- CONVERT-THERMO-FORCING ----------------------------
 
-!converting T tendencies to theta, can be called from homme and EAM
-!tests and EAM return thermo tendencies in T, this call converts them to theta
-!should be called BEFORE applyCAMforcing_tracers, before ps_v is updated
-!that is, theta tendencies are computed wrt the same pressure levels 
+!Converting T tendencies to theta, can be called from homme and EAM.
+!Tests and EAM return thermo tendencies in terms of T, this routine 
+!converts them to weighted potential temp. variable asi theta-l model.
+!This routine should be called BEFORE applyCAMforcing_tracers and
+!before ps_v is updated.
+!That is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
   subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
   use control_mod,        only : use_moisture
