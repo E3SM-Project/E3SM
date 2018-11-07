@@ -4991,9 +4991,9 @@ void set_idx2_maps (CslMpi& cm, const Rank2Gids& rank2rmtgids,
 }
 
 // In the original MPI pattern that has been in HOMME for years, each owned cell
-// has a 1-halo patch of bulk data. The allocations in this routine use
-// essentially the same amount of memory, but not more. We could use less if we
-// were willing to realloc space at each SL time step.
+// has a 1-halo patch of bulk data. For a 1-halo, allocations in this routine
+// use essentially the same amount of memory, but not more. We could use less if
+// we were willing to realloc space at each SL time step.
 void alloc_mpi_buffers (CslMpi& cm, const Rank2Gids& rank2rmtgids,
                         const Rank2Gids& rank2owngids) {
   const auto myrank = cm.p->rank();
@@ -5312,6 +5312,10 @@ void pack_dep_points_sendbuf_pass1 (CslMpi& cm) {
     const auto&& lid_on_rank = cm.lid_on_rank(ri);
     Int xos = 0, qos = 0;
     xos += setbuf(sendbuf, xos, cm.nx_in_rank(ri), 0 /* empty space for alignment */);
+    if (cm.nx_in_rank(ri) == 0) {
+      cm.sendcount(ri) = xos;
+      continue;
+    }
     auto&& bla = cm.bla(ri);
     for (Int lidi = 0, lidn = cm.lid_on_rank(ri).n(); lidi < lidn; ++lidi) {
       auto nx_in_lid = cm.nx_in_lid(ri,lidi);
