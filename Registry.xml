@@ -253,10 +253,7 @@
 		            description="phase of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization. Units are cycles, i.e., 0-1"
 		            possible_values="any positive real value"
 		/>
-                <nml_option name="config_temperature_profile_GL_depth_fraction" type="real" default_value="0.25" units="unitless"
-		            description="The fraction of the deepest grounding line depths over which the grounding line depth is averaged to obtain a reference grounding line depth for the 'temperature_profile' melt parameterization."
-		            possible_values="any positive real value"
-		/>
+
         </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
