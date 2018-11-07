@@ -504,6 +504,200 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="cheyenne">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="gnu">
+  <CPPDEFS>
+    <append MODEL="pio1"> -DNO_MPIMOD </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="intel">
+  <CFLAGS>
+    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
+  </FFLAGS>
+  <CMAKE_OPTS>
+    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
+  </CMAKE_OPTS>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+  <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="pgi">
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="constance" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="constance" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="cori-haswell" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+    <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <LDFLAGS>
+    <append>-mkl </append>
+  </LDFLAGS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+</compiler>
+
+<compiler MACH="cori-knl" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append> -xMIC-AVX512 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xMIC-AVX512 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+    <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC</append>
+  </CPPDEFS>
+  <LDFLAGS>
+    <append>-mkl -lmemkind -zmuldefs</append>
+  </LDFLAGS>
+  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+</compiler>
+
+<compiler MACH="eastwind" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="eastwind" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append compile_threaded="false"> -nomp </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append compile_threaded="false"> -nomp </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append compile_threaded="false"> -nomp </append>
+  </LDFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="edison" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_PAPI </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="euler2">
   <CPPDEFS>
     <append> -DLINUX </append>
@@ -603,175 +797,6 @@ using a fortran linker.
   </FFLAGS>
 </compiler>
 
-<compiler MACH="constance" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="constance" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="cori-haswell" COMPILER="intel">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CFLAGS>
-    <append> -xCORE-AVX2 </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append> -xCORE-AVX2 </append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
-  </SLIBS>
-    <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
-  </CPPDEFS>
-  <LDFLAGS>
-    <append>-mkl </append>
-  </LDFLAGS>
-  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-</compiler>
-
-
-<compiler MACH="cori-knl" COMPILER="intel">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CFLAGS>
-    <append> -xMIC-AVX512 </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append> -xMIC-AVX512 </append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
-  </SLIBS>
-    <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC</append>
-  </CPPDEFS>
-  <LDFLAGS>
-    <append>-mkl -lmemkind -zmuldefs</append>
-  </LDFLAGS>
-  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-</compiler>
-
-
-<compiler MACH="eastwind" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="eastwind" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-    <append compile_threaded="false"> -nomp </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-    <append compile_threaded="false"> -nomp </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append compile_threaded="false"> -nomp </append>
-  </LDFLAGS>
-  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="edison" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="hera" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="hobart">
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
@@ -804,6 +829,9 @@ using a fortran linker.
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="nag">
@@ -849,17 +877,59 @@ using a fortran linker.
   </LDFLAGS>
 </compiler>
 
-<compiler MACH="juqueen" COMPILER="ibm">
-  <MPICC> mpixlc_r </MPICC>
-  <MPIFC> mpixlf2003_r </MPIFC>
-  <NETCDF_PATH> /bgsys/local/netcdf/</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH> /bgsys/local/parallel-netcdf/v1.3.1</PNETCDF_PATH>
-  <SCC> mpixlc_r </SCC>
-  <SFC> mpixlf2003_r </SFC>
+<compiler MACH="laramie">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+</compiler>
+<compiler MACH="laramie" COMPILER="intel">
+  <CFLAGS>
+    <append> -vec-report </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -vec-report </append>
+  </FFLAGS>
+  <CMAKE_OPTS>
+    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
+  </CMAKE_OPTS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lawrencium-lr3">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
   <SLIBS>
-    <append>-L/bgsys/local/netcdf/lib -lnetcdf -L/bgsys/drivers/ppcfloor/comm/lib </append>
+    <append> -lnetcdff -lnetcdf -mkl </append>
   </SLIBS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </CFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lawrencium-lr2">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl </append>
+  </SLIBS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append DEBUG="TRUE"> -ftrapuv </append>
+  </CFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
 </compiler>
 
 <compiler MACH="melvin" COMPILER="gnu">
@@ -904,6 +974,16 @@ using a fortran linker.
   <SLIBS>
     <append>-L${NETCDF_PATH}/lib -lnetcdff -lnetcdf -L$ENV{HDF5}/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
   </SLIBS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="modex">
+  <SLIBS>
+    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_PATH}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
+  </SLIBS>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
 </compiler>
 
 <compiler MACH="olympus" COMPILER="pgi">
@@ -982,18 +1062,6 @@ using a fortran linker.
   <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
-<compiler MACH="sierra">
-  <LDFLAGS>
-    <append> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1067,6 +1135,16 @@ using a fortran linker.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="theia">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
+  <FFLAGS>
+    <append MODEL="mom"> -r8 </append>
+  </FFLAGS>
+</compiler>
+
 <compiler MACH="theta">
   <CFLAGS>
     <append> -xMIC-AVX512 </append>
@@ -1079,24 +1157,6 @@ using a fortran linker.
   </CONFIG_ARGS>
   <SLIBS>
     <append>-L$(NETCDF_DIR)/lib -lnetcdff -L$(NETCDF_DIR)/lib -lnetcdf -Wl,-rpath -Wl,$(NETCDF_DIR)/lib </append>
-  </SLIBS>
-</compiler>
-
-
-<compiler MACH="tukey" COMPILER="ibm">
-  <HDF5_PATH>/soft/libraries/hdf5/1.8.10/cnk-xl/current/ </HDF5_PATH>
-  <!-- This LD is a workaround for darshan initialization on tukey?? (Darshan does -->
-  <!-- not run if f90 or higher is used for linking -->
-  <LD> mpixlf77_r </LD>
-  <MPICC> mpixlc_r </MPICC>
-  <MPIFC> mpixlf2003_r </MPIFC>
-  <NETCDF_PATH>/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.3.1/cnk-xl/current/</PNETCDF_PATH>
-  <SCC> mpixlc_r </SCC>
-  <SFC> mpixlf2003_r </SFC>
-  <SLIBS>
-    <append>-L${NETCDF_PATH}/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
   </SLIBS>
 </compiler>
 
@@ -1115,200 +1175,6 @@ using a fortran linker.
   <SLIBS>
     <append># USERDEFINED $SHELL{${NETCDF_PATH}/bin/nc-config --flibs}</append>
   </SLIBS>
-</compiler>
-
-<compiler MACH="yellowstone">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-</compiler>
-
-<compiler MACH="cheyenne" COMPILER="gnu">
-  <CPPDEFS>
-    <append MODEL="pio1"> -DNO_MPIMOD </append>
-  </CPPDEFS>
-  <SLIBS>
-    <append> -ldl </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="cheyenne" COMPILER="pgi">
-  <SLIBS>
-    <append> -llapack -lblas </append>
-    <append MPILIB="mpi-serial"> -ldl </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="cheyenne">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-</compiler>
-<compiler MACH="cheyenne" COMPILER="intel">
-  <CFLAGS>
-    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
-  </CFLAGS>
-  <FFLAGS>
-    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
-  </FFLAGS>
-  <CMAKE_OPTS>
-    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
-  </CMAKE_OPTS>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
-  <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
-  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-</compiler>
-
-<compiler MACH="laramie">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-</compiler>
-<compiler MACH="laramie" COMPILER="intel">
-  <CFLAGS>
-    <append> -vec-report </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append> -vec-report </append>
-  </FFLAGS>
-  <CMAKE_OPTS>
-    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
-  </CMAKE_OPTS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="lawrencium-lr3">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <SLIBS>
-    <append> -lnetcdff -lnetcdf -mkl </append>
-  </SLIBS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </FFLAGS>
-  <CFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS>
-  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
-  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
-</compiler>
-
-<compiler COMPILER="intel" MACH="lawrencium-lr2">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <SLIBS>
-    <append> -lnetcdff -lnetcdf -mkl </append>
-  </SLIBS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </FFLAGS>
-  <CFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS>
-  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
-  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="gnu">
-  <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
-  <SCC MPILIB="mpi-serial">gcc</SCC>
-  <SFC MPILIB="mpi-serial">gfortran</SFC>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="intel">
-  <CFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append MPILIB="mpich2"> -DINTEL_MKL -DHAVE_SSE2 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
-  </FFLAGS>
-  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
-  <PAPI_INC MPILIB="mpich2"> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
-  <PAPI_LIB MPILIB="mpich2">/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_yellowstone_Intel15.0.1_noMPI_noOpenMP</PFUNIT_PATH>
-  <PFUNIT_PATH MPILIB="mpich2" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
-  <!-- Needed due to the way that netcdf is loaded on yellowstone -->
-  <SCC MPILIB="mpi-serial">icc</SCC>
-  <SFC MPILIB="mpi-serial">ifort</SFC>
-  <SCC MPILIB="mpich2">${MPICC}</SCC>
-  <SFC MPILIB="mpich2">${MPIFC}</SFC>
-  <SLIBS>
-    <append MPILIB="mpich2"> -Wl,-rpath ${PAPI_LIB} -L${PAPI_LIB} -lpapi</append>
-  </SLIBS>
-  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O </append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -llapack -lblas </append>
-  </SLIBS>
-  <SCC MPILIB="mpi-serial">pgcc</SCC>
-  <SFC MPILIB="mpi-serial">pgfortran</SFC>
-</compiler>
-
-<compiler COMPILER="intel" MACH="lbl-lr3">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <SLIBS>
-    <append> -lnetcdff -lnetcdf -mkl </append>
-  </SLIBS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </FFLAGS>
-  <CFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS>
-  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
-</compiler>
-
-<compiler COMPILER="intel" MACH="lbl-lr2">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <SLIBS>
-    <append> -lnetcdff -lnetcdf -mkl </append>
-  </SLIBS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </FFLAGS>
-  <CFLAGS>
-    <append DEBUG="TRUE"> -ftrapuv </append>
-  </CFLAGS>
-  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
-</compiler>
-
-<compiler COMPILER="gnu" MACH="modex">
-  <SLIBS>
-    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
-    <append> -L$ENV{NETCDF_PATH}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
-  </SLIBS>
-  <CPPDEFS>
-     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
-  </CPPDEFS>
 </compiler>
 
 </config_compilers>

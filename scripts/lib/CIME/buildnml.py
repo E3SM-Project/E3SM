@@ -37,7 +37,14 @@ def build_xcpl_nml(case, caseroot, compname):
     expect(compclass is not None,
            "Could not identify compclass for compname {}".format(compname))
     rundir = case.get_value("RUNDIR")
-    ninst  = case.get_value("NINST_{}".format(compclass.upper()))
+    comp_interface = case.get_value("COMP_INTERFACE")
+
+    if comp_interface != "nuopc":
+        ninst  = case.get_value("NINST_{}".format(compclass.upper()))
+    else:
+        ninst = case.get_value("NINST")
+    if not ninst:
+        ninst = 1
     nx     = case.get_value("{}_NX".format(compclass.upper()))
     ny     = case.get_value("{}_NY".format(compclass.upper()))
     if compname == "xrof":

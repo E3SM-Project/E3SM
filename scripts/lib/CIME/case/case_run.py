@@ -22,7 +22,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
-    batchsubmit = case.get_value("BATCHSUBMIT")
     rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
 
@@ -41,17 +40,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     # load the module environment...
     case.load_env(reset=True)
-
-    # set environment variables
-
-    if batchsubmit is None or len(batchsubmit) == 0:
-        os.environ["LBQUERY"] = "FALSE"
-        os.environ["BATCHQUERY"] = "undefined"
-    elif batchsubmit == 'UNSET':
-        os.environ["LBQUERY"] = "FALSE"
-        os.environ["BATCHQUERY"] = "undefined"
-    else:
-        os.environ["LBQUERY"] = "TRUE"
 
     # create the timing directories, optionally cleaning them if needed.
     if os.path.isdir(os.path.join(rundir, "timing")):
@@ -177,15 +165,24 @@ def _post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
+    driver = case.get_value("COMP_INTERFACE")
+
+    if driver == 'nuopc':
+        file_prefix = 'med'
+    else:
+        file_prefix = 'cpl'
+
     cpl_ninst = 1
     if case.get_value("MULTI_DRIVER"):
         cpl_ninst = case.get_value("NINST_MAX")
     cpl_logs = []
+
     if cpl_ninst > 1:
         for inst in range(cpl_ninst):
-            cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
+            cpl_logs.append(os.path.join(rundir, file_prefix + "_%04d.log." % (inst+1) + lid))
     else:
-        cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
+        cpl_logs = [os.path.join(rundir, file_prefix + ".log." + lid)]
+
     cpl_logfile = cpl_logs[0]
 
     # find the last model.log and cpl.log
@@ -269,12 +266,16 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
     postrun_script = self.get_value("POSTRUN_SCRIPT")
+    driver = self.get_value("COMP_INTERFACE")
 
     data_assimilation_cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = self.get_value("DATA_ASSIMILATION_SCRIPT")
     data_assimilation = (data_assimilation_cycles > 0 and
                          len(data_assimilation_script) > 0 and
                          os.path.isfile(data_assimilation_script))
+
+    driver = self.get_value("COMP_INTERFACE")
+
     # set up the LID
     lid = new_lid()
 
@@ -297,10 +298,14 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         lid = _run_model(self, lid, skip_pnl, da_cycle=cycle)
         model_log("e3sm", logger, "{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-        if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
-            model_log("e3sm", logger, "{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-            get_timing(self, lid)     # Run the getTiming script
-            model_log("e3sm", logger, "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+        # TODO mvertens: remove the hard-wiring for nuopc below
+        if driver != 'nuopc':
+            if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
+                model_log("e3sm", logger, "{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+                get_timing(self, lid)     # Run the getTiming script
+                model_log("e3sm", logger, "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+        else:
+            self.set_value("CHECK_TIMING",False)
 
         if data_assimilation:
             model_log("e3sm", logger, "{} DO_DATA_ASSIMILATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
