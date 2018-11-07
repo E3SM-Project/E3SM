@@ -9,12 +9,6 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<immutable_stream name="StandardAerosolsInput"
-                  type="input"
-                  filename_template="standard_optics_mpas_cice.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
 <immutable_stream name="SnicarInput"
                   type="input"
                   filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
