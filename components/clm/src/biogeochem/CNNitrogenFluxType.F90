@@ -279,7 +279,8 @@ module CNNitrogenFluxType
      real(r8), pointer :: smin_no3_leached_col                      (:)     ! col soil mineral NO3 pool loss to leaching (gN/m2/s)
      real(r8), pointer :: smin_no3_runoff_vr_col                    (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
      real(r8), pointer :: smin_no3_runoff_col                       (:)     ! col soil mineral NO3 pool loss to runoff (gN/m2/s)
-
+     real(r8), pointer :: smin_nh4_runoff_col                       (:)
+     real(r8), pointer :: smin_nh4_leached_col                      (:)
      ! nitrification /denitrification diagnostic quantities
      real(r8), pointer :: smin_no3_massdens_vr_col                  (:,:)   ! col (ugN / g soil) soil nitrate concentration
      real(r8), pointer :: soil_bulkdensity_col                      (:,:)   ! col (kg soil / m3) bulk density of soil
@@ -412,6 +413,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: nflx_input_litr_cwd_vr_col              (:,:) => null()
      real(r8), pointer :: nflx_minn_input_nh4_vr_col              (:,:) => null()
      real(r8), pointer :: nflx_minn_input_no3_vr_col              (:,:) => null()
+     real(r8), pointer :: nh3_soi_flx_col                        (:)=> null()
    contains
 
      procedure , public  :: Init   
@@ -652,7 +654,7 @@ contains
     allocate(this%dwt_prod100n_gain_col      (begc:endc))                   ; this%dwt_prod100n_gain_col      (:)   = nan
     allocate(this%dwt_nloss_col              (begc:endc))                   ; this%dwt_nloss_col              (:)   = nan
     allocate(this%wood_harvestn_col          (begc:endc))                   ; this%wood_harvestn_col          (:)   = nan
-
+    allocate(this%nh3_soi_flx_col           (begc:endc))                   ; this%nh3_soi_flx_col           (:)   = nan
     allocate(this%dwt_frootn_to_litr_met_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n_col     (:,:) = nan
     allocate(this%dwt_frootn_to_litr_cel_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_cel_n_col     (:,:) = nan
     allocate(this%dwt_frootn_to_litr_lig_n_col(begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_lig_n_col     (:,:) = nan
@@ -664,6 +666,8 @@ contains
     allocate(this%smin_no3_leached_col        (begc:endc))                   ; this%smin_no3_leached_col             (:)   = nan
     allocate(this%smin_no3_runoff_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr_col           (:,:) = nan
     allocate(this%smin_no3_runoff_col         (begc:endc))                   ; this%smin_no3_runoff_col              (:)   = nan
+    allocate(this%smin_nh4_leached_col        (begc:endc))                   ; this%smin_nh4_leached_col             (:)   = nan
+    allocate(this%smin_nh4_runoff_col         (begc:endc))                   ; this%smin_nh4_runoff_col              (:)   = nan
     allocate(this%pot_f_nit_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr_col                 (:,:) = nan
     allocate(this%pot_f_nit_col               (begc:endc))                   ; this%pot_f_nit_col                    (:)   = nan
     allocate(this%pot_f_denit_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr_col               (:,:) = nan
@@ -1519,6 +1523,11 @@ contains
        call hist_addfld1d (fname='F_NIT', units='gN/m^2/s',  &
             avgflag='A', long_name='nitrification flux', &
             ptr_col=this%f_nit_col)
+
+       this%nh3_soi_flx_col(begc:endc)=spval
+       call hist_addfld1d (fname='F_NH3_SOILE', units='gN/m^2/s',  &
+            avgflag='A', long_name='ammonia volatilization flux', &
+            ptr_col=this%nh3_soi_flx_col)
     end if
 
     if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
@@ -1547,6 +1556,11 @@ contains
        call hist_addfld1d (fname='SMIN_NO3_LEACHED', units='gN/m^2/s', &
             avgflag='A', long_name='soil NO3 pool loss to leaching', &
             ptr_col=this%smin_no3_leached_col)
+
+       this%smin_nh4_leached_col(begc:endc) = spval
+       call hist_addfld1d (fname='SMIN_NH4_LEACHED', units='gN/m^2/s', &
+            avgflag='A', long_name='soil NH4 pool loss to leaching', &
+            ptr_col=this%smin_nh4_leached_col)
     end if
 
     if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
@@ -1554,6 +1568,12 @@ contains
        call hist_addfld1d (fname='SMIN_NO3_RUNOFF', units='gN/m^2/s', &
             avgflag='A', long_name='soil NO3 pool loss to runoff', &
             ptr_col=this%smin_no3_runoff_col)
+
+
+       this%smin_nh4_runoff_col(begc:endc) = spval
+       call hist_addfld1d (fname='SMIN_NH4_RUNOFF', units='gN/m^2/s', &
+            avgflag='A', long_name='soil NH4 pool loss to runoff', &
+            ptr_col=this%smin_nh4_runoff_col)
     end if
 
     this%som_n_runoff_col(begc:endc) = spval    
@@ -2661,6 +2681,7 @@ contains
        this%net_nmin_col(i)                  = value_column
        this%denit_col(i)                     = value_column
        if (use_nitrif_denitrif) then
+          this%nh3_soi_flx_col(i)            = value_column
           this%f_nit_col(i)                  = value_column
           this%pot_f_nit_col(i)              = value_column
           this%f_denit_col(i)                = value_column
@@ -2669,7 +2690,8 @@ contains
           this%f_n2o_nit_col(i)              = value_column
           this%smin_no3_leached_col(i)       = value_column
           this%smin_no3_runoff_col(i)        = value_column
-
+          this%smin_nh4_leached_col(i)       = value_column
+          this%smin_nh4_runoff_col(i)        = value_column
           this%f_ngas_decomp_col(i)         = value_column
           this%f_ngas_nitri_col(i)          = value_column
           this%f_ngas_denit_col(i)          = value_column

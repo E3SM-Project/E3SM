@@ -363,6 +363,8 @@ contains
          sminn_leached       =>    nitrogenflux_vars%sminn_leached_col       , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
          smin_no3_leached    =>    nitrogenflux_vars%smin_no3_leached_col    , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff     =>    nitrogenflux_vars%smin_no3_runoff_col     , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
+         smin_nh4_leached    =>    nitrogenflux_vars%smin_nh4_leached_col    , & ! Input:  [real(r8) (:)]  soil mineral nh4 pool loss to leaching (gN/m2/s)
+         smin_nh4_runoff     =>    nitrogenflux_vars%smin_nh4_runoff_col     , & ! Input:  [real(r8) (:)]  soil mineral nh4 pool loss to runoff (gN/m2/s)
          f_n2o_nit           =>    nitrogenflux_vars%f_n2o_nit_col           , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
          col_fire_nloss      =>    nitrogenflux_vars%fire_nloss_col          , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
          dwt_nloss           =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
@@ -377,7 +379,8 @@ contains
          col_begnb           =>    nitrogenstate_vars%begnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb           =>    nitrogenstate_vars%endnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
          col_errnb           =>    nitrogenstate_vars%errnb_col              , & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
-         som_n_runoff_col    =>    nitrogenflux_vars%som_n_runoff_col          &
+         som_n_runoff_col    =>    nitrogenflux_vars%som_n_runoff_col        , &
+         nh3_soi_flx_col     =>    nitrogenflux_vars%nh3_soi_flx_col           &
          )
 
       ! set time steps
@@ -423,7 +426,8 @@ contains
          if(is_active_betr_bgc)then
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
 
-            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c) &
+               + smin_nh4_leached(c) + smin_nh4_runoff(c)+ nh3_soi_flx_col(c)
          else
            if (.not. use_nitrif_denitrif) then
             col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
@@ -442,7 +446,7 @@ contains
            end if
          endif
 
-         col_noutputs(c) = col_noutputs(c) - som_n_leached(c) + som_n_runoff_col(c)
+         col_noutputs(c) = col_noutputs(c) - som_n_leached(c) + som_n_runoff_col(c) 
 
          ! calculate the total column-level nitrogen balance error for this time step
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
@@ -498,8 +502,11 @@ contains
          write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
          write(iulog,*)'no3_leach             = ', smin_no3_leached(c)*dt
          write(iulog,*)'no3_runof             = ', smin_no3_runoff(c)*dt
+         write(iulog,*)'nh4_leach             = ',smin_nh4_leached(c)*dt
+         write(iulog,*)'nh4_runof             = ',smin_nh4_runoff(c)*dt
          write(iulog,*)'som_n_leach           = ', -som_n_leached(c)*dt
          write(iulog,*)'som_n_runoff          = ',som_n_runoff_col(c)*dt
+         write(iulog,*)'nh3_soile             = ',nh3_soi_flx_col(c)*dt
          write(iulog,*)'decompfireloss        = ',nitrogenflux_vars%fire_decomp_nloss_col(c)*dt
          write(iulog,*)'plt2soil              = ',nitrogenflux_vars%nflx_plant_to_soilbgc_col(c)*dt
          write(iulog,*)'soil2plt              = ',nitrogenflux_vars%sminn_to_plant_col(c)*dt
@@ -516,7 +523,8 @@ contains
             - denit(c)*dt-f_n2o_nit(c)*dt-smin_no3_leached(c)*dt &
             - smin_no3_runoff(c)*dt+som_n_leached(c)*dt-som_n_runoff_col(c)*dt &
             - nitrogenflux_vars%fire_decomp_nloss_col(c)*dt &
-            - nitrogenflux_vars%sminn_to_plant_col(c)*dt
+            - smin_nh4_runoff(c)*dt-smin_nh4_leached(c)*dt &
+            - nitrogenflux_vars%sminn_to_plant_col(c)*dt-nh3_soi_flx_col(c)*dt
          write(iulog,*)'errblg =',err_blg
          err_abg = nitrogenstate_vars%begabgn_col(c) - nitrogenstate_vars%totabgn_col(c)  &
             + (nfix_to_ecosysn(c)-nfix_to_sminn(c))*dt &

@@ -1354,12 +1354,6 @@ contains
          froot_curmr(p) = froot_mr(p) * curmr_ratio
          froot_xsmr(p) = froot_mr(p) * xsmr_ratio
          froot_mr(p) =  froot_curmr(p) + froot_xsmr(p)
-         if(get_nstep()==23 .and. p==5)then
-           print*,'cnalloc froot_xsmr',froot_xsmr(p)*dt
-           print*,'cnalloc froot_curmr',froot_curmr(p)*dt
-           print*,'cnalloc froo mr',froot_mr(p)*dt
-           print*,'cnalloc leaf mr',leaf_mr(p)*dt
-         endif
          if (woody(ivt(p)) == 1._r8 .or. ivt(p) >= npcropmin) then
            livestem_curmr(p) = livestem_mr(p) * curmr_ratio
            livestem_xsmr(p) = livestem_mr(p) * xsmr_ratio
