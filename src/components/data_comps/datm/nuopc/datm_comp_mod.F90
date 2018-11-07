@@ -7,29 +7,31 @@ module datm_comp_mod
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
-  use perf_mod              , only : t_startf, t_stopf
-  use perf_mod              , only : t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use mct_mod               , only : mct_gsmap_init
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect, mct_gsmap_init
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize 
   use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_const_mod         , only : SHR_CONST_TKFRZ
   use shr_const_mod         , only : SHR_CONST_PI
   use shr_const_mod         , only : SHR_CONST_PSTD
   use shr_const_mod         , only : SHR_CONST_STEBOL
   use shr_const_mod         , only : SHR_CONST_RDAIR
-  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
+  use med_constants_mod     , only : R8, CS, CL, CXX
   use shr_string_mod        , only : shr_string_listGetName
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
+  use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_date2julian, shr_cal_datetod2string
   use shr_mpi_mod           , only : shr_mpi_bcast, shr_mpi_max
   use shr_precip_mod        , only : shr_precip_partition_rain_snow_ramp
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod       , only : shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain 
+  use shr_strdata_mod       , only : shr_strdata_init_streams
+  use shr_strdata_mod       , only : shr_strdata_init_mapping
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
+  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod        , only : shr_dmodel_rearrGGrid
+  use shr_strdata_mod       , only : shr_strdata_setorbs
   use shr_dmodel_mod        , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -63,32 +65,27 @@ module datm_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  type(mct_gsMap), target    :: gsMap_target
-  type(mct_gGrid), target    :: ggrid_target
-  type(mct_gsMap), pointer   :: gsMap
-  type(mct_gGrid), pointer   :: ggrid
-
   integer                    :: dbug = 1              ! debug level (higher is more)
   real(R8)                   :: tbotmax               ! units detector
   real(R8)                   :: tdewmax               ! units detector
   real(R8)                   :: anidrmax              ! existance detector
 
   ! Attribute vectors field indices
-  integer(IN)                :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
-  integer(IN)                :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
-  integer(IN)                :: kanidr,kanidf,kavsdr,kavsdf
-  integer(IN)                :: kshum_16O, kshum_18O, kshum_HDO
-  integer(IN)                :: krc_18O, krc_HDO
-  integer(IN)                :: krl_18O, krl_HDO
-  integer(IN)                :: ksc_18O, ksc_HDO
-  integer(IN)                :: ksl_18O, ksl_HDO
-  integer(IN)                :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
-  integer(IN)                :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
-  integer(IN)                :: srh_16O, srh_18O, srh_HDO, sprecn_16O, sprecn_18O, sprecn_HDO
-  integer(IN)                :: sprecsf
-  integer(IN)                :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
+  integer                    :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
+  integer                    :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
+  integer                    :: kanidr,kanidf,kavsdr,kavsdf
+  integer                    :: kshum_16O, kshum_18O, kshum_HDO
+  integer                    :: krc_18O, krc_HDO
+  integer                    :: krl_18O, krl_HDO
+  integer                    :: ksc_18O, ksc_HDO
+  integer                    :: ksl_18O, ksl_HDO
+  integer                    :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
+  integer                    :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
+  integer                    :: srh_16O, srh_18O, srh_HDO, sprecn_16O, sprecn_18O, sprecn_HDO
+  integer                    :: sprecsf
+  integer                    :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
+  integer                    :: index_lat, index_lon
 
-  type(mct_rearr)            :: rearr
   type(mct_avect)            :: avstrm         ! av of data from stream
   character(len=CS), pointer :: avifld(:)      ! character array for field names coming from streams
   character(len=CS), pointer :: avofld(:)      ! character array for field names to be sent/received from mediator
@@ -96,16 +93,16 @@ module datm_comp_mod
   character(len=CS), pointer :: stofld(:)      ! character array for field intermediate avs for calculations
   character(len=CL), pointer :: ilist_av(:)    ! input  character array for translation (avifld->avofld)
   character(len=CL), pointer :: olist_av(:)    ! output character array for translation (avifld->avofld)
-  integer(IN),       pointer :: count_av(:)    ! number of fields in translation (avifld->avofld)
+  integer    ,       pointer :: count_av(:)    ! number of fields in translation (avifld->avofld)
   character(len=CL), pointer :: ilist_st(:)    ! input  character array for translation (stifld->strmofld)
   character(len=CL), pointer :: olist_st(:)    ! output character array for translation (stifld->strmofld)
-  integer(IN)  ,     pointer :: count_st(:)    ! number of fields in translation (stifld->strmofld)
+  integer      ,     pointer :: count_st(:)    ! number of fields in translation (stifld->strmofld)
   character(len=CXX)         :: flds_strm = '' ! colon deliminated string of field names
   character(len=CXX)         :: flds_a2x_mod
   character(len=CXX)         :: flds_x2a_mod
 
-  integer(IN), pointer       :: imask(:)
-  real(R8), pointer          :: yc(:)
+  integer , pointer          :: imask(:)
+  real(R8), pointer          :: xc(:), yc(:)       ! arrays of model latitudes and longitudes
   real(R8), pointer          :: windFactor(:)
   real(R8), pointer          :: winddFactor(:)
   real(R8), pointer          :: qsatFactor(:)
@@ -466,13 +463,13 @@ contains
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     type(shr_strdata_type) , intent(inout) :: SDATM          ! model shr_strdata instance (output)
-    integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
-    integer(IN)            , intent(in)    :: compid         ! mct comp id
-    integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task    ! task number of master task
+    integer                , intent(in)    :: mpicom         ! mpi communicator
+    integer                , intent(in)    :: compid         ! mct comp id
+    integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task    ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
     character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie."lnd_0001")
-    integer(IN)            , intent(in)    :: logunit        ! logging unit number
+    integer                , intent(in)    :: logunit        ! logging unit number
     logical                , intent(in)    :: read_restart   ! start from restart
     logical                , intent(in)    :: scmMode        ! single column mode
     real(R8)               , intent(in)    :: scmLat         ! single column lat
@@ -490,31 +487,33 @@ contains
     type(ESMF_Mesh)        , intent(inout) :: mesh  
 
     !--- local variables ---
-    integer(IN)                  :: n,k            ! generic counters
-    integer(IN)                  :: lsize          ! local size
-    integer(IN)                  :: kmask          ! field reference
-    integer(IN)                  :: klat           ! field reference
-    integer(IN)                  :: kfld           ! fld index
-    integer(IN)                  :: cnt            ! counter
+    integer                      :: n,k            ! generic counters
+    integer                      :: lsize          ! local size
+    integer                      :: kmask          ! field reference
+    integer                      :: klat           ! field reference
+    integer                      :: kfld           ! fld index
+    integer                      :: cnt            ! counter
     logical                      :: exists,exists1 ! filename existance
-    integer(IN)                  :: nu             ! unit number
-    integer(IN)                  :: stepno         ! step number
+    integer                      :: nu             ! unit number
+    integer                      :: stepno         ! step number
     type(ESMF_DistGrid)          :: distGrid
     integer, allocatable, target :: gindex(:)
     integer                      :: rc
-
-    !--- formats ---
-    character(*), parameter :: F00   ="('(datm_comp_init) ',8a)"
-    character(*), parameter :: F05   ="('(datm_comp_init) ',a,2f10.4)"
-    character(*), parameter :: subName ="(datm_comp_init)"
+    integer                      :: dimCount
+    integer                      :: tileCount
+    integer                      :: deCount
+    integer                      :: gsize
+    integer, allocatable         :: elementCountPTile(:)
+    integer, allocatable         :: indexCountPDE(:,:)
+    integer                      :: spatialDim
+    integer                      :: numOwnedElements
+    real(R8), pointer            :: ownedElemCoords(:)
+    character(*), parameter      :: F00   ="('(datm_comp_init) ',8a)"
+    character(*), parameter      :: F01   ="('(datm_comp_init) ',a,2f10.4)"
+    character(*), parameter      :: subName ="(datm_comp_init)"
     !-------------------------------------------------------------------------------
 
-    gsmap => gsmap_target
-    ggrid => ggrid_target
-
     call t_startf('DATM_INIT')
-
-    call t_startf('datm_strdata_init')
 
     !----------------------------------------------------------------------------
     ! Initialize PIO
@@ -523,25 +522,96 @@ contains
     call shr_strdata_pioinit(SDATM, COMPID)
 
     !----------------------------------------------------------------------------
+    ! Create a data model global seqmap 
+    !----------------------------------------------------------------------------
+
+    call t_startf('datm_strdata_init')
+
+    if (my_task == master_task) write(logunit,F00) ' initialize SDATM gsmap'
+
+    ! obtain the distgrid from the mesh that was read in
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    ! determin local size on my processor
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global index space for my processor
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global size of distgrid
+    call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(elementCountPTile(tileCount))
+    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    gsize = 0
+    do n = 1,size(elementCountPTile)
+       gsize = gsize + elementCountPTile(n)
+    end do
+    deallocate(elementCountPTile)
+
+    ! create the data model gsmap given the local size, global size and gindex
+    call mct_gsMap_init( SDATM%gsmap, gindex, mpicom, compid, lsize, gsize)
+    deallocate(gindex)
+
+    !----------------------------------------------------------------------------
     ! Initialize SDATM
     !----------------------------------------------------------------------------
 
-    ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
-    ! grid and from that computes SDATM%gsmap and SDATM%ggrid. DATM%gsmap is created
-    ! using the decomp '2d1d' (1d decomp of 2d grid)
+    ! The call to shr_strdata_init_model_domain creates the SDATM%gsmap which
+    ! is a '2d1d' decommp (1d decomp of 2d grid) and also create SDATM%grid
+
+    SDATM%calendar = trim(shr_cal_calendarName(trim(calendar)))
+
     if (scmmode) then
-       if (my_task == master_task) then
-          write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
-       end if
-       call shr_strdata_init(SDATM,&
-            mpicom, compid, name='atm', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-            calendar=calendar)
+       if (my_task == master_task) write(logunit,F01) ' scm lon lat = ',scmlon,scmlat
+       call shr_strdata_init_model_domain(SDATM, mpicom, compid, my_task, &
+            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDATM%gsmap)
     else
-       call shr_strdata_init(SDATM,&
-            mpicom, compid, name='atm', &
-            calendar=calendar)
+       call shr_strdata_init_model_domain(SDATM, mpicom, compid, my_task, gsmap=SDATM%gsmap)
+    end if
+    call shr_strdata_init_streams(SDATM, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDATM, compid, mpicom, my_task)
+
+    if (my_task == master_task) then
+       call shr_strdata_print(SDATM,'SDATM data')
     endif
+
+    ! obtain mesh lats and lons
+    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(ownedElemCoords(spatialDim*numOwnedElements))
+    allocate(xc(numOwnedElements), yc(numOwnedElements))
+    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (numOwnedElements /= lsize) then
+       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
+    end if
+    do n = 1,lsize
+       xc(n) = ownedElemCoords(2*n-1)
+       yc(n) = ownedElemCoords(2*n)
+    end do
+
+    ! error check that mesh lats and lons correspond to those on the input domain file
+    index_lon = mct_aVect_indexRA(SDATM%grid%data,'lon')
+    do n = 1, lsize
+       if (abs( SDATM%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-12) then
+          write(6,*)'ERROR: lon diff = ',abs(SDATM%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
+          call shr_sys_abort()
+       end if
+    end do
+    index_lat = mct_aVect_indexRA(SDATM%grid%data,'lat')
+    do n = 1, lsize
+       if (abs( SDATM%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-12) then
+          write(6,*)'ERROR: lat diff = ',abs(SDATM%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
+          call shr_sys_abort()
+       end if
+    end do
 
     !--- overwrite mask and frac ---
     k = mct_aVect_indexRA(SDATM%grid%data,'mask')
@@ -550,63 +620,21 @@ contains
     k = mct_aVect_indexRA(SDATM%grid%data,'frac')
     SDATM%grid%data%rAttr(k,:) = 1.0_R8
 
+    allocate(imask(lsize))
+    kmask = mct_aVect_indexRA(SDATM%grid%data,'mask')
+    imask(:) = nint(SDATM%grid%data%rAttr(kmask,:))
+
     if (my_task == master_task) then
        call shr_strdata_print(SDATM,'ATM data')
     endif
 
-    call t_stopf('datm_strdata_init')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map for data component
-    !----------------------------------------------------------------------------
-
-    call t_startf('datm_initgsmaps')
-    if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-
-    ! create a data model global seqmap (gsmap) given the mesh
-    ! distgrid and the data model global grid sizes
-
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
-    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    allocate(gindex(lsize))
-    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call mct_gsMap_init( gsmap, gindex, mpicom, compid, lsize, SDATM%nxg*SDATM%nyg)
-    deallocate(gindex)
-
-    ! create a rearranger from the data model SDATM%gsmap to gsmap
-    call mct_rearr_init(SDATM%gsmap, gsmap, mpicom, rearr)
-    call t_stopf('datm_initgsmaps')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT domain
-    !----------------------------------------------------------------------------
-
-    call t_startf('datm_initmctdom')
-    if (my_task == master_task) write(logunit,F00) 'copy domains'
-
-    call shr_dmodel_rearrGGrid(SDATM%grid, ggrid, gsmap, rearr, mpicom)
-    call t_stopf('datm_initmctdom')
-
-    !----------------------------------------------------------------------------
-    ! Allocate module arrays
-    !----------------------------------------------------------------------------
+    ! allocate module arrays
 
     allocate(windFactor(lsize))
     allocate(winddFactor(lsize))
     allocate(qsatFactor(lsize))
 
-    allocate(imask(lsize))
-    kmask = mct_aVect_indexRA(ggrid%data,'mask')
-    imask(:) = nint(ggrid%data%rAttr(kmask,:))
-
-    allocate(yc(lsize))
-    klat = mct_aVect_indexRA(ggrid%data,'lat')
-    yc(:) = ggrid%data%rAttr(klat,:)
+    call t_stopf('datm_strdata_init')
 
     !----------------------------------------------------------------------------
     ! Initialize attribute vectors
@@ -737,7 +765,7 @@ contains
        ! if (exists1) then
        !    if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
        !    call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
-       !         trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
+       !         trim(rest_file),mpicom,gsmap=SDATM%gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
        ! else
        !    if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
        ! endif
@@ -797,43 +825,42 @@ contains
     type(mct_aVect)        , intent(inout) :: x2a
     type(mct_aVect)        , intent(inout) :: a2x
     type(shr_strdata_type) , intent(inout) :: SDATM
-    integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
-    integer(IN)            , intent(in)    :: compid           ! mct comp id
-    integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task      ! task number of master task
+    integer                , intent(in)    :: mpicom           ! mpi communicator
+    integer                , intent(in)    :: compid           ! mct comp id
+    integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    integer                , intent(in)    :: logunit          ! logging unit number
     real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
     real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     logical                , intent(in)    :: write_restart    ! restart alarm is on
-    integer(IN)            , intent(in)    :: target_ymd       ! model date
-    integer(IN)            , intent(in)    :: target_tod       ! model sec into model date
-    integer(IN)            , intent(in)    :: target_mon       ! model month
+    integer                , intent(in)    :: target_ymd       ! model date
+    integer                , intent(in)    :: target_tod       ! model sec into model date
+    integer                , intent(in)    :: target_mon       ! model month
     character(len=*)       , intent(in)    :: calendar         ! calendar type
-    Integer(IN)            , intent(in)    :: modeldt          ! model time step
+    Integer                , intent(in)    :: modeldt          ! model time step
     logical                , intent(in)    :: atm_prognostic
     character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)       :: n,nfld            ! indices
-    integer(IN)       :: lsize             ! size of attr vect
-    character(CL)     :: rest_file         ! restart_file
-    character(CL)     :: rest_file_strm    ! restart_file
-    integer(IN)       :: nu                ! unit number
-    integer(IN)       :: eday              ! elapsed day
-    real(R8)          :: rday              ! elapsed day
-    real(R8)          :: cosFactor         ! cosine factor
-    real(R8)          :: factor            ! generic/temporary correction factor
-    real(R8)          :: avg_alb           ! average albedo
-    real(R8)          :: tMin              ! minimum temperature
-    character(len=18) :: date_str
-    character(len=CS) :: fldname
-    real(R8)          :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
-    real(R8)          :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
-    logical           :: firstcall = .true.    ! first call logical
-
+    integer                 :: n,nfld            ! indices
+    integer                 :: lsize             ! size of attr vect
+    character(CL)           :: rest_file         ! restart_file
+    character(CL)           :: rest_file_strm    ! restart_file
+    integer                 :: nu                ! unit number
+    integer                 :: eday              ! elapsed day
+    real(R8)                :: rday              ! elapsed day
+    real(R8)                :: cosFactor         ! cosine factor
+    real(R8)                :: factor            ! generic/temporary correction factor
+    real(R8)                :: avg_alb           ! average albedo
+    real(R8)                :: tMin              ! minimum temperature
+    character(len=18)       :: date_str
+    character(len=CS)       :: fldname
+    real(R8)                :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
+    real(R8)                :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
+    logical                 :: firstcall = .true.    ! first call logical
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: F0D   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
@@ -897,7 +924,7 @@ contains
     do n = 1,SDATM%nstreams
        if (count_av(n) > 0) then
           call shr_dmodel_translateAV_list( avi=SDATM%avs(n), avo=a2x, &
-               ilist=ilist_av(n), olist=olist_av(n), rearr=rearr)
+               ilist=ilist_av(n), olist=olist_av(n))
        end if
     enddo
 
@@ -905,7 +932,7 @@ contains
     do n = 1,SDATM%nstreams
        if (count_st(n) > 0) then
           call shr_dmodel_translateAV_list( avi=SDATM%avs(n), avo=avstrm, &
-               ilist=ilist_st(n), olist=olist_st(n), rearr=rearr)
+               ilist=ilist_st(n), olist=olist_st(n))
        end if
     enddo
     call t_stopf('datm_scatter')
@@ -933,7 +960,7 @@ contains
              endif
           endif
           call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
-               mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+               mpicom,compid, SDATM%gsmap, SDATM%grid, SDATM%nxg, SDATM%nyg)
        endif
        call shr_cal_date2julian(target_ymd,target_tod,rday,calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
@@ -1055,7 +1082,7 @@ contains
             qsatFactor = 1.0_R8
           else
             call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
-                 mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+                 mpicom, compid, SDATM%gsmap, SDATM%grid, SDATM%nxg, SDATM%nyg)
           endif
        endif
        call shr_cal_date2julian(target_ymd,target_tod,rday,calendar)

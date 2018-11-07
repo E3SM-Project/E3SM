@@ -76,9 +76,8 @@ module ocn_comp_nuopc
   character(CXX)           :: flds_o2x = ''
   character(CXX)           :: flds_x2o = ''
   integer                  :: logunit                   ! logging unit number
-  integer            :: shrlogunit ! original log unit
-  integer            :: shrloglev  ! original log level
-
+  integer                  :: shrlogunit ! original log unit
+  integer                  :: shrloglev  ! original log level
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(ocn_comp_nuopc)"
   character(*),parameter   :: u_FILE_u = &
