@@ -183,6 +183,10 @@ class _TimingParser:
                                     "{}_timing{}.{}.{}".format(cime_model, inst_label, caseid, self.lid))
 
         timingDir = os.path.join(self.caseroot, "timing")
+        if not os.path.isfile(binfilename):
+            logger.warning("No timing file found in run directory")
+            return
+
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
 

@@ -1315,7 +1315,7 @@ contains
 #ifdef _PNETCDF
        ierr  = nfmpi_wait_all(file%fh, cnt-1, array_of_requests, status)
 #endif
-       if(DEBUG) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
+       if(Debug) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
 
        ptr=>file%data_list_top
        do while(associated(ptr))

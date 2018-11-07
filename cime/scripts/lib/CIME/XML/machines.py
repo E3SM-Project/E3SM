@@ -190,7 +190,6 @@ class Machines(GenericXML):
             node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
                 value = self.text(node)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
@@ -301,6 +300,7 @@ class Machines(GenericXML):
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
         tmproot = self.root
         self.root = self.machine_node
+        #pylint: disable=assignment-from-no-return
         result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
                                                ignore_type=ignore_type)
         self.root = tmproot
