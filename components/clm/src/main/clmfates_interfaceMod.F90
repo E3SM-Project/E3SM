@@ -45,6 +45,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : iulog
    use clm_varctl        , only : use_vertsoilc 
    use clm_varctl        , only : use_fates_spitfire
+   use clm_varctl        , only : fates_parteh_mode
    use clm_varctl        , only : use_fates_planthydro
    use clm_varctl        , only : use_fates_ed_st3
    use clm_varctl        , only : use_fates_ed_prescribed_phys
@@ -103,6 +104,7 @@ module CLMFatesInterfaceMod
    use FatesInterfaceMod     , only : allocate_bcout
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : set_fates_ctrlparms
+   use FatesInterfaceMod     , only : InitPARTEHGlobals
 
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
@@ -291,6 +293,7 @@ contains
       call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1)) ! FATES IGNORES
                                                                           ! AND DOESNT TOUCH
                                                                           ! THE BARE SOIL PATCH
+      call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
 
       if(is_restart()) then
          pass_is_restart = 1
@@ -492,6 +495,14 @@ contains
 
       end do
       !$OMP END PARALLEL DO
+
+      ! This will initialize all globals associated with the chosen
+      ! Plant Allocation and Reactive Transport hypothesis. This includes
+      ! mapping tables and global variables. These will be read-only
+      ! and only required once per machine instance (thus no requirements
+      ! to have it instanced on each thread
+      
+      call InitPARTEHGlobals()
 
       call this%init_history_io(bounds_proc)
       
@@ -1154,6 +1165,14 @@ contains
                call this%wrap_update_hlmfates_dyn(nc,bounds_clump, &
                      waterstate_inst,canopystate_inst,frictionvel_inst)
                
+               ! ------------------------------------------------------------------------
+               ! Update the 3D patch level radiation absorption fractions
+               ! ------------------------------------------------------------------------
+               call this%fates_restart%update_3dpatch_radiation(nc, &
+                                                                this%fates(nc)%nsites, &
+                                                                this%fates(nc)%sites, &
+                                                                this%fates(nc)%bc_out)
+
                ! ------------------------------------------------------------------------
                ! Update history IO fields that depend on ecosystem dynamics
                ! ------------------------------------------------------------------------
