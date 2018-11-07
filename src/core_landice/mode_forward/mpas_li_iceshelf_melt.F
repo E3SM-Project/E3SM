@@ -804,14 +804,12 @@ module li_iceshelf_melt
       real(kind=RKIND), dimension(2*nBinsMax) :: localGLSums, globalGLSums ! Vars for GL global reduction
       real(kind=RKIND) :: cumBinWeightedDepthSum, cumBinWeightSum !< cumulative sums over bins for final calculation
       real(kind=RKIND) :: totalBinWeight !< sum of weights in all bins
-      real(kind=RKIND), pointer :: weightThreshold !< fraction of deepest GL depths to average overn
+      real(kind=RKIND), parameter :: weightThreshold = 0.25_RKIND !< fraction of deepest GL depths to average overn
 
       integer :: indexBin
 
 
       err = 0
-
-      call mpas_pool_get_config(liConfigs, 'config_temperature_profile_GL_depth_fraction', weightThreshold)
 
       ! need to first determine bin info (could happen on init, but cheap to recompute each timestep)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
