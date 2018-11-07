@@ -1505,6 +1505,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="T62_ww3" compset="_WW3">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">ww3a</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
     <model_grid alias="T62_oQU480" compset="(DATM|XATM|SATM)">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
