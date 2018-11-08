@@ -34,8 +34,8 @@
     <category>setup</category>
     <input_pathname>abs</input_pathname>
     <values>
-      <value runtype="startup">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.seed</value>
-      <value runtype="hybrid">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.seed</value>
+      <value runtype="startup">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.calm</value>
+      <value runtype="hybrid">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.calm</value>
     </values>
     <desc>
       Initial condition file.
@@ -49,7 +49,7 @@
     <category>setup</category>
     <valid_values>0,1,2,3,4,6,8,12,24</valid_values>
     <values>
-        <value>0</value>
+        <value>3</value>
     </values>
     <desc>
       Output frequency (6 = once per 6 hours). A value of 0 turns output off.
