@@ -4469,7 +4469,6 @@ contains
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
 
-    use MathfuncMod      , only : dot_sum
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -4597,7 +4596,6 @@ contains
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
     use tracer_varcon    , only : is_active_betr_bgc
-    use MathfuncMod      , only : dot_sum
     use clm_varpar       , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
@@ -5046,7 +5044,7 @@ contains
 
        do fc = 1, num_soilc
           c = filter_soilc(fc)
-          this%hr_col(c) = dot_sum(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
+          this%hr_col(c) = dot_product(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
        enddo
     endif
     
