@@ -149,9 +149,9 @@
 ! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
-      use w3gdatmd
+      use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg
       use w3wdatmd, only: time, w3ndat, w3dimw, w3setw
-      use w3adatmd
+      use w3adatmd, only: lamult, ussx, ussy, w3naux, w3seta
       use w3idatmd, only: flags, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -161,11 +161,11 @@
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
                           nogrd, idout, fnmpre, iostyp
 !/
-      use w3initmd
-      use w3wavemd
+      use w3initmd, only: w3init 
+      use w3wavemd, only: w3wave 
 !/
-      use w3iopomd
-      use w3timemd
+      use w3iopomd, only:
+      use w3timemd, only: stme21 
       use w3cesmmd, only : casename, initfile, rstwr, runtype, histwr, outfreq
       use w3cesmmd, only : inst_index, inst_name, inst_suffix
 
