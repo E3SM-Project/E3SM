@@ -253,6 +253,12 @@ Toggle to turn on the FATES
 Toggle to turn on spitfire (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_parteh_mode" type="integer" category="physics"
+       group="clm_inparm" valid_values="">
+Switch deciding which nutrient model to use in FATES.
+</entry>
+
+
 <entry id="use_fates_logging" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
 Toggle to turn on the logging module (only relevant if FATES is being used).

@@ -27,9 +27,10 @@ module DUSTMod
   use CanopyStateType      , only : canopystate_type
   use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
+  use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
-  use VegetationType            , only : veg_pp
+  use VegetationType       , only : veg_pp
   !  
   ! !PUBLIC TYPES
   implicit none
@@ -211,7 +212,7 @@ contains
 
     !
     ! !LOCAL VARIABLES
-    integer  :: fp,p,c,l,g,m,n      ! indices
+    integer  :: fp,p,c,l,t,g,m,n      ! indices
     real(r8) :: liqfrac             ! fraction of total water that is liquid
     real(r8) :: wnd_frc_rat         ! [frc] Wind friction threshold over wind friction
     real(r8) :: wnd_frc_slt_dlt     ! [m s-1] Friction velocity increase from saltatn
@@ -241,7 +242,7 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                         & 
-         forc_rho            => atm2lnd_vars%forc_rho_downscaled_col , & ! Input:  [real(r8) (:)   ]  downscaled density (kg/m**3)                                 
+         forc_rho            => top_as%rhobot                        , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
          
          gwc_thr             => soilstate_vars%gwc_thr_col           , & ! Input:  [real(r8) (:)   ]  threshold gravimetric soil moisture based on clay content
          mss_frc_cly_vld     => soilstate_vars%mss_frc_cly_vld_col   , & ! Input:  [real(r8) (:)   ]  [frc] Mass fraction clay limited to 0.20          
@@ -350,6 +351,7 @@ contains
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
          l = veg_pp%landunit(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! only perform the following calculations if lnd_frc_mbl is non-zero 
@@ -386,7 +388,7 @@ contains
             !          subr. wnd_frc_thr_slt_get which computes dry threshold
             !          friction velocity for saltation
 
-            wnd_frc_thr_slt = tmp1 / sqrt(forc_rho(c)) * frc_thr_wet_fct * frc_thr_rgh_fct
+            wnd_frc_thr_slt = tmp1 / sqrt(forc_rho(t)) * frc_thr_wet_fct * frc_thr_rgh_fct
 
             ! reset these variables which will be updated in the following if-block
 
@@ -414,7 +416,7 @@ contains
 
             if (wnd_frc_slt > wnd_frc_thr_slt) then
                wnd_frc_rat = wnd_frc_thr_slt / wnd_frc_slt
-               flx_mss_hrz_slt_ttl = cst_slt * forc_rho(c) * (wnd_frc_slt**3.0_r8) * &
+               flx_mss_hrz_slt_ttl = cst_slt * forc_rho(t) * (wnd_frc_slt**3.0_r8) * &
                     (1.0_r8 - wnd_frc_rat) * (1.0_r8 + wnd_frc_rat) * (1.0_r8 + wnd_frc_rat) / grav
 
                ! the following loop originates from subr. dst_mbl
@@ -493,7 +495,7 @@ contains
     type(dust_type)        , intent(inout) :: dust_vars
     !
     ! !LOCAL VARIABLES
-    integer  :: p,c,g,m,n                             ! indices
+    integer  :: p,c,t,g,m,n                           ! indices
     real(r8) :: vsc_dyn_atm(bounds%begp:bounds%endp)  ! [kg m-1 s-1] Dynamic viscosity of air
     real(r8) :: vsc_knm_atm(bounds%begp:bounds%endp)  ! [m2 s-1] Kinematic viscosity of atmosphere
     real(r8) :: shm_nbr_xpn                           ! [frc] Sfc-dep exponent for aerosol-diffusion dependence on Schmidt number
@@ -510,9 +512,9 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                   & 
-         forc_pbot =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
-         forc_rho  =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
-         forc_t    =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
+         forc_pbot =>    top_as%pbot                           , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
+         forc_rho  =>    top_as%rhobot                         , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
+         forc_t    =>    top_as%tbot                           , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
          
          ram1      =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8)  (:)   ]  aerodynamical resistance (s/m)                    
          fv        =>    frictionvel_vars%fv_patch             , & ! Input:  [real(r8)  (:)   ]  friction velocity (m/s)                           
@@ -527,6 +529,7 @@ contains
       do p = bounds%begp,bounds%endp
          if (veg_pp%active(p)) then
             g = veg_pp%gridcell(p)
+            t = veg_pp%topounit(p)
             c = veg_pp%column(p)
 
             ! from subroutine dst_dps_dry (consider adding sanity checks from line 212)
@@ -536,11 +539,11 @@ contains
             ! Quasi-laminar layer resistance: call rss_lmn_get
             ! Size-independent thermokinetic properties
 
-            vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(c)/273.0_r8)**1.5_r8) * 393.0_r8 / &
-                 (forc_t(c)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
+            vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(t)/273.0_r8)**1.5_r8) * 393.0_r8 / &
+                 (forc_t(t)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
             mfp_atm = 2.0_r8 * vsc_dyn_atm(p) / &   ![m] SeP97 p. 455
-                 (forc_pbot(c)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(c))))
-            vsc_knm_atm(p) = vsc_dyn_atm(p) / forc_rho(c) ![m2 s-1] Kinematic viscosity of air
+                 (forc_pbot(t)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
+            vsc_knm_atm(p) = vsc_dyn_atm(p) / forc_rho(t) ![m2 s-1] Kinematic viscosity of air
 
             do m = 1, ndst
                slp_crc(p,m) = 1.0_r8 + 2.0_r8 * mfp_atm * &
@@ -557,10 +560,11 @@ contains
          do p = bounds%begp,bounds%endp
             if (veg_pp%active(p)) then
                g = veg_pp%gridcell(p)
+               t = veg_pp%topounit(p)
                c = veg_pp%column(p)
 
                stk_nbr = vlc_grv(p,m) * fv(p) * fv(p) / (grav * vsc_knm_atm(p))  ![frc] SeP97 p.965
-               dff_aer = SHR_CONST_BOLTZ * forc_t(c) * slp_crc(p,m) / &          ![m2 s-1]
+               dff_aer = SHR_CONST_BOLTZ * forc_t(t) * slp_crc(p,m) / &          ![m2 s-1]
                     (3.0_r8*SHR_CONST_PI * vsc_dyn_atm(p) * dmt_vwr(m))          !SeP97 p.474
                shm_nbr = vsc_knm_atm(p) / dff_aer                                ![frc] SeP97 p.972
                shm_nbr_xpn = shm_nbr_xpn_lnd                                     ![frc]

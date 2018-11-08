@@ -7,7 +7,7 @@
 #SBATCH --time=1:30:00
 #XXSBATCH -N 20
 #XXSBATCH --time=5:00:00
-#PBS -l walltime=60:00
+#PBS -l walltime=20:00
 #PBS -l nodes=20
 #PBS -q acme
 #

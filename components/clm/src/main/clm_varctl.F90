@@ -195,6 +195,10 @@ module clm_varctl
   logical, public            :: use_fates_ed_prescribed_phys = .false. ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.     ! true => initialize fates from inventory
   character(len=256), public :: fates_inventory_ctrl_filename = ''     ! filename for inventory control
+  integer, public            :: fates_parteh_mode = -9                 ! 1 => carbon only
+                                                                       ! 2 => C+N+P (not enabled yet)
+                                                                       ! no others enabled
+
 
   !----------------------------------------------------------
   !  BeTR switches

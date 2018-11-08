@@ -23,6 +23,7 @@ module CanopyHydrologyMod
   use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
+  use TopounitType    , only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnType      , only : col_pp                
   use VegetationType       , only : veg_pp                
   !
@@ -135,6 +136,7 @@ contains
      integer  :: p                                            ! patch index
      integer  :: c                                            ! column index
      integer  :: l                                            ! landunit index
+     integer  :: t                                            ! topounit index
      integer  :: g                                            ! gridcell index
      integer  :: newnode                                      ! flag when new snow node is set, (1=yes, 0=no)
      real(r8) :: dtime                                        ! land model time step (sec)
@@ -164,7 +166,8 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
-          pgridcell            => veg_pp%gridcell                             , & ! Input:  [integer  (:)   ]  pft's gridcell                           
+          pgridcell            => veg_pp%gridcell                             , & ! Input:  [integer  (:)   ]  pft's gridcell
+          ptopounit            => veg_pp%topounit                             , & ! Input:  [integer  (:)   ]  pft's topounit
           plandunit            => veg_pp%landunit                             , & ! Input:  [integer  (:)   ]  pft's landunit                           
           pcolumn              => veg_pp%column                               , & ! Input:  [integer  (:)   ]  pft's column                             
           ltype                => lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
@@ -180,9 +183,9 @@ contains
           dz                   => col_pp%dz                                   , & ! Output: [real(r8) (:,:) ]  layer depth (m)                       
           z                    => col_pp%z                                    , & ! Output: [real(r8) (:,:) ]  layer thickness (m)                   
 
-          forc_rain            => atm2lnd_vars%forc_rain_downscaled_col    , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                        
-          forc_snow            => atm2lnd_vars%forc_snow_downscaled_col    , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                        
-          forc_t               => atm2lnd_vars%forc_t_downscaled_col       , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
+          forc_rain            => top_af%rain                              , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
+          forc_snow            => top_af%snow                              , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
+          forc_t               => top_as%tbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
           qflx_floodg          => atm2lnd_vars%forc_flood_grc              , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
           dewmx                => canopystate_vars%dewmx_patch             , & ! Input:  [real(r8) (:)   ]  Maximum allowed dew [mm]                
@@ -231,6 +234,7 @@ contains
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
+          t = ptopounit(p)
           l = plandunit(p)
           c = pcolumn(p)
 
@@ -250,11 +254,11 @@ contains
 
              if (ctype(c) /= icol_sunwall .and. ctype(c) /= icol_shadewall) then
 
-                if (frac_veg_nosno(p) == 1 .and. (forc_rain(c) + forc_snow(c)) > 0._r8) then
+                if (frac_veg_nosno(p) == 1 .and. (forc_rain(t) + forc_snow(t)) > 0._r8) then
 
                    ! determine fraction of input precipitation that is snow and rain
-                   fracsnow(p) = forc_snow(c)/(forc_snow(c) + forc_rain(c))
-                   fracrain(p) = forc_rain(c)/(forc_snow(c) + forc_rain(c))
+                   fracsnow(p) = forc_snow(t)/(forc_snow(t) + forc_rain(t))
+                   fracrain(p) = forc_rain(t)/(forc_snow(t) + forc_rain(t))
 
                    ! The leaf water capacities for solid and liquid are different,
                    ! generally double for snow, but these are of somewhat less
@@ -268,11 +272,11 @@ contains
                    fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
 
                    ! Direct throughfall
-                   qflx_through_snow(p) = forc_snow(c) * (1._r8-fpi)
-                   qflx_through_rain(p) = forc_rain(c) * (1._r8-fpi)
+                   qflx_through_snow(p) = forc_snow(t) * (1._r8-fpi)
+                   qflx_through_rain(p) = forc_rain(t) * (1._r8-fpi)
 
                    ! Intercepted precipitation [mm/s]
-                   qflx_prec_intr(p) = (forc_snow(c) + forc_rain(c)) * fpi
+                   qflx_prec_intr(p) = (forc_snow(t) + forc_rain(t)) * fpi
 
                    ! Water storage of intercepted precipitation and dew
                    h2ocan(p) = max(0._r8, h2ocan(p) + dtime*qflx_prec_intr(p))
@@ -309,8 +313,8 @@ contains
 
           if (ctype(c) /= icol_sunwall .and. ctype(c) /= icol_shadewall) then
              if (frac_veg_nosno(p) == 0) then
-                qflx_prec_grnd_snow(p) = forc_snow(c)
-                qflx_prec_grnd_rain(p) = forc_rain(c)
+                qflx_prec_grnd_snow(p) = forc_snow(t)
+                qflx_prec_grnd_rain(p) = forc_rain(t)
              else
                 qflx_prec_grnd_snow(p) = qflx_through_snow(p) + (qflx_candrip(p) * fracsnow(p))
                 qflx_prec_grnd_rain(p) = qflx_through_rain(p) + (qflx_candrip(p) * fracrain(p))
@@ -380,6 +384,7 @@ contains
        do f = 1, num_nolakec
           c = filter_nolakec(f)
           l = clandunit(c)
+          t = col_pp%topounit(c)
           g = cgridcell(c)
 
           ! Use Alta relationship, Anderson(1976); LaChapelle(1961),
@@ -403,10 +408,10 @@ contains
              frac_sno(c)=1._r8
              int_snow(c) = 5.e2_r8
           else
-             if (forc_t(c) > tfrz + 2._r8) then
+             if (forc_t(t) > tfrz + 2._r8) then
                 bifall=50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
-             else if (forc_t(c) > tfrz - 15._r8) then
-                bifall=50._r8 + 1.7_r8*(forc_t(c) - tfrz + 15._r8)**1.5_r8
+             else if (forc_t(t) > tfrz - 15._r8) then
+                bifall=50._r8 + 1.7_r8*(forc_t(t) - tfrz + 15._r8)**1.5_r8
              else
                 bifall=50._r8
              end if
@@ -546,7 +551,7 @@ contains
              dz(c,0) = snow_depth(c)                       ! meter
              z(c,0) = -0.5_r8*dz(c,0)
              zi(c,-1) = -dz(c,0)
-             t_soisno(c,0) = min(tfrz, forc_t(c))      ! K
+             t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
              h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
              h2osoi_liq(c,0) = 0._r8                   ! kg/m2
              frac_iceold(c,0) = 1._r8

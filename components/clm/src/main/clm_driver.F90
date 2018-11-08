@@ -124,7 +124,8 @@ module clm_driver
   use clm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
-  use GridcellType           , only : grc_pp                
+  use GridcellType           , only : grc_pp
+  use TopounitType           , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp
@@ -549,7 +550,7 @@ contains
        ! over the patch index range defined by bounds_clump%begp:bounds_proc%endp
        
        if(use_fates) then
-          call alm_fates%wrap_sunfrac(bounds_clump,atm2lnd_vars, canopystate_vars)
+          call alm_fates%wrap_sunfrac(bounds_clump, top_af, canopystate_vars)
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
                                        atm2lnd_vars, surfalb_vars, canopystate_vars,    &
@@ -1100,9 +1101,9 @@ contains
                 write(iulog,*)  'clm: calling FATES model ', get_nstep()
              end if
              
-             call alm_fates%dynamics_driv( bounds_clump,               &
-                  atm2lnd_vars, soilstate_vars, temperature_vars,     &
-                  waterstate_vars, canopystate_vars, carbonflux_vars, &
+             call alm_fates%dynamics_driv( bounds_clump, top_as,          &
+                  top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
+                  waterstate_vars, canopystate_vars, carbonflux_vars,     &
                   frictionvel_vars)
 
              
@@ -1295,6 +1296,10 @@ contains
        call t_startf('accum')
        
        call atm2lnd_vars%UpdateAccVars(bounds_proc)
+       
+       call top_as%UpdateAccVars(bounds_proc)
+       
+       call top_af%UpdateAccVars(bounds_proc)
        
        call temperature_vars%UpdateAccVars(bounds_proc)
        

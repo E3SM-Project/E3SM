@@ -19,8 +19,9 @@ module SoilFluxesMod
   use TemperatureType   , only : temperature_type
   use WaterstateType    , only : waterstate_type
   use WaterfluxType     , only : waterflux_type
-  use LandunitType	, only : lun_pp                
-  use ColumnType	, only : col_pp                
+  use TopounitType      , only : top_af
+  use LandunitType	   , only : lun_pp                
+  use ColumnType	      , only : col_pp                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -66,7 +67,7 @@ contains
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: p,c,g,j,pi,l                                       ! indices
+    integer  :: p,c,t,g,j,pi,l                                     ! indices
     integer  :: fc,fp                                              ! lake filtered column and pft indices
     real(r8) :: dtime                                              ! land model time step (sec)
     real(r8) :: egsmax(bounds%begc:bounds%endc)                    ! max. evaporation which soil can provide at one time step
@@ -84,7 +85,7 @@ contains
 
     associate(                                                                &
          eflx_h2osfc_to_snow_col => energyflux_vars%eflx_h2osfc_to_snow_col , & ! Input:  [real(r8) (:)   ]  col snow melt to h2osfc heat flux (W/m**2)
-         forc_lwrad              => atm2lnd_vars%forc_lwrad_downscaled_col  , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
+         forc_lwrad              => top_af%lwrad                            , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
 
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer (:)    ]  fraction of veg not covered by snow (0/1 now) [-]
 
@@ -258,6 +259,7 @@ contains
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
          l = veg_pp%landunit(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
          j = col_pp%snl(c)+1
 
@@ -281,7 +283,7 @@ contains
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
             eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
-                 + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                 + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
                  - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
                  - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
@@ -407,6 +409,7 @@ contains
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
          l = veg_pp%landunit(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
          j = col_pp%snl(c)+1
 
@@ -416,13 +419,13 @@ contains
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
             eflx_lwrad_out(p) = ulrad(p) &
-                 + (1-frac_veg_nosno(p))*(1.-emg(c))*forc_lwrad(c) &
+                 + (1-frac_veg_nosno(p))*(1.-emg(c))*forc_lwrad(t) &
                  + (1-frac_veg_nosno(p))*emg(c)*sb*lw_grnd &
                  + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
 
-            eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(c)
+            eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(t)
             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-               eflx_lwrad_net_r(p) = eflx_lwrad_out(p) - forc_lwrad(c)
+               eflx_lwrad_net_r(p) = eflx_lwrad_out(p) - forc_lwrad(t)
                eflx_lwrad_out_r(p) = eflx_lwrad_out(p)
             end if
          else
