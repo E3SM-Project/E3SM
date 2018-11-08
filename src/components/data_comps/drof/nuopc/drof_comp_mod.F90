@@ -5,7 +5,7 @@ module drof_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
@@ -18,7 +18,7 @@ module drof_comp_mod
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain 
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
   use shr_strdata_mod       , only : shr_strdata_init_mapping
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
@@ -86,7 +86,7 @@ contains
     character(len=*)     , intent(out) :: flds_x2r
     integer              , intent(out) :: rc
 
-    ! local variables 
+    ! local variables
     integer :: n
     !-------------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ contains
     !-------------------
     ! export fields
     !-------------------
-    
+
     ! scalar fields that need to be advertised
 
     fldsFrRof_num=1
@@ -152,7 +152,7 @@ contains
     integer                , intent(in)    :: target_ymd   ! model date
     integer                , intent(in)    :: target_tod   ! model sec into model date
     character(len=*)       , intent(in)    :: calendar     ! model calendar
-    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh 
+    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
 
     ! local variables
     integer                      :: n,k     ! generic counters
@@ -189,7 +189,7 @@ contains
     call shr_strdata_pioinit(SDROF, COMPID)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global segmap 
+    ! Create a data model global segmap
     !----------------------------------------------------------------------------
 
     call t_startf('drof_strdata_init')
@@ -197,9 +197,9 @@ contains
     if (my_task == master_task) write(logunit,F00) ' initialize SDROF gsmap'
 
     ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -236,8 +236,6 @@ contains
     SDROF%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
     call shr_strdata_init_model_domain(SDROF, mpicom, compid, my_task, gsmap=SDROF%gsmap)
-    call shr_strdata_init_streams(SDROF, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(SDROF, compid, mpicom, my_task)
 
     if (my_task == master_task) then
        call shr_strdata_print(SDROF,'SDROF data')
@@ -265,6 +263,7 @@ contains
           write(6,*)'ERROR: lon diff = ',abs(SDROF%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDROF%grid%data%rattr(index_lon,n) = xc(n) ! overwrite ggrid with mesh data
     end do
     index_lat = mct_aVect_indexRA(SDROF%grid%data,'lat')
     do n = 1, lsize
@@ -272,7 +271,15 @@ contains
           write(6,*)'ERROR: lat diff = ',abs(SDROF%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDROF%grid%data%rattr(index_lat,n) = yc(n) ! overwrite ggrid with mesh data
     end do
+
+    !----------------------------------------------------------------------------
+    ! Initialize SDROF attributes for streams and mapping of streams to model domain
+    !----------------------------------------------------------------------------
+
+    call shr_strdata_init_streams(SDROF, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDROF, compid, mpicom, my_task)
 
     call t_stopf('drof_strdata_init')
 
@@ -285,7 +292,6 @@ contains
 
     call mct_aVect_init(x2r, rList=flds_x2r_mod, lsize=lsize)
     call mct_aVect_zero(x2r)
-
     call mct_aVect_init(r2x, rList=flds_r2x_mod, lsize=lsize)
     call mct_aVect_zero(r2x)
     call t_stopf('drof_initmctavs')

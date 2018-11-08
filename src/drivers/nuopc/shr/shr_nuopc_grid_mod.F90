@@ -628,7 +628,7 @@ contains
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call shr_nuopc_methods_State_reset(state, value = 0._r8, rc=rc)
+    call shr_nuopc_methods_State_reset(state, value = 0.0_r8, rc=rc)
 
     lsize = size(array, dim=2)
     nflds = shr_string_listGetNum(rList)
@@ -642,13 +642,11 @@ contains
       else
          call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
          call ESMF_FieldGet(lfield, farrayPtr=farray1, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
          do n = 1,lsize
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
             farray1(n) = array(nf,n)
          enddo
-
-         write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",&
-              minval(farray1),maxval(farray1),sum(farray1)
+         write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",minval(farray1),maxval(farray1),sum(farray1)
          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
       end if
     enddo

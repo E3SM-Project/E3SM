@@ -5,12 +5,12 @@ module datm_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_gsmap_init
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize 
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize
   use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_const_mod         , only : SHR_CONST_TKFRZ
   use shr_const_mod         , only : SHR_CONST_PI
@@ -25,7 +25,7 @@ module datm_comp_mod
   use shr_cal_mod           , only : shr_cal_date2julian, shr_cal_datetod2string
   use shr_mpi_mod           , only : shr_mpi_bcast, shr_mpi_max
   use shr_precip_mod        , only : shr_precip_partition_rain_snow_ramp
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain 
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
   use shr_strdata_mod       , only : shr_strdata_init_mapping
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
@@ -84,7 +84,6 @@ module datm_comp_mod
   integer                    :: srh_16O, srh_18O, srh_HDO, sprecn_16O, sprecn_18O, sprecn_HDO
   integer                    :: sprecsf
   integer                    :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
-  integer                    :: index_lat, index_lon
 
   type(mct_avect)            :: avstrm         ! av of data from stream
   character(len=CS), pointer :: avifld(:)      ! character array for field names coming from streams
@@ -101,8 +100,7 @@ module datm_comp_mod
   character(len=CXX)         :: flds_a2x_mod
   character(len=CXX)         :: flds_x2a_mod
 
-  integer , pointer          :: imask(:)
-  real(R8), pointer          :: xc(:), yc(:)       ! arrays of model latitudes and longitudes
+  real(R8), pointer          :: xc(:), yc(:)   ! arrays of model latitudes and longitudes
   real(R8), pointer          :: windFactor(:)
   real(R8), pointer          :: winddFactor(:)
   real(R8), pointer          :: qsatFactor(:)
@@ -139,7 +137,7 @@ contains
 
     ! 1. determine export and import fields to advertise to mediator
     ! 2. determine translation of fields from streams to export/import fields
-    ! 3. determine module indices for attribute vectors 
+    ! 3. determine module indices for attribute vectors
 
     ! input/output arguments
     type(ESMF_State)                   :: importState
@@ -242,7 +240,7 @@ contains
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
        call dshr_fld_add(data_fld="co2prog", data_fld_array=avifld, model_fld="Sa_co2prog", model_fld_array=avofld, &
             model_fld_concat=flds_x2a,    fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-       
+
        call dshr_fld_add(data_fld="co2diag", data_fld_array=avifld, model_fld="Sa_co2diag", model_fld_array=avofld, &
             model_fld_concat=flds_x2a,    fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
     end if
@@ -376,7 +374,7 @@ contains
        call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
-    
+
     if (atm_prognostic) then
        do n = 1,fldsToAtm_num
           call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, rc=rc)
@@ -397,9 +395,9 @@ contains
 
     ! - stifld is a character array of stream field names
     ! - stofld is a character array of data model field names that have a one-to-one correspondence with names in stifld
-    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY 
+    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY
     !   those field names that are available in the data streams present in SDATM%sdatm
-    ! - avstrm is an attribute vector created from flds_strm 
+    ! - avstrm is an attribute vector created from flds_strm
 
     call dshr_fld_add(data_fld="wind"      , data_fld_array=stifld, model_fld="strm_wind"      , model_fld_array=stofld)
     call dshr_fld_add(data_fld="tdew"      , data_fld_array=stifld, model_fld="strm_tdew"      , model_fld_array=stofld)
@@ -484,13 +482,13 @@ contains
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: current_mon    ! model month
     logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
-    type(ESMF_Mesh)        , intent(inout) :: mesh  
+    type(ESMF_Mesh)        , intent(inout) :: mesh
 
     !--- local variables ---
     integer                      :: n,k            ! generic counters
     integer                      :: lsize          ! local size
     integer                      :: kmask          ! field reference
-    integer                      :: klat           ! field reference
+    integer                      :: klon,klat      ! field reference
     integer                      :: kfld           ! fld index
     integer                      :: cnt            ! counter
     logical                      :: exists,exists1 ! filename existance
@@ -522,7 +520,7 @@ contains
     call shr_strdata_pioinit(SDATM, COMPID)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global seqmap 
+    ! Create a data model global seqmap
     !----------------------------------------------------------------------------
 
     call t_startf('datm_strdata_init')
@@ -530,9 +528,9 @@ contains
     if (my_task == master_task) write(logunit,F00) ' initialize SDATM gsmap'
 
     ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -575,8 +573,6 @@ contains
     else
        call shr_strdata_init_model_domain(SDATM, mpicom, compid, my_task, gsmap=SDATM%gsmap)
     end if
-    call shr_strdata_init_streams(SDATM, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(SDATM, compid, mpicom, my_task)
 
     if (my_task == master_task) then
        call shr_strdata_print(SDATM,'SDATM data')
@@ -598,37 +594,48 @@ contains
     end do
 
     ! error check that mesh lats and lons correspond to those on the input domain file
-    index_lon = mct_aVect_indexRA(SDATM%grid%data,'lon')
+    klon = mct_aVect_indexRA(SDATM%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDATM%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-12) then
-          write(6,*)'ERROR: lon diff = ',abs(SDATM%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
+       if (abs( SDATM%grid%data%rattr(klon,n) - xc(n)) > 1.e-5) then
+          write(6,*)'ERROR: DATM n, lon(domain), lon(mesh) = ',n, SDATM%grid%data%rattr(klon,n),xc(n)
+          write(6,*)'ERROR: DATM lon diff = ',abs(SDATM%grid%data%rattr(klon,n) -  xc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDATM%grid%data%rattr(klon,n) = xc(n) ! overwrite ggrid with mesh data
+       xc(n) = SDATM%grid%data%rattr(klon,n)
     end do
-    index_lat = mct_aVect_indexRA(SDATM%grid%data,'lat')
+    klat = mct_aVect_indexRA(SDATM%grid%data,'lat')
     do n = 1, lsize
-       if (abs( SDATM%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-12) then
-          write(6,*)'ERROR: lat diff = ',abs(SDATM%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
+       if (abs( SDATM%grid%data%rattr(klat,n) -  yc(n)) > 1.e-5) then
+          write(6,*)'ERROR: DATM n, lat(domain), lat(mesh) = ',n,SDATM%grid%data%rattr(klat,n),yc(n)
+          write(6,*)'ERROR: DATM lat diff = ',abs(SDATM%grid%data%rattr(klat,n) -  yc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDATM%grid%data%rattr(klat,n) = yc(n) ! overwrite ggrid with mesh data
+       yc(n) = SDATM%grid%data%rattr(klat,n)
     end do
 
-    !--- overwrite mask and frac ---
+    ! overwrite mask and frac
     k = mct_aVect_indexRA(SDATM%grid%data,'mask')
     SDATM%grid%data%rAttr(k,:) = 1.0_R8
 
     k = mct_aVect_indexRA(SDATM%grid%data,'frac')
     SDATM%grid%data%rAttr(k,:) = 1.0_R8
 
-    allocate(imask(lsize))
-    kmask = mct_aVect_indexRA(SDATM%grid%data,'mask')
-    imask(:) = nint(SDATM%grid%data%rAttr(kmask,:))
-
     if (my_task == master_task) then
        call shr_strdata_print(SDATM,'ATM data')
     endif
 
+    !----------------------------------------------------------------------------
+    ! Initialize SDATM attributes for streams and mapping of streams to model domain
+    !----------------------------------------------------------------------------
+
+    call shr_strdata_init_streams(SDATM, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDATM, compid, mpicom, my_task)
+
+    !----------------------------------------------------------------------------
     ! allocate module arrays
+    !----------------------------------------------------------------------------
 
     allocate(windFactor(lsize))
     allocate(winddFactor(lsize))
@@ -645,7 +652,6 @@ contains
 
     call mct_aVect_init(a2x, rList=flds_a2x_mod, lsize=lsize)
     call mct_aVect_zero(a2x)
-
     call mct_aVect_init(x2a, rList=flds_x2a_mod, lsize=lsize)
     call mct_aVect_zero(x2a)
 
@@ -676,7 +682,7 @@ contains
     if (my_task == master_task) write(logunit,F00) ' flds_strm = ',trim(flds_strm)
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
-    
+
     ! Note: because the following needs to occur AFTER we determine the fields in
     ! flds_strm - the indices below CANNOT be set in the datm_comp_advertise phase
 

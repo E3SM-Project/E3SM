@@ -6,7 +6,7 @@ module dice_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_gsmap_init
@@ -23,7 +23,7 @@ module dice_comp_mod
   use shr_sys_mod           , only : shr_sys_abort
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain 
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
   use shr_strdata_mod       , only : shr_strdata_init_mapping
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
@@ -368,7 +368,7 @@ contains
     real(R8)               , intent(in)    :: scmLat           ! single column lat
     real(R8)               , intent(in)    :: scmLon           ! single column lon
     character(len=*)       , intent(in)    :: calendar         ! calendar type
-    type(ESMF_Mesh)        , intent(in)    :: mesh             ! ESMF dice mesh 
+    type(ESMF_Mesh)        , intent(in)    :: mesh             ! ESMF dice mesh
 
     !--- local variables ---
     integer                      :: n,k            ! generic counters
@@ -403,7 +403,7 @@ contains
     call shr_strdata_pioinit(SDICE, compid)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global segmap 
+    ! Create a data model global segmap
     !----------------------------------------------------------------------------
 
     call t_startf('dice_strdata_init')
@@ -411,9 +411,9 @@ contains
     if (my_task == master_task) write(logunit,F00) ' initialize SDICE gsmap'
 
     ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -456,8 +456,6 @@ contains
     else
        call shr_strdata_init_model_domain(SDICE, mpicom, compid, my_task, gsmap=SDICE%gsmap)
     end if
-    call shr_strdata_init_streams(SDICE, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(SDICE, compid, mpicom, my_task)
 
     if (my_task == master_task) then
        call shr_strdata_print(SDICE,'SDICE data')
@@ -481,17 +479,19 @@ contains
     ! error check that mesh lats and lons correspond to those on the input domain file
     index_lon = mct_aVect_indexRA(SDICE%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDICE%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-12) then
+       if (abs( SDICE%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-4) then
           write(6,*)'ERROR: lon diff = ',abs(SDICE%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDICE%grid%data%rattr(index_lon,n) = xc(n) ! overwrite ggrid with mesh data
     end do
     index_lat = mct_aVect_indexRA(SDICE%grid%data,'lat')
     do n = 1, lsize
-       if (abs( SDICE%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-12) then
+       if (abs( SDICE%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-4) then
           write(6,*)'ERROR: lat diff = ',abs(SDICE%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDICE%grid%data%rattr(index_lat,n) = yc(n) ! overwrite ggrid with mesh data
     end do
 
     ! Note that the module array, imask, does not change after initialization
@@ -504,6 +504,13 @@ contains
     endif
 
     call t_stopf('dice_strdata_init')
+
+    !----------------------------------------------------------------------------
+    ! Initialize SDICE attributes for streams and mapping of streams to model domain
+    !----------------------------------------------------------------------------
+
+    call shr_strdata_init_streams(SDICE, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDICE, compid, mpicom, my_task)
 
     !----------------------------------------------------------------------------
     ! Initialize MCT attribute vectors

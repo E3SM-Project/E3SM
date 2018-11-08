@@ -6,12 +6,12 @@ module docn_comp_mod
   ! !USES:
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State 
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use ESMF                  , only : ESMF_State, ESMF_LOGMSG_INFO, ESMF_LogWrite
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize 
+  use mct_mod               , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
   use med_constants_mod     , only : R8, CS, CXX
@@ -27,7 +27,7 @@ module docn_comp_mod
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain 
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
   use shr_strdata_mod       , only : shr_strdata_init_mapping
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
@@ -68,26 +68,26 @@ module docn_comp_mod
   real(R8),parameter         :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
   integer                    :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp ! field indices
-  integer                    :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
+  integer                    :: kswnet,klwup,klwdn
+  integer                    :: ksen,klat,kmelth,ksnow,krofi
   integer                    :: kh,kqbot
-  integer                    :: index_lat, index_lon
-  integer                    :: kmask, kfrac ! frac and mask field indices of docn domain
-  integer                    :: ksomask      ! So_omask field index
+  integer                    :: kmask, kfrac                    ! frac and mask field indices of docn domain
+  integer                    :: ksomask                         ! So_omask field index
 
-  type(mct_avect)            :: avstrm             ! av of data created from all stream input
-  character(len=CS), pointer :: avifld(:)          ! names of fields in input streams
-  character(len=CS), pointer :: avofld(:)          ! local names of fields in input streams for import/export
-  character(len=CS), pointer :: stifld(:)          ! names of fields in input streams
-  character(len=CS), pointer :: stofld(:)          ! local names of fields in input streams for calculations
-  character(CXX)             :: flds_strm = ''     ! set in docn_comp_init
-  character(len=CXX)         :: flds_o2x_mod       ! set in docn_comp_advertise
-  character(len=CXX)         :: flds_x2o_mod       ! set in docn_comp_advertise
-  logical                    :: ocn_prognostic_mod ! set in docn_comp_advertise
+  type(mct_avect)            :: avstrm                          ! av of data created from all stream input
+  character(len=CS), pointer :: avifld(:)                       ! names of fields in input streams
+  character(len=CS), pointer :: avofld(:)                       ! local names of fields in input streams for import/export
+  character(len=CS), pointer :: stifld(:)                       ! names of fields in input streams
+  character(len=CS), pointer :: stofld(:)                       ! local names of fields in input streams for calculations
+  character(CXX)             :: flds_strm = ''                  ! set in docn_comp_init
+  character(len=CXX)         :: flds_o2x_mod                    ! set in docn_comp_advertise
+  character(len=CXX)         :: flds_x2o_mod                    ! set in docn_comp_advertise
+  logical                    :: ocn_prognostic_mod              ! set in docn_comp_advertise
 
-  real(R8), pointer          :: somtp(:)           ! SOM ocean temperature
-  real(R8), pointer          :: tfreeze(:)         ! SOM ocean freezing temperature
-  integer    , pointer       :: imask(:)           ! integer ocean mask
-  real(R8), pointer          :: xc(:), yc(:)       ! arrays of model latitudes and longitudes
+  integer , pointer          :: imask(:)                        ! integer ocean mask
+  real(R8), pointer          :: xc(:), yc(:)                    ! arrays of model latitudes and longitudes
+  real(R8), pointer          :: somtp(:)                        ! SOM ocean temperature
+  real(R8), pointer          :: tfreeze(:)                      ! SOM ocean freezing temperature
 
   logical                    :: firstcall = .true.              ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ocn'         ! name of ocean ropinter file
@@ -235,7 +235,7 @@ contains
 
   subroutine docn_comp_init(x2o, o2x, &
        SDOCN, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, &
+       inst_suffix, logunit, read_restart, &
        scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh)
 
 
@@ -251,7 +251,6 @@ contains
     integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task    ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
     integer                , intent(in)    :: logunit        ! logging unit number
     logical                , intent(in)    :: read_restart   ! start from restart
     logical                , intent(in)    :: scmMode        ! single column mode
@@ -261,7 +260,7 @@ contains
     integer                , intent(in)    :: current_ymd    ! model date
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt        ! model time step
-    type(ESMF_Mesh)        , intent(in)    :: mesh           ! ESMF docn mesh 
+    type(ESMF_Mesh)        , intent(in)    :: mesh           ! ESMF docn mesh
 
     !--- local variables ---
     integer                        :: n,k      ! generic counters
@@ -284,6 +283,7 @@ contains
     integer                        :: spatialDim
     integer                        :: numOwnedElements
     real(R8), pointer              :: ownedElemCoords(:)
+    integer                        :: klat, klon
     character(*), parameter        :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter        :: F05   = "('(docn_comp_init) ',a,2f10.4)"
     character(*), parameter        :: F06   = "('(docn_comp_init) ',a,f10.4)"
@@ -299,7 +299,7 @@ contains
     call shr_strdata_pioinit(SDOCN, COMPID)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global seqmap 
+    ! Create a data model global seqmap
     !----------------------------------------------------------------------------
 
     call t_startf('docn_strdata_init')
@@ -307,9 +307,9 @@ contains
     if (my_task == master_task) write(logunit,F00) ' initialize DOCN gsmap'
 
     ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -337,7 +337,7 @@ contains
     deallocate(gindex)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDOCN
+    ! Initialize SDOCN model domain attributes
     !----------------------------------------------------------------------------
 
     ! The call to shr_strdata_init_model_domain creates the SDOCN%gsmap which
@@ -355,8 +355,6 @@ contains
     else
        call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, gsmap=SDOCN%gsmap)
     end if
-    call shr_strdata_init_streams(SDOCN, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(SDOCN, compid, mpicom, my_task)
 
     if (my_task == master_task) then
        call shr_strdata_print(SDOCN,'SDOCN data')
@@ -378,25 +376,36 @@ contains
     end do
 
     ! error check that mesh lats and lons correspond to those on the input domain file
-    index_lon = mct_aVect_indexRA(SDOCN%grid%data,'lon')
+    klon = mct_aVect_indexRA(SDOCN%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDOCN%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-12) then
-          write(6,*)'ERROR: lon diff = ',abs(SDOCN%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
+       if (abs( SDOCN%grid%data%rattr(klon,n) - xc(n)) > 1.e-4) then
+          write(6,*)'ERROR: DOCN lon diff = ',abs(SDOCN%grid%data%rattr(klon,n) -  xc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDOCN%grid%data%rattr(klon,n) = xc(n) ! overwrite ggrid with mesh data
+       xc(n) = SDOCN%grid%data%rattr(klon,n)  ! overwrite mesh data with ggrid data
     end do
-    index_lat = mct_aVect_indexRA(SDOCN%grid%data,'lat')
+    klat = mct_aVect_indexRA(SDOCN%grid%data,'lat')
     do n = 1, lsize
-       if (abs( SDOCN%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-12) then
-          write(6,*)'ERROR: lat diff = ',abs(SDOCN%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
+       if (abs( SDOCN%grid%data%rattr(klat,n) -  yc(n)) > 1.e-4) then
+          write(6,*)'ERROR: DOCN lat diff = ',abs(SDOCN%grid%data%rattr(klat,n) -  yc(n)),' too large'
           call shr_sys_abort()
        end if
+       !SDOCN%grid%data%rattr(klat,n) = yc(n)
+       yc(n) = SDOCN%grid%data%rattr(klat,n)
     end do
 
-    ! determine imask
+    ! determine module mask array (imask)
     allocate(imask(lsize))
     kmask = mct_aVect_indexRA(SDOCN%grid%data,'mask')
     imask(:) = nint(SDOCN%grid%data%rAttr(kmask,:))
+
+    !----------------------------------------------------------------------------
+    ! Initialize the SDOCN streams and mapping of streams to model domain
+    !----------------------------------------------------------------------------
+
+    call shr_strdata_init_streams(SDOCN, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDOCN, compid, mpicom, my_task)
 
     !----------------------------------------------------------------------------
     ! Allocate module arrays

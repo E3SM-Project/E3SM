@@ -231,7 +231,6 @@ module ocn_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)  :: convCIM, purpComp
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_Time)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
@@ -243,7 +242,6 @@ module ocn_comp_nuopc
     integer                 :: current_day               ! model day
     integer                 :: current_tod               ! model sec into model date
     integer                 :: modeldt                   ! model timestep
-    integer                 :: nx_global, ny_global
     integer                 :: n
     character(CL)           :: cvalue
     integer                 :: ierr                      ! error code
@@ -338,7 +336,7 @@ module ocn_comp_nuopc
 
     call docn_comp_init(x2o, o2x, &
          SDOCN, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
+         inst_suffix, logunit, read_restart, &
          scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, Emesh)
 
     !--------------------------------
@@ -382,13 +380,11 @@ module ocn_comp_nuopc
     call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    nx_global = SDOCN%nxg
-    ny_global = SDOCN%nyg
-    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDOCN%nxg),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDOCN%nyg),flds_scalar_index_ny, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -428,7 +424,6 @@ module ocn_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)  :: convCIM, purpComp
     type(ESMF_Clock)        :: clock
     type(ESMF_State)        :: importState, exportState
     type(ESMF_Time)         :: time

@@ -25,7 +25,6 @@ module lnd_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
@@ -33,7 +32,7 @@ module lnd_comp_nuopc
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dlnd_shr_mod          , only : dlnd_shr_read_namelists
   use dlnd_comp_mod         , only : dlnd_comp_init, dlnd_comp_run, dlnd_comp_advertise
-  use mct_mod
+  use mct_mod               , only : mct_Avect, mct_Avect_info 
 
   implicit none
   private ! except
@@ -54,12 +53,7 @@ module lnd_comp_nuopc
   type (fld_list_type)       :: fldsToLnd(fldsMax)
   type (fld_list_type)       :: fldsFrLnd(fldsMax)
 
-  character(len=3)           :: myModelName = 'lnd'       ! user defined model name
   type(shr_strdata_type)     :: SDLND
-  type(mct_gsMap), target    :: gsMap_target
-  type(mct_gGrid), target    :: ggrid_target
-  type(mct_gsMap), pointer   :: gsMap
-  type(mct_gGrid), pointer   :: ggrid
   type(mct_aVect)            :: x2d
   type(mct_aVect)            :: d2x
   integer                    :: compid                    ! mct comp id
@@ -135,6 +129,7 @@ contains
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
 
@@ -230,7 +225,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)  :: convCIM, purpComp
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_TIME)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
@@ -241,19 +235,12 @@ contains
     integer                 :: current_mon               ! model month
     integer                 :: current_day               ! model day
     integer                 :: current_tod               ! model sec into model date
-    integer                 :: nx_global, ny_global
     character(CL)           :: cvalue
     integer                 :: shrlogunit                ! original log unit
     integer                 :: shrloglev                 ! original log level
-    integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    integer                 :: n, klon, klat
-    integer                 :: lsize
-    integer                 :: iam
-    real(r8), pointer       :: lon(:),lat(:)
-    integer , pointer       :: gindex(:)
     logical                 :: read_restart              ! start from restart
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
@@ -307,44 +294,28 @@ contains
        return
     end if
 
+    !--------------------------------
+    ! Generate the mesh
+    !--------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_lnd', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (my_task == master_task) then
+       write(logunit,*) " obtaining dlnd mesh from " // trim(cvalue)
+    end if
+
+    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
 
-    gsmap => gsmap_target
-    ggrid => ggrid_target
-
     call dlnd_comp_init(x2d, d2x, &
-         SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+         SDLND, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, &
-         calendar, current_ymd, current_tod)
-
-    !--------------------------------
-    ! generate the grid or mesh from the gsmap and ggrid
-    ! grid_option specifies grid or mesh
-    !--------------------------------
-
-    nx_global = SDLND%nxg
-    ny_global = SDLND%nyg
-    lsize = mct_gsMap_lsize(gsMap, mpicom)
-    allocate(lon(lsize))
-    allocate(lat(lsize))
-    allocate(gindex(lsize))
-
-    klat = mct_aVect_indexRA(ggrid%data, 'lat')
-    klon = mct_aVect_indexRA(ggrid%data, 'lon')
-    call mpi_comm_rank(mpicom, iam, ierr)
-    call mct_gGrid_exportRattr(ggrid,'lon',lon,lsize)
-    call mct_gGrid_exportRattr(ggrid,'lat',lat,lsize)
-    call mct_gsMap_OrderedPoints(gsMap_target, iam, gindex)
-
-    call shr_nuopc_grid_MeshInit(gcomp, nx_global, ny_global, mpicom, gindex, lon, lat, Emesh, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    deallocate(lon)
-    deallocate(lat)
-    deallocate(gindex)
+         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, Emesh)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -381,11 +352,11 @@ contains
     call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDLND%nxg),flds_scalar_index_nx, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDLND%nyg),flds_scalar_index_ny, exportState, mpicom, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -540,7 +511,7 @@ contains
     if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     if (my_task == master_task) then
        write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F00) ' dlnd : end of main integration loop'
        write(logunit,F91)
     end if
     if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
