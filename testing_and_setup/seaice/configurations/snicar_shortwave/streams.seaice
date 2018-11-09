@@ -9,18 +9,6 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<immutable_stream name="StandardAerosolsInput"
-                  type="input"
-                  filename_template="standard_optics_mpas_cice.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
-<immutable_stream name="SnicarInput"
-                  type="input"
-                  filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
 <immutable_stream name="restart"
                   type="input;output"
                   filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
@@ -28,7 +16,6 @@
                   input_interval="initial_only"
                   output_interval="00-03-00_00:00:00" 
                   clobber_mode="replace_files"/>
-
 
 <stream name="output"
         type="output"
@@ -136,6 +123,18 @@
                   filename_template="forcing/ocean_forcing_monthly.nc"
                   filename_interval="none"
                   input_interval="none" />
+
+<immutable_stream name="StandardAerosolsInput"
+                  type="input"
+                  filename_template="forcing/standard_optics_mpas_seaice.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+<immutable_stream name="SnicarInput"
+                  type="input"
+                  filename_template="forcing/snicar_optics_4bnd_snow_and_aerosols.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
 
 <stream name="abort_block"
         type="output"
