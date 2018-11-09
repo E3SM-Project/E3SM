@@ -39,7 +39,6 @@ module datm_comp_mod
   use dshr_nuopc_mod        , only : dshr_fld_add
   use datm_shr_mod          , only : datm_shr_esat, datm_shr_CORE2getFactors
   use datm_shr_mod          , only : datamode       ! namelist input
-  use datm_shr_mod          , only : decomp         ! namelist input
   use datm_shr_mod          , only : wiso_datm      ! namelist input
   use datm_shr_mod          , only : rest_file      ! namelist input
   use datm_shr_mod          , only : rest_file_strm ! namelist input
@@ -65,7 +64,9 @@ module datm_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  integer                    :: dbug = 1              ! debug level (higher is more)
+  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
+  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
+
   real(R8)                   :: tbotmax               ! units detector
   real(R8)                   :: tdewmax               ! units detector
   real(R8)                   :: anidrmax              ! existance detector
@@ -130,7 +131,7 @@ contains
 !===============================================================================
 
   subroutine datm_comp_advertise(importState, exportState, &
-       atm_present, atm_prognostic, &
+       atm_prognostic, &
        flds_wiso, flds_co2a, flds_co2b, flds_co2c, &
        fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, &
        flds_a2x, flds_x2a, rc)
@@ -142,7 +143,6 @@ contains
     ! input/output arguments
     type(ESMF_State)                   :: importState
     type(ESMF_State)                   :: exportState
-    logical              , intent(in)  :: atm_present
     logical              , intent(in)  :: atm_prognostic
     logical              , intent(in)  :: flds_wiso      ! use case
     logical              , intent(in)  :: flds_co2a      ! use case
@@ -161,8 +161,6 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-
-    if (.not. atm_present) return
 
     !-------------------
     ! export fields
@@ -874,6 +872,20 @@ contains
     !-------------------------------------------------------------------------------
 
     !--------------------
+    ! Debug output
+    !--------------------
+
+    if (debug_import > 0 .and. my_task == master_task .and. atm_prognostic) then
+       do nfld = 1, mct_aVect_nRAttr(x2a)
+          call shr_string_listGetName(trim(flds_x2a_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2a)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2a%rattr(nfld,n)
+          end do
+       end do
+    end if
+    
+    !--------------------
     ! ADVANCE ATM
     !--------------------
 
@@ -1371,14 +1383,7 @@ contains
     ! Debug output
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(x2a)
-          call shr_string_listGetName(trim(flds_x2a_mod), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2a)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2a%rattr(nfld,n)
-          end do
-       end do
+    if (debug_export > 0 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(a2x)
           call shr_string_listGetName(trim(flds_a2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(a2x)

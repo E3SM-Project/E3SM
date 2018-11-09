@@ -6,7 +6,8 @@ module dlnd_comp_mod
 
   ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_gsmap_init
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
@@ -24,6 +25,7 @@ module dlnd_comp_mod
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
@@ -32,7 +34,6 @@ module dlnd_comp_mod
   use dshr_nuopc_mod        , only : dshr_fld_add
   use glc_elevclass_mod     , only : glc_get_num_elevation_classes, glc_elevclass_as_string, glc_elevclass_init 
   use dlnd_shr_mod          , only : datamode        ! namelist input
-  use dlnd_shr_mod          , only : decomp          ! namelist input
   use dlnd_shr_mod          , only : rest_file       ! namelist input
   use dlnd_shr_mod          , only : rest_file_strm  ! namelist input
   use dlnd_shr_mod          , only : domain_fracname ! namelist input
@@ -183,8 +184,7 @@ contains
   subroutine dlnd_comp_init(x2l, l2x, &
        SDLND, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, &
-       scmMode, scmlat, scmlon, &
-       calendar, current_ymd, current_tod)
+       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, mesh)
 
     ! !DESCRIPTION: initialize dlnd model
 
@@ -210,7 +210,6 @@ contains
     integer                      :: n,k             ! generic counters
     integer                      :: lsize           ! local size
     logical                      :: exists          ! file existance
-    integer                      :: kfrac           ! AV index
     logical                      :: write_restart 
     integer                      :: nu              ! unit number
     type(ESMF_DistGrid)          :: distGrid
@@ -224,10 +223,12 @@ contains
     integer                      :: spatialDim
     integer                      :: numOwnedElements
     real(R8), pointer            :: ownedElemCoords(:)
-    integer                      :: index_lat, index_lon
-    real(R8), pointer            :: xc(:), yc(:)       ! arrays of model latitudes and longitudes
+    integer                      :: klat, klon, kfrac  ! AV indices 
+    real(R8)                     :: domlon,domlat      ! domain lats and lots
+    real(R8), pointer            :: xc(:), yc(:)       ! mesh lats and lons
+    integer                      :: rc
     character(*), parameter      :: F00   = "('(dlnd_comp_init) ',8a)"
-    character(*), parameter      :: F05   = "('(dlnd_comp_init) ',a,2f10.4)"
+    character(*), parameter      :: F01   = "('(dice_comp_init) ',a,2f10.4)"
     character(*), parameter      :: subName = "(dlnd_comp_init) "
     !-------------------------------------------------------------------------------
 
@@ -289,9 +290,11 @@ contains
     if (scmmode) then
        if (my_task == master_task) write(logunit,F01) ' scm lon lat = ',scmlon,scmlat
        call shr_strdata_init_model_domain(SDLND, mpicom, compid, my_task, &
-            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDLND%gsmap)
+            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDLND%gsmap, &
+            dmodel_domain_fracname_from_stream=domain_fracname)
     else
-       call shr_strdata_init_model_domain(SDLND, mpicom, compid, my_task, gsmap=SDLND%gsmap)
+       call shr_strdata_init_model_domain(SDLND, mpicom, compid, my_task, gsmap=SDLND%gsmap, &
+            dmodel_domain_fracname_from_stream=domain_fracname)
     end if
 
     if (my_task == master_task) then
@@ -314,23 +317,30 @@ contains
     end do
 
     ! error check that mesh lats and lons correspond to those on the input domain file
-    index_lon = mct_aVect_indexRA(SDLND%grid%data,'lon')
+    klon = mct_aVect_indexRA(SDLND%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDLND%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-10) then
-          write(6,*)'ERROR: lon diff = ',abs(SDLND%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
+       domlon = SDLND%grid%data%rattr(klon,n)
+       if (abs( domlon - xc(n)) > 1.e-10 .and. domlon /= 0.0_r8) then
+          write(6,100) n, domlon, xc(n), abs(xc(n)-domlon)
+100       format('ERROR: DLND n, dom_lon, mesh_lon, diff_lon = ',i6,2(f21.13,3x),d21.5)
           call shr_sys_abort()
        end if
-       SDLND%grid%data%rattr(index_lon,n) = xc(n)
+       !SDLND%grid%data%rattr(klon,n) = xc(n)
     end do
-    index_lat = mct_aVect_indexRA(SDLND%grid%data,'lat')
+    klat = mct_aVect_indexRA(SDLND%grid%data,'lat')
     do n = 1, lsize
-       if (abs( SDLND%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-10) then
-          write(6,*)'ERROR: lat diff = ',abs(SDLND%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
+       domlat = SDLND%grid%data%rattr(klat,n)
+       if (abs( domlat -  yc(n)) > 1.e-10 .and. domlat /= 0.0_r8) then
+          write(6,101) n, domlat,yc(n), abs(yc(n)-domlat)
+101       format('ERROR: DLND n, dom_lat, mesh_lat, diff_lat = ',i6,2(f21.13,3x),d21.5)
           call shr_sys_abort()
        end if
-       SDLND%grid%data%rattr(index_lat,n) = yc(n)
+       !SDLND%grid%data%rattr(klat,n) = yc(n)
     end do
 
+    allocate(lfrac(lsize))
+    kfrac = mct_aVect_indexRA(SDLND%grid%data,'frac')
+    lfrac(:) = SDLND%grid%data%rAttr(kfrac,:)
 
     !----------------------------------------------------------------------------
     ! Initialize SDLND attributes for streams and mapping of streams to model domain 

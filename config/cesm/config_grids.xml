@@ -973,6 +973,9 @@
       <desc>null is no grid: </desc>
     </domain>
 
+    <!-- LND domains for single column or regional -->
+
+
     <domain name="01col">
       <nx>1</nx> <ny>1</ny>
       <file>domain.ocn.01col.ArcticOcean.20150824.nc</file>
@@ -1034,6 +1037,8 @@
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
     </domain>
 
+    <!-- ATM/LND domains global -->
+
     <domain name="360x720cru">
       <nx>720</nx> <ny>360</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.360x720_cruncep.100429.nc</file>
@@ -1053,6 +1058,7 @@
       <file grid="ocnice"  mask="gx1v6">domain.ocn.0.47x0.63_gx1v6_090408.nc</file>
       <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv0.47x0.63_gx1v7.180521.nc</file>
       <file grid="ocnice"  mask="gx1v7">domain.ocn.fv0.47x0.63_gx1v7.180521.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc</mesh>
       <desc>0.47x0.63 is FV 1/2-deg grid:</desc>
     </domain>
 
@@ -1062,6 +1068,7 @@
       <file grid="ocnice"  mask="gx1v6">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
       <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv0.9x1.25_gx1v7.151020.nc</file>
       <file grid="ocnice"  mask="gx1v7">domain.ocn.fv0.9x1.25_gx1v7.151020.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_ESMFmesh.nc</mesh>
       <desc>0.9x1.25 is FV 1-deg grid:</desc>
     </domain>
 
@@ -1073,8 +1080,7 @@
       <file grid="ocnice"  mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
       <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv1.9x2.5_gx1v7.170518.nc</file>
       <file grid="ocnice"  mask="gx1v7">domain.ocn.fv1.9x2.5_gx1v7.170518.nc</file>
-      <!-- <mesh driver="nuopc" mask="gx1v6">$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_060511_ESMFmesh.nc</mesh> -->
-      <mesh driver="nuopc" mask="gx1v7">$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc</mesh>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc</mesh>
       <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
 
@@ -1193,6 +1199,7 @@
       <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
       <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30_gx1v7.171003.nc</file>
       <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30_gx1v7.171003.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/ne30np4_091226_pentagons_ESMFmesh.nc</mesh>
       <desc>ne30np4 is Spectral Elem 1-deg grid:</desc>
     </domain>
 
@@ -1224,6 +1231,7 @@
       <nx>194402</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne60np4_gx1v6.120406.nc</file>
       <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne60np4_gx1v6.121113.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/ne60np4_pentagons_100408_ESMFmesh.nc</mesh>
       <desc>ne60np4 is Spectral Elem 1/2-deg grid:</desc>
     </domain>
 
@@ -1262,6 +1270,7 @@
       <nx>345600</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4.pg2_gx1v7.170629.nc</file>
       <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4.pg2_gx1v7.170629.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/ne120np4_pentagons_100310_ESMFmesh.nc</mesh>
       <desc>ne120np4.pg2 is a Spectral Elem 0.25-deg grid with a 2x2 FVM physics grid:</desc>
       <support>EXPERIMENTAL FVM physics grid</support>
     </domain>
@@ -1329,6 +1338,8 @@
       <support>EXPERIMENTAL FVM physics grid</support>
     </domain>
 
+    <!-- OCN/ICE domains -->
+
     <domain name="gx1v6">
       <nx>320</nx>  <ny>384</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc</file>
@@ -1354,7 +1365,7 @@
 
     <domain name="tx0.1v2">
       <nx>3600</nx> <ny>2400</ny>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.1v2_161014.nc</file>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.1v2.161014.nc</file>
       <desc>tx0.1v2 is tripole v2 1/10-deg grid:</desc>
       <support>Experimental for high resolution experiments</support>
     </domain>
@@ -1372,6 +1383,8 @@
       <desc>tripole v1 1-deg grid: testing proxy for high-res tripole ocean grids- do not use for scientific experiments</desc>
       <support>Experimental tripole ocean grid</support>
     </domain>
+
+    <!-- ROF domains -->
 
     <domain name="rx1">
       <nx>360</nx> <ny>180</ny>
@@ -1405,7 +1418,7 @@
       <support>Experimental, under development</support>
     </domain>
 
-    <!-- GLC domain -->
+    <!-- GLC domains -->
 
     <domain name="gland20">
       <nx>76</nx> <ny>141</ny>
@@ -1428,6 +1441,7 @@
       <nx>90</nx>  <ny>50</ny>
       <file mask="ww3a">$DIN_LOC_ROOT/share/domains/domain.lnd.ww3a_ww3a.120222.nc</file>
       <file mask="ww3a">$DIN_LOC_ROOT/share/domains/domain.ocn.ww3a_ww3a.120222.nc</file>
+      <mesh>$DIN_LOC_ROOT/share/meshes/ww3a_120222_ESMFmesh.nc</mesh>
       <desc>WW3 90 x 50 global grid</desc>
       <support>For testing of the WAV model</support>
     </domain>

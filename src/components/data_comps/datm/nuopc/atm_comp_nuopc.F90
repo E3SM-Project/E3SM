@@ -12,7 +12,7 @@ module atm_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : IN, R8, I8, CXX
+  use med_constants_mod     , only : IN, R8, I8, CXX, CL
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
@@ -68,19 +68,17 @@ module atm_comp_nuopc
   character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer                  :: logunit                   ! logging unit number
   integer    ,parameter    :: master_task=0             ! task number of master task
-  integer                  :: localPet
   character(len=256)       :: case_name                 ! case name
-  character(len=256)       :: tmpstr                    ! tmp string
-  integer                  :: dbrc
-  integer, parameter       :: dbug = 10
   character(len=80)        :: calendar                  ! calendar name
   logical                  :: atm_prognostic            ! data is sent back to datm
   character(len=CXX)       :: flds_a2x = ''
   character(len=CXX)       :: flds_x2a = ''
-
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(atm_comp_nuopc)"
-  character(*),parameter   :: u_FILE_u = __FILE__
+  integer, parameter       :: debug_import = 0          ! if > 0 will diagnose import fields
+  integer, parameter       :: debug_export = 0          ! if > 0 will diagnose export fields
+  character(*),parameter   :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
@@ -91,11 +89,12 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
+    integer :: dbrc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -130,7 +129,7 @@ contains
          specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
 
@@ -147,26 +146,26 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    logical            :: atm_present    ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
-    character(len=256) :: cvalue
+    character(len=CL)  :: cvalue
     integer            :: n
-    integer            :: ierr           ! error code
-    integer            :: shrlogunit     ! original log unit
-    integer            :: shrloglev      ! original log level
+    integer            :: ierr        ! error code
+    integer            :: shrlogunit  ! original log unit
+    integer            :: shrloglev   ! original log level
     logical            :: isPresent
-
-    logical            :: flds_co2a  ! use case
-    logical            :: flds_co2b  ! use case
-    logical            :: flds_co2c  ! use case
-    logical            :: flds_wiso  ! use case
-
+    integer            :: localPet
+    logical            :: flds_co2a   ! use case
+    logical            :: flds_co2b   ! use case
+    logical            :: flds_co2c   ! use case
+    logical            :: flds_wiso   ! use case
+    integer            :: dbrc
+    character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -198,14 +197,9 @@ contains
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------
 
-    call datm_shr_read_namelists(mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, &
-         logunit, SDATM, atm_present, atm_prognostic)
-
-    ! NOTE: atm_present flag is not needed - since the run sequence
-    ! will have no call to this routine for the atm_present flag being
-    ! set to false (i.e. null mode) - only the atm_prognostic flag is
-    ! needed below
+    filename = "datm_in"//trim(inst_suffix)
+    call datm_shr_read_namelists(filename, mpicom, my_task, master_task, &
+         logunit, SDATM, atm_prognostic)
 
     !--------------------------------
     ! determine necessary toggles for below
@@ -236,13 +230,13 @@ contains
     !--------------------------------
 
     call datm_comp_advertise(importState, exportState, &
-         atm_present, atm_prognostic, &
+         atm_prognostic, &
          flds_wiso, flds_co2a, flds_co2b, flds_co2c, &
          fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, &
          flds_a2x, flds_x2a, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -286,6 +280,7 @@ contains
     real(R8)                :: orbMvelpp                 ! orb moving vernal eq (radians)
     real(R8)                :: orbLambm0                 ! orb mean long of perhelion (radians)
     real(R8)                :: orbObliqr                 ! orb obliquity (radians)
+    integer                 :: dbrc
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -293,7 +288,7 @@ contains
     ! from the config attributes of the gridded component
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -453,10 +448,7 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, a2x, istr='initial diag'//':AV')
-       end if
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -473,7 +465,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
@@ -507,11 +499,12 @@ contains
     real(R8)                :: orbLambm0     ! orb mean long of perhelion (radians)
     real(R8)                :: orbObliqr     ! orb obliquity (radians)
     character(len=256)      :: cvalue
+    integer                 :: dbrc
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !--------------------------------
     ! Reset shr logging to my log file
@@ -529,11 +522,9 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+    if (debug_export > 0 .and. my_task == master_task) then
+       call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
     !--------------------------------
@@ -620,22 +611,17 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, a2x, istr='run diag'//':AV', pe=localPet)
-       end if
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
-       if (my_task == master_task) then
-          call ESMF_ClockPrint(clock, options="currTime", &
-               preString="------>Advancing ATM from: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (my_task == master_task) then
+       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ATM from: ", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          call ESMF_ClockPrint(clock, options="stopTime", &
-               preString="--------------------------------> to: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
     !----------------------------------------------------------------------------
@@ -645,7 +631,7 @@ contains
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelAdvance
 
@@ -656,19 +642,20 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
+    integer                 :: dbrc
     character(*), parameter :: F00   = "('(datm_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(datm_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     if (my_task == master_task) then
        write(logunit,F91)
        write(logunit,F00) 'datm : end of main integration loop'
        write(logunit,F91)
     end if
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
 

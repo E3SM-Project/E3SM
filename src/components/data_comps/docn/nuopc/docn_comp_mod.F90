@@ -37,7 +37,6 @@ module docn_comp_mod
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
-  use docn_shr_mod          , only : decomp         ! namelist input
   use docn_shr_mod          , only : rest_file      ! namelist input
   use docn_shr_mod          , only : rest_file_strm ! namelist input
   use docn_shr_mod          , only : nullstr
@@ -59,6 +58,9 @@ module docn_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
+  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
 
   real(R8),parameter         :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter         :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -91,7 +93,6 @@ module docn_comp_mod
 
   logical                    :: firstcall = .true.              ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ocn'         ! name of ocean ropinter file
-  integer                    :: dbug = 1                        ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -556,12 +557,6 @@ contains
 
     call t_adj_detailf(-2)
 
-    if (dbug > 1 .and. my_task == master_task) then
-       do n = 1,lsize
-          write(logunit,F06)'n,ofrac = ',mct_aVect_indexRA(SDOCN%grid%data,'frac')
-       end do
-    end if
-
     call t_stopf('DOCN_INIT')
 
   end subroutine docn_comp_init
@@ -615,7 +610,7 @@ contains
     ! Debug input
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
+    if (debug_import > 0 .and. my_task == master_task .and. ocn_prognostic_mod) then
        do nfld = 1, mct_aVect_nRAttr(x2o)
           call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(x2o)
@@ -817,7 +812,7 @@ contains
     ! Debug output
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
+    if (debug_export > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(o2x)
           call shr_string_listGetName(trim(flds_o2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(o2x)

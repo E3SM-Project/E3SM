@@ -32,7 +32,6 @@ module drof_comp_mod
   use dshr_nuopc_mod        , only : fld_list_type
   use dshr_nuopc_mod        , only : dshr_fld_add
   use drof_shr_mod          , only : datamode       ! namelist input
-  use drof_shr_mod          , only : decomp         ! namelist input
   use drof_shr_mod          , only : rest_file      ! namelist input
   use drof_shr_mod          , only : rest_file_strm ! namelist input
   use drof_shr_mod          , only : nullstr

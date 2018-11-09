@@ -32,7 +32,6 @@ module dice_comp_mod
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
   use dice_shr_mod          , only : datamode       ! namelist input
-  use dice_shr_mod          , only : decomp         ! namelist input
   use dice_shr_mod          , only : rest_file      ! namelist input
   use dice_shr_mod          , only : rest_file_strm ! namelist input
   use dice_shr_mod          , only : flux_swpf      ! namelist input -short-wave penatration factor
@@ -58,6 +57,9 @@ module dice_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
+  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
 
   real(R8),parameter         :: pi     = shr_const_pi      ! pi
   real(R8),parameter         :: spval  = shr_const_spval   ! flags invalid data
@@ -109,7 +111,6 @@ module dice_comp_mod
 
   logical                    :: firstcall = .true. ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
-  integer                    :: dbug = 0           ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -654,6 +655,20 @@ contains
     !-------------------------------------------------------------------------------
 
     !--------------------
+    ! Debug output
+    !--------------------
+
+    if (debug_import > 1 .and. my_task == master_task) then
+       do nfld = 1, mct_aVect_nRAttr(x2i)
+          call shr_string_listGetName(trim(flds_x2i_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2i)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2i%rattr(nfld,n)
+          end do
+       end do
+    end if
+
+    !--------------------
     ! ADVANCE ICE
     !--------------------
 
@@ -852,14 +867,7 @@ contains
     ! Debug output
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(x2i)
-          call shr_string_listGetName(trim(flds_x2i_mod), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2i)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2i%rattr(nfld,n)
-          end do
-       end do
+    if (debug_export > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(i2x)
           call shr_string_listGetName(trim(flds_i2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(i2x)

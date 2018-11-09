@@ -368,7 +368,9 @@ CONTAINS
     ! Create gsmap if input gsmap is not given
 
     if (trim(ldecomp) == 'use_input_gsmap') then
-       ! do nothing
+       if (my_task == master_task) then
+          write(logunit,*)trim(subname) // ': Using input gsmap'
+       end if
     else
        call shr_dmodel_gsmapCreate(gsMap, nxgo, nygo, nzgo, compid, mpicom, trim(ldecomp))
     end if

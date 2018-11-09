@@ -66,20 +66,18 @@ module ocn_comp_nuopc
   character(len=16)        :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
   character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer, parameter       :: master_task=0             ! task number of master task
-  integer                  :: localPet
   logical                  :: read_restart              ! start from restart
   character(CL)            :: case_name                 ! case name
   character(len=80)        :: calendar                  ! calendar name
   logical                  :: ocn_present               ! flag
   logical                  :: ocn_prognostic    ! flag
-  integer, parameter       :: dbug = 10
   character(CXX)           :: flds_o2x = ''
   character(CXX)           :: flds_x2o = ''
   integer                  :: logunit                   ! logging unit number
-  integer                  :: shrlogunit ! original log unit
-  integer                  :: shrloglev  ! original log level
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(ocn_comp_nuopc)"
+  integer, parameter       :: debug_import = 0          ! if > 0 will diagnose import fields
+  integer, parameter       :: debug_export = 0          ! if > 0 will diagnose export fields
   character(*),parameter   :: u_FILE_u = &
        __FILE__
 
@@ -90,14 +88,16 @@ module ocn_comp_nuopc
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-    character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     ! local variables
-    integer  :: dbrc
+    integer :: shrlogunit ! original log unit
+    integer :: shrloglev  ! original log level
+    integer :: dbrc
+    character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -132,7 +132,7 @@ module ocn_comp_nuopc
          specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
 
@@ -150,20 +150,24 @@ module ocn_comp_nuopc
     ! local variables
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
-    character(CL)      :: cvalue
+    character(len=CL)  :: cvalue
     logical            :: activefld
     integer            :: n,nflds
     integer            :: ierr       ! error code
+    integer            :: shrlogunit  ! original log unit
+    integer            :: shrloglev   ! original log level
     integer            :: dbrc
     logical            :: isPresent
-    character(len=512) :: diro
-    character(len=512) :: logfile
+    character(len=CL)  :: diro
+    character(len=CL)  :: logfile
     logical            :: ocnrof_prognostic ! flag
+    integer            :: localPet
+    character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -195,8 +199,8 @@ module ocn_comp_nuopc
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------
 
-    call docn_shr_read_namelists(mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, &
+    filename = "docn_in"//trim(inst_suffix)
+    call docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
          logunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
 
     ! TODO: - hard wire prognostic for now to get atm/ocn flux
@@ -218,7 +222,7 @@ module ocn_comp_nuopc
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeAdvertise
 
@@ -249,11 +253,13 @@ module ocn_comp_nuopc
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
     integer                 :: dbrc
+    integer                 :: shrlogunit ! original log unit
+    integer                 :: shrloglev  ! original log level
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -392,10 +398,7 @@ module ocn_comp_nuopc
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, o2x, istr=subname//':AV')
-       end if
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -412,7 +415,7 @@ module ocn_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
@@ -424,29 +427,33 @@ module ocn_comp_nuopc
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)        :: clock
-    type(ESMF_State)        :: importState, exportState
-    type(ESMF_Time)         :: time
-    type(ESMF_Alarm)        :: alarm
-    type(ESMF_Time)         :: currTime
-    type(ESMF_Time)         :: nextTime
-    type(ESMF_TimeInterval) :: timeStep
-    logical                 :: write_restart ! restart alarm is ringing
-    integer                 :: currentYMD    ! model date
-    integer                 :: currentTOD    ! model sec into model date
-    integer                 :: nextYMD       ! model date
-    integer                 :: nextTOD       ! model sec into model date
-    integer                 :: yr            ! year
-    integer                 :: mon           ! month
-    integer                 :: day           ! day in month
-    integer                 :: modeldt       ! model timestep
-    integer                 :: dbrc
-    character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
+    type(ESMF_Clock)           :: clock
+    type(ESMF_State)           :: importState, exportState
+    type(ESMF_Time)            :: time
+    type(ESMF_Alarm)           :: alarm
+    type(ESMF_Time)            :: currTime
+    type(ESMF_Time)            :: nextTime
+    type(ESMF_TimeInterval)    :: timeStep
+    logical                    :: write_restart ! restart alarm is ringing
+    integer                    :: currentYMD    ! model date
+    integer                    :: currentTOD    ! model sec into model date
+    integer                    :: nextYMD       ! model date
+    integer                    :: nextTOD       ! model sec into model date
+    integer                    :: yr            ! year
+    integer                    :: mon           ! month
+    integer                    :: day           ! day in month
+    integer                    :: modeldt       ! model timestep
+    integer                    :: dbrc
+    integer                    :: shrlogunit ! original log unit
+    integer                    :: shrloglev  ! original log level
+    character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
     call shr_nuopc_memcheck(subname, 5, my_task==master_task)
+
     !--------------------------------
     ! Reset shr logging to my log file
     !--------------------------------
@@ -463,7 +470,7 @@ module ocn_comp_nuopc
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 1) then
+    if (debug_import > 0) then
       call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
     endif
 
@@ -527,10 +534,7 @@ module ocn_comp_nuopc
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 1) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, o2x, istr=subname//':AV')
-       end if
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -543,7 +547,7 @@ module ocn_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
@@ -569,7 +573,7 @@ module ocn_comp_nuopc
        write(logunit,F00) 'docn : end of main integration loop'
        write(logunit,F91)
     end if
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
 

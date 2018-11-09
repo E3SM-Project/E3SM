@@ -12,7 +12,7 @@ module ice_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, CXX, CS
+  use med_constants_mod     , only : R8, CXX, CL, CS
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
@@ -68,12 +68,9 @@ module ice_comp_nuopc
   character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit                   ! logging unit number
   integer, parameter         :: master_task=0             ! task number of master task
-  integer                    :: localPet
   logical                    :: read_restart              ! start from restart
   character(len=256)         :: case_name                 ! case name
-  character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
-  integer, parameter         :: dbug = 10
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
                                                           ! category fields are passed from ice to ocean
   character(len=80)          :: calendar                  ! calendar name
@@ -83,7 +80,9 @@ module ice_comp_nuopc
   logical                    :: use_esmf_metadata = .false.
   real(R8)    ,parameter     :: pi  = shr_const_pi      ! pi
   character(*),parameter     :: modName =  "(ice_comp_nuopc)"
-  character(*),parameter     :: u_FILE_u =&
+  integer, parameter         :: debug_import = 0          ! if > 0 will diagnose import fields
+  integer, parameter         :: debug_export = 0          ! if > 0 will diagnose export fields
+  character(*),parameter     :: u_FILE_u = &
        __FILE__
 
 !===============================================================================
@@ -96,7 +95,7 @@ contains
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -132,7 +131,7 @@ contains
          specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
 
@@ -152,19 +151,21 @@ contains
     logical            :: ice_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
-    character(len=256) :: cvalue
+    character(len=CL)  :: cvalue
     integer            :: n
     integer            :: ierr           ! error code
     integer            :: shrlogunit     ! original log unit
     integer            :: shrloglev      ! original log level
     logical            :: isPresent
-    character(len=512) :: diro
-    character(len=512) :: logfile
+    character(len=CL)  :: diro
+    character(len=CL)  :: logfile
+    integer            :: localPet
+    character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -196,8 +197,8 @@ contains
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------
 
-    call dice_shr_read_namelists(mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, &
+    filename = "dice_in"//trim(inst_suffix)
+    call dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
          logunit, SDICE, ice_present, ice_prognostic)
 
     !--------------------------------
@@ -216,7 +217,7 @@ contains
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeAdvertise
 
@@ -254,7 +255,7 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -403,10 +404,7 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 5) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, i2x, istr=subname//':AV')
-       end if
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -423,7 +421,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
@@ -454,7 +452,7 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !--------------------------------
     ! Reset shr logging to my log file
@@ -472,9 +470,9 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-    endif
+    if (debug_import > 0 .and. my_task == master_task) then
+       call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
+    end if
 
     !--------------------------------
     ! Unpack import state
@@ -536,24 +534,20 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 5) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, i2x, istr=subname//':AV', pe=localPet)
-       end if
-
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (my_task == master_task) then
-          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (my_task == master_task) then
+       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -582,7 +576,7 @@ contains
        write(logunit,F00) ' dice: end of main integration loop'
        write(logunit,F91)
     end if
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
 
