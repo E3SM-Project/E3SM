@@ -80,7 +80,8 @@ module five_intr
     use units,         only: getunit, freeunit
     use namelist_utils,  only: find_group_name
     use cam_abortutils,         only: endrun
-     
+    use mpishorthand    
+ 
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
     
     integer :: iunit, read_status
