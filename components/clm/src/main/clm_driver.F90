@@ -51,7 +51,7 @@ module clm_driver
   use EcosystemDynMod      , only : EcosystemDynNoLeaching1, EcosystemDynNoLeaching2
 
   use EcosystemDynMod      , only : EcosystemDynLeaching 
-  use CNVegStructUpdateMod   , only : CNVegStructUpdate 
+  use VegStructUpdateMod   , only : VegStructUpdate 
   use AnnualUpdateMod      , only : AnnualUpdate
   use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
@@ -1156,7 +1156,7 @@ contains
              end if
 
              if (doalb) then   
-                call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
+                call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
                      waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
                      carbonstate_vars, canopystate_vars, crop_vars)
              end if

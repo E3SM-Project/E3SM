@@ -117,8 +117,8 @@ module pftvarcon
   real(r8), allocatable :: fleafi(:)       !parameter used in CNAllocation
   real(r8), allocatable :: allconsl(:)     !parameter used in CNAllocation
   real(r8), allocatable :: allconss(:)     !parameter used in CNAllocation
-  real(r8), allocatable :: ztopmx(:)       !parameter used in CNVegStructUpdate
-  real(r8), allocatable :: laimx(:)        !parameter used in CNVegStructUpdate
+  real(r8), allocatable :: ztopmx(:)       !parameter used in VegStructUpdate
+  real(r8), allocatable :: laimx(:)        !parameter used in VegStructUpdate
   real(r8), allocatable :: gddmin(:)       !parameter used in Phenology
   real(r8), allocatable :: hybgdd(:)       !parameter used in Phenology
   real(r8), allocatable :: lfemerg(:)      !parameter used in Phenology

@@ -280,7 +280,7 @@ contains
             if (fpcgrid(p) > 0._r8 .and. nind(p) > 0._r8) then
                stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 pft area
                ! stemdiam derived here from cn's formula for htop found in
-               ! CNVegStructUpdate and cn's assumption stemdiam=2*htop/taper
+               ! VegStructUpdate and cn's assumption stemdiam=2*htop/taper
                ! this derivation neglects upper htop limit enforced elsewhere
                stemdiam = (24._r8 * dstemc(p) / (SHR_CONST_PI * stocking * dwood(ivt(p)) * taper))**(1._r8/3._r8)
             else
