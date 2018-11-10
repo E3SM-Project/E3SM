@@ -1,4 +1,4 @@
-module CNMRespMod
+module MaintenanceRespMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -29,20 +29,20 @@ module CNMRespMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNMResp
-  public :: readCNMRespParams
+  public :: MaintenanceResp
+  public :: readMaintenanceRespParams
 
-  type, private :: CNMRespParamsType
+  type, private :: MaintenanceRespParamsType
      real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
-  end type CNMRespParamsType
+  end type MaintenanceRespParamsType
 
-  type(CNMRespParamsType),private ::  CNMRespParamsInst
+  type(MaintenanceRespParamsType),private ::  MaintenanceRespParamsInst
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readCNMRespParams ( ncid )
+  subroutine readMaintenanceRespParams ( ncid )
     !
     ! !DESCRIPTION:
     ! Read parameters
@@ -55,7 +55,7 @@ contains
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
     !
     ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNMRespParamsType'
+    character(len=32)  :: subname = 'MaintenanceRespParamsType'
     character(len=100) :: errCode = '-Error reading in parameters file:'
     logical            :: readv ! has variable been read in or not
     real(r8)           :: tempr ! temporary to read in constant
@@ -65,14 +65,14 @@ contains
     tString='br_mr'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNMRespParamsInst%br_mr=tempr
+    MaintenanceRespParamsInst%br_mr=tempr
 
-  end subroutine readCNMRespParams
+  end subroutine readMaintenanceRespParams
 
   !-----------------------------------------------------------------------
   ! FIX(SPM,032414) this shouldn't even be called with ED on.
   !
-  subroutine CNMResp(bounds, &
+  subroutine MaintenanceResp(bounds, &
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
        canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
        carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
@@ -142,7 +142,7 @@ contains
       ! Original expression is br = 0.0106 molC/(molN h)
       ! Conversion by molecular weights of C and N gives 2.525e-6 gC/(gN s)
       ! set constants
-      br_mr = CNMRespParamsInst%br_mr
+      br_mr = MaintenanceRespParamsInst%br_mr
 
       ! Peter Thornton: 3/13/09 
       ! Q10 was originally set to 2.0, an arbitrary choice, but reduced to 1.5 as part of the tuning
@@ -223,6 +223,6 @@ contains
 
     end associate
 
-  end subroutine CNMResp
+  end subroutine MaintenanceResp
 
-end module CNMRespMod
+end module MaintenanceRespMod

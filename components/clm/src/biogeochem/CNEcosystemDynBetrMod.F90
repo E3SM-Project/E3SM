@@ -68,7 +68,7 @@ module CNEcosystemDynBetrMod
     !
     ! !USES:
     use NitrogenDynamicsMod            , only : NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use CNMRespMod                , only : CNMResp
+    use MaintenanceRespMod                , only : MaintenanceResp
     use SoilLittDecompMod               , only : SoilLittDecompAlloc
     use CNPhenologyBeTRMod            , only : CNPhenology
     use GrowthRespMod                , only : GrowthResp
@@ -175,16 +175,16 @@ module CNEcosystemDynBetrMod
             atm2lnd_vars, nitrogenflux_vars)
        call t_stopf('CNDeposition')
 
-       call t_startf('CNMResp')
+       call t_startf('MaintenanceResp')
        if (crop_prog) then
           call NitrogenFert(bounds, num_soilc,filter_soilc, &
                nitrogenflux_vars)
 
        end if
-       call CNMResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
-       call t_stopf('CNMResp')
+       call t_stopf('MaintenanceResp')
 
        ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
        ! then competitors take up solution P

@@ -82,7 +82,7 @@ contains
     use DecompCascadeCNMod     , only : readDecompCNParams
     use PhenologyMod             , only : readPhenolParams
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
-    use CNMRespMod               , only : readCNMRespParams
+    use MaintenanceRespMod               , only : readMaintenanceRespParams
     use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
     use GapMortalityMod          , only : readGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
@@ -156,7 +156,7 @@ contains
        else
          call readPhenolParams(ncid)
        endif
-       call readCNMRespParams (ncid)
+       call readMaintenanceRespParams (ncid)
        call readNitrogenDynamicsParams (ncid)
        if(is_active_betr_bgc)then
          call readCNGapMortBeTRParams (ncid)

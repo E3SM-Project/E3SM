@@ -259,7 +259,7 @@ contains
     ! !USES:
     use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
     use PhosphorusDynamicsMod           , only: PhosphorusDeposition   
-    use CNMRespMod             , only: CNMResp
+    use MaintenanceRespMod             , only: MaintenanceResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
 !    use PhenologyMod         , only: Phenology
 !    use GrowthRespMod             , only: GrowthResp
@@ -385,7 +385,7 @@ contains
           call t_stopf('CNFixation')
        end if
 
-       call t_startf('CNMResp')
+       call t_startf('MaintenanceResp')
        if (crop_prog) then
           call NitrogenFert(bounds, num_soilc,filter_soilc, &
                nitrogenflux_vars)
@@ -394,10 +394,10 @@ contains
                waterstate_vars, crop_vars, cnstate_vars, &
                nitrogenstate_vars, nitrogenflux_vars)
        end if
-       call CNMResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
-       call t_stopf('CNMResp')
+       call t_stopf('MaintenanceResp')
 
        if ( nu_com .ne. 'RD') then
           ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
@@ -489,7 +489,7 @@ contains
     !
     ! !USES:
 !    use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-!    use CNMRespMod             , only: CNMResp
+!    use MaintenanceRespMod             , only: MaintenanceResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use PhenologyMod         , only: Phenology
     use GrowthRespMod             , only: GrowthResp
