@@ -16,7 +16,7 @@ module SoilLittDecompMod
   use DecompCascadeCNMod   , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
   use CNNitrifDenitrifMod    , only : nitrif_denitrif
-  use CNVerticalProfileMod   , only : decomp_vertprofiles
+  use VerticalProfileMod   , only : decomp_vertprofiles
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use CNNitrogenStateType    , only : nitrogenstate_type

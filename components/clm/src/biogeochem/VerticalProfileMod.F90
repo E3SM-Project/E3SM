@@ -1,4 +1,4 @@
-module CNVerticalProfileMod
+module VerticalProfileMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module holding routines for vertical discretization of C and N inputs into deocmposing pools
@@ -298,4 +298,4 @@ contains
 
   end subroutine decomp_vertprofiles
   
-end module CNVerticalProfileMod
+end module VerticalProfileMod

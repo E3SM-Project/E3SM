@@ -36,7 +36,7 @@ module EcosystemDynMod
   use PhosphorusStateType , only : phosphorusstate_type
   ! bgc interface & pflotran
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
-  use CNVerticalProfileMod   , only : decomp_vertprofiles
+  use VerticalProfileMod   , only : decomp_vertprofiles
   use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use clm_varctl          , only : nu_com
   !

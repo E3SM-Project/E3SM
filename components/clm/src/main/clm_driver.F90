@@ -61,7 +61,7 @@ module clm_driver
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
-  use CNVerticalProfileMod   , only : decomp_vertprofiles
+  use VerticalProfileMod   , only : decomp_vertprofiles
   use FireMod              , only : FireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg

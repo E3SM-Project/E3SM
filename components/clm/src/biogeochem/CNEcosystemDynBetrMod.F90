@@ -95,7 +95,7 @@ module CNEcosystemDynBetrMod
     use PhosphorusStateUpdate1Mod          , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use PhosphorusDynamicsMod              , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
-    use CNVerticalProfileMod      , only : decomp_vertprofiles
+    use VerticalProfileMod      , only : decomp_vertprofiles
     use RootDynamicsMod              , only : RootDynamics
     implicit none
 

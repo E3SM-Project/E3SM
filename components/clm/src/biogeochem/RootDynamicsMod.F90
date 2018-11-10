@@ -44,7 +44,7 @@ contains
     ! This routine determine the fine root distribution
     ! Needs to be called after the photosynthesis calculation
     ! May need to update other subroutines that use the fixed root profile for calculations
-    ! i.e. CNVerticalProfileMod
+    ! i.e. VerticalProfileMod
     !
     ! !USES:
 
