@@ -1,4 +1,4 @@
-module CNAnnualUpdateMod
+module AnnualUpdateMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module for updating annual summation variables
@@ -14,13 +14,13 @@ module CNAnnualUpdateMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: CNAnnualUpdate
+  public:: AnnualUpdate
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNAnnualUpdate(bounds, &
+  subroutine AnnualUpdate(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars)
@@ -114,6 +114,6 @@ contains
        end if
     end do
 
- end subroutine CNAnnualUpdate
+ end subroutine AnnualUpdate
 
-end module CNAnnualUpdateMod
+end module AnnualUpdateMod

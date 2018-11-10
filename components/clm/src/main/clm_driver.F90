@@ -52,7 +52,7 @@ module clm_driver
 
   use EcosystemDynMod      , only : EcosystemDynLeaching 
   use CNVegStructUpdateMod   , only : CNVegStructUpdate 
-  use CNAnnualUpdateMod      , only : CNAnnualUpdate
+  use AnnualUpdateMod      , only : AnnualUpdate
   use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
@@ -845,7 +845,7 @@ contains
                  PlantMicKinetics_vars,                                         &
                  phosphorusflux_vars, phosphorusstate_vars)
 
-           call CNAnnualUpdate(bounds_clump,            &
+           call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   filter(nc)%num_soilp, filter(nc)%soilp, &
                   cnstate_vars, carbonflux_vars)    
@@ -963,7 +963,7 @@ contains
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
              !===========================================================================================
 
-             call CNAnnualUpdate(bounds_clump,            &
+             call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   filter(nc)%num_soilp, filter(nc)%soilp, &
                   cnstate_vars, carbonflux_vars)
@@ -1015,7 +1015,7 @@ contains
          endif  !end use_betr
          
          if (use_lch4 .and. .not. is_active_betr_bgc) then
-           !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
+           !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
            call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
