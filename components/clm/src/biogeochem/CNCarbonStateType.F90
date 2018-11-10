@@ -3329,7 +3329,7 @@ contains
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
-    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
     class(carbonstate_type)        , intent(inout) :: this

@@ -1,4 +1,4 @@
-module CNComputeSeedMod
+module ComputeSeedMod
   !-----------------------------------------------------------------------
   ! Module to compute seed amounts for new patch areas
   !
@@ -297,4 +297,4 @@ contains
 
   end function SpeciesTypeMultiplier
 
-end module CNComputeSeedMod
+end module ComputeSeedMod
