@@ -1,4 +1,4 @@
-module CNDecompCascadeBGCMod
+module DecompCascadeBGCMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -31,7 +31,7 @@ module CNDecompCascadeBGCMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: init_decompcascade_bgc
-  public :: readCNDecompBgcParams
+  public :: readDecompBGCParams
   public :: decomp_rate_constants_bgc
   !
   ! !PUBLIC DATA MEMBERS 
@@ -40,7 +40,7 @@ module CNDecompCascadeBGCMod
   real(r8), public :: normalization_tref = 15._r8            ! reference temperature for normalizaion (degrees C)
   !
   ! !PRIVATE DATA MEMBERS 
-  type, private :: CNDecompBgcParamsType
+  type, private :: DecompBGCParamsType
      real(r8):: cn_s1_bgc     !C:N for SOM 1
      real(r8):: cn_s2_bgc     !C:N for SOM 2
      real(r8):: cn_s3_bgc     !C:N for SOM 3
@@ -82,15 +82,15 @@ module CNDecompCascadeBGCMod
      integer  :: nsompools = 3
      real(r8),allocatable :: spinup_vector(:) ! multipliers for soil decomp during accelerated spinup
 
-  end type CNDecompBgcParamsType
+  end type DecompBGCParamsType
 
-  type(CNDecompBgcParamsType),private ::  CNDecompBgcParamsInst
+  type(DecompBGCParamsType),private ::  DecompBGCParamsInst
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readCNDecompBgcParams ( ncid )
+  subroutine readDecompBGCParams ( ncid )
     !
     ! !DESCRIPTION:
     !
@@ -101,7 +101,7 @@ contains
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
     !
     ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNDecompBgcParamsType'
+    character(len=32)  :: subname = 'DecompBGCParamsType'
     character(len=100) :: errCode = 'Error reading in CN const file '
     logical            :: readv   ! has variable been read in or not
     real(r8)           :: tempr   ! temporary to read in constant
@@ -109,54 +109,54 @@ contains
     !-----------------------------------------------------------------------
 
     ! These are not read off of netcdf file
-    allocate(CNDecompBgcParamsInst%spinup_vector(CNDecompBgcParamsInst%nsompools))
-    CNDecompBgcParamsInst%spinup_vector(:) = (/ 1.0_r8, 15.0_r8, 675.0_r8 /)
+    allocate(DecompBGCParamsInst%spinup_vector(DecompBGCParamsInst%nsompools))
+    DecompBGCParamsInst%spinup_vector(:) = (/ 1.0_r8, 15.0_r8, 675.0_r8 /)
 
     ! Read off of netcdf file
     tString='tau_l1'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%tau_l1_bgc=tempr
+    DecompBGCParamsInst%tau_l1_bgc=tempr
 
     tString='tau_l2_l3'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%tau_l2_l3_bgc=tempr
+    DecompBGCParamsInst%tau_l2_l3_bgc=tempr
 
     tString='tau_s1'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%tau_s1_bgc=tempr
+    DecompBGCParamsInst%tau_s1_bgc=tempr
 
     tString='tau_s2'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%tau_s2_bgc=tempr
+    DecompBGCParamsInst%tau_s2_bgc=tempr
 
     tString='tau_s3'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%tau_s3_bgc=tempr
+    DecompBGCParamsInst%tau_s3_bgc=tempr
 
     tString='tau_cwd'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%tau_cwd_bgc=tempr
+    DecompBGCParamsInst%tau_cwd_bgc=tempr
 
     tString='cn_s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%cn_s1_bgc=tempr
+    DecompBGCParamsInst%cn_s1_bgc=tempr
 
     tString='cn_s2_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%cn_s2_bgc=tempr
+    DecompBGCParamsInst%cn_s2_bgc=tempr
 
     tString='cn_s3_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%cn_s3_bgc=tempr
+    DecompBGCParamsInst%cn_s3_bgc=tempr
 
 !!! read in phosphorus variables - note that these NP ratio parameters for BGC  will have
 !!! to be added in the parameter file
@@ -164,79 +164,79 @@ contains
     tString='np_s1_new'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%np_s1_new_bgc=tempr
+    DecompBGCParamsInst%np_s1_new_bgc=tempr
 
     tString='np_s2_new'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%np_s2_new_bgc=tempr
+    DecompBGCParamsInst%np_s2_new_bgc=tempr
 
     tString='np_s3_new'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%np_s3_new_bgc=tempr
+    DecompBGCParamsInst%np_s3_new_bgc=tempr
 
     tString='rf_l1s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_l1s1_bgc=tempr
+    DecompBGCParamsInst%rf_l1s1_bgc=tempr
 
     tString='rf_l2s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_l2s1_bgc=tempr
+    DecompBGCParamsInst%rf_l2s1_bgc=tempr
 
     tString='rf_l3s2_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_l3s2_bgc=tempr   
+    DecompBGCParamsInst%rf_l3s2_bgc=tempr   
 
     tString='rf_s2s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_s2s1_bgc=tempr
+    DecompBGCParamsInst%rf_s2s1_bgc=tempr
 
     tString='rf_s2s3_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_s2s3_bgc=tempr
+    DecompBGCParamsInst%rf_s2s3_bgc=tempr
 
     tString='rf_s3s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_s3s1_bgc=tempr
+    DecompBGCParamsInst%rf_s3s1_bgc=tempr
 
     tString='rf_cwdl2_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_cwdl2_bgc=tempr
+    DecompBGCParamsInst%rf_cwdl2_bgc=tempr
 
     tString='rf_cwdl3_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_cwdl3_bgc=tempr
+    DecompBGCParamsInst%rf_cwdl3_bgc=tempr
 
     tString='cwd_fcel'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%cwd_fcel_bgc=tempr
+    DecompBGCParamsInst%cwd_fcel_bgc=tempr
 
     tString='k_frag'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%k_frag_bgc=tempr
+    DecompBGCParamsInst%k_frag_bgc=tempr
 
     tString='minpsi_hr'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%minpsi_bgc=tempr 
+    DecompBGCParamsInst%minpsi_bgc=tempr 
 
     tString='cwd_flig'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%cwd_flig_bgc=tempr 
+    DecompBGCParamsInst%cwd_flig_bgc=tempr 
 
-  end subroutine readCNDecompBgcParams
+  end subroutine readDecompBGCParams
 
   !-----------------------------------------------------------------------
   subroutine init_decompcascade_bgc(bounds, cnstate_vars, soilstate_vars)
@@ -336,29 +336,29 @@ contains
 
       !------- time-constant coefficients ---------- !
       ! set soil organic matter compartment C:N ratios
-      cn_s1 = CNDecompBgcParamsInst%cn_s1_bgc
-      cn_s2 = CNDecompBgcParamsInst%cn_s2_bgc
-      cn_s3 = CNDecompBgcParamsInst%cn_s3_bgc
+      cn_s1 = DecompBGCParamsInst%cn_s1_bgc
+      cn_s2 = DecompBGCParamsInst%cn_s2_bgc
+      cn_s3 = DecompBGCParamsInst%cn_s3_bgc
 
       ! set soil organic matter C:P ratios -X. YANG 
-      np_s1_new=CNDecompBgcParamsInst%np_s1_new_bgc
-      np_s2_new=CNDecompBgcParamsInst%np_s2_new_bgc
-      np_s3_new=CNDecompBgcParamsInst%np_s3_new_bgc
+      np_s1_new=DecompBGCParamsInst%np_s1_new_bgc
+      np_s2_new=DecompBGCParamsInst%np_s2_new_bgc
+      np_s3_new=DecompBGCParamsInst%np_s3_new_bgc
 
       ! set respiration fractions for fluxes between compartments
-      rf_l1s1 = CNDecompBgcParamsInst%rf_l1s1_bgc
-      rf_l2s1 = CNDecompBgcParamsInst%rf_l2s1_bgc
-      rf_l3s2 = CNDecompBgcParamsInst%rf_l3s2_bgc
-      rf_s2s1 = CNDecompBgcParamsInst%rf_s2s1_bgc
-      rf_s2s3 = CNDecompBgcParamsInst%rf_s2s3_bgc
-      rf_s3s1 = CNDecompBgcParamsInst%rf_s3s1_bgc
+      rf_l1s1 = DecompBGCParamsInst%rf_l1s1_bgc
+      rf_l2s1 = DecompBGCParamsInst%rf_l2s1_bgc
+      rf_l3s2 = DecompBGCParamsInst%rf_l3s2_bgc
+      rf_s2s1 = DecompBGCParamsInst%rf_s2s1_bgc
+      rf_s2s3 = DecompBGCParamsInst%rf_s2s3_bgc
+      rf_s3s1 = DecompBGCParamsInst%rf_s3s1_bgc
 
-      rf_cwdl2 = CNDecompBgcParamsInst%rf_cwdl2_bgc
-      rf_cwdl3 = CNDecompBgcParamsInst%rf_cwdl3_bgc
+      rf_cwdl2 = DecompBGCParamsInst%rf_cwdl2_bgc
+      rf_cwdl3 = DecompBGCParamsInst%rf_cwdl3_bgc
 
       ! set the cellulose and lignin fractions for coarse woody debris
-      cwd_fcel = CNDecompBgcParamsInst%cwd_fcel_bgc
-      cwd_flig = CNDecompBgcParamsInst%cwd_flig_bgc
+      cwd_fcel = DecompBGCParamsInst%cwd_fcel_bgc
+      cwd_flig = DecompBGCParamsInst%cwd_flig_bgc
 
         ! set path fractions
       f_s2s1 = 0.42_r8/(0.45_r8)
@@ -516,9 +516,9 @@ contains
       if (.not. use_fates) then
          spinup_factor(i_cwd) = 1._r8
       end if
-      spinup_factor(i_soil1) = CNDecompBgcParamsInst%spinup_vector(1)
-      spinup_factor(i_soil2) = CNDecompBgcParamsInst%spinup_vector(2)
-      spinup_factor(i_soil3) = CNDecompBgcParamsInst%spinup_vector(3)
+      spinup_factor(i_soil1) = DecompBGCParamsInst%spinup_vector(1)
+      spinup_factor(i_soil2) = DecompBGCParamsInst%spinup_vector(2)
+      spinup_factor(i_soil3) = DecompBGCParamsInst%spinup_vector(3)
 
 
       !----------------  list of transitions and their time-independent coefficients  ---------------!
@@ -716,14 +716,14 @@ contains
       ! value is placed in the parameters netcdf file.  To get bfb, keep the 
       ! divide in source.
 
-      !tau_l1 = CNDecompBgcParamsInst%tau_l1_bgc
-      !tau_l2_l3 = CNDecompBgcParamsInst%tau_l2_l3_bgc
-      !tau_s1 = CNDecompBgcParamsInst%tau_s1_bgc
-      !tau_s2 = CNDecompBgcParamsInst%tau_s2_bgc
-      !tau_s3 = CNDecompBgcParamsInst%tau_s3_bgc
+      !tau_l1 = DecompBGCParamsInst%tau_l1_bgc
+      !tau_l2_l3 = DecompBGCParamsInst%tau_l2_l3_bgc
+      !tau_s1 = DecompBGCParamsInst%tau_s1_bgc
+      !tau_s2 = DecompBGCParamsInst%tau_s2_bgc
+      !tau_s3 = DecompBGCParamsInst%tau_s3_bgc
 
       !set turnover rate of coarse woody debris
-      !tau_cwd = CNDecompBgcParamsInst%tau_cwd_bgc
+      !tau_cwd = DecompBGCParamsInst%tau_cwd_bgc
 
       ! set "Q10" parameter
       Q10 = CNParamsShareInst%Q10_hr
@@ -770,9 +770,9 @@ contains
 
      ! The following code implements the acceleration part of the AD spinup algorithm
       if ( spinup_state .eq. 1 ) then
-         k_s1 = k_s1 * CNDecompBgcParamsInst%spinup_vector(1)
-         k_s2 = k_s2 * CNDecompBgcParamsInst%spinup_vector(2)
-         k_s3 = k_s3 * CNDecompBgcParamsInst%spinup_vector(3)
+         k_s1 = k_s1 * DecompBGCParamsInst%spinup_vector(1)
+         k_s2 = k_s2 * DecompBGCParamsInst%spinup_vector(2)
+         k_s3 = k_s3 * DecompBGCParamsInst%spinup_vector(3)
       endif
 
       !--- time dependent coefficients-----!
@@ -1097,4 +1097,4 @@ contains
 
  end subroutine decomp_rate_constants_bgc
 
-end module CNDecompCascadeBGCMod
+end module DecompCascadeBGCMod

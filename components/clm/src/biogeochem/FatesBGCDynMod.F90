@@ -38,7 +38,7 @@ contains
       use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
       use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
       use clm_varctl             , only : use_century_decomp
-      use CNDecompCascadeBGCMod  , only : decomp_rate_constants_bgc
+      use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
       use CNDecompCascadeCNMod   , only : decomp_rate_constants_cn
       use CarbonStateUpdate1Mod     , only : CarbonStateUpdate1
       use SoilLittVertTranspMod, only : SoilLittVertTransp

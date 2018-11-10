@@ -419,7 +419,7 @@ contains
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use EcosystemDynMod     , only : EcosystemDynInit
     use pdepStreamMod         , only : pdep_init, pdep_interp
-    use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
+    use DecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
     use VegetationPropertiesType        , only : veg_vp 

@@ -276,7 +276,7 @@ contains
 !    use C14DecayMod          , only: C14Decay, C14BombSpike
 !    use WoodProductsMod      , only: WoodProducts
 !    use SoilLittVertTranspMod, only: SoilLittVertTransp
-    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
+    use DecompCascadeBGCMod  , only: decomp_rate_constants_bgc
     use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
 !    use dynHarvestMod          , only: CNHarvest
@@ -507,7 +507,7 @@ contains
     use WoodProductsMod      , only: WoodProducts
     use CropHarvestPoolsMod    , only: CropHarvestPools
     use SoilLittVertTranspMod, only: SoilLittVertTransp
-!    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
+!    use DecompCascadeBGCMod  , only: decomp_rate_constants_bgc
 !    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
     use dynHarvestMod          , only: CNHarvest

@@ -78,7 +78,7 @@ contains
     !
     use AllocationMod          , only : readCNAllocParams    
     use SoilLittDecompMod              , only : readSoilLittDecompParams
-    use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
+    use DecompCascadeBGCMod    , only : readDecompBGCParams
     use CNDecompCascadeCNMod     , only : readCNDecompCnParams
     use PhenologyMod             , only : readPhenolParams
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
@@ -133,7 +133,7 @@ contains
        if(.not. is_active_betr_bgc) then
          call readSoilLittDecompParams(ncid)
          if (use_century_decomp) then
-            call readCNDecompBgcParams(ncid)
+            call readDecompBGCParams(ncid)
          else
             call readCNDecompCnParams(ncid)
          end if
