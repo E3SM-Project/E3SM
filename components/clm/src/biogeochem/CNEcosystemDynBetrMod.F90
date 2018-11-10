@@ -71,7 +71,7 @@ module CNEcosystemDynBetrMod
     use CNMRespMod                , only : CNMResp
     use SoilLittDecompMod               , only : SoilLittDecompAlloc
     use CNPhenologyBeTRMod            , only : CNPhenology
-    use CNGRespMod                , only : CNGResp
+    use GrowthRespMod                , only : GrowthResp
     use CarbonStateUpdate1Mod        , only : CarbonStateUpdate1,CarbonStateUpdate0
     use CNNStateUpdate1BeTRMod        , only : NStateUpdate1
     use CNGapMortalityBeTRMod         , only : CNGapMortality
@@ -273,10 +273,10 @@ module CNEcosystemDynBetrMod
        ! Growth respiration
        !--------------------------------------------
 
-       call t_startf('CNGResp')
-       call CNGResp(num_soilp, filter_soilp, &
+       call t_startf('GrowthResp')
+       call GrowthResp(num_soilp, filter_soilp, &
             carbonflux_vars)
-       call t_stopf('CNGResp')
+       call t_stopf('GrowthResp')
        call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
 
        if(use_c13) then

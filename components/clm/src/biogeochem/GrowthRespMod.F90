@@ -1,4 +1,4 @@
-module CNGRespMod
+module GrowthRespMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -17,13 +17,13 @@ module CNGRespMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNGResp
+  public :: GrowthResp
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNGResp(num_soilp, filter_soilp, carbonflux_vars)
+  subroutine GrowthResp(num_soilp, filter_soilp, carbonflux_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -147,6 +147,6 @@ contains
 
     end associate
 
-  end subroutine CNGResp
+  end subroutine GrowthResp
 
-end module CNGRespMod
+end module GrowthRespMod
