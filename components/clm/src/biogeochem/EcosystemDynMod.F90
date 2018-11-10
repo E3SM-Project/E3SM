@@ -511,7 +511,7 @@ contains
 !    use DecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
     use dynHarvestMod          , only: CNHarvest
-    use CNRootDynMod           , only: CNRootDyn
+    use RootDynamicsMod           , only: RootDynamics
 !    use clm_varpar             , only: crop_prog
 
 !    use AllocationMod        , only: cnallocation
@@ -626,12 +626,12 @@ contains
        !--------------------------------------------
 
        if( use_dynroot ) then
-          call t_startf('CNRootDyn')
+          call t_startf('RootDynamics')
 
-          call CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                canopystate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
                cnstate_vars, crop_vars, energyflux_vars, soilstate_vars)
-          call t_stopf('CNRootDyn')
+          call t_stopf('RootDynamics')
        end if
 
        !--------------------------------------------

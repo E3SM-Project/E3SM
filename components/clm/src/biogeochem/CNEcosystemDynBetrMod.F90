@@ -96,7 +96,7 @@ module CNEcosystemDynBetrMod
     use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use PhosphorusDynamicsMod              , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
     use CNVerticalProfileMod      , only : decomp_vertprofiles
-    use CNRootDynMod              , only : CNRootDyn
+    use RootDynamicsMod              , only : RootDynamics
     implicit none
 
 
@@ -291,12 +291,12 @@ module CNEcosystemDynBetrMod
        !--------------------------------------------
 
        if( use_dynroot ) then
-          call t_startf('CNRootDyn')
+          call t_startf('RootDynamics')
 
-          call CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                canopystate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
                cnstate_vars, crop_vars, energyflux_vars, soilstate_vars)
-          call t_stopf('CNRootDyn')
+          call t_stopf('RootDynamics')
        end if
 
        !--------------------------------------------

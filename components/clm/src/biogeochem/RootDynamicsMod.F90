@@ -1,4 +1,4 @@
-module CNRootDynMod
+module RootDynamicsMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -29,14 +29,14 @@ module CNRootDynMod
   implicit none
   save
   private
-  public :: CNRootDyn
+  public :: RootDynamics
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
   !
-  subroutine CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        canopystate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
        cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars)
     !
@@ -258,6 +258,6 @@ contains
 
     end associate
 
-  end subroutine CNRootDyn
+  end subroutine RootDynamics
 
-end module CNRootDynMod
+end module RootDynamicsMod
