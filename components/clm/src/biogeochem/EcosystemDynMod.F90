@@ -277,7 +277,7 @@ contains
 !    use WoodProductsMod      , only: WoodProducts
 !    use SoilLittVertTranspMod, only: SoilLittVertTransp
     use DecompCascadeBGCMod  , only: decomp_rate_constants_bgc
-    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
+    use DecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
 !    use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
@@ -508,7 +508,7 @@ contains
     use CropHarvestPoolsMod    , only: CropHarvestPools
     use SoilLittVertTranspMod, only: SoilLittVertTransp
 !    use DecompCascadeBGCMod  , only: decomp_rate_constants_bgc
-!    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
+!    use DecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
     use dynHarvestMod          , only: CNHarvest
     use CNRootDynMod           , only: CNRootDyn

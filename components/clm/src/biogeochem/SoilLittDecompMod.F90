@@ -13,7 +13,7 @@ module SoilLittDecompMod
   use clm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
   use clm_varcon             , only : dzsoi_decomp
   use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
-  use CNDecompCascadeCNMod   , only : decomp_rate_constants_cn
+  use DecompCascadeCNMod   , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
   use CNNitrifDenitrifMod    , only : nitrif_denitrif
   use CNVerticalProfileMod   , only : decomp_vertprofiles

@@ -79,7 +79,7 @@ contains
     use AllocationMod          , only : readCNAllocParams    
     use SoilLittDecompMod              , only : readSoilLittDecompParams
     use DecompCascadeBGCMod    , only : readDecompBGCParams
-    use CNDecompCascadeCNMod     , only : readCNDecompCnParams
+    use DecompCascadeCNMod     , only : readDecompCNParams
     use PhenologyMod             , only : readPhenolParams
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use CNMRespMod               , only : readCNMRespParams
@@ -135,7 +135,7 @@ contains
          if (use_century_decomp) then
             call readDecompBGCParams(ncid)
          else
-            call readCNDecompCnParams(ncid)
+            call readDecompCNParams(ncid)
          end if
        
          if (use_nitrif_denitrif) then

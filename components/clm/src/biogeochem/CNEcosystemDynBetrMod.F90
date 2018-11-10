@@ -83,7 +83,7 @@ module CNEcosystemDynBetrMod
     use C14DecayMod             , only : C14Decay, C14BombSpike
     use WoodProductsMod         , only : WoodProducts
     use DecompCascadeBGCMod     , only : decomp_rate_constants_bgc
-    use CNDecompCascadeCNMod      , only : decomp_rate_constants_cn
+    use DecompCascadeCNMod      , only : decomp_rate_constants_cn
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
     use clm_varpar                , only : crop_prog
