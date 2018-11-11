@@ -48,9 +48,9 @@ module parallel_mod
     integer :: root                       ! local root
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
-    integer :: node_comm                  ! local communicator of all procs per node
-    integer :: node_rank                  ! local rank in node_comm
-    integer :: node_nprocs                ! local rank in node_comm
+!    integer :: node_comm                  ! local communicator of all procs per node
+!    integer :: node_rank                  ! local rank in node_comm
+!    integer :: node_nprocs                ! local rank in node_comm
     logical :: masterproc                
     logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
@@ -217,9 +217,10 @@ contains
     if (node_color==0) call abortmp("initmp: Errror computing procs per node")
 
     ! create a communicator of all procs per node
-    call mpi_comm_split(par%comm, node_color, par%rank, par%node_comm, ierr)
-    call MPI_comm_rank(par%node_comm,par%node_rank,ierr)
-    call MPI_comm_size(par%node_comm,par%node_nprocs,ierr)
+    ! currently not used, so commenting out
+!    call mpi_comm_split(par%comm, node_color, par%rank, par%node_comm, ierr)
+!    call MPI_comm_rank(par%node_comm,par%node_rank,ierr)
+!    call MPI_comm_size(par%node_comm,par%node_nprocs,ierr)
 
     ! =======================================================================
     !  Verify that everybody agrees on this number otherwise do not do 

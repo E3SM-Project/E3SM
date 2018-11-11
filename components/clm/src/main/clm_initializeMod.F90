@@ -25,7 +25,7 @@ module clm_initializeMod
   ! Definition of component types
   !-----------------------------------------
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_pp, top_es, top_ws
+  use TopounitType           , only : top_pp, top_as, top_af, top_es
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp                
@@ -293,8 +293,9 @@ contains
     
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
+    call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
+    call top_af%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric flux variables (forcings)
     call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
-    call top_ws%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! water state
     
     ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
@@ -615,6 +616,10 @@ contains
     call t_startf('init_accflds')
 
     call atm2lnd_vars%initAccBuffer(bounds_proc)
+    
+    call top_as%InitAccBuffer(bounds_proc)
+    
+    call top_af%InitAccBuffer(bounds_proc)
 
     call temperature_vars%initAccBuffer(bounds_proc)
 
@@ -834,6 +839,8 @@ contains
     ! must be called after the restart file is read 
 
     call atm2lnd_vars%initAccVars(bounds_proc)
+    call top_as%InitAccVars(bounds_proc)
+    call top_af%InitAccVars(bounds_proc)
     call temperature_vars%initAccVars(bounds_proc)
     call canopystate_vars%initAccVars(bounds_proc)
     if (use_cndv) then

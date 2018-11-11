@@ -313,6 +313,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         with Case(testdir, read_only=False) as case:
             for env_file in case._files:
                 self.assertFalse(env_file.needsrewrite, msg="Instantiating a case should not trigger a flush call")
+
         with Case(testdir, read_only=False) as case:
             case.set_value("HIST_OPTION","nyears")
             runfile = case.get_env('run')
@@ -654,6 +655,34 @@ class J_TestCreateNewcase(unittest.TestCase):
         self.assertEqual("mymachine" in machlist_after, True, msg="Not able to append config_machines.xml")
 
 
+    def test_m_createnewcase_alternate_drivers(self):
+        # Test that case.setup runs for nuopc and moab drivers
+        cls = self.__class__
+        for driver in ("nuopc", "moab"):
+            testdir = os.path.join(cls._testroot, 'testcreatenewcase.{}'.format( driver))
+            if os.path.exists(testdir):
+                shutil.rmtree(testdir)
+            args =  " --driver {} --case {} --compset X --res f19_g16 --output-root {} --handle-preexisting-dirs=r".format(driver, testdir, cls._testroot)
+            if CIME.utils.get_model() == "cesm":
+                args += " --run-unsupported"
+            if TEST_COMPILER is not None:
+                args = args +  " --compiler %s"%TEST_COMPILER
+            if TEST_MPILIB is not None:
+                args = args +  " --mpilib %s"%TEST_MPILIB
+
+            cls._testdirs.append(testdir)
+            run_cmd_assert_result(self, "./create_newcase %s"%(args), from_dir=SCRIPT_DIR)
+            self.assertTrue(os.path.exists(testdir))
+            self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
+
+            run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+            with Case(testdir, read_only=False) as case:
+                comp_interface = case.get_value("COMP_INTERFACE")
+                self.assertTrue(driver == comp_interface, msg="%s != %s"%(driver, comp_interface))
+
+            cls._do_teardown.append(testdir)
+
+
     @classmethod
     def tearDownClass(cls):
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
@@ -663,7 +692,11 @@ class J_TestCreateNewcase(unittest.TestCase):
                 print("Detected failed test or user request no teardown")
                 print("Leaving case directory : %s"%tfile)
             elif do_teardown:
-                shutil.rmtree(tfile)
+                try:
+                    print ("Attempt to remove directory {}".format(tfile))
+                    shutil.rmtree(tfile)
+                except BaseException:
+                    print("Could not remove directory {}".format(tfile))
 
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):
@@ -1452,9 +1485,10 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
             compargs = ["-c", "-b", self._baseline_name, test_name]
         else:
-            genargs = ["-g", self._baseline_name, "-o", test_name]
-            compargs = ["-c", self._baseline_name, test_name]
-
+            genargs = ["-g", self._baseline_name, "-o", test_name,
+                       "--baseline-root ", self._baseline_area]
+            compargs = ["-c", self._baseline_name, test_name,
+                       "--baseline-root ", self._baseline_area]
         self._create_test(genargs)
 
         # Hist compare should pass
@@ -1673,6 +1707,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+
                                      "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
                                          SCRIPT_DIR, testcase_name, testdir, testdir),
                               from_dir=SCRIPT_DIR)
@@ -2117,7 +2152,12 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def simple_test(self, manual_timing=False):
     ###########################################################################
         timing_flag = "" if manual_timing else "--save-timing"
-        self._create_test(["SMS_Ln9_P1.f19_g16_rx1.A", timing_flag, "--walltime=0:15:00"], test_id=self._baseline_name)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            walltime="00:15:00"
+        else:
+            walltime="00:30:00"
+        self._create_test(["SMS_Ln9_P1.f19_g16_rx1.A", timing_flag, "--walltime="+walltime], test_id=self._baseline_name)
 
         statuses = glob.glob("%s/*%s/TestStatus" % (self._testroot, self._baseline_name))
         self.assertEqual(len(statuses), 1, msg="Should have had exactly one match, found %s" % statuses)
@@ -2941,7 +2981,8 @@ def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
             B_CheckCode.all_results = check_code(all_files)
-        result = B_CheckCode.all_results[pyfile] # pylint: disable=unsubscriptable-object
+        #pylint: disable=unsubscriptable-object
+        result = B_CheckCode.all_results[pyfile]
         self.assertTrue(result == "", msg=result)
 
     return test

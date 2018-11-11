@@ -8,11 +8,12 @@ module time_mod
   !------------------
   implicit none
   integer,public                :: nsplit=1
-  integer,public                :: nmax          ! Max number of timesteps
-  integer,public                :: nEndStep      ! Number of End Step
-  integer,public                :: ndays         ! Max number of days
-  real (kind=real_kind), public :: tstep         ! Dynamics timestep
-  real (kind=real_kind), public :: phys_tscale=0.! Physics time scale
+  integer,public                :: nmax           ! Max number of timesteps
+  integer,public                :: nEndStep       ! Number of End Step
+  integer,public                :: ndays          ! Max number of days
+  integer,public                :: nextOutputStep ! Next timestep where output will occur
+  real (kind=real_kind), public :: tstep          ! Dynamics timestep
+  real (kind=real_kind), public :: phys_tscale=0. ! Physics time scale
 
   real (kind=real_kind), public, parameter :: secphr = 3600.0D0 ! Timestep filter
   real (kind=real_kind), public, parameter :: secpday = 86400.0D0 ! Timestep filter

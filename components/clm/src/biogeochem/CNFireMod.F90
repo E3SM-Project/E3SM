@@ -43,9 +43,10 @@ module CNFireMod
   use SoilHydrologyType      , only : soilhydrology_type  
   use TemperatureType        , only : temperature_type
   use WaterstateType         , only : waterstate_type
-  use GridcellType           , only : grc_pp                
+  use GridcellType           , only : grc_pp
+  use TopounitType           , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp                
-  use VegetationType              , only : veg_pp                
+  use VegetationType         , only : veg_pp                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
@@ -161,7 +162,7 @@ contains
     ! non-boreal peat fires (was different in paper)
     real(r8), parameter :: non_boreal_peatfire_c = 0.001_r8
     !
-    integer  :: g,l,c,p,pi,j,fc,fp,kyr, kmo, kda, mcsec   ! index variables
+    integer  :: g,t,l,c,p,pi,j,fc,fp,kyr, kmo, kda, mcsec   ! index variables
     real(r8) :: dt       ! time step variable (s)
     real(r8) :: m        ! top-layer soil moisture (proportion)
     real(r8) :: dayspyr  ! days per year
@@ -181,26 +182,22 @@ contains
     real(r8) :: hdmlf    ! human density
     real(r8) :: btran_col(bounds%begc:bounds%endc)
     logical  :: transient_landcover  ! whether this run has any prescribed transient landcover
-    real(r8), target  :: prec60_col_target(bounds%begc:bounds%endc)
-    real(r8), target  :: prec10_col_target(bounds%begc:bounds%endc)
-    real(r8), pointer :: prec60_col(:)
-    real(r8), pointer :: prec10_col(:)
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
          is_cwd             =>    decomp_cascade_con%is_cwd                 , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool                         
          
-         forc_rh            =>    atm2lnd_vars%forc_rh_grc                  , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
-         forc_wind          =>    atm2lnd_vars%forc_wind_grc                , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
-         forc_t             =>    atm2lnd_vars%forc_t_downscaled_col        , & ! Input:  [real(r8) (:)     ]  downscaled atmospheric temperature (Kelvin)                  
-         forc_rain          =>    atm2lnd_vars%forc_rain_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled rain                                              
-         forc_snow          =>    atm2lnd_vars%forc_snow_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled snow                                              
+         forc_rh            =>    top_as%rhbot                              , & ! Input:  [real(r8) (:)     ]  relative humidity                                 
+         forc_wind          =>    top_as%windbot                            , & ! Input:  [real(r8) (:)     ]  atmospheric wind speed (m/s)                       
+         forc_t             =>    top_as%tbot                               , & ! Input:  [real(r8) (:)     ]  atmospheric temperature (Kelvin)                  
+         forc_rain          =>    top_af%rain                               , & ! Input:  [real(r8) (:)     ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                              
+         forc_snow          =>    top_af%snow                               , & ! Input:  [real(r8) (:)     ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                                            
 #ifdef CPL_BYPASS
          forc_hdm           =>    atm2lnd_vars%forc_hdm                     , & ! Input:  [real(r8) (:)     ]  population density
          forc_lnfm          =>    atm2lnd_vars%forc_lnfm                    , & ! Input:  [real(r8) (:)     ]  ligntning data 
 #endif 
-         prec60             =>    atm2lnd_vars%prec60_patch                 , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation         
-         prec10             =>    atm2lnd_vars%prec10_patch                 , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation         
+         prec60             =>    top_af%prec60d                            , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation, mm liquid H2O/s 
+         prec10             =>    top_af%prec10d                            , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation, mm liquid H2O/s 
          
          tsoi17             =>    temperature_vars%t_soi17cm_col            , & ! Input:  [real(r8) (:)     ]  soil T for top 0.17 m                             
          
@@ -262,16 +259,6 @@ contains
       transient_landcover = run_has_transient_landcover()
 
       !pft to column average 
-      prec10_col => prec10_col_target
-      call p2c(bounds, num_soilc, filter_soilc, &
-           prec10(bounds%begp:bounds%endp), &
-           prec10_col(bounds%begc:bounds%endc))
-
-      prec60_col => prec60_col_target
-      call p2c(bounds, num_soilc, filter_soilc, &
-           prec60(bounds%begp:bounds%endp), &
-           prec60_col(bounds%begc:bounds%endc))
-
       call p2c(bounds, num_soilc, filter_soilc, &
            totvegc(bounds%begp:bounds%endp), &
            totvegc_col(bounds%begc:bounds%endc))
@@ -498,13 +485,14 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           g= col_pp%gridcell(c)
+           g = col_pp%gridcell(c)
+           t = col_pp%topounit(c)
            hdmlf=forc_hdm(g)
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
               ! For crop
-              if( forc_t(c)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
-                   kmo == abm_lf(c) .and. forc_rain(c)+forc_snow(c) == 0._r8  .and. &
+              if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
+                   kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
                  ! calculate human density impact on ag. fire
@@ -531,10 +519,11 @@ contains
      !
      do fc = 1, num_soilc
         c = filter_soilc(fc)
-        g= col_pp%gridcell(c)
+        t = col_pp%topounit(c) 
+        g = col_pp%gridcell(c)
         if(grc_pp%latdeg(g) < borealat )then
            baf_peatf(c) = non_boreal_peatfire_c/secsphr*max(0._r8, &
-                min(1._r8,(4.0_r8-prec60_col(c)*secspday)/ &
+                min(1._r8,(4.0_r8-prec60(t)*secspday)/ &
                 4.0_r8))**2*peatf_lf(c)*(1._r8-fsat(c))
         else
            baf_peatf(c) = boreal_peatfire_c/secsphr*exp(-SHR_CONST_PI*(max(wf2(c),0._r8)/0.3_r8))* &
@@ -564,6 +553,7 @@ contains
      do fc = 1, num_soilc
         c = filter_soilc(fc)
         g = col_pp%gridcell(c)
+        t = col_pp%topounit(c)
         hdmlf=forc_hdm(g)
         if( cropf_col(c)  <  1.0 )then
            if (trotr1_col(c)+trotr2_col(c)>0.6_r8) then
@@ -586,17 +576,17 @@ contains
               fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
               m        = max(0._r8,wf(c))
               fire_m   = exp(-SHR_CONST_PI *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
-                   min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))*  &
-                   min(1._r8,exp(SHR_CONST_PI*(forc_t(c)-SHR_CONST_TKFRZ)/10._r8))
+                   min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8))))*  &
+                   min(1._r8,exp(SHR_CONST_PI*(forc_t(t)-SHR_CONST_TKFRZ)/10._r8))
               lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
               ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
               nfire(c) = ig/secsphr*fb*fire_m*lgdp_col(c) !fire counts/km2/sec
-              Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(g)))
+              Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(t)))
               if ( wtlf(c) > 0.0_r8 )then
                  spread_m = (1.0_r8 - max(0._r8,min(1._r8,(btran_col(c)/wtlf(c)-0.3_r8)/ &
                       (0.7_r8-0.3_r8))))*(1.0_r8-max(0._r8, &
-                      min(1._r8,(forc_rh(g)-30._r8)/(80._r8-30._r8))))
+                      min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8))))
               else
                  spread_m = 0.0_r8
               end if
@@ -617,10 +607,10 @@ contains
                     farea_burned(c) = baf_crop(c)+baf_peatf(c)
                  else
                     cri = (4.0_r8*trotr1_col(c)+1.8_r8*trotr2_col(c))/(trotr1_col(c)+trotr2_col(c))
-                    cli = (max(0._r8,min(1._r8,(cri-prec60_col(c)*secspday)/cri))**0.5)* &
-                         (max(0._r8,min(1._r8,(cri-prec10_col(c)*secspday)/cri))**0.5)* &
+                    cli = (max(0._r8,min(1._r8,(cri-prec60(t)*secspday)/cri))**0.5)* &
+                         (max(0._r8,min(1._r8,(cri-prec10(t)*secspday)/cri))**0.5)* &
                          max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)*dayspyr*secspday/dt-0.001_r8))* &
-                         max(0._r8,min(1._r8,(0.25_r8-(forc_rain(c)+forc_snow(c))*secsphr)/0.25_r8))
+                         max(0._r8,min(1._r8,(0.25_r8-(forc_rain(t)+forc_snow(t))*secsphr)/0.25_r8))
                     farea_burned(c) = cli*(cli_scale/secspday)+baf_crop(c)+baf_peatf(c)
                     ! burned area out of conversion region due to land use fire
                     fbac1(c) = max(0._r8,cli*(cli_scale/secspday) - 2.0_r8*lfc(c)/dt)   

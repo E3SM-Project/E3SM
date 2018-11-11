@@ -92,10 +92,11 @@ def _test_helper1(file_contents):
     ts._parse_test_status(file_contents) # pylint: disable=protected-access
     return ts._phase_statuses # pylint: disable=protected-access
 
-def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, no_run=False):
+def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, no_run=False, no_perm=False):
     lines = file_contents.splitlines()
     rv = None
-    for perm in itertools.permutations(lines):
+    perms = [lines] if no_perm else itertools.permutations(lines)
+    for perm in perms:
         ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
         ts._parse_test_status("\n".join(perm)) # pylint: disable=protected-access
         the_status = ts.get_overall_test_status(wait_for_run=wait_for_run,
@@ -330,6 +331,8 @@ class TestStatus(object):
 
             if (status == TEST_PEND_STATUS):
                 rv = TEST_PEND_STATUS
+                if not no_run:
+                    break
 
             elif (status == TEST_FAIL_STATUS):
                 if ( (not check_throughput and phase == THROUGHPUT_PHASE) or
@@ -410,6 +413,22 @@ class TestStatus(object):
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', no_run=True)
         'PASS'
+        >>> s = '''PASS ERS.foo.A CREATE_NEWCASE
+        ... PASS ERS.foo.A XML
+        ... PASS ERS.foo.A SETUP
+        ... PASS ERS.foo.A SHAREDLIB_BUILD time=454
+        ... PASS ERS.foo.A NLCOMP
+        ... PASS ERS.foo.A MODEL_BUILD time=363
+        ... PASS ERS.foo.A SUBMIT
+        ... PASS ERS.foo.A RUN time=73
+        ... PEND ERS.foo.A COMPARE_base_single_thread
+        ... FAIL ERS.foo.A BASELINE master: DIFF
+        ... PASS ERS.foo.A TPUTCOMP
+        ... PASS ERS.foo.A MEMLEAK insuffiencient data for memleak test
+        ... PASS ERS.foo.A SHORT_TERM_ARCHIVER
+        ... '''
+        >>> _test_helper2(s, no_perm=True)
+        'PEND'
         """
         # Core phases take priority
         core_rv = self._get_overall_status_based_on_phases(CORE_PHASES,

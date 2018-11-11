@@ -30,18 +30,22 @@ def _build_usernl_files(case, model, comp):
 
     expect(os.path.isdir(model_dir),
            "cannot find cime_config directory {} for component {}".format(model_dir, comp))
-    ninst = 1
+    comp_interface = case.get_value("COMP_INTERFACE")
     multi_driver = case.get_value("MULTI_DRIVER")
+    ninst = 1
+
     if multi_driver:
         ninst_max = case.get_value("NINST_MAX")
-        if model not in ("DRV","CPL","ESP"):
+        if comp_interface != "nuopc" and model not in ("DRV","CPL","ESP"):
             ninst_model = case.get_value("NINST_{}".format(model))
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             safe_copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
-        if ninst == 1:
+        if comp_interface == "nuopc":
+            ninst = case.get_value("NINST")
+        elif ninst == 1:
             ninst = case.get_value("NINST_{}".format(model))
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
@@ -98,12 +102,13 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         debug = case.get_value("DEBUG")
         mpilib = case.get_value("MPILIB")
         sysos = case.get_value("OS")
+        comp_interface = case.get_value("COMP_INTERFACE")
         expect(mach is not None, "xml variable MACH is not set")
 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
@@ -113,15 +118,22 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
+        comp_interface = case.get_value("COMP_INTERFACE")
+        if comp_interface == "nuopc":
+            ninst  = case.get_value("NINST")
+
         multi_driver = case.get_value("MULTI_DRIVER")
+
         for comp in models:
             ntasks = case.get_value("NTASKS_{}".format(comp))
             if comp == "CPL":
                 continue
-            ninst  = case.get_value("NINST_{}".format(comp))
+            if comp_interface != "nuopc":
+                ninst  = case.get_value("NINST_{}".format(comp))
             if multi_driver:
-                expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
-                       "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
+                if comp_interface != "nuopc":
+                    expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
+                           "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
                 case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)
             else:
                 if ninst > ntasks:
@@ -130,7 +142,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                         ntasks = ninst
                     else:
                         expect(False, "NINST_{} value {:d} greater than NTASKS_{} {:d}".format(comp, ninst, comp, ntasks))
-                case.set_value("NTASKS_PER_INST_{}".format(comp), int(ntasks / ninst))
+                case.set_value("NTASKS_PER_INST_{}".format(comp), max(1,int(ntasks / ninst)))
 
         if os.path.exists(get_batch_script_for_job(case.get_primary_job())):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")

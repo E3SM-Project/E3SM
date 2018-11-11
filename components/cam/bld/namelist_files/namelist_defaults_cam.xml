@@ -161,6 +161,7 @@
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="72"              >atm/cam/inic/homme/cami_mam4_Linoz_0001-01-ne240np4_L72_c170910.nc</ncdata>
 
 <ncdata dyn="se" hgrid="ne30np4x8arm"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm30x8_L30_c130424.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4x8arm"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm30x8_L26_ape_c000000.nc</ncdata>

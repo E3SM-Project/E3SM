@@ -1,0 +1,18 @@
+IF(DEFINED KOKKOS_PATH)
+  SET (KOKKOS_LIBRARIES "kokkos" CACHE STRING "")
+  SET (KOKKOS_TPL_LIBRARIES "dl" CACHE STRING "")
+  SET (KOKKOS_INCLUDE_DIR ${KOKKOS_PATH}/include CACHE STRING "")
+  SET (KOKKOS_LIBRARY_DIR ${KOKKOS_PATH}/lib CACHE STRING "")
+
+  MESSAGE (STATUS "Standalone Kokkos installation found! Here are the details:")
+  MESSAGE ("    KOKKOS_INCLUDE_DIR: ${KOKKOS_INCLUDE_DIR}")
+  MESSAGE ("    KOKKOS_LIBRARY_DIR: ${KOKKOS_LIBRARY_DIR}")
+  MESSAGE ("    KOKKOS_LIBRARIES:   ${KOKKOS_LIBRARIES}")
+ELSE()
+  MESSAGE(FATAL_ERROR "Kokkos is required by this build; you can specify KOKKOS_PATH to point to a valid installation of Kokkos.")
+ENDIF()
+
+macro(link_to_kokkos targetName)
+  INCLUDE_DIRECTORIES("${KOKKOS_INCLUDE_DIR}")
+  TARGET_LINK_LIBRARIES(${targetName} ${KOKKOS_TPL_LIBRARIES} ${KOKKOS_LIBRARIES} -L${KOKKOS_LIBRARY_DIR})
+endmacro(link_to_kokkos)

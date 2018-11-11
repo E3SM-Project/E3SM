@@ -18,12 +18,12 @@ import CIME.XML.machines
 from argparse           import RawTextHelpFormatter
 
 logger = logging.getLogger(__name__)
+supported_comp_interfaces = ["mct", "nuopc", "moab"]
 
-def query_grids(long_output):
+def query_grids(files, long_output):
     """
     query all grids.
     """
-    files = Files()
     config_file = files.get_value("GRIDS_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
@@ -34,11 +34,10 @@ def query_grids(long_output):
     else:
         grids.print_values()
 
-def query_machines(machine_name='all'):
+def query_machines(files, machine_name='all'):
     """
     query machines. Defaule: all
     """
-    files = Files()
     config_file = files.get_value("MACHINES_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
@@ -46,12 +45,12 @@ def query_machines(machine_name='all'):
     machines = Machines(config_file, machine="Query")
     machines.print_values(machine_name=machine_name)
 
-def query_compsets(name):
+def query_compsets(files, name):
     """
     query compset definition give a compset name
     """
     # Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
-    files, components = get_compsets()
+    components = get_compsets(files)
     match_found = None
     all_components = False
     if re.search("^all$", name):  # print all compsets
@@ -100,11 +99,11 @@ def print_compset(name, files, all_components=False):
     # print compsets associated with component without help text
     compsets.print_values(arg_help=False)
 
-def query_all_components():
+def query_all_components(files):
     """
     query all components
     """
-    files, components = get_components()
+    components = get_components(files)
     # Loop through the elements for each component class (in config_files.xml)
     for comp in components:
         string = "CONFIG_{}_FILE".format(comp)
@@ -112,15 +111,15 @@ def query_all_components():
         # determine all components in string
         components = files.get_components(string)
         for item in components:
-            query_component(item, all_components=True)
+            query_component(item, files, all_components=True)
 
-def query_component(name, all_components=False):
+def query_component(name, files, all_components=False):
     """
     query a component by name
     """
     # Determine the valid component classes (e.g. atm) for the driver/cpl
     # These are then stored in comps_array
-    files, components = get_components()
+    components = get_components(files)
 
     # Loop through the elements for each component class (in config_files.xml)
     # and see if there is a match for the the target component in the component attribute
@@ -178,30 +177,38 @@ def parse_command_line(args, description):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    files, components = get_compsets()
     valid_components = ['all']
-    for item in components:
-        valid_components.append(item)
+    files = {}
+    for comp_interface in supported_comp_interfaces:
+        files[comp_interface] = Files(comp_interface=comp_interface)
+        components = files[comp_interface].get_components("COMPSETS_SPEC_FILE")
+        for item in components:
+            valid_components.append(item)
 
     parser.add_argument("--compsets", nargs='?', const='all', choices=valid_components,
                         help="Query compsets corresponding to the target component for the {} model."
                         " If no component is given, lists compsets defined by all components".format(cime_model))
 
-    files, components = get_components()
     # Loop through the elements for each component class (in config_files.xml)
     valid_components = ['all']
-    for comp in components:
-        if cime_model == "cesm":
-            string = "COMP_ROOT_DIR_{}".format(comp)
-        else:
-            string = "CONFIG_{}_FILE".format(comp)
+    tmp_comp_interfaces = supported_comp_interfaces
+    for comp_interface in tmp_comp_interfaces:
+        try:
+            components = get_components(files[comp_interface])
+        except:
+            supported_comp_interfaces.remove(comp_interface)
 
-        # determine all components in string
-        components = files.get_components(string)
+        for comp in components:
+            if cime_model == "cesm":
+                string = "COMP_ROOT_DIR_{}".format(comp)
+            else:
+                string = "CONFIG_{}_FILE".format(comp)
 
-
-        for item in components:
-            valid_components.append(item)
+            # determine all components in string
+            components = files[comp_interface].get_components(string)
+            if components:
+                for item in components:
+                    valid_components.append(item)
 
     parser.add_argument("--components", nargs='?', const='all', choices=valid_components,
                         help="Query component settings corresponding to the target component for {} model."
@@ -209,8 +216,8 @@ def parse_command_line(args, description):
 
     parser.add_argument("--grids", action="store_true",
                         help="Query supported model grids for {} model.".format(cime_model))
-
-    config_file = files.get_value("MACHINES_SPEC_FILE")
+    # same for all comp_interfaces
+    config_file = files['mct'].get_value("MACHINES_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file {} on disk".format(config_file))
     machines = Machines(config_file, machine="Query")
@@ -225,30 +232,33 @@ def parse_command_line(args, description):
     parser.add_argument("--long", action="store_true",
                         help="Provide long output for queries")
 
+    parser.add_argument("--comp_interface", choices=supported_comp_interfaces,
+                        default='mct',
+                        help="Coupler/Driver interface")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     # make sure at least one argument has been passed
     if not (args.grids or args.compsets or args.components or args.machines):
         parser.print_help(sys.stderr)
 
-    return args
+    return args.grids, args.compsets, args.components, args.machines, \
+        args.long, files[args.comp_interface]
 
-def get_compsets():
+def get_compsets(files):
     """
     Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
     """
-    files = Files()
-    return files, files.get_components("COMPSETS_SPEC_FILE")
+    return files.get_components("COMPSETS_SPEC_FILE")
 
-def get_components():
+def get_components(files):
     """
     Determine the valid component classes (e.g. atm) for the driver/cpl
     These are then stored in comps_array
     """
-    files = Files()
     infile = files.get_value("CONFIG_CPL_FILE")
     config_drv = Component(infile, "CPL")
-    return files, config_drv.get_valid_model_components()
+    return config_drv.get_valid_model_components()
 
 class ArgumentParser(argparse.ArgumentParser):
     """
@@ -258,13 +268,15 @@ class ArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         self.print_usage(sys.stderr)
         # missing argument
+        # TODO: assumes comp_interface='mct'
         if "expected one argument" in message:
             if "compset" in message:
-                files, components = get_compsets()
+                components = get_compsets(Files(comp_interface='mct'))
                 self.exit(2, '{}: error: {}\nValid input arguments are {}\n'
                           .format(self.prog, message, components))
             elif "component" in message:
-                files, components = get_components()
+                files = Files(comp_interface='mct')
+                components = get_components(files)
                 # Loop through the elements for each component class (in config_files.xml)
                 valid_components = []
                 for comp in components:
@@ -308,7 +320,13 @@ class Machines(CIME.XML.machines.Machines):
                 desc = self.text(self.get_child("DESC"))
                 os_  = self.text(self.get_child("OS"))
                 compilers = self.text(self.get_child("COMPILERS"))
-
+                mpilibnodes = self.get_children("MPILIBS", root=self.machine_node)
+                mpilibs = []
+                for node in mpilibnodes:
+                    mpilibs.extend(self.text(node).split(','))
+                # This does not include the possible depedancy of mpilib on compiler
+                # it simply provides a list of mpilibs available on the machine
+                mpilibs = list(set(mpilibs))
                 max_tasks_per_node = self.text(self.get_child("MAX_TASKS_PER_NODE"))
                 mpitasks_node = self.get_optional_child("MAX_MPITASKS_PER_NODE")
                 max_mpitasks_per_node = self.text(mpitasks_node) if mpitasks_node else max_tasks_per_node
@@ -318,6 +336,7 @@ class Machines(CIME.XML.machines.Machines):
                 print("  {} : {} ".format(name, desc))
                 print("      os             ", os_)
                 print("      compilers      ",compilers)
+                print("      mpilibs        ",mpilibs)
                 if max_mpitasks_per_node is not None:
                     print("      pes/node       ",max_mpitasks_per_node)
                 if max_tasks_per_node is not None:
@@ -328,22 +347,23 @@ def _main_func(description):
     """
     main function
     """
-    args = parse_command_line(sys.argv, description)
+    grids, compsets, components, machines, long_output, files = parse_command_line(sys.argv, description)
 
-    if args.grids:
-        query_grids(long_output=args.long)
 
-    if args.compsets is not None:
-        query_compsets(name=args.compsets)
+    if grids:
+        query_grids(files, long_output)
 
-    if args.components is not None:
-        if re.search("^all$", args.components):  # print all compsets
-            query_all_components()
+    if compsets is not None:
+        query_compsets(files, name=compsets)
+
+    if components is not None:
+        if re.search("^all$", components):  # print all compsets
+            query_all_components(files)
         else:
-            query_component(args.components)
+            query_component(components, files)
 
-    if args.machines is not None:
-        query_machines(machine_name=args.machines)
+    if machines is not None:
+        query_machines(files, machine_name=machines)
 
 # main entry point
 if __name__ == "__main__":
