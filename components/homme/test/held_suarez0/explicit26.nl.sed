@@ -9,7 +9,7 @@ statefreq     = SFREQ
 tstep_type    = 5
 qsize         = 1
 rsplit        = 3
-restartfreq   =  30
+restartfreq   =  1
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
 !restartdir    = "bglockless:./restart/"
@@ -28,13 +28,15 @@ vfile_mid     = "../vcoord/camm-26.ascii"
 vfile_int     = "../vcoord/cami-26.ascii"
 /
 &analysis_nl
-output_timeunits=1,1
-output_frequency=1,1
-output_start_time=600,600
-output_end_time=30000,30000
+infilenames='/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc'
+output_timeunits=1,1,1
+output_frequency=1,1,2
+output_start_time=600,600,0
+output_end_time=30000,30000,1
 output_varnames1='u','v','T','zeta','ps'
 !output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 !output_varnames2='DIFFT','DIFFU','DIFFV','CONVU','CONVV','FU','FV'
+output_varnames3='geos'
 io_stride = 32
 /
 

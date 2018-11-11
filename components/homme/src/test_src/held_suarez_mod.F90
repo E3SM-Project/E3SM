@@ -16,6 +16,7 @@ module held_suarez_mod
   use physical_constants,     only: p0, kappa,g, dd_pi
   use physics_mod,            only: prim_condense
   use time_mod,               only: secpday
+  use common_io_mod,          only: infilenames
 
 implicit none
 private
@@ -221,7 +222,7 @@ contains
     integer :: n0 
     integer :: np1
     real (kind=real_kind) :: lat_mtn,lon_mtn,r_mtn,h_mtn,rsq,lat,lon
-    real (kind=real_kind) :: temperature(np,np,nlev)
+    real (kind=real_kind) :: temperature(np,np,nlev),p(np,np),exner(np,np)
 
     if (hybrid%masterthread) write(iulog,*) 'initializing Held-Suarez primitive equations test'
 
@@ -235,7 +236,18 @@ contains
        elem(ie)%state%ps_v(:,:,nm1)=hvcoord%ps0
        elem(ie)%state%ps_v(:,:,np1)=hvcoord%ps0
 
-       elem(ie)%state%phis(:,:)=0.0D0
+       elem(ie)%state%v(:,:,:,:,n0) =0.0D0
+       elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
+       elem(ie)%state%v(:,:,:,:,np1)=elem(ie)%state%v(:,:,:,:,n0)
+
+       temperature(:,:,:)=Tinit
+
+       ! if topo file was given in the namelist, PHIS was initilized in prim_main
+       ! otherwise assume 0
+       if (infilenames(1)=='') then
+          elem(ie)%state%phis(:,:)=0.0D0
+       endif
+
 #undef HS_TOPO1
 #ifdef HS_TOPO1
        lat_mtn = dd_pi/6
@@ -252,9 +264,22 @@ contains
        enddo
 #endif
 
-       elem(ie)%state%v(:,:,:,:,n0) =0.0D0
-       elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
-       elem(ie)%state%v(:,:,:,:,np1)=elem(ie)%state%v(:,:,:,:,n0)
+
+       ! initialize surface pressure to be consistent with topo
+       ! use 11.3pa per meter 
+       elem(ie)%state%ps_v(:,:,n0) = elem(ie)%state%ps_v(:,:,n0) - &
+            11.3*elem(ie)%state%phis(:,:)/g
+       elem(ie)%state%ps_v(:,:,nm1)=elem(ie)%state%ps_v(:,:,n0)
+       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,n0)
+
+#if 0
+       do k=1,nlev
+          p(:,:)=hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,n0)
+          exner(:,:) = (p(:,:)/hvcoord%ps0)**kappa
+          temperature(:,:,k)=(Tinit-150)+150*exner(:,:)
+       enddo
+#endif
+
 
        if (qsize>=1) then
        q=1
@@ -264,7 +289,6 @@ contains
        enddo
        endif
 
-       temperature(:,:,:)=Tinit
        do tl=1,timelevels
           call set_thermostate(elem(ie),temperature,hvcoord,n0,1)
        enddo

@@ -53,7 +53,7 @@
 #SBATCH --account=FY150001
 #SBATCH --time=2:00:00
 #PBS -l walltime=3:00:00
-#PBS -l nodes=38
+#PBS -l nodes=22
 #PBS -q acme
 
 
@@ -71,7 +71,7 @@ set rfreq = 10000   # no. of days, or n. of timesteps if ndays=0
 # 0 = normal, 1=restart
 set runtype = 0 
 
-set ne = 15
+set ne = 16
 set NPTS = 4
 set qsize = 1         # number of tracers
 if ( $ne == 8 ) then
@@ -85,6 +85,13 @@ if ( $ne == 15 ) then
    set tstep = 600
    set nu = 1e16
    if ( $NCPU > 1350) set NCPU = 1350
+endif
+if ( $ne == 16 ) then
+   # 2 degree  anvil 38 nodes, 1600 days: 5min 
+   # tbird 100 nodes, 1200days: 90min
+   set tstep = 600
+   set nu = 7e15    # turn on subcycling for larger values
+   if ( $NCPU > 1536) set NCPU = 1536
 endif
 if ( $ne == 30 ) then
    # 1 degree    
@@ -121,8 +128,9 @@ if ( $ndays == 0 ) then
   set sfreq = $nmax
 endif
 
-set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
-set name = hs-${mesh}-nu${nu}
+#set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+#set name = hs-${mesh}-nu${nu}
+set name = hs-ne${ne}-nu${nu}
 echo $name
 
 
@@ -147,11 +155,11 @@ if (! -f CMakeCache.txt) then
    -DPREQX_USE_ENERGY=TRUE  $HOMME
    if ($status) exit
 endif
-if (! -f $exe ) then
-   make -j4 clean
+#if (! -f $exe ) then
+   #make -j4 clean
    make -j4 preqx
    if ($status) exit
-endif
+#endif
 
 
 # setup the work directory

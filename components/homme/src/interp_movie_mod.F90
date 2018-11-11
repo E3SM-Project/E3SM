@@ -742,6 +742,7 @@ contains
 !            large block of _PRIM only I/O
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
              if(nf_selectedvar('geos', output_varnames)) then
+                if (par%masterproc) print *,'writing geos...'
                 if (nf_get_frame(ncdf(ios))==1) then
                 st=1
                 allocate (datall(ncnt,1))
