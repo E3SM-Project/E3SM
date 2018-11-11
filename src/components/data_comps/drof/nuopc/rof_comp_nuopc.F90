@@ -310,7 +310,7 @@ contains
 
     call drof_comp_init(x2r, r2x, &
          SDROF, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
+         inst_suffix, logunit, read_restart, &
          current_ymd, current_tod, calendar, Emesh)
 
     !--------------------------------

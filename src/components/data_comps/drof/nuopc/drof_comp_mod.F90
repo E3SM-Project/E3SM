@@ -132,7 +132,7 @@ contains
 
   subroutine drof_comp_init(x2r, r2x, &
        SDROF, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, &
+       inst_suffix, logunit, read_restart, &
        target_ymd, target_tod, calendar, mesh)
 
     ! !DESCRIPTION: initialize drof model
@@ -145,7 +145,6 @@ contains
     integer                , intent(in)    :: my_task      ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task  ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name    ! fullname of current instance (ie. "lnd_0001")
     integer                , intent(in)    :: logunit      ! logging unit number
     logical                , intent(in)    :: read_restart ! start from restart
     integer                , intent(in)    :: target_ymd   ! model date
