@@ -35,7 +35,7 @@ contains
     ! read CN and BGC shared parameters
     !
 
-    use CNSharedParamsMod       , only : CNParamsReadShared
+    use SharedParamsMod       , only : ParamsReadShared
 
     use clm_varctl              , only : paramfile, iulog
     use spmdMod                 , only : masterproc
@@ -67,7 +67,7 @@ contains
     !
     ! some parameters (eg. organic_max) are used in non-CN, non-BGC cases
     !
-    call CNParamsReadShared(ncid)
+    call ParamsReadShared(ncid)
 
 
   end subroutine CNParamsSharedReadFile

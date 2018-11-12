@@ -13,7 +13,7 @@ module MaintenanceRespMod
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use pftvarcon           , only : npcropmin
-  use CNSharedParamsMod   , only : CNParamsShareInst
+  use SharedParamsMod   , only : ParamsShareInst
   use VegetationPropertiesType      , only : veg_vp
   use SoilStateType       , only : soilstate_type
   use CanopyStateType     , only : canopystate_type
@@ -149,8 +149,8 @@ contains
       ! to improve seasonal cycle of atmospheric CO2 concentration in global
       ! simulatoins
 
-      ! Set Q10 from CNSharedParamsMod
-      Q10 = CNParamsShareInst%Q10_mr
+      ! Set Q10 from SharedParamsMod
+      Q10 = ParamsShareInst%Q10_mr
 
       ! column loop to calculate temperature factors in each soil layer
       do j=1,nlevgrnd

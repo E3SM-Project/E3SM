@@ -9,7 +9,7 @@ Module SoilHydrologyType
   use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
   use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
   use clm_varctl            , only : iulog 
-  use CNSharedParamsMod     , only : CNParamsShareInst
+  use SharedParamsMod     , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
   use ColumnType            , only : col_pp                
   !
@@ -435,7 +435,7 @@ contains
        enddo
        zisoifl(nlevsoifl) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
 
-       organic_max = CNParamsShareInst%organic_max
+       organic_max = ParamsShareInst%organic_max
 
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)

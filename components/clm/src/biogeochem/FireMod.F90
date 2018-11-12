@@ -50,7 +50,7 @@ module FireMod
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
-  use CNSharedParamsMod      , only : CNParamsShareInst
+  use SharedParamsMod      , only : ParamsShareInst
   use clm_varctl             , only : nu_com
   !
   implicit none

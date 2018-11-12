@@ -20,7 +20,7 @@ module CH4Mod
   use clm_varctl         , only : iulog, use_cn, use_nitrif_denitrif, use_lch4
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type
-  use CNSharedParamsMod  , only : CNParamsShareInst
+  use SharedParamsMod  , only : ParamsShareInst
   use atm2lndType        , only : atm2lnd_type
   use CanopyStateType    , only : canopystate_type
   use CNCarbonFluxType   , only : carbonflux_type
@@ -1896,7 +1896,7 @@ contains
     use CH4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
     use clm_varctl         , only: anoxia
     use clm_varpar         , only: nlevdecomp, nlevdecomp_full
-    use CNSharedParamsMod  , only: nlev_soildecomp_standard
+    use SharedParamsMod  , only: nlev_soildecomp_standard
     use pftvarcon          , only: noveg
     !
     ! !ARGUMENTS:
@@ -2016,7 +2016,7 @@ contains
       q10lakebase      = CH4ParamsInst%q10lakebase
 
       ! Shared constant with other modules
-      mino2lim = CNParamsShareInst%mino2lim
+      mino2lim = ParamsShareInst%mino2lim
 
       q10lake = q10ch4 * 1.5_r8
 
@@ -2954,7 +2954,7 @@ contains
       aereoxid             = CH4ParamsInst%aereoxid
 
       ! Set shared constant
-      organic_max = CNParamsShareInst%organic_max
+      organic_max = ParamsShareInst%organic_max
 
       ! Perform competition for oxygen and methane in each soil layer if demands over the course of the timestep
       ! exceed that available. Assign to each process in proportion to the quantity demanded in the absense of

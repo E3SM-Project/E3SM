@@ -306,7 +306,7 @@ contains
     use pftvarcon           , only : noveg, roota_par, rootb_par
     use fileutils           , only : getfil
     use organicFileMod      , only : organicrd 
-    use CNSharedParamsMod   , only : CNParamsShareInst
+    use SharedParamsMod   , only : ParamsShareInst
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
     !
@@ -432,7 +432,7 @@ contains
 
     ! Read in organic matter dataset 
 
-    organic_max = CNParamsShareInst%organic_max
+    organic_max = ParamsShareInst%organic_max
 
     allocate(organic3d(bounds%begg:bounds%endg,nlevsoifl))
     call organicrd(organic3d)

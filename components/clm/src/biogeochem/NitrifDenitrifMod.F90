@@ -111,7 +111,7 @@ contains
     !
     ! !USES:
     use clm_time_manager  , only : get_curr_date, get_step_size
-    use CNSharedParamsMod , only : anoxia_wtsat,CNParamsShareInst
+    use SharedParamsMod , only : anoxia_wtsat,ParamsShareInst
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds  
@@ -222,7 +222,7 @@ contains
       rij_kro_gamma = NitrifDenitrifParamsInst%rij_kro_gamma
       rij_kro_delta = NitrifDenitrifParamsInst%rij_kro_delta
 
-      organic_max = CNParamsShareInst%organic_max
+      organic_max = ParamsShareInst%organic_max
 
       pH(bounds%begc:bounds%endc) = 6.5  !!! set all soils with the same pH as placeholder here
       co2diff_con(1) =   0.1325_r8

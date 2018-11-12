@@ -15,7 +15,7 @@ module DecompCascadeCNMod
   use clm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
-  use CNSharedParamsMod      , only : CNParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard 
+  use SharedParamsMod      , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard 
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use CNCarbonFluxType       , only : carbonflux_type
@@ -698,7 +698,7 @@ contains
           decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)    ! pflotran (0 for atm. co2)
           )
 
-       mino2lim = CNParamsShareInst%mino2lim
+       mino2lim = ParamsShareInst%mino2lim
 
        ! set time steps
        dt = real( get_step_size(), r8 )
@@ -735,14 +735,14 @@ contains
 
        minpsi=DecompCNParamsInst%minpsi_cn
 
-       Q10 = CNParamsShareInst%Q10_hr
+       Q10 = ParamsShareInst%Q10_hr
 
        ! set "froz_q10" parameter
-       froz_q10  = CNParamsShareInst%froz_q10
+       froz_q10  = ParamsShareInst%froz_q10
 
        if (use_vertsoilc) then
           ! Set "decomp_depth_efolding" parameter
-          decomp_depth_efolding = CNParamsShareInst%decomp_depth_efolding
+          decomp_depth_efolding = ParamsShareInst%decomp_depth_efolding
        end if
 
        i_litr1 = 1
