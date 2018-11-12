@@ -3478,24 +3478,10 @@ contains
             avgflag='A', long_name='C13 seed source to patch-level leaf', &
             ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
 
-       this%dwt_seedc_to_leaf_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_LEAF_PATCH', units='gC13/m^2/s', &
-            avgflag='A', &
-            long_name='C13 patch-level seed source to patch-level leaf ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_leaf_patch, default='inactive')
-
        this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
        call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 seed source to patch-level deadstem', &
             ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_PATCH', units='gC13/m^2/s', &
-            avgflag='A', &
-            long_name='C13 patch-level seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
 
        this%dwt_conv_cflux_grc(begg:endg) = spval
        call hist_addfld1d (fname='C13_DWT_CONV_CFLUX_GRC', units='gC13/m^2/s', &
@@ -3548,14 +3534,8 @@ contains
        call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_PATCH', units='gC13/m^2/s', &
             avgflag='A', &
             long_name='patch-level C13 seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+           '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
             ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 conversion C flux (immediate loss to atm) ' // &
-            '(0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
 
        this%dwt_conv_cflux_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
@@ -3783,24 +3763,10 @@ contains
             avgflag='A', long_name='C14 seed source to patch-level leaf', &
             ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
 
-       this%dwt_seedc_to_leaf_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_LEAF_PATCH', units='gC14/m^2/s', &
-            avgflag='A', &
-            long_name='C14 patch-level seed source to patch-level leaf ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_leaf_patch, default='inactive')
-
        this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
        call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 seed source to patch-level deadstem', &
             ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM_PATCH', units='gC14/m^2/s', &
-            avgflag='A', &
-            long_name='C14 patch-level seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
 
        this%dwt_conv_cflux_grc(begg:endg) = spval
        call hist_addfld1d (fname='C14_DWT_CONV_CFLUX_GRC', units='gC14/m^2/s', &
@@ -3855,12 +3821,6 @@ contains
             long_name='patch-level C14 seed source to patch-level deadstem ' // &
             '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
             ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 conversion C flux (immediate loss to atm) ' // &
-            '(0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
 
        this%dwt_conv_cflux_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_DWT_CONV_CFLUX', units='gC14/m^2/s', &
