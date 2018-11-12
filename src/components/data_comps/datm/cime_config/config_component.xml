@@ -277,10 +277,10 @@
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="2000.*_DATM%CRU">2010</value>
       <value   compset="2003.*_DATM%CRU">2003</value>
-      <value   compset="2010.*_DATM%CRU">2015</value>
+      <value   compset="2010.*_DATM%CRU">2014</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
       <value   compset="2000.*_DATM%GSW">2010</value>
-      <value   compset="2010.*_DATM%GSW">2015</value>
+      <value   compset="2010.*_DATM%GSW">2014</value>
       <value   compset="2003.*_DATM%GSW">2003</value>
     </values>
     <group>run_component_datm</group>
