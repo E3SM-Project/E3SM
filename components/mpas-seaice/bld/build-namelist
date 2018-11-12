@@ -56,6 +56,8 @@ OPTIONS
      -ice_bgc              variable for enabling sea ice BGC
      -surface_mode         variable for surface mode
                            Options are: free, non-free
+     -iceberg_mode         variable for iceberg mode
+                           Options are: none, data, prognostic
      -ntasks_ice           NTASKS_ICE for this case
      -ninst_ice            NINST_ICE for this case
 
@@ -102,6 +104,7 @@ my %opts = ( help          => 0,
              ic_mode       => undef,
              ice_bgc       => undef,
              surface_mode  => undef,
+             iceberg_mode  => undef,
              cfg_dir       => $cfgdir,
              ntasks_ice    => 0,
              ninst_ice     => 0,
@@ -122,6 +125,7 @@ GetOptions(
     "ic_mode=s"       => \$opts{'ic_mode'},
     "ice_bgc=s"       => \$opts{'ice_bgc'},
     "surface_mode=s"  => \$opts{'surface_mode'},
+    "iceberg_mode=s"  => \$opts{'iceberg_mode'},
     "cfg_dir=s"       => \$opts{'cfg_dir'},
     "preview"         => \$opts{'preview'},
     "ntasks_ice=i"    => \$opts{'ntasks_ice'},
@@ -159,6 +163,7 @@ my $date_stamp    = $opts{'date_stamp'};
 my $ic_mode       = $opts{'ic_mode'};
 my $ice_bgc       = $opts{'ice_bgc'};
 my $surface_mode  = $opts{'surface_mode'};
+my $iceberg_mode  = $opts{'iceberg_mode'};
 my $NINST_ICE     = $opts{'ninst_ice'};
 my $NTASKS_ICE    = $opts{'ntasks_ice'};
 $cfgdir           = $opts{'cfg_dir'};
@@ -851,6 +856,11 @@ if ($surface_mode eq 'non-free') {
         add_default($nl, 'config_ocean_surface_type', 'val'=>"free");
 }
 add_default($nl, 'config_couple_biogeochemistry_fields');
+if ($iceberg_mode eq 'data') {
+        add_default($nl, 'config_use_data_icebergs', 'val'=>"true");
+} else {
+        add_default($nl, 'config_use_data_icebergs', 'val'=>"false");
+}
 
 ###############################
 # Namelist group: diagnostics #

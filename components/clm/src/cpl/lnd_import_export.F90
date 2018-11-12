@@ -6,7 +6,9 @@ module lnd_import_export
   use lnd2atmType  , only: lnd2atm_type
   use lnd2glcMod   , only: lnd2glc_type
   use atm2lndType  , only: atm2lnd_type
-  use glc2lndMod   , only: glc2lnd_type 
+  use glc2lndMod   , only: glc2lnd_type
+  use GridcellType , only: grc_pp          ! for access to gridcell topology
+  use TopounitType , only: top_as, top_af  ! atmospheric state and flux variables  
   use clm_cpl_indices
   use mct_mod
   !
@@ -43,7 +45,7 @@ contains
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
     !
     ! !LOCAL VARIABLES:
-    integer  :: g,i,m,thism,nstep,ier  ! indices, number of steps, and error code
+    integer  :: g,topo,i,m,thism,nstep,ier  ! indices, number of steps, and error code
     real(r8) :: forc_rainc           ! rainxy Atm flux mm/s
     real(r8) :: e, ea                ! vapor pressure (Pa)
     real(r8) :: qsat                 ! saturation specific humidity (kg/kg)
@@ -62,6 +64,7 @@ contains
     real(r8) :: a0,a1,a2,a3,a4,a5,a6 ! coefficients for esat over water
     real(r8) :: b0,b1,b2,b3,b4,b5,b6 ! coefficients for esat over ice
     real(r8) :: tdc, t               ! Kelvins to Celcius function and its input
+    real(r8) :: vp                   ! water vapor pressure (Pa)
     integer  :: num, nu_nml, nml_error                 
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
     real(r8) :: thiscosz, avgcosz, szenith
@@ -966,9 +969,74 @@ contains
        atm2lnd_vars%forc_aer_grc(g,12) =  x2l(index_x2l_Faxa_dstdry3,i)
        atm2lnd_vars%forc_aer_grc(g,13) =  x2l(index_x2l_Faxa_dstwet4,i)
        atm2lnd_vars%forc_aer_grc(g,14) =  x2l(index_x2l_Faxa_dstdry4,i)
+       
+       !set the topounit-level atmospheric state and flux forcings
+       do topo = grc_pp%topi(g), grc_pp%topf(g)
+         ! first, all the state forcings
+         top_as%tbot(topo)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
+         top_as%thbot(topo)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+         top_as%pbot(topo)    = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy    Atm state Pa
+         top_as%qbot(topo)    = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
+         top_as%ubot(topo)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
+         top_as%vbot(topo)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+         top_as%zbot(topo)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+         ! assign the state forcing fields derived from other inputs
+         ! Horizontal windspeed (m/s)
+         top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
+         ! Relative humidity (percent)
+         if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
+            e = esatw(tdc(top_as%tbot(topo)))
+         else
+            e = esati(tdc(top_as%tbot(topo)))
+         end if
+         qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
+         top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
+         ! partial pressure of oxygen (Pa)
+         top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
+         ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
+         vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
+         top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
+         
+         ! second, all the flux forcings
+         top_af%rain(topo)    = forc_rainc + forc_rainl       ! sum of convective and large-scale rain
+         top_af%snow(topo)    = forc_snowc + forc_snowl       ! sum of convective and large-scale snow
+         top_af%solad(topo,2) = x2l(index_x2l_Faxa_swndr,i)   ! forc_sollxy  Atm flux  W/m^2
+         top_af%solad(topo,1) = x2l(index_x2l_Faxa_swvdr,i)   ! forc_solsxy  Atm flux  W/m^2
+         top_af%solai(topo,2) = x2l(index_x2l_Faxa_swndf,i)   ! forc_solldxy Atm flux  W/m^2
+         top_af%solai(topo,1) = x2l(index_x2l_Faxa_swvdf,i)   ! forc_solsdxy Atm flux  W/m^2
+         top_af%lwrad(topo)   = x2l(index_x2l_Faxa_lwdn,i)    ! flwdsxy Atm flux  W/m^2
+         ! derived flux forcings
+         top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
+                              top_af%solai(topo,2) + top_af%solai(topo,1)
+       end do
+         
 #endif
 
        ! Determine optional receive fields
+       ! CO2 (and C13O2) concentration: constant, prognostic, or diagnostic
+       if (co2_type_idx == 0) then                    ! CO2 constant, value from namelist
+         co2_ppmv_val = co2_ppmv
+       else if (co2_type_idx == 1) then               ! CO2 prognostic, value from coupler field
+         co2_ppmv_val = x2l(index_x2l_Sa_co2prog,i)
+       else if (co2_type_idx == 2) then               ! CO2 diagnostic, value from coupler field
+         co2_ppmv_val = x2l(index_x2l_Sa_co2diag,i)
+       else
+         call endrun( sub//' ERROR: Invalid co2_type_idx, must be 0, 1, or 2 (constant, prognostic, or diagnostic)' )
+       end if
+       ! Assign to topounits, with conversion from ppmv to partial pressure (Pa)
+       ! If using C13, then get the c13ratio from clm_varcon (constant value for pre-industrial atmosphere)
+       do topo = grc_pp%topi(g), grc_pp%topf(g)
+         top_as%pco2bot(topo) = co2_ppmv_val * 1.e-6_r8 * top_as%pbot(topo)
+         if (use_c13) then
+            top_as%pc13o2bot(topo) = top_as%pco2bot(topo) * c13ratio;
+         end if
+       end do
+       ! CH4
+       if (index_x2l_Sa_methane /= 0) then
+          do topo = grc_pp%topi(g), grc_pp%topf(g)
+            top_as%pch4bot(topo) = x2l(index_x2l_Sa_methane,i)
+          end do
+       endif
 
        if (index_x2l_Sa_co2prog /= 0) then
           co2_ppmv_prog = x2l(index_x2l_Sa_co2prog,i)   ! co2 atm state prognostic

@@ -349,6 +349,7 @@
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
+<config_use_data_icebergs>false</config_use_data_icebergs>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>

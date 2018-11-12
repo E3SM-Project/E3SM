@@ -211,6 +211,27 @@
   <lname>20TR_CAM5%CMIP6_CLM45%CNPECACNTBC_MPASCICE%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
+<!-- E3SM v1 cryosphere compsets -->
+
+<compset>
+  <alias>A_WCYCL1850-DIB</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%DIB_MPASO%IB_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850-DIB-ISMF</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850-DIB_CMIP6</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%DIB_MPASO%IB_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850-DIB-ISMF_CMIP6</alias>
+  <lname>1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+</compset>
 
 <!-- E3SM backup compsets -->
 <compset>
@@ -303,36 +324,4 @@
   <lname>20TR_CAM5_CLM45%CNECACTCBC_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
 </compset>
 
-<entries>
-
-  <entry id="RUN_STARTDATE">
-    <values>
-      <value  compset="20TR_CAM">1850-01-01</value>
-    </values>
-  </entry>
-
-  <entry id="RUN_REFDATE">
-     <values match="first">
-       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >0331-01-01</value>
-      </values>
-  </entry>
-
-  <entry id="RUN_TYPE">
-     <values match="first">
-       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >hybrid</value>
-      </values>
-  </entry>
-
-  <entry id="RUN_REFCASE">
-     <values match="first">
-       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >20171228.beta3rc13_1850.ne30_oECv3_ICG.edison</value>
-      </values>
-  </entry>
-
-  <entry id="RUN_REFDIR">
-     <values match="first">
-       <value grid="a%ne30np4_l%ne30np4_oi%oEC60to30v3_ICG_r%r05_g%null_w%null_m%oEC60to30v3"      compset="1850_CAM5%CMIP6_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV"    >e3sm_init</value>
-      </values>
-  </entry>
-</entries>
 </compsets>

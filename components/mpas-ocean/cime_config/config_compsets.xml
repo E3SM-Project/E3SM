@@ -27,8 +27,38 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-NYF-ISMF</alias>
+    <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO%ISMFCOREFORCED_DROF%NYFAIS45_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-IAF</alias>
     <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%COREFORCED_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-IAF-ISMF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%ISMFCOREFORCED_DROF%IAFAIS45_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-DIB-NYF</alias>
+    <lname>2000_DATM%NYF_SLND_MPASCICE%DIB_MPASO%IBCOREFORCED_DROF%NYFAIS55_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-DIB-NYF-ISMF</alias>
+    <lname>2000_DATM%NYF_SLND_MPASCICE%DIB_MPASO%IBISMFCOREFORCED_DROF%NYFAIS00_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-DIB-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%DIB_MPASO%IBCOREFORCED_DROF%IAFAIS55_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-DIB-IAF-ISMF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%DIB_MPASO%IBISMFCOREFORCED_DROF%IAFAIS00_SGLC_SWAV</lname>
   </compset>
 
   <compset>

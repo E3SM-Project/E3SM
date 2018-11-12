@@ -202,7 +202,6 @@ CONTAINS
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
        scmmode, scmlon, scmlat)
 
-    use shr_flds_mod  , only : seq_flds_dom_coord, seq_flds_dom_other
     use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
     use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes, &
@@ -379,8 +378,7 @@ CONTAINS
 
     call shr_dmodel_gsmapCreate(gsMap,nxgo,nygo,nzgo,compid,mpicom,trim(ldecomp))
     lsize = mct_gsMap_lsize(gsMap, mpicom)
-    call mct_gGrid_init( GGrid=gGrid, CoordChars=trim(seq_flds_dom_coord), &
-         OtherChars=trim(seq_flds_dom_other), lsize=lsize )
+    call mct_gGrid_init(GGrid=Ggrid, CoordChars='lat:lon:hgt', OtherChars='area:aream:mask:frac', lsize=lsize )
 
     ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
 
