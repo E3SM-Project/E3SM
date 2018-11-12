@@ -1384,6 +1384,13 @@
       <support>Experimental tripole ocean grid</support>
     </domain>
 
+    <domain name="oQU120">
+      <nx>28574</nx>  <ny>1</ny>
+      <file mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.ocn.oQU120.160325.nc</file>
+      <desc>oQU120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
+      <support>Experimental, under development</support>
+    </domain>
+
     <!-- ROF domains -->
 
     <domain name="rx1">
@@ -1395,7 +1402,7 @@
 
     <domain name="r05">
       <nx>720</nx> <ny>360</ny>
-      <mesh>$DIN_LOC_ROOT/share/meshes/r05_nomask_070925_ESMFmesh.nc</mesh>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh.nc</mesh>
       <desc>r05 is 1/2 degree river routing grid:</desc>
     </domain>
 
@@ -1408,14 +1415,7 @@
 
     <domain name="JRA025">
       <nx>1440</nx> <ny>720</ny>
-      <desc>JRA 0.25 degree runoff grid for use with JRA-55 runoff data</desc>
-    </domain>
-
-    <domain name="oQU120">
-      <nx>28574</nx>  <ny>1</ny>
-      <file mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.ocn.oQU120.160325.nc</file>
-      <desc>oQU120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
-      <support>Experimental, under development</support>
+      <desc>JRA is 0.25 degree runoff grid for use with JRA-55 runoff data</desc>
     </domain>
 
     <!-- GLC domains -->
