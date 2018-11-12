@@ -397,13 +397,11 @@ contains
 
   real(kind=real_kind)                  :: gp(np)
 
-
-!new forcing
+  q = 1
   do ie=nets,nete
      call get_temperature(elem(ie),tn1,hvcoord,n0)
      ! semi-epeated code from applycamforcing_tracers
      psn1(:,:) = 0.0
-     q = 1
      do k=1,nlev
         do j=1,np
            do i=1,np
@@ -424,6 +422,8 @@ contains
 
      if (use_moisture) then
         psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) + dt*psn1(:,:)
+     else
+        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) 
      endif
 
      do k=1,nlev
