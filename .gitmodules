@@ -1,6 +1,6 @@
 [submodule "components/clm/src/external_models/fates"]
 	path = components/clm/src/external_models/fates
-	url = git@github.com:NGEET/fates-release.git
+	url = git@github.com:NGEET/fates.git
 [submodule "alm-mpp"]
 	path = components/clm/src/external_models/mpp
 	url = git@github.com:MPP-LSM/MPP.git
