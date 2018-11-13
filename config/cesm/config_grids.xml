@@ -1088,7 +1088,7 @@
       <nx>72</nx> <ny>46</ny>
       <file grid="atm|lnd" mask="gx3v7">domain.lnd.fv4x5_gx3v7.091218.nc</file>
       <file grid="ocnice">domain.ocn.4x5_gx3v7_100120.nc</file>
-      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc</mesh> 
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc</mesh>
       <desc>4x5 is FV 4-deg grid:</desc>
     </domain>
 
