@@ -1,6 +1,41 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 11-13-2018
+Tag: cime_cesm2_1_rel_04
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Fix 2010 period for datm GSWP3v1.
+    - Update pyCECT to v3.0.8
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+2e72d20 Merge pull request #2908 from ekluzek/fix2010datm
+5f4a911 Merge pull request #2905 from ESMCI/fischer/pyCECT_v3.0.8
+
+Modified files: git diff --name-status [previous_tag]
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M       tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M       tools/statistical_ensemble_test/pyCECT/README_pyEnsSumPop.rst
+M       tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+D       tools/statistical_ensemble_test/pyCECT/pyEnsSumPop_test.sh
+M       tools/statistical_ensemble_test/pyCECT/test_pop_CECT.sh
+D       tools/statistical_ensemble_test/pyCECT/test_pop_ensemble.sh
+A       tools/statistical_ensemble_test/pyCECT/test_pyEnsSumPop.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 11-5-2018
 Tag: cime_cesm2_1_rel_03
 Answer Changes: None
