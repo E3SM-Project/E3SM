@@ -2994,17 +2994,22 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Mesh_Print(mesh, string, rc)
-    use ESMF, only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
+    use ESMF, only: ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
+    use ESMF, only: ESMF_DELayoutGet, ESMF_DELayout
+    use ESMF, only: ESMF_MeshStatus_Flag, ESMF_MeshStatus_Complete
     type(ESMF_Mesh) , intent(in)  :: mesh
     character(len=*), intent(in)  :: string
     integer         , intent(out) :: rc
 
     type(ESMF_Distgrid)         :: distgrid
+    type(ESMF_DELayout)         :: delayout
     integer                     :: pdim, sdim, nnodes, nelements
     integer                     :: localDeCount
     integer                     :: DeCount
     integer                     :: dimCount, tileCount
     integer, allocatable        :: minIndexPTile(:,:), maxIndexPTile(:,:)
+    type(ESMF_MeshStatus_Flag)  :: meshStatus
+    logical                     :: elemDGPresent, nodeDGPresent
     integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Mesh_Print)'
 
@@ -3013,56 +3018,142 @@ module shr_nuopc_methods_mod
     endif
     rc = ESMF_SUCCESS
 
-    ! access localDeCount to show this is a real Grid
-    call ESMF_MeshGet(mesh, parametricDim=pdim, spatialDim=sdim, elementDistgrid=distgrid, &
-         numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
+    call ESMF_MeshGet(mesh, elementDistGridIsPresent=elemDGPresent, &
+         nodalDistgridIsPresent=nodeDGPresent, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write (msgString,*) trim(subname)//":"//trim(string)//": parametricDim=", pdim
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    write (msgString,*) trim(subname)//":"//trim(string)//": spatialDim=", sdim
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    write (msgString,*) trim(subname)//":"//trim(string)//": numOwnedNodes=", nnodes
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    write (msgString,*) trim(subname)//":"//trim(string)//": numOwnedElements=", nelements
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+    call ESMF_MeshGet(mesh, status=meshStatus, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! get dimCount and tileCount
-    call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, deCount=deCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! first get the distgrid, which should be available
+    if (elemDGPresent) then
+       call ESMF_MeshGet(mesh, elementDistgrid=distgrid, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//": distGrid=element"
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write (msgString,*) trim(subname)//":"//trim(string)//": dimCount=", dimCount
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_DistGridGet(distgrid, deLayout=deLayout, dimCount=dimCount, &
+            tileCount=tileCount, deCount=deCount, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    dimCount=", dimCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    tileCount=", tileCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    deCount=", deCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write (msgString,*) trim(subname)//":"//trim(string)//": tileCount=", tileCount
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_DELayoutGet(deLayout, localDeCount=localDeCount, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write (msgString,*) trim(subname)//":"//trim(string)//": deCount=", deCount
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write (msgString,*) trim(subname)//":"//trim(string)//":    localDeCount=", localDeCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
+       allocate(minIndexPTile(dimCount, tileCount), &
+            maxIndexPTile(dimCount, tileCount))
+       
+       ! get minIndex and maxIndex arrays
+       call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+            maxIndexPTile=maxIndexPTile, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    minIndexPTile=", minIndexPTile
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    maxIndexPTile=", maxIndexPTile
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       deallocate(minIndexPTile, maxIndexPTile)       
 
-    ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
-    allocate(minIndexPTile(dimCount, tileCount), &
-             maxIndexPTile(dimCount, tileCount))
+    endif
 
-    ! get minIndex and maxIndex arrays
-    call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
-       maxIndexPTile=maxIndexPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (nodeDGPresent) then
+       call ESMF_MeshGet(mesh, nodalDistgrid=distgrid, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write (msgString,*) trim(subname)//":"//trim(string)//": minIndexPTile=", minIndexPTile
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write (msgString,*) trim(subname)//":"//trim(string)//": distGrid=nodal"
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write (msgString,*) trim(subname)//":"//trim(string)//": maxIndexPTile=", maxIndexPTile
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_DistGridGet(distgrid, deLayout=deLayout, dimCount=dimCount, &
+            tileCount=tileCount, deCount=deCount, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    dimCount=", dimCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    tileCount=", tileCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    deCount=", deCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    deallocate(minIndexPTile, maxIndexPTile)
+       call ESMF_DELayoutGet(deLayout, localDeCount=localDeCount, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+       write (msgString,*) trim(subname)//":"//trim(string)//":    localDeCount=", localDeCount
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+ 
+       ! allocate minIndexPTile and maxIndexPTile accord. to dimCount and tileCount
+       allocate(minIndexPTile(dimCount, tileCount), &
+            maxIndexPTile(dimCount, tileCount))
+       
+       ! get minIndex and maxIndex arrays
+       call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
+            maxIndexPTile=maxIndexPTile, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    minIndexPTile=", minIndexPTile
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//":    maxIndexPTile=", maxIndexPTile
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       deallocate(minIndexPTile, maxIndexPTile)       
+
+    endif
+
+    if (.not. elemDGPresent .and. .not. nodeDGPresent) then
+       call ESMF_LogWrite(trim(subname)//": cannot print distgrid from mesh", & 
+            ESMF_LOGMSG_WARNING, rc=rc)
+       return
+    endif
+
+    ! if mesh is complete, also get additional parameters
+    if (meshStatus==ESMF_MESHSTATUS_COMPLETE) then   
+       ! access localDeCount to show this is a real Grid
+       call ESMF_MeshGet(mesh, parametricDim=pdim, spatialDim=sdim, &
+            numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       write (msgString,*) trim(subname)//":"//trim(string)//": parametricDim=", pdim
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       write (msgString,*) trim(subname)//":"//trim(string)//": spatialDim=", sdim
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       write (msgString,*) trim(subname)//":"//trim(string)//": numOwnedNodes=", nnodes
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       write (msgString,*) trim(subname)//":"//trim(string)//": numOwnedElements=", nelements
+       call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
+       
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif

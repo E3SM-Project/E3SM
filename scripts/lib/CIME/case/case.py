@@ -788,7 +788,7 @@ class Case(object):
         #--------------------------------------------
         grids = Grids(gridfile)
 
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname, driver=driver)
 
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
