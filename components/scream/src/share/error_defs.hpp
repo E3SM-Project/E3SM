@@ -37,8 +37,8 @@
 namespace scream {
 namespace error {
 
-void runtime_check(bool cond, const std::string& message, int code);
-void runtime_abort(const std::string& message, int code);
+void runtime_check(bool cond, const std::string& message, int code = -1);
+void runtime_abort(const std::string& message, int code = -1);
 
 } // namespace error
 } // namespace scream
