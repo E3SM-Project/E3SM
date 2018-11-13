@@ -145,6 +145,8 @@ contains
          do_capsnow           =>  waterstate_vars%do_capsnow_col        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          begwb                =>  waterstate_vars%begwb_col             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
          endwb                =>  waterstate_vars%endwb_col             , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
+         h2osoi_liq_depth_intg=> waterstate_vars%h2osoi_liq_depth_intg_col, & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
+         h2osoi_ice_depth_intg=> waterstate_vars%h2osoi_ice_depth_intg_col, & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
          snw_rds              =>  waterstate_vars%snw_rds_col           , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
          snw_rds_top          =>  waterstate_vars%snw_rds_top_col       , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer [microns] 
          h2osno_top           =>  waterstate_vars%h2osno_top_col        , & ! Output: [real(r8) (:)   ]  mass of snow in top layer [kg]    
@@ -218,6 +220,8 @@ contains
          do fc = 1, num_lakec
             c = filter_lakec(fc)
             begwb(c) = begwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+            h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+            h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
          end do
       end do
 
