@@ -113,7 +113,7 @@ module init_atm_core_interface
       integer :: ierr
 
       logical, pointer :: initial_conds, sfc_update
-      logical, pointer :: gwd_stage_in, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
+      logical, pointer :: gwd_stage_in, gwd_stage_out, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
       logical, pointer :: config_native_gwd_static, config_static_interp, config_vertical_grid, config_met_interp
       integer, pointer :: config_init_case
 
@@ -135,6 +135,9 @@ module init_atm_core_interface
       nullify(gwd_stage_in)
       call mpas_pool_get_package(packages, 'gwd_stage_inActive', gwd_stage_in)
 
+      nullify(gwd_stage_out)
+      call mpas_pool_get_package(packages, 'gwd_stage_outActive', gwd_stage_out)
+
       nullify(vertical_stage_in)
       call mpas_pool_get_package(packages, 'vertical_stage_inActive', vertical_stage_in)
 
@@ -150,6 +153,7 @@ module init_atm_core_interface
       if (.not. associated(initial_conds) .or. &
           .not. associated(sfc_update) .or. &
           .not. associated(gwd_stage_in) .or. &
+          .not. associated(gwd_stage_out) .or. &
           .not. associated(vertical_stage_in) .or. &
           .not. associated(vertical_stage_out) .or. &
           .not. associated(met_stage_in) .or. &
@@ -170,19 +174,34 @@ module init_atm_core_interface
       end if
 
       if (config_init_case == 7) then
-         gwd_stage_in = (config_native_gwd_static .and. .not. config_static_interp)
-         vertical_stage_in = (config_vertical_grid .and. .not. config_static_interp)
-         vertical_stage_out = (config_vertical_grid .and. .not. config_met_interp)
-         met_stage_in = (config_met_interp .and. .not. config_vertical_grid)
+
+         !
+         ! The logic here is a little convoluted
+         ! For input, we want to read in fields from all earlier stages, except if those earlier stages are being run now
+         ! For output, we want to output the fields that were computed in a stage and all of those from earlier stages
+         !
+         gwd_stage_in = config_native_gwd_static .and. &
+                        (.not. config_static_interp)
+         gwd_stage_out = config_native_gwd_static
+         vertical_stage_in = config_vertical_grid .and. &
+                             (.not. config_native_gwd_static) .and. &
+                             (.not. config_static_interp)
+         vertical_stage_out = config_vertical_grid
+         met_stage_in = config_met_interp .and. &
+                        (.not. config_native_gwd_static) .and. &
+                        (.not. config_static_interp) .and. &
+                        (.not. config_vertical_grid)
          met_stage_out = config_met_interp
       else if (config_init_case == 8) then
          gwd_stage_in = .false.
+         gwd_stage_out = .false.
          vertical_stage_in = .true.
          vertical_stage_out = .false.
          met_stage_in = .false.
          met_stage_out = .false.
       else
          gwd_stage_in = .false.
+         gwd_stage_out = .false.
          vertical_stage_in = .false.
          vertical_stage_out = .false.
          met_stage_in = .false.

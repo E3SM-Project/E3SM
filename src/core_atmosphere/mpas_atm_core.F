@@ -144,6 +144,17 @@ module atm_core
       call mpas_pool_get_field(state, 'u', u_field, 1)
       call mpas_dmpar_exch_halo_field(u_field)
 
+
+      !
+      ! Perform basic compatibility checks among the fields that were read and the run-time options that were selected
+      !
+      call mpas_atm_run_compatibility(domain % dminfo, domain % blocklist, domain % streamManager, ierr)
+      if (ierr /= 0) then
+          call mpas_log_write('Please correct issues with the model input fields and/or namelist.', messageType=MPAS_LOG_ERR)
+          return
+      end if
+
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -1196,6 +1207,46 @@ module atm_core
       zb3_cell(:,:,:) = config_coef_3rd_order * zb3_cell(:,:,:)
 
    end subroutine atm_couple_coef_3rd_order
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_atm_run_compatibility
+   !
+   !> \brief Checks input fields and options for compatibility
+   !> \author Michael Duda
+   !> \date   22 October 2018
+   !> \details
+   !>  This routine checks the input fields and run-time options provided
+   !>  by the user for compatibility. For example, two run-time options may
+   !>  be mutually exclusive, or an option may require that a certain input
+   !>  field is provided.
+   !>
+   !>  A value of 0 is returned if there are no incompatibilities among
+   !>  the provided input fields and run-time options, and a non-zero value
+   !>  otherwise.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_atm_run_compatibility(dminfo, blockList, streamManager, ierr)
+
+      use mpas_atmphys_control, only : physics_compatibility_check
+
+      implicit none
+
+      type (dm_info), pointer :: dminfo
+      type (block_type), pointer :: blockList
+      type (MPAS_streamManager_type), pointer :: streamManager
+      integer, intent(out) :: ierr
+
+      integer :: local_ierr
+
+      ierr = 0
+
+      ! Physics specific checks found in /physics/mpas_atmphys_control.F
+      call physics_compatibility_check(dminfo, blockList, streamManager, local_ierr)
+      ierr = ierr + local_ierr
+
+
+   end subroutine mpas_atm_run_compatibility
 
 
 end module atm_core
