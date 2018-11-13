@@ -1,7 +1,8 @@
 set(SHARE_SRC
   error_defs.cpp
-  field_header.cpp
-  field_repository.cpp
+  field/field_identifier.cpp
+  field/field_header.cpp
+  field/field_repository.cpp
   scream_session.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
@@ -12,13 +13,16 @@ set(SHARE_SRC
 set(SHARE_HEADERS
   atmosphere_process.hpp
   error_defs.hpp
-  field.hpp
-  field_header.hpp
-  field_repository.hpp
-  field_repository_impl.hpp
-  field_tag.hpp
+  field/field.hpp
+  field/field_identifier.hpp
+  field/field_header.hpp
+  field/field_repository.hpp
+  field/field_repository_impl.hpp
+  field/field_tag.hpp
+  parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
+  util/factory.hpp
   util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp

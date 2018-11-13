@@ -1,8 +1,8 @@
 #ifndef SCREAM_FIELD_REPOSITORY_HPP
 #define SCREAM_FIELD_REPOSITORY_HPP
 
-#include "scream_types.hpp"
-#include "error_defs.hpp"
+#include <share/scream_types.hpp>
+#include <share/error_defs.hpp>
 #include "field.hpp"
 
 #include <map>
@@ -23,23 +23,31 @@ class FieldRepository {
 public:
 
   // Public types
-  using field_type  = Field<Real*,MemSpace,true>;
+  using field_type  = Field<Real*,MemSpace,MemoryManaged>;
   using header_type = typename field_type::header_type;
+  using identifier_type = typename header_type::identifier_type;
   using view_type   = typename field_type::view_type;
 
+  // Constructor(s)
   FieldRepository () : m_registration_completed(false) {}
 
+  // No copies
+  FieldRepository (const FieldRepository<MemSpace>&) = delete;
+  FieldRepository& operator= (const FieldRepository<MemSpace>&) = delete;
+
   // Methods to add fields to the database
-  field_type register_field (std::shared_ptr<header_type> header, const bool abort_if_existing = false);
+  field_type register_field (const identifier_type& identifier, const bool abort_if_existing = false);
 
   // Methods to query the database
-  field_type get_field (std::shared_ptr<header_type> header) const;
+  field_type get_field (const identifier_type& identifier) const;
 
-  // Closes the field registration phase
-  // Using this checkpoint, allows to confine all the fields registration in one execution phase,
+  // Closes the field registration phase.
+  // Using this checkpoint, allows to confine all the fields registration in one confined phase,
   // allowing for better debugging.
-  // Up for debate: we should not allow calls to get_field*** before registration is completed.
-  void registration_complete();
+  void registration_complete ();
+
+  // Queries whether the database is open for registration
+  bool is_registration_open () const { return !m_registration_completed; }
   
   // Cleans up the repo. This is needed since this class will most likely be contained inside
   // some singleton with static storage, which will be destroyed only after exit from main.
@@ -50,16 +58,16 @@ public:
 protected:
 
   // Create a new field
-  field_type create_field (std::shared_ptr<header_type> header);
+  field_type create_field (const identifier_type& identifier);
 
   // When true, no more fields are allowed to be added to the repo
   bool m_registration_completed;
 
   // A map identifier->field
-  std::map<std::string,field_type>   m_fields;
+  std::map<identifier_type,field_type>   m_fields;
 };
 
-// Explicit instantiation
+// Explicit instantiation (declaration)
 extern template class FieldRepository<ExecMemSpace>;
 extern template class FieldRepository<HostMemSpace>;
 

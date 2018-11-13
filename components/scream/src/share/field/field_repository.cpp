@@ -1,7 +1,7 @@
 #include "field_repository.hpp"
 #include "field_repository_impl.hpp"
 
-#include "scream_types.hpp"
+#include <share/scream_types.hpp>
 
 namespace scream {
 
