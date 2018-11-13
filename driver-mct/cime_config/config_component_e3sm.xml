@@ -617,6 +617,10 @@
       <value compset="^2000.+AV1C-H01C"				>368.865</value>
       <value compset="^1850.+CMIP6"                             >284.317</value>
       <value compset="^1950.+CMIP6"                             >312.821</value>
+      <value compset="^20TR.*BGC%BCRC"                                >284.317</value>
+      <value compset="^20TR.*BGC%BCRD"                                >284.317</value>
+      <value compset="^20TR.*BGC%BDRC"                                >284.317</value>
+      <value compset="^20TR.*BGC%BDRD"                                >284.317</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
