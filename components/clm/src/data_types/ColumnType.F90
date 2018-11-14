@@ -30,7 +30,10 @@ module ColumnType
   implicit none
   save
   private
-  !
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds physical property information at the column level.
+  !-----------------------------------------------------------------------
   type, public :: column_physical_properties_type
      ! indices and weights for higher subgrid levels (landunit, topounit, gridcell)
      integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
@@ -76,9 +79,123 @@ module ColumnType
      procedure, public :: Init => col_pp_init
      procedure, public :: Clean => col_pp_clean
 
-  end type column_physical_properties_type
+  end type column_physical_properties
 
-  type(column_physical_properties_type), public, target :: col_pp !column data structure (soil/snow/canopy columns)
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy state information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_energy_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_es
+    procedure, public :: Clean => clean_col_es
+  end type column_energy_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds water state information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_water_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_ws
+    procedure, public :: Clean => clean_col_ws
+  end type column_water_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds carbon state information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_carbon_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_cs
+    procedure, public :: Clean => clean_col_cs
+  end type column_carbon_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds nitrogen state information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_nitrogen_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_ns
+    procedure, public :: Clean => clean_col_ns
+  end type column_nitrogen_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds phosphorus state information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_phosphorus_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_ps
+    procedure, public :: Clean => clean_col_ps
+  end type column_phosphorus_state
+
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy flux information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_energy_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_ef
+    procedure, public :: Clean => clean_col_ef
+  end type column_energy_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds water flux information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_water_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_wf
+    procedure, public :: Clean => clean_col_wf
+  end type column_water_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds carbon flux information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_carbon_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_cf
+    procedure, public :: Clean => clean_col_cf
+  end type column_carbon_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds nitrogen flux information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_nitrogen_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_nf
+    procedure, public :: Clean => clean_col_nf
+  end type column_nitrogen_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds phosphorus flux information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_phosphorus_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_col_pf
+    procedure, public :: Clean => clean_col_pf
+  end type column_phosphorus_flux
+  
+  !-----------------------------------------------------------------------
+  ! declare the public instances of column-level data types
+  !-----------------------------------------------------------------------
+  type(column_physical_properties)   , public, target :: col_pp    ! column physical properties
+  type(column_energy_state_type)     , public, target :: col_es    ! column energy state
+  type(column_water_state_type)      , public, target :: col_ws    ! column water state
+  type(column_carbon_state_type)     , public, target :: col_cs    ! column carbon state
+  type(column_nitrogen_state_type)   , public, target :: col_ns    ! column nitrogen state
+  type(column_phosphorus_state_type) , public, target :: col_ps    ! column phosphorus state
+  type(column_energy_flux_type)      , public, target :: col_ef    ! column energy flux
+  type(column_water_flux_type)       , public, target :: col_wf    ! column water flux
+  type(column_carbon_flux_type)      , public, target :: col_cf    ! column carbon flux
+  type(column_nitrogen_flux_type)    , public, target :: col_nf    ! column nitrogen flux
+  type(column_phosphorus_flux_type)  , public, target :: col_pf    ! column phosphorus flux
+
   !------------------------------------------------------------------------
 
 contains
