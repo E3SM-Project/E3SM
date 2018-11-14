@@ -178,7 +178,7 @@ contains
          end if
 #if (defined HUM_HOL)
          if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% 
-         if (c .eq. 2) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))  !min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) TAO
+         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)!TAO
 #endif
 
          ! use perched water table to determine fsat (if present)
@@ -190,7 +190,7 @@ contains
             end if
 #if (defined HUM_HOL)
             if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) TAO
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO
 #endif
          else
             if ( frost_table(c) > zwt_perched(c)) then 
@@ -198,7 +198,7 @@ contains
             endif
 #if (defined HUM_HOL)
             if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c))) !min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) TAO
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO
 #endif   
          endif
          if (origflag == 1) then
@@ -219,16 +219,16 @@ contains
          if (origflag == 1) then
 #if (defined HUM_HOL)
            if (c .eq. 1) then  !XS - only compute sfc runoff from hummock, send to hollow 
-             qflx_surf(c) = 0._r8    !fcov(c) * qflx_top_soil(c) TAO
+             qflx_surf(c) = fcov(c) * qflx_top_soil(c) !TAO
            else
              qflx_surf(c) = 0._r8   !turn off surface runoff for hollow
            endif
 #else
-           qflx_surf(c) = 0._r8     !fcov(c) * qflx_top_soil(c) TAO
+           qflx_surf(c) = fcov(c) * qflx_top_soil(c) !TAO
 #endif
          else
             ! only send fast runoff directly to streams
-            qflx_surf(c) = 0._r8    !fsat(c) * qflx_top_soil(c) TAO
+            qflx_surf(c) = fsat(c) * qflx_top_soil(c) !TAO
          endif
       end do
 
@@ -467,10 +467,8 @@ contains
 
              if (c .eq. 1) then
              call get_curr_time(days, seconds)
-               qflx_surf_input(1) = 10._r8 
-               !(sin((12.12535_r8*seconds) + 513.4328_r8)) / 6.437586_r8 + ((sin(seconds/2.920463_r8) / 0.91518_r8)+0.1_r8) 
-               !0._r8 !hummock TAO 22/8/2018 changed to 10 for TideTest3, then sin function for TideTest04, 15 for TideTest09
-               qflx_surf_input(2) = 0._r8           !qflx_surf(1)*(hum_frac/hol_frac)     !hollow  TAO
+               qflx_surf_input(1) = 0.005_r8 !0._r8 !hummock TAO
+               qflx_surf_input(2) = qflx_surf(1)*(hum_frac/hol_frac)     !hollow  TAO
              end if
              qflx_in_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c) - qflx_surf(c) + qflx_surf_input(c))
              qflx_in_h2osfc(c) = frac_h2osfc(c) * (qflx_top_soil(c) - qflx_surf(c) + qflx_surf_input(c))
@@ -550,7 +548,7 @@ contains
              else if (c .eq. 2) then
                 call get_curr_time (days, seconds)
                 qflx_h2osfc_surf(c) = 0._r8
-                h2osfc(c) = 500_r8 * (sin((1.4_r8/3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds/2.920463_r8) / 0.91518_r8)) ! changed from 0. to sine function TAO 27/8/2018
+                h2osfc(c) = 500_r8 * (sin((0.00003_r8*3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds/2.920463_r8) / 0.91518_r8) + 800_r8) ! changed from 0. to sine function TAO 27/8/2018
              
 #else
              if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
@@ -619,7 +617,11 @@ contains
 
              if (c.eq.1) then
                zwt_hu = zwt(1)
+               if (h2osfc(1) > 0_r8) then !TAO
+                  zwt_hu = 0 !TAO
+               else !TAO
                zwt_hu = zwt_hu - h2osfc(1)/1000._r8
+               endif
                !Replace zwt_ho with externally forced water height here
                call get_curr_date(yr, mon, day, tod)
              endif
@@ -631,7 +633,7 @@ contains
                ka_hu = max(ka_hu, 1e-5_r8)
                !DMR 9/21/15 - only inlcude h2osfc if water table near surfce, use
                !harmonic mean 
-               !zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13 TAO 10/7/2018
+               zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13 TAO 10/7/2018
                !DMR 12/4/2015
                call get_curr_time(days, seconds)
                if (maxval(icefrac(:,:)) .ge. 0.01_r8) then
