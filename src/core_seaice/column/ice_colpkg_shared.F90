@@ -91,6 +91,12 @@
          hi_ssl = 0.050_dbl_kind, & ! ice surface scattering layer thickness (m)
          hs_ssl = 0.040_dbl_kind    ! snow surface scattering layer thickness (m)
 
+      ! snicar 5 band system, set in namelist
+      logical (kind=log_kind), public :: &
+         use_snicar    ! if true, use 5-band snicar IOPs for
+                          ! shortwave radiative calculation of
+                          ! snow-coverd sea ice
+
 !-----------------------------------------------------------------------
 ! Parameters for ridging and strength
 !-----------------------------------------------------------------------
