@@ -204,7 +204,7 @@ contains
   subroutine col_pp_init(this, begc, endc)
     !
     ! !ARGUMENTS:
-    class(column_physical_properties_type)  :: this
+    class(column_physical_properties)  :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
 
@@ -247,7 +247,7 @@ contains
   subroutine col_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(column_physical_properties_type) :: this
+    class(column_physical_properties) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell   )

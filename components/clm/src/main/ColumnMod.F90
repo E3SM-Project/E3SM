@@ -4,7 +4,7 @@ module ColumnMod
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
   use clm_varcon     , only : spval, ispval
-  use ColumnType     , only : column_physical_properties_type, col_pp
+  use ColumnType     , only : col_pp
   !
   ! !PUBLIC TYPES:
   implicit none

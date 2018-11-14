@@ -42,8 +42,10 @@ module VegetationType
   implicit none
   save
   private
-  !
-  type, public :: vegetation_physical_properties_type
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds physical property information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_physical_properties
      ! indices and weights for higher subgrid levels (column, landunit, topounit, gridcell)
      integer , pointer :: gridcell      (:) => null() ! index into gridcell level quantities
      real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell) 
@@ -74,8 +76,123 @@ module VegetationType
      procedure, public :: Init => veg_pp_init
      procedure, public :: Clean => veg_pp_clean
      
-  end type vegetation_physical_properties_type
-  type(vegetation_physical_properties_type), public, target :: veg_pp  ! patch type data structure !***TODO*** - change the data instance to patch from pft
+  end type vegetation_physical_properties
+
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy state information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_energy_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_es
+    procedure, public :: Clean => clean_veg_es
+  end type vegetation_energy_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds water state information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_water_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_ws
+    procedure, public :: Clean => clean_veg_ws
+  end type vegetation_water_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds carbon state information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_carbon_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_cs
+    procedure, public :: Clean => clean_veg_cs
+  end type vegetation_carbon_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds nitrogen state information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_nitrogen_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_ns
+    procedure, public :: Clean => clean_veg_ns
+  end type vegetation_nitrogen_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds phosphorus state information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_phosphorus_state
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_ps
+    procedure, public :: Clean => clean_veg_ps
+  end type vegetation_phosphorus_state
+
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy flux information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_energy_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_ef
+    procedure, public :: Clean => clean_veg_ef
+  end type vegetation_energy_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds water flux information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_water_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_wf
+    procedure, public :: Clean => clean_veg_wf
+  end type vegetation_water_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds carbon flux information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_carbon_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_cf
+    procedure, public :: Clean => clean_veg_cf
+  end type vegetation_carbon_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds nitrogen flux information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_nitrogen_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_nf
+    procedure, public :: Clean => clean_veg_nf
+  end type vegetation_nitrogen_flux
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds phosphorus flux information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_phosphorus_flux
+    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+  contains
+    procedure, public :: Init  => init_veg_pf
+    procedure, public :: Clean => clean_veg_pf
+  end type vegetation_phosphorus_flux
+  
+  !-----------------------------------------------------------------------
+  ! declare the public instances of vegetation-level data types
+  !-----------------------------------------------------------------------
+  type(vegetation_physical_properties)   , public, target :: veg_pp    ! vegetation physical properties
+  type(vegetation_energy_state_type)     , public, target :: veg_es    ! vegetation energy state
+  type(vegetation_water_state_type)      , public, target :: veg_ws    ! vegetation water state
+  type(vegetation_carbon_state_type)     , public, target :: veg_cs    ! vegetation carbon state
+  type(vegetation_nitrogen_state_type)   , public, target :: veg_ns    ! vegetation nitrogen state
+  type(vegetation_phosphorus_state_type) , public, target :: veg_ps    ! vegetation phosphorus state
+  type(vegetation_energy_flux_type)      , public, target :: veg_ef    ! vegetation energy flux
+  type(vegetation_water_flux_type)       , public, target :: veg_wf    ! vegetation water flux
+  type(vegetation_carbon_flux_type)      , public, target :: veg_cf    ! vegetation carbon flux
+  type(vegetation_nitrogen_flux_type)    , public, target :: veg_nf    ! vegetation nitrogen flux
+  type(vegetation_phosphorus_flux_type)  , public, target :: veg_pf    ! vegetation phosphorus flux
+
   !------------------------------------------------------------------------
 
 contains
@@ -84,7 +201,7 @@ contains
   subroutine veg_pp_init(this, begp, endp)
     !
     ! !ARGUMENTS:
-    class(vegetation_physical_properties_type)   :: this
+    class(vegetation_physical_properties)   :: this
     integer, intent(in) :: begp,endp
     !
     ! LOCAL VARAIBLES:
@@ -116,7 +233,7 @@ contains
   subroutine veg_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(vegetation_physical_properties_type) :: this
+    class(vegetation_physical_properties) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell  )
