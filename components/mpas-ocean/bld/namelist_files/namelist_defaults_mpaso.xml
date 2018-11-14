@@ -59,6 +59,8 @@
 <config_dt ocn_grid="oRRS18to6">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS18to6v3">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
+<config_dt ocn_grid="oARRM60to10">'00:10:00'</config_dt>
+<config_dt ocn_grid="oARRM60to6">'00:05:00'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
 <!-- ALE_vertical_grid -->
@@ -97,6 +99,8 @@
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oARRM60to10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oARRM60to6">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
 
@@ -132,6 +136,8 @@
 <config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS18to6v3">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
+<config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_tracer_del4>0.0</config_tracer_del4>
 
@@ -157,6 +163,8 @@
 <config_use_standardGM ocn_grid="oRRS18to6">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS18to6v3">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oARRM60to10">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oARRM60to6">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
@@ -359,6 +367,8 @@
 <config_btr_dt ocn_grid="oRRS18to6">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS18to6v3">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
+<config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
+<config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
@@ -826,6 +836,8 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS18to6">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS18to6v3">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
 <config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>
