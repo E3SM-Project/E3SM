@@ -516,13 +516,13 @@ module CNEcosystemDynBetrMod
     ! DESCRIPTION
     ! summarize all fluxes and state varaibles, prepare for mass balance analysis
     !
-    use ColumnType           , only : column_physical_properties_type
-    use VegetationType       , only : vegetation_physical_properties_type
+    use ColumnType           , only : column_physical_properties
+    use VegetationType       , only : vegetation_physical_properties
     use PrecisionControlMod  , only: PrecisionControl
     implicit none
     type(bounds_type)        , intent(in)    :: bounds
-    type(column_physical_properties_type)        , intent(in)    :: col
-    type(vegetation_physical_properties_type)         , intent(in)    :: pft
+    type(column_physical_properties)        , intent(in)    :: col
+    type(vegetation_physical_properties)         , intent(in)    :: pft
     integer                  , intent(in)    :: num_soilc            ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)      ! filter for soil columns
     integer                  , intent(in)    :: num_soilp            ! number of soil patches in filter
@@ -578,13 +578,13 @@ module CNEcosystemDynBetrMod
     ! DESCRIPTION
     ! calculate gpp downregulation factor
     use clm_time_manager         , only : get_step_size
-    use ColumnType               , only : column_physical_properties_type
-    use VegetationType           , only : vegetation_physical_properties_type
+    use ColumnType               , only : column_physical_properties
+    use VegetationType           , only : vegetation_physical_properties
     use pftvarcon                , only : noveg
     implicit none
     type(bounds_type)        , intent(in)    :: bounds
-    type(column_physical_properties_type)        , intent(in)    :: col
-    type(vegetation_physical_properties_type)         , intent(in)    :: pft
+    type(column_physical_properties)        , intent(in)    :: col
+    type(vegetation_physical_properties)         , intent(in)    :: pft
     integer                  , intent(in)    :: num_soilc                                      ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)                                ! filter for soil columns
     integer                  , intent(in)    :: num_soilp
