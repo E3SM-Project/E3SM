@@ -132,7 +132,7 @@
 
 <immutable_stream name="SnicarInput"
                   type="input"
-                  filename_template="forcing/snicar_optics_4bnd_snow_and_aerosols.nc"
+                  filename_template="forcing/snicar_optics_5bnd_snow_and_aerosols.nc"
                   filename_interval="none"
                   input_interval="initial_only" />
 
