@@ -327,8 +327,7 @@ contains
          qflx_ev_h2osfc(p) = -raiw*(forc_q(t) - qg_h2osfc(c))
 
          ! 2 m height air temperature
-         call get_curr_date (year, month, day, secs) !This line added to try to increase abs solar rad/per to increase temp TAO 5/7/2018
-         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p)) ! added + (0.1_r8 * year) 5/7/2018 TAO RadTest11, 0.2 RadTest12 -caused simulation to crash, removed 
+         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p)) 
 
          ! 2 m height specific humidity
          q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))

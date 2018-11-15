@@ -524,8 +524,7 @@ contains
              sabv(p) = sabv(p) + cad(p,ib) + cai(p,ib)
              fsa(p)  = fsa(p)  + cad(p,ib) + cai(p,ib)
              if (ib == 1) then
-             call get_curr_date (year, month, day, secs) !This line added to try to increase abs solar rad/per to increase temp TAO 2/7/2018
-                parveg(p) = cad(p,ib) + cai(p,ib) ! added + (0.1_r8 * year) 3/7/2018 TAO RadTest09 - no effect, changed to 0.2 - RadTest10 - won't run
+               parveg(p) = cad(p,ib) + cai(p,ib) 
              end if
              if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
                 fsa_r(p)  = fsa_r(p)  + cad(p,ib) + cai(p,ib)
@@ -537,9 +536,8 @@ contains
              tri(p,ib) = forc_solad(t,ib)*ftid(p,ib) + forc_solai(t,ib)*ftii(p,ib)
              ! Solar radiation absorbed by ground surface
              ! calculate absorbed solar by soil/snow separately
-             call get_curr_date (year, month, day, secs) !added to increase abs solar rad/per to increase temp TAO 2/7/2018
              absrad  = trd(p,ib)*(1._r8-albsod(c,ib)) + tri(p,ib)*(1._r8-albsoi(c,ib)) 
-             sabg_soil(p) = sabg_soil(p) + absrad ! added + (0.0001_r8 * year) 2/7/2018 TAO RadTest06, changed to 0.1 for RadTest07
+             sabg_soil(p) = sabg_soil(p) + absrad
              absrad  = trd(p,ib)*(1._r8-albsnd_hst(c,ib)) + tri(p,ib)*(1._r8-albsni_hst(c,ib))
              sabg_snow(p) = sabg_snow(p) + absrad
              absrad  = trd(p,ib)*(1._r8-albgrd(c,ib)) + tri(p,ib)*(1._r8-albgri(c,ib)) 
@@ -559,22 +557,21 @@ contains
              endif
 
              if (use_snicar_frc) then
-             call get_curr_date (year, month, day, secs) !This line added to try to increase abs solar rad/per to increase temp TAO 2/7/2018
                 ! Solar radiation absorbed by ground surface without BC
                 absrad_bc = trd(p,ib)*(1._r8-albgrd_bc(c,ib)) + tri(p,ib)*(1._r8-albgri_bc(c,ib))
-                sabg_bc(p) = sabg_bc(p) + absrad_bc ! added + (0.1_r8 * year) 3/7/2018 TAO RadTest08-no effect, changed to 0.5 for RadTest10 - won't run
+                sabg_bc(p) = sabg_bc(p) + absrad_bc 
 
                 ! Solar radiation absorbed by ground surface without OC
                 absrad_oc = trd(p,ib)*(1._r8-albgrd_oc(c,ib)) + tri(p,ib)*(1._r8-albgri_oc(c,ib))
-                sabg_oc(p) = sabg_oc(p) + absrad_oc ! added + (0.1_r8 * year) 3/7/2018 TAO RadTest08- no effect, changed to 0.5 for RadTest10
+                sabg_oc(p) = sabg_oc(p) + absrad_oc 
 
                 ! Solar radiation absorbed by ground surface without dust
                 absrad_dst = trd(p,ib)*(1._r8-albgrd_dst(c,ib)) + tri(p,ib)*(1._r8-albgri_dst(c,ib))
-                sabg_dst(p) = sabg_dst(p) + absrad_dst ! added + (0.1_r8 * year) 3/7/2018 TAO RadTest08- no effect, changed to 0.5 for RadTest10
+                sabg_dst(p) = sabg_dst(p) + absrad_dst 
 
                 ! Solar radiation absorbed by ground surface without any aerosols
                 absrad_pur = trd(p,ib)*(1._r8-albgrd_pur(c,ib)) + tri(p,ib)*(1._r8-albgri_pur(c,ib))
-                sabg_pur(p) = sabg_pur(p) + absrad_pur ! added + (0.1_r8 * year) 3/7/2018 TAO RadTest08- no effect, changed to 0.5 for RadTest10
+                sabg_pur(p) = sabg_pur(p) + absrad_pur 
              end if
 
           end do ! end of pft loop

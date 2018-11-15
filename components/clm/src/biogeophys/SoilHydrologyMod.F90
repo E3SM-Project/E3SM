@@ -465,7 +465,7 @@ contains
 
              if (c .eq. 1) then
              call get_curr_time(days, seconds)
-               qflx_surf_input(1) = 0.005_r8 !0._r8 !hummock TAO
+               qflx_surf_input(1) = 0._r8 !hummock TAO KEEP AT ZERO!!!
                qflx_surf_input(2) = qflx_surf(1)*(hum_frac/hol_frac)     !hollow  TAO
              end if
              qflx_in_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c) - qflx_surf(c) + qflx_surf_input(c))
@@ -615,9 +615,9 @@ contains
 
              if (c.eq.1) then
                zwt_hu = zwt(1)
-               if (h2osfc(1) > 0_r8) then !TAO
-                  zwt_hu = 0 !TAO
-               else !TAO
+               !if (h2osfc(1) > 0_r8) then !TAO
+               !   zwt_hu = 0 !TAO
+               !else !TAO
                zwt_hu = zwt_hu - h2osfc(1)/1000._r8
                endif
                !Replace zwt_ho with externally forced water height here
@@ -1490,7 +1490,10 @@ contains
                    fracice_rsub(c) = max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
                         - exp(-3._r8))/(1.0_r8-exp(-3._r8))
                    imped=(1._r8 - fracice_rsub(c))
+                   rsub_top_max = 5.5e-3_r8
+#if (defined HUM_HOL)                   
                    rsub_top_max = min(5.5e-3_r8, rsub_top_globalmax)
+#endif
                 end if
              else
                 if (use_vichydro) then

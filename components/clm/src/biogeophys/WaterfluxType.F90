@@ -512,11 +512,11 @@ contains
      this%qflx_lat_aqu(begc:endc) = spval
        call hist_addfld1d (fname='QFLX_LAT_AQU', units='mm H2O/s', &
             avgflag='A', long_name='Lateral flow between hummock and hollow', &
-            ptr_col=this%qflx_lat_aqu, default='inactive', c2l_scale_type='urbanf')
+            ptr_col=this%qflx_lat_aqu, c2l_scale_type='urbanf')
        this%qflx_surf_input(begc:endc) = spval
        call hist_addfld1d (fname='QFLX_SURF_INPUT', units='mm H2O/s', &
             avgflag='A', long_name='Runoff from hummock to hollow', &
-            ptr_col=this%qflx_surf_input, default='inactive', c2l_scale_type='urbanf')
+            ptr_col=this%qflx_surf_input, c2l_scale_type='urbanf')
 
 
 
