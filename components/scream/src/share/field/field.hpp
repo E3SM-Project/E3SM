@@ -32,7 +32,7 @@ public:
   // Constructor(s)
   Field () = delete;
   Field (const identifier_type& id);
-  Field (std::shared_ptr<FieldHeader> fh, view_type view);
+  Field (const std::shared_ptr<FieldHeader>& fh, const view_type& view);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
@@ -45,9 +45,9 @@ public:
   // Getters
   const header_type& get_header () const { return *m_header; }
         header_type& get_header ()       { return *m_header; }
-        view_type    get_view   () const { return  m_view;   }
+  const view_type&   get_view   () const { return  m_view;   }
 
-  std::shared_ptr<header_type> get_header_ptr () const { return m_header; }
+  const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
 
 protected:
 
@@ -95,7 +95,7 @@ Field (const Field<SrcDT,MemSpace,MemManagement>& src)
 
 template<typename DataType, typename MemSpace, typename MemManagement>
 Field<DataType,MemSpace,MemManagement>::
-Field (std::shared_ptr<FieldHeader> header, view_type view)
+Field (const std::shared_ptr<FieldHeader>& header, const view_type& view)
  : m_header (header)
  , m_view   (view)
 {
