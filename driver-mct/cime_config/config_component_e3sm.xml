@@ -561,6 +561,7 @@
     <values match="last">
       <value compset="DATM.*_POP\d"    >TRUE</value>
       <value compset="CAM.*_POP\d"     >TRUE</value>
+      <value compset="CAM.*_MPASO"     >TRUE</value>
       <value compset="CAM.*_DOCN%SOM">TRUE</value>
     </values>
     <group>run_budgets</group>
