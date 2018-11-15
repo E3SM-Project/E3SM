@@ -18,8 +18,16 @@ endif
 # But must be AFTER any definitions it uses are defined.
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
+ifdef COMP_INTERFACE
+  UPVAR := $(shell echo $(COMP_INTERFACE) | tr a-z A-Z)
+  CPPDEFS+=-D$(UPVAR)_INTERFACE
+  ifeq ("$(COMP_INTERFACE)", "nuopc")
+    -include $(ESMFMKFILE)
+    FFLAGS += $(ESMF_F90COMPILEPATHS)
+  endif
+endif
 ifdef GPTL_CPPDEFS
-  CPPDEFS+=$(GPTL_CPPDEFS)  -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
+  CPPDEFS+=$(GPTL_CPPDEFS) -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
 endif
 INCLDIR += -I$(GPTL_DIR)
 
