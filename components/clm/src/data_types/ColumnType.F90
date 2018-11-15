@@ -34,7 +34,7 @@ module ColumnType
   !-----------------------------------------------------------------------
   ! Define the data structure that holds physical property information at the column level.
   !-----------------------------------------------------------------------
-  type, public :: column_physical_properties_type
+  type, public :: column_physical_properties
      ! indices and weights for higher subgrid levels (landunit, topounit, gridcell)
      integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
      real(r8), pointer :: wtgcell      (:) => null() ! weight (relative to gridcell)
@@ -185,16 +185,16 @@ module ColumnType
   ! declare the public instances of column-level data types
   !-----------------------------------------------------------------------
   type(column_physical_properties)   , public, target :: col_pp    ! column physical properties
-  type(column_energy_state_type)     , public, target :: col_es    ! column energy state
-  type(column_water_state_type)      , public, target :: col_ws    ! column water state
-  type(column_carbon_state_type)     , public, target :: col_cs    ! column carbon state
-  type(column_nitrogen_state_type)   , public, target :: col_ns    ! column nitrogen state
-  type(column_phosphorus_state_type) , public, target :: col_ps    ! column phosphorus state
-  type(column_energy_flux_type)      , public, target :: col_ef    ! column energy flux
-  type(column_water_flux_type)       , public, target :: col_wf    ! column water flux
-  type(column_carbon_flux_type)      , public, target :: col_cf    ! column carbon flux
-  type(column_nitrogen_flux_type)    , public, target :: col_nf    ! column nitrogen flux
-  type(column_phosphorus_flux_type)  , public, target :: col_pf    ! column phosphorus flux
+  type(column_energy_state)          , public, target :: col_es    ! column energy state
+  type(column_water_state)           , public, target :: col_ws    ! column water state
+  type(column_carbon_state)          , public, target :: col_cs    ! column carbon state
+  type(column_nitrogen_state)        , public, target :: col_ns    ! column nitrogen state
+  type(column_phosphorus_state)      , public, target :: col_ps    ! column phosphorus state
+  type(column_energy_flux)           , public, target :: col_ef    ! column energy flux
+  type(column_water_flux)            , public, target :: col_wf    ! column water flux
+  type(column_carbon_flux)           , public, target :: col_cf    ! column carbon flux
+  type(column_nitrogen_flux)         , public, target :: col_nf    ! column nitrogen flux
+  type(column_phosphorus_flux)       , public, target :: col_pf    ! column phosphorus flux
 
   !------------------------------------------------------------------------
 
@@ -280,5 +280,216 @@ contains
 
   end subroutine col_pp_clean
 
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column energy state data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_es(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_energy_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_es
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_es(this)
+    !
+    ! !ARGUMENTS:
+    class(column_energy_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_es
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column water state data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_ws(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_water_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_ws
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_ws(this)
+    !
+    ! !ARGUMENTS:
+    class(column_water_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_ws
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column carbon state data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_cs(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_cs
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_cs(this)
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_cs
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column nitrogen state data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_ns(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_ns
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_ns(this)
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_ns
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column phosphorus state data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_ps(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_ps
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_ps(this)
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_ps
 
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column energy flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_ef(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_energy_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_ef
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_ef(this)
+    !
+    ! !ARGUMENTS:
+    class(column_energy_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_ef
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column water flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_wf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_water_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_wf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_wf(this)
+    !
+    ! !ARGUMENTS:
+    class(column_water_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_wf
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column carbon flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_cf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_cf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_cf(this)
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_cf
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column nitrogen flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_nf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_nf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_nf(this)
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_nf
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean column phosphorus flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_col_pf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_col_pf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_col_pf(this)
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_col_pf
+  
+    !------------------------------------------------------------------------
+    
 end module ColumnType

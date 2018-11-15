@@ -182,16 +182,16 @@ module VegetationType
   ! declare the public instances of vegetation-level data types
   !-----------------------------------------------------------------------
   type(vegetation_physical_properties)   , public, target :: veg_pp    ! vegetation physical properties
-  type(vegetation_energy_state_type)     , public, target :: veg_es    ! vegetation energy state
-  type(vegetation_water_state_type)      , public, target :: veg_ws    ! vegetation water state
-  type(vegetation_carbon_state_type)     , public, target :: veg_cs    ! vegetation carbon state
-  type(vegetation_nitrogen_state_type)   , public, target :: veg_ns    ! vegetation nitrogen state
-  type(vegetation_phosphorus_state_type) , public, target :: veg_ps    ! vegetation phosphorus state
-  type(vegetation_energy_flux_type)      , public, target :: veg_ef    ! vegetation energy flux
-  type(vegetation_water_flux_type)       , public, target :: veg_wf    ! vegetation water flux
-  type(vegetation_carbon_flux_type)      , public, target :: veg_cf    ! vegetation carbon flux
-  type(vegetation_nitrogen_flux_type)    , public, target :: veg_nf    ! vegetation nitrogen flux
-  type(vegetation_phosphorus_flux_type)  , public, target :: veg_pf    ! vegetation phosphorus flux
+  type(vegetation_energy_state)          , public, target :: veg_es    ! vegetation energy state
+  type(vegetation_water_state)           , public, target :: veg_ws    ! vegetation water state
+  type(vegetation_carbon_state)          , public, target :: veg_cs    ! vegetation carbon state
+  type(vegetation_nitrogen_state)        , public, target :: veg_ns    ! vegetation nitrogen state
+  type(vegetation_phosphorus_state)      , public, target :: veg_ps    ! vegetation phosphorus state
+  type(vegetation_energy_flux)           , public, target :: veg_ef    ! vegetation energy flux
+  type(vegetation_water_flux)            , public, target :: veg_wf    ! vegetation water flux
+  type(vegetation_carbon_flux)           , public, target :: veg_cf    ! vegetation carbon flux
+  type(vegetation_nitrogen_flux)         , public, target :: veg_nf    ! vegetation nitrogen flux
+  type(vegetation_phosphorus_flux)       , public, target :: veg_pf    ! vegetation phosphorus flux
 
   !------------------------------------------------------------------------
 
@@ -256,5 +256,216 @@ contains
     end if
 
   end subroutine veg_pp_clean
+
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation energy state data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_es(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_energy_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_es
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_es(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_energy_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_es
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation water state data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_ws(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_water_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_ws
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_ws(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_water_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_ws
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation carbon state data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_cs(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_carbon_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_cs
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_cs(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_carbon_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_cs
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation nitrogen state data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_ns(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_nitrogen_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_ns
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_ns(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_nitrogen_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_ns
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation phosphorus state data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_ps(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_phosphorus_state) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_ps
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_ps(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_phosphorus_state) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_ps
+
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation energy flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_ef(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_energy_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_ef
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_ef(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_energy_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_ef
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation water flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_wf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_water_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_wf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_wf(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_water_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_wf
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation carbon flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_cf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_carbon_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_cf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_cf(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_carbon_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_cf
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation nitrogen flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_nf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_nitrogen_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_nf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_nf(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_nitrogen_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_nf
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean vegetation phosphorus flux data structure
+  !------------------------------------------------------------------------
+  subroutine init_veg_pf(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_phosphorus_flux) :: this
+    integer, intent(in) :: begc,endc
+    !------------------------------------------------------------------------
+    
+  end subroutine init_veg_pf
+    
+  !------------------------------------------------------------------------
+  subroutine clean_veg_pf(this)
+    !
+    ! !ARGUMENTS:
+    class(vegetation_phosphorus_flux) :: this
+    !------------------------------------------------------------------------
+    
+  end subroutine clean_veg_pf
+  
 
 end module VegetationType
