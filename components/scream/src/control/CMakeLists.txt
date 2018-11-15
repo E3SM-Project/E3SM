@@ -1,13 +1,11 @@
 set(SCREAM_CONTROL_SOURCES
   cxx_f90_interface.cpp
   atmosphere_driver.cpp
-  atm_processes_scheduling.cpp
   surface_coupling.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS
   atmosphere_driver.hpp
-  atm_processes_scheduling.hpp
   surface_coupling.hpp
 )
 
