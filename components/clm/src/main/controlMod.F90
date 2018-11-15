@@ -268,6 +268,10 @@ contains
     namelist /clm_inparm/ &
          use_petsc_thermal_model
 
+    namelist /clm_inparm/ &
+         do_budgets, budget_inst, budget_daily, budget_month, &
+         budget_ann, budget_ltann, budget_ltend
+
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -771,6 +775,15 @@ contains
 
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    ! Budget
+    call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (budget_inst  , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_daily , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_month , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
 
   end subroutine control_spmd
 
