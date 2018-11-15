@@ -19,6 +19,30 @@ namespace scream {
 
 namespace util {
 
+// =============== type_traits utils ============== //
+
+// <type_traits> has remove_all_extents but lacks the analogous
+// remove_all_pointers
+template<typename T>
+struct remove_all_pointers {
+  using type = T;
+};
+template<typename T>
+struct remove_all_pointers<T*> {
+  using type = typename remove_all_pointers<T>::type;
+};
+
+// std::remove_const does not remove the leading const cv from
+// the type <const T*>. Indeed, remove_const can only remove the
+// const cv from the pointer, not the pointee.
+template<typename T>
+struct remove_all_consts : std::remove_const<T> {};
+
+template<typename T>
+struct remove_all_consts<T*> {
+  using type = typename remove_all_consts<T>::type*;
+};
+
 // ================ std::any ================= //
 
 namespace impl {

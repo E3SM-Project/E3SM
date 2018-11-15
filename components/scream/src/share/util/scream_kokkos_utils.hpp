@@ -2,6 +2,7 @@
 #define SCREAM_KOKKOS_UTILS_HPP
 
 #include <share/scream_kokkos_meta.hpp>
+#include <share/util/scream_std_meta.hpp>
 
 #include <Kokkos_Core.hpp>
 
@@ -19,18 +20,7 @@
 namespace scream {
 namespace util {
 
-// Tiny helper structures, since type_traits has remove_all_extents
-// but not remove_all_pointers, and lacks of something that remove
-// all pointers, extents and possibly reference
-template<typename T>
-struct remove_all_pointers {
-  using type = T;
-};
-template<typename T>
-struct remove_all_pointers<T*> {
-  using type = typename remove_all_pointers<T>::type;
-};
-
+// Retrieve the underlying scalar type from a MD array type
 template<typename MDArrayType>
 struct ScalarType {
 private:
