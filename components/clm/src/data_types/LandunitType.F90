@@ -25,7 +25,7 @@ module LandunitType
   save
   private
   !
-  type, public :: landunit_physical_properties_type
+  type, public :: landunit_physical_properties
      
      ! indices and weights for higher subgrid levels (topounit, gridcell)
      integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
@@ -62,8 +62,8 @@ module LandunitType
      procedure, public :: Init => lun_pp_init
      procedure, public :: Clean => lun_pp_clean
      
-  end type landunit_physical_properties_type
-  type(landunit_physical_properties_type), public, target :: lun_pp  !geomorphological landunits
+  end type landunit_physical_properties
+  type(landunit_physical_properties), public, target :: lun_pp  !geomorphological landunits
   !------------------------------------------------------------------------
 
 contains
@@ -72,7 +72,7 @@ contains
   subroutine lun_pp_Init(this, begl, endl)
     !
     ! !ARGUMENTS:
-    class(landunit_physical_properties_type) :: this
+    class(landunit_physical_properties) :: this
     integer, intent(in) :: begl,endl
     !------------------------------------------------------------------------
 
@@ -110,7 +110,7 @@ contains
   subroutine lun_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(landunit_physical_properties_type) :: this
+    class(landunit_physical_properties) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell     )
