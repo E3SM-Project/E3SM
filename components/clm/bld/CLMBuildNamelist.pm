@@ -1309,6 +1309,10 @@ sub setup_cmdl_nutrient_comp {
 
           $nl_flags->{$var} = 'ECA';
 
+          $var = "nfix_ptase_plant";
+          $val = '.true.';
+          $nl->set_variable_value($group, $var, $val);
+
         } else {
           fatal_error("-nutrient_comp_pathway has a value ($val) that is not valid. Valid values are: [rd, eca] \n");
         }
