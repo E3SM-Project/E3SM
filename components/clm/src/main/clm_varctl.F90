@@ -374,6 +374,16 @@ module clm_varctl
    character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
 
 
+  !----------------------------------------------------------
+  ! Budgets
+  !----------------------------------------------------------
+   logical, public :: do_budgets   = .false.
+   integer, public :: budget_inst  = 0
+   integer, public :: budget_daily = 0
+   integer, public :: budget_month = 1
+   integer, public :: budget_ann   = 1
+   integer, public :: budget_ltann = 1
+   integer, public :: budget_ltend = 0
 contains
 
   !---------------------------------------------------------------------------

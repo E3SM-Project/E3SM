@@ -108,6 +108,11 @@ contains
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
     !
+    use WaterBudgetMod, only : WaterBudget_Restart
+    use clm_varctl    , only : do_budgets
+    !
+    implicit none
+    !
     ! !ARGUMENTS:
     type(bounds_type)              , intent(in)    :: bounds          
     character(len=*)               , intent(in)    :: file             ! output netcdf restart file
@@ -270,6 +275,10 @@ contains
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
     end if
 
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='define')
+    end if
+
     call restFile_enddef( ncid )
 
     ! --------------------------------------------
@@ -378,6 +387,10 @@ contains
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
 
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='write')
+    end if
+
     ! --------------------------------------------
     ! Close restart file and write restart pointer file
     ! --------------------------------------------
@@ -421,6 +434,7 @@ contains
     use decompMod        , only : get_proc_clumps, get_clump_bounds
     use decompMod        , only : bounds_type
     use reweightMod      , only : reweight_wrapup
+    use WaterBudgetMod   , only : WaterBudget_Restart
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -585,6 +599,8 @@ contains
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')
+
+    call WaterBudget_Restart(bounds, ncid, flag='read')
 
     ! Do error checking on file
     
@@ -848,6 +864,8 @@ contains
     use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
+    use clm_varctl           , only : do_budgets
+    use WaterBudgetMod       , only : f_size, s_size, p_size
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -891,6 +909,11 @@ contains
     call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
     if (create_glacier_mec_landunit) then
        call ncd_defdim(ncid , 'glc_nec', maxpatch_glcmec, dimid)
+    end if
+
+    if (do_budgets) then
+       call ncd_defdim(ncid , 'budg_flux' , f_size*p_size,  dimid)
+       call ncd_defdim(ncid , 'budg_state', s_size*p_size,  dimid)
     end if
 
     ! Define global attributes
