@@ -62,7 +62,7 @@ contains
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
-    use ch4varcon                 , only: ch4conrd
+    use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn
@@ -351,7 +351,7 @@ contains
     ! look for several optional parameters on surfdata file.
 
     if (use_lch4) then
-       call ch4conrd()
+       call CH4conrd()
     end if
 
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
@@ -419,10 +419,10 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use EcosystemDynMod     , only : EcosystemDynInit
     use pdepStreamMod         , only : pdep_init, pdep_interp
-    use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
-    use CNDecompCascadeCNMod  , only : init_decompcascade_cn
+    use DecompCascadeBGCMod , only : init_decompcascade_bgc
+    use DecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
     use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
@@ -659,7 +659,7 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       call EcosystemDynInit(bounds_proc)
     else
        call SatellitePhenologyInit(bounds_proc)
     end if

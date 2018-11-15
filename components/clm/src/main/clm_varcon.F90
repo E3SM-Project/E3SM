@@ -185,7 +185,7 @@ module clm_varcon
   real(r8) ,allocatable :: dzsoifl(:)      !original soil thickness  (used in interpolation of sand and clay)
 
   !------------------------------------------------------------------
-  ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in ch4varcon)
+  ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in CH4varcon)
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 
