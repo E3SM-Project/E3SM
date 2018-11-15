@@ -56,7 +56,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm /* inputs? */ ) {
   // Set all the fields in the processes needing them (before, they only had headers)
   // Input fields will be handed to the processes as const
   for (const auto& id : inputs) {
-    m_atm_process_group->set_required_field(m_device_field_repo.get_field(id).get_const());
+    m_atm_process_group->set_required_field(m_device_field_repo.get_field(id));
   }
   // Output fields are handed to the processes as writable
   for (const auto& id : outputs) {
