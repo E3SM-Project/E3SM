@@ -13,7 +13,7 @@ addons:
     - g++-6
     - gfortran-6
     - lcov
-    - openmpi
+    - libopenmpi-dev
 
 git:
   submodules: false
