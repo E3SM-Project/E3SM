@@ -2883,6 +2883,34 @@
     </values>
   </entry>
 
+  <entry id="info_taskmap_model">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for the whole model 
+      (0: no output; 1: compact; 2: verbose)
+      default: 2
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_comp">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for individual components
+      (0: no output; 1: compact; 2: verbose)
+      default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- group prof_inparm           -->
   <!--  in perf_mod.F90            -->
