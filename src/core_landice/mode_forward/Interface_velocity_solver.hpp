@@ -95,6 +95,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0, double* dissipation_heat_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0,
@@ -137,6 +138,7 @@ void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
     double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -179,6 +181,7 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& bedTopographyData,
     const std::vector<double>& smbData,
     const std::vector<double>& stiffnessFactorData,
+//    const std::vector<double>& effecPressData,  TODO: UNCOMMENT THIS
     const std::vector<double>& temperatureOnTetra,
     std::vector<double>& dissipationHeatOnTetra,
     std::vector<double>& velocityOnVertices,
@@ -250,7 +253,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
+    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
 void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
             double const * lowerSurface_F, 
