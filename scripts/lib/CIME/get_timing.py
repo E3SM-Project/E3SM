@@ -18,6 +18,8 @@ class _GetTimingInfo:
         self.tmin = 0
         self.tmax = 0
         self.adays = 0
+        self.ncount = 0
+        self.nprocs = 0
 
 class _TimingParser:
     def __init__(self, case, lid="999999-999999"):
@@ -86,20 +88,20 @@ class _TimingParser:
         return (0, 0)
 
     def _gettime2_nuopc(self):
-        nprocs = 0
-        ncount = 0
+        self.nprocs = 0
+        self.ncount = 0
         nproc_expression = re.compile('\s*\[ensemble\] RunPhase1\s+(\d+)\s')
         ncount_expression = re.compile('\s*\[MED\] med_fraction_set\s+(\d+)\s')
 
         for line in self.finlines:
             nproc_match = nproc_expression.match(line)
             if nproc_match:
-                nprocs = int(nproc_match.group(1))
+                self.nprocs = int(nproc_match.group(1))
             ncount_match = ncount_expression.match(line)
             if ncount_match:
-                ncount = int(ncount_match.group(1))
-            if nprocs > 0 and ncount > 0:
-                return (nprocs, ncount)
+                self.ncount = int(ncount_match.group(1))
+            if self.nprocs > 0 and self.ncount > 0:
+                return (self.nprocs, self.ncount)
 
         return (0, 0)
 
@@ -129,13 +131,13 @@ class _TimingParser:
         minval = 0
         maxval = 0
         m = None
-        timeline = re.compile(r'\s*{}\s+\d+\s+\d*\.\d+\s+\d*\.\d+\s+\d*\.\d+\s+(\d*\.\d+)\s+(\d*\.\d+)'.format(re.escape(heading_padded)))
+        timeline = re.compile(r'\s*{}\s+\d+\s+(\d*\.\d+)\s+'.format(re.escape(heading_padded)))
         for line in self.finlines:
             if heading_padded in line:
                 m = timeline.match(line)
                 if m:
-                    minval = float(m.groups()[0])
-                    maxval = float(m.groups()[1])
+                    minval = float(m.group(1))/self.nprocs
+                    maxval = float(m.group(1))/self.nprocs
                     return (minval, maxval, True)
 
         return (0, 0, False)
@@ -143,16 +145,30 @@ class _TimingParser:
 
     def getMEDtime(self):
         med_phase_line = re.compile(r'\s*(\[MED\] med_phases\S+)\s+')
+        med_connector_line = re.compile(r'\s*(\[MED\] med_connectors\S+)\s+')
+        med_fraction_line = re.compile(r'\s*(\[MED\] med_fraction\S+)\s+')
         m = None
         minval = 0
         maxval = 0
         for line in self.finlines:
+            # Runphase should preceed initphase in timing file
+            # this will ignore time in initphase
+            if "[ensemble] Init 1" in line:
+                exit
+            minv = 0
+            maxv = 0
             m = med_phase_line.match(line)
+            if not m:
+                m = med_connector_line.match(line)
+            if not m:
+                m = med_fraction_line.match(line)
             if m:
                 heading = m.group(1)
                 minv, maxv, _ = self._gettime_nuopc(heading)
                 minval += minv
                 maxval += maxv
+                logger.debug("{} time={} sum={}".format(heading, minv, minval))
+
         return(minval, maxval)
 
     def getCOMMtime(self):
@@ -160,11 +176,16 @@ class _TimingParser:
         m = None
         maxval = 0
         for line in self.finlines:
+            # Runphase should preceed initphase in timing file
+            # this will ignore time in initphase
+            if "[ensemble] Init 1" in line:
+                exit
             m = comm_line.match(line)
             if m:
                 heading = m.group(1)
                 _, maxv, _ = self._gettime_nuopc(heading)
                 maxval += maxv
+                logger.debug("{} time={} sum={}".format(heading, maxv, maxval))
         return maxval
 
 
@@ -362,9 +383,6 @@ class _TimingParser:
                 m.tmin, m.tmax, _ = self.gettime(' [{}] RunPhase1 '.format(m.name))
             else:
                 m.tmin, m.tmax = self.getMEDtime()
-            m.tmin *= nsteps
-            m.tmax *= nsteps
-
 
         if self._driver == 'mct':
             nmax  = self.gettime(' CPL:INIT ')[1]
@@ -397,7 +415,7 @@ class _TimingParser:
             nmax = self.gettime("[ensemble] Init 1")[1]
             tmax = self.gettime("[ensemble] RunPhase1")[1]
             fmax = self.gettime("[ensemble] FinalizePhase1")[1]
-            xmax = self.getCOMMtime() * nsteps
+            xmax = self.getCOMMtime()
 
         for m in self.models.values():
             m.tmaxr = 0
