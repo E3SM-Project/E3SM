@@ -69,6 +69,7 @@
            <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
            <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
            <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+           <value compset="_MPASO%OIECO.*_BGC%BPRP">bprp</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
