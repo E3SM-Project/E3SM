@@ -2,6 +2,7 @@ set(SCREAM_CONTROL_SOURCES
   cxx_f90_interface.cpp
   atmosphere_driver.cpp
   atmosphere_process_group.cpp
+  atmosphere_processes_registration.cpp
   surface_coupling.cpp
 )
 

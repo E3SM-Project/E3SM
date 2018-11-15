@@ -1,18 +1,19 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
-#include <share/field_repository.hpp>
 #include <share/scream_types.hpp>
+#include <share/field/field_repository.hpp>
 #include <share/mpi/scream_comm.hpp>
 
-#include <list>
+#include <share/parameter_list.hpp>
+
 #include <memory>
 
 namespace scream {
 
 // Forward declarations
 class AtmosphereProcess;
-class ProcessesSchedule;
+class AtmosphereProcessGroup;
 
 namespace control {
 
@@ -33,8 +34,6 @@ class AtmosphereDriver
 {
 public:
 
-  using atm_process_type = AtmosphereProcess;
-
   // The initialization method should:
   //   1) create all the subcomponents needed, given the current simulation parameters
   //   2) initialize all the subcomponents 
@@ -43,7 +42,7 @@ public:
   // going through the list, and calling their run method, they will be called in the
   // correct order. There should ALWAYS be a component that handles the dynamics. We should
   // make sure of that.
-  void initialize ( /* inputs? */ );
+  void initialize ( const Comm& atm_comm /*, inputs? */ );
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parametrizations
@@ -55,12 +54,13 @@ public:
 
 protected:
 
-  void create_atm_processes ();
+  FieldRepository<ExecMemSpace>               m_device_field_repo;
 
-  FieldRepository<ExecMemSpace>         m_device_field_repo;
+  std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 
-  std::list<std::shared_ptr<atm_process_type>>    m_atm_processes;
+  ParameterList                               m_atm_params;
 
+  // This is the comm containing all (and only) the processes assigned to the atmosphere
   Comm   m_atm_comm;
 };
 
