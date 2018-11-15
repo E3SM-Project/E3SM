@@ -1,4 +1,5 @@
 #include "atmosphere_process_group.hpp"
+#include "atmosphere_process_factory.hpp"
 
 #include <share/util/string_utils.hpp>
 
@@ -9,10 +10,11 @@ AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
   m_group_size = params.get<int>("Number of Entries");
 
   // Create the individual atmosphere processes
+  using factory = AtmosphereProcessFactory;
   for (int i=0; i<m_group_size; ++i) {
     const auto& params_i = params.sublist(util::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
-    m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,params_i));
+    m_atm_processes.emplace_back(factory::create(process_name,params_i));
   }
 
   m_group_schedule_type = params.get<GroupScheduleType>("Schedule Type");
@@ -84,11 +86,6 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<      Real*, E
       atm_proc->set_computed_field(f);
     }
   }
-}
-
-// The AtmosphereProcessGroup creator function (for the factory)
-AtmosphereProcess* create_process_group (const ParameterList& params) {
-  return new AtmosphereProcessGroup(params);
 }
 
 } // namespace scream

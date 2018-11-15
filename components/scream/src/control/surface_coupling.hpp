@@ -2,6 +2,7 @@
 #define SCREAM_SURFACE_COUPLING_HPP
 
 #include <share/atmosphere_process.hpp>
+#include <share/parameter_list.hpp>
 
 #include <share/field/field_repository.hpp>
 
@@ -53,8 +54,6 @@ protected:
 
   Comm    m_comm;
 };
-
-AtmosphereProcess* create_surface_coupling (const ParameterList& params);
 
 } // namespace scream
 

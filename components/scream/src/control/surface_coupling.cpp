@@ -30,8 +30,4 @@ void SurfaceCoupling::finalize ( /* inputs? */ ) {
   // clean up
 }
 
-AtmosphereProcess* create_surface_coupling (const ParameterList& params) {
-  return new SurfaceCoupling (params);
-}
-
 }  // namespace scream

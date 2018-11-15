@@ -4,6 +4,7 @@
 #include <string>
 
 #include "share/atmosphere_process.hpp"
+#include "share/parameter_list.hpp"
 
 namespace scream
 {
@@ -76,8 +77,6 @@ protected:
   std::set<FieldIdentifier>      m_required_fields;
   std::set<FieldIdentifier>      m_computed_fields;
 };
-
-AtmosphereProcess* create_process_group (const ParameterList& params);
 
 } // namespace scream
 

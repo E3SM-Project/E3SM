@@ -9,18 +9,10 @@
 #include "dynamics/atmosphere_dynamics.hpp"
 
 namespace scream {
-
-// This external function calls all the registrations
-// If you create a new AtmosphereProcess, don't forget to add it to the factory
-void register_all_atm_processes ();
-
 namespace control {
 
 void AtmosphereDriver::initialize (const Comm& atm_comm /* inputs? */ ) {
   m_atm_comm = atm_comm;
-
-  // Register all atmosphere processes in the atmosphere process factory
-  register_all_atm_processes ();
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).

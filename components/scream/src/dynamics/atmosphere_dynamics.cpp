@@ -21,8 +21,4 @@ void AtmosphereDynamics::finalize (/* what inputs? */)
 
 }
 
-AtmosphereProcess* create_atmosphere_dynamics (const ParameterList& params) {
-  return new AtmosphereDynamics(params);
-}
-
 } // namespace scream

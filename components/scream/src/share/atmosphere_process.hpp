@@ -7,8 +7,6 @@
 #include <share/mpi/scream_comm.hpp>
 #include <share/field/field_identifier.hpp>
 #include <share/field/field.hpp>
-#include <share/parameter_list.hpp>
-#include <share/util/factory.hpp>
 
 namespace scream
 {
@@ -92,8 +90,6 @@ protected:
   virtual void set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) = 0;
   virtual void set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& f) = 0;
 };
-
-typedef Factory<AtmosphereProcess,std::string,const ParameterList&>  AtmosphereProcessFactory;
 
 } // namespace scream
 

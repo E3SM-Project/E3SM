@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_DYNAMICS_HPP
 
 #include <share/atmosphere_process.hpp>
+#include <share/parameter_list.hpp>
 
 #include <string>
 
@@ -55,8 +56,6 @@ protected:
   Comm      m_dynamics_comm;
 
 };
-
-AtmosphereProcess* create_atmosphere_dynamics (const ParameterList& params);
 
 } // namespace scream
 
