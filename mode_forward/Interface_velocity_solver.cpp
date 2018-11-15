@@ -69,7 +69,7 @@ std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, temperatureData, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -340,6 +340,7 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F,
     double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
@@ -384,7 +385,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
 
     std::map<int, int> bdExtensionMap;
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, temperature_F, smb_F,  minThickness);
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -402,7 +403,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
-        stiffnessFactorData,
+        stiffnessFactorData, //effecPressData,  TODO: UNCOMMENT THIS
         temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
@@ -1437,7 +1438,7 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 }
 
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double const* stiffnessFactor_F, 
+    double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
   int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
@@ -1448,6 +1449,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
     betaData.assign(nVertices, 1e10);
   if (stiffnessFactor_F != 0)
     stiffnessFactorData.assign(nVertices, 1.0);
+  if (effecPress_F != 0)
+    effecPressData.assign(nVertices, 1e10);
   if(temperature_F != 0)
     temperatureData.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
@@ -1466,6 +1469,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[index] = stiffnessFactor_F[iCell];
+    if (effecPress_F != 0)
+      effecPressData[index] = effecPress_F[iCell];  // TODO: CHECK IF CORRECT UNITS!
   }
 
   if(temperature_F != 0) {
@@ -1579,6 +1584,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[iv] = stiffnessFactor_F[ic];
+    if (effecPress_F != 0)
+      effecPressData[iv] = effecPress_F[ic];  // TODO: CHECK IF CORRECT UNITS!
   }
 
 }
@@ -2121,6 +2128,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
     double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -2195,7 +2203,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     
     std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
     import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, 
-                   stiffnessFactor_F, temperature_F, smb_F, minThickness);
+                   stiffnessFactor_F, effecPress_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
                     thicknessUncertainty_F,
@@ -2221,6 +2229,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     write_ascii_mesh_field(bmbData, "basal_mass_balance");
     write_ascii_mesh_field(bmbUncertaintyData, "basal_mass_balance_uncertainty");
+
+    write_ascii_mesh_field(effecPressData, "effective_pressure");
 
     // These two fields are more complicated than the others so cannot use the function to write out
 
