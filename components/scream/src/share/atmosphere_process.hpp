@@ -2,19 +2,22 @@
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
 #include <string>
-#include <list>
+#include <set>
 
-#include "share/mpi/scream_comm.hpp"
-#include "share/field_header.hpp"
-#include "share/field.hpp"
+#include <share/mpi/scream_comm.hpp>
+#include <share/field/field_identifier.hpp>
+#include <share/field/field.hpp>
+#include <share/parameter_list.hpp>
+#include <share/util/factory.hpp>
 
 namespace scream
 {
 
 enum class AtmosphereProcessType {
-  Coupling,
-  Dynamics,
-  Physics
+  Coupling,   // Process responsible of interfacing with the component coupler
+  Dynamics,   // Process responsible of handling the dynamics
+  Physics,    // Process handling a physics parametrization
+  Group       // Process that groups a bunch of processes (so they look as a single process)
 };
 
 /*
@@ -56,28 +59,41 @@ public:
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize (/* what inputs? */) = 0;
+  virtual void initialize (const Comm& comm) = 0;
   virtual void run        (/* what inputs? */) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
-  // 'reshaping' templated "copy-constructor" of Field (see field.hpp for details).
-  // Otherwise, the process could store the 1d view, and reshape it when needed during
-  // the run phase.
-  // NOTE: this method is called by the driver, and feeds fields found in the field repo.
-  //       Therefore, it *should* be safe to even store unmanaged views to the underlying
-  //       kokkos view in the input field, since the field (and the field repo) should
-  //       outlive the atmosphere process.
-
-  virtual void set_required_field (const Field<const Real*, ExecMemSpace, true>& f) = 0;
-  virtual void set_computed_field (const Field<      Real*, ExecMemSpace, true>& f) = 0;
+  // template functio 'reinterpret_field' (see field.hpp for details).
+  void set_required_field (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) {
+    error::runtime_check(requires(f.get_header().get_identifier()),
+                         "Error! This atmosphere process does not require this field. "
+                         "Something is wrong up the call stack. Please, contact developers.\n");
+    set_required_field_impl (f);
+  }
+  void set_computed_field (const Field<Real*, ExecMemSpace, MemoryManaged>& f) {
+    error::runtime_check(computes(f.get_header().get_identifier()),
+                         "Error! This atmosphere process does not compute this field. "
+                         "Something is wrong up the call stack. Please, contact developers.\n");
+    set_computed_field_impl (f);
+  }
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
-  virtual const std::list<std::shared_ptr<FieldHeader>>&  get_required_fields () const = 0;
-  virtual const std::list<std::shared_ptr<FieldHeader>>&  get_computed_fields () const = 0;
+  virtual const std::set<FieldIdentifier>& get_required_fields () const = 0;
+  virtual const std::set<FieldIdentifier>& get_computed_fields () const = 0;
+
+  // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use find and check result.
+  bool requires (const FieldIdentifier& id) const { return get_required_fields().find(id)!= get_computed_fields().end(); }
+  bool computes (const FieldIdentifier& id) const { return get_computed_fields().find(id)!= get_computed_fields().end(); }
+
+protected:
+  virtual void set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) = 0;
+  virtual void set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& f) = 0;
 };
+
+typedef Factory<AtmosphereProcess,std::string,const ParameterList&>  AtmosphereProcessFactory;
 
 } // namespace scream
 
