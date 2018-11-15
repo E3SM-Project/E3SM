@@ -2,7 +2,13 @@
 
 namespace scream {
 
-void SurfaceCoupling::initialize ( /* inputs? */ ) {
+SurfaceCoupling::SurfaceCoupling (const ParameterList& /*params*/)
+{
+  // Grab what you need from the parameter list
+}
+
+void SurfaceCoupling::initialize (const Comm& comm) {
+  m_comm = comm;
   // Initialize the FieldRepository (FR) for host fields
   // (i.e., fields that are I/O w.r.t the coupler)
 }
@@ -22,6 +28,10 @@ void SurfaceCoupling::run ( /* inputs ? */ ) {
 
 void SurfaceCoupling::finalize ( /* inputs? */ ) {
   // clean up
+}
+
+AtmosphereProcess* create_surface_coupling (const ParameterList& params) {
+  return new SurfaceCoupling (params);
 }
 
 }  // namespace scream

@@ -4,7 +4,6 @@
 #include <share/atmosphere_process.hpp>
 
 #include <string>
-#include <list>
 
 namespace scream
 {
@@ -12,16 +11,19 @@ namespace scream
 /*
  *  The class responsible to handle the atmosphere dynamics
  *
- *  The AD should only exactly ONE instance of this class stored
+ *  The AD should store exactly ONE instance of this class stored
  *  in its list of subcomponents (the AD should make sure of this).
  *
- *  For now, Scream is only going to accommodate HOMME as a dynamics
+ *  Note: for now, Scream is only going to accommodate HOMME as a dynamics
  *  dycore.
  */
 
 class AtmosphereDynamics : public AtmosphereProcess
 {
 public:
+
+  // Constructor(s)
+  AtmosphereDynamics (const ParameterList& params);
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
@@ -33,27 +35,28 @@ public:
   const Comm& get_comm () const { return m_dynamics_comm; }
 
   // These are the three main interfaces:
-  void initialize (/* what inputs? */);
+  void initialize (const Comm& comm);
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 
-  // These two methods allow the driver to figure out what subcomponent need
-  // a given field and what subcomponent updates a given field.
-  const std::list<std::shared_ptr<FieldHeader>>&  get_required_fields () const { return m_input_fields;  }
-  const std::list<std::shared_ptr<FieldHeader>>&  get_computed_fields () const { return m_output_fields; }
-
-  // Setting the field in the atmosphere process
-  void set_required_field (const Field<const Real*, ExecMemSpace, true>& /*f*/) { /* impl */ }
-  void set_computed_field (const Field<      Real*, ExecMemSpace, true>& /*f*/) { /* impl */ }
+  // Get the set of required/computed fields
+  const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
+  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
 
 protected:
 
-  std::list<std::shared_ptr<FieldHeader>> m_input_fields;
-  std::list<std::shared_ptr<FieldHeader>> m_output_fields;
+  // Setting the field in the atmosphere process
+  void set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& /*f*/) { /* impl */ }
+  void set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& /*f*/) { /* impl */ }
+
+  std::set<FieldIdentifier> m_required_fields;
+  std::set<FieldIdentifier> m_computed_fields;
 
   Comm      m_dynamics_comm;
 
 };
+
+AtmosphereProcess* create_atmosphere_dynamics (const ParameterList& params);
 
 } // namespace scream
 
