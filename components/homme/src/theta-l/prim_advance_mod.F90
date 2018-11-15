@@ -487,7 +487,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
   
-  call abortmp('Error: __FILE__,__LINE__ theta-l model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
+  call abortmp('Error: In applyCAMforcing_dyn theta-l model doesnt have ftype=3 option.')
   end subroutine applyCAMforcing_dynamics_dp
 
 
