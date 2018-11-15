@@ -184,10 +184,12 @@
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
+      <value compset="_MPASCICE_MPASO_.*_BGC%BPRP" >CO2C</value>
       <value compset="_MPASCICE_MPASO_.*_BGC%BCRC" >CO2C</value>
       <value compset="_MPASCICE_MPASO_.*_BGC%BCRD" >CO2C</value>
       <value compset="_MPASCICE_MPASO_.*_BGC%BDRC" >CO2C</value>
       <value compset="_MPASCICE_MPASO_.*_BGC%BDRD" >CO2C</value>
+      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BPRP" >CO2C_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
       <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
