@@ -2367,7 +2367,6 @@
                 <var name="i_acswuptc" type="integer" dimensions="nCells Time" units="unitless"
                      description="incidence of accumulated clear-sky upward top-of-atmosphere shortwave radiation greater than config_bucket_radt"/>
 
-
                 <var name="coszr" type="real" dimensions="nCells Time" units="unitless"
                      description="cosine of zenith solar angle"/>
 
@@ -2378,7 +2377,7 @@
                      description="all-sky downward surface shortwave radiation flux"/>
 
                 <var name="swdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface shortwave radiation flux"/>                
+                     description="clear-sky downward surface shortwave radiation flux"/>
 
                 <var name="swdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2402,7 +2401,7 @@
                      description="accumulated all-sky downward surface shortwave radiation flux"/>
 
                 <var name="acswdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface shortwave radiation flux"/>                
+                     description="accumulated clear-sky downward surface shortwave radiation flux"/>
 
                 <var name="acswdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2424,7 +2423,6 @@
 
                 <var name="gsw" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="net surface shortwave radiation flux"/>
-
 
                 <!-- RRTMG SW ONLY: -->
                 <var name="swdnflx" type="real" dimensions="nVertLevelsP2 nCells Time" units="-"
@@ -2484,22 +2482,22 @@
                      description="clear-sky downward surface longwave radiation flux"/>
 
                 <var name="lwdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface longwave radiation flux"/>
+                     description="all-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwdntc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface longwave radiation flux"/>
+                     description="clear-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwupb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky upward surface longwave radiation flux"/>
 
                 <var name="lwupbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="clear-sky upward surface longwave radiation flux"/>
 
                 <var name="lwupt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="all-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="clear-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwdnb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky downward surface longwave radiation flux"/>
@@ -2508,28 +2506,28 @@
                      description="accumulated clear-sky downward surface longwave radiation flux"/>
 
                 <var name="aclwdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface longwave radiation flux"/>
+                     description="accumulated all-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwdntc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface longwave radiation flux"/>
+                     description="accumulated clear-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwupb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky upward surface longwave radiation flux"/>
 
                 <var name="aclwupbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated clear-sky upward surface longwave radiation flux"/>
 
                 <var name="aclwupt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated all-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated clear-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="olrtoa" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="top-of-atmosphere outgoing longwave radiation flux"/>
+                     description="all-sky top-of-atmosphere outgoing longwave radiation flux"/>
 
                 <var name="glw" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all downward surface longwave radiation"/>
+                     description="all-sky downward surface longwave radiation"/>
 
                 <var name="rre_cloud" type="real" dimensions="nVertLevels nCells Time" units="microns"
                      description="effective radius of cloud water droplets calculated in RRTMG radiation"/>
@@ -2537,8 +2535,8 @@
                 <var name="rre_ice" type="real" dimensions="nVertLevels nCells Time" units="microns"
                      description="effective radius of cloud ice crystals calculated in RRTMG radiation"/>
 
-                <var name="rre_snow" type="real" dimensions="nVertLevels nCells Time"/>
-                     description="effective radius of cloud ice crystals calculated in RRTMG radiation"/>
+                <var name="rre_snow" type="real" dimensions="nVertLevels nCells Time" units="microns"
+                     description="effective radius of snow crystals calculated in RRTMG radiation"/>
 
 
                 <!-- ================================================================================================== -->
