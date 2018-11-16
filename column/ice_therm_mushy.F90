@@ -523,7 +523,7 @@ contains
           ! check if solution is consistent 
           ! surface conductive heat flux should be less than 
           ! incoming surface heat flux
-          if (fcondtop - fsurfn < ferrmax) then
+          if (fcondtop - fsurfn < 0.9_dbl_kind*ferrmax) then
 
              ! solution is consistent - have solution so finish
              return
@@ -576,7 +576,7 @@ contains
        ! check if solution is consistent 
        ! surface conductive heat flux should be less than 
        ! incoming surface heat flux
-       if (fcondtop - fsurfn < ferrmax) then
+       if (fcondtop - fsurfn < 0.9_dbl_kind*ferrmax) then
 
           ! solution is consistent - have solution so finish
           return
@@ -842,7 +842,7 @@ contains
           ! check if solution is consistent 
           ! surface conductive heat flux should be less than 
           ! incoming surface heat flux
-          if (fcondtop - fsurfn < ferrmax) then
+          if (fcondtop - fsurfn < 0.9_dbl_kind*ferrmax) then
 
              ! solution is consistent - have solution so finish
              return
@@ -895,7 +895,7 @@ contains
        ! check if solution is consistent 
        ! surface conductive heat flux should be less than 
        ! incoming surface heat flux
-       if (fcondtop - fsurfn < ferrmax) then
+       if (fcondtop - fsurfn < 0.9_dbl_kind*ferrmax) then
 
           ! solution is consistent - have solution so finish
           return
