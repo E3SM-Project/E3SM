@@ -301,7 +301,6 @@ contains
     character(len=*), intent(in)  :: type1d           ! 1d data type
     character(len=*), intent(in)  :: type1d_out       ! 1d output type
     character(len=*), intent(in)  :: type2d           ! 2d output type
-    integer         , intent(in)  :: numdims          ! number of dimensions
     integer         , intent(in)  :: num2d            ! size of second dimension (e.g. number of vertical levels)
     character(len=*), intent(in)  :: units            ! units of field
     character(len=1), intent(in)  :: avgflag          ! time averaging flag
@@ -1168,6 +1167,9 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
        else
           check_active = .false.
        end if
@@ -1449,7 +1451,10 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
-       else
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
+       else             
           check_active = .false.
        end if
 
@@ -1856,7 +1861,7 @@ contains
 
     ! Global compressed dimensions (not including non-land points)
     call ncd_defdim(lnfid, trim(nameg), numg, dimid)
-    call ncd_defdim(lnfid, trim(namet), numt, dimid)
+    call ncd_defdim(lnfid, trim(namet), max_topounits, dimid) !TKT topounit dimension needs to be max_topounits
     call ncd_defdim(lnfid, trim(namel), numl, dimid)
     call ncd_defdim(lnfid, trim(namec), numc, dimid)
     call ncd_defdim(lnfid, trim(namep), nump, dimid)
@@ -2469,9 +2474,6 @@ contains
              call ncd_io(varname='fates_scmap_levscag',data=fates_hdim_scmap_levscag, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_agmap_levscag',data=fates_hdim_agmap_levscag, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levscls',data=fates_hdim_levsclass, ncid=nfid(t), flag='write')
-             call ncd_io(varname='fates_levcacls',data=fates_hdim_levcoage, ncid=nfid(t), flag='write')
-             call ncd_io(varname='fates_pftmap_levcapf',data=fates_hdim_pfmap_levcapf, ncid=nfid(t), flag='write')
-             call ncd_io(varname='fates_camap_levcapf',data=fates_hdim_camap_levcapf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_pftmap_levscpf',data=fates_hdim_pfmap_levscpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_scmap_levscpf',data=fates_hdim_scmap_levscpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levage',data=fates_hdim_levage, ncid=nfid(t), flag='write')
@@ -2490,14 +2492,6 @@ contains
              call ncd_io(varname='fates_pftmap_levscagpft',data=fates_hdim_pftmap_levscagpft, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_pftmap_levagepft',data=fates_hdim_pftmap_levagepft, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_agmap_levagepft',data=fates_hdim_agmap_levagepft, ncid=nfid(t), flag='write')
-             call ncd_io(varname='fates_levelem',data=fates_hdim_levelem, ncid=nfid(t),flag='write')
-             call ncd_io(varname='fates_elmap_levelpft',data=fates_hdim_elmap_levelpft, ncid=nfid(t),flag='write')
-             call ncd_io(varname='fates_pftmap_levelpft',data=fates_hdim_pftmap_levelpft, ncid=nfid(t),flag='write')
-             call ncd_io(varname='fates_elmap_levelcwd',data=fates_hdim_elmap_levelcwd, ncid=nfid(t),flag='write')
-             call ncd_io(varname='fates_cwdmap_levelcwd',data=fates_hdim_cwdmap_levelcwd, ncid=nfid(t),flag='write')
-             call ncd_io(varname='fates_elmap_levelage',data=fates_hdim_elmap_levelage, ncid=nfid(t),flag='write')
-             call ncd_io(varname='fates_agemap_levelage',data=fates_hdim_agemap_levelage, ncid=nfid(t),flag='write')
-
           end if
 
        endif
@@ -2687,7 +2681,10 @@ contains
        call ncd_io(varname='landfrac', data=ldomain%frac, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
-
+       call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
+       if(has_topounit .and. max_topounits > 1) then
+          call ncd_io(varname='topoPerGrid' , data=ldomain%num_tunits_per_grd, dim1name=grlnd, ncid=nfid(t), flag='write')
+       end if
     end if  ! (define/write mode
 
   end subroutine htape_timeconst
@@ -4508,7 +4505,7 @@ contains
     ! initial or branch run to initialize the actual history tapes.
     !
     ! !USES:
-    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil, nmonth, nvegwcs
+    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil    
     use clm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
     use landunit_varcon , only : max_lunit
     !
