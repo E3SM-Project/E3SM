@@ -309,7 +309,7 @@ contains
     ! !USES:
     use spmdMod        , only : masterproc
     use ncdio_pio      , only : ncd_io
-    use surfrdUtilsMod , only : check_sums_equal_1
+    use surfrdUtilsMod , only : check_sums_equal_1_2d
     !
     ! !ARGUMENTS:
     class(dyn_var_type) , intent(inout) :: this ! this object (needs to be intent(inout) because this%dynfile is intent(inout) in the ncd_io call)
@@ -357,11 +357,11 @@ contains
        this%data_on_file = .true.
        arrayl = arrayl / this%conversion_factor
 
-       ! The following needs to be in an ifdef because the check_sums_equal_1 interface
+       ! The following needs to be in an ifdef because the check_sums_equal_1_2d interface
        ! requires a 2-d array
 #if ({DIMS}==2)
        if (this%do_check_sums_equal_1) then
-          call check_sums_equal_1(arrayl, 1, this%varname, subname)
+          call check_sums_equal_1_2d(arrayl, 1, this%varname, subname)
        end if
 #endif
 

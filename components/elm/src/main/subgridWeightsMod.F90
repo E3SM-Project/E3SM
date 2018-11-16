@@ -100,6 +100,8 @@ module subgridWeightsMod
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
+  use landunit_varcon, only : istsoil, istice, istice_mec
+  use topounit_varcon , only : max_topounits, has_topounit
   !
   ! PUBLIC TYPES:
   implicit none
@@ -270,13 +272,19 @@ contains
     type(bounds_type), intent(in) :: bounds  ! bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: l,c,p       ! loop counters
+    integer :: t,l,c,p       ! loop counters
 
     character(len=*), parameter :: subname = 'set_active'
     !------------------------------------------------------------------------
 
     do l = bounds%begl,bounds%endl
+       t = lun_pp%topounit(l)
        lun_pp%active(l) = is_active_l(l)
+       if (lun_pp%active(l) .and. .not. lun_pp%itype(l) == istice_mec .and. .not. lun_pp%itype(l) == istsoil .and. .not. top_pp%active(t)) then
+          write(iulog,*) trim(subname),' ERROR: active landunit found on inactive topounit', &
+                         'at l = ', l, ', t = ', t
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
     end do
 
     do c = bounds%begc,bounds%endc
@@ -333,7 +341,7 @@ contains
        ! General conditions under which is_active_l NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (lun_pp%wttopounit(l) > 0) is_active_l = .true.
+       if (top_pp%active(t) .and. lun_pp%wttopounit(l) > 0) is_active_l = .true.   !Make sure land unit is active only if topounit is active
 
        ! ------------------------------------------------------------------------
        ! Conditions under which is_active_l is set to true because we want extra virtual landunits:
@@ -348,7 +356,8 @@ contains
        ! rather than icemask is a (typically small) performance cost.
        ! PET: 4/25/2018: By keeping the glcmask reference at the gridcell level, this forces
        ! is_active_l = .true. for istice_mec landunits on all topounits for the gridcell.
-       if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true.
+       !if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true. ! make sure no active l for inactive topounit TKT
+       if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true.
 
        ! In general, include a virtual natural vegetation landunit. This aids
        ! initialization of a new landunit; and for runs that are coupled to CISM, this
@@ -367,7 +376,8 @@ contains
        ! - in this topounit, due to dynamic landunits. We'll live with the fact that
        ! initialization of the new crop landunit will be initialized in an un-ideal way
        ! in this rare situation.
-       if (lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then
+       !if (lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then ! make sure no active l for inactive topounit TKT
+       if (top_pp%active(t) .and. lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then
           is_active_l = .true.
        end if
 
@@ -391,6 +401,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: l  ! landunit index
+    integer :: t  ! topounit index
     integer :: g  ! grid cell index
     !------------------------------------------------------------------------
 
@@ -400,6 +411,7 @@ contains
     else
        l =col_pp%landunit(c)
        g =col_pp%gridcell(c)
+       t =col_pp%topounit(c)
 
        is_active_c = .false.
 
@@ -407,7 +419,7 @@ contains
        ! General conditions under which is_active_c NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (lun_pp%active(l) .and. col_pp%wtlunit(c) > 0._r8) is_active_c = .true.
+       if (top_pp%active(t) .and. lun_pp%active(l) .and. col_pp%wtlunit(c) > 0._r8) is_active_c = .true.
 
        ! ------------------------------------------------------------------------
        ! Conditions under which is_active_c is set to true because we want extra virtual columns:
@@ -418,7 +430,7 @@ contains
        !
        ! Note that we use glcmask rather than icemask here; see comment in is_active_l
        ! for the rationale.
-       if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_c = .true.
+       if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_c = .true.
 
        ! We don't really need to run over 0-weight urban columns. But because of some
        ! messiness in the urban code (many loops are over the landunit filter, then drill
@@ -426,7 +438,7 @@ contains
        ! places) it keeps the code cleaner to run over 0-weight urban columns. This generally
        ! shouldn't add much computation time, since in most places, all urban columns are
        ! non-zero weight if the landunit is non-zero weight.
-       if (lun_pp%active(l) .and. (lun_pp%itype(l) >= isturb_MIN .and. lun_pp%itype(l) <= isturb_MAX)) then
+       if (top_pp%active(t) .and. lun_pp%active(l) .and. (lun_pp%itype(l) >= isturb_MIN .and. lun_pp%itype(l) <= isturb_MAX)) then
           is_active_c = .true.
        end if
     end if
@@ -580,14 +592,16 @@ contains
     logical, intent(in) :: active_only ! true => check sum of weights just of ACTIVE children, grandchildren, etc.
     !
     ! !LOCAL VARIABLES:
-    integer :: g,l,c,p     ! loop counters
-    real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwtgcell(:)
+    integer :: g,t,l,c,p, tu     ! loop counters
+    real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwtgcell(:), sumwttunit(:)
     logical :: error_found                ! true if we find an error
+    logical :: topo_active_only           ! Check the weights of the active topounits
     character(len=*), parameter :: subname = 'check_weights'
     !------------------------------------------------------------------------------
 
     allocate(sumwtcol(bounds%begc:bounds%endc))
     allocate(sumwtlunit(bounds%begl:bounds%endl))
+    allocate(sumwttunit(bounds%begt:bounds%endt))
     allocate(sumwtgcell(bounds%begg:bounds%endg))
 
     error_found = .false.
@@ -595,33 +609,58 @@ contains
     ! Check PFT-level weights
     sumwtcol(bounds%begc : bounds%endc) = 0._r8
     sumwtlunit(bounds%begl : bounds%endl) = 0._r8
+    sumwttunit(bounds%begt : bounds%endt) = 0._r8
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
 
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
        l = veg_pp%landunit(p)
+       t = veg_pp%topounit(p)
        g = veg_pp%gridcell(p)
 
        if ((active_only .and. veg_pp%active(p)) .or. .not. active_only) then 
           sumwtcol(c) = sumwtcol(c) + veg_pp%wtcol(p)
           sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
+          !topo_active_only = top_pp%active(t)
+          !if(topo_active_only) then  !TKT calculate only for active topounits
+          sumwttunit(t) = sumwttunit(t) + veg_pp%wttopounit(p)
           sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
+          !end if
        end if
     end do
 
     do c = bounds%begc,bounds%endc
-       if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
-          write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
+       tu = col_pp%topounit(c)
+       topo_active_only = top_pp%active(tu) 
+       if (topo_active_only) then ! Check only for the valid topounits
+          if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
+             write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
        end if
     end do
 
     do l = bounds%begl,bounds%endl
-       if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
-          write(iulog,*) trim(subname),' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
+       tu = lun_pp%topounit(l)
+       topo_active_only = top_pp%active(tu) 
+       if (topo_active_only) then 
+          if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
+             write(iulog,*) trim(subname),' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
+       end if
+    end do
+    
+    do t = bounds%begt,bounds%endt       
+       topo_active_only = top_pp%active(t)
+       if (topo_active_only) then 
+          if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
+             write(iulog,*) trim(subname),' ERROR: at t = ',t,'total PFT weight is ',sumwttunit(t), &
+                         'active_only = ', active_only
+             error_found = .true.
+          end if
        end if
     end do
 
@@ -635,23 +674,44 @@ contains
 
     ! Check col-level weights
     sumwtlunit(bounds%begl : bounds%endl) = 0._r8
+    sumwttunit(bounds%begt : bounds%endt) = 0._r8
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
 
     do c = bounds%begc,bounds%endc
        l = col_pp%landunit(c)
+       t = col_pp%topounit(c)
        g = col_pp%gridcell(c)
 
        if ((active_only .and. col_pp%active(c)) .or. .not. active_only) then
           sumwtlunit(l) = sumwtlunit(l) + col_pp%wtlunit(c)
+          topo_active_only = top_pp%active(t)
+          !if(topo_active_only) then  !TKT calculate only for active topounits
+          sumwttunit(t) = sumwttunit(t) + col_pp%wttopounit(c)
           sumwtgcell(g) = sumwtgcell(g) + col_pp%wtgcell(c)
+          !end if
        end if
     end do
 
     do l = bounds%begl,bounds%endl
-       if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
-          write(iulog,*) trim(subname),' ERROR: at l = ',l,'total col weight is ',sumwtlunit(l), &
+       tu = lun_pp%topounit(l)
+       topo_active_only = top_pp%active(tu)
+       if (topo_active_only) then ! Check only for the valid topounits
+          if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
+             write(iulog,*) trim(subname),' ERROR: at l = ',l,'total col weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
-          error_found = .true.
+             error_found = .true.
+          end if
+       end if
+    end do
+    
+    do t = bounds%begt,bounds%endt
+       topo_active_only = top_pp%active(t)
+       if (topo_active_only) then
+          if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
+             write(iulog,*) trim(subname),' ERROR: at t = ',t,'total col weight is ',sumwttunit(t), &
+                         'active_only = ', active_only
+             error_found = .true.
+          end if
        end if
     end do
     
@@ -665,14 +725,28 @@ contains
 
     ! Check landunit-level weights
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
+    sumwttunit(bounds%begt : bounds%endt) = 0._r8
 
     do l = bounds%begl,bounds%endl
+       t = lun_pp%topounit(l)
        g = lun_pp%gridcell(l)
+       !topo_active_only = top_pp%active(t)       
        if ((active_only .and. lun_pp%active(l)) .or. .not. active_only) then
+          sumwttunit(t) = sumwttunit(t) + lun_pp%wttopounit(l)
           sumwtgcell(g) = sumwtgcell(g) + lun_pp%wtgcell(l)
-       end if
+       end if       
     end do
 
+    do t = bounds%begt,bounds%endt
+       if (top_pp%active(t)) then
+          if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
+             write(iulog,*) trim(subname),' ERROR: at t= ',t,'total lunit weight is ',sumwttunit(t), &
+                         'active_only = ', active_only
+             error_found = .true.
+          end if
+       end if
+    end do
+    
     do g = bounds%begg,bounds%endg
        if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
           write(iulog,*) trim(subname),' ERROR: at g = ',g,'total lunit weight is ',sumwtgcell(g), &
@@ -680,8 +754,26 @@ contains
           error_found = .true.
        end if
     end do
+    
+    ! Check topounit-level weights
+    sumwtgcell(bounds%begg : bounds%endg) = 0._r8    
+    do t = bounds%begt,bounds%endt
+       g = top_pp%gridcell(t)     
+       if ((active_only .and. top_pp%active(t)) .or. .not. active_only) then          
+          sumwtgcell(g) = sumwtgcell(g) + top_pp%wtgcell(t)
+       end if       
+    end do
 
-    deallocate(sumwtcol, sumwtlunit, sumwtgcell)
+    do g = bounds%begg,bounds%endg
+       if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
+          write(iulog,*) trim(subname),' ERROR: at g = ',g,'total topounit weight is ',sumwtgcell(g), &
+                         'active_only = ', active_only
+          write(iulog,*) trim(subname),' ERROR: at g = ',g,' ntopounits = ',grc_pp%ntopounits(g)
+          error_found = .true.
+       end if
+    end do
+    
+    deallocate(sumwtcol, sumwtlunit, sumwttunit, sumwtgcell)
 
     if (error_found) then
        call endrun(msg=errMsg(__FILE__, __LINE__))

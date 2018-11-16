@@ -81,6 +81,7 @@ module TopounitDataType
   ! Define the data structure that holds energy state information for land at the level of topographic unit.
   type, public :: topounit_energy_state
     real(r8), pointer :: t_rad      (:) => null() ! mean radiative temperature of land surface (K)
+    real(r8), pointer :: eflx_lwrad_out_topo      (:) => null() ! Topounit level longwave radiation flux to be used in downscaling
   contains
     procedure, public :: Init  => init_top_es
     procedure, public :: Clean => clean_top_es
@@ -126,22 +127,22 @@ module TopounitDataType
     this%tbot(begt:endt) = spval
     call hist_addfld1d (fname='TBOT', units='K',  &
          avgflag='A', long_name='atmospheric air temperature', &
-         ptr_lnd=this%tbot)
+         ptr_topo=this%tbot,t2g_scale_type='unity')
 
     this%thbot(begt:endt) = spval
     call hist_addfld1d (fname='THBOT', units='K',  &
          avgflag='A', long_name='atmospheric air potential temperature', &
-         ptr_lnd=this%thbot)
+         ptr_topo=this%thbot,t2g_scale_type='unity')
 
     this%pbot(begt:endt) = spval
     call hist_addfld1d (fname='PBOT', units='Pa',  &
          avgflag='A', long_name='atmospheric pressure', &
-         ptr_lnd=this%pbot)
+         ptr_topo=this%pbot,t2g_scale_type='unity')
 
     this%qbot(begt:endt) = spval
     call hist_addfld1d (fname='QBOT', units='kg/kg',  &
          avgflag='A', long_name='atmospheric specific humidity', &
-         ptr_lnd=this%qbot)
+         ptr_topo=this%qbot,t2g_scale_type='unity')
 
     this%rhbot(begt:endt) = spval
     call hist_addfld1d (fname='RH', units='%',  &
@@ -151,23 +152,23 @@ module TopounitDataType
     this%windbot(begt:endt) = spval
     call hist_addfld1d (fname='WIND', units='m/s',  &
          avgflag='A', long_name='atmospheric wind velocity magnitude', &
-         ptr_lnd=this%windbot)
+         ptr_topo=this%windbot,t2g_scale_type='unity')
 
     this%zbot(begt:endt) = spval
     call hist_addfld1d (fname='ZBOT', units='m',  &
          avgflag='A', long_name='atmospheric reference height', &
-         ptr_lnd=this%zbot)
+         ptr_topo=this%zbot,t2g_scale_type='unity')
 
     this%pco2bot(begt:endt) = spval
     call hist_addfld1d (fname='PCO2', units='Pa',  &
          avgflag='A', long_name='atmospheric partial pressure of CO2', &
-         ptr_lnd=this%pco2bot)
+         ptr_topo=this%pco2bot,t2g_scale_type='unity')
 
     if (use_lch4) then
        this%pch4bot(begt:endt) = spval
        call hist_addfld1d (fname='PCH4', units='Pa',  &
             avgflag='A', long_name='atmospheric partial pressure of CH4', &
-            ptr_lnd=this%pch4bot)
+            ptr_topo=this%pch4bot,t2g_scale_type='unity')
     end if
   end subroutine init_top_as
 
@@ -355,22 +356,26 @@ module TopounitDataType
     this%rain(begt:endt) = spval
     call hist_addfld1d (fname='RAIN', units='mm/s',  &
          avgflag='A', long_name='atmospheric rain', &
-         ptr_lnd=this%rain)
+         ptr_topo=this%rain,t2g_scale_type='unity')
 
     this%snow(begt:endt) = spval
     call hist_addfld1d (fname='SNOW', units='mm/s',  &
          avgflag='A', long_name='atmospheric snow', &
-         ptr_lnd=this%snow)
+         ptr_topo=this%snow,t2g_scale_type='unity')
 
     this%solar(begt:endt) = spval
     call hist_addfld1d (fname='FSDS', units='W/m^2',  &
          avgflag='A', long_name='atmospheric incident solar radiation', &
-         ptr_lnd=this%solar)
+         ptr_topo=this%solar,t2g_scale_type='unity')
 
     this%lwrad(begt:endt) = spval
     call hist_addfld1d (fname='FLDS', units='W/m^2',  &
          avgflag='A', long_name='atmospheric longwave radiation', &
-         ptr_lnd=this%lwrad)
+         ptr_topo=this%lwrad,t2g_scale_type='unity')
+    
+    !call hist_addfld1d (fname='FLDS', units='W/m^2',  &
+    !     avgflag='A', long_name='atmospheric longwave radiation', &
+    !     ptr_lnd=this%lwrad)
 
     end subroutine init_top_af
 
@@ -591,6 +596,8 @@ module TopounitDataType
     integer, intent(in) :: endt   ! ending topographic unit index
 
     allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
+    allocate(this%eflx_lwrad_out_topo   (begt:endt)) ; this%eflx_lwrad_out_topo   (:) = nan
+    
   end subroutine init_top_es
   
   !-----------------------------------------------------------------------
@@ -600,6 +607,7 @@ module TopounitDataType
     integer, intent(in) :: endt   ! ending topographic unit index
     
     deallocate(this%t_rad    )
+    deallocate(this%eflx_lwrad_out_topo    )
   end subroutine clean_top_es
   
 

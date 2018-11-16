@@ -20,7 +20,9 @@ module decompInitMod
   use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
   use VegetationType  , only : veg_pp                
   use decompMod
-  use mct_mod
+  use mct_mod  
+  use topounit_varcon   , only : max_topounits, has_topounit
+  use domainMod         , only: ldomain
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -99,7 +101,7 @@ contains
     procinfo%nclumps = clump_pproc
     procinfo%cid(:)  = -1
     procinfo%ncells  = 0
-    procinfo%ntopounits  = 0
+    procinfo%ntunits  = 0
     procinfo%nlunits = 0
     procinfo%ncols   = 0
     procinfo%npfts   = 0
@@ -124,7 +126,7 @@ contains
     end if
     clumps(:)%owner   = -1
     clumps(:)%ncells  = 0
-    clumps(:)%ntopounits = 0
+    clumps(:)%ntunits = 0
     clumps(:)%nlunits = 0
     clumps(:)%ncols   = 0
     clumps(:)%npfts   = 0
@@ -168,7 +170,7 @@ contains
           numg = numg + 1
        endif
     enddo
-
+   
     if (npes > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of processes exceeds number ', &
             'of land grid cells',npes,numg
@@ -340,7 +342,7 @@ contains
   end subroutine decompInit_lnd
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_clumps(glcmask)
+  subroutine decompInit_clumps(glcmask,num_tunits_per_grd)
     !
     ! !DESCRIPTION:
     ! This subroutine initializes the land surface decomposition into a clump
@@ -354,6 +356,7 @@ contains
     ! !ARGUMENTS:
     implicit none
     integer , pointer, optional   :: glcmask(:)  ! glc mask
+    integer , pointer, optional   :: num_tunits_per_grd(:)  ! Number of topounits per grid
     !
     ! !LOCAL VARIABLES:
     integer :: ln,an              ! indices
@@ -363,7 +366,7 @@ contains
     integer :: anumg              ! lnd num gridcells
     integer :: icells             ! temporary
     integer :: begg, endg         ! temporary
-    integer :: itopounits         ! temporary
+    integer :: itunits            ! temporary
     integer :: ilunits            ! temporary
     integer :: icols              ! temporary
     integer :: ipfts              ! temporary
@@ -400,7 +403,7 @@ contains
     ! gridcell index (an) that is associated with the local gridcell index (ln)
     ! More detail: an is the row-major order 1d-index into the global ixj grid.
 
-    itopounits=0
+    itunits=0
     ilunits=0
     icols=0
     ipfts=0
@@ -414,15 +417,26 @@ contains
        an  = ldecomp%gdc2glo(anumg)
        cid = lcid(an)
        ln  = anumg
-       if (present(glcmask)) then
-          call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-              ncohorts=icohorts, glcmask=glcmask(ln))
-       else
-          call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-               ncohorts=icohorts )
+       if(max_topounits > 1) then
+          if (present(glcmask)) then
+             call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                 ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln))
+          else
+             call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                 ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+          endif
+       else 
+          if (present(glcmask)) then
+             call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                 ncohorts=icohorts, glcmask=glcmask(ln))
+          else
+             call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                 ncohorts=icohorts )
+          endif
        endif
+       
        allvecl(cid,glev) = allvecl(cid,glev) + 1           ! number of gridcells for local clump cid
-       allvecl(cid,tlev) = allvecl(cid,tlev) + itopounits  ! number of topographic units for local clump cid
+       allvecl(cid,tlev) = allvecl(cid,tlev) + itunits     ! number of topographic units for local clump cid
        allvecl(cid,llev) = allvecl(cid,llev) + ilunits     ! number of landunits for local clump cid
        allvecl(cid,clev) = allvecl(cid,clev) + icols       ! number of columns for local clump cid
        allvecl(cid,plev) = allvecl(cid,plev) + ipfts       ! number of pfts for local clump cid 
@@ -442,7 +456,7 @@ contains
 
     do cid = 1,nclumps
        icells      = allvecg(cid,glev)  ! number of all clump cid gridcells (over all processors)
-       itopounits  = allvecg(cid,tlev)  ! number of all clump cid topounits (over all processors)
+       itunits  = allvecg(cid,tlev)  ! number of all clump cid topounits (over all processors)
        ilunits     = allvecg(cid,llev)  ! number of all clump cid landunits (over all processors)
        icols       = allvecg(cid,clev)  ! number of all clump cid columns (over all processors)
        ipfts       = allvecg(cid,plev)  ! number of all clump cid pfts (over all processors)
@@ -450,14 +464,14 @@ contains
 
        !--- overall total ---
        numg = numg + icells         ! total number of gridcells
-       numt = numt + itopounits     ! total number of landunits
+       numt = numt + itunits     ! total number of landunits
        numl = numl + ilunits        ! total number of landunits
        numc = numc + icols          ! total number of columns
        nump = nump + ipfts          ! total number of pfts
        numCohort = numCohort + icohorts       ! total number of cohorts
 
        !--- give gridcell to cid ---
-       clumps(cid)%ntopounits  = clumps(cid)%ntopounits  + itopounits  
+       clumps(cid)%ntunits  = clumps(cid)%ntunits  + itunits  
        clumps(cid)%nlunits     = clumps(cid)%nlunits  + ilunits  
        clumps(cid)%ncols       = clumps(cid)%ncols    + icols
        clumps(cid)%npfts       = clumps(cid)%npfts    + ipfts
@@ -465,7 +479,7 @@ contains
 
        !--- give gridcell to the proc that owns the cid ---
        if (iam == clumps(cid)%owner) then
-          procinfo%ntopounits  = procinfo%ntopounits  + itopounits
+          procinfo%ntunits  = procinfo%ntunits  + itunits
           procinfo%nlunits     = procinfo%nlunits  + ilunits
           procinfo%ncols       = procinfo%ncols    + icols
           procinfo%npfts       = procinfo%npfts    + ipfts
@@ -473,9 +487,6 @@ contains
        endif
 
     enddo
-
-    ! determine offset for XXX (topounits/lunits/cols/pfts/cohorts) index
-    ! for each process
 
     allocate(proc_nXXX(0:npes-1), stat=ier)
     if (ier /= 0) then
@@ -494,7 +505,7 @@ contains
     proc_nXXX(:) = 0
     do cid = 1,nclumps
        proc_nXXX(clumps(cid)%owner) = &
-        proc_nXXX(clumps(cid)%owner) + clumps(cid)%ntopounits
+        proc_nXXX(clumps(cid)%owner) + clumps(cid)%ntunits
     enddo
 
     ! determine offset (begt) for all processes,
@@ -504,14 +515,14 @@ contains
        proc_begX(pid) = proc_begX(pid-1) + proc_nXXX(pid-1)
     enddo
     procinfo%begt = proc_begX(iam)
-    procinfo%endt = (procinfo%begt-1) + procinfo%ntopounits
+    procinfo%endt = (procinfo%begt-1) + procinfo%ntunits
 
     ! determine topounit offset for each clump assigned to each process
     ! (re-using proc_begX as work space)
     do cid = 1,nclumps
       clumps(cid)%begt = proc_begX(clumps(cid)%owner)
       proc_begX(clumps(cid)%owner) = proc_begX(clumps(cid)%owner) &
-                                   + clumps(cid)%ntopounits
+                                   + clumps(cid)%ntunits
       clumps(cid)%endt = proc_begX(clumps(cid)%owner) - 1
     enddo
 
@@ -624,14 +635,14 @@ contains
 
     do n = 1,nclumps
        if (clumps(n)%ncells      /= allvecg(n,glev) .or. &
-           clumps(n)%ntopounits  /= allvecg(n,tlev) .or. &
+           clumps(n)%ntunits  /= allvecg(n,tlev) .or. &
            clumps(n)%nlunits     /= allvecg(n,llev) .or. &
            clumps(n)%ncols       /= allvecg(n,clev) .or. &
            clumps(n)%npfts       /= allvecg(n,plev) .or. &
            clumps(n)%nCohorts    /= allvecg(n,hlev)) then
 
                write(iulog,*) 'decompInit_glcp(): allvecg error ncells ',iam,n,clumps(n)%ncells ,allvecg(n,glev)
-               write(iulog,*) 'decompInit_glcp(): allvecg error topounits ',iam,n,clumps(n)%ntopounits,allvecg(n,tlev)
+               write(iulog,*) 'decompInit_glcp(): allvecg error topounits ',iam,n,clumps(n)%ntunits,allvecg(n,tlev)
                write(iulog,*) 'decompInit_glcp(): allvecg error lunits ',iam,n,clumps(n)%nlunits,allvecg(n,llev)
                write(iulog,*) 'decompInit_glcp(): allvecg error ncols  ',iam,n,clumps(n)%ncols  ,allvecg(n,clev)
                write(iulog,*) 'decompInit_glcp(): allvecg error pfts   ',iam,n,clumps(n)%npfts  ,allvecg(n,plev)
@@ -648,7 +659,7 @@ contains
   end subroutine decompInit_clumps
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_gtlcp(lns,lni,lnj,glcmask)
+  subroutine decompInit_gtlcp(lns,lni,lnj,glcmask,num_tunits_per_grd)
     !
     ! !DESCRIPTION:
     ! Determine gsMaps for topounits, landunits, columns, pfts and cohorts
@@ -663,6 +674,7 @@ contains
     implicit none
     integer , intent(in) :: lns,lni,lnj ! land domain global size
     integer , pointer, optional   :: glcmask(:)  ! glc mask
+    integer , pointer, optional   :: num_tunits_per_grd(:)  ! Number of topounits per grid
     !
     ! !LOCAL VARIABLES:
     integer :: gi,ti,li,ci,pi,coi ! indices
@@ -681,7 +693,7 @@ contains
     integer :: nump               ! total number of pfts across all processors
     integer :: numCohort          ! ED cohorts
     integer :: icells             ! temporary
-    integer :: itopounits         ! temporary
+    integer :: itunits         ! temporary
     integer :: ilunits            ! temporary
     integer :: icols              ! temporary
     integer :: ipfts              ! temporary
@@ -745,15 +757,26 @@ contains
     ! Determine gcount, tcount, lcount, ccount and pcount
 
     do gi = begg,endg
-       if (present(glcmask)) then
-          call subgrid_get_gcellinfo (gi, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-              ncohorts=icohorts, glcmask=glcmask(gi))
+       if(max_topounits > 1) then
+          if (present(glcmask)) then
+             call subgrid_get_gcellinfo (gi, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                 ncohorts=icohorts, glcmask=glcmask(gi), num_tunits_per_grd= ldomain%num_tunits_per_grd(gi) )
+          else
+             call subgrid_get_gcellinfo (gi, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                  ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(gi) )
+          endif
        else
-          call subgrid_get_gcellinfo (gi, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-               ncohorts=icohorts )
+          if (present(glcmask)) then
+             call subgrid_get_gcellinfo (gi, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                 ncohorts=icohorts, glcmask=glcmask(gi))
+          else
+             call subgrid_get_gcellinfo (gi, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                  ncohorts=icohorts )
+          endif
        endif
+       
        gcount(gi)  = 1          ! number of gridcells for local gridcell index gi
-       tcount(gi)  = itopounits ! number of topounits for local gridcell index gi
+       tcount(gi)  = itunits ! number of topounits for local gridcell index gi
        lcount(gi)  = ilunits    ! number of landunits for local gridcell index gi
        ccount(gi)  = icols      ! number of columns for local gridcell index gi
        pcount(gi)  = ipfts      ! number of pfts for local gridcell index gi
@@ -1031,7 +1054,7 @@ contains
           write(iulog,*)'proc= ',pid,&
                ' beg topounit= ',procinfo%begt, &
                ' end topounit= ',procinfo%endt,                   &
-               ' total topounits per proc= ',procinfo%ntopounits
+               ' total topounits per proc= ',procinfo%ntunits
           write(iulog,*)'proc= ',pid,&
                ' beg landunit= ',procinfo%begl, &
                ' end landunit= ',procinfo%endl,                   &
@@ -1089,7 +1112,7 @@ contains
                   ' clump id= ',procinfo%cid(n),    &
                   ' beg topounit= ',clumps(cid)%begt, &
                   ' end topounit= ',clumps(cid)%endt, &
-                  ' total topounits per clump = ',clumps(cid)%ntopounits
+                  ' total topounits per clump = ',clumps(cid)%ntunits
              write(iulog,*)'proc= ',pid,' clump no = ',n, &
                   ' clump id= ',procinfo%cid(n),    &
                   ' beg landunit= ',clumps(cid)%begl, &
@@ -1704,7 +1727,7 @@ contains
   end subroutine decompInit_lnd_using_gp
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_ghosts(glcmask)
+  subroutine decompInit_ghosts(glcmask,num_tunits_per_grd)
     !
     ! !DESCRIPTION:
     ! On each proc, determine the number of following ghost/halo subgrid quantities:
@@ -1726,13 +1749,14 @@ contains
     !
     ! !ARGUMENTS:
     integer , pointer, optional  :: glcmask(:)             ! glc mask
+    integer , pointer, optional  :: num_tunits_per_grd(:)             ! glc mask
     !
     ! !LOCAL VARIABLES:
     integer                      :: begg,endg              ! begin/end indices for grid
     integer                      :: anumg                  ! lnd num gridcells
     integer                      :: ln                     ! temporary
     integer                      :: nblocks                ! block size for PETSc vector
-    integer                      :: itopounits             ! temporary
+    integer                      :: itunits             ! temporary
     integer                      :: ilunits                ! temporary
     integer                      :: icols                  ! temporary
     integer                      :: ipfts                  ! temporary
@@ -1749,7 +1773,7 @@ contains
 
        ! No ghost cells
        procinfo%ncells_ghost    = 0
-       procinfo%ntopounits_ghost   = 0
+       procinfo%ntunits_ghost   = 0
        procinfo%nlunits_ghost   = 0
        procinfo%ncols_ghost     = 0
        procinfo%npfts_ghost     = 0
@@ -1770,7 +1794,7 @@ contains
 
        ! All = local (as no ghost cells)
        procinfo%ncells_all      = procinfo%ncells
-       procinfo%ntopounits_all  = procinfo%ntopounits
+       procinfo%ntunits_all     = procinfo%ntunits
        procinfo%nlunits_all     = procinfo%nlunits
        procinfo%ncols_all       = procinfo%ncols
        procinfo%npfts_all       = procinfo%npfts
@@ -1821,15 +1845,25 @@ contains
 
        do anumg = begg,endg
           ln  = anumg
-          if (present(glcmask)) then
-             call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-                  ncohorts=icohorts, glcmask=glcmask(ln))
+          if(max_topounits > 1) then
+             if (present(glcmask)) then
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+             else
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+             endif
           else
-             call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-                  ncohorts=icohorts )
-          endif
-
-          data_send((anumg-begg)*nblocks + 1) = itopounits
+             if (present(glcmask)) then
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts, glcmask=glcmask(ln))
+             else
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts )
+             endif
+          endif 
+          
+          data_send((anumg-begg)*nblocks + 1) = itunits
           data_send((anumg-begg)*nblocks + 2) = ilunits
           data_send((anumg-begg)*nblocks + 3) = icols
           data_send((anumg-begg)*nblocks + 4) = ipfts
@@ -1843,7 +1877,7 @@ contains
 
        ! Get number of ghost quantites at all subgrid categories
        procinfo%ncells_ghost    = ldomain_lateral%ugrid%ngrid_ghost
-       procinfo%ntopounits_ghost   = 0
+       procinfo%ntunits_ghost   = 0
        procinfo%nlunits_ghost   = 0
        procinfo%ncols_ghost     = 0
        procinfo%npfts_ghost     = 0
@@ -1853,7 +1887,7 @@ contains
        ighost_end = ldomain_lateral%ugrid%ngrid_ghosted
 
        do ighost = ighost_beg, ighost_end
-          procinfo%ntopounits_ghost  = procinfo%ntopounits_ghost  + data_recv((ighost-1)*nblocks + 1)
+          procinfo%ntunits_ghost  = procinfo%ntunits_ghost  + data_recv((ighost-1)*nblocks + 1)
           procinfo%nlunits_ghost  = procinfo%nlunits_ghost  + data_recv((ighost-1)*nblocks + 2)
           procinfo%ncols_ghost    = procinfo%ncols_ghost    + data_recv((ighost-1)*nblocks + 3)
           procinfo%npfts_ghost    = procinfo%npfts_ghost    + data_recv((ighost-1)*nblocks + 4)
@@ -1870,7 +1904,7 @@ contains
 
        ! Set 'end' index for subgrid categories
        procinfo%endg_all        = procinfo%endg      + procinfo%ncells_ghost
-       procinfo%endt_all        = procinfo%endt      + procinfo%ntopounits_ghost
+       procinfo%endt_all        = procinfo%endt      + procinfo%ntunits_ghost
        procinfo%endl_all        = procinfo%endl      + procinfo%nlunits_ghost
        procinfo%endc_all        = procinfo%endc      + procinfo%ncols_ghost
        procinfo%endp_all        = procinfo%endp      + procinfo%npfts_ghost

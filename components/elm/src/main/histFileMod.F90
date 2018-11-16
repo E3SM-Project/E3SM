@@ -31,6 +31,8 @@ module histFileMod
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
   use PRTGenericMod          , only : nelements_fates  => num_elements
+  use TopounitType      , only : top_pp
+  use topounit_varcon   , only: max_topounits, has_topounit
 
   !
   implicit none
@@ -1171,6 +1173,9 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
        else
           check_active = .false.
        end if
@@ -1452,7 +1457,10 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
-       else
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
+       else             
           check_active = .false.
        end if
 
@@ -2693,6 +2701,19 @@ contains
               long_name='pft real/fake mask (0.=fake and 1.=real)', ncid=nfid(t), &
               imissing_value=ispval, ifill_value=ispval)
        end if
+       if(max_topounits > 1) then
+          if (ldomain%isgrid2d) then
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name='lon', dim2name='lat', &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          else
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name=grlnd, &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          end if
+       end if
 
     else if (mode == 'write') then
 
@@ -2711,7 +2732,10 @@ contains
        call ncd_io(varname='landfrac', data=ldomain%frac, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
-
+       call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
+       if(max_topounits > 1) then
+          call ncd_io(varname='topoPerGrid' , data=ldomain%num_tunits_per_grd, dim1name=grlnd, ncid=nfid(t), flag='write')
+       end if
     end if  ! (define/write mode
 
   end subroutine htape_timeconst
