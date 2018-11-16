@@ -78,7 +78,8 @@ module camsrfexch
      real(r8), allocatable :: dstdry3(:)  ! dry deposition of dust (bin3)
      real(r8), allocatable :: dstwet4(:)  ! wet deposition of dust (bin4)
      real(r8), allocatable :: dstdry4(:)  ! dry deposition of dust (bin4)
-  end type cam_out_t 
+     real(r8), allocatable :: uovern(:)       ! ratio of wind speed/brunt vaisalla frequency  
+end type cam_out_t 
 
 !---------------------------------------------------------------------------
 ! This is the merged state of sea-ice, land and ocean surface parameterizations
@@ -478,6 +479,9 @@ CONTAINS
 
        allocate (cam_out(c)%dstdry4(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry4')
+       
+       allocate (cam_out(c)%uovern(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error uovern')
     enddo  
 
     do c = begchunk,endchunk
@@ -518,6 +522,7 @@ CONTAINS
        cam_out(c)%dstwet3(:)  = 0._r8
        cam_out(c)%dstdry4(:)  = 0._r8
        cam_out(c)%dstwet4(:)  = 0._r8
+       cam_out(c)%uovern(:)   = 0._r8
     end do
 
   end subroutine atm2hub_alloc
@@ -562,6 +567,7 @@ CONTAINS
           deallocate(cam_out(c)%dstdry3)
           deallocate(cam_out(c)%dstwet4)
           deallocate(cam_out(c)%dstdry4)
+          deallocate(cam_out(c)%uovern)
        enddo  
 
        deallocate(cam_out)
@@ -628,6 +634,7 @@ CONTAINS
              deallocate(cam_in(c)%depvel)
              nullify(cam_in(c)%depvel)
           end if
+          
        enddo
 
        deallocate(cam_in)

@@ -47,6 +47,7 @@ module CanopyFluxesMod
   use ColumnDataType        , only : col_es, col_ef, col_ws               
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf  
+  use spmdmod          , only: masterproc
   !
   ! !PUBLIC TYPES:
   implicit none
