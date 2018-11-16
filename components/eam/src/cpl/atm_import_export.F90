@@ -271,6 +271,7 @@ contains
           a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)   
           a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1) 
 	  a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
+          a2x(index_a2x_Sa_uovern ,ig) = cam_out(c)%uovern(i)   
           a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)      
           a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i)  
           a2x(index_a2x_Faxa_rainc,ig) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8

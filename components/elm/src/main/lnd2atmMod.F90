@@ -11,11 +11,11 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates
+  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_downscaling_to_topounit
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
-  use subgridAveMod        , only : p2g, c2g
+  use subgridAveMod        , only : p2g, c2g, p2t  
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
   use CH4Mod               , only : ch4_type
@@ -27,11 +27,13 @@ module lnd2atmMod
   use SolarAbsorbedType    , only : solarabs_type
   use SurfaceAlbedoType    , only : surfalb_type
   use GridcellType         , only : grc_pp
+  use TopounitDataType     , only : top_es, top_af                 ! To calculate t_rad at topounit level needed in downscaling
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
-  use SoilHydrologyType    , only : soilhydrology_type
-
+  use SoilHydrologyType    , only : soilhydrology_type 
+  use spmdmod          , only: masterproc
+  use elm_varctl     , only : iulog
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -69,8 +71,7 @@ contains
     type(lnd2atm_type)    , intent(inout) :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g                                    ! index
-
+    integer :: g, t                                    ! index
     !------------------------------------------------------------------------
     associate( &
       h2osno => col_ws%h2osno  , &
@@ -117,7 +118,21 @@ contains
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(eflx_lwrad_out_grc(g)/sb))
     end do
+    
+    ! Calculate topounit level eflx_lwrad_out_topo for downscaling purpose
+    if (use_downscaling_to_topounit) then
+       call p2t(bounds, &
+            eflx_lwrad_out (bounds%begp:bounds%endp), &
+            top_es%eflx_lwrad_out_topo      (bounds%begt:bounds%endt), &
+            p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2t_scale_type='unity')
+    
+       do t = bounds%begt,bounds%endt
+          top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))   
+       end do
+    end if
+    
     end associate
+
   end subroutine lnd2atm_minimal
 
   !------------------------------------------------------------------------

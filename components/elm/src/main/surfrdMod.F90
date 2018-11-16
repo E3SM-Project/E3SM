@@ -14,7 +14,7 @@ module surfrdMod
   use elm_varcon      , only : grlnd
   use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
   use elm_varctl      , only : create_glacier_mec_landunit
-  use surfrdUtilsMod  , only : check_sums_equal_1
+  use surfrdUtilsMod  , only : check_sums_equal_1_2d, check_sums_equal_1_3d
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
@@ -553,7 +553,8 @@ contains
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
     use elm_varsur  , only : wt_lunit, topo_glc_mec
-
+    use GridcellType, only : grc_pp
+    use topounit_varcon, only : max_topounits, has_topounit
     !
     ! !ARGUMENTS:
     integer,          intent(in) :: begg, endg      

@@ -15,6 +15,7 @@ module GridcellType
   use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
+  use topounit_varcon, only : max_topounits
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -34,7 +35,8 @@ module GridcellType
      ! Starting and ending indices for all subgrid types below the gridcell level
      integer , pointer :: topi         (:) => null() ! beginning topographic unit index for each gridcell
      integer , pointer :: topf         (:) => null() ! ending topographic unit index for each gridcell
-     integer , pointer :: ntopounits   (:) => null() ! number of topographic units for each gridcell
+     integer , pointer :: ntopounits   (:) => null() ! number of topographic units for each gridcell calculated from topi and topf
+     integer , pointer :: ntopounits2   (:) => null() ! number of topographic units for each gridcell read from surface data input
      integer , pointer :: lndi         (:) => null() ! beginning landunit index for each gridcell
      integer , pointer :: lndf         (:) => null() ! ending landunit index for each gridcell
      integer , pointer :: nlandunits   (:) => null() ! number of landunits for each gridcell
@@ -45,10 +47,15 @@ module GridcellType
      integer , pointer :: pftf         (:) => null() ! ending pft index for each gridcell
      integer , pointer :: npfts        (:) => null() ! number of patches for each gridcell
 
-     ! Daylength
-     real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (s)
+     ! Physical properties
+     real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (seconds)
      real(r8) , pointer :: dayl        (:) => null() ! daylength (seconds)
      real(r8) , pointer :: prev_dayl   (:) => null() ! daylength from previous timestep (seconds)
+     real(r8) , pointer :: elevation   (:) => null() ! mean soil surface elevation, above mean sea level (m)
+     real(r8) , pointer :: froudenum   (:) => null() ! Froude number (dimensionless)
+	 real(r8) , pointer :: MaxElevation   (:) => null() ! Maximum soil surface elevation, above mean sea level (meter) needed for precipitation downscaling
+	 
+     !integer , pointer :: topounit_indices (:,:) => null()
 
      ! indices into landunit-level arrays for landunits in this grid cell (ispval implies
      ! this landunit doesn't exist on this grid cell) [1:max_lunit, begg:endg]
@@ -88,6 +95,7 @@ contains
     allocate(this%topi      (begg:endg)) ; this%topi      (:) = ispval
     allocate(this%topf      (begg:endg)) ; this%topf      (:) = ispval
     allocate(this%ntopounits(begg:endg)) ; this%ntopounits(:) = ispval
+    allocate(this%ntopounits2(begg:endg)) ; this%ntopounits2(:) = ispval
     allocate(this%lndi      (begg:endg)) ; this%lndi      (:) = ispval
     allocate(this%lndf      (begg:endg)) ; this%lndf      (:) = ispval
     allocate(this%nlandunits(begg:endg)) ; this%nlandunits(:) = ispval
@@ -102,8 +110,14 @@ contains
     allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = nan
     allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = nan
     allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = nan
+    
+    allocate(this%elevation (begg:endg)) ; this%elevation (:) = nan
+    allocate(this%froudenum (begg:endg)) ; this%froudenum (:) = nan 
+	allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = nan
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
+	
+   ! allocate(this%topounit_indices (begg:endg,1:max_topounits)) ; this%topounit_indices (:,:) = ispval
 
   end subroutine grc_pp_init
 
@@ -123,6 +137,7 @@ contains
     deallocate(this%topi             )
     deallocate(this%topf             )
     deallocate(this%ntopounits       )
+    deallocate(this%ntopounits2       )
     deallocate(this%lndi             )
     deallocate(this%lndf             )
     deallocate(this%nlandunits       )
@@ -135,8 +150,10 @@ contains
     deallocate(this%max_dayl         )
     deallocate(this%dayl             )
     deallocate(this%prev_dayl        )
+    deallocate(this%elevation        )
+    deallocate(this%froudenum        )
+    deallocate(this%MaxElevation     )
     deallocate(this%landunit_indices )
-
   end subroutine grc_pp_clean
 
 end module GridcellType

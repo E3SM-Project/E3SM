@@ -28,7 +28,9 @@ module domainMod
      character(len=8) :: elmlevel   ! grid type
      integer ,pointer :: mask(:)    ! land mask: 1 = land, 0 = ocean
      real(r8),pointer :: frac(:)    ! fractional land
-     real(r8),pointer :: topo(:)    ! topography
+     real(r8),pointer :: topo(:)    ! topography this needs to be removed with the implementation of the topounit structure
+     real(r8),pointer :: topo2(:)    ! Area weighted average topography (elevation) calculated based on the elevation o 
+     integer ,pointer :: num_tunits_per_grd(:)    ! Number of topountis per grid to be used in subgrid decomposition
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
      real(r8),pointer :: firrig(:)
@@ -122,7 +124,7 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &
+             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%topo2(nb:ne),domain%num_tunits_per_grd(nb:ne),domain%glcmask(nb:ne), &
              domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
@@ -159,6 +161,8 @@ contains
     domain%mask     = -9999
     domain%frac     = -1.0e36
     domain%topo     = 0._r8
+    domain%topo2    = 0._r8
+    domain%num_tunits_per_grd = -9999
     domain%latc     = nan
     domain%lonc     = nan
     domain%xCell    = nan
@@ -208,9 +212,9 @@ end subroutine domain_init
           write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
        endif
        deallocate(domain%mask,domain%frac,domain%latc, &
-                  domain%lonc,domain%area,domain%firrig,domain%pftm, &
-                  domain%topo,domain%f_surf,domain%f_grd,domain%glcmask, &
-                  domain%xCell,domain%yCell,stat=ier)
+             domain%pftm,domain%area,domain%firrig,domain%lonc, &
+             domain%topo,domain%f_surf,domain%f_grd,domain%topo2,domain%num_tunits_per_grd,domain%glcmask, &
+             domain%xCell,domain%yCell,stat=ier)
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
@@ -288,6 +292,8 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
+    write(iulog,*) '  domain_check topo2      = ',minval(domain%topo2),maxval(domain%topo2)
+    write(iulog,*) '  domain_check num_tunits_per_grd      = ',minval(domain%num_tunits_per_grd),maxval(domain%num_tunits_per_grd)
     write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
     write(iulog,*) '  domain_check f_surf    = ',minval(domain%f_surf),maxval(domain%f_surf)
     write(iulog,*) '  domain_check f_grd     = ',minval(domain%f_grd),maxval(domain%f_grd)
