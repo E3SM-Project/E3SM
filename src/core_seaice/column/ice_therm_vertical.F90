@@ -1837,7 +1837,8 @@
 
       real (kind=dbl_kind) :: &
          einp        , & ! energy input during timestep (J m-2)
-         ferr            ! energy conservation error (W m-2)
+         ferr        , & ! energy conservation error (W m-2)
+         ftop            ! surface flux error: fcondtopn-fsurfn
 
       character(len=char_len_long) :: &
          warning ! warning message
@@ -1883,6 +1884,10 @@
          call add_warning(warning)
          write(warning,*) fbot,fcondbot
          call add_warning(warning)
+         write(warning,*) 'fsurfn,fcondtopn:'
+         call add_warning(warning)
+         write(warning,*) fsurfn,fcondtopn
+         call add_warning(warning)
 
          !         if (ktherm == 2) then
          write(warning,*) 'Intermediate energy =', einter
@@ -1893,11 +1898,15 @@
          write(warning,*) 'einter - einit  =', &
               einter-einit
          call add_warning(warning)
+         ftop = c0
+         if (ktherm == 2) then
+            if (fcondtopn > fsurfn) ftop = (fcondtopn-fsurfn)
+         end if
          write(warning,*) 'Conduction Error =', (einter-einit) &
-              - (fcondtopn*dt - fcondbot*dt + fswint*dt)
+              - (fcondtopn*dt - fcondbot*dt + fswint*dt) + ftop*dt
          call add_warning(warning)
          write(warning,*) 'Melt/Growth Error =', (einter-einit) &
-              + ferr*dt - (fcondtopn*dt - fcondbot*dt + fswint*dt)
+              + ferr*dt - (fcondtopn*dt - fcondbot*dt + fswint*dt)-ftop*dt
          call add_warning(warning)
          write(warning,*) 'Advection Error =', fadvocn*dt
          call add_warning(warning)
