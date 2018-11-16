@@ -3020,7 +3020,7 @@
     <OS>LINUX</OS>
     <TESTS>e3sm_developer</TESTS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mpich2</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <RUNDIR>/rsgrps/xubin/$ENV{USER}/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>/rsgrps/xubin/$ENV{USER}/acme/scratch/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/rsgrps/xubin/data/CESM_data/inputdata</DIN_LOC_ROOT>
