@@ -42,7 +42,7 @@ public:
   // going through the list, and calling their run method, they will be called in the
   // correct order. There should ALWAYS be a component that handles the dynamics. We should
   // make sure of that.
-  void initialize ( const Comm& atm_comm /*, inputs? */ );
+  void initialize ( const Comm& atm_comm, const ParameterList& params /*, inputs? */ );
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parametrizations

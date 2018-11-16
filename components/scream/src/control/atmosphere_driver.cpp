@@ -11,13 +11,14 @@
 namespace scream {
 namespace control {
 
-void AtmosphereDriver::initialize (const Comm& atm_comm /* inputs? */ ) {
+void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params /* inputs? */ ) {
   m_atm_comm = atm_comm;
+  m_atm_params = params;
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
-  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_params.sublist("Processes Scheduling"));
+  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_params.sublist("Atmosphere Processes"));
 
   // Initialize the processes
   m_atm_process_group->initialize(m_atm_comm);

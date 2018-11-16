@@ -17,7 +17,13 @@ AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
     m_atm_processes.emplace_back(factory::create(process_name,params_i));
   }
 
-  m_group_schedule_type = params.get<GroupScheduleType>("Schedule Type");
+  if (params.get<std::string>("Schedule Type") == "Sequential") {
+    m_group_schedule_type = GroupScheduleType::Sequential;
+  } else if (params.get<std::string>("Schedule Type") == "Parallel") {
+    m_group_schedule_type = GroupScheduleType::Parallel;
+  } else {
+    error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
+  }
 
   error::runtime_check(m_group_schedule_type==GroupScheduleType::Sequential, "Error! Parallel schedule not yet implemented.\n");
 }
