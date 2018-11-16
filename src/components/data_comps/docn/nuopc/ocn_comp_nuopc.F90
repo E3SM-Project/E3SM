@@ -34,7 +34,7 @@ module ocn_comp_nuopc
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
   use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info 
+  use mct_mod               , only : mct_Avect, mct_Avect_info
 
   implicit none
 
@@ -538,7 +538,7 @@ module ocn_comp_nuopc
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-
+#if DEBUG
     if (my_task == master_task) then
        call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing OCN from: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -546,7 +546,7 @@ module ocn_comp_nuopc
        call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
+#endif
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     call shr_file_setLogLevel(shrloglev)

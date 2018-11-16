@@ -36,7 +36,7 @@ module atm_comp_nuopc
   use datm_shr_mod          , only : datm_shr_read_namelists
   use datm_shr_mod          , only : iradsw, datm_shr_getNextRadCDay
   use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info 
+  use mct_mod               , only : mct_Avect, mct_Avect_info
 
   implicit none
   private ! except
@@ -615,7 +615,7 @@ contains
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
+#if DEBUG
     if (my_task == master_task) then
        call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ATM from: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -623,7 +623,7 @@ contains
        call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
+#endif
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------

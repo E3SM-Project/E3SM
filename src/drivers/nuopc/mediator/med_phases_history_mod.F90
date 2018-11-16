@@ -172,13 +172,6 @@ contains
     if (dbug_flag > 1) then
        call ESMF_LogWrite(trim(subname)//": nexttime = "//trim(nexttimestr), ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-
-    if (mastertask) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
-            " mediating for: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
     timediff = nexttime - reftime
     call ESMF_TimeIntervalGet(timediff, d=day, s=sec, rc=rc)
     dayssince = day + sec/real(SecPerDay,R8)
@@ -215,6 +208,13 @@ contains
        alarmIsOn = .true.
        call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#if DEBUG
+       if (mastertask) then
+          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
+               " history alarm for: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+#endif
     else
        alarmisOn = .false.
     endif

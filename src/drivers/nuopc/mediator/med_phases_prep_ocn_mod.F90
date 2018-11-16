@@ -424,12 +424,12 @@ contains
        if (dbug_flag > 1) then
           call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
        endif
-
+#if DEBUG
        if (mastertask) then
           call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-
+#endif
        !---------------------------------------
        !--- ocean accumulator
        !---------------------------------------

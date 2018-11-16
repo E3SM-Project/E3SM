@@ -195,11 +195,12 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
-    testcase = case.get_value("CASE")
+    casename = case.get_value("CASE")
+    testcase = case.get_value("TESTCASE")
     casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
-    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
+    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(casename, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_driver_compare = False
     archive = case.get_env('archive')
     ref_case = case.get_value("RUN_REFCASE")
@@ -245,8 +246,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
-
-    if num_compared == 0:
+    # PFS test may not have any history files to compare.
+    if num_compared == 0 and testcase != "PFS":
         all_success = False
         comments += "Did not compare any hist files! Missing baselines?\n"
 

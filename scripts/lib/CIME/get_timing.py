@@ -150,11 +150,16 @@ class _TimingParser:
         m = None
         minval = 0
         maxval = 0
+        phase = None
         for line in self.finlines:
-            # Runphase should preceed initphase in timing file
-            # this will ignore time in initphase
             if "[ensemble] Init 1" in line:
-                exit
+                phase = "init"
+            elif "[ensemble] RunPhase1" in line:
+                phase = "run"
+            elif "[ensemble] Finalize" in line:
+                phase = "finalize"
+            if phase != "run":
+                next
             minv = 0
             maxv = 0
             m = med_phase_line.match(line)
@@ -175,11 +180,16 @@ class _TimingParser:
         comm_line = re.compile(r'\s*(\[\S+-TO-\S+\] RunPhase1)\s+')
         m = None
         maxval = 0
+        phase = None
         for line in self.finlines:
-            # Runphase should preceed initphase in timing file
-            # this will ignore time in initphase
             if "[ensemble] Init 1" in line:
-                exit
+                phase = "init"
+            elif "[ensemble] RunPhase1" in line:
+                phase = "run"
+            elif "[ensemble] Finalize" in line:
+                phase = "finalize"
+            if phase != "run":
+                next
             m = comm_line.match(line)
             if m:
                 heading = m.group(1)
@@ -464,20 +474,20 @@ class _TimingParser:
             m = self.models[k]
             self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
         self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
-
-        self.write("\n\n---------------- DRIVER TIMING FLOWCHART "
-                   "--------------------- \n\n")
-
-        pstrlen = 25
-        hoffset = 1
-        self.write("   NOTE: min:max driver timers (seconds/day):   \n")
-
-        for k in self.case.get_values("COMP_CLASSES"):
-            m = self.models[k]
-            xspace = (pstrlen+hoffset+m.offset) * ' '
-            self.write(" {} {} (pes {:d} to {:d}) \n".format(xspace, k, m.rootpe, m.pemax))
-        self.write("\n")
         if self._driver == "mct":
+            self.write("\n\n---------------- DRIVER TIMING FLOWCHART "
+                       "--------------------- \n\n")
+
+            pstrlen = 25
+            hoffset = 1
+            self.write("   NOTE: min:max driver timers (seconds/day):   \n")
+
+            for k in self.case.get_values("COMP_CLASSES"):
+                m = self.models[k]
+                xspace = (pstrlen+hoffset+m.offset) * ' '
+                self.write(" {} {} (pes {:d} to {:d}) \n".format(xspace, k, m.rootpe, m.pemax))
+            self.write("\n")
+
             self.prttime(' CPL:CLOCK_ADVANCE ')
             self.prttime(' CPL:OCNPRE1_BARRIER ')
             self.prttime(' CPL:OCNPRE1 ')
