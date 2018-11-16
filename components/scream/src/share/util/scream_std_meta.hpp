@@ -103,7 +103,7 @@ public:
 
 private:
 
-  std::unique_ptr<impl::holder_base> m_content;
+  std::shared_ptr<impl::holder_base> m_content;
 };
 
 template<typename ConcreteType>

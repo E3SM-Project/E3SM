@@ -33,7 +33,7 @@ public:
 template<typename DataType>
 struct GetRanks {
 private:
-  using dimension = typename Kokkos::View<DataType>::dimension;
+  using dimension = typename Kokkos::View<DataType>::traits::dimension;
 public:
   enum : int { rank = dimension::rank };
   enum : int { rank_dynamic = dimension::rank_dynamic };
