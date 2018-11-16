@@ -293,6 +293,9 @@ contains
     namelist /clm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+	
+	namelist /clm_inparm/use_downscaling_to_topounit
+    namelist /clm_inparm/precip_downscaling_method
 
     namelist /clm_inparm/ &
          use_erosion, ero_ccycle
@@ -874,6 +877,9 @@ contains
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
+    write(iulog,*) '    use_downscaling_to_topounit = ', use_downscaling_to_topounit
+    write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
+    !write(iulog,*) '    Maximum number of topounits per grid = ', max_topounits
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'
     else
