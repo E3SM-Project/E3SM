@@ -4,6 +4,7 @@
 #include <share/field/field_header.hpp>
 #include <share/field/field.hpp>
 #include <share/field/field_repository.hpp>
+#include <share/scream_pack.hpp>
 
 namespace {
 
@@ -34,17 +35,17 @@ TEST_CASE("field_identifier", "") {
 TEST_CASE("field", "") {
   using namespace scream;
 
-  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<int> dims = {2, 3, 4};
+  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::Level};
+  std::vector<int> dims1 = {2, 3, 4};
 
-  FieldIdentifier fid ("field_1", tags);
-  fid.set_dimensions(dims);
+  FieldIdentifier fid1 ("field_1", tags);
+  fid1.set_dimensions(dims1);
 
   // The following 'REQUIRE' tests are not the real tests. The real
   // tests are whether or not the instructions to create fields succeed.
   // If they fail, they'll raise MPI_Abort errors.
 
-  Field<Real*,HostMemSpace,MemoryManaged> f1 (fid);
+  Field<Real*,HostMemSpace,MemoryManaged> f1 (fid1);
   REQUIRE(static_cast<bool>(f1.get_header_ptr()));
 
   Field<const Real*,HostMemSpace,MemoryManaged> f2 = f1;
@@ -52,6 +53,16 @@ TEST_CASE("field", "") {
 
   auto f3 = reinterpret_field<Real[2][3][4]>(f1);
   REQUIRE(static_cast<bool>(f3.get_header_ptr()));
+
+  // Check if we can copy f3 to a field with a different scalar type (like a Pack)
+  FieldIdentifier fid2 ("field_1",tags);
+  std::vector<int> dims2 = {2, 3, 1};
+  fid2.set_dimensions(dims2);
+
+  auto f3_pack = reinterpret_field<pack::Pack<Real,4>[2][3][1]>(f3,std::make_shared<FieldHeader>(fid2));
+  const int size_f3_pack = f3_pack.get_header().get_identifier().size()*sizeof(typename decltype(f3_pack)::value_type);
+  const int size_f3      = f3.get_header().get_identifier().size()*sizeof(typename decltype(f3)::value_type);
+  REQUIRE(size_f3==size_f3_pack);
 }
 
 TEST_CASE("field_repo", "") {

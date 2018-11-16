@@ -42,7 +42,7 @@ public:
   int      size ()               const;
 
   // The identifier string
-  const std::string& identifier () const { return m_identifier; }
+  const std::string& get_identifier () const { return m_identifier; }
 
   // If the header was created without specifying the dimensions (e.g., they
   // were not known at construction time), we can reshape the field now.
@@ -88,7 +88,6 @@ inline int FieldIdentifier::size () const {
   }
   return prod;
 }
-
 
 inline FieldTag FieldIdentifier::tag (const int idim) const { 
   error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);

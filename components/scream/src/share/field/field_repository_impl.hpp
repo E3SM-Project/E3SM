@@ -29,7 +29,7 @@ typename FieldRepository<MemSpace>::field_type
 FieldRepository<MemSpace>::create_field (const identifier_type& id) {
   error::runtime_check(id.dimensions_set(), "Error! You need to set dimensions in the FieldIdentifier *before* creating the field.\n");
   auto it_bool = m_fields.emplace(id,id);
-  error::runtime_check(it_bool.second, "Error! Someting went wrong while creating the field with identifier '" + id.identifier() + "'\n.");
+  error::runtime_check(it_bool.second, "Error! Someting went wrong while creating the field with identifier '" + id.get_identifier() + "'\n.");
   return it_bool.first->second;
 }
 

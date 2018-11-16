@@ -144,21 +144,32 @@ operator= (const Field<SrcDT,MemSpace,MemManagement>& src) {
 
 template<typename DstDT, typename SrcDT, typename MemSpace, typename MemManagement>
 Field<DstDT,MemSpace,MemoryUnmanaged>
-reinterpret_field (const Field<SrcDT,MemSpace,MemManagement>& f,
-                   std::shared_ptr<FieldHeader> header) {
+reinterpret_field (const Field<SrcDT,MemSpace,MemManagement>& src,
+                   const std::shared_ptr<FieldHeader>& dstHeader) {
   using DstField = Field<DstDT,MemSpace,MemoryUnmanaged>;
   using DstView  = typename DstField::view_type;
-  error::runtime_check(header->get_identifier().dimensions_set(), "Error! Target header dimensions have not been set yet.\n");
-  error::runtime_check(header->get_identifier().size()==f.get_header().get_identifier().size(), "Error! You can only reinterpret a field to a data type with the same flattened 1d length.\n");
+
+  using SrcScalarType = typename util::ScalarType<SrcDT>::type;
+  using DstScalarType = typename util::ScalarType<DstDT>::type;
+
+  const auto& srcId = src.get_header().get_identifier();
+  const auto& dstId = dstHeader->get_identifier();
+  error::runtime_check(dstId.dimensions_set(), "Error! Target header dimensions have not been set yet.\n");
+
+  const int dstSize = dstId.size()*sizeof(DstScalarType);
+  const int srcSize = srcId.size()*sizeof(SrcScalarType);
+  error::runtime_check(dstSize==srcSize,"Error! You can only reinterpret a field to a data type with the same size in memory.\n"
+                                        "       Src size: " + std::to_string(srcSize) + "\n"
+                                        "       Dst size: " + std::to_string(dstSize) + "\n");
 
   Kokkos::LayoutRight layout;
-  for (int idim=0; idim<header->get_identifier().rank(); ++idim) {
-    layout.dimension[idim] = header->get_identifier().dim(idim);
+  for (int idim=0; idim<dstId.rank(); ++idim) {
+    layout.dimension[idim] = dstId.dim(idim);
   }
 
-  DstView dst_view (f.get_view().data(),layout);
+  DstView dst_view (reinterpret_cast<DstScalarType*>(src.get_view().data()),layout);
 
-  return DstField(header,dst_view);
+  return DstField(dstHeader,dst_view);
 }
 
 template<typename DstDT, typename SrcDT, typename MemSpace, typename MemManagement>

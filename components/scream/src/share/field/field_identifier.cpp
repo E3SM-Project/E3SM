@@ -46,62 +46,15 @@ void FieldIdentifier::update_identifier () {
   m_identifier += ")";
 }
 
+// Free functions for identifiers comparison
 bool operator== (const FieldIdentifier& fid1, const FieldIdentifier& fid2) {
-  // First, compare names
-  if (fid1.m_name != fid2.m_name) { return false; }
-
-  // Then, compare ranks
-  if (fid1.m_rank != fid2.m_rank) { return false; }
-
-  // Check tags along each dimension
-  for (int dim=0; dim<fid1.m_rank; ++dim) {
-    if (fid1.m_tags[dim]!=fid2.m_tags[dim]) {
-      return false;
-    }
-  }
-
-  // Check each dimension
-  for (int dim=0; dim<fid1.m_rank; ++dim) {
-    if (fid1.m_dims[dim]!=fid2.m_dims[dim]) {
-      return false;
-    }
-  }
-
-  // Field identifiers are exactly the same. Return true.
-  return true;
+  // Simply compare the identifiers
+  return (fid1.get_identifier()==fid2.get_identifier());
 }
 
 bool operator< (const FieldIdentifier& fid1, const FieldIdentifier& fid2) {
-  // First, compare names
-  if (fid1.m_name < fid2.m_name) {
-    return true;
-  } else if (fid1.m_name == fid2.m_name) {
-    // If equal, compare ranks
-    if (fid1.m_rank < fid2.m_rank) {
-      return true;
-    } else if (fid1.m_rank == fid2.m_rank) {
-      // If still equal, check tags along each dimension
-      for (int idim=0; idim<fid1.m_rank; ++idim) {
-        if (fid1.m_tags[idim] < fid2.m_tags[idim]) {
-          return true;
-        } else if (fid2.m_tags[idim] > fid2.m_tags[idim]) {
-          return false;
-        }
-      }
-
-      // If still equal, check dimensions
-      for (int idim=0; idim<fid1.m_rank; ++idim) {
-        if (fid1.m_dims[idim] < fid2.m_dims[idim]) {
-          return true;
-        } else if (fid2.m_dims[idim] > fid2.m_dims[idim]) {
-          return false;
-        }
-      }
-    }
-  }
-
-  // Everything compared equal. Return false.
-  return false;
+  // Simply compare the identifiers
+  return (fid1.get_identifier()<fid2.get_identifier());
 }
 
 } // namespace scream
