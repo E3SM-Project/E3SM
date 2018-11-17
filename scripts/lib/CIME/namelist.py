@@ -1286,7 +1286,10 @@ class Namelist(object):
                                     if skip_comp in run_entry:
                                         print_entry = False
                                         logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                                    if skip_comp.lower().strip() in run_entry:
+                                    elif "_"+skip_comp.lower().strip() in run_entry:
+                                        print_entry = False
+                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
+                                    elif "2"+skip_comp.lower().strip() in run_entry:
                                         print_entry = False
                                         logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
                             if print_entry:

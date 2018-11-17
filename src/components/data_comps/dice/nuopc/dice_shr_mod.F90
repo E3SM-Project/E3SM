@@ -23,8 +23,9 @@ module dice_shr_mod
   ! Public data
   !--------------------------------------------------------------------------
 
+  ! Note that model decomp will now come from reading in the mesh directly
+
   ! input namelist variables
-  character(CL) , public :: decomp                ! decomp strategy
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
   real(R8)      , public :: flux_swpf             ! short-wave penatration factor
@@ -37,33 +38,31 @@ module dice_shr_mod
   character(CL) , public :: rest_file_strm        ! restart filename for streams
   character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  subroutine dice_shr_read_namelists(mpicom, my_task, master_task, &
-       inst_index, inst_suffix, inst_name, &
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CONTAINS
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  subroutine dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
        logunit, SDICE, ice_present, ice_prognostic)
 
     ! !DESCRIPTION: Read in dice namelists
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
+    character(len=*)       , intent(in)    :: filename       ! input namelist filename
     integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
     integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task    ! task number of master task
-    integer                , intent(in)    :: inst_index     ! number of current instance (ie. 1)
-    character(len=16)      , intent(in)    :: inst_suffix    ! char string associated with instance
-    character(len=16)      , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit        ! logging unit number
     type(shr_strdata_type) , intent(inout) :: SDICE
     logical                , intent(out)   :: ice_present    ! flag
     logical                , intent(out)   :: ice_prognostic ! flag
 
     !--- local variables ---
-    character(CL) :: fileName    ! generic file name
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: ierr        ! error code
+    character(CL) :: decomp      ! decomp strategy - not used for NUOPC - but still needed in namelist for now
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
@@ -74,27 +73,20 @@ CONTAINS
     !-------------------------------------------------------------------------------
 
     !----- define namelist -----
-    namelist / dice_nml / &
-         decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
-
-    !----------------------------------------------------------------------------
-    ! Determine input filenamname
-    !----------------------------------------------------------------------------
-
-    filename = "dice_in"//trim(inst_suffix)
+    namelist / dice_nml / decomp, &
+         flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils
 
     !----------------------------------------------------------------------------
     ! Read dice_in
     !----------------------------------------------------------------------------
 
-    filename   = "dice_in"//trim(inst_suffix)
-    decomp     = "1d"
     flux_swpf  =     0.0_R8  ! no penetration
     flux_Qmin  =  -300.0_R8  ! kg/s/m^2
     flux_Qacc  = .false.     ! no accumulation
     flux_Qacc0 =     0.0_R8  ! no water
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
+
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -105,7 +97,6 @@ CONTAINS
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' decomp     = ',trim(decomp)
        write(logunit,F02)' flux_swpf  = ',flux_swpf
        write(logunit,F02)' flux_Qmin  = ',flux_Qmin
        write(logunit,F06)' flux_Qacc  = ',flux_Qacc
@@ -113,7 +104,7 @@ CONTAINS
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
     endif
-    call shr_mpi_bcast(decomp    ,mpicom,'decomp')
+
     call shr_mpi_bcast(flux_swpf ,mpicom,'flux_swpf')
     call shr_mpi_bcast(flux_Qmin ,mpicom,'flux_Qmin')
     call shr_mpi_bcast(flux_Qacc ,mpicom,'flux_Qacc')
