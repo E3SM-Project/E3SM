@@ -114,7 +114,7 @@ contains
     character(len=varname_len), pointer :: output_varnames(:)
 
     real (kind=real_kind) :: vartmp(np,np,nlev)
-    real (kind=real_kind),allocatable :: var3d(:,:)
+    real (kind=real_kind),allocatable :: var3d(:,:),var2d(:)
 
 
 #ifdef _MPI
@@ -210,6 +210,9 @@ contains
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+#ifdef _PRIM
+    call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+#endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
@@ -346,6 +349,19 @@ contains
              deallocate(var3d)
           end if
 
+          if(nf_selectedvar('geos', output_varnames)) then
+             allocate(var2d(nxyp))
+             if (par%masterproc) print *,'writing geos...'
+             st=1
+             do ie=1,nelemd
+                en=st+elem(ie)%idxp%NumUniquePts-1
+                call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
+                st=en+1
+             enddo
+             call nf_put_var(ncdf(ios),var2d,start,count,name='geos')
+             deallocate(var2d)
+          endif
+
 
           if (par%masterproc) print *,'done writing coordinates ios=',ios
        end if
@@ -458,17 +474,6 @@ contains
                 call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='hypervis')
              endif
 
-
-             if(nf_selectedvar('geos', output_varnames)) then
-                if (par%masterproc) print *,'writing geos...'
-                st=1
-                do ie=1,nelemd
-                   en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
-                   st=en+1
-                enddo
-                call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='geos')
-             endif
 
              if(nf_selectedvar('area', output_varnames)) then
                 st=1

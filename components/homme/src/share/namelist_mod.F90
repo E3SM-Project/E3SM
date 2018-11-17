@@ -60,7 +60,6 @@ module namelist_mod
     hypervis_subcycle,    &
     hypervis_subcycle_q,  &
     smooth_phis_numcycle, &
-    smooth_sgh_numcycle,  &
     smooth_phis_nudt,     &
     initial_total_mass,   & ! set > 0 to set the initial_total_mass
     u_perturb,     &        ! J&W baroclinic test perturbation size
@@ -235,7 +234,6 @@ module namelist_mod
       hypervis_subcycle_q, &
       hypervis_scaling, &
       smooth_phis_numcycle, &
-      smooth_sgh_numcycle, &
       smooth_phis_nudt, &
       initial_total_mass, &
       u_perturb,     &
@@ -660,7 +658,6 @@ module namelist_mod
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(smooth_sgh_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -952,7 +949,6 @@ module namelist_mod
        write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
        write(iulog,*)"PHIS smoothing:  ",smooth_phis_numcycle,smooth_phis_nudt
-       write(iulog,*)"SGH  smoothing:  ",smooth_sgh_numcycle
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s

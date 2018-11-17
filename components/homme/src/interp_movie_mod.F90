@@ -742,8 +742,9 @@ contains
 !            large block of _PRIM only I/O
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
              if(nf_selectedvar('geos', output_varnames)) then
-                if (par%masterproc) print *,'writing geos...'
+                ! only write goes on first frame (it does not depend on time)
                 if (nf_get_frame(ncdf(ios))==1) then
+                if (par%masterproc) print *,'writing geos...'
                 st=1
                 allocate (datall(ncnt,1))
                 

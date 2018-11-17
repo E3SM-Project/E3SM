@@ -138,7 +138,6 @@ module control_mod
 
   ! hyperviscosity parameters used for smoothing topography
   integer, public :: smooth_phis_numcycle = 0   ! 0 = disable
-  integer, public :: smooth_sgh_numcycle = 0   ! 0 = disabled
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?

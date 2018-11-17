@@ -28,15 +28,15 @@ vfile_mid     = "../vcoord/camm-26.ascii"
 vfile_int     = "../vcoord/cami-26.ascii"
 /
 &analysis_nl
-infilenames='/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc'
-output_timeunits=1,1,1
-output_frequency=1,1,2
-output_start_time=600,600,0
-output_end_time=30000,30000,1
+infilenames=''
+output_timeunits=1,1,2    ! 1=days, 2=hours, 3=seconds
+output_frequency=1,1,1
+output_start_time=600,600,100
+output_end_time=30000,30000,110
 output_varnames1='u','v','T','zeta','ps'
 !output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 !output_varnames2='DIFFT','DIFFU','DIFFV','CONVU','CONVV','FU','FV'
-output_varnames3='geos'
+output_varnames3='geos','u','v','zeta','ps','div'
 io_stride = 32
 /
 

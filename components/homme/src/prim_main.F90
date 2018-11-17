@@ -33,6 +33,7 @@ program prim_main
   use interpolate_driver_mod, only : interpolate_driver, pio_read_phis
 #else
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
+  use interpolate_driver_mod, only : pio_read_phis
 #endif
 
   implicit none
@@ -156,7 +157,7 @@ program prim_main
   !$OMP END PARALLEL
 #endif
 
-  
+
   ! Here we get sure the directory specified
   ! in the input namelist file in the 
   ! variable 'output_dir' does exist.

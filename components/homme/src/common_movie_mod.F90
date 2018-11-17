@@ -52,7 +52,7 @@ module common_movie_mod
 
 
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,5,0,0,0,0, & ! ps
-                                                               1,5,0,0,0,0, & ! geos
+                                                               1,0,0,0,0,0, & ! geos
                                                                1,0,0,0,0,0, & ! area
                                                                1,2,0,0,0,0, & ! cv_lat
                                                                1,2,0,0,0,0, & ! cv_lon
