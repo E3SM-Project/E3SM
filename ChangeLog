@@ -1,6 +1,28 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 11-17-2018
+Tag: cime_cesm2_1_rel_05
+Answer Changes: None
+Tests:  ./create_test cime_developer on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Do not include time of day in cpl auxiliary hist file names.
+
+User interface changes: 
+    - Changes names of cpl auxiliary history files.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b3fc9d6 Merge pull request #2914 from billsacks/auxhist_no_time
+
+Modified files: git diff --name-status [previous_tag]
+M       src/drivers/mct/main/seq_hist_mod.F90
+
+======================================================================
+======================================================================
+
+Originator: Chris Fischer 
 Date: 11-13-2018
 Tag: cime_cesm2_1_rel_04
 Answer Changes: None
