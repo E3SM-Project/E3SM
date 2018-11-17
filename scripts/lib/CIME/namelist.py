@@ -1134,7 +1134,7 @@ class Namelist(object):
         return group_variables
 
     def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True,
-              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None, rof_cpl_dt=None):
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1157,14 +1157,16 @@ class Namelist(object):
             with open(out_file, flag) as file_obj:
                 if format_ == 'nuopc':
                     self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups,
-                                      skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                                      skip_comps=skip_comps, 
+                                      atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt, rof_cpl_dt=rof_cpl_dt)
                 else:
                     self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
             if format_ == 'nuopc':
                 self._write_nuopc(out_file, groups, sorted_groups=sorted_groups,
-                                  skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                                  skip_comps=skip_comps, 
+                                  atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt, rof_cpl_dt=rof_cpl_dt)
             else:
                 self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
@@ -1215,7 +1217,7 @@ class Namelist(object):
                 out_file.write("\n")
 
 
-    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt):
+    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt, rof_cpl_dt):
         """Unwrapped version of `write` assuming that a file object is input."""
 
         if groups is None:
@@ -1297,6 +1299,8 @@ class Namelist(object):
                                     run_entry = run_entry.replace("atm_cpl_dt",atm_cpl_dt)
                                 if "@ocn_cpl_dt" in run_entry:
                                     run_entry = run_entry.replace("ocn_cpl_dt",ocn_cpl_dt)
+                                if "@rof_cpl_dt" in run_entry:
+                                    run_entry = run_entry.replace("rof_cpl_dt",rof_cpl_dt)
                                 newline += run_entry + "\n"
                         out_file.write(newline)
                     else:

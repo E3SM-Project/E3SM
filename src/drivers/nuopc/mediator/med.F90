@@ -65,9 +65,10 @@ contains
     use med_phases_prep_atm_mod , only: med_phases_prep_atm
     use med_phases_prep_ice_mod , only: med_phases_prep_ice
     use med_phases_prep_lnd_mod , only: med_phases_prep_lnd
-    use med_phases_prep_rof_mod , only: med_phases_prep_rof
     use med_phases_prep_wav_mod , only: med_phases_prep_wav
     use med_phases_prep_glc_mod , only: med_phases_prep_glc
+    use med_phases_prep_rof_mod , only: med_phases_prep_rof_accum_fast
+    use med_phases_prep_rof_mod , only: med_phases_prep_rof_avg
     use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_map
     use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_merge
     use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_accum_fast
@@ -350,10 +351,17 @@ contains
     !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_phases_prep_rof"/), userRoutine=mediator_routine_Run, rc=rc)
+         phaseLabelList=(/"med_phases_prep_rof_avg"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_phases_prep_rof", specRoutine=med_phases_prep_rof, rc=rc)
+         specPhaseLabel="med_phases_prep_rof_avg", specRoutine=med_phases_prep_rof_avg, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_prep_rof_accum_fast"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_prep_rof_accum_fast", specRoutine=med_phases_prep_rof_accum_fast, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -1137,11 +1145,11 @@ contains
                         call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                      end if
-                  else                     
+                  else
                      call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing mesh for field: "//&
                           trim(fieldNameList(n1)), ESMF_LOGMSG_WARNING, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  endif                  
+                  endif
                enddo
 
             else  ! geomtype
@@ -1392,21 +1400,10 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Copy
     use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetNumFlds
     use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetFldNames
-    use med_infodata_mod        , only : med_infodata_CopyStateToInfodata
-    use med_infodata_mod        , only : med_infodata
+    use med_infodata_mod        , only : med_infodata, med_infodata_CopyStateToInfodata
     use med_fraction_mod        , only : med_fraction_init, med_fraction_set
     use med_phases_restart_mod  , only : med_phases_restart_read
     use med_phases_prep_atm_mod , only : med_phases_prep_atm
-    use med_phases_prep_ice_mod , only : med_phases_prep_ice
-    use med_phases_prep_lnd_mod , only : med_phases_prep_lnd
-    use med_phases_prep_rof_mod , only : med_phases_prep_rof
-    use med_phases_prep_wav_mod , only : med_phases_prep_wav
-    use med_phases_prep_glc_mod , only : med_phases_prep_glc
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_map
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_merge
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_accum_fast
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_accum_avg
-    use med_phases_profile_mod  , only : med_phases_profile
     use med_phases_ocnalb_mod   , only : med_phases_ocnalb_run
     use med_phases_aofluxes_mod , only : med_phases_aofluxes_run
     use med_connectors_mod      , only : med_connectors_prep_med2atm
@@ -1594,16 +1591,18 @@ contains
                  name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n1), flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(n1), &
+                 STflds=is_local%wrap%NStateImp(n1), &
+                 name='FBImpAccum'//trim(compname(n1)), rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1,n1), value=czero, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBExp(n1), flds_scalar_name, &
                  STgeom=is_local%wrap%NStateExp(n1), &
                  STflds=is_local%wrap%NStateExp(n1), &
                  name='FBExp'//trim(compname(n1)), rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(n1), &
-                 STflds=is_local%wrap%NStateImp(n1), &
-                 name='FBImpAccum'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             call shr_nuopc_methods_FB_init(is_local%wrap%FBExpAccum(n1), flds_scalar_name, &
@@ -1611,19 +1610,18 @@ contains
                  STflds=is_local%wrap%NStateExp(n1), &
                  name='FBExpAccum'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             is_local%wrap%FBImpAccumCnt(n1) = 0
             is_local%wrap%FBExpAccumCnt(n1) = 0
 
-            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1), value=czero, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          endif
          if (mastertask) call shr_sys_flush(logunit)
 
-         ! These are the FBImp mapped to different grids, FBImp(n1,n1) is handled above
+         ! These are the FBImp and FBImpAccum mapped to different
+         ! grids, FBImp(n1,n1) and FBImpAccum(n1,n1) are handled above
+
          do n2 = 1,ncomps
             if (n1 /= n2 .and. &
                  is_local%wrap%med_coupling_active(n1,n2) .and. &
@@ -1631,20 +1629,20 @@ contains
                  ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc)) then
                if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))//'_'//trim(compname(n2))
 
-               ! TODO:
-               ! The NStateImp(n2) should be used here rather than NStateExp(n2), since
-               ! the export state might only contain control data and no grid information if
-               ! if the target component (n2) is not prognostic only receives control data back
-               ! But if STgeom=is_local%wrap%NStateImp(n2) is substituted for STgeom=is_local%wrap%NStateExp(n2)
-               ! then an error occurs as follows
-
                call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(n2), &
+                    STflds=is_local%wrap%NStateImp(n1), &
+                    name='FBImp'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n2), flds_scalar_name, &
                     STgeom=is_local%wrap%NStateImp(n2), &
                     STflds=is_local%wrap%NStateImp(n1), &
                     name='FBImp'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             endif
          enddo
+
       enddo
       if (mastertask) call shr_sys_flush(logunit)
 

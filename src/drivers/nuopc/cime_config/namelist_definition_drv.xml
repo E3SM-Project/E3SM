@@ -85,6 +85,32 @@
           MED med_phases_restart_write
       @
       </value>
+      <value COMP_LND="clm" COMP_ATM="datm" COMP_OCN="socn" COMP_ICE="sice" COMP_GLC="sglc">
+      @rof_cpl_dt   # rof coupling step
+          MED med_phases_prep_rof_avg
+          MED med_connectors_prep_med2rof
+	  MED -> ROF :remapMethod=redist
+          ROF
+          ROF -> MED :remapMethod=redist
+  	  @atm_cpl_dt  # atmosphere coupling step
+            MED med_phases_prep_lnd
+            MED med_connectors_prep_med2lnd
+            MED -> LND :remapMethod=redist
+            LND
+            LND -> MED :remapMethod=redist
+            MED med_connectors_post_lnd2med
+            MED med_phases_prep_rof_accum_fast
+            MED med_phases_prep_atm
+            MED med_connectors_prep_med2atm
+            ATM
+            ATM -> MED :remapMethod=redist
+            MED med_connectors_post_atm2med
+	  @
+          MED med_connectors_post_rof2med
+          MED med_phases_history_write
+          MED med_phases_restart_write
+      @
+      </value>
       <value COMP_OCN="socn">
       @ocn_cpl_dt   #ocean coupling step
   	  @atm_cpl_dt  # atmosphere coupling step

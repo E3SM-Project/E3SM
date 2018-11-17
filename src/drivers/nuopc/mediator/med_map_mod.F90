@@ -16,10 +16,16 @@ module med_map_mod
 
   ! private module variables
 
-  character(*)      , parameter :: u_FILE_u    = __FILE__
+  interface med_map_FB_Regrid_norm 
+     module procedure med_map_FB_Regrid_Norm_All
+     module procedure med_map_FB_Regrid_Norm_Frac
+  end interface
+
   ! should this be a module variable?
   integer                       :: srcTermProcessing_Value = 0
   logical                       :: mastertask
+  character(*)      , parameter :: u_FILE_u = &
+       __FILE__
 
 !================================================================================
 contains
@@ -285,6 +291,11 @@ contains
 
   subroutine med_map_Fractions_init(gcomp, n1, n2, FBSrc, FBDst, RouteHandle, rc)
 
+    !---------------------------------------------
+    ! Initialize initialize additional route handles
+    ! for mapping fractions
+    !---------------------------------------------
+
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFlush
     use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundle, ESMF_RouteHandle, ESMF_Field
     use ESMF                  , only : ESMF_FieldRedistStore, ESMF_FieldSMMStore, ESMF_FieldRegridStore
@@ -295,11 +306,8 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use perf_mod              , only : t_startf, t_stopf
-    !---------------------------------------------
-    ! Initialize initialize additional route handles
-    ! for mapping fractions
-    !---------------------------------------------
 
+    ! input/output variables
     type(ESMF_GridComp)                    :: gcomp
     integer                , intent(in)    :: n1
     integer                , intent(in)    :: n2
@@ -411,6 +419,7 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
     use perf_mod              , only: t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(in)  :: llogunit
@@ -497,14 +506,13 @@ contains
 
   !================================================================================
 
-  subroutine med_map_FB_Regrid_Norm(fldsSrc, srccomp, destcomp, &
+  subroutine med_map_FB_Regrid_Norm_All(fldsSrc, srccomp, destcomp, &
        FBSrc, FBDst, FBFrac, FBNormOne, RouteHandles, string, rc)
 
     ! ----------------------------------------------
     ! Map field bundles with appropriate fraction weighting
     ! ----------------------------------------------
 
-    use NUOPC                 , only: NUOPC_IsConnected
     use ESMF                  , only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
     use ESMF                  , only: ESMF_FieldBundle, ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
@@ -523,9 +531,6 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
     use shr_nuopc_utils_mod   , only: shr_nuopc_memcheck
     use perf_mod              , only: t_startf, t_stopf
-    ! ----------------------------------------------
-    ! Map field bundles with appropriate fraction weighting
-    ! ----------------------------------------------
 
     ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer       :: fldsSrc(:)
@@ -540,26 +545,26 @@ contains
     integer                            , intent(out)   :: rc
 
     ! local variables
-    integer                     :: i, n
-    type(ESMF_FieldBundle)      :: FBSrcTmp        ! temporary
-    type(ESMF_FieldBundle)      :: FBNormSrc       ! temporary
-    type(ESMF_FieldBundle)      :: FBNormDst       ! temporary
-    integer                     :: mapindex
-    character(len=CS)  :: lstring
-    character(len=CS)  :: mapnorm
-    character(len=CS)  :: fldname
-    character(len=CS)  :: csize1, csize2
-    real(R8), pointer :: data_srctmp(:)  ! temporary
-    real(R8), pointer :: data_src(:)     ! temporary
-    real(R8), pointer :: data_dst(:)     ! temporary
-    real(R8), pointer :: data_srcnorm(:) ! temporary
-    real(R8), pointer :: data_dstnorm(:) ! temporary
-    real(R8), pointer :: data_frac(:)    ! temporary
-    real(R8), pointer :: data_norm(:)    ! temporary
+    integer                :: i, n
+    type(ESMF_FieldBundle) :: FBSrcTmp        ! temporary
+    type(ESMF_FieldBundle) :: FBNormSrc       ! temporary
+    type(ESMF_FieldBundle) :: FBNormDst       ! temporary
+    integer                :: mapindex
+    character(len=CS)      :: lstring
+    character(len=CS)      :: mapnorm
+    character(len=CS)      :: fldname
+    character(len=CS)      :: csize1, csize2
+    real(R8), pointer      :: data_srctmp(:)  ! temporary
+    real(R8), pointer      :: data_src(:)     ! temporary
+    real(R8), pointer      :: data_dst(:)     ! temporary
+    real(R8), pointer      :: data_srcnorm(:) ! temporary
+    real(R8), pointer      :: data_dstnorm(:) ! temporary
+    real(R8), pointer      :: data_frac(:)    ! temporary
+    real(R8), pointer      :: data_norm(:)    ! temporary
+    integer                :: dbrc
     character(len=*), parameter :: subname='(module_MED_Map:med_map_Regrid_Norm)'
-    integer :: dbrc
-
     !-------------------------------------------------------------------------------
+
     call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -643,16 +648,6 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
 
-          if (.not. ESMF_FieldBundleIsCreated(FBSrcTmp)) then
-             ! Create a new temporary field bundle, FBSrcTmp if needed
-             call shr_nuopc_methods_FB_init(FBSrcTmp, flds_scalar_name, FBgeom=FBSrc, &
-                  fieldNameList=(/'data_srctmp'/), name='data_srctmp', rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-             ! Get pointer to source field data in FBSrcTmp
-             call shr_nuopc_methods_FB_GetFldPtr(FBSrcTmp, 'data_srctmp', data_srctmp, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
           ! Get pointer to source field data in FBSrc
           call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -662,6 +657,16 @@ contains
              !-------------------------------------------------
              ! fractional normalization
              !-------------------------------------------------
+
+             ! Create a new temporary field bundle, FBSrcTmp that will contain field data on source grid
+             if (.not. ESMF_FieldBundleIsCreated(FBSrcTmp)) then
+                call shr_nuopc_methods_FB_init(FBSrcTmp, flds_scalar_name, FBgeom=FBSrc, &
+                     fieldNameList=(/'data_srctmp'/), name='data_srctmp', rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                call shr_nuopc_methods_FB_GetFldPtr(FBSrcTmp, 'data_srctmp', data_srctmp, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             end if
 
              ! create a temporary field bundle that will contain normalization on the source grid
              if (.not. ESMF_FieldBundleIsCreated(FBNormSrc)) then
@@ -799,9 +804,214 @@ contains
     end if
     call t_startf('MED:'//subname)
 
-  end subroutine med_map_FB_Regrid_Norm
+  end subroutine med_map_FB_Regrid_Norm_All
 
-!================================================================================
+  !================================================================================
 
+  subroutine med_map_FB_Regrid_Norm_Frac(FBSrc, FBDst, fldnames, &
+       FBFrac, mapnorm, RouteHandle, string, rc)
+
+    ! ----------------------------------------------
+    ! Map field bundles with appropriate fraction weighting
+    ! ----------------------------------------------
+
+    use ESMF                  , only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use ESMF                  , only: ESMF_FieldBundle, ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use ESMF                  , only: ESMF_RouteHandle, ESMF_RouteHandleIsCreated, ESMF_Field
+    use shr_nuopc_scalars_mod , only: flds_scalar_name
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Init
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Reset
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Clean
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FieldRegrid
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Field_diagnose
+    use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod   , only: shr_nuopc_memcheck
+    use perf_mod              , only: t_startf, t_stopf
+
+    ! input/output variables
+    type(ESMF_FieldBundle) , intent(inout)        :: FBSrc
+    type(ESMF_FieldBundle) , intent(inout)        :: FBDst
+    character(len=*)       , intent(in)           :: fldnames(:)
+    type(ESMF_FieldBundle) , intent(in)           :: FBFrac
+    character(len=*)       , intent(in)           :: mapnorm
+    type(ESMF_RouteHandle) , intent(inout)        :: RouteHandle
+    character(len=*)       , intent(in), optional :: string
+    integer                , intent(out)          :: rc
+
+    ! local variables
+    integer                        :: i, n
+    type(ESMF_FieldBundle)         :: FBSrcTmp        ! temporary
+    type(ESMF_FieldBundle)         :: FBNormSrc       ! temporary
+    type(ESMF_FieldBundle)         :: FBNormDst       ! temporary
+    character(len=CS)              :: lstring
+    character(len=CS)              :: csize1, csize2
+    real(R8), pointer              :: data_srctmp(:)  ! temporary
+    real(R8), pointer              :: data_src(:)     ! temporary
+    real(R8), pointer              :: data_dst(:)     ! temporary
+    real(R8), pointer              :: data_srcnorm(:) ! temporary
+    real(R8), pointer              :: data_dstnorm(:) ! temporary
+    real(R8), pointer              :: data_frac(:)    ! temporary
+    real(R8), pointer              :: data_norm(:)    ! temporary
+    integer                        :: dbrc
+    character(len=*), parameter    :: subname='(module_MED_Map:med_map_Regrid_Norm)'
+    !-------------------------------------------------------------------------------
+
+    call t_startf('MED:'//subname)
+    rc = ESMF_SUCCESS
+
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call shr_nuopc_memcheck(subname, 1, mastertask)
+
+    if (present(string)) then
+      lstring = trim(string)
+    else
+      lstring = " "
+    endif
+
+    !---------------------------------------
+    ! First - reset the field bundle on the destination grid to zero
+    !---------------------------------------
+
+    call shr_nuopc_methods_FB_reset(FBDst, value=czero, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------
+    ! Loop over all fields in the source field bundle and map them to
+    ! the destination field bundle accordingly
+    !---------------------------------------
+
+    ! call ESMF_FieldBundleGet(FBsrc, fieldCount=fieldCount, fieldNameList=fldnames, rc=rc)
+    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+
+    !-------------------------------------------------
+    ! Map with fractional normalization
+    !-------------------------------------------------
+
+    do n = 1,size(fldnames)
+
+       ! get pointer to source field data in FBSrc
+       call shr_nuopc_methods_FB_GetFldPtr(FBSrc, trim(fldnames(n)), data_src, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! create a new temporary field bundle, FBSrcTmp that will contain field data on the source grid
+       if (.not. ESMF_FieldBundleIsCreated(FBSrcTmp)) then
+          call shr_nuopc_methods_FB_init(FBSrcTmp, flds_scalar_name, &
+               FBgeom=FBSrc, fieldNameList=(/'data_srctmp'/), name='data_srctmp', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          call shr_nuopc_methods_FB_GetFldPtr(FBSrcTmp, 'data_srctmp', data_srctmp, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+
+       ! create a temporary field bundle that will contain normalization on the source grid
+       if (.not. ESMF_FieldBundleIsCreated(FBNormSrc)) then
+          call shr_nuopc_methods_FB_init(FBout=FBNormSrc, flds_scalar_name=flds_scalar_name, &
+               FBgeom=FBSrc, fieldNameList=(/trim(mapnorm)/), name='normsrc', rc=rc)
+          if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+
+          call shr_nuopc_methods_FB_GetFldPtr(FBNormSrc, trim(mapnorm), data_srcnorm, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+
+       call shr_nuopc_methods_FB_reset(FBNormSrc, value=czero, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+
+       ! create a temporary field bundle that will contain normalization on the destination grid
+       if (.not. ESMF_FieldBundleIsCreated(FBNormDst)) then
+          call shr_nuopc_methods_FB_init(FBout=FBNormDst, flds_scalar_name=flds_scalar_name, &
+               FBgeom=FBDst, fieldNameList=(/trim(mapnorm)/), name='normdst', rc=rc)
+          if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+
+          call shr_nuopc_methods_FB_GetFldPtr(FBFrac, trim(mapnorm), data_frac, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+
+       call shr_nuopc_methods_FB_reset(FBNormDst, value=czero, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+
+       ! error checks
+       if (size(data_srcnorm) /= size(data_frac)) then
+          call ESMF_LogWrite(trim(subname)//" fldname= "//trim(fldnames(n))//" mapnorm= "//trim(mapnorm), &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          write(csize1,'(i8)') size(data_srcnorm)
+          write(csize2,'(i8)') size(data_frac)
+          call ESMF_LogWrite(trim(subname)//": ERROR data_normsrc size "//trim(csize1)//&
+               " and data_frac size "//trim(csize2)//" are inconsistent", &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          rc = ESMF_FAILURE
+          return
+       else if (size(data_srcnorm) /= size(data_srctmp)) then
+          write(csize1,'(i8)') size(data_srcnorm)
+          write(csize2,'(i8)') size(data_srctmp)
+          call ESMF_LogWrite(trim(subname)//": ERROR data_srcnorm size "//trim(csize1)//&
+               " and data_srctmp size "//trim(csize2)//" are inconsistent", &
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          rc = ESMF_FAILURE
+          return
+       end if
+
+       ! now fill in the values for data_srcnorm and data_srctmp - these are the two arrays needed for normalization
+       ! Note that FBsrcTmp will now have the data_srctmp value
+       do i = 1,size(data_frac)
+          data_srcnorm(i) = data_frac(i)
+          data_srctmp(i)  = data_src(i) * data_frac(i)  ! Multiply initial field by data_frac
+       end do
+
+       ! regrid FBSrcTmp to FBDst
+       if (trim(fldnames(n)) == trim(flds_scalar_name)) then
+          call ESMF_LogWrite(trim(subname)//trim(lstring)//": skip : fld="//trim(fldnames(n)), &
+               ESMF_LOGMSG_INFO, rc=dbrc)
+       else
+          call shr_nuopc_methods_FB_FieldRegrid( FBSrcTmp, 'data_srctmp', FBDst, fldnames(n), RouteHandle, rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+
+       call shr_nuopc_methods_FB_FieldRegrid(FBNormSrc, mapnorm, FBNormDst, mapnorm, RouteHandle, rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! multiply interpolated field (FBDst) by reciprocal of fraction on destination grid (FBNormDst)
+       call shr_nuopc_methods_FB_GetFldPtr(FBNormDst, trim(mapnorm), data_dstnorm, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_GetFldPtr(FBDst, trim(fldnames(n)), data_dst, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do i= 1,size(data_dst)
+          if (data_dstnorm(i) == 0.0_R8) then
+             data_dst(i) = 0.0_R8
+          else
+             data_dst(i) = data_dst(i)/data_dstnorm(i)
+          endif
+       end do
+
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldnames(n), &
+               string=trim(subname) //' Mapping (' // trim(fldnames(n)) // trim(lstring), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+
+    end do  ! loop over fields
+
+    ! Clean up temporary field bundles
+    if (ESMF_FieldBundleIsCreated(FBSrcTmp)) then
+       call shr_nuopc_methods_FB_clean(FBSrcTmp, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+    end if
+    if (ESMF_FieldBundleIsCreated(FBNormSrc)) then
+       call shr_nuopc_methods_FB_clean(FBNormSrc, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+    end if
+    if (ESMF_FieldBundleIsCreated(FBNormDst)) then
+       call shr_nuopc_methods_FB_clean(FBNormDst, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+    end if
+    call t_startf('MED:'//subname)
+
+  end subroutine med_map_FB_Regrid_Norm_Frac
 
 end module med_map_mod

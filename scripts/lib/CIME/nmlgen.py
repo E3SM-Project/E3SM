@@ -697,12 +697,12 @@ class NamelistGenerator(object):
 
     # For NUOPC
     def write_nuopc_config_file(self, filename, data_list_path=None,
-                                skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+                                skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None, rof_cpl_dt=None):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
         groups = self._namelist.get_group_names()
         self._namelist.write(filename, groups=groups, format_='nuopc', sorted_groups=False,
-                             skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                             skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt, rof_cpl_dt=rof_cpl_dt)
         if data_list_path is not None:
             # append to input_data_list file
             self._write_input_files(data_list_path)

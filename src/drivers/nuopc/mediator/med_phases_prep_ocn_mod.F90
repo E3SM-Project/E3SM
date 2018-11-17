@@ -1,11 +1,12 @@
 module med_phases_prep_ocn_mod
 
-  use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
-  use med_internalstate_mod, only : mastertask
   !-----------------------------------------------------------------------------
-  ! Carry out fast accumulation for the ocean
+  ! Prep mediator export data for the ocean component
   !-----------------------------------------------------------------------------
+
+  use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+  use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
+  use med_internalstate_mod , only : mastertask
 
   implicit none
   private
@@ -23,6 +24,7 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_map(gcomp, rc)
+
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
@@ -34,16 +36,17 @@ contains
     use esmFlds               , only : compocn, ncomps, compname
     use perf_mod              , only : t_startf, t_stopf
 
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(InternalState)         :: is_local
-    integer                     :: n1, ncnt
+    type(InternalState) :: is_local
+    integer             :: n1, ncnt
+    integer             :: dbrc
     character(len=*), parameter :: subname='(med_phases_prep_ocn_map)'
-    integer :: dbrc
-
     !-------------------------------------------------------------------------------
+
     call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -114,6 +117,7 @@ contains
     use esmFlds               , only : fldListTo
     use esmFlds               , only : compocn, compname, compatm, compice
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -361,30 +365,34 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_accum_fast(gcomp, rc)
-    use ESMF, only: ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF, only: ESMF_FieldBundleGet
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-    use med_internalstate_mod   , only : InternalState, mastertask
-    use esmFlds                 , only : compocn
-    use perf_mod                , only : t_startf, t_stopf
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
 
     ! Carry out fast accumulation for the ocean
 
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
+    use ESMF                  , only : ESMF_FieldBundleGet
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use med_internalstate_mod , only : InternalState, mastertask
+    use esmFlds               , only : compocn
+    use perf_mod              , only : t_startf, t_stopf
+
+    ! input/output variables
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: time
-    character(len=64)           :: timestr
-    type(InternalState)         :: is_local
-    integer                     :: i,j,n,n1,ncnt
-    character(len=*), parameter :: subname='(med_phases_accum_fast)'
-    integer :: dbrc
+    type(ESMF_Clock)    :: clock
+    type(ESMF_Time)     :: time
+    character(len=64)   :: timestr
+    type(InternalState) :: is_local
+    integer             :: i,j,n,n1,ncnt
+    integer             :: dbrc
+    character(len=*), parameter :: subname='(med_phases_prep_ocn_accum_fast)'
     !---------------------------------------
+
     call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
@@ -468,37 +476,38 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_accum_avg(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_FieldBundleGet
-    use med_constants_mod, only : czero=>med_constants_czero
-    use med_internalstate_mod   , only : InternalState
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_average
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_copy
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-    use esmFlds                 , only : compocn
-    use perf_mod                , only : t_startf, t_stopf
+
+    ! Prepares the export fields sent to the ocn
+
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_FieldBundleGet
+    use med_constants_mod     , only : czero=>med_constants_czero
+    use med_internalstate_mod , only : InternalState
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_average
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use esmFlds               , only : compocn
+    use perf_mod              , only : t_startf, t_stopf
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    ! Prepares the OCN import Fields.
-
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: time
-    character(len=64)           :: timestr
-    type(InternalState)         :: is_local
-    integer                     :: i,j,n,n1,ncnt
+    type(ESMF_Clock)    :: clock
+    type(ESMF_Time)     :: time
+    character(len=64)   :: timestr
+    type(InternalState) :: is_local
+    integer             :: i,j,n,n1,ncnt
+    integer             :: dbrc
     character(len=*),parameter  :: subname='(med_phases_prep_ocn_accum_avg)'
-    integer :: dbrc
     !---------------------------------------
     call t_startf('MED:'//subname)
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -520,10 +529,8 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
        RETURN
     end if
 
@@ -531,21 +538,17 @@ contains
     !--- average ocn accumulator
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+         string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
          is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBaccO_avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+         string=trim(subname)//' FBaccO_avg ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- copy to FBExp(compocn)

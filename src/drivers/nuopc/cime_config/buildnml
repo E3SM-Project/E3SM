@@ -234,9 +234,11 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     atm_cpl_dt = nmlgen.get_value('atm_cpl_dt')
     ocn_cpl_dt = nmlgen.get_value('ocn_cpl_dt')
+    rof_cpl_dt = nmlgen.get_value('rof_cpl_dt')
     nuopc_config_file = os.path.join(confdir, "cesm.runconfig")
     nmlgen.write_nuopc_config_file(nuopc_config_file, data_list_path=data_list_path,
-                                   skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                                   skip_comps=skip_comps, 
+                                   atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt, rof_cpl_dt=rof_cpl_dt)
 
     #--------------------------------
     # (4) Write drv_flds_in

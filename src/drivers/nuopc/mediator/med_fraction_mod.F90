@@ -112,13 +112,11 @@ module med_fraction_mod
   !
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod      , only : R8
-  use esmFlds, only : ncomps
+  use med_constants_mod , only : R8
+  use esmFlds           , only : ncomps
 
   implicit none
   private
-
-  character(*)      , parameter :: u_FILE_u =  __FILE__
 
   ! Note - everything is private in this module other than these routines
   public med_fraction_init
@@ -152,8 +150,11 @@ module med_fraction_mod
   !  real(R8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
+  character(*), parameter :: u_FILE_u =  &
+       __FILE__
+
 !-----------------------------------------------------------------------------
-  contains
+contains
 !-----------------------------------------------------------------------------
 
   subroutine med_fraction_init(gcomp, rc)
@@ -163,6 +164,7 @@ module med_fraction_mod
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_State, ESMF_Field
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_StateIsCreated, ESMF_RouteHandleIsCreated
+    use ESMF                  , only : ESMF_FieldBundle, ESMF_FieldBundleIsCreated, ESMF_FieldBundleDestroy
     use med_constants_mod     , only : czero=>med_constants_czero
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use esmFlds               , only : compatm, compocn, compice, complnd
@@ -179,6 +181,7 @@ module med_fraction_mod
     use med_map_mod           , only : med_map_Fractions_init
     use med_internalstate_mod , only : InternalState
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -189,6 +192,7 @@ module med_fraction_mod
     character(len=64)          :: timestr
     type(ESMF_State)           :: importState, exportState
     type(ESMF_Field)           :: field
+    type(ESMF_FieldBundle)     :: FBtemp
     type(InternalState)        :: is_local
     real(R8), pointer          :: dataPtr(:)
     real(R8), pointer          :: dataPtr1(:),dataPtr2(:),dataPtr3(:),dataPtr4(:)
@@ -258,22 +262,26 @@ module med_fraction_mod
 
     if (is_local%wrap%comp_present(compatm)) then
 
+      !------------------------
       ! Set atm 'afrac' to 1.
+      !------------------------
       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'afrac', dataPtr, rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       dataPtr(:) = 1.0_R8
 
+      !------------------------
       ! map atm 'afrac' to ocn 'afrac' conservatively or redist
+      !------------------------
       if (is_local%wrap%med_coupling_active(compatm,compocn)) then
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapfcopy), rc=rc)) then
              maptype = mapfcopy
           else
              maptype = mapconsf
-             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)) then
+             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compocn,maptype), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, compocn, &
                      FBSrc=is_local%wrap%FBImp(compatm,compatm), &
                      FBDst=is_local%wrap%FBImp(compatm,compocn), &
-                     RouteHandle=is_local%wrap%RH(compatm,compocn,mapconsf), rc=rc)
+                     RouteHandle=is_local%wrap%RH(compatm,compocn,maptype), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
           end if
@@ -284,17 +292,19 @@ module med_fraction_mod
           if(shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
 
+       !------------------------
        ! map atm 'afrac' to ice 'afrac' conservatively or redist
+       !------------------------
        if (is_local%wrap%med_coupling_active(compatm,compice)) then
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapfcopy), rc=rc)) then
              maptype = mapfcopy
           else
              maptype = mapconsf
-             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)) then
+             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,maptype), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, compocn, &
                      FBSrc=is_local%wrap%FBImp(compatm,compatm), &
                      FBDst=is_local%wrap%FBImp(compatm,compice), &
-                     RouteHandle=is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)
+                     RouteHandle=is_local%wrap%RH(compatm,compice,maptype), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
           end if
@@ -314,11 +324,11 @@ module med_fraction_mod
     if (is_local%wrap%comp_present(compglc)) then
        ! If 'gfrac' and 'frac' exists, then copy 'frac' to 'gfrac'
        ! TODO: implement a more general scheme that hard-wiring the name 'frac'
-       if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBfrac(compglc), 'gfrac', rc=rc) .and. &
+       if ( shr_nuopc_methods_FB_FldChk(is_local%wrap%FBfrac(compglc), 'gfrac', rc=rc) .and. &
             shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compglc, compglc), 'frac', rc=rc)) then
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc), 'gfrac', dataPtr1, rc=rc)
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compglc,compglc), 'frac' , dataPtr2, rc=rc)
-          dataPtr1 = dataPtr2
+          dataPtr1(:) = dataPtr2(:)
        endif
     endif
 
@@ -338,17 +348,19 @@ module med_fraction_mod
 
        if (is_local%wrap%comp_present(compatm)) then
 
+          !------------------------
           ! map atm 'afrac' to lnd 'afrac' conservatively or redist
+          !------------------------
           if (is_local%wrap%med_coupling_active(compatm,complnd)) then
              if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
                 maptype = mapfcopy
              else
                 maptype = mapconsf
-                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapconsf), rc=rc)) then
+                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,maptype), rc=rc)) then
                    call med_map_Fractions_init( gcomp, compatm, complnd, &
                         FBSrc=is_local%wrap%FBImp(compatm,compatm), &
                         FBDst=is_local%wrap%FBImp(compatm,complnd), &
-                        RouteHandle=is_local%wrap%RH(compatm,complnd,mapconsf), rc=rc)
+                        RouteHandle=is_local%wrap%RH(compatm,complnd,maptype), rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 end if
              end if
@@ -359,11 +371,49 @@ module med_fraction_mod
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
 
+          !------------------------
           ! map lnd 'lfrin' to atm 'lfrin' conservatively or redist
-          if (is_local%wrap%med_coupling_active(complnd,compatm)) then
-             if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
-                maptype = mapfcopy
+          !------------------------
+          ! Note - need to do the following if compatm->complnd is active, even if complnd->compatm is not active
+          if (is_local%wrap%med_coupling_active(compatm,complnd)) then
+
+             ! If mapfcopy (i.e. redist) route handle from atm->lnd is created but not from lnd->atm 
+             ! then create it - otherwise create a conservative mapping handle from lnd->atm
+
+             if ( ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
+
+                ! If redist route hand dles not exist from lnd->atm then create it
+                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,mapfcopy), rc=rc)) then
+                   maptype = mapfcopy
+                   if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,compatm))) then
+                      ! Create a temporary field bundle if one does not exists
+                      call shr_nuopc_methods_FB_init(FBout=FBtemp, &
+                           flds_scalar_name=flds_scalar_name, &
+                           FBgeom=is_local%wrap%FBImp(compatm,compatm), &
+                           fieldNameList=(/'Fldtemp'/), name='FBtemp', rc=rc)
+                      if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+                      ! Create the redist route handle
+                      call med_map_Fractions_init( gcomp, complnd, compatm, &
+                           FBSrc=is_local%wrap%FBImp(complnd,complnd), &
+                           FBDst=FBtemp, &
+                           RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
+                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                      ! Destroy temporary field bundle
+                      call ESMF_FieldBundleDestroy(FBtemp, rc=rc)
+                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   else
+                      ! Use the field bundle already existing to create route handle
+                      call med_map_Fractions_init( gcomp, complnd, compatm, &
+                           FBSrc=is_local%wrap%FBImp(complnd,complnd), &
+                           FBDst=is_local%wrap%FBImp(complnd,compatm), &
+                           RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
+                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   end if
+                end if
+
              else
+
+                ! This assumes that destination field bundle exists 
                 maptype = mapconsf
                 if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,maptype), rc=rc)) then
                    call med_map_Fractions_init( gcomp, complnd, compatm, &
@@ -372,14 +422,16 @@ module med_fraction_mod
                         RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 end if
+
              end if
+
              call shr_nuopc_methods_FB_FieldRegrid(&
                   is_local%wrap%FBfrac(complnd), 'lfrin', &
                   is_local%wrap%FBfrac(compatm), 'lfrin', &
                   is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
 
+          end if
        end if
     end if
 
@@ -389,7 +441,9 @@ module med_fraction_mod
 
     if (is_local%wrap%comp_present(comprof)) then
 
+       !------------------------
        ! Set 'frac' in FBfrac(comprof) to 1.
+       !------------------------
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(comprof), 'rfrac', dataPtr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataPtr1(:) = 1.0_R8
@@ -408,7 +462,9 @@ module med_fraction_mod
 
     if (is_local%wrap%comp_present(compwav)) then
 
+          !------------------------
        ! Set 'wfrac' in FBfrac(compwav) to 1.
+          !------------------------
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compwav), 'wfrac', dataPtr, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        dataPtr(:) = 1.0_R8
@@ -434,17 +490,19 @@ module med_fraction_mod
 
        if (is_local%wrap%comp_present(compatm)) then
 
+          !------------------------
           ! Reset FBFrac(compatm) 'ofrac' by mapping ice 'ofrac' to atm 'ofrac' conservatively or redist
+          !------------------------
           if (is_local%wrap%med_coupling_active(compice,compatm)) then
              if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
                 maptype = mapfcopy
              else
                 maptype = mapconsf
-                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)) then
+                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,maptype), rc=rc)) then
                    call med_map_Fractions_init( gcomp, compice, compatm, &
                         FBSrc=is_local%wrap%FBImp(compice,compice), &
                         FBDst=is_local%wrap%FBImp(compice,compatm), &
-                        RouteHandle=is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+                        RouteHandle=is_local%wrap%RH(compice,compatm,maptype), rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 end if
              end if
@@ -455,17 +513,19 @@ module med_fraction_mod
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
 
+          !------------------------
           ! Reset FBFrac(compice) 'afrac' by mapping atm 'afrac' to ice 'afrac' conservatively or redist
+          !------------------------
           if (is_local%wrap%med_coupling_active(compatm,compice)) then
              if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
                 maptype = mapfcopy
              else
                 maptype = mapconsf
-                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)) then
+                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,maptype), rc=rc)) then
                    call med_map_Fractions_init( gcomp, compatm, compice, &
                         FBSrc=is_local%wrap%FBImp(compatm,compatm), &
                         FBDst=is_local%wrap%FBImp(compatm,compice), &
-                        RouteHandle=is_local%wrap%RH(compatm,compice,mapconsf), rc=rc)
+                        RouteHandle=is_local%wrap%RH(compatm,compice,maptype), rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 end if
              end if
@@ -562,7 +622,6 @@ module med_fraction_mod
              end if
           end do
        else if (is_local%wrap%comp_present(complnd)) then
-          ! If the atmosphere is absent, then simply set lfrac=lfrin on atm grid
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', dataPtr_lfrac, rc=rc)
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrin', dataPtr_lfrin, rc=rc)
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', dataPtr_ofrac, rc=rc)
@@ -606,6 +665,7 @@ module med_fraction_mod
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
        else
+          ! If the atmosphere is absent, then simply set lfrac=lfrin on atm grid
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(complnd), 'lfrin', dataPtr_lfrin, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(complnd), 'lfrac', dataPtr_lfrac, rc=rc)

@@ -213,6 +213,7 @@ contains
     use med_infodata_mod      , only : med_infodata
     use med_infodata_mod      , only : med_infodata_CopyStateToInfodata
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)           :: gcomp
     character(len=*), intent(in)  :: type

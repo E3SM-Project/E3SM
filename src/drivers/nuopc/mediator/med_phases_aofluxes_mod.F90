@@ -182,7 +182,7 @@ contains
   subroutine med_phases_aofluxes_run(gcomp, rc)
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_GridCompGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use NUOPC                 , only : NUOPC_IsConnected, NUOPC_CompAttributeGet
+    use NUOPC                 , only : NUOPC_CompAttributeGet
     use med_internalstate_mod , only : InternalState
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use esmFlds               , only : fldListFr
