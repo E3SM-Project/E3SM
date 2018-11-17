@@ -1827,27 +1827,24 @@
 
   <machine MACH="cascade">
     <DESC>PNNL Intel KNC cluster, OS is Linux, batch system is SLURM</DESC>
+    <NODENAME_REGEX>glogin</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
-    <NODENAME_REGEX>glogin</NODENAME_REGEX>
     <CIME_OUTPUT_ROOT>/dtemp/$PROJECT/$USER</CIME_OUTPUT_ROOT>
-    <RUNDIR>$CIME_OUTPUT_ROOT/csmruns/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/csmruns/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/dtemp/st49401/sing201/acme/inputdata/</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/dtemp/st49401/sing201/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <BASELINE_ROOT>$CIME_OUTPUT_ROOT/acme/acme_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$CIME_OUTPUT_ROOT/acme/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
-      <executable></executable>
+      <executable/>
     </mpirun>
     <mpirun mpilib="impi">
       <executable>mpirun</executable>
@@ -1858,39 +1855,41 @@
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
       <arguments>
-	<arg name="mpi">--mpi=none</arg>
-	<arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
-	<arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
-	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+        <arg name="mpi">--mpi=none</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="python">/opt/lmod/7.3.28/init/env_modules_python.py</init_path>
+      <init_path lang="python">/opt/lmod/7.8.4/init/env_modules_python.py</init_path>
       <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <cmd_path lang="python">/opt/lmod/7.3.28/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/opt/lmod/7.8.4/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-	<command name="purge"></command>
+        <command name="purge"/>
       </modules>
       <modules>
-	<command name="load">python/2.7.9</command>
+        <command name="load">python/2.7.9</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/ips_18</command>
-	<command name="load">mkl/14.0</command>
+        <command name="load">intel/ips_18</command>
+        <command name="load">mkl/14.0</command>
       </modules>
       <modules mpilib="impi">
         <command name="load">impi/4.1.2.040</command>
       </modules>
       <modules mpilib="mvapich2">
-	<command name="load">mvapich2/1.9</command>
+        <command name="load">mvapich2/1.9</command>
       </modules>
       <modules>
-	<command name="load">netcdf/4.3.0</command>
+        <command name="load">netcdf/4.3.0</command>
       </modules>
     </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/csmruns/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/csmruns/$CASE/bld</EXEROOT>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}</env>
