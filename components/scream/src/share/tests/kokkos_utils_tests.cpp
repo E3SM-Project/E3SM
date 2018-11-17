@@ -8,9 +8,9 @@ TEST_CASE("data_type", "") {
   using namespace scream::util;
 
   // Check meta-util to get underlying scalar type of a raw MD array
-  REQUIRE(std::is_same<ScalarType<double**&>::type,double>::value);
-  REQUIRE(std::is_same<ScalarType<double*[3]>::type,double>::value);
-  REQUIRE(std::is_same<ScalarType<double[2][3]>::type,double>::value);
+  REQUIRE(std::is_same<ValueType<double**&>::type,double>::value);
+  REQUIRE(std::is_same<ValueType<double*[3]>::type,double>::value);
+  REQUIRE(std::is_same<ValueType<double[2][3]>::type,double>::value);
 
   // Check meta-util to get rank and dynamic rank of a raw MD array
   REQUIRE(GetRanks<double[2][3]>::rank==2);

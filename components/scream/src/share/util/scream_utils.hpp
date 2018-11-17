@@ -2,6 +2,7 @@
 #define SCREAM_UTILS_HPP
 
 #include <string>
+#include <typeinfo>
 
 namespace scream {
 namespace util {
@@ -19,6 +20,14 @@ void deactivate_floating_point_exceptions_if_enabled();
 
 std::string active_avx_string();
 std::string config_string();
+
+// A templated class to return a human-readable name for a type (defaults to type_info implementation)
+template<typename T>
+struct TypeName {
+  static std::string name () {
+    return typeid(T).name();
+  }
+};
 
 } // namespace util
 } // namespace scream

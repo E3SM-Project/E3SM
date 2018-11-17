@@ -12,8 +12,8 @@ namespace scream {
 // E3SM, via the mct coupler.
 class SurfaceCoupling : public AtmosphereProcess {
 public:
-  template<typename VT>
-  using field_repo_type = FieldRepository<VT>;
+  template<typename MS>
+  using field_repo_type = FieldRepository<Real,MS>;
 
   SurfaceCoupling (const ParameterList& params);
 

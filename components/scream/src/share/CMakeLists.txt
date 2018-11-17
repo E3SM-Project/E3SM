@@ -2,7 +2,7 @@ set(SHARE_SRC
   error_defs.cpp
   field/field_identifier.cpp
   field/field_header.cpp
-  field/field_repository.cpp
+  field/field_tracking.cpp
   scream_session.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
@@ -17,8 +17,8 @@ set(SHARE_HEADERS
   field/field_identifier.hpp
   field/field_header.hpp
   field/field_repository.hpp
-  field/field_repository_impl.hpp
   field/field_tag.hpp
+  field/field_tracking.cpp
   parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp

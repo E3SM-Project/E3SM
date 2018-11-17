@@ -4,9 +4,10 @@
 //TODO
 // - bounds checking define
 
-#include "util/math_utils.hpp" // for min, max
-#include "scream_types.hpp"    // for Int
-#include "scream_macros.hpp"   // for vector annotations
+#include "util/math_utils.hpp"    // for min, max
+#include "scream_types.hpp"       // for Int
+#include "util/scream_utils.hpp"  // for TypeName
+#include "scream_macros.hpp"      // for vector annotations
 
 namespace scream {
 namespace pack {
@@ -394,6 +395,20 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
 #undef scream_mask_gen_bin_op_all
 
 } // namespace pack
+
+namespace util {
+
+// Specialization of helper function for pack-properties detection
+
+template<typename T, int N>
+struct is_pack<pack::Pack<T,N>> {
+  using scalar_type = T;
+  static constexpr bool value = true;
+  static constexpr int  size  = N;
+};
+
+} // namespace util
+
 } // namespace scream
 
 #endif // INCLUDE_SCREAM_PACK

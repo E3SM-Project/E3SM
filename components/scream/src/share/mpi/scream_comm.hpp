@@ -31,7 +31,7 @@ public:
   //   2) the call is collective on both the stored and input comm's
   void reset_mpi_comm (MPI_Comm new_mpi_comm);
 
-  bool root () const { return m_rank==0; }
+  bool am_i_root () const { return m_rank==0; }
   int  rank () const { return m_rank; }
   int  size () const { return m_size; }
   MPI_Comm mpi_comm () const { return m_mpi_comm; }

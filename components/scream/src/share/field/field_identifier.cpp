@@ -10,6 +10,7 @@ FieldIdentifier::FieldIdentifier (const std::string& name,
  , m_rank (tags.size())
  , m_dims (tags.size(),-1)
 {
+  // Compute identifier string
   update_identifier ();
 }
 
@@ -22,7 +23,6 @@ void FieldIdentifier::set_dimension (const int idim, const int dimension) {
 
   update_identifier ();
 }
-
 
 void FieldIdentifier::set_dimensions (const std::vector<int>& dims) {
   // Check, then set dims

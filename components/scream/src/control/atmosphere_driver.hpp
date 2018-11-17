@@ -54,7 +54,7 @@ public:
 
 protected:
 
-  FieldRepository<ExecMemSpace>               m_device_field_repo;
+  FieldRepository<Real,ExecMemSpace>          m_device_field_repo;
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 

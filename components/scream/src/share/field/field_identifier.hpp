@@ -10,8 +10,6 @@
 namespace scream
 {
 
-class AtmosphereProcess;
-
 /*
  *  A small class to hold basic info about a field
  *  
@@ -36,23 +34,26 @@ public:
 
   // Name and layout informations
   const std::string& name () const { return m_name; }
+  const std::vector<FieldTag>& tags () const { return m_tags; }
   FieldTag tag  (const int idim) const;
   int      rank ()               const  { return m_rank; }
+  const std::vector<int>& dims () const { return m_dims; }
   int      dim  (const int idim) const;
   int      size ()               const;
 
   // The identifier string
   const std::string& get_identifier () const { return m_identifier; }
 
-  // If the header was created without specifying the dimensions (e.g., they
-  // were not known at construction time), we can reshape the field now.
+  bool is_dimension_set  (const int idim) const;
+  bool are_dimensions_set () const;
+  
+  // ----- Setters ----- //
+
   // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
   void set_dimensions (const std::vector<int>& dims);
-  bool dimension_set  (const int idim) const;
-  bool dimensions_set () const;
 
-  // We reimplement the equality operator for identifiers comparison (needed for std::set)
+  // We reimplement the equality operator for identifiers comparison (needed for some std container)
   friend bool operator== (const FieldIdentifier&, const FieldIdentifier&);
   friend bool operator<  (const FieldIdentifier&, const FieldIdentifier&);
 
@@ -81,7 +82,7 @@ inline int FieldIdentifier::dim (const int idim) const {
 }
 
 inline int FieldIdentifier::size () const {
-  error::runtime_check(dimensions_set(), "Error! Field dimensions not yet set.\n",-1);
+  error::runtime_check(are_dimensions_set(), "Error! Field dimensions not yet set.\n",-1);
   int prod = m_rank>0 ? 1 : 0;
   for (int idim=0; idim<m_rank; ++idim) {
     prod *= m_dims[idim];
@@ -94,12 +95,12 @@ inline FieldTag FieldIdentifier::tag (const int idim) const {
   return m_tags[idim];
 } 
 
-inline bool FieldIdentifier::dimension_set (const int idim) const {
+inline bool FieldIdentifier::is_dimension_set (const int idim) const {
   error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
   return m_dims[idim]>=0;
 }
 
-inline bool FieldIdentifier::dimensions_set () const {
+inline bool FieldIdentifier::are_dimensions_set () const {
   for (int idim=0; idim<m_rank; ++idim) {
     if (m_dims[idim]<0) {
       return false;

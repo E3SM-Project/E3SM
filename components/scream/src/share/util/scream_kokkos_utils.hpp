@@ -22,7 +22,7 @@ namespace util {
 
 // Retrieve the underlying scalar type from a MD array type
 template<typename MDArrayType>
-struct ScalarType {
+struct ValueType {
 private:
   using no_ref = typename std::remove_reference<MDArrayType>::type;
   using no_arr = typename std::remove_all_extents<no_ref>::type;
