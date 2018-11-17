@@ -239,8 +239,9 @@ contains
       str_grido = 'unknown'
       str_grida = 'unknown'
 
-      call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'domain_a', str_da))
-      call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'domain_b', str_db))
+      ! Do not require domain_a and domain_b
+      call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'domain_a', str_da), fatal=.false.)
+      call check_ret(nf_get_att_text(fid, NF_GLOBAL, 'domain_b', str_db), fatal=.false.)
 
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_ocn', str_grido)
       if ( rcode == nf_enotatt ) then
@@ -335,9 +336,14 @@ contains
 
       if (.not. complf) then
 
-         ! Determine ocn mask on ocn grid
-         call check_ret(nf_inq_varid(fid,'mask'//trim(suffix), vid ))
-         call check_ret(nf_get_var_int   (fid,vid,omask ))
+         ! Determine ocn mask on ocn grid; if mask is not present, we assume
+         ! that the grid covers the entire domain, so mask = 1 for all points.
+         if (var_exists(fid, 'mask'//trim(suffix))) then
+            call check_ret(nf_inq_varid(fid,'mask'//trim(suffix), vid ))
+            call check_ret(nf_get_var_int   (fid,vid,omask ))
+         else
+            omask(:) = 1
+         end if
          ofrac(:) = c0
          where (omask /= 0) ofrac = c1
 
@@ -360,8 +366,16 @@ contains
          call check_ret(nf_get_var_int(fid,vid, row ))
          call check_ret(nf_inq_varid(fid,'S', vid ))
          call check_ret(nf_get_var_double(fid,vid,S))
-         call check_ret(nf_inq_varid(fid,'mask_a', vid ))
-         call check_ret(nf_get_var_int(fid,vid,mask_a ))
+
+         ! If mask_a is not present, assume that mask_a covers the entire domain
+         ! and thus mask_a = 1 for all points.
+         if (var_exists(fid, 'mask_a')) then
+            call check_ret(nf_inq_varid(fid,'mask_a', vid ))
+            call check_ret(nf_get_var_int(fid,vid,mask_a ))
+         else
+            mask_a(:) = 1
+         end if
+
          frac_a = c0
          where (mask_a /= 0) frac_a = c1
          !--- compute ocean fraction on atm grid ---
@@ -470,14 +484,19 @@ contains
 
 !===========================================================================
 
-  subroutine check_ret(ret)
+  subroutine check_ret(ret, fatal)
     ! Check return status from netcdf call
     implicit none
     integer, intent(in) :: ret
+    logical, intent(in), optional :: fatal
+    logical :: fatal_local = .true.
+
+    ! Default is to die when error is encountered
+    if (present(fatal)) fatal_local = fatal
 
     if (ret /= NF_NOERR) then
        write(6,*)'netcdf error with rcode = ', ret,' error = ', nf_strerror(ret)
-       call abort()
+       if (fatal_local)  call abort()
     end if
 
   end subroutine check_ret
@@ -799,6 +818,20 @@ SUBROUTINE sys_getenv(name, val, rcode)
 #endif
 
 END SUBROUTINE sys_getenv
+
+
+logical function var_exists(fid, var_name)
+   integer, intent(in) :: fid
+   character(len=*), intent(in) :: var_name
+   integer :: error_code, vid
+   
+   error_code = nf_inq_varid(fid, var_name, vid)
+   if (error_code == NF_NOERR) then
+      var_exists = .true.
+   else
+      var_exists = .false.
+   end if
+end function
 
 
 end program fmain
