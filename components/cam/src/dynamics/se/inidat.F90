@@ -1,3 +1,6 @@
+!temp to mahe theta-l work
+#define MODEL_THETA_L
+
 module inidat
   !----------------------------------------------------------------------- 
   ! 
@@ -21,7 +24,6 @@ module inidat
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
   use scamMod, only: single_column, precip_off, scmlat, scmlon
-  use element_ops, only: set_thermostate, get_temperature, copy_state
   implicit none
   private
   public read_inidat
@@ -35,7 +37,7 @@ contains
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,     only: nelemd, nlev, nlevp, np, npsq
+    use dimensions_mod,     only: nelemd, nlev, np, npsq
     use dof_mod, only           : putUniquePoints
     use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
     use edgetype_mod, only : EdgeBuffer_t
@@ -62,6 +64,10 @@ contains
     use shr_const_mod,       only: SHR_CONST_PI
     use scamMod,             only: setiopupdate, readiopdata
     use se_single_column_mod, only: scm_setinitial
+#ifdef MODEL_THETA_L
+    use element_ops,         only: set_thermostate_from_derived_T
+#endif
+ 
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -71,14 +77,12 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
-    real(r8)              :: temptmp(np,np,nlev) 
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
     logical :: found
     integer :: kptr, m_cnst
-!what's better, use 1 big buffer twise or 1 big and 1 small?
-    type(EdgeBuffer_t) :: edge, edge_surf
+    type(EdgeBuffer_t) :: edge
     integer :: lsize
 
     integer,parameter :: pcnst = PCNST
@@ -89,17 +93,25 @@ contains
     integer, allocatable :: rndm_seed(:)
     real(r8) :: pertval
     integer :: sysclk
-    integer :: i, j, indx
+    integer :: i, j, indx, tl
     real(r8), parameter :: D0_0 = 0.0_r8
     real(r8), parameter :: D0_5 = 0.5_r8
     real(r8), parameter :: D1_0 = 1.0_r8
     real(r8), parameter :: D2_0 = 2.0_r8
     real(r8) :: scmposlon, minpoint, testlat, testlon, testval 
     character*16 :: subname='READ_INIDAT'
+
     logical :: iop_update_surface
 
-    integer :: tl
     tl = 1
+
+#ifdef MODEL_THETA_L
+    ! not going to wrap each scm call in ifdef for now,
+    ! but some calls have to be wrapped
+    if (single_column) then
+        !abort gracefully
+    endif
+#endif
 
     if(par%dynproc) then
        elem=> dyn_in%elem
@@ -107,7 +119,7 @@ contains
        nullify(elem)
     end if
 
-    lsize = cam_grid_get_local_size(dyn_decomp)	
+    lsize = cam_grid_get_local_size(dyn_decomp)
 
     if (lsize /= (np*np*nelemd)) then
       call endrun(trim(subname)//': mismatch in local input array size')
@@ -175,7 +187,7 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,1,:,1)=tmp(indx_scm,:,ie_scm)
+             if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -194,11 +206,89 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,2,:,1) = tmp(indx_scm,:,ie_scm)
+             if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
     end do
+
+    fieldname = 'T'
+    tmp = 0.0_r8
+    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    if(.not. found) then
+       call endrun('Could not find T field on input datafile')
+    end if
+
+    do ie=1,nelemd
+#ifdef MODEL_THETA_L
+       elem(ie)%derived%T=0.0_r8
+#else
+       elem(ie)%state%T=0.0_r8
+#endif
+       indx = 1
+       do j = 1, np
+          do i = 1, np
+#ifdef MODEL_THETA_L
+             elem(ie)%derived%T(i,j,:) = tmp(indx,:,ie)
+             !no scm in theta-l yet
+#else
+             elem(ie)%state%T(i,j,:,1) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
+#endif
+             indx = indx + 1
+          end do
+       end do
+    end do
+
+    if (pertlim .ne. D0_0) then
+      if(masterproc) then
+        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
+                       'by +/- ', pertlim, ' to initial temperature field'
+      end if
+
+      if (new_random) then
+        rndm_seed_sz = 1
+      else
+        call random_seed(size=rndm_seed_sz)
+      endif
+      allocate(rndm_seed(rndm_seed_sz))
+
+      do ie=1,nelemd
+        ! seed random number generator based on element ID
+        ! (possibly include a flag to allow clock-based random seeding)
+        rndm_seed(:) = elem(ie)%GlobalId
+        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
+        if (seed_clock) then
+          call system_clock(sysclk)
+          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
+        endif
+        if (new_random) then
+          call init_ranx(rndm_seed(1))
+        else
+          call random_seed(put=rndm_seed)
+        endif
+        do i=1,np
+          do j=1,np
+            do k=1,nlev
+              if (new_random) then
+                pertval = ranx()
+              else
+                call random_number(pertval)
+              endif
+              pertval = D2_0*pertlim*(D0_5 - pertval)
+#ifdef MODEL_THETA_L
+              elem(ie)%derived%T(i,j,k) = elem(ie)%derived%T(i,j,k)*(D1_0 + pertval)
+#else
+              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
+#endif
+            end do
+          end do
+        end do
+      end do
+
+      deallocate(rndm_seed)
+    end if
 
     if (associated(ldof)) then
        call endrun(trim(subname)//': ldof should not be associated')
@@ -344,7 +434,7 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
-                if (single_column) elem(ie)%state%ps_v(i,j,1) = tmp(indx_scm,1,ie_scm)
+                if (single_column) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
                 indx = indx + 1
              end do
           end do
@@ -352,7 +442,7 @@ contains
 
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
-    else
+    else    
        fieldname = 'PHIS'
        tmp(:,1,:) = 0.0_r8
        call infld(fieldname, ncid_topo, 'ncol',      &
@@ -373,142 +463,7 @@ contains
           end do
        end do
     end do
-
-!dss ps, phis, vapor or if-statements 'if ps_v .neq. 0' for each gll point in set_thermostate? best guess that
-!dss is faster.
-
-#if 0 
-! model == preqx
-#else 
-! model == theta-l
-    if(par%dynproc) then
-       call initEdgeBuffer(par, edge_surf, elem, 2+nlev)
-    end if
-#endif
-
-#if 0 
-! model == preqx
-#else 
-! model == theta-l
-! BETTER CODING PRACTICE, get a var for tl=1 here
-    do ie=1,nelemd
-       kptr=0
-       call edgeVpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,   kptr,ie)
-       kptr=kptr+1
-       call edgeVpack(edge_surf, elem(ie)%state%phis,       1,   kptr,ie)
-       kptr=kptr+1
-       call edgeVpack(edge_surf, elem(ie)%state%Q(:,:,:,1), nlev,kptr,ie)
-    end do
-    if(par%dynproc) then
-       call bndry_exchangeV(par,edge_surf)
-    end if
-    do ie=1,nelemd
-       kptr=0
-       call edgeVunpack(edge_surf, elem(ie)%state%ps_v(:,:,1),1,   kptr,ie)
-       kptr=kptr+1
-       call edgeVunpack(edge_surf, elem(ie)%state%phis,       1,   kptr,ie)
-       kptr=kptr+1
-       call edgeVunpack(edge_surf, elem(ie)%state%Q(:,:,:,1), nlev,kptr,ie)
-    end do
-#endif
-
-
-
-! make sep loop for now, fuse later
-    do ie=1,nelemd
-!TEMP CODE, what's the best way to do this? call homme routine
-! init_state_vars_for_eam?
-!it seems to not be zero even with this statement, where is it init-ed again?
-!where in homme w_i and phinh_i are inited in hydro runs?
-       elem(ie)%state%w_i(:,:,:,:) = 0.0_r8
-       elem(ie)%state%phinh_i(:,:,:,:) = 0.0_r8
-       elem(ie)%derived%omega_p(:,:,:) = 0.0_r8
-    enddo
- 
-    fieldname = 'T'
-    tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
-    if(.not. found) then
-       call endrun('Could not find T field on input datafile')
-    end if
-
-    do ie=1,nelemd
-
-!old code
-!       elem(ie)%state%T=0.0_r8
-!do ne need to nullify here? in case some points are missed???
-!so, let's do this tho not clear why
-       temptmp(:,:,:) = 0.0_r8
-
-!in preqx this will set T at tl, in theta this will set all timelevels
-       call set_thermostate(elem(ie),temptmp,hvcoord,tl)
-
-       indx = 1
-       do j = 1, np
-          do i = 1, np
-             !old code
-             !elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
-             temptmp(i,j,:) = tmp(indx,:,ie)
-             indx = indx + 1
-          end do
-       end do
-!in preqx this will set T at tl, in theta this will set all timelevels
-       call set_thermostate(elem(ie),temptmp,hvcoord,tl)
-    end do !ie
-
-    if (pertlim .ne. D0_0) then
-      if(masterproc) then
-        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
-                       'by +/- ', pertlim, ' to initial temperature field'
-      end if
-
-      if (new_random) then
-        rndm_seed_sz = 1
-      else
-        call random_seed(size=rndm_seed_sz)
-      endif
-      allocate(rndm_seed(rndm_seed_sz))
-
-      do ie=1,nelemd
-        ! seed random number generator based on element ID
-        ! (possibly include a flag to allow clock-based random seeding)
-        rndm_seed(:) = elem(ie)%GlobalId
-        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
-        if (seed_clock) then
-          call system_clock(sysclk)
-          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
-        endif
-        if (new_random) then
-          call init_ranx(rndm_seed(1))
-        else
-          call random_seed(put=rndm_seed)
-        endif
-
-        call get_temperature(elem(ie), temptmp, hvcoord, tl)
-
-        do i=1,np
-          do j=1,np
-            do k=1,nlev
-              if (new_random) then
-                pertval = ranx()
-              else
-                call random_number(pertval)
-              endif
-              pertval = D2_0*pertlim*(D0_5 - pertval)
-!old code
-!              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
-              temptmp(i,j,k) = temptmp(i,j,k)*(D1_0 + pertval)
-            end do !k
-          end do
-        end do! i
-!in preqx this will set T at tl, in theta this will set all timelevels
-        call set_thermostate(elem(ie),temptmp,hvcoord,tl)
-      end do! ie
-
-      deallocate(rndm_seed)
-    end if !if pertlim neq 0
-
+    
     if (single_column) then
       iop_update_surface = .false.
       call setiopupdate()
@@ -516,101 +471,92 @@ contains
       call scm_setinitial(elem)
     endif
 
-    if (.not. single_column) then
+    if (.not. single_column) then    
 
-    ! once we've read all the fields we do a boundary exchange to 
-    ! update the redundent columns in the dynamics
+      ! once we've read all the fields we do a boundary exchange to 
+      ! update the redundent columns in the dynamics
+      if(par%dynproc) then
+!for nonhydro change size of buf
+!other issues is not inited w_i, phi
+        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
+      end if
 
-#if 0 
-! model == preqx
-    if(par%dynproc) then
-       call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
-    end if
-#else 
-! model == theta-l
-    if(par%dynproc) then
-!making this buffer smaller since 3 vars are already dss
-!for now ignore w_i, phi, but not in NH
-!total number of levels then: 2*nlev + nlev + tracers-1
-       call initEdgeBuffer(par, edge, elem, (3+pcnst-1)*nlev)
-    end if
+#ifdef MODEL_THETA_L
+      do ie=1,nelemd
+        kptr=0
+        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        kptr=kptr+1
+        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        kptr=kptr+1
+        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        kptr=kptr+2*nlev
+        call edgeVpack(edge, elem(ie)%derived%T(:,:,:),nlev,kptr,ie)
+        kptr=kptr+nlev
+        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+      end do
+#else
+      do ie=1,nelemd
+        kptr=0
+        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        kptr=kptr+1
+        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        kptr=kptr+1
+        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        kptr=kptr+2*nlev
+        call edgeVpack(edge, elem(ie)%state%T(:,:,:,tl),nlev,kptr,ie)
+        kptr=kptr+nlev
+        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+      end do
 #endif
+      if(par%dynproc) then
+        call bndry_exchangeV(par,edge)
+      end if
+#ifdef MODEL_THETA_L
+      do ie=1,nelemd
+        kptr=0
+        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        kptr=kptr+1
+        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        kptr=kptr+1
+        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        kptr=kptr+2*nlev
+        call edgeVunpack(edge, elem(ie)%derived%T(:,:,:),nlev,kptr,ie)
+        kptr=kptr+nlev
+        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+      end do
+#else
+      do ie=1,nelemd
+        kptr=0
+        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        kptr=kptr+1
+        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        kptr=kptr+1
+        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        kptr=kptr+2*nlev
+        call edgeVunpack(edge, elem(ie)%state%T(:,:,:,tl),nlev,kptr,ie)
+        kptr=kptr+nlev
+        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+      end do
+#endif    
+    endif
 
-#if 0 
-! model == preqx
-
-!all this does is dss state+Q, this can be routine in homme
-!depending on model
+!$omp parallel do private(ie, t, m_cnst)
     do ie=1,nelemd
-       kptr=0
-       call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
-       kptr=kptr+1
-       call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
-       kptr=kptr+1
-       call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
-       call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
-       kptr=kptr+nlev
-       call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
-    end do
-    if(par%dynproc) then
-       call bndry_exchangeV(par,edge)
-    end if
-    do ie=1,nelemd
-       kptr=0
-       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
-       kptr=kptr+1
-       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
-       kptr=kptr+1
-       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
-       call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
-       kptr=kptr+nlev
-       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
-    end do
-#else 
-! model == theta-l
-    do ie=1,nelemd
-       kptr=0
-       call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
-       call edgeVpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
-       kptr=kptr+nlev
-       do m_cnst=2,pcnst
-          call edgeVpack(edge, elem(ie)%state%Q(:,:,:,m_cnst),nlev,kptr,ie)
-          kptr=kptr+nlev
-       enddo
-    end do
-    if(par%dynproc) then
-       call bndry_exchangeV(par,edge)
-    end if
-    do ie=1,nelemd
-       kptr=0
-       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
-       call edgeVunpack(edge, elem(ie)%state%vtheta_dp(:,:,:,1),nlev,kptr,ie)
-       kptr=kptr+nlev
-       do m_cnst=2,pcnst
-          call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,m_cnst),nlev,kptr,ie)
-          kptr=kptr+nlev
-       enddo
-    end do
-#endif
-    endif !NOT single column
-
-
-!$omp parallel do private(ie, t)
-    do ie=1,nelemd
+#ifdef MODEL_THETA_L
+       !convert T to theta, call set_thermostate to copy to all timelevels
+       call set_thermostate_from_derived_T(elem(ie),hvcoord,tl)
+#else
        do t=2,3
-          call copy_state(elem(ie),tl,t)
+          elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,tl)
+          elem(ie)%state%v(:,:,:,:,t)=elem(ie)%state%v(:,:,:,:,tl)
+          elem(ie)%state%T(:,:,:,t)=elem(ie)%state%T(:,:,:,tl)
        end do
+#endif
     end do
 
     if (.not. single_column) then
       if(par%dynproc) then
         call FreeEdgeBuffer(edge)
-!technically edge_surf is not always there, but this code will go to homme
-        call FreeEdgeBuffer(edge_surf)
       end if
     endif
 

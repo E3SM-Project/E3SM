@@ -2797,7 +2797,7 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
       elsif($opts{'dyn_target'} eq 'theta-l') {
-              print $fh "$camsrcdir/homme/src/theta-l\n";
+        print $fh "$camsrcdir/homme/src/theta-l\n";
       }
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";

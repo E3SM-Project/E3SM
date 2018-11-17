@@ -68,7 +68,8 @@ module element_ops
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
   public state0
-  
+  public set_thermostate_from_derived_T 
+ 
 contains
 
   recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
@@ -411,6 +412,44 @@ endif
   call tests_finalize(elem,hvcoord,nt)
 
   end subroutine set_thermostate
+
+
+  !_____________________________________________________________________
+  subroutine set_thermostate_from_derived_T(elem,hvcoord,nt)
+  !
+  ! Assuming a hydrostatic intital state and given surface pressure,
+  ! and no moisture, compute theta and phi 
+  !
+  ! input:  ps_v, temperature
+  ! ouput:  state variables:   vtheta_dp, phi
+  !
+  implicit none
+  type (element_t), intent(inout)   :: elem
+  type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in)               :: nt
+  !   local
+  real (kind=real_kind) :: p(np,np,nlev), rstar(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  integer :: k
+
+  do k=1,nlev
+     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+  do k=1,nlev
+     !old without moisture
+     !elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
+! this is exact inversion of get_temperature in case of hydro
+!however there will be lorenz3 routine get_theta_fromT like that.
+     elem%state%vtheta_dp(:,:,k,nt)=rstar(:,:,k)/Rgas*dp(:,:,k)* &
+                                    elem%derived%T(:,:,k)*(p(:,:,k)/p0)**(-kappa)
+  enddo
+!computes and sets hydrostatic phi, copies state to all timelevels
+  call tests_finalize(elem,hvcoord,nt)
+  end subroutine set_thermostate_from_derived_T
+
 
 
 !zm,g is not used
