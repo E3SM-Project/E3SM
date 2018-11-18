@@ -146,6 +146,7 @@ void write_ascii_mesh(int const* indexToCellID_F,
 
 } // extern "C"
 
+extern int velocity_solver_init_mpi__(int* fComm);
 extern void velocity_solver_finalize__();
 
 #ifdef LIFEV

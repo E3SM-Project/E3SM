@@ -106,8 +106,7 @@ int velocity_solver_init_mpi(int* fComm) {
   // get MPI_Comm from Fortran
   comm = MPI_Comm_f2c(*fComm);
   reducedComm = MPI_COMM_NULL;  // initialize to null so we can check if set
-
-  return 0;
+  return velocity_solver_init_mpi__(fComm);
 }
 
 
@@ -2180,7 +2179,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        }
 
        for (int index = 0; index < nTriangles; index++) //triangles lines
-        outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by FELIX, so giving dummy value
+        outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
 
        for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
        outfile <<  verticesOnBoundaryEdge[0 + 2 * index] + 1 << " " << verticesOnBoundaryEdge[1 + 2 * index] + 1 << " " << 1 << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.

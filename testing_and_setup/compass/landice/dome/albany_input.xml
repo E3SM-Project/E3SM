@@ -6,7 +6,7 @@
 <Parameter name="Parameter 0" type="string" value="Glen's Law Homotopy Parameter"/>
 </ParameterList>
 
-<ParameterList name="FELIX Viscosity">
+<ParameterList name="LandIce Viscosity">
 <!-- <Parameter name="Flow Rate Type" type="string" value="temperature Based"/> -->
 <Parameter name="Flow Rate Type" type="string" value="Uniform"/>
 <Parameter name="Glen's Law Homotopy Parameter" type="double" value="1"/>

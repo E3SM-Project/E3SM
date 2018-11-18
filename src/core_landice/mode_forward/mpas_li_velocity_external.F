@@ -686,7 +686,7 @@ contains
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       ! This call is needed for using any of the external velocity solvers
-   !   call velocity_solver_finalize()
+      call velocity_solver_finalize()
 #else
       call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
       err = 1

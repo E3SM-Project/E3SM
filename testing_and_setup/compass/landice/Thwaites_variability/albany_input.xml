@@ -1,12 +1,12 @@
 <ParameterList>
 <ParameterList name="Problem">
 <Parameter name="Solution Method" type="string" value="Steady"/>
-<Parameter name="Name" type="string" value="FELIX Stokes First Order 3D"/>
+<Parameter name="Name" type="string" value="LandIce Stokes First Order 3D"/>
 <ParameterList name="Parameters">
 <Parameter name="Number" type="int" value="1"/>
 <Parameter name="Parameter 0" type="string" value="Glen's Law Homotopy Parameter"/>
 </ParameterList>
-<ParameterList name="FELIX Viscosity">
+<ParameterList name="LandIce Viscosity">
 <Parameter name="Type" type="string" value="Glen's Law"/>
 <Parameter name="Flow Rate Type" type="string" value="Temperature Based"/>
 <!--Parameter name="Flow Rate Type" type="string" value="Uniform"/-->
@@ -19,11 +19,24 @@
 <Parameter name="Type" type="string" value="FO INTERP SURF GRAD"/>
 </ParameterList>
 
-<ParameterList name="Neumann BCs">
- <Parameter name="Cubature Degree" type="int" value="11"/>
- <Parameter name="NBC on SS basalside for DOF all set basal" type="Array(double)" value="{0 0 0 0 0}"/>
- <Parameter name="BetaXY" type="string" value="Scalar Field"/>
- <Parameter name="NBC on SS floatinglateralside for DOF all set lateral" type="Array(double)" value="{0.885}"/>
+<ParameterList name="LandIce BCs">
+  <Parameter name="Number" type="int" value="2"/>
+  <ParameterList name="BC 0">
+    <Parameter name="Cubature Degree" type="int" value="11"/>
+    <Parameter name="Side Set Name" type="string" value="basalside"/>
+    <Parameter name="Type" type="string" value="Basal Friction"/>
+    <ParameterList name="Basal Friction Coefficient">
+      <Parameter name="Type" type="string" value="Given Field"/>
+      <Parameter name="Given Field Variable Name" type="string" value="basal_friction"/>
+      <Parameter name="Zero Beta On Floating Ice" type="bool" value="true"/> 
+    </ParameterList>
+  </ParameterList>
+  <ParameterList name="BC 1">
+    <Parameter name="Cubature Degree" type="int" value="11"/>
+    <Parameter name="Side Set Name" type="string" value="floatinglateralside"/>
+    <Parameter name="Type" type="string" value="Lateral"/>
+    <Parameter name="Immersed Ratio" type="double" value="0.885"/>
+  </ParameterList>
 </ParameterList>
 
 <!--
