@@ -2,6 +2,11 @@
 !-------------------------------------------------------------------------------
 ! dynamics - physics coupling module
 !-------------------------------------------------------------------------------
+
+!!!!!!!!!!!TEMP
+#define MODEL_THETA_L
+
+
 module dp_coupling
   use constituents,   only: pcnst, cnst_name
   use cam_history,    only: outfld, write_inithist, hist_fld_active
@@ -26,13 +31,12 @@ module dp_coupling
   use perf_mod,       only: t_startf, t_stopf, t_barrierf
   use parallel_mod,   only: par
   use scamMod,        only: single_column
-  use element_ops,    only: get_temperature, get_omega_p
+  use element_ops,    only: get_temperature
   private
   public :: d_p_coupling, p_d_coupling
 !===============================================================================
 CONTAINS
 !===============================================================================
-
 !===============================================================================
   subroutine d_p_coupling(phys_state, phys_tend,  pbuf2d, dyn_out)
     use physics_buffer, only: physics_buffer_desc, pbuf_get_chunk, &
@@ -127,9 +131,7 @@ CONTAINS
 
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
 
-          call get_omega_p(elem(ie), omega_dyn, hvcoord, tl_f)
-          !old call
-          !call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP, nlev, omega_dyn, omega_tmp(1:ncols,:,ie))
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
@@ -303,15 +305,21 @@ CONTAINS
     call derived_phys(phys_state,phys_tend,pbuf2d)
     call t_stopf('derived_phys')
 
+
+!for theta there is no need to multiply omega_p by p
+#ifndef MODEL_THETA_L
 !$omp parallel do private (lchnk, ncols, ilyr, icol)
     do lchnk=begchunk,endchunk
       ncols=get_ncols_p(lchnk)
       do ilyr=1,pver
         do icol=1,ncols
-          if (.not. single_column) phys_state(lchnk)%omega(icol,ilyr)=phys_state(lchnk)%omega(icol,ilyr)*phys_state(lchnk)%pmid(icol,ilyr)
+          if (.not. single_column) then 
+            phys_state(lchnk)%omega(icol,ilyr)=phys_state(lchnk)%omega(icol,ilyr)*phys_state(lchnk)%pmid(icol,ilyr)
+          endif
         end do
       end do
    end do
+#endif
 
    if (write_inithist() ) then
       do lchnk=begchunk,endchunk

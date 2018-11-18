@@ -48,7 +48,8 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applycamforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
+            applycamforcing_dynamics, applyCAMforcing_dynamics_dp, &
+            convert_thermo_forcing, convert_thermo_forcing_eam
 
 contains
 
@@ -374,6 +375,9 @@ contains
 !should be called BEFORE applyCAMforcing_tracers, before ps_v is updated
 !that is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
+
+!DO NOT CALL FOR EAM RUNS, MANY COMPS ARE AVOIDABLE
+
   subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
   use control_mod,        only : use_moisture
 
@@ -395,12 +399,14 @@ contains
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
   real(kind=real_kind)                  :: psn1(np,np)
 
-  real(kind=real_kind)                  :: gp(np)
-
-
 !new forcing
   do ie=nets,nete
+#ifdef CAM
+     tn1 = elem(ie)%derived%T
+#else
+! before tests interfaces are converted to used derived%T as well
      call get_temperature(elem(ie),tn1,hvcoord,n0)
+#endif
      ! semi-epeated code from applycamforcing_tracers
      psn1(:,:) = 0.0
      q = 1
@@ -451,6 +457,49 @@ contains
   enddo
 
   end subroutine convert_thermo_forcing
+
+
+! a version for eam till homme standalone tests are converted too to use
+! derived%T
+!----------------------------- CONVERT-THERMO-FORCING-EAM ----------------------------
+
+  subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt,nets,nete)
+  use control_mod,        only : use_moisture
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: nets,nete
+  integer,                intent(in)    :: nt
+  integer                               :: ie,i,j,k,q
+  real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
+  real (kind=real_kind)                 :: pnh(np,np,nlev)
+  real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
+  real(kind=real_kind)                  :: rstarn1(np,np,nlev)
+  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
+  real(kind=real_kind)                  :: psn1(np,np)
+
+  do ie=nets,nete
+     tn1 = elem(ie)%derived%T + dt*elem(ie)%derived%FT
+
+     call get_R_star(rstarn1,elem(ie)%state%Q(:,:,:,1))
+
+     do k=1,nlev
+        dp(:,:,k)=&
+            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,nt)
+     enddo
+
+     call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
+          elem(ie)%state%phinh_i(:,:,:,nt),vthn1)
+
+     !finally, compute difference for FT
+     ! this method is using new dp, new exner, new-new r*, new t
+     elem(ie)%derived%FT(:,:,:) = &
+         (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,nt))/dt
+  enddo
+
+  end subroutine convert_thermo_forcing_eam
 
 
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------

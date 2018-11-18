@@ -215,6 +215,7 @@ contains
   
   end subroutine get_temperature
 
+#if 0
   !_____________________________________________________________________
   subroutine get_omega_p(elem,omega_p,hvcoord,nt)
   implicit none
@@ -227,6 +228,8 @@ contains
   omega_p(:,:,k) = elem%derived%omega_p(:,:,k)
 
   end subroutine get_omega_p
+#endif
+
 
   !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)

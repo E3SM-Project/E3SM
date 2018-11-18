@@ -212,7 +212,6 @@ implicit none
   end subroutine get_theta_from_T
 
 
-
 !og why is it called get, not set?
   !_____________________________________________________________________
   subroutine get_phinh(hvcoord,phis,vtheta_dp,dp,phi_i)

@@ -1,3 +1,7 @@
+!!!!!!!!! TEMP
+#define MODEL_THETA_L
+
+
 Module dyn_comp
 
   use shr_kind_mod, only: r8 => shr_kind_r8
@@ -289,6 +293,7 @@ CONTAINS
 
                 elem(ie)%state%phis(:,:)=0.0_r8
 
+!do this with derived T and set_thermostate_from_derivedT or leave it as is?
                 temperature(:,:,:) = Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8

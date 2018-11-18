@@ -15,7 +15,7 @@ module prim_driver_base
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
   use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
-  use element_ops,      only: copy_state
+  use element_ops,      only: copy_state, get_temperature
   use gridgraph_mod,    only: GridVertex_t, GridEdge_t
   use hybrid_mod,       only: hybrid_t
   use kinds,            only: real_kind, iulog
@@ -25,9 +25,10 @@ module prim_driver_base
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
 #ifndef CAM
-  use prim_restart_mod, only : initrestartfile
-  use restart_io_mod ,  only : readrestart
-  use test_mod,         only: set_test_initial_conditions, compute_test_forcing
+  use prim_restart_mod, only: initrestartfile
+  use restart_io_mod ,  only: readrestart
+  use test_mod,         only: set_test_initial_conditions, &
+                              compute_test_forcing
 #endif
 
   implicit none
@@ -983,7 +984,7 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: convert_thermo_forcing
+    use prim_advance_mod,   only: convert_thermo_forcing, convert_thermo_forcing_eam
 
     implicit none
 
@@ -1051,7 +1052,14 @@ enddo
     ! compute HOMME test case forcing
     ! by calling it here, it mimics eam forcings computations in standalone.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+
+    ! now that there is derivedT, there is no need to have two diff. logics for
+    ! call convert_forcing.... in
+    ! standalone and cam homme, since now we don't care anymore that tracers are
+    ! adjusted in stepon. clean this later, after the rest works. 
     call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+#else
+    call convert_thermo_forcing_eam(elem,hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
     ! Apply CAM Physics forcing
@@ -1164,6 +1172,7 @@ enddo
              elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:)
           enddo
        enddo
+       call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
     enddo
     call t_stopf("prim_run_subcyle_diags")
 

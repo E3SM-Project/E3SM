@@ -63,7 +63,7 @@ module element_ops
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
   public get_field, get_state
-  public get_temperature, get_phi, get_R_star, get_omega_p
+  public get_temperature, get_phi, get_R_star
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
@@ -204,7 +204,7 @@ contains
 
   end subroutine get_temperature
 
-
+#if 0
   !_____________________________________________________________________
   subroutine get_omega_p(elem,omega_p,hvcoord,nt)
   !
@@ -231,7 +231,7 @@ contains
   enddo
 
   end subroutine get_omega_p
-
+#endif
 
   !_____________________________________________________________________
   subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt,ntQ)

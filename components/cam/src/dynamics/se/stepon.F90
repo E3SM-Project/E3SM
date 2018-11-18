@@ -3,6 +3,11 @@
 ! !MODULE: stepon -- FV Dynamics specific time-stepping
 !
 ! !INTERFACE:
+
+!!!!!!!!!! TEMPORARY
+#define MODEL_THETA_L
+
+
 module stepon
 
 ! !USES:
@@ -22,9 +27,9 @@ module stepon
 ! from SE
    use derivative_mod, only: derivinit, derivative_t
    use quadrature_mod, only: gauss, gausslobatto, quadrature_t
-   use edgetype_mod,       only: EdgeBuffer_t
+   use edgetype_mod,   only: EdgeBuffer_t
    use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
-   use parallel_mod,   only : par
+   use parallel_mod,   only: par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
                              setiopupdate, readiopdata
    use element_mod,    only: element_t
@@ -299,12 +304,8 @@ print *, 'END PD COUPLING'
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
-
 !what are these for?
       dyn_ps0=ps0
-
-      !dt for convert is dt_remap
-      call convert_thermo_forcing(dyn_in%elem,hvcoord,tl_f,tl_fQdp,dtime/nsplit,1,nelemd)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
@@ -375,11 +376,7 @@ print *, 'END PD COUPLING'
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (ftype==1) then
 
-#if 0
-!disabling all of ftype1 code now
-! once we have convert_thermo_forcing working, we can call it,
-!except what is dyn_in?
-
+#ifndef MODEL_THETA_L
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
@@ -436,7 +433,7 @@ print *, 'END PD COUPLING'
             end do
          end do
 
-#endif !disabling ftype1
+#endif !disabling ftype1 for theta-l
 
       endif
 
