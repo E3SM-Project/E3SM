@@ -19,7 +19,6 @@ module ESM
   character(len=512)             :: msgstr
   logical                        :: mastertask ! master processor for driver gcomp
   integer                        :: componentCount
-  integer                        :: mediator_root=0  ! Mediator root in driver gcomp
   character(len=8)               :: atm_present, lnd_present, ocn_present
   character(len=8)               :: ice_present, rof_present, wav_present
   character(len=8)               :: glc_present, med_present
@@ -768,10 +767,9 @@ module ESM
     use ESMF             , only : ESMF_GridComp, ESMF_GridCompGet
     use ESMF             , only : ESMF_Clock, ESMF_ClockGet, ESMF_Time, ESMF_TimeGet
     use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
-    use ESMF             , only : ESMF_RC_NOT_VALID, ESMF_VM
+    use ESMF             , only : ESMF_RC_NOT_VALID
     use ESMF             , only : ESMF_GridCompIsPetLocal, ESMF_VMBroadcast
     use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
-    use NUOPC_Driver     , only : NUOPC_DriverGetComp
     use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
     use seq_comm_mct     , only : CPLID, OCNID
     use seq_comm_mct     , only : seq_comm_getinfo => seq_comm_setptrs
@@ -791,14 +789,11 @@ module ESM
     integer             , intent(out)   :: rc                    ! return code
 
     ! local variables
-    type(ESMF_GridComp)             :: mediator
     type(ESMF_Clock)                :: clock
     type(ESMF_Time)                 :: currTime
-    type(ESMF_VM)                   :: vm
     character(SHR_KIND_CL)          :: errstring
     character(SHR_KIND_CL)          :: cvalue
     integer                         :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
-    logical                         :: iamroot_med           ! mediator masterproc
     logical                         :: drv_threading         ! driver threading control
     logical                         :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
     real(SHR_KIND_R8)               :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
@@ -834,7 +829,7 @@ module ESM
     integer                         :: i, it, n
     integer                         :: unitn                 ! Namelist unit number to read
     integer                         :: dbrc
-    integer          , pointer      :: petList(:)
+    integer                         :: localPet, rootpe_med
     integer          , parameter    :: ens1=1                ! use first instance of ensemble only
     integer          , parameter    :: fix1=1                ! temporary hard-coding to first ensemble, needs to be fixed
     real(SHR_KIND_R8), parameter    :: epsilo = shr_const_mwwv/shr_const_mwdair
@@ -950,57 +945,38 @@ module ESM
        return  ! bail out
     endif
 
+    call NUOPC_CompAttributeGet(driver, name='cpl_rootpe', value=cvalue, rc=rc)
+    write(rootpe_med, *) cvalue
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_GridCompGet(driver, localPet=localPet, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     ! Determine orbital params
-    call NUOPC_DriverGetComp(driver, 'MED', comp=mediator, PetList=PetList, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    iamroot_med = .false.
-    if (ESMF_GridCompIsPetLocal(mediator, rc=rc)) then
-       call seq_comm_getinfo(CPLID, iamroot=iamroot_med)
-       if (iamroot_med) then
-          if (trim(orb_mode) == trim(orb_variable_year)) then
-             call ESMF_GridCompGet(driver, clock=clock, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (trim(orb_mode) == trim(orb_variable_year)) then
+       call ESMF_GridCompGet(driver, clock=clock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-             call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-             call ESMF_TimeGet(CurrTime, yy=year, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeGet(CurrTime, yy=year, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-             orb_cyear = orb_iyear + (year - orb_iyear_align)
-             call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
-                  orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
-          else
-             call shr_orb_params(orb_iyear, orb_eccen, orb_obliq, orb_mvelp, &
-                  orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
-          end if
+       orb_cyear = orb_iyear + (year - orb_iyear_align)
+       call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
+            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
+    else
+       call shr_orb_params(orb_iyear, orb_eccen, orb_obliq, orb_mvelp, &
+            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
+    end if
 
-          if (orb_eccen  == SHR_ORB_UNDEF_REAL .or. &
-               orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
-               orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
-               orb_lambm0 == SHR_ORB_UNDEF_REAL) then
-             write (msgstr, *) subname//' ERROR: orb params incorrect'
-             call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
-             return  ! bail out
-          endif
-       endif
+    if (orb_eccen  == SHR_ORB_UNDEF_REAL .or. &
+         orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
+         orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
+         orb_lambm0 == SHR_ORB_UNDEF_REAL) then
+       write (msgstr, *) subname//' ERROR: orb params incorrect'
+       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+       return  ! bail out
     endif
-    ! Broadcast from mediator to full driver pes.
-    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    orbrtmp(1) = orb_eccen
-    orbrtmp(2) = orb_obliq
-    orbrtmp(3) = orb_mvelp
-    orbrtmp(4) = orb_obliqr
-    orbrtmp(5) = orb_lambm0
-    orbrtmp(6) = orb_mvelpp
-    call ESMF_VMBroadcast(vm, orbrtmp, 6, PetList(1), rc=rc)
-    orb_eccen = orbrtmp(1)
-    orb_obliq = orbrtmp(2)
-    orb_mvelp = orbrtmp(3)
-    orb_obliqr = orbrtmp(4)
-    orb_lambm0 = orbrtmp(5)
-    orb_mvelpp = orbrtmp(6)
 
     ! Add updated orbital params to driver attributes
 
@@ -1565,7 +1541,8 @@ module ESM
           pelist(2,1) = rootpe+ntasks-1
           pelist(3,1) = stride
           call seq_comm_setcomm(CPLID, pelist, nthreads=nthrds, iname='CPL')
-          mediator_root = rootpe
+          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'ATM') then
           ATMID(1) = i+1
           pelist(1,1) = rootpe
@@ -1630,13 +1607,14 @@ module ESM
 !          call seq_comm_setcomm(ESPID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
 !          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
        endif
+       call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
           call ESMF_GridCompGet(child, vm=vm, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
           ! Attach methods for handling reading/writing of restart pointer file
           call ESMF_MethodAdd(child, label="GetRestartFileToWrite", &
                userRoutine=GetRestartFileToWrite, rc=rc)
