@@ -107,7 +107,8 @@ module ocn_tracer_advection_mono
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
               activeTracerHorizontalAdvectionTendency, &
-              activeTracerVerticalAdvectionTendency
+              activeTracerVerticalAdvectionTendency,   &
+              activeTracerHorizontalAdvectionEdgeTend
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
@@ -131,6 +132,8 @@ module ocn_tracer_advection_mono
 
       call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
       if (config_compute_active_tracer_budgets) then
+         call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorizontalAdvectionEdgeTend', &
+                 activeTracerHorizontalAdvectionEdgeTend)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
                  activeTracerHorizontalAdvectionTendency)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
@@ -399,6 +402,16 @@ module ocn_tracer_advection_mono
 
         if (config_compute_active_tracer_budgets) then
            if (tracerGroupName == 'activeTracers') then
+
+              !$omp do schedule(runtime) private(k)
+              do i = 1,nEdgesOnCell(iCell)
+                iEdge = edgesOnCell(i, iCell)
+                do k = 1,maxLevelEdgeTop(iEdge)
+                  activeTracerHorizontalAdvectionEdgeTend(iTracer,k,iEdge) = high_order_flux(k,iEdge)
+                enddo
+              enddo
+              !$omp end do
+
               !$omp do schedule(runtime) private(k)
               do iCell = 1, nCells
                 do k = 1, maxLevelCell(iCell)
