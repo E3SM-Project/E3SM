@@ -404,10 +404,12 @@ enddo
 
 !----------------------------- CONVERT-THERMO-FORCING ----------------------------
 
-!converting T tendencies to theta, can be called from homme and EAM
-!tests and EAM return thermo tendencies in T, this call converts them to theta
-!should be called BEFORE applyCAMforcing_tracers, before ps_v is updated
-!that is, theta tendencies are computed wrt the same pressure levels 
+!Converting T tendencies to theta, can be called from homme and EAM.
+!Tests and EAM return thermo tendencies in terms of T, this routine 
+!converts them to weighted potential temp. variable asi theta-l model.
+!This routine should be called BEFORE applyCAMforcing_tracers and
+!before ps_v is updated.
+!That is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
 
 !DO NOT CALL FOR EAM RUNS, MANY COMPS ARE AVOIDABLE
@@ -433,7 +435,8 @@ enddo
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
   real(kind=real_kind)                  :: psn1(np,np)
 
-!new forcing
+  q = 1
+
   do ie=nets,nete
 #ifdef CAM
      tn1 = elem(ie)%derived%T
@@ -443,7 +446,6 @@ enddo
 #endif
      ! semi-epeated code from applycamforcing_tracers
      psn1(:,:) = 0.0
-     q = 1
      do k=1,nlev
         do j=1,np
            do i=1,np
@@ -586,7 +588,7 @@ print *, 'new vth and old vth', vthn1(1,1,1), elem(ie)%state%vtheta_dp(1,1,1,nt)
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
   
-  call abortmp('Error: __FILE__,__LINE__ theta-l model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
+  call abortmp('Error: In applyCAMforcing_dyn theta-l model doesnt have ftype=3 option.')
   end subroutine applyCAMforcing_dynamics_dp
 
 

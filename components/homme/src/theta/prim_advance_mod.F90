@@ -516,6 +516,8 @@ contains
 
      if (use_moisture) then
         psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) + dt*psn1(:,:)
+     else
+        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0)
      endif
 
      do k=1,nlev
