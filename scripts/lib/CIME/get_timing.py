@@ -18,8 +18,6 @@ class _GetTimingInfo:
         self.tmin = 0
         self.tmax = 0
         self.adays = 0
-        self.ncount = 0
-        self.nprocs = 0
 
 class _TimingParser:
     def __init__(self, case, lid="999999-999999"):
@@ -31,6 +29,8 @@ class _TimingParser:
         self.adays=0
         self._driver = case.get_value("COMP_INTERFACE")
         self.models = {}
+        self.ncount = 0
+        self.nprocs = 0
 
     def write(self, text):
         self.fout.write(text)
@@ -90,8 +90,8 @@ class _TimingParser:
     def _gettime2_nuopc(self):
         self.nprocs = 0
         self.ncount = 0
-        nproc_expression = re.compile('\s*\[ensemble\] RunPhase1\s+(\d+)\s')
-        ncount_expression = re.compile('\s*\[MED\] med_fraction_set\s+(\d+)\s')
+        nproc_expression = re.compile(r'\s*\[ensemble\]\s+RunPhase1\s+(\d+)\s')
+        ncount_expression = re.compile(r'\s*\[MED\]\s+med_fraction_set\s+(\d+)\s')
 
         for line in self.finlines:
             nproc_match = nproc_expression.match(line)
@@ -159,7 +159,7 @@ class _TimingParser:
             elif "[ensemble] Finalize" in line:
                 phase = "finalize"
             if phase != "run":
-                next
+                continue
             minv = 0
             maxv = 0
             m = med_phase_line.match(line)
@@ -189,7 +189,7 @@ class _TimingParser:
             elif "[ensemble] Finalize" in line:
                 phase = "finalize"
             if phase != "run":
-                next
+                continue
             m = comm_line.match(line)
             if m:
                 heading = m.group(1)
@@ -387,19 +387,27 @@ class _TimingParser:
             self.write("  {} = {:<8s}   {:<6d}      {:<6d}   {:<6d} x {:<6d}  {:<6d} ({:<6d}) \n".format(m.name.lower(), comp_label, (m.ntasks*m.nthrds *smt_factor), m.rootpe, m.ntasks, m.nthrds, m.ninst, m.pstrid))
             if m.nthrds > maxthrds:
                 maxthrds = m.nthrds
-        for k in components:
-            m = self.models[k]
-            if k != "CPL":
-                m.tmin, m.tmax, _ = self.gettime(' [{}] RunPhase1 '.format(m.name))
-            else:
-                m.tmin, m.tmax = self.getMEDtime()
+        if self._driver == 'nuopc':
+            for k in components:
+                m = self.models[k]
+                if k != "CPL":
+                    m.tmin, m.tmax, _ = self.gettime(' [{}] RunPhase1 '.format(m.name))
+                else:
+                    m.tmin, m.tmax = self.getMEDtime()
+            nmax = self.gettime("[ensemble] Init 1")[1]
+            tmax = self.gettime("[ensemble] RunPhase1")[1]
+            fmax = self.gettime("[ensemble] FinalizePhase1")[1]
+            xmax = self.getCOMMtime()
 
         if self._driver == 'mct':
+            for k in components:
+                if k != "CPL":
+                    m = self.models[k]
+                    m.tmin, m.tmax, _ = self.gettime(' CPL:{}_RUN '.format(m.name))
             nmax  = self.gettime(' CPL:INIT ')[1]
             tmax  = self.gettime(' CPL:RUN_LOOP ')[1]
             wtmin = self.gettime(' CPL:TPROF_WRITE ')[0]
             fmax  = self.gettime(' CPL:FINAL ')[1]
-            m.tmin, m.tmax, _ = self.gettime(' CPL:{}_RUN '.format(m.name))
             otmin, otmax, _ = self.gettime(' CPL:OCNT_RUN ')
 
             # pick OCNT_RUN for tight coupling
@@ -420,12 +428,6 @@ class _TimingParser:
 
             tmax = tmax + wtmin + correction
             ocn.tmax += ocnrunitime
-
-        elif self._driver == 'nuopc':
-            nmax = self.gettime("[ensemble] Init 1")[1]
-            tmax = self.gettime("[ensemble] RunPhase1")[1]
-            fmax = self.gettime("[ensemble] FinalizePhase1")[1]
-            xmax = self.getCOMMtime()
 
         for m in self.models.values():
             m.tmaxr = 0
