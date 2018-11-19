@@ -325,6 +325,7 @@ module mpas_io
          pio_ierr = PIO_openfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
       endif
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -334,6 +335,7 @@ module mpas_io
          pio_ierr = PIO_inquire(MPAS_io_open % pio_file, unlimitedDimID=MPAS_io_open % pio_unlimited_dimid)
 !call mpas_log_write('Found unlimited dim $i', intArgs=(/MPAS_io_open % pio_unlimited_dimid/) )
          if (pio_ierr /= PIO_noerr) then
+            call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
          end if
@@ -345,6 +347,7 @@ module mpas_io
          if ( MPAS_io_open % pio_unlimited_dimid >= 0 ) then
             pio_ierr = PIO_inq_dimlen(MPAS_io_open % pio_file, MPAS_io_open % pio_unlimited_dimid, MPAS_io_open % preexisting_records)
             if (pio_ierr /= PIO_noerr) then
+               call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
                if (present(ierr)) ierr = MPAS_IO_ERR_PIO
                return
             end if
@@ -451,6 +454,7 @@ module mpas_io
 
       pio_ierr = PIO_inq_dimlen(handle % pio_file, new_dimlist_node % dimhandle % dimid, new_dimlist_node % dimhandle % dimsize)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
@@ -568,6 +572,7 @@ module mpas_io
          pio_ierr = PIO_def_dim(handle % pio_file, trim(dimname), dimsize, new_dimlist_node % dimhandle % dimid)
       end if
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
@@ -652,6 +657,7 @@ module mpas_io
          pio_ierr = PIO_inq_varid(handle % pio_file, trim(fieldname), new_fieldlist_node % fieldhandle % fieldid)
          pio_ierr = PIO_inq_varid(handle % pio_file, trim(fieldname), new_fieldlist_node % fieldhandle % field_desc)
          if (pio_ierr /= PIO_noerr) then
+            call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             deallocate(new_fieldlist_node % fieldhandle)
             deallocate(new_fieldlist_node)
@@ -663,6 +669,7 @@ module mpas_io
          ! Get field type
          pio_ierr = PIO_inq_vartype(handle % pio_file, new_fieldlist_node % fieldhandle % fieldid, new_fieldlist_node % fieldhandle % field_type)
          if (pio_ierr /= PIO_noerr) then
+            call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             deallocate(new_fieldlist_node % fieldhandle)
             deallocate(new_fieldlist_node)
@@ -688,6 +695,7 @@ module mpas_io
          ! Get number of dimensions
          pio_ierr = PIO_inq_varndims(handle % pio_file, new_fieldlist_node % fieldhandle % fieldid, new_fieldlist_node % fieldhandle % ndims)
          if (pio_ierr /= PIO_noerr) then
+            call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             deallocate(new_fieldlist_node % fieldhandle)
             deallocate(new_fieldlist_node)
@@ -701,6 +709,7 @@ module mpas_io
          if (new_fieldlist_node % fieldhandle % ndims > 0) then
             pio_ierr = PIO_inq_vardimid(handle % pio_file, new_fieldlist_node % fieldhandle % fieldid, dimids)
             if (pio_ierr /= PIO_noerr) then
+               call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
                if (present(ierr)) ierr = MPAS_IO_ERR_PIO
                deallocate(new_fieldlist_node % fieldhandle)
                deallocate(new_fieldlist_node)
@@ -722,6 +731,7 @@ module mpas_io
 
             pio_ierr = PIO_inq_dimlen(handle % pio_file, dimids(i), new_fieldlist_node % fieldhandle % dims(i) % dimsize)
             if (pio_ierr /= PIO_noerr) then
+               call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
                if (present(ierr)) ierr = MPAS_IO_ERR_PIO
                deallocate(new_fieldlist_node % fieldhandle)
                deallocate(new_fieldlist_node)
@@ -732,6 +742,7 @@ module mpas_io
 
             pio_ierr = PIO_inq_dimname(handle % pio_file, dimids(i), new_fieldlist_node % fieldhandle % dims(i) % dimname)
             if (pio_ierr /= PIO_noerr) then
+               call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
                if (present(ierr)) ierr = MPAS_IO_ERR_PIO
                deallocate(new_fieldlist_node % fieldhandle)
                deallocate(new_fieldlist_node)
@@ -1005,6 +1016,7 @@ module mpas_io
          pio_ierr = PIO_def_var(handle % pio_file, trim(fieldname), pio_type, dimids, new_fieldlist_node % fieldhandle % field_desc)
       end if
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -1012,6 +1024,7 @@ module mpas_io
       ! Get the varid for use by put_att routines
       pio_ierr = PIO_inq_varid(handle % pio_file, trim(fieldname), new_fieldlist_node % fieldhandle % fieldid)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -1991,6 +2004,7 @@ module mpas_io
 
 !      call mpas_log_write('Checking for error')
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -2314,6 +2328,7 @@ module mpas_io
          ! an error under harmless circumstances; so, don't return only for
          ! pre-existing files.
          if (pio_ierr /= PIO_noerr .and. (.not. handle % preexisting_file)) then
+            call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
             if (present(ierr)) ierr = MPAS_IO_ERR_PIO
             return
          end if
@@ -2898,6 +2913,7 @@ module mpas_io
          end if
       end if
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3212,6 +3228,7 @@ module mpas_io
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3222,6 +3239,7 @@ module mpas_io
 
       pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3353,6 +3371,7 @@ module mpas_io
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3364,6 +3383,7 @@ module mpas_io
 
       pio_ierr = PIO_inq_attlen(handle % pio_file, varid, attName, attlen)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3371,6 +3391,7 @@ module mpas_io
       allocate(attValue(attlen))
       pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3511,6 +3532,7 @@ module mpas_io
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3545,6 +3567,7 @@ module mpas_io
 
       end if
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3687,12 +3710,14 @@ module mpas_io
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
 
       pio_ierr = PIO_inq_attlen(handle % pio_file, varid, attName, attlen)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3734,6 +3759,7 @@ module mpas_io
 
       end if
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3865,6 +3891,7 @@ module mpas_io
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -3875,6 +3902,7 @@ module mpas_io
 
       pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -4056,6 +4084,7 @@ module mpas_io
 
       pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -4213,6 +4242,7 @@ module mpas_io
 
       pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -4381,6 +4411,7 @@ module mpas_io
       end if
 
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -4561,6 +4592,7 @@ module mpas_io
          pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       end if
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
@@ -4720,6 +4752,7 @@ module mpas_io
 
       pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
       if (pio_ierr /= PIO_noerr) then
+         call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
 
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
 
@@ -4913,6 +4946,7 @@ module mpas_io
          if ( finalize_iosystem ) then
            call PIO_finalize(ioContext % pio_iosystem, pio_ierr)
            if (pio_ierr /= PIO_noerr) then
+              call mpas_log_write('MPAS I/O: PIO Returned Erorr, CODE = $i',intArgs=(/pio_ierr/), MPAS_LOG_WARN)
               if (present(ierr)) ierr = MPAS_IO_ERR_PIO
               return
            end if
