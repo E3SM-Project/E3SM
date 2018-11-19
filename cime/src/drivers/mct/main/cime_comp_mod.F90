@@ -818,9 +818,9 @@ contains
 
           if (iamroot_CPLID) then
              write(c_cpl_npes,'(i8)') npes_CPLID
-             write(logunit,100) trim(adjustl(c_cpl_npes)), &
-                                trim(adjustl(c_cpl_inst))
-100          format(a,' pes participating in computation of CPL instance #',a)
+             write(logunit,'(3A)') trim(adjustl(c_cpl_npes)), &
+                                   ' pes participating in computation of CPL instance #', &
+                                   trim(adjustl(c_cpl_inst))
              call flush(logunit)
           endif
 

@@ -385,11 +385,12 @@ contains
        if (mype == 0) then
           write(c_driver_numpes,'(i8)') numpes
           if (drv_inst == 0) then
-             write(logunit,100) trim(adjustl(c_driver_numpes))
-100          format(/,a,' pes participating in computation of coupled model')
+             write(logunit,'(2A)') trim(adjustl(c_driver_numpes)), &
+                                   ' pes participating in computation of coupled model'
           else
-             write(logunit,101) trim(adjustl(c_driver_numpes)), trim(adjustl(c_drv_inst))
-101          format(/,a,' pes participating in computation of DRIVER instance #',a)
+             write(logunit,'(3A)') trim(adjustl(c_driver_numpes)), &
+                                   ' pes participating in computation of DRIVER instance #', &
+                                   trim(adjustl(c_drv_inst))
           endif
           call shr_sys_flush(logunit)
        endif
