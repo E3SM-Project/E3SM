@@ -46,7 +46,7 @@ CONTAINS
     use viscosity_mod,  only: compute_zeta_C0
     use cam_abortutils,     only: endrun
     use gravity_waves_sources, only: gws_src_fnct
-    use dyn_comp,       only: frontgf_idx, frontga_idx, hvcoord
+    use dyn_comp,       only: frontgf_idx, frontga_idx
     use phys_control,   only: use_gw_front
     implicit none
 !-----------------------------------------------------------------------

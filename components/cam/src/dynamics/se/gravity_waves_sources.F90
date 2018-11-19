@@ -1,3 +1,6 @@
+!!!! temp
+#define MODEL_THETA_L
+
 module gravity_waves_sources
   use derivative_mod, only : derivative_t
   use dimensions_mod, only : np,nlev
@@ -142,9 +145,13 @@ CONTAINS
 
           ! old preqx call
           ! theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
-          
-          call get_temperature(elem(ie),temperature,hvcoord,tl)
-            
+
+#ifdef MODEL_THETA_L          
+          temperature(:,:,k) = elem(ie)%derived%T(:,:,k)
+#else
+          temperature(:,:,k) = elem(ie)%state%T(:,:,k,tl)
+#endif            
+
           theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
           gradth(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
           

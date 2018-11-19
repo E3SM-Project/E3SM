@@ -215,21 +215,6 @@ contains
   
   end subroutine get_temperature
 
-#if 0
-  !_____________________________________________________________________
-  subroutine get_omega_p(elem,omega_p,hvcoord,nt)
-  implicit none
-
-  type (element_t), intent(in)        :: elem
-  real (kind=real_kind), intent(out)  :: omega_p(np,np,nlev)
-  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid
-  integer, intent(in) :: nt
-
-  omega_p(:,:,k) = elem%derived%omega_p(:,:,k)
-
-  end subroutine get_omega_p
-#endif
-
 
   !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)

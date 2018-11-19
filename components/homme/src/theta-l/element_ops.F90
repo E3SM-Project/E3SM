@@ -204,34 +204,6 @@ contains
 
   end subroutine get_temperature
 
-#if 0
-  !_____________________________________________________________________
-  subroutine get_omega_p(elem,omega_p,hvcoord,nt)
-  !
-  ! Should only be called outside timestep loop, state variables on reference
-  ! levels
-  !
-  implicit none
-
-  type (element_t), intent(in)        :: elem
-  real (kind=real_kind), intent(out)  :: omega_p(np,np,nlev)
-  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid
-  integer, intent(in) :: nt
-
-  !   local
-  real (kind=real_kind) :: p(np,np,nlev)
-  integer :: k
-
-  do k=1,nlev
-     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
-  enddo
-
-  do k=1,nlev
-     omega_p(:,:,k)= elem%derived%omega_p(:,:,k)/p(:,:,k)
-  enddo
-
-  end subroutine get_omega_p
-#endif
 
   !_____________________________________________________________________
   subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt,ntQ)
@@ -373,10 +345,6 @@ contains
   real (kind=real_kind) :: dp(np,np,nlev), aaa
   integer :: k
 
-!print *, 'in set_thermostate --------------------- '
-!print *, 'tl, hvcoord', nt, hvcoord 
-!print *, 'temperature', temperature
-
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -390,23 +358,10 @@ contains
      !elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
 ! this is exact inversion of get_temperature in case of hydro
 !however there will be lorenz3 routine get_theta_fromT like that.
+!since this call is needed in standalone dry cases, it needs dry/moist
+!conversion based on nQ=-1
      elem%state%vtheta_dp(:,:,k,nt)=rstar(:,:,k)/Rgas*dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
-
-  aaa = sum(elem%state%vtheta_dp(:,:,:,nt))
-  
-if(aaa /= aaa) then 
-  print *, 'in set_thermostate --------------------- '
-  print *, 'tl, hvcoord', nt, hvcoord 
-  print *, 'temperature', temperature
-  print *, aaa
-  print *, 'p',p
-  print *, 'dp', dp
-  print *, 'kappa,p0', kappa, p0
-  print *, 'ps_v', elem%state%ps_v(:,:,nt)
-  print *, 'hyam', hvcoord%hyam(:)
-  stop
-endif
 
 !computes and sets hydrostatic phi, copies state to all timelevels
   call tests_finalize(elem,hvcoord,nt)
@@ -414,6 +369,8 @@ endif
   end subroutine set_thermostate
 
 
+!it is a slightly diff call than get_theta_from_T(hvcoord,Rstar,temperature,dp3d,phi_i,vtheta_dp)
+!this routine does not need rstar for input
   !_____________________________________________________________________
   subroutine set_thermostate_from_derived_T(elem,hvcoord,nt)
   !
@@ -439,10 +396,7 @@ endif
   enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
   do k=1,nlev
-     !old without moisture
-     !elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
-! this is exact inversion of get_temperature in case of hydro
-!however there will be lorenz3 routine get_theta_fromT like that.
+!get_theta_from_T
      elem%state%vtheta_dp(:,:,k,nt)=rstar(:,:,k)/Rgas*dp(:,:,k)* &
                                     elem%derived%T(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo

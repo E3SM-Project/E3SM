@@ -1012,12 +1012,12 @@ print *, 'OG BEFORE SUB'
 
 do ie=nets,nets
 print *, 'ie', ie
-print *, elem(ie)%state%ps_v(1,1,tl%nstep0)
-print *, elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
-print *, elem(ie)%state%v(1,1,1,1,tl%nstep0)
-print *, elem(ie)%state%v(1,1,2,1,tl%nstep0)
-print *, elem(ie)%derived%omega_p(1,1,1)
-print *, elem(ie)%state%Q(1,1,1,tl%nstep0)
+print *, 'ps_v',elem(ie)%state%ps_v(1,1,tl%nstep0)
+print *, 'vtheta',elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
+print *, 'u',elem(ie)%state%v(1,1,1,1,tl%nstep0)
+print *, 'v',elem(ie)%state%v(1,1,2,1,tl%nstep0)
+print *, 'omega',elem(ie)%derived%omega_p(1,1,1)
+print *, 'Q',elem(ie)%state%Q(1,1,1,1)
 enddo
 
 
@@ -1218,12 +1218,12 @@ enddo
 print *, 'OG AFTER SUB'
 do ie=nets,nets
 print *, 'ie', ie
-print *, elem(ie)%state%ps_v(1,1,tl%nstep0)
-print *, elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
-print *, elem(ie)%state%v(1,1,1,1,tl%nstep0)
-print *, elem(ie)%state%v(1,1,2,1,tl%nstep0)
-print *, elem(ie)%derived%omega_p(1,1,1)
-print *, elem(ie)%state%Q(1,1,1,tl%nstep0)
+print *, 'ps_v',elem(ie)%state%ps_v(1,1,tl%nstep0)
+print *, 'vtheta',elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
+print *, 'u',elem(ie)%state%v(1,1,1,1,tl%nstep0)
+print *, 'v',elem(ie)%state%v(1,1,2,1,tl%nstep0)
+print *, 'omega',elem(ie)%derived%omega_p(1,1,1)
+print *, 'Q',elem(ie)%state%Q(1,1,1,1)
 enddo
 
 

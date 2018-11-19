@@ -216,8 +216,6 @@ CONTAINS
     ! Physics-grid will be defined later by phys_grid_init
     call define_cam_grids()
 
-
-#if 1
     !why store ps0 in a temp?
     dyn_ps0=ps0
     hvcoord%hyam=hyam
@@ -227,9 +225,6 @@ CONTAINS
     hvcoord%ps0=dyn_ps0
 
     call set_layer_locations(hvcoord,.false.,par%masterproc)
-#endif
-
-
 
   end subroutine dyn_init1
 
@@ -247,7 +242,7 @@ CONTAINS
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
     use cam_instance,     only: inst_index
-    use element_ops,      only: set_thermostate
+    use element_ops,      only: set_thermostate_from_derived_T
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
@@ -293,20 +288,18 @@ CONTAINS
 
                 elem(ie)%state%phis(:,:)=0.0_r8
 
-!do this with derived T and set_thermostate_from_derivedT or leave it as is?
-                temperature(:,:,:) = Tinit
-
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
-                
-                !for theta model, this routine will compute vtheta_dp, phi at time level tlev and will set 
-                !all other time levels to timelevel tlev.
-                !in preqx, this routine sets T for timelevel tlev only, so, we need to
-                !call it 3 times
+
+#ifdef MODEL_THETA_L
+                elem(ie)%derived%T(:,:,:) = Tinit
                 do tlev=1,3
-                  call set_thermostate(elem(ie),temperature,hvcoord,tlev)
+                   call set_thermostate_from_derived_T(elem(ie),hvcoord,tlev)
                 enddo
+#else
+                elem(ie)%state%T(:,:,:,:) = Tinit
+#endif               
 
              end do
           end if
