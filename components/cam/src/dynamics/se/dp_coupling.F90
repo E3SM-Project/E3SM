@@ -90,9 +90,6 @@ CONTAINS
     integer :: tl_f
 
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
-
-    real (kind=real_kind) :: temperature(np,np,nlev) 
-    real (kind=real_kind) :: omega_dyn(np,np,nlev) 
     !----------------------------------------------------------------------
 
     nullify(pbuf_chnk)
@@ -120,35 +117,19 @@ CONTAINS
           ncols = elem(ie)%idxP%NumUniquePts
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
 
-          call get_temperature(elem(ie),temperature,hvcoord,tl_f)
-
-!print *, 'IN DP COUPLING _______________________', ie
-!print *, 'temperature',temperature
-
           !old call
-          !call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
-          call UniquePoints(elem(ie)%idxP, nlev, temperature, T_tmp(1:ncols,:,ie))
-
+#ifdef MODEL_THETA_L
+          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%T(:,:,:), T_tmp(1:ncols,:,ie))
+#else
+          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
+#endif
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
 
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
-          call UniquePoints(elem(ie)%idxP, nlev, omega_dyn, omega_tmp(1:ncols,:,ie))
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev,pcnst, elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
-
-
-!print *, 'ie', ie
-!print *, elem(ie)%state%ps_v(1,1,tl_f)
-!print *, temperature(1,1,1)
-!print *, elem(ie)%state%v(1,1,1,1,tl_f)
-!print *, elem(ie)%state%v(1,1,2,1,tl_f)
-!print *, elem(ie)%derived%omega_p(1,1,1)
-!print *, elem(ie)%state%Q(1,1,1,1)
-!call flush(*)
-
        end do
-!stop
        call t_stopf('UniquePoints')
 
        if (use_gw_front) call gws_src_fnct(elem, tl_f, frontgf, frontga)

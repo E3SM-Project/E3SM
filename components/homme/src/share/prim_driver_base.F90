@@ -1,3 +1,6 @@
+!temp!!!!!
+#define  MODEL_THETA_L
+
 ! ------------------------------------------------------------------------------------------------
 ! prim_driver_mod: 
 !
@@ -1172,7 +1175,9 @@ enddo
              elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:)
           enddo
        enddo
+#ifdef MODEL_THETA_L
        call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+#endif
     enddo
     call t_stopf("prim_run_subcyle_diags")
 

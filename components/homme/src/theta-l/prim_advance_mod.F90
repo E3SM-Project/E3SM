@@ -165,8 +165,28 @@ contains
     else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+
+do ie=nets,nete
+print *, 'before first CAAR ie', ie
+print *,'u', elem(ie)%state%v(1,1,1,1,:)
+print *,'v', elem(ie)%state%v(1,1,1,2,:)
+print *,'theta', elem(ie)%state%vtheta_dp(1,1,1,:)
+print *,'ps_v', elem(ie)%state%ps_v(1,1,:)
+print *,'derivedT', elem(ie)%derived%T(1,1,1)
+enddo
+
        call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
+
+do ie=nets,nete
+print *, 'after first CAAR ie', ie
+print *,'u', elem(ie)%state%v(1,1,1,1,:)
+print *,'v', elem(ie)%state%v(1,1,1,2,:)
+print *,'theta', elem(ie)%state%vtheta_dp(1,1,1,:)
+print *,'ps_v', elem(ie)%state%ps_v(1,1,:)
+print *,'derivedT', elem(ie)%derived%T(1,1,1)
+enddo
+
        ! u2 = u0 + dt/5 RHS(u1)
        call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
@@ -192,6 +212,20 @@ contains
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
+
+
+do ie=nets,nete
+print *, 'after LAST CAAR ie', ie
+print *,'u', elem(ie)%state%v(1,1,1,1,:)
+print *,'v', elem(ie)%state%v(1,1,1,2,:)
+print *,'theta', elem(ie)%state%vtheta_dp(1,1,1,:)
+print *,'ps_v', elem(ie)%state%ps_v(1,1,:)
+print *,'derivedT', elem(ie)%derived%T(1,1,1)
+enddo
+
+
+
+
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 !=========================================================================================
@@ -463,6 +497,8 @@ contains
 ! derived%T
 !----------------------------- CONVERT-THERMO-FORCING-EAM ----------------------------
 
+!in standalone homme derivedT is not inited before the first call of_subcy
+
   subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt,nets,nete)
   use control_mod,        only : use_moisture
   implicit none
@@ -479,7 +515,16 @@ contains
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
   real(kind=real_kind)                  :: psn1(np,np)
 
+print *, 'OG in convert_...eam --------------------'
+
   do ie=nets,nete
+
+!if(abs(elem(ie)%derived%FT(1,1,1)) > 10000) then
+print *, 'ie', ie, 'globid', elem(ie)%globalid
+print *, 'FT', elem(ie)%derived%FT(1,1,1)
+print *, 'derivedT', elem(ie)%derived%T(1,1,1)
+!endif
+
      tn1 = elem(ie)%derived%T + dt*elem(ie)%derived%FT
 
      call get_R_star(rstarn1,elem(ie)%state%Q(:,:,:,1))
@@ -497,6 +542,9 @@ contains
      ! this method is using new dp, new exner, new-new r*, new t
      elem(ie)%derived%FT(:,:,:) = &
          (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,nt))/dt
+
+print *, 'theta FT', elem(ie)%derived%FT(1,1,1)
+print *, 'new vth and old vth', vthn1(1,1,1), elem(ie)%state%vtheta_dp(1,1,1,nt)
   enddo
 
   end subroutine convert_thermo_forcing_eam
