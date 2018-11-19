@@ -233,8 +233,8 @@ contains
              elem(ie)%derived%T(i,j,:) = tmp(indx,:,ie)
              !no scm in theta-l yet
 #else
-             elem(ie)%state%T(i,j,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
+             elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
 #endif
              indx = indx + 1
           end do
@@ -543,7 +543,6 @@ contains
 !$omp parallel do private(ie, t, m_cnst)
     do ie=1,nelemd
 #ifdef MODEL_THETA_L
-       !convert T to theta, call set_thermostate to copy to all timelevels
        call set_thermostate_from_derived_T(elem(ie),hvcoord,tl)
 #else
        do t=2,3

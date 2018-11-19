@@ -117,14 +117,12 @@ CONTAINS
           ncols = elem(ie)%idxP%NumUniquePts
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
 
-          !old call
 #ifdef MODEL_THETA_L
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%T(:,:,:), T_tmp(1:ncols,:,ie))
 #else
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
 #endif
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
-
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
 
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
