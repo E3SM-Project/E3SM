@@ -3639,7 +3639,7 @@ contains
   !
   ! ! calculating BGC state variable changes over one time-step (rates)
   !   NOTE: Don't update the organic C/N state variables, which will be updated in those 'update' subroutines
-  !           and the 'CNSoilLittVertTranspMod.F90' after 'update1'.
+  !           and the 'SoilLittVertTranspMod.F90' after 'update1'.
   !
   subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
 ! TODO: add phosphorus vars

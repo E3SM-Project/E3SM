@@ -19,7 +19,7 @@ module SoilStateType
   use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
   use clm_varctl      , only : use_var_soil_thick
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
-  use ch4varcon       , only : allowlakeprod
+  use CH4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use VegetationType       , only : veg_pp                
@@ -306,7 +306,7 @@ contains
     use pftvarcon           , only : noveg, roota_par, rootb_par
     use fileutils           , only : getfil
     use organicFileMod      , only : organicrd 
-    use CNSharedParamsMod   , only : CNParamsShareInst
+    use SharedParamsMod   , only : ParamsShareInst
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
     !
@@ -432,7 +432,7 @@ contains
 
     ! Read in organic matter dataset 
 
-    organic_max = CNParamsShareInst%organic_max
+    organic_max = ParamsShareInst%organic_max
 
     allocate(organic3d(bounds%begg:bounds%endg,nlevsoifl))
     call organicrd(organic3d)

@@ -560,7 +560,7 @@ contains
     this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
 
     this%dwb_col(bounds%begc:bounds%endc) = 0._r8
-    ! needed for CNNLeaching 
+    ! needed for NitrogenLeaching 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then

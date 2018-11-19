@@ -49,27 +49,27 @@ module clm_driver
   use SurfaceRadiationMod    , only : SurfaceRadiation, CanopySunShadeFractions
   use UrbanRadiationMod      , only : UrbanRadiation
   !clm_interface
-  use CNEcosystemDynMod      , only : CNEcosystemDynNoLeaching1, CNEcosystemDynNoLeaching2
+  use EcosystemDynMod      , only : EcosystemDynNoLeaching1, EcosystemDynNoLeaching2
 
-  use CNEcosystemDynMod      , only : CNEcosystemDynLeaching 
-  use CNVegStructUpdateMod   , only : CNVegStructUpdate 
-  use CNAnnualUpdateMod      , only : CNAnnualUpdate
-  use CNBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
-  use CNBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
-  use CNBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
-  use CNBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
-  use CNBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
-  use CNBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
-  use CNBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
-  use CNBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
-  use CNVerticalProfileMod   , only : decomp_vertprofiles
-  use CNFireMod              , only : CNFireInterp
+  use EcosystemDynMod      , only : EcosystemDynLeaching 
+  use VegStructUpdateMod   , only : VegStructUpdate 
+  use AnnualUpdateMod      , only : AnnualUpdate
+  use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
+  use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
+  use EcosystemBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
+  use VerticalProfileMod   , only : decomp_vertprofiles
+  use FireMod              , only : FireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
   use pdepStreamMod          , only : pdep_interp
   use ActiveLayerMod         , only : alt_calc
-  use ch4Mod                 , only : ch4
+  use CH4Mod                 , only : CH4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
   use FatesBGCDynMod         , only : FatesBGCDyn
@@ -491,7 +491,7 @@ contains
        call t_startf('ndep_interp')
        ! PET: switching CN timestep
        call ndep_interp(bounds_proc, atm2lnd_vars)
-       call CNFireInterp(bounds_proc)
+       call FireInterp(bounds_proc)
        call t_stopf('ndep_interp')
     end if
 
@@ -865,7 +865,7 @@ contains
                  PlantMicKinetics_vars,                                         &
                  phosphorusflux_vars, phosphorusstate_vars)
 
-           call CNAnnualUpdate(bounds_clump,            &
+           call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   filter(nc)%num_soilp, filter(nc)%soilp, &
                   cnstate_vars, carbonflux_vars)    
@@ -882,11 +882,11 @@ contains
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
              !===========================================================================================
-             ! clm_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): BEGIN
-             ! CNEcosystemDynNoLeaching1 is called before clm_interface
-             ! CNEcosystemDynNoLeaching2 is called after clm_interface
+             ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): BEGIN
+             ! EcosystemDynNoLeaching1 is called before clm_interface
+             ! EcosystemDynNoLeaching2 is called after clm_interface
              !===========================================================================================
-             call CNEcosystemDynNoLeaching1(bounds_clump,                               &
+             call EcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
                        filter(nc)%num_soilp, filter(nc)%soilp,                          &
                        cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
@@ -938,10 +938,10 @@ contains
                  elseif (use_clm_bgc) then
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
-                    ! run clm-bgc (CNDecompAlloc) through interface
-                    ! STEP-2: (1) pass data from clm_interface_data to CNDecompAlloc
-                    ! STEP-2: (2) run CNDecompAlloc
-                    ! STEP-2: (3) update clm_interface_data from CNDecompAlloc
+                    ! run clm-bgc (SoilLittDecompAlloc) through interface
+                    ! STEP-2: (1) pass data from clm_interface_data to SoilLittDecompAlloc
+                    ! STEP-2: (2) run SoilLittDecompAlloc
+                    ! STEP-2: (3) update clm_interface_data from SoilLittDecompAlloc
                     ! -------------------------------------------------------------------------
                     call clm_bgc_run(clm_interface_data, bounds_clump,          &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
@@ -966,7 +966,7 @@ contains
              end if !if (use_clm_interface)
              !--------------------------------------------------------------------------------
 
-             call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
+             call EcosystemDynNoLeaching2(bounds_clump,                                   &
                    filter(nc)%num_soilc, filter(nc)%soilc,                                  &
                    filter(nc)%num_soilp, filter(nc)%soilp,                                  &
                    filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,                         &
@@ -980,10 +980,10 @@ contains
                    phosphorusflux_vars,phosphorusstate_vars)
 
              !===========================================================================================
-             ! clm_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
+             ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
              !===========================================================================================
 
-             call CNAnnualUpdate(bounds_clump,            &
+             call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   filter(nc)%num_soilp, filter(nc)%soilp, &
                   cnstate_vars, carbonflux_vars)
@@ -1035,9 +1035,9 @@ contains
          endif  !end use_betr
          
          if (use_lch4 .and. .not. is_active_betr_bgc) then
-           !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
+           !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
-           call ch4 (bounds_clump,                                                                  &
+           call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
@@ -1162,7 +1162,7 @@ contains
             if (.not. is_active_betr_bgc)then
              ! FIX(SPM,032414) there are use_fates checks in this routine...be consistent 
              ! (see comment above re: no leaching
-               call CNEcosystemDynLeaching(bounds_clump,                &
+               call EcosystemDynLeaching(bounds_clump,                &
                   filter(nc)%num_soilc, filter(nc)%soilc,               &
                   filter(nc)%num_soilp, filter(nc)%soilp,               &
                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,      &
@@ -1176,7 +1176,7 @@ contains
              end if
 
              if (doalb) then   
-                call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
+                call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
                      waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
                      carbonstate_vars, canopystate_vars, crop_vars)
              end if

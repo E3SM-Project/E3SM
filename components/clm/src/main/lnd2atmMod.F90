@@ -18,7 +18,7 @@ module lnd2atmMod
   use subgridAveMod        , only : p2g, c2g 
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
-  use ch4Mod               , only : ch4_type
+  use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use DUSTMod              , only : dust_type
   use DryDepVelocity       , only : drydepvel_type
@@ -117,7 +117,7 @@ contains
     ! Compute lnd2atm_vars component of gridcell derived type
     !
     ! !USES:
-    use ch4varcon  , only : ch4offline
+    use CH4varcon  , only : ch4offline
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)     :: bounds  

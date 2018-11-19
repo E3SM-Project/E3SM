@@ -23,7 +23,7 @@ module CNNitrogenStateType
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com, use_crop
   use dynPatchStateUpdaterMod, only : patch_state_updater_type               
-  use CNSpeciesMod           , only : CN_SPECIES_N
+  use SpeciesMod           , only : CN_SPECIES_N
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -1898,7 +1898,7 @@ contains
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
-    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
     class(nitrogenstate_type)      , intent(inout) :: this
