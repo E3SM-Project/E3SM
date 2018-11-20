@@ -1117,17 +1117,17 @@
                     LNSTR2 = 'Mean current, y-component'
                   ELSE IF ( IO .EQ.  3 ) THEN
                     DO ISEA=1, NSEA
-                      AUX1(ISEA) = UA(ISEA)*COS(UD(ISEA))
-                      AUX2(ISEA) = UA(ISEA)*SIN(UD(ISEA))
+                      AUX1(ISEA) = UA(ISEA)
+                      AUX2(ISEA) = UD(ISEA)*180.0/(4.0*ATAN(1.0))
                       END DO
                     WAUX1 = .TRUE.
                     WAUX2 = .TRUE.
-                    FLDSTR1 = 'UAX'
-                    FLDSTR2 = 'UAY'
+                    FLDSTR1 = 'wnd'
+                    FLDSTR2 = 'wnddir'
                     UNITSTR1 = 'm/s'
-                    UNITSTR2 = 'm/s'
-                    LNSTR1 = 'Mean wind, x-component'
-                    LNSTR2 = 'Mean wind, y-component'
+                    UNITSTR2 = 'deg'
+                    LNSTR1 = 'Mean wind speed'
+                    LNSTR2 = 'Mean wind direction'
                   ELSE IF ( IO .EQ.  4 ) THEN
                     AUX1(1:NSEA) = AS(1:NSEA)
                     WAUX1 = .TRUE.
@@ -1159,7 +1159,7 @@
                   ELSE IF ( IO .EQ.  6 ) THEN
                     AUX1(1:NSEA) = HS(1:NSEA)
                     WAUX1 = .TRUE.
-                    FLDSTR1 = 'HS'
+                    FLDSTR1 = 'hs'
                     UNITSTR1 = 'm'
                     LNSTR1 = 'Significant wave height'
                   ELSE IF ( IO .EQ.  7 ) THEN
@@ -1189,14 +1189,14 @@
                   ELSE IF ( IO .EQ. 11 ) THEN
                     AUX1(1:NSEA) = FP0(1:NSEA)
                     WAUX1 = .TRUE.
-                    FLDSTR1 = 'PF0'
+                    FLDSTR1 = 'fp'
                     UNITSTR1 = 'Hz'
                     LNSTR1 = 'Peak frequency'
                   ELSE IF ( IO .EQ. 12 ) THEN
-                    AUX1(1:NSEA) = THP0(1:NSEA)
+                    AUX1(1:NSEA) = THP0(1:NSEA)*180.0/(4.0*ATAN(1.0))
                     WAUX1 = .TRUE.
-                    FLDSTR1 = 'THP0'
-                    UNITSTR1 = 'rad'
+                    FLDSTR1 = 'th1p'
+                    UNITSTR1 = 'degree'
                     LNSTR1 = 'Peak direction'
                   ELSE IF ( IO .EQ. 13 ) THEN
                     AUX1(1:NSEA) = FP1(1:NSEA)
