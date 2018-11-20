@@ -181,7 +181,7 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& bedTopographyData,
     const std::vector<double>& smbData,
     const std::vector<double>& stiffnessFactorData,
-//    const std::vector<double>& effecPressData,  TODO: UNCOMMENT THIS
+    const std::vector<double>& effecPressData,
     const std::vector<double>& temperatureOnTetra,
     std::vector<double>& dissipationHeatOnTetra,
     std::vector<double>& velocityOnVertices,

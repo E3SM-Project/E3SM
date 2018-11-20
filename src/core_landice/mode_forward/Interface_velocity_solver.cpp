@@ -403,7 +403,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
-        stiffnessFactorData, //effecPressData,  TODO: UNCOMMENT THIS
+        stiffnessFactorData, effecPressData,
         temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
@@ -1470,7 +1470,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[index] = stiffnessFactor_F[iCell];
     if (effecPress_F != 0)
-      effecPressData[index] = effecPress_F[iCell];  // TODO: CHECK IF CORRECT UNITS!
+      effecPressData[index] = effecPress_F[iCell] / unit_length;  
   }
 
   if(temperature_F != 0) {
@@ -1585,7 +1585,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[iv] = stiffnessFactor_F[ic];
     if (effecPress_F != 0)
-      effecPressData[iv] = effecPress_F[ic];  // TODO: CHECK IF CORRECT UNITS!
+      effecPressData[iv] = effecPress_F[ic] / unit_length;
   }
 
 }
