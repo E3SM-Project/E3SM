@@ -90,7 +90,7 @@ class _TimingParser:
     def _gettime2_nuopc(self):
         self.nprocs = 0
         self.ncount = 0
-        nproc_expression = re.compile(r'\s*\[ensemble\]\s+RunPhase1\s+(\d+)\s')
+        nproc_expression = re.compile(r'\s*\[ESM\d*\]\s+RunPhase1\s+(\d+)\s')
         ncount_expression = re.compile(r'\s*\[MED\]\s+med_fraction_set\s+(\d+)\s')
 
         for line in self.finlines:
@@ -127,13 +127,17 @@ class _TimingParser:
                 return (minval, maxval, found)
         return (0, 0, False)
 
-    def _gettime_nuopc(self, heading_padded):
+    def _gettime_nuopc(self, heading, instance=''):
         minval = 0
         maxval = 0
         m = None
-        timeline = re.compile(r'\s*{}\s+\d+\s+(\d*\.\d+)\s+'.format(re.escape(heading_padded)))
+        timeline = re.compile(r'\s*{}\s+\d+\s+(\d*\.\d+)\s+'.format(re.escape(heading)))
+        phase = None
         for line in self.finlines:
-            if heading_padded in line:
+            phase = self._get_nuopc_phase(line, instance, phase)
+            if phase != "run" and not "[ensemble]" in heading:
+                continue
+            if heading in line:
                 m = timeline.match(line)
                 if m:
                     minval = float(m.group(1))/self.nprocs
@@ -142,22 +146,28 @@ class _TimingParser:
 
         return (0, 0, False)
 
+    def _get_nuopc_phase(self, line, instance, phase):
+        if "[ensemble] Init 1" in line:
+            phase = "init"
+        elif "[ESM"+instance+"] RunPhase1" in line:
+            phase = "run"
+        elif "[ESM"+instance+"] Finalize" in line:
+            phase = "finalize"
+        elif "[ESM" in line and "RunPhase1" in line:
+            phase = "other"
+        return phase
 
-    def getMEDtime(self):
-        med_phase_line = re.compile(r'\s*(\[MED\] med_phases\S+)\s+')
-        med_connector_line = re.compile(r'\s*(\[MED\] med_connectors\S+)\s+')
-        med_fraction_line = re.compile(r'\s*(\[MED\] med_fraction\S+)\s+')
+    def getMEDtime(self, instance):
+        med_phase_line = re.compile(r'\s*(\[MED\] med_phases\S+)\s+\d+\s+(\d*\.\d+)\s+')
+        med_connector_line = re.compile(r'\s*(\[MED\] med_connectors\S+)\s+\d+\s+(\d*\.\d+)\s+')
+        med_fraction_line = re.compile(r'\s*(\[MED\] med_fraction\S+)\s+\d+\s+(\d*\.\d+)\s+')
+
         m = None
         minval = 0
         maxval = 0
         phase = None
         for line in self.finlines:
-            if "[ensemble] Init 1" in line:
-                phase = "init"
-            elif "[ensemble] RunPhase1" in line:
-                phase = "run"
-            elif "[ensemble] Finalize" in line:
-                phase = "finalize"
+            phase = self._get_nuopc_phase(line, instance, phase)
             if phase != "run":
                 continue
             minv = 0
@@ -168,32 +178,25 @@ class _TimingParser:
             if not m:
                 m = med_fraction_line.match(line)
             if m:
-                heading = m.group(1)
-                minv, maxv, _ = self._gettime_nuopc(heading)
-                minval += minv
-                maxval += maxv
-                logger.debug("{} time={} sum={}".format(heading, minv, minval))
+                minval += float(m.group(2))
+                maxval += float(m.group(2))
+                logger.debug("{} time={} sum={}".format(line, minv, minval))
 
         return(minval, maxval)
 
-    def getCOMMtime(self):
-        comm_line = re.compile(r'\s*(\[\S+-TO-\S+\] RunPhase1)\s+')
+    def getCOMMtime(self, instance):
+        comm_line = re.compile(r'\s*(\[\S+-TO-\S+\] RunPhase1)\s+\d+\s+(\d*\.\d+)\s+')
         m = None
         maxval = 0
         phase = None
         for line in self.finlines:
-            if "[ensemble] Init 1" in line:
-                phase = "init"
-            elif "[ensemble] RunPhase1" in line:
-                phase = "run"
-            elif "[ensemble] Finalize" in line:
-                phase = "finalize"
+            phase = self._get_nuopc_phase(line, instance, phase)
             if phase != "run":
                 continue
             m = comm_line.match(line)
             if m:
                 heading = m.group(1)
-                _, maxv, _ = self._gettime_nuopc(heading)
+                maxv = float(m.group(2))
                 maxval += maxv
                 logger.debug("{} time={} sum={}".format(heading, maxv, maxval))
         return maxval
@@ -367,9 +370,9 @@ class _TimingParser:
 
         self.write("  grid        : {}\n".format(grid))
         self.write("  compset     : {}\n".format(compset))
-        self.write("  run_type    : {}, continue_run = {} (inittype = {})\n".format(run_type, str(continue_run).upper(), inittype))
-        self.write("  stop_option : {}, stop_n = {}\n".format(stop_option, stop_n))
-        self.write("  run_length  : {} days ({} for ocean)\n\n".format(adays, odays))
+        self.write("  run type    : {}, continue_run = {} (inittype = {})\n".format(run_type, str(continue_run).upper(), inittype))
+        self.write("  stop option : {}, stop_n = {}\n".format(stop_option, stop_n))
+        self.write("  run length  : {} days ({} for ocean)\n\n".format(adays, odays))
 
         self.write("  component       comp_pes    root_pe   tasks  "
                    "x threads"
@@ -391,13 +394,13 @@ class _TimingParser:
             for k in components:
                 m = self.models[k]
                 if k != "CPL":
-                    m.tmin, m.tmax, _ = self.gettime(' [{}] RunPhase1 '.format(m.name))
+                    m.tmin, m.tmax, _ = self._gettime_nuopc(' [{}] RunPhase1 '.format(m.name), inst_label[1:])
                 else:
-                    m.tmin, m.tmax = self.getMEDtime()
+                    m.tmin, m.tmax = self.getMEDtime(inst_label[1:])
             nmax = self.gettime("[ensemble] Init 1")[1]
             tmax = self.gettime("[ensemble] RunPhase1")[1]
             fmax = self.gettime("[ensemble] FinalizePhase1")[1]
-            xmax = self.getCOMMtime()
+            xmax = self.getCOMMtime(inst_label[1:])
 
         if self._driver == 'mct':
             for k in components:
@@ -447,7 +450,10 @@ class _TimingParser:
         self.write("\n")
 
         self.write("  Overall Metrics: \n")
-        self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year \n".format((tmax*365.0*pecost)/(3600.0*adays)))
+        self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year ".format((tmax*365.0*pecost)/(3600.0*adays)))
+        if inst_label:
+            self.write("      (Model Cost is for entire ensemble)")
+        self.write("\n")
         self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n".format((86400.0*adays)/(tmax*365.0)) )
         self.write("\n")
 

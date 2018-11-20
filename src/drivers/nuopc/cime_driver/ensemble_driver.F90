@@ -14,7 +14,6 @@ module Ensemble_driver
 
   public  :: SetServices
   private :: SetModelServices
-  logical :: mastertask
 
   character(*),parameter :: u_FILE_u = __FILE__
 
@@ -131,12 +130,6 @@ module Ensemble_driver
     call ESMF_VMGet(vm, localPet=localPet, PetCount=PetCount, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (localPet == 0) then
-       mastertask=.true.
-    else
-       mastertask = .false.
-    end if
-
     !-------------------------------------------
     ! Initialize clocks
     !-------------------------------------------
@@ -219,7 +212,7 @@ module Ensemble_driver
           call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          if (localPet == rootpe_med) then
+          if (mod(localPet, ntasks_per_member) == rootpe_med) then
              call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call NUOPC_CompAttributeGet(driver, name="logfile", value=logfile, rc=rc)
