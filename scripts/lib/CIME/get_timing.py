@@ -127,7 +127,9 @@ class _TimingParser:
                 return (minval, maxval, found)
         return (0, 0, False)
 
-    def _gettime_nuopc(self, heading, instance=''):
+    def _gettime_nuopc(self, heading, instance='0001'):
+        if instance == '':
+            instance = '0001'
         minval = 0
         maxval = 0
         m = None
@@ -158,6 +160,8 @@ class _TimingParser:
         return phase
 
     def getMEDtime(self, instance):
+        if instance == '':
+            instance = '0001'
         med_phase_line = re.compile(r'\s*(\[MED\] med_phases\S+)\s+\d+\s+(\d*\.\d+)\s+')
         med_connector_line = re.compile(r'\s*(\[MED\] med_connectors\S+)\s+\d+\s+(\d*\.\d+)\s+')
         med_fraction_line = re.compile(r'\s*(\[MED\] med_fraction\S+)\s+\d+\s+(\d*\.\d+)\s+')
@@ -185,6 +189,8 @@ class _TimingParser:
         return(minval, maxval)
 
     def getCOMMtime(self, instance):
+        if instance == '':
+            instance = '0001'
         comm_line = re.compile(r'\s*(\[\S+-TO-\S+\] RunPhase1)\s+\d+\s+(\d*\.\d+)\s+')
         m = None
         maxval = 0

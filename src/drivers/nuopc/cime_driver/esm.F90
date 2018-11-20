@@ -946,7 +946,7 @@ module ESM
     endif
 
     call NUOPC_CompAttributeGet(driver, name='cpl_rootpe', value=cvalue, rc=rc)
-    write(rootpe_med, *) cvalue
+    read(cvalue, *) rootpe_med
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_GridCompGet(driver, localPet=localPet, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

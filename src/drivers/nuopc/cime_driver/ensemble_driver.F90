@@ -175,7 +175,7 @@ module Ensemble_driver
 
     call NUOPC_CompAttributeGet(ensemble_driver, name='cpl_rootpe', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    write(rootpe_med, *) cvalue
+    read(cvalue, *) rootpe_med
 
     do inst=1,number_of_members
 
