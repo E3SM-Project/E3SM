@@ -3044,6 +3044,7 @@
     </mpirun>
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF}</env>
+      <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
 </machine>
 
