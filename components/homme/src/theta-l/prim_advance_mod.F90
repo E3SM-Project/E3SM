@@ -166,26 +166,8 @@ contains
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
 
-!do ie=nets,nete
-!print *, 'before first CAAR ie', ie
-!print *,'u', elem(ie)%state%v(1,1,1,1,:)
-!print *,'v', elem(ie)%state%v(1,1,1,2,:)
-!print *,'theta', elem(ie)%state%vtheta_dp(1,1,1,:)
-!print *,'ps_v', elem(ie)%state%ps_v(1,1,:)
-!print *,'derivedT', elem(ie)%derived%T(1,1,1)
-!enddo
-
        call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
-
-!do ie=nets,nete
-!print *, 'after first CAAR ie', ie
-!print *,'u', elem(ie)%state%v(1,1,1,1,:)
-!print *,'v', elem(ie)%state%v(1,1,1,2,:)
-!print *,'theta', elem(ie)%state%vtheta_dp(1,1,1,:)
-!print *,'ps_v', elem(ie)%state%ps_v(1,1,:)
-!print *,'derivedT', elem(ie)%derived%T(1,1,1)
-!enddo
 
        ! u2 = u0 + dt/5 RHS(u1)
        call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
@@ -212,16 +194,6 @@ contains
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
-
-
-!do ie=nets,nete
-!print *, 'after LAST CAAR ie', ie
-!print *,'u', elem(ie)%state%v(1,1,1,1,:)
-!print *,'v', elem(ie)%state%v(1,1,1,2,:)
-!print *,'theta', elem(ie)%state%vtheta_dp(1,1,1,:)
-!print *,'ps_v', elem(ie)%state%ps_v(1,1,:)
-!print *,'derivedT', elem(ie)%derived%T(1,1,1)
-!enddo
 
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
@@ -409,7 +381,7 @@ contains
 !That is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
 
-!DO NOT CALL FOR EAM RUNS, MANY COMPS ARE AVOIDABLE
+!DO NOT CALL FOR EAM RUNS
 
   subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
   use control_mod,        only : use_moisture
@@ -511,35 +483,23 @@ contains
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
   real(kind=real_kind)                  :: tn1(np,np,nlev)
 
-!print *, 'OG in convert_...eam --------------------'
+  tn1 = elem%derived%T + dt*elem%derived%FT
 
+  call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
 
-!if(abs(elem(ie)%derived%FT(1,1,1)) > 10000) then
-!print *, 'globid', elem%globalid
-!print *, 'FT', elem%derived%FT(1,1,1)
-!print *, 'derivedT', elem%derived%T(1,1,1)
-!endif
+  do k=1,nlev
+     dp(:,:,k)=&
+         ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+         ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
+  enddo
 
-     tn1 = elem%derived%T + dt*elem%derived%FT
+  call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
+       elem%state%phinh_i(:,:,:,nt),vthn1)
 
-     call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
-
-     do k=1,nlev
-        dp(:,:,k)=&
-            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
-     enddo
-
-     call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
-          elem%state%phinh_i(:,:,:,nt),vthn1)
-
-     !finally, compute difference for FT
-     ! this method is using new dp, new exner, new-new r*, new t
-     elem%derived%FT(:,:,:) = &
-         (vthn1 - elem%state%vtheta_dp(:,:,:,nt))/dt
-
-!print *, 'theta FT', elem%derived%FT(1,1,1)
-!print *, 'new vth and old vth', vthn1(1,1,1), elem%state%vtheta_dp(1,1,1,nt)
+  !finally, compute difference for FT
+  ! this method is using new dp, new exner, new-new r*, new t
+  elem%derived%FT(:,:,:) = &
+      (vthn1 - elem%state%vtheta_dp(:,:,:,nt))/dt
 
   end subroutine convert_thermo_forcing_eam
 
