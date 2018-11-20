@@ -84,9 +84,7 @@ wks = gsn_open_wks("pdf","hszonal")
 
   res@vpWidthF            = .8           ; change aspect ratio of plot
   res@vpHeightF           = .42
-;  res@tiMainString           = ":F21:U"
-  res@tiYAxisString          = ":F21:eta"
-;  res@tiXAxisString          = ":F21:Kinetic Energy"
+  res@tiYAxisString          = "~F21~eta"
 
    field=fuv->u
    field@long_name = "Zonal-mean Zonal Wind"

@@ -32,7 +32,8 @@ def lookfor1(fid,key1,key2="",allow_eof=0):
 
     if (allow_eof==1):
         raise eof,"EOF"
-    raise search_failed,"Search failed  string='"+key1+"'"
+#    raise search_failed,"Search failed  string='"+key1+"'"
+    raise search_failed,"Search failed  string="+key1
     return 0
 
     
@@ -44,11 +45,11 @@ PE=[]
 time=[]
 try:
     startstr="number of MPI processes:"
-    str = lookfor1(sys.stdin,startstr,"",1)
+    str = lookfor1(sys.stdin,startstr,"",0)
     str=split(str)
     ncpu=atoi(str[0])
 
-    str = lookfor1(sys.stdin,"tstep ","",1)
+    str = lookfor1(sys.stdin,"tstep ","",0)
     str=split(str)
     tstep=atof(str[1])
     print 'NCPU = %i tstep=%f' % (ncpu, tstep)
@@ -63,37 +64,41 @@ try:
         # KE,d/dt,diss:
         # IE,d/dt,diss:
         # PE,d/dt,diss:
-        str = lookfor1(sys.stdin,"KE,d/dt,diss:","",1)
+        str = lookfor1(sys.stdin,"KE,d/dt","",1)
         str=split(str)
-        KE.extend([atof(str[0])])
+        KE.extend([atof(str[1])])
 
-        str = lookfor1(sys.stdin,"IE,d/dt,diss:","",1)
+        str = lookfor1(sys.stdin,"IE,d/dt","",0)
         str=split(str)
-        IE.extend([atof(str[0])])
+        IE.extend([atof(str[1])])
 
-        str = lookfor1(sys.stdin,"PE,d/dt,diss:","",1)
+        str = lookfor1(sys.stdin,"PE,d/dt","",0)
         str=split(str)
-        PE.extend([atof(str[0])])
-
+        PE.extend([atof(str[1])])
+        #print 'parsed nstep=%i' % ( n)
 
         
 except search_failed,e:
     print "search failed"
-    print e
+    print "".join(e)
     sys.exit(1)
     
 except eof,e:
     print 'plotting...'
     KE2= np.array(KE)
-    KE2=KE2/KE2[0]
+    nlen=KE2.size
+    print 'data parsed size=%i' % (nlen)
+    time=time[0:nlen]
+    #KE2=KE2/KE2[0]
+    KE2=KE2*1e3
     PE2= np.array(PE)
-    PE2=PE2/PE2[0]
+    #PE2=PE2/PE2[0]
     IE2= np.array(IE)
-    IE2=IE2/IE2[0]
-    p1,=plt.plot(time,KE2,label='KE')
+    #IE2=IE2/IE2[0]
+    p1,=plt.plot(time,KE2,label='KE*1e3')
     p2,=plt.plot(time,PE2,label='PE')
     p2,=plt.plot(time,IE2,label='IE')
-    plt.axis([0, 500, 0, 80])
+    plt.axis([0, 500, 0, 2.5e9])
     plt.legend()
     plt.show()
 

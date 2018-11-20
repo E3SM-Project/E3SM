@@ -618,9 +618,12 @@ contains
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='omega')
              end if
+             if (par%masterproc) print *,'writing time...'
              call nf_put_var(ncdf(ios),real(dayspersec*time_at(tl%nstep),kind=real_kind),&
                   start(3:3),count(3:3),name='time')
              call nf_advance_frame(ncdf(ios))
+             call pio_syncfile(ncdf(ios)%fileid)
+             if (par%masterproc) print *,'finished I/O sync'
           end if
        end if
     end do

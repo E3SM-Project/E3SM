@@ -2,13 +2,15 @@
 NThreads      = 1
 partmethod    = 4
 topology      = "cube"
+theta_hydrostatic_mode = .true.
 test_case     = "held_suarez0"
 ne            = NE
 ndays         = 400
 statefreq     = SFREQ
 tstep_type    = 5
 qsize         = 1
-rsplit        = 3
+limiter_option = 9
+rsplit        = 1
 restartfreq   =  1
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
@@ -31,12 +33,13 @@ vfile_int     = "../vcoord/cami-26.ascii"
 infilenames=''
 output_timeunits=1,1,2    ! 1=days, 2=hours, 3=seconds
 output_frequency=1,1,1
-output_start_time=600,600,100
-output_end_time=30000,30000,110
-output_varnames1='u','v','T','zeta','ps'
+output_start_time=600,600,4800
+output_end_time=30000,30000,5280
+output_varnames1='u','v','T','zeta','div','ps'
 !output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 !output_varnames2='DIFFT','DIFFU','DIFFV','CONVU','CONVV','FU','FV'
-output_varnames3='geos','u','v','zeta','ps','div'
+! output3: hourly data for 20 days  
+output_varnames3='geos','omega','zeta','ps','div'
 io_stride = 32
 /
 

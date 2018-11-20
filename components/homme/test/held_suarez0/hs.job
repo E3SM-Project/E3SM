@@ -65,7 +65,7 @@ echo using NCPU = $NCPU
 set nlev=26
 set ndays = 1600
 set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
-set rfreq = 10000   # no. of days, or n. of timesteps if ndays=0
+set rfreq = 16000   # no. of days, or n. of timesteps if ndays=0
 
 
 # 0 = normal, 1=restart
@@ -75,6 +75,7 @@ set ne = 30
 set NPTS = 4
 set qsize = 1         # number of tracers
 set topo = ''
+set toponame = ''
 if ( $ne == 8 ) then
    # 3.75 degree     
    set tstep = 900
@@ -99,7 +100,8 @@ if ( $ne == 30 ) then
    # 1 degree    
    set tstep = 300       # dynamics timestep
    set nu = 1e15
-   set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+   #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+   #set toponame = 16xdel2
 endif
 if ( $ne == 60 ) then
    # 0.5 degree     tbird 200 nodes, 560 days: 20h
@@ -131,11 +133,6 @@ if ( $ndays == 0 ) then
   set sfreq = $nmax
 endif
 
-#set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
-#set name = hs-${mesh}-nu${nu}
-set name = hs-ne${ne}-nu${nu}
-echo $name
-
 
 set HOMME = ~/codes/acme/components/homme
 set wdir = ~/scratch1/preqx
@@ -143,7 +140,11 @@ set wdir = ~/scratch1/preqx
 set MACH = $HOMME/cmake/machineFiles/anvil.cmake
 set input = $HOMME/test/held_suarez0
 set bld = $wdir/bld
-set exe = $bld/src/preqx/preqx
+set exe = preqx
+#set exe = theta-l
+
+set name = hs${toponame}-$exe-ne${ne}-nu${nu}
+echo $name
 
 mkdir -p $bld
 cd $bld
@@ -159,8 +160,8 @@ if (! -f CMakeCache.txt) then
    if ($status) exit
    make -j4 clean
 endif
-#if (! -f $exe ) then
-   make -j4 preqx
+#if (! -f $bld/src/$exe/$exe ) then
+   make -j4 $exe
    if ($status) exit
 #endif
 
@@ -216,7 +217,7 @@ cat  $wdir/input.nl
 ############################################################
 date
 set echo
-mpirun -np $NCPU $exe < $wdir/input.nl 
+mpirun -np $NCPU $bld/src/$exe/$exe < $wdir/input.nl 
 date
 
 # save timing data
@@ -248,4 +249,9 @@ echo "NCPU=$NCPU average time (seconds) per timestep:  $time_per_timestep"
 set SYPD = `python -c "print($tstep / ( $time_per_timestep * 360 ))" `
 echo "NCPU=$NCPU SYPD = $SYPD"
 
-
+# time average the h3 file:
+# takes a long time, so do this on the front end:
+#if ( -f movies/held_suarez03.nc ) then
+#  ncwa -O -v zeta -a time movies/held_suarez03.nc  movies/held_suarez03-ave.nc 
+#  ncwa -A -v omega -a time movies/held_suarez03.nc  movies/held_suarez03-ave.nc 
+#endif
