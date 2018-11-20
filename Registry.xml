@@ -70,7 +70,7 @@
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
 		<nml_option name="config_flowParamA_calculation" type="character" default_value="constant" units="unitless"
-			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.xml file."
+			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file."
 			possible_values="'constant', 'PB1982', 'CP2010'"
 		/>
 		<nml_option name="config_do_velocity_reconstruction_for_external_dycore" type="logical" default_value=".false." units="unitless"
