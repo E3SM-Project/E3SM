@@ -495,59 +495,54 @@ enddo
   end subroutine convert_thermo_forcing
 
 
-! a version for eam till homme standalone tests are converted too to use
-! derived%T
 !----------------------------- CONVERT-THERMO-FORCING-EAM ----------------------------
 
 !in standalone homme derivedT is not inited before the first call of_subcy
-
-  subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt,nets,nete)
+!to not break loop fusion, make it work on 1 elem
+!this call assumes that Q and ps_v were already updated
+  subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt)
   use control_mod,        only : use_moisture
   implicit none
-  type (element_t),       intent(inout) :: elem(:)
+  type (element_t),       intent(inout) :: elem
   real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nets,nete
   integer,                intent(in)    :: nt
-  integer                               :: ie,i,j,k,q
+  integer                               :: i,j,k,q
   real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
-  real (kind=real_kind)                 :: pnh(np,np,nlev)
-  real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
+  real(kind=real_kind)                  :: pnh(np,np,nlev)
+  real(kind=real_kind)                  :: dpnh_dp_i(np,np,nlevp)
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
-  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
-  real(kind=real_kind)                  :: psn1(np,np)
+  real(kind=real_kind)                  :: tn1(np,np,nlev)
 
 print *, 'OG in convert_...eam --------------------'
 
-  do ie=nets,nete
 
 !if(abs(elem(ie)%derived%FT(1,1,1)) > 10000) then
-print *, 'ie', ie, 'globid', elem(ie)%globalid
-print *, 'FT', elem(ie)%derived%FT(1,1,1)
-print *, 'derivedT', elem(ie)%derived%T(1,1,1)
+print *, 'globid', elem%globalid
+print *, 'FT', elem%derived%FT(1,1,1)
+print *, 'derivedT', elem%derived%T(1,1,1)
 !endif
 
-     tn1 = elem(ie)%derived%T + dt*elem(ie)%derived%FT
+     tn1 = elem%derived%T + dt*elem%derived%FT
 
-     call get_R_star(rstarn1,elem(ie)%state%Q(:,:,:,1))
+     call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
 
      do k=1,nlev
         dp(:,:,k)=&
             ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,nt)
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
      enddo
 
      call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
-          elem(ie)%state%phinh_i(:,:,:,nt),vthn1)
+          elem%state%phinh_i(:,:,:,nt),vthn1)
 
      !finally, compute difference for FT
      ! this method is using new dp, new exner, new-new r*, new t
-     elem(ie)%derived%FT(:,:,:) = &
-         (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,nt))/dt
+     elem%derived%FT(:,:,:) = &
+         (vthn1 - elem%state%vtheta_dp(:,:,:,nt))/dt
 
-print *, 'theta FT', elem(ie)%derived%FT(1,1,1)
-print *, 'new vth and old vth', vthn1(1,1,1), elem(ie)%state%vtheta_dp(1,1,1,nt)
-  enddo
+print *, 'theta FT', elem%derived%FT(1,1,1)
+print *, 'new vth and old vth', vthn1(1,1,1), elem%state%vtheta_dp(1,1,1,nt)
 
   end subroutine convert_thermo_forcing_eam
 

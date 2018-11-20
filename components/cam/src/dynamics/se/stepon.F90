@@ -235,7 +235,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
    use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
-   use prim_advance_mod, only: convert_thermo_forcing
+   use prim_advance_mod,only: convert_thermo_forcing_eam
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
@@ -368,6 +368,10 @@ print *, 'END PD COUPLING'
             end do
           end do
          end do
+
+#ifdef MODEL_THETA_L
+      call convert_thermo_forcing_eam(dyn_in%elem(ie),hvcoord,tl_f,dtime)
+#endif
 
       endif ! if ftype == 2 or == 3 or == 4
 

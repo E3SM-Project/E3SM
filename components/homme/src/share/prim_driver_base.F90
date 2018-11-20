@@ -987,7 +987,7 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: convert_thermo_forcing, convert_thermo_forcing_eam
+    use prim_advance_mod,   only: convert_thermo_forcing
 
     implicit none
 
@@ -1062,8 +1062,6 @@ enddo
     ! standalone and cam homme, since now we don't care anymore that tracers are
     ! adjusted in stepon. clean this later, after the rest works. 
     call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-#else
-    call convert_thermo_forcing_eam(elem,hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
     ! Apply CAM Physics forcing
