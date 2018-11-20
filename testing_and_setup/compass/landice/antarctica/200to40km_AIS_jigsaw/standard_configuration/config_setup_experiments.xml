@@ -10,7 +10,7 @@
         <add_executable source="interpolate_to_mpasli_grid" dest="interpolate_to_mpasli_grid.py"/>
         <add_executable source="define_cull_mask" dest="define_cullMask.py"/>
         <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
-        <!--        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/> -->
+        <!--        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/> -->
         <add_link source_path="script_test_dir" source="antarctica_8km_2018_04_20.nc" dest="ais_input_data.nc"/>
         <add_link source_path="script_test_dir" source="ais_temp_pattyn_cism_format.5km.filled.nc" dest="ais_temperature_input_data.nc"/>
         <add_link source_path="script_test_dir" source="ais200to40km-MESH.msh" dest="."/>

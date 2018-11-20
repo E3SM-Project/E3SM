@@ -9,7 +9,7 @@
         <!-- add needed files/executables -->
         <add_link source_path="work_resolution_dir" source="gis20km.150922.nc" dest="landice_grid.nc"/>
         <add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_executable source="model" dest="landice_model"/>
         <add_executable source="metis" dest="metis"/>
 

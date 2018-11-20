@@ -3,7 +3,7 @@
         <!-- add needed files/executables -->
         <add_link source="../setup_mesh/graph.info" dest="."/>
         <add_link source="../setup_mesh/graph.info.part.4" dest="."/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_executable source="model" dest="landice_model"/>
         <!-- link in scripts that the user will need -->
         <add_link source_path="script_configuration_dir" source="setup_initial_conditions_EISMINT2.py" dest="."/>

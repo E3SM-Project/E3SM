@@ -12,7 +12,7 @@
         <add_link source_path="script_configuration_dir" source="setup_mismip+_subdirectories.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="mismip+WriteGL.py" dest="."/> -->
         <add_link source_path="script_configuration_dir" source="mismip+PlotGL.py" dest="."/> -->
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
         <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
 

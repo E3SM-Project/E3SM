@@ -2,7 +2,7 @@
 <config case="P75">
 
         <!-- Set up needed files and executables -->
-       <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+       <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
 
 
         <namelist name="namelist.landice.P75" mode="forward">

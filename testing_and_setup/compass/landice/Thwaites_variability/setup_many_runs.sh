@@ -30,7 +30,7 @@ if [ $SETUP = 1 ]; then
    # remove some unneeded garbage
    rm ./make_graph_file.py ./metis ./setup_model.py
    # remove symlink to a few files
-   cp --remove-destination `readlink albany_input.xml` albany_input.xml
+   cp --remove-destination `readlink albany_input.yaml` albany_input.yaml
    cp --remove-destination `readlink slurm.wolf.run` slurm.wolf.run
    cp --remove-destination `readlink slurm.edison_bundle.run` slurm.edison_bundle.run
 fi

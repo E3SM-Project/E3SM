@@ -9,7 +9,7 @@
         <!-- add needed files/executables -->
         <add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
         <add_executable source="metis" dest="metis"/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
         <add_link source_path="script_configuration_dir" source="setup_many_runs.sh" dest="../setup_many_runs.sh"/>
         <add_link source_path="script_configuration_dir" source="compare_variability_runs.py" dest="../compare_variability_runs.py"/>

@@ -71,7 +71,7 @@ for expt in experiments:
             os.symlink('../' + file, file)
 
     # Link to the albany input file in the parent directory
-    os.symlink('../' + 'albany_input.xml', 'albany_input.xml')
+    os.symlink('../' + 'albany_input.yaml', 'albany_input.yaml')
 
     # Link to the appropriate restart file and timestamp
     # No restart file needed for the Spinup experiment

@@ -1,0 +1,139 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Problem: 
+    Solution Method: Steady
+    Name: LandIce Stokes First Order 3D
+    Parameters: 
+      Number: 1
+      Parameter 0: 'Glen''s Law Homotopy Parameter'
+    LandIce Viscosity: 
+      Type: 'Glen''s Law'
+      Flow Rate Type: Uniform
+      'Glen''s Law Homotopy Parameter': 1.0
+      'Glen''s Law A': 1.0e-04
+      'Glen''s Law n': 3.0e+00
+    Body Force: 
+      Type: FO INTERP SURF GRAD
+    LandIce Field Norm: 
+      sliding_velocity_basalside: 
+        Regularization Type: Given Value
+        Regularization Value: 1.0e-05
+    LandIce BCs: 
+      Number: 2
+      BC 0: 
+        Cubature Degree: 3
+        Side Set Name: basalside
+        Type: Basal Friction
+        Basal Friction Coefficient: 
+          Type: Regularized Coulomb
+          Given Field Variable Name: basal_friction
+          Zero Beta On Floating Ice: true
+          Coulomb Friction Coefficient: 1.0e+05
+          Power Exponent: 1.0
+          Bed Roughness: 1.0e+04
+      BC 1: 
+        Cubature Degree: 3
+        Side Set Name: floatinglateralside
+        Type: Lateral
+        Immersed Ratio: 8.8521e-01
+  Discretization: 
+    Exodus Output File Name: albany_output.exo
+    Cubature Degree: 1
+    Interleaved Ordering: false
+  Piro: 
+    LOCA: 
+      Bifurcation: { }
+      Constraints: { }
+      Predictor: 
+        Method: Constant
+      Stepper: 
+        Initial Value: 2.0e-01
+        Continuation Parameter: 'Glen''s Law Homotopy Parameter'
+        Continuation Method: Natural
+        Max Steps: 100
+        Max Value: 1.0
+        Min Value: -3.0e-01
+      Step Size: 
+        Initial Step Size: 2.0e-01
+        Aggressiveness: 1.0e+01
+    NOX: 
+      Status Tests: 
+        Test Type: Combo
+        Combo Type: OR
+        Number of Tests: 2
+        Test 0: 
+          Test Type: Combo
+          Combo Type: AND
+          Number of Tests: 2
+          Test 0: 
+            Test Type: NormF
+            Norm Type: Two Norm
+            Scale Type: Scaled
+            Tolerance: 1.0e-04
+          Test 1: 
+            Test Type: NormWRMS
+            Absolute Tolerance: 1.0e-04
+            Relative Tolerance: 1.0e-05
+        Test 1: 
+          Test Type: MaxIters
+          Maximum Iterations: 15
+      Direction: 
+        Method: Newton
+        Newton: 
+          Forcing Term Method: Constant
+          Linear Solver: 
+            Write Linear System: false
+          Stratimikos Linear Solver: 
+            NOX Stratimikos Options: { }
+            Stratimikos: 
+              Linear Solver Type: AztecOO
+              Linear Solver Types: 
+                AztecOO: 
+                  Forward Solve: 
+                    AztecOO Settings: 
+                      Aztec Solver: GMRES
+                      Convergence Test: r0
+                      Size of Krylov Subspace: 200
+                      Output Frequency: 20
+                    Max Iterations: 200
+                    Tolerance: 1.0e-04
+              Preconditioner Type: Ifpack
+              Preconditioner Types: 
+                Ifpack: 
+                  Overlap: 1
+                  Prec Type: ILU
+                  Ifpack Settings: 
+                    'fact: level-of-fill': 0
+                ML: 
+                  Base Method Defaults: none
+                  ML Settings: 
+                    default values: SA
+                    'smoother: type': ML symmetric Gauss-Seidel
+                    'smoother: pre or post': both
+                    'coarse: type': Amesos-KLU
+                    PDE equations: 4
+          Rescue Bad Newton Solve: true
+      Line Search: 
+        Full Step: 
+          Full Step: 1.0e+00
+        Method: Backtrack
+        Backtrack: 
+          Max Iters: 5
+      Nonlinear Solver: Line Search Based
+      Printing: 
+        Output Precision: 3
+        Output Processor: 0
+        Output Information: 
+          Error: true
+          Warning: true
+          Outer Iteration: true
+          Parameters: false
+          Details: false
+          Linear Solver Details: true
+          Stepper Iteration: true
+          Stepper Details: true
+          Stepper Parameters: true
+      Solver Options: 
+        Status Test Check Type: Minimal
+...
