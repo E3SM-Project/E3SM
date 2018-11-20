@@ -30,4 +30,8 @@ void SurfaceCoupling::finalize ( /* inputs? */ ) {
   // clean up
 }
 
+void SurfaceCoupling::register_fields (FieldRepository<Real, ExecMemSpace>& /*field_repo*/) const {
+  // register device fields in the repo
+}
+
 }  // namespace scream

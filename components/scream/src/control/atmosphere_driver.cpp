@@ -23,15 +23,8 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   // Initialize the processes
   m_atm_process_group->initialize(m_atm_comm);
 
-  // Get all the inputs from all the atmosphere processes, and register them in the field repository
-  const auto& inputs  = m_atm_process_group->get_required_fields();
-  const auto& outputs = m_atm_process_group->get_computed_fields();
-  for (const auto& id : inputs) {
-    m_device_field_repo.register_field(id);
-  }
-  for (const auto& id : outputs) {
-    m_device_field_repo.register_field(id);
-  }
+  // Let the processes register their fields in the repo
+  m_atm_process_group->register_fields(m_device_field_repo);
 
   // TODO: this is the correct location where you should make sure all the fields
   //       dimensions have been set. Some may have not been known at construction
@@ -48,6 +41,8 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
 
   // Set all the fields in the processes needing them (before, they only had headers)
   // Input fields will be handed to the processes as const
+  const auto& inputs  = m_atm_process_group->get_required_fields();
+  const auto& outputs = m_atm_process_group->get_computed_fields();
   for (const auto& id : inputs) {
     m_atm_process_group->set_required_field(m_device_field_repo.get_field(id));
   }

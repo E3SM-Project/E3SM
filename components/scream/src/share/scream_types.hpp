@@ -58,18 +58,17 @@ template <typename DataType>
 using HostViewUnmanaged = HostView<DataType, MemoryUnmanaged>;
 
 namespace util {
-// Helper structure template on a type T. It establishes
+// Helper structure templated on a type T. It establishes
 //  1) if T is a pack
-//  2) what's the core type
-//  3) what's the size of the pack
-// The default impl says T is not a pack, the core type is T itself, and the size is 1.
+//  2) what's the underlying scalar type
+// The default impl says T is not a pack, and that the scalar type is T itself.
 
 template<typename T>
-struct is_pack {
+struct ScalarProperties {
   using scalar_type = T;
-  static constexpr bool value = false;
-  static constexpr int  size  = 1;
+  static constexpr bool is_pack = false;
 };
+
 } // namespace util
 
 } // namespace scream

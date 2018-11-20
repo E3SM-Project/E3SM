@@ -4,6 +4,7 @@
 #include "field_identifier.hpp"
 #include "field_tracking.hpp"
 #include "field_tag.hpp"
+#include "field_alloc_prop.hpp"
 #include <share/scream_types.hpp>
 #include <share/util/time_stamp.hpp>
 
@@ -39,6 +40,11 @@ public:
   const FieldTracking& get_tracking () const { return m_tracking; }
         FieldTracking& get_tracking ()       { return m_tracking; }
 
+
+  // Get the allocation properties
+  const FieldAllocProp& get_alloc_properties () const { return m_alloc_prop; }
+        FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
+
 protected:
 
   // Static information about the field: name, rank, tags
@@ -46,6 +52,9 @@ protected:
 
   // Tracking of the field
   FieldTracking         m_tracking;
+
+  // Allocation properties
+  FieldAllocProp        m_alloc_prop;
 };
 
 } // namespace scream

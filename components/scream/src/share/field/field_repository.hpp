@@ -19,19 +19,19 @@ namespace scream
   *  You can find some utilities for reshaping a field in field_utils.hpp.
   */
 
-template<typename Scalar, typename MemSpace>
+template<typename ScalarType, typename MemSpace>
 class FieldRepository {
 public:
 
   // Public types
-  using scalar_type     = Scalar;
+  using scalar_type     = ScalarType;
   using field_type      = Field<scalar_type*,MemSpace,MemoryManaged>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
   using view_type       = typename field_type::view_type;
 
   // Constructor(s)
-  FieldRepository () : m_registration_completed(false) {}
+  FieldRepository ();
 
   // No copies, cause the internal database is not a shared_ptr.
   // NOTE: you can change this if you find that copies are needed/useful.
@@ -39,8 +39,8 @@ public:
   FieldRepository& operator= (const FieldRepository&) = delete;
 
   // Deduce the pack size from the scalar type (which must be of type Pack<ScalarType,N>, for some int N>0, or ScalarType)
-  template<typename ScalarOrPackType = scalar_type>
-  void register_field (const identifier_type& identifier, const bool abort_if_existing = false);
+  template<typename RequestedValueType = scalar_type>
+  void register_field (const identifier_type& identifier);
 
   // Methods to query the database
   field_type get_field (const identifier_type& identifier) const;
@@ -52,6 +52,9 @@ public:
 
   // Queries whether the database is open for registration
   bool is_registration_open () const { return !m_registration_completed; }
+
+  // Queries whether the database is cleaned up (used only for integridy checks)
+  bool is_cleaned_up () const { return m_cleaned_up; }
   
   // Cleans up the repo. This is needed since this class will most likely be contained inside
   // some singleton with static storage, which will be destroyed only after exit from main.
@@ -64,44 +67,48 @@ protected:
   // When true, no more fields are allowed to be added to the repo
   bool                                  m_registration_completed;
 
+  // Used only to perform some checks on the status of the repo
+  bool                                  m_cleaned_up;
+
   // A map identifier->field
   std::map<identifier_type,field_type>  m_fields;
 };
 
 // ============================== IMPLEMENTATION ============================= //
 
-template<typename Scalar, typename MemSpace>
-template<typename ScalarOrPackType>
-void FieldRepository<Scalar,MemSpace>::register_field (const identifier_type& id,
-                                                       const bool abort_if_existing) {
-  // Check that ScalarOrPackType is indeed Scalar or Pack<Scalar,N>, for some N>0.
-  static_assert(std::is_same<Scalar,ScalarOrPackType>::value ||
-                std::is_same<Scalar,typename util::is_pack<ScalarOrPackType>::scalar_type>::value,
-                "Error! The template argument 'ScalarOrPackType' of this function must either match "
-                "the template argument 'Scalar' of this class or be a Pack<Scalar,N>, for some N>0.\n");
+template<typename ScalarType, typename MemSpace>
+FieldRepository<ScalarType,MemSpace>::FieldRepository ()
+ : m_registration_completed (false)
+ , m_cleaned_up             (true)
+{
+  // Nothing to be done here
+}
+
+template<typename ScalarType, typename MemSpace>
+template<typename RequestedValueType>
+void FieldRepository<ScalarType,MemSpace>::register_field (const identifier_type& id) {
+  // Check that ScalarOrPackType is indeed ScalarType or Pack<ScalarType,N>, for some N>0.
+  static_assert(std::is_same<ScalarType,RequestedValueType>::value ||
+                std::is_same<ScalarType,typename util::ScalarProperties<RequestedValueType>::scalar_type>::value,
+                "Error! The template argument 'RequestedValueType' of this function must either match "
+                "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
   
   // Sanity checks
   error::runtime_check(!m_registration_completed,"Error! Registration of new fields no longer allowed.\n");
 
-  // Try to create the field. Abort if we fail and abort_if_existing is true
+  // Try to create the field. Allow case where it is already existing.
   auto it_bool = m_fields.emplace(id,id);
-  if (!it_bool.second && abort_if_existing) {
-    error::runtime_abort("Error! Field with identifier '" + id.get_identifier() + "' already registered in the database.\n");
-  }
 
-  // Detect pack size
-  int pack_size = 1;
-  if (util::is_pack<ScalarOrPackType>::value) {
-    pack_size = util::is_pack<ScalarOrPackType>::size;
-  }
+  // Make sure the field can accommodate the requested value type
+  it_bool.first->second.get_header().get_alloc_properties().template request_value_type_allocation<RequestedValueType>();
 
-  // Set the requested pack size in the field
-  it_bool.first->second.request_pack_size(pack_size);
+  // No longer cleaned up
+  m_cleaned_up = false;
 }
 
-template<typename Scalar, typename MemSpace>
-typename FieldRepository<Scalar,MemSpace>::field_type
-FieldRepository<Scalar,MemSpace>::get_field (const identifier_type& id) const {
+template<typename ScalarType, typename MemSpace>
+typename FieldRepository<ScalarType,MemSpace>::field_type
+FieldRepository<ScalarType,MemSpace>::get_field (const identifier_type& id) const {
   error::runtime_check(m_registration_completed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   auto it = m_fields.find(id);
@@ -109,8 +116,8 @@ FieldRepository<Scalar,MemSpace>::get_field (const identifier_type& id) const {
   return it->second;
 }
 
-template<typename Scalar, typename MemSpace>
-void FieldRepository<Scalar,MemSpace>::registration_complete () {
+template<typename ScalarType, typename MemSpace>
+void FieldRepository<ScalarType,MemSpace>::registration_complete () {
   // Proceed to allocate fields
   for (auto& it : m_fields) {
     it.second.allocate_view();
@@ -120,10 +127,11 @@ void FieldRepository<Scalar,MemSpace>::registration_complete () {
   m_registration_completed = true;
 }
 
-template<typename Scalar, typename MemSpace>
-void FieldRepository<Scalar,MemSpace>::clean_up() {
+template<typename ScalarType, typename MemSpace>
+void FieldRepository<ScalarType,MemSpace>::clean_up() {
   m_fields.clear();
   m_registration_completed = false;
+  m_cleaned_up = true;
 }
 
 

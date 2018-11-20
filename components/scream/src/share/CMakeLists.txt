@@ -1,5 +1,6 @@
 set(SHARE_SRC
   error_defs.cpp
+  field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
   field/field_tracking.cpp
@@ -14,6 +15,7 @@ set(SHARE_HEADERS
   atmosphere_process.hpp
   error_defs.hpp
   field/field.hpp
+  field/field_alloc_prop.hpp
   field/field_identifier.hpp
   field/field_header.hpp
   field/field_repository.hpp

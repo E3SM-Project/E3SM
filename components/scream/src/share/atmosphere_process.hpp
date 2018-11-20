@@ -4,8 +4,10 @@
 #include <string>
 #include <set>
 
+#include <share/error_defs.hpp>
 #include <share/mpi/scream_comm.hpp>
 #include <share/field/field_identifier.hpp>
+#include <share/field/field_repository.hpp>
 #include <share/field/field.hpp>
 
 namespace scream
@@ -76,6 +78,9 @@ public:
                          "Something is wrong up the call stack. Please, contact developers.\n");
     set_computed_field_impl (f);
   }
+
+  // Register required/computed fields in the field repo
+  virtual void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const = 0;
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.

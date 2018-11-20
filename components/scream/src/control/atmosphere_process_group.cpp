@@ -78,6 +78,16 @@ void AtmosphereProcessGroup::finalize   (/* what inputs? */) {
   }
 }
 
+void AtmosphereProcessGroup::register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const {
+  for (const auto& atm_proc : m_atm_processes) {
+    atm_proc->register_fields(field_repo);
+
+    // Make sure processes are not calling methods they shouldn't on the repo
+    error::runtime_check(field_repo.is_registration_open(), "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
+    error::runtime_check(!field_repo.is_cleaned_up(),       "Error! Atmosphere processes are *not* allowed to modify the state of the repository, and should register at least one field.\n");
+  }
+}
+
 void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->requires(f.get_header().get_identifier())) {

@@ -36,6 +36,9 @@ public:
   // Clean up
   void finalize ( /* inputs */ );
 
+  // Register all fields in the given repo
+  void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const;
+
   // Providing a list of required and computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_fields_to_import; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_fields_to_export; }

@@ -40,6 +40,9 @@ public:
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 
+  // Register all fields in the given repo
+  void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const;
+
   // Get the set of required/computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }

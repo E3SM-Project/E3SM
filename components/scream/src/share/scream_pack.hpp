@@ -398,13 +398,15 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
 
 namespace util {
 
-// Specialization of helper function for pack-properties detection
+// Specialization of scalar-properties detection helper struct for Pack types
 
 template<typename T, int N>
-struct is_pack<pack::Pack<T,N>> {
-  using scalar_type = T;
-  static constexpr bool value = true;
-  static constexpr int  size  = N;
+struct ScalarProperties<pack::Pack<T,N>> {
+  // This seems funky. But write down a pow of 2 and a non-pow of 2 in binary (both positive), and you'll see why it works
+  static_assert (N>0 && ((N & (N-1))==0), "Error! Packs can only have power of two lengths.\n");
+
+  using scalar_type = typename ScalarProperties<T>::scalar_type;
+  static constexpr bool is_pack = true;
 };
 
 } // namespace util
