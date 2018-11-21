@@ -278,7 +278,6 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
     postrun_script = self.get_value("POSTRUN_SCRIPT")
-    driver = self.get_value("COMP_INTERFACE")
 
     data_assimilation_cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = self.get_value("DATA_ASSIMILATION_SCRIPT")
@@ -286,7 +285,6 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
                          len(data_assimilation_script) > 0 and
                          os.path.isfile(data_assimilation_script))
 
-    driver = self.get_value("COMP_INTERFACE")
 
     # set up the LID
     lid = new_lid()

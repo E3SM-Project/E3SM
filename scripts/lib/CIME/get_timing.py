@@ -171,8 +171,6 @@ class _TimingParser:
             phase = self._get_nuopc_phase(line, instance, phase)
             if phase != "run":
                 continue
-            minv = 0
-            maxv = 0
             m = med_phase_line.match(line)
             if not m:
                 m = med_connector_line.match(line)
@@ -181,7 +179,7 @@ class _TimingParser:
             if m:
                 minval += float(m.group(2))
                 maxval += float(m.group(2))
-                logger.debug("{} time={} sum={}".format(line, minv, minval))
+                logger.debug("{} time={} sum={}".format(line, minval, minval))
 
         return(minval, maxval)
 
