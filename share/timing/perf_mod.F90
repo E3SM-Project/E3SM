@@ -118,7 +118,9 @@ module perf_mod
    integer, parameter :: init_timing_detail = 0                ! init
    integer, private   :: cur_timing_detail = init_timing_detail
                          ! current timing detail level
-
+#ifdef NUOPC_INTERFACE
+   integer, private   :: cur_timing_depth = 0
+#endif
    logical, parameter :: def_perf_single_file = .false.         ! default
    logical, private   :: perf_single_file = def_perf_single_file
                          ! flag indicating whether the performance timer
@@ -746,6 +748,10 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
+#ifdef NUOPC_INTERFACE
+   cur_timing_depth = cur_timing_depth + 1
+   if(cur_timing_depth > timer_depth_limit) return
+#endif
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
@@ -810,7 +816,10 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
-
+#ifdef NUOPC_INTERFACE
+   cur_timing_depth = cur_timing_depth - 1
+   if(cur_timing_depth > timer_depth_limit) return
+#endif
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
