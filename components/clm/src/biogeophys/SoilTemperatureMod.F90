@@ -25,7 +25,7 @@ module SoilTemperatureMod
   use TemperatureType   , only : temperature_type
   use TopounitType      , only : top_af
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
+  use ColumnType        , only : col_pp, col_es                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -279,7 +279,7 @@ contains
          hc_soi                  => temperature_vars%hc_soi_col             , & ! Input:  [real(r8) (:)   ]  soil heat content (MJ/m2)               ! TODO: make a module variable
          hc_soisno               => temperature_vars%hc_soisno_col          , & ! Input:  [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2) !TODO: make a module variable
          tssbef                  => temperature_vars%t_ssbef_col            , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
-         t_h2osfc                => temperature_vars%t_h2osfc_col           , & ! Output: [real(r8) (:)   ]  surface water temperature               
+         t_h2osfc                => col_es%t_h2osfc           , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => temperature_vars%t_soisno_col           , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd                  => temperature_vars%t_grnd_col             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
          t_building              => temperature_vars%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
@@ -1132,7 +1132,7 @@ end subroutine SolveTemperature
          c_h2osfc                  =>    temperature_vars%c_h2osfc_col  , &
          xmf_h2osfc                =>    temperature_vars%xmf_h2osfc_col, &
          t_soisno                  =>    temperature_vars%t_soisno_col         , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
-         t_h2osfc                  =>    temperature_vars%t_h2osfc_col           & ! Output: [real(r8) (:)   ] surface water temperature               
+         t_h2osfc                  =>    col_es%t_h2osfc           & ! Output: [real(r8) (:)   ] surface water temperature               
          )
 
       ! Get step size
@@ -1765,7 +1765,7 @@ end subroutine SolveTemperature
          qflx_tran_veg           => waterflux_vars%qflx_tran_veg_patch      , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          
          emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
-         t_h2osfc                => temperature_vars%t_h2osfc_col           , & ! Input:  [real(r8) (:)   ]  surface water temperature               
+         t_h2osfc                => col_es%t_h2osfc           , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          t_grnd                  => temperature_vars%t_grnd_col             , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]          
          t_soisno                => temperature_vars%t_soisno_col           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          
@@ -2112,7 +2112,7 @@ end subroutine SolveTemperature
 
     associate(                                              &
          t_soisno     => temperature_vars%t_soisno_col    , & ! Input: [real(r8) (:,:) ]  soil temperature (Kelvin)      
-         t_h2osfc     => temperature_vars%t_h2osfc_col    , & ! Input: [real(r8) (:)   ]  surface water temperature               
+         t_h2osfc     => col_es%t_h2osfc    , & ! Input: [real(r8) (:)   ]  surface water temperature               
          frac_h2osfc  => waterstate_vars%frac_h2osfc_col  , & ! Input: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          frac_sno_eff => waterstate_vars%frac_sno_eff_col , & ! Input: [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
          begc         => bounds%begc                      , & ! Input: [integer ] beginning column index

@@ -24,7 +24,14 @@ module ColumnType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
   use clm_varcon     , only : spval, ispval
+  use clm_varctl     , only : use_cn
   use column_varcon  , only : is_hydrologically_active
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
+  use spmdMod        , only : masterproc
+  use ncdio_pio      , only : file_desc_t, ncd_double
+  use decompMod      , only : bounds_type
+  use restUtilMod
+  use histFieldsMod  , only : col_es_init_hist
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -85,10 +92,11 @@ module ColumnType
   ! Define the data structure that holds energy state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_energy_state
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: t_h2osfc      (:) => null() ! surface water temperature (K)
   contains
-    procedure, public :: Init  => init_col_es
-    procedure, public :: Clean => clean_col_es
+    procedure, public :: Init    => init_col_es
+    procedure, public :: Restart => restart_col_es
+    procedure, public :: Clean   => clean_col_es
   end type column_energy_state
   
   !-----------------------------------------------------------------------
@@ -285,20 +293,57 @@ contains
   !------------------------------------------------------------------------
   subroutine init_col_es(this, begc, endc)
     !
+    ! !USES:
+    !use histFieldsMod  , only : col_es_hist_init
+    !
     ! !ARGUMENTS:
     class(column_energy_state) :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
+    allocate(this%t_h2osfc             (begc:endc))              ; this%t_h2osfc           (:)   = nan
+
+    call col_es_init_hist(begc, endc)
+    
+    ! set cold-start initial values
+    this%t_h2osfc = 274._r8
     
   end subroutine init_col_es
     
+  !------------------------------------------------------------------------
+  subroutine restart_col_es(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write column energy state information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(column_energy_state) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='TH2OSFC', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='surface water temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_h2osfc)
+    if (flag=='read' .and. .not. readvar) then
+       this%t_h2osfc(bounds%begc:bounds%endc) = 274.0_r8
+    end if
+
+  end subroutine restart_col_es
+
   !------------------------------------------------------------------------
   subroutine clean_col_es(this)
     !
     ! !ARGUMENTS:
     class(column_energy_state) :: this
     !------------------------------------------------------------------------
-    
+    deallocate(this%t_h2osfc)
   end subroutine clean_col_es
   
   !------------------------------------------------------------------------

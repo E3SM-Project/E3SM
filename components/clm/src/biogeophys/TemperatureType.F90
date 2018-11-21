@@ -280,11 +280,6 @@ contains
     begl = bounds%begl; endl= bounds%endl
     begg = bounds%begg; endg= bounds%endg
 
-    this%t_h2osfc_col(begc:endc) = spval
-    call hist_addfld1d (fname='TH2OSFC',  units='K',  &
-         avgflag='A', long_name='surface water temperature', &
-         ptr_col=this%t_h2osfc_col)
-
     this%t_grnd_u_col(begc:endc) = spval
     call hist_addfld1d (fname='TG_U', units='K',  &
          avgflag='A', long_name='Urban ground temperature', &
@@ -647,10 +642,6 @@ contains
          end if
       end do
 
-      ! Set t_h2osfc_col
-
-      this%t_h2osfc_col(bounds%begc:bounds%endc)  = 274._r8
-
       ! Set t_veg, t_ref2m, t_ref2m_u and tref2m_r 
 
       do p = bounds%begp, bounds%endp
@@ -756,14 +747,6 @@ contains
          dim1name='pft', &
          long_name='vegetation temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_veg_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='TH2OSFC', xtype=ncd_double,  &
-         dim1name='column', &
-         long_name='surface water temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_h2osfc_col)
-    if (flag=='read' .and. .not. readvar) then
-       this%t_h2osfc_col(bounds%begc:bounds%endc) = 274.0_r8
-    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='T_LAKE', xtype=ncd_double,  &
          dim1name='column', dim2name='levlak', switchdim=.true., &

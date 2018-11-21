@@ -37,8 +37,9 @@ module CH4Mod
   use GridcellType       , only : grc_pp
   use TopounitType       , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
-  use ColumnType         , only : col_pp                
-  use VegetationType          , only : veg_pp                
+  use ColumnType         , only : col_pp, col_es              
+  use VegetationType     , only : veg_pp
+  
   !
   implicit none
   save
@@ -2891,7 +2892,7 @@ contains
 
          t_soisno      =>    temperature_vars%t_soisno_col   , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
          t_grnd        =>    temperature_vars%t_grnd_col     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)                       
-         t_h2osfc      =>    temperature_vars%t_h2osfc_col   , & ! Input:  [real(r8) (:)   ]  surface water temperature               
+         t_h2osfc      =>    col_es%t_h2osfc   , & ! Input:  [real(r8) (:)   ]  surface water temperature               
 
          frac_h2osfc   =>    waterstate_vars%frac_h2osfc_col , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          snow_depth    =>    waterstate_vars%snow_depth_col  , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   

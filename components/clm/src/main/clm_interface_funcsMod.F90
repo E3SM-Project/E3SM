@@ -28,7 +28,7 @@ module clm_interface_funcsMod
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
-  use ColumnType            , only : col_pp 
+  use ColumnType            , only : col_pp, col_es 
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -367,7 +367,7 @@ contains
       !
       t_soisno              => temperature_vars%t_soisno_col            , & ! [real(r8) (:,:)] snow-soil temperature (Kelvin) (-nlevsno+1:nlevgrnd)
       t_grnd                => temperature_vars%t_grnd_col              , & ! [real(r8) (:)] ground (snow/soil1/surfwater-mixed) temperature (Kelvin)
-      t_h2osfc              => temperature_vars%t_h2osfc_col            , & ! [real(r8) (:)] surface water temperature (Kelvin)
+      t_h2osfc              => col_es%t_h2osfc            , & ! [real(r8) (:)] surface water temperature (Kelvin)
       t_nearsurf            => temperature_vars%t_nearsurf_col          , & ! [real(r8) (:)] near surface air temperature (Kelvin)
       !
       forc_pbot             => atm2lnd_vars%forc_pbot_not_downscaled_grc  & ! atmospheric pressure (Pa)
