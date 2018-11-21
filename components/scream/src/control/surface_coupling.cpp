@@ -34,4 +34,12 @@ void SurfaceCoupling::register_fields (FieldRepository<Real, ExecMemSpace>& /*fi
   // register device fields in the repo
 }
 
+void SurfaceCoupling::set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& /*f*/) {
+  /* impl */
+}
+
+void SurfaceCoupling::set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& /*f*/) {
+  /* impl */
+}
+
 }  // namespace scream

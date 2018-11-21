@@ -46,8 +46,8 @@ public:
 protected:
 
   // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& /*f*/) { /* impl */ }
-  void set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& /*f*/) { /* impl */ }
+  void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f);
+  void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& f);
 
   std::set<FieldIdentifier> m_fields_to_export;
   std::set<FieldIdentifier> m_fields_to_import;

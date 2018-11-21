@@ -31,16 +31,12 @@ public:
   using identifier_type      = header_type::identifier_type;
 
   // Statically check that ScalarType is not an array.
-  static_assert(view_type::Rank==1, "Error! ScalarType should not be a (multidimensional) array.\n");
+  static_assert(view_type::Rank==1, "Error! ScalarType should not be an array type.\n");
 
   // Constructor(s)
   Field () = delete;
   Field (const identifier_type& id);
   Field (const header_type& header);
-
-  // WARNING: this is an expert user constructor. We do perform some checks, to make
-  //          sure things are consistent, but it is not to be used frequently.
-  Field (const std::shared_ptr<header_type>& fh, const view_type& view);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
@@ -53,9 +49,12 @@ public:
   // ---- Getters ---- //
   const header_type& get_header () const { return *m_header; }
         header_type& get_header ()       { return *m_header; }
+  const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
+
   const view_type&   get_view   () const { return  m_view;   }
 
-  const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
+  template<typename DT>
+  ViewType<DT,MemSpace,MemoryUnmanaged> get_reshaped_view () const;
 
   bool is_allocated () const { return m_allocated; }
 
@@ -96,7 +95,7 @@ Field (const Field<SrcScalarType,MemSpace,MemManagement>& src)
  , m_view      (src.get_view())
  , m_allocated (src.is_allocated())
 {
-  using src_field_type = decltype(src);
+  using src_field_type = Field<SrcScalarType,MemSpace,MemManagement>;
 
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
@@ -107,18 +106,6 @@ Field (const Field<SrcScalarType,MemSpace,MemManagement>& src)
   static_assert(std::is_same<value_type,const_value_type>::value ||
                 std::is_same<typename src_field_type::value_type,non_const_value_type>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
-}
-
-template<typename ScalarType, typename MemSpace, typename MemManagement>
-Field<ScalarType,MemSpace,MemManagement>::
-Field (const std::shared_ptr<header_type>& header, const view_type& view)
- : m_header    (header)
- , m_view      (view)
- , m_allocated (true)
-{
-  // Perform some checks
-  error::runtime_check(static_cast<bool>(header),"Error! Input header is null.\n");
-  error::runtime_check(view.size()>0, "Error! Input view has 0 size. This constructor should only be used with an allocated view\n");
 }
 
 template<typename ScalarType, typename MemSpace, typename MemManagement>
@@ -143,6 +130,51 @@ operator= (const Field<SrcScalarType,MemSpace,MemManagement>& src) {
     m_view      = src.get_view();
     m_allocated = src.is_allocated();
   }
+}
+
+template<typename ScalarType, typename MemSpace, typename MemManagement>
+template<typename DT>
+ViewType<DT,MemSpace,MemoryUnmanaged>
+Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
+  // The dst value types
+  using DstValueType = typename util::ValueType<DT>::type;
+
+  // Get src details
+  const auto& alloc_prop = m_header->get_alloc_properties();
+  const auto& id = m_header->get_identifier();
+
+  // Make sure input field is allocated
+  error::runtime_check(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
+
+  // Make sure DstDT has an eligible rank: can only reinterpret if the data type rank does not change or if either src or dst have rank 1.
+  constexpr int DstRank = util::GetRanks<DT>::rank==1;
+
+  // Check the reinterpret cast makes sense for the two value types (need integer sizes ratio)
+  error::runtime_check(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
+                       "Error! Source field allocation is not compatible with the destination field's value type.\n");
+
+  // The destination field and view types
+  using DstView = ViewType<DT,MemSpace,MemoryUnmanaged>;
+  typename DstView::traits::array_layout layout;
+
+  const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
+  if (DstRank==1) {
+    // We are staying 1d, possibly changing the data type
+    layout.dimension[0] = num_values;
+  } else {
+    int num_last_dim_values = num_values;
+    // The destination data type is a multi-dimensional array.
+    for (int i=0; i<id.rank()-1; ++i) {
+      layout.dimension[i] = id.dim(i);
+
+      // Safety check: id.dim(0)*...*id.dim(id.rank()-2) should divide num_values, so we check
+      error::runtime_check(num_last_dim_values % id.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
+      num_last_dim_values /= id.dim(i);
+    }
+    layout.dimension[id.rank()-1] = num_last_dim_values;
+  }
+
+  return DstView (reinterpret_cast<DstValueType*>(m_view.data()),layout);
 }
 
 template<typename ScalarType, typename MemSpace, typename MemManagement>

@@ -66,13 +66,13 @@ public:
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
   // template functio 'reinterpret_field' (see field.hpp for details).
-  void set_required_field (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) {
+  void set_required_field (const Field<const Real, ExecMemSpace, MemoryManaged>& f) {
     error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
-  void set_computed_field (const Field<Real*, ExecMemSpace, MemoryManaged>& f) {
+  void set_computed_field (const Field<Real, ExecMemSpace, MemoryManaged>& f) {
     error::runtime_check(computes(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not compute this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
@@ -92,8 +92,8 @@ public:
   bool computes (const FieldIdentifier& id) const { return get_computed_fields().find(id)!= get_computed_fields().end(); }
 
 protected:
-  virtual void set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) = 0;
-  virtual void set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& f) = 0;
+  virtual void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f) = 0;
+  virtual void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& f) = 0;
 };
 
 } // namespace scream

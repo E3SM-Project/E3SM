@@ -88,7 +88,7 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, ExecMemSpace
   }
 }
 
-void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& f) {
+void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f) {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->requires(f.get_header().get_identifier())) {
       atm_proc->set_required_field(f);
@@ -96,7 +96,7 @@ void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real*, E
   }
 }
 
-void AtmosphereProcessGroup::set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& f) {
+void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real, ExecMemSpace, MemoryManaged>& f) {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->computes(f.get_header().get_identifier())) {
       atm_proc->set_computed_field(f);

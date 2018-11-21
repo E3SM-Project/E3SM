@@ -13,10 +13,7 @@ namespace scream
  /*
   *  A database for all the persistent fields needed in an atm time step
   *  We template a field repository over the field value type and over
-  *  the memory space of the views. The data type of the underlying view
-  *  will *always* be scalar_type*, so that we can store all the fields
-  *  in one place (regardless of const/nonconst, and regardless of layout).
-  *  You can find some utilities for reshaping a field in field_utils.hpp.
+  *  the memory space of the views.
   */
 
 template<typename ScalarType, typename MemSpace>
@@ -25,7 +22,7 @@ public:
 
   // Public types
   using scalar_type     = ScalarType;
-  using field_type      = Field<scalar_type*,MemSpace,MemoryManaged>;
+  using field_type      = Field<scalar_type,MemSpace,MemoryManaged>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
   using view_type       = typename field_type::view_type;

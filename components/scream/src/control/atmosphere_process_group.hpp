@@ -59,8 +59,8 @@ public:
 protected:
 
   // The methods to set the fields in the process
-  void set_required_field_impl (const Field<const Real*, ExecMemSpace, MemoryManaged>& f);
-  void set_computed_field_impl (const Field<      Real*, ExecMemSpace, MemoryManaged>& f);
+  void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f);
+  void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& f);
 
 
   // The communicator that each process in this group uses

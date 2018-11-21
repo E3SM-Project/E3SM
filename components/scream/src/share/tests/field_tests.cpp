@@ -4,7 +4,6 @@
 #include <share/field/field_header.hpp>
 #include <share/field/field.hpp>
 #include <share/field/field_repository.hpp>
-#include <share/field/field_utils.hpp>
 #include <share/scream_pack.hpp>
 
 namespace {
@@ -35,37 +34,58 @@ TEST_CASE("field_identifier", "") {
 
 TEST_CASE("field", "") {
   using namespace scream;
+  using namespace scream::pack;
 
   std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::Level};
-  std::vector<int> dims1 = {2, 3, 4};
+  std::vector<int> dims = {2, 3, 12};
 
-  FieldIdentifier fid1 ("field_1", tags);
-  fid1.set_dimensions(dims1);
+  FieldIdentifier fid ("field_1", tags);
+  fid.set_dimensions(dims);
 
-  // The following 'REQUIRE' tests are not the real tests. The real
-  // tests are whether or not the instructions to create fields succeed.
-  // If they fail, they'll raise MPI_Abort errors.
+  // Check copy constructor
+  SECTION ("copy ctor") {
+    Field<Real,HostMemSpace,MemoryManaged> f1 (fid);
+    f1.allocate_view();
 
-  Field<Real*,HostMemSpace,MemoryManaged> f1 (fid1);
-  REQUIRE(static_cast<bool>(f1.get_header_ptr()));
-  f1.allocate_view();
+    Field<const Real,HostMemSpace,MemoryManaged> f2 = f1;
+    REQUIRE(f2.get_header_ptr()==f1.get_header_ptr());
+    REQUIRE(f2.get_view()==f1.get_view());
+    REQUIRE(f2.is_allocated());
+  }
 
-  Field<const Real*,HostMemSpace,MemoryManaged> f2 = f1;
-  REQUIRE(static_cast<bool>(f2.get_header_ptr()));
+  // Check if we can extract a reshaped view
+  SECTION ("reshape simple") {
+    Field<Real,HostMemSpace,MemoryManaged> f1 (fid);
+    f1.allocate_view();
 
-  auto f3 = reinterpret_field<Real[2][3][4]>(f1);
-  REQUIRE(static_cast<bool>(f3.get_header_ptr()));
+    auto v1d = f1.get_view();
+    auto v3d = f1.get_reshaped_view<Real[2][3][12]>();
+    REQUIRE(v3d.size()==v1d.size());
+  }
 
-  // Check if we can copy f3 to a field with a different scalar type (like a Pack)
-  FieldIdentifier fid2 ("field_1",tags);
-  std::vector<int> dims2 = {2, 3, 1};
-  fid2.set_dimensions(dims2);
+  // Check if we can request multiple value types
+  SECTION ("reshape multiple value types") {
+    Field<Real,HostMemSpace,MemoryManaged> f1 (fid);
+    f1.get_header().get_alloc_properties().request_value_type_allocation<Pack<Real,8>>();
+    f1.allocate_view();
 
-  auto f3_pack = reinterpret_field<pack::Pack<Real,4>[2][3][1]>(f3);
-  const int extent3_f3_pack = f3_pack.get_view().extent_int(2);
-  const int extent3_f3      = f3.get_view().extent_int(2);
-  REQUIRE(extent3_f3==4);
-  REQUIRE(extent3_f3_pack==1);
+    auto v1d = f1.get_view();
+    auto v3d_1 = f1.get_reshaped_view<Pack<Real,8>***>();
+    auto v3d_2 = f1.get_reshaped_view<Pack<Real,4>***>();
+    auto v3d_3 = f1.get_reshaped_view<Real***>();
+    auto v3d_4 = f1.get_reshaped_view<Real[2][3][16]>();
+
+    // The memory spans should be identical
+    REQUIRE (v3d_1.impl_map().memory_span()==v3d_2.impl_map().memory_span());
+    REQUIRE (v3d_1.impl_map().memory_span()==v3d_3.impl_map().memory_span());
+    REQUIRE (v3d_1.impl_map().memory_span()==v3d_4.impl_map().memory_span());
+
+    // Sizes differ, since they are in terms of the stored value type.
+    // Each Pack<Real,8> corresponds to two Pack<Real,4>, which corresponds to 4 Real's.
+    REQUIRE(2*v3d_1.size()==v3d_2.size());
+    REQUIRE(8*v3d_1.size()==v3d_3.size());
+    REQUIRE(8*v3d_1.size()==v3d_4.size());
+  }
 }
 
 TEST_CASE("field_repo", "") {
