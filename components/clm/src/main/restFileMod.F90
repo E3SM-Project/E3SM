@@ -254,7 +254,8 @@ contains
        call alm_fates%restart(bounds, ncid, flag='define',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
-             frictionvel_inst=frictionvel_vars)
+             frictionvel_inst=frictionvel_vars, &
+             soilstate_inst=soilsate_vars )
     end if
 
 
