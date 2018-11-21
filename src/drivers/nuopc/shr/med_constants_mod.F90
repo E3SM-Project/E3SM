@@ -36,6 +36,6 @@ module med_constants_mod
   integer,  parameter :: med_constants_SecPerDay = 86400    ! Seconds per day
 
   !-----------------------------------------------------------------------------
-  integer :: med_constants_dbug_flag = 0
+  integer :: med_constants_dbug_flag = 10
 
 end module med_constants_mod

@@ -37,7 +37,7 @@
             MED med_connectors_prep_med2wav
             MED -> WAV :remapMethod=redist
 	    #
-            MED med_phases_prep_rof
+            MED med_phases_prep_rof_avg
             MED med_connectors_prep_med2rof
             MED -> ROF :remapMethod=redist
 	    #
@@ -99,7 +99,7 @@
             LND
             LND -> MED :remapMethod=redist
             MED med_connectors_post_lnd2med
-            MED med_phases_prep_rof_accum_fast
+            MED med_phases_prep_lnd2rof_accum_fast
             MED med_phases_prep_atm
             MED med_connectors_prep_med2atm
             ATM

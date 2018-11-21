@@ -4,13 +4,20 @@ module med_phases_prep_rof_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
+  use esmFlds, only : ncomps
+  use ESMF   , only : ESMF_FieldBundle
+
   implicit none
   private 
 
   public  :: med_phases_prep_rof_avg
-  public  :: med_phases_prep_rof_accum_fast
+  public  :: med_phases_prep_lnd2rof_accum_fast
 
+  private :: init_lnd2rof_accum
   private :: map_lnd2rof_irrig
+
+  type(ESMF_FieldBundle):: FBImpAccum(ncomps,ncomps)   ! Accumulator for various components import
+  integer               :: FBImpAccumCnt(ncomps)       ! Accumulator counter for each FBImpAccum
 
   character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
   character(*)    , parameter :: u_FILE_u = &
@@ -20,21 +27,22 @@ module med_phases_prep_rof_mod
 contains
 !-----------------------------------------------------------------------------
 
-  subroutine med_phases_prep_rof_accum_fast(gcomp, rc)
+  subroutine init_lnd2rof_accum(gcomp, rc)
 
-    ! Carry out fast accumulation for the river (rof) component
-    ! Accumulation and averaging is done on the land input to the river component on the land grid
-    ! Mapping from the land to the rof grid is then done with the time averaged fields
+    ! Initialize module field bundles needed for accumulation
 
-    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_GridComp, ESMF_StateIsCreated, ESMF_StateGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF                  , only : ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use med_internalstate_mod , only : InternalState, mastertask
-    use esmFlds               , only : comprof, complnd
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_scalars_mod , only : flds_scalar_name
+    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use med_constants_mod     , only : CS, czero => med_constants_czero
+    use med_internalstate_mod , only : InternalState, mastertask, logunit
+    use esmFlds               , only : comprof, complnd, compname
     use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
@@ -42,18 +50,20 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)    :: clock
-    type(ESMF_Time)     :: time
-    character(len=64)   :: timestr
-    type(InternalState) :: is_local
-    integer             :: i,j,n,n1,ncnt
-    integer             :: dbrc
-    character(len=*), parameter :: subname='(med_phases_prep_rof_accum_fast)'
+    type(InternalState)            :: is_local
+    integer                        :: n1, n2,ncnt
+    integer                        :: nlnd, nrof, nshare
+    character(len=CS), allocatable :: flds_lnd(:), flds_rof(:)
+    character(len=CS), allocatable :: flds_shared(:)
+    integer                        :: dbrc
+    character(len=*) , parameter   :: subname='(init_accum)'
     !---------------------------------------
 
     call t_startf('MED:'//subname)
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -63,46 +73,6 @@ contains
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    ! -- determine the share fields between FBImp(complnd,complnd) and FBExp(comprof,comprof) 
-    !---------------------------------------
-
-    ! if (first_call) then
-
-    !    call ESMF_StateGet(is_local%wrap%NStateImp(complnd), itemCount=nlnd, rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    !    allocate(fldslnd(nlnd))
-    !    call ESMF_StateGet(is_local%wrap%NStateImp(complnd), itemNameList=fldslnd, rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !    call ESMF_StateGet(is_local%wrap%NStateImp(comprof), itemCount=nrof, rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    !    allocate(fldsrof(nrof))
-    !    call ESMF_StateGet(is_local%wrap%NStateImp(comprof), itemNameList=fldsrof, rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !    ! first count the number of fields that match between the two
-    !    nshare = 0
-    !    do n1 = 1,nlnd
-    !       do n2 = 1,nrof
-    !          if (trim(fldslnd(n1) == trim(fldsrof(n2)))) then
-    !             nshare = nshare + 1
-    !          end if
-    !       end do
-    !    end do
-    !    allocate(fldsmatch(nshare))
-    !    nshare = 0
-    !    do n1 = 1,nlnd
-    !       do n2 = 1,nrof
-    !          if (trim(fldslnd(n1) == trim(fldsrof(n2)))) then
-    !             nshare = nmatch + 1
-    !             flds_shared(nshare) = trim(fldslnd(n1))
-    !          end if
-    !       end do
-    !    end do
-       
-    ! end if
 
     !---------------------------------------
     !--- Count the number of fields outside of scalar data, if zero, then return
@@ -119,32 +89,183 @@ contains
             ESMF_LOGMSG_INFO, rc=dbrc)
        RETURN
     end if
+    !---------------------------------------
+    ! -- determine the share fields between FBImp(complnd,complnd) and FBExp(comprof,comprof) 
+    !---------------------------------------
 
+    call ESMF_StateGet(is_local%wrap%NStateImp(complnd), itemCount=nlnd, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(flds_lnd(nlnd))
+    call ESMF_StateGet(is_local%wrap%NStateImp(complnd), itemNameList=flds_lnd, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_StateGet(is_local%wrap%NStateExp(comprof), itemCount=nrof, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(flds_rof(nrof))
+    call ESMF_StateGet(is_local%wrap%NStateExp(comprof), itemNameList=flds_rof, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! first count the number of fields that match between the two
+    nshare = 0
+    do n1 = 1,nlnd
+       do n2 = 1,nrof
+          if (trim(flds_lnd(n1)) == trim(flds_rof(n2))) then
+             nshare = nshare + 1
+          end if
+       end do
+    end do
+    allocate(flds_shared(nshare))
+    nshare = 0
+    do n1 = 1,nlnd
+       do n2 = 1,nrof
+          if (trim(flds_lnd(n1)) == trim(flds_rof(n2))) then
+             nshare = nshare + 1
+             flds_shared(nshare) = trim(flds_lnd(n1))
+          end if
+       end do
+    end do
+
+    ! Initialize module variables for accumulation
+
+    if (mastertask) then
+       write(logunit,*) subname,' initializing accumulated FBs for '//trim(compname(complnd))
+    end if
+
+    call shr_nuopc_methods_FB_init(FBImpAccum(complnd,complnd), flds_scalar_name, &
+         STgeom=is_local%wrap%NStateImp(complnd), &
+         fieldNameList=flds_shared, &
+         name='FBImpAccum', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    FBImpAccumCnt(complnd) = 0
+
+    if (is_local%wrap%med_coupling_active(complnd,comprof) .and. &
+         ESMF_StateIsCreated(is_local%wrap%NStateImp(complnd),rc=rc) .and. &
+         ESMF_StateIsCreated(is_local%wrap%NStateExp(comprof),rc=rc)) then
+
+       if (mastertask) then
+          write(logunit,*) subname,' initializing accumulated FBs for '//&
+               trim(compname(complnd))//'_'//trim(compname(comprof))
+       end if
+
+       call shr_nuopc_methods_FB_init(FBImpAccum(complnd,comprof), flds_scalar_name, &
+            STgeom=is_local%wrap%NStateImp(comprof), &
+            fieldNameList=flds_shared, &
+            name='FBImp'//trim(compname(complnd))//'_'//trim(compname(comprof)), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       ! TODO: exit in error - since this is assumed
+    end if
+
+    call shr_nuopc_methods_FB_reset(FBImpAccum(complnd,complnd), value=czero, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call shr_nuopc_methods_FB_reset(FBImpAccum(complnd, comprof), value=czero, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    deallocate(flds_lnd, flds_rof, flds_shared)
+
+  end subroutine init_lnd2rof_accum
+
+  !-----------------------------------------------------------------------------
+
+  subroutine med_phases_prep_lnd2rof_accum_fast(gcomp, rc)
+
+    ! Carry out fast accumulation for the river (rof) component
+    ! Accumulation and averaging is done on the land input to the river component on the land grid
+    ! Mapping from the land to the rof grid is then done with the time averaged fields
+
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
+    use ESMF                  , only : ESMF_FieldBundleGet, ESMF_StateIsCreated, ESMF_StateGet
+    use ESMF                  , only : ESMF_FieldBundleIsCreated
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use med_constants_mod     , only : CS, czero => med_constants_czero
+    use med_internalstate_mod , only : InternalState
+    use esmFlds               , only : complnd
+    use perf_mod              , only : t_startf, t_stopf
+
+    ! input/output variables
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Clock)    :: clock
+    type(ESMF_Time)     :: time
+    character(len=64)   :: timestr
+    type(InternalState) :: is_local
+    integer             :: i,j,n,ncnt
+    integer             :: dbrc
+    character(len=*), parameter :: subname='(med_phases_prep_lnd2rof_accum_fast)'
+    !---------------------------------------
+
+    call t_startf('MED:'//subname)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
+    rc = ESMF_SUCCESS
+
+    !---------------------------------------
+    ! --- Get the internal state
+    !---------------------------------------
+
+    nullify(is_local%wrap)
+    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !---------------------------------------
+    ! Initialize module field bundles if necessary
+    !---------------------------------------
+
+    if (.not. ESMF_FieldBundleIsCreated(FBImpAccum(complnd,complnd))) then
+       call init_lnd2rof_accum(gcomp, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    !---------------------------------------
+    !--- Count the number of fields outside of scalar data, if zero, then return
+    !---------------------------------------
+
+    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
+    ! fieldCount is 0 and not 1 here
+
+    call ESMF_FieldBundleGet(is_local%wrap%FBImp(complnd,complnd), fieldCount=ncnt, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (ncnt == 0) then
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
+       RETURN
+    end if
     !---------------------------------------
     !--- Get the current time from the clock
     !---------------------------------------
 
-    call ESMF_GridCompGet(gcomp, clock=clock)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_ClockGet(clock,currtime=time,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeGet(time,timestring=timestr)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 1) then
+       call ESMF_GridCompGet(gcomp, clock=clock)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_ClockGet(clock,currtime=time,rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeGet(time,timestring=timestr)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
 
     !---------------------------------------
     !--- accumulator land input to rof component (on land grid)
     !---------------------------------------
 
-    ! TODO: only accumulate fields listed in flds_shared above
-
-    call shr_nuopc_methods_FB_accum(is_local%wrap%FBImpAccum(complnd,complnd), &
-         is_local%wrap%FBImp(complnd,complnd), rc=rc)
+    call shr_nuopc_methods_FB_accum(FBImpAccum(complnd,complnd), is_local%wrap%FBImp(complnd,complnd), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    is_local%wrap%FBImpAccumCnt(complnd) = is_local%wrap%FBImpAccumCnt(complnd) + 1
+    FBImpAccumCnt(complnd) = FBImpAccumCnt(complnd) + 1
 
-    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
+    call shr_nuopc_methods_FB_diagnose(FBImpAccum(complnd,complnd), &
          string=trim(subname)//' FBImpAccum(complnd,complnd) ', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -156,7 +277,7 @@ contains
 
     call t_stopf('MED:'//subname)
 
-  end subroutine med_phases_prep_rof_accum_fast
+  end subroutine med_phases_prep_lnd2rof_accum_fast
 
   !-----------------------------------------------------------------------------
 
@@ -169,6 +290,7 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldBundle, ESMF_LOGMSG_INFO
+    use ESMF                  , only : ESMF_FieldBundleIsCreated
     use esmFlds               , only : complnd, comprof, compname
     use esmFlds               , only : fldListFr, fldListTo
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
@@ -180,6 +302,7 @@ contains
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
     use med_constants_mod     , only : R8, czero => med_constants_czero
+    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
@@ -201,7 +324,9 @@ contains
 
     call t_startf('MED:'//subname)
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -229,18 +354,26 @@ contains
     end if
 
     !---------------------------------------
+    ! Initialize module field bundles if necessary
+    !---------------------------------------
+
+    if (.not. ESMF_FieldBundleIsCreated(FBImpAccum(complnd,complnd))) then
+       call init_lnd2rof_accum(gcomp, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    !---------------------------------------
     !--- Get the current time from the clock
     !---------------------------------------
 
-    call ESMF_GridCompGet(gcomp, clock=clock)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_ClockGet(clock,currtime=time,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeGet(time,timestring=timestr)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-    if (mastertask) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+    if (dbug_flag > 1) then
+       call ESMF_GridCompGet(gcomp, clock=clock)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_ClockGet(clock,currtime=time,rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeGet(time,timestring=timestr)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -248,11 +381,10 @@ contains
     !--- average import from land accumuled FB
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_average(is_local%wrap%FBImpAccum(complnd,complnd), &
-         is_local%wrap%FBImpAccumCnt(complnd), rc=rc)
+    call shr_nuopc_methods_FB_average(FBImpAccum(complnd,complnd), FBImpAccumCnt(complnd), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
+    call shr_nuopc_methods_FB_diagnose(FBImpAccum(complnd,complnd), &
          string=trim(subname)//' FBImpAccum(complnd,complnd) after avg ', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -263,13 +395,11 @@ contains
     ! The following assumes that only land import fields are needed to create the
     ! export fields for the river component 
 
-    ! TODO: Only map fields in shared_flds above - need to extended med_map_fb_regrid_norm go handle this
-
     if (is_local%wrap%med_coupling_active(complnd,comprof)) then
        call med_map_FB_Regrid_Norm( &
             fldListFr(complnd)%flds, complnd, comprof, &
-            is_local%wrap%FBImpAccum(complnd,complnd), &
-            is_local%wrap%FBImpAccum(complnd,comprof), &
+            FBImpAccum(complnd,complnd), &
+            FBImpAccum(complnd,comprof), &
             is_local%wrap%FBFrac(complnd), &
             is_local%wrap%FBNormOne(complnd,comprof,:), &
             is_local%wrap%RH(complnd,comprof,:), &
@@ -283,7 +413,7 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           ! This will ensure that no irrig is sent from the land
-          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,comprof), &
+          call shr_nuopc_methods_FB_getFldPtr(FBImpAccum(complnd,comprof), &
                trim(irrig_flux_field), dataptr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr(:) = 0._r8
@@ -297,22 +427,22 @@ contains
     call med_merge_auto(trim(compname(comprof)), &
          is_local%wrap%FBExp(comprof), &
          is_local%wrap%FBFrac(comprof), &
-         is_local%wrap%FBImpAccum(:,comprof), &
+         FBImpAccum(:,comprof), &
          fldListTo(comprof), &
          document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), string=trim(subname)//' FBexp(comprof) ', rc=rc)
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
+         string=trim(subname)//' FBexp(comprof) ', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- zero accumulator
     !---------------------------------------
 
-    is_local%wrap%FBImpAccumFlag(complnd) = .true.
-    is_local%wrap%FBImpAccumCnt(complnd) = 0
+    FBImpAccumCnt(complnd) = 0
 
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(complnd,complnd), value=czero, rc=rc)
+    call shr_nuopc_methods_FB_reset(FBImpAccum(complnd,complnd), value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
@@ -509,7 +639,7 @@ contains
     ! flux on the rof grid.
 
     ! First extract accumulated irrigation flux from land
-    call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,complnd), &
+    call shr_nuopc_methods_FB_getFldPtr(FBImpAccum(complnd,complnd), &
          trim(irrig_flux_field), irrig_flux_l, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -546,7 +676,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Convert to a total irrigation flux on the ROF grid, and put this in the pre-merge FBImpAccum(complnd,comprof)
-    call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,comprof), trim(irrig_flux_field), irrig_flux_r, rc=rc)
+    call shr_nuopc_methods_FB_getFldPtr(FBImpAccum(complnd,comprof), trim(irrig_flux_field), irrig_flux_r, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     do r = 1, size(irrig_flux_r)

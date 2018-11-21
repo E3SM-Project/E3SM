@@ -43,7 +43,8 @@ module med_infodata_mod
   ! InputInfo derived type
   type med_infodata_type
      private
-     !--- set via components and held fixed after initialization ---
+
+     ! Set via components and held fixed after initialization
      integer :: nx(ncomps) = -1              ! global nx
      integer :: ny(ncomps) = -1              ! global ny
      logical :: rofice_present = .false.     ! does rof have iceberg coupling on
@@ -56,13 +57,14 @@ module med_infodata_mod
      logical :: glc_coupled_fluxes = .false. ! does glc send fluxes to other components
                                              ! (only relevant if glc_present is .true.)
 
-     !--- set via components and may be time varying ---
-     real(R8)       :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
-     real(R8)       :: precip_fact =  1.0_R8 ! precip factor
+     ! Set via components and may be time varying
+     real(R8) :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
+     real(R8) :: precip_fact =  1.0_R8 ! precip factor
      type(seq_pause_resume_type), pointer :: pause_resume => NULL()
 
-     !--- set by driver and may be time varying
-     logical                 :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
+     ! Set by mediator and may be time varying
+     logical  :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
+
   end type med_infodata_type
 
   type (med_infodata_type), target :: med_infodata ! single instance for cpl and all comps

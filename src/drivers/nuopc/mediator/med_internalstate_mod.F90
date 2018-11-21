@@ -67,11 +67,8 @@ module med_internalstate_mod
     type(ESMF_FieldBundle):: FBfrac(ncomps)                     ! Fraction data for various components, on their grid
 
     ! Accumulators
-    type(ESMF_FieldBundle):: FBImpAccum(ncomps,ncomps)          ! Accumulator for various components import on their grid
     type(ESMF_FieldBundle):: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
-    integer               :: FBImpAccumcnt(ncomps)              ! Accumulator counter for each FBImpAccum
     integer               :: FBExpAccumcnt(ncomps)              ! Accumulator counter for each FBExpAccum
-    integer               :: FBImpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
     logical               :: FBExpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
 
     ! Connectors
