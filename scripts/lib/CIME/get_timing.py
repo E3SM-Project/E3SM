@@ -90,17 +90,13 @@ class _TimingParser:
     def _gettime2_nuopc(self):
         self.nprocs = 0
         self.ncount = 0
-        nproc_expression = re.compile(r'\s*\[ESM\d*\]\s+RunPhase1\s+(\d+)\s')
-        ncount_expression = re.compile(r'\s*\[MED\]\s+med_fraction_set\s+(\d+)\s')
+        expression = re.compile(r'\s*\[MED\]\s+med_fraction_set\s+(\d+)\s+(\d+)')
 
         for line in self.finlines:
-            nproc_match = nproc_expression.match(line)
-            if nproc_match:
-                self.nprocs = int(nproc_match.group(1))
-            ncount_match = ncount_expression.match(line)
-            if ncount_match:
-                self.ncount = int(ncount_match.group(1))
-            if self.nprocs > 0 and self.ncount > 0:
+            match = expression.match(line)
+            if match:
+                self.nprocs = int(match.group(1))
+                self.ncount = int(match.group(2))
                 return (self.nprocs, self.ncount)
 
         return (0, 0)
@@ -133,7 +129,8 @@ class _TimingParser:
         minval = 0
         maxval = 0
         m = None
-        timeline = re.compile(r'\s*{}\s+\d+\s+(\d*\.\d+)\s+'.format(re.escape(heading)))
+        #  PETs   Count    Mean (s)    Min (s)     Min PET Max (s)     Max PET
+        timeline = re.compile(r'\s*{}\s+\d+\s+\d+\s+(\d*\.\d+)\s+(\d*\.\d+)\s+\d+\s+(\d*\.\d+)\s+\d+'.format(re.escape(heading)))
         phase = None
         for line in self.finlines:
             phase = self._get_nuopc_phase(line, instance, phase)
@@ -142,8 +139,8 @@ class _TimingParser:
             if heading in line:
                 m = timeline.match(line)
                 if m:
-                    minval = float(m.group(1))/self.nprocs
-                    maxval = float(m.group(1))/self.nprocs
+                    minval = float(m.group(2))
+                    maxval = float(m.group(3))
                     return (minval, maxval, True)
 
         return (0, 0, False)
@@ -162,9 +159,9 @@ class _TimingParser:
     def getMEDtime(self, instance):
         if instance == '':
             instance = '0001'
-        med_phase_line = re.compile(r'\s*(\[MED\] med_phases\S+)\s+\d+\s+(\d*\.\d+)\s+')
-        med_connector_line = re.compile(r'\s*(\[MED\] med_connectors\S+)\s+\d+\s+(\d*\.\d+)\s+')
-        med_fraction_line = re.compile(r'\s*(\[MED\] med_fraction\S+)\s+\d+\s+(\d*\.\d+)\s+')
+        med_phase_line = re.compile(r'\s*(\[MED\] med_phases\S+)\s+\d+\s+\d+\s+(\d*\.\d+)\s+')
+        med_connector_line = re.compile(r'\s*(\[MED\] med_connectors\S+)\s+\d+\s+\d+\s+(\d*\.\d+)\s+')
+        med_fraction_line = re.compile(r'\s*(\[MED\] med_fraction\S+)\s+\d+\s+\d+\s+(\d*\.\d+)\s+')
 
         m = None
         minval = 0
@@ -191,7 +188,7 @@ class _TimingParser:
     def getCOMMtime(self, instance):
         if instance == '':
             instance = '0001'
-        comm_line = re.compile(r'\s*(\[\S+-TO-\S+\] RunPhase1)\s+\d+\s+(\d*\.\d+)\s+')
+        comm_line = re.compile(r'\s*(\[\S+-TO-\S+\] RunPhase1)\s+\d+\s+\d+\s+(\d*\.\d+)\s+')
         m = None
         maxval = 0
         phase = None
@@ -296,9 +293,9 @@ class _TimingParser:
             finfilename = os.path.join(self.caseroot, "timing",
                                        "{}_timing{}_stats.{}".format(cime_model, inst_label, self.lid))
         elif self._driver == 'nuopc':
-            binfilename = os.path.join(rundir, "ESMF_Profile.txt")
+            binfilename = os.path.join(rundir, "ESMF_Profile.summary")
             finfilename = os.path.join(self.caseroot, "timing",
-                                   "{}_ESMF_Profile.txt.{}".format(cime_model, self.lid))
+                                   "{}.ESMF_Profile.summary.{}".format(cime_model, self.lid))
 
         foutfilename = os.path.join(self.caseroot, "timing",
                                     "{}_timing{}.{}.{}".format(cime_model, inst_label, caseid, self.lid))
@@ -338,9 +335,9 @@ class _TimingParser:
         # at this point the routine becomes driver specific
         if self._driver == 'mct':
             nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
+            nsteps = ncount / nprocs
         elif self._driver == 'nuopc':
-            nprocs, ncount = self.gettime2('')
-        nsteps = ncount / nprocs
+            nprocs, nsteps = self.gettime2('')
 
         adays = nsteps*tlen/ncpl
         odays = nsteps*tlen/ncpl
