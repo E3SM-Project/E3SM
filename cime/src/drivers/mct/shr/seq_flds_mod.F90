@@ -660,6 +660,15 @@ contains
     attname  = 'Sa_dens'
     call metadata_set(attname, longname, stdname, units)
 
+    ! air density at the lowest model level (kg/m**3)
+    call seq_flds_add(a2x_states,"Sa_uovern")
+    call seq_flds_add(x2l_states,"Sa_uovern")
+    longname = 'Froude Number'
+    stdname  = 'Froude Number'
+    units    = 'Unitless'
+    attname  = 'Sa_uovern'
+    call metadata_set(attname, longname, stdname, units)
+
     ! convective precipitation rate
     ! large-scale (stable) snow rate (water equivalent)
     call seq_flds_add(a2x_fluxes,"Faxa_rainc")

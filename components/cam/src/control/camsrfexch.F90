@@ -78,6 +78,7 @@ module camsrfexch
      real(r8) :: dstdry3(pcols)      ! dry deposition of dust (bin3)
      real(r8) :: dstwet4(pcols)      ! wet deposition of dust (bin4)
      real(r8) :: dstdry4(pcols)      ! dry deposition of dust (bin4)
+     real(r8) :: uovern(pcols)       ! ratio of wind speed/brunt vaisalla frequency
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -332,6 +333,7 @@ CONTAINS
        cam_out(c)%dstwet3(:)  = 0._r8
        cam_out(c)%dstdry4(:)  = 0._r8
        cam_out(c)%dstwet4(:)  = 0._r8
+       cam_out(c)%uovern(:)   = 0._r8
     end do
 
   end subroutine atm2hub_alloc

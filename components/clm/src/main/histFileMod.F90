@@ -29,6 +29,8 @@ module histFileMod
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use EDTypesMod        , only : ncwd_fates       => ncwd
   use FatesInterfaceMod , only : numpft_fates     => numpft
+  use TopounitType      , only : top_pp
+  use topounit_varcon   , only: max_topounits, has_topounit
 
   !
   implicit none
@@ -128,7 +130,7 @@ module histFileMod
   private :: masterlist_change_timeavg ! Override default history tape contents for specific tape
   private :: htape_addfld              ! Add a field to the active list for a history tape
   private :: htape_create              ! Define contents of history file t
-  private :: htape_add_ltype_metadata  ! Add global metadata defining landunit types
+  private :: htape_add_ltype_metadata  ! Add global metadata defining landunit types TKT do we also need the same function for topounit?
   private :: htape_add_natpft_metadata ! Add global metadata defining natpft types
   private :: htape_add_cft_metadata    ! Add global metadata defining cft types
   private :: htape_timeconst           ! Write time constant values to history tape
@@ -174,7 +176,7 @@ module histFileMod
      character(len=8) :: p2c_scale_type        ! scale factor when averaging pft to column
      character(len=8) :: c2l_scale_type        ! scale factor when averaging column to landunit
      character(len=8) :: l2g_scale_type        ! scale factor when averaging landunit to gridcell
-     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell
+     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell 
      integer :: no_snow_behavior               ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
   end type field_info
 
@@ -991,7 +993,13 @@ contains
 !$OMP PARALLEL DO PRIVATE (f, num2d)
        do f = 1,tape(t)%nflds
           num2d = tape(t)%hlist(f)%field%num2d
-          if ( num2d == 1) then
+          if ( num2d == 1) then                             
+               ! !if (masterproc) then  ! TKT debugging
+               !    write(iulog,*) 'TKT  Field ', tape(t)%hlist(f)%field%name
+               !    write(iulog,*) 'TKT  Field type1d ', tape(t)%hlist(f)%field%type1d
+               !    write(iulog,*) 'TKT  Field type1d_out ', tape(t)%hlist(f)%field%type1d_out
+               !! end if
+                
              call hist_update_hbuf_field_1d (t, f, bounds)
           else
              call hist_update_hbuf_field_2d (t, f, bounds, num2d)
@@ -1034,8 +1042,8 @@ contains
     character(len=1)  :: avgflag        ! time averaging flag
     character(len=8)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
     character(len=8)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
-    character(len=8)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells
-    character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
+    character(len=8)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells (TKT why we dont have l2t_scale_type?)
+    character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells 
     real(r8), pointer :: hbuf(:,:)      ! history buffer
     integer , pointer :: nacs(:,:)      ! accumulation counter
     real(r8), pointer :: field(:)       ! clm 1d pointer field
@@ -1159,6 +1167,9 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
        else
           check_active = .false.
        end if
@@ -1194,6 +1205,12 @@ contains
                 if (.not. active(k)) valid = .false.
              end if
              if (valid) then
+                
+                !if (masterproc) then  ! TKT debugging
+                !   write(iulog,*) ' Field ', field
+                !   write(iulog,*) ' Field type1d ', field(k)%type1d
+                !end if
+                
                 if (field(k+k_offset) /= spval) then   ! add k_offset
                    if (nacs(k,1) == 0) hbuf(k,1) = 0._r8
                    hbuf(k,1) = hbuf(k,1) + field(k+k_offset)   ! add k_offset
@@ -1440,7 +1457,10 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
-       else
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
+       else             
           check_active = .false.
        end if
 
@@ -1847,7 +1867,7 @@ contains
 
     ! Global compressed dimensions (not including non-land points)
     call ncd_defdim(lnfid, trim(nameg), numg, dimid)
-    call ncd_defdim(lnfid, trim(namet), numt, dimid)
+    call ncd_defdim(lnfid, trim(namet), max_topounits, dimid) !TKT topounit dimension needs to be max_topounits
     call ncd_defdim(lnfid, trim(namel), numl, dimid)
     call ncd_defdim(lnfid, trim(namec), numc, dimid)
     call ncd_defdim(lnfid, trim(namep), nump, dimid)
@@ -2096,7 +2116,7 @@ contains
                      long_name=long_name, units=units, missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=trim(varnames(ifld)), xtype=tape(t)%ncprec, &
-                        dim1name=grlnd, dim2name='levgrnd', &
+                        dim1name=grlnd, dim2name='levgrnd', &  !TKT
                      long_name=long_name, units=units, missing_value=spval, fill_value=spval)
              end if
           else
@@ -2175,7 +2195,7 @@ contains
              if (ldomain%isgrid2d) then
                 call ncd_io(varname=trim(varnames(ifld)), dim1name=grlnd, &
                      data=histo, ncid=nfid(t), flag='write')
-             else
+             else			                       
                 call ncd_io(varname=trim(varnames(ifld)), dim1name=grlnd, &
                      data=histo, ncid=nfid(t), flag='write')
              end if
@@ -2308,8 +2328,6 @@ contains
     use FatesInterfaceMod, only : fates_hdim_pftmap_levscagpft
     use FatesInterfaceMod, only : fates_hdim_agmap_levagepft
     use FatesInterfaceMod, only : fates_hdim_pftmap_levagepft
-
-
     !
     ! !ARGUMENTS:
     integer, intent(in) :: t              ! tape index
@@ -2609,6 +2627,19 @@ contains
               long_name='pft real/fake mask (0.=fake and 1.=real)', ncid=nfid(t), &
               imissing_value=ispval, ifill_value=ispval)
        end if
+       if(has_topounit .and. max_topounits > 1) then
+          if (ldomain%isgrid2d) then
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name='lon', dim2name='lat', &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          else
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name=grlnd, &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          end if
+       end if
 
     else if (mode == 'write') then
 
@@ -2626,7 +2657,10 @@ contains
        call ncd_io(varname='landfrac', data=ldomain%frac, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
-
+       call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
+       if(has_topounit .and. max_topounits > 1) then
+          call ncd_io(varname='topoPerGrid' , data=ldomain%num_tunits_per_grd, dim1name=grlnd, ncid=nfid(t), flag='write')
+       end if
     end if  ! (define/write mode
 
   end subroutine htape_timeconst
@@ -2768,6 +2802,11 @@ contains
           ! Write history output.  Always output land and ocean runoff on xy grid.
 
           if (num2d == 1) then
+             !write(iulog,*) 'TKT  varname ', varname
+             !write(iulog,*) 'TKT  type1d_out ', type1d_out
+             !write(iulog,*) 'TKT  shape(hist1do) ', shape(hist1do) 
+             !write(iulog,*) 'TKT  hist1do values ', hist1do
+             
              call ncd_io(flag='write', varname=varname, &
                   dim1name=type1d_out, data=hist1do, ncid=nfid(t), nt=nt)
           else
@@ -3228,7 +3267,7 @@ contains
           call htape_timeconst(t, mode='write')
 
           ! Write 3D time constant history variables only to first primary tape
-          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then
+          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then             
              call htape_timeconst3D(t, &
                   bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
              do_3Dtconst = .false.

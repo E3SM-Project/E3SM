@@ -22,6 +22,7 @@ use phys_control,  only: phys_getopts
 use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
 
+use scamMod,       only: single_column, wfld
 use cam_abortutils,    only: endrun
 
 implicit none
@@ -308,6 +309,8 @@ subroutine diag_init()
    call addfld ('T9251000',horiz_only,   'A','K','Temperature difference 925 mb - 1000 mb') 
    call addfld ('TH9251000',horiz_only,   'A','K','Theta difference 925 mb - 1000 mb')   
    call addfld ('THE9251000',horiz_only,   'A','K','ThetaE difference 925 mb - 1000 mb') 
+   call addfld ('UOVERN',horiz_only,   'A','m','wind speed/brunt vaisalla frequency 800-100 mb') 
+
 
    ! This field is added by radiation when full physics is used
    if ( ideal_phys )then
@@ -1062,7 +1065,11 @@ end subroutine diag_conv_tend_ini
 
 ! Vertical velocity and advection
 
-    call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    if (single_column) then
+       call outfld('OMEGA   ',wfld,    pcols,   lchnk     )
+    else
+       call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    endif
 
 #if (defined BFB_CAM_SCAM_IOP )
     call outfld('omega   ',state%omega,    pcols,   lchnk     )

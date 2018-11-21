@@ -399,8 +399,8 @@ contains
     ! to lnd: specific humidity at the lowest model level from atm
     ! ---------------------------------------------------------------------
 
-    allocate(flds(11))
-    flds = (/'Sa_z', 'Sa_topo', 'Sa_u', 'Sa_v', 'Sa_tbot', 'Sa_ptem', &
+    allocate(flds(12))
+    flds = (/'Sa_z', 'Sa_topo', 'Sa_u', 'Sa_v', 'Sa_tbot','Sa_uovern', 'Sa_ptem', &
              'Sa_pbot', 'Sa_shum', 'Sa_shum_16O', 'Sa_shum_18O', 'Sa_shum_HDO'/)
 
     do n = 1,size(flds)
