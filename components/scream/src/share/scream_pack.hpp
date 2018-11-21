@@ -409,6 +409,14 @@ struct ScalarProperties<pack::Pack<T,N>> {
   static constexpr bool is_pack = true;
 };
 
+// Specialization of TypeName struct for Pack type
+template<typename T, int N>
+struct TypeName<pack::Pack<T,N>> {
+  static std::string name () {
+    return "Pack<" + TypeName<T>::name() + "," + std::to_string(N) + ">";
+  }
+};
+
 } // namespace util
 
 } // namespace scream
