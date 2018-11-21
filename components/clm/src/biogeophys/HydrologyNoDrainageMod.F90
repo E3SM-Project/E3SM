@@ -18,8 +18,8 @@ Module HydrologyNoDrainageMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
-  use VegetationType      , only : veg_pp                
+  use ColumnType        , only : col_pp, col_es                
+  use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -128,7 +128,7 @@ contains
          nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
-         t_h2osfc           => temperature_vars%t_h2osfc_col          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
+         t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          dTdz_top           => temperature_vars%dTdz_top_col          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
          snot_top           => temperature_vars%snot_top_col          , & ! Output: [real(r8) (:)   ]  snow temperature in top layer (col) [K]  
          t_soisno           => temperature_vars%t_soisno_col          , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             

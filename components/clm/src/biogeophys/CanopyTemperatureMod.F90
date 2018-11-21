@@ -31,7 +31,7 @@ module CanopyTemperatureMod
   use WaterstateType       , only : waterstate_type
   use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp                
-  use ColumnType           , only : col_pp                
+  use ColumnType           , only : col_pp, col_es                
   use VegetationType       , only : veg_pp
   !
   ! !PUBLIC TYPES:
@@ -198,7 +198,7 @@ contains
          soilalpha        =>    soilstate_vars%soilalpha_col          , & ! Output: [real(r8) (:)   ] factor that reduces ground saturated specific humidity (-)
          soilalpha_u      =>    soilstate_vars%soilalpha_u_col        , & ! Output: [real(r8) (:)   ] Urban factor that reduces ground saturated specific humidity (-)
 
-         t_h2osfc         =>    temperature_vars%t_h2osfc_col         , & ! Input:  [real(r8) (:)   ] surface water temperature               
+         t_h2osfc         =>    col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ] surface water temperature               
          t_soisno         =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
          beta             =>    temperature_vars%beta_col             , & ! Output: [real(r8) (:)   ] coefficient of convective velocity [-]   
          emg              =>    temperature_vars%emg_col              , & ! Output: [real(r8) (:)   ] ground emissivity                        

@@ -11,7 +11,7 @@ module TotalWaterAndHeatMod
   use decompMod          , only : bounds_type
   use clm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
   use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
-  use ColumnType         , only : col_pp
+  use ColumnType         , only : col_pp, col_es
   use LandunitType       , only : lun_pp
   use subgridAveMod      , only : p2c
   use SoilHydrologyType  , only : soilhydrology_type
@@ -448,7 +448,7 @@ contains
          watsat       => soilstate_inst%watsat_col, & ! volumetric soil water at saturation (porosity)
          csol         => soilstate_inst%csol_col, & ! heat capacity, soil solids (J/m**3/Kelvin)
          t_soisno     => temperature_inst%t_soisno_col, & ! soil temperature (Kelvin)
-         t_h2osfc     => temperature_inst%t_h2osfc_col, & ! surface water temperature (Kelvin)
+         t_h2osfc     => col_es%t_h2osfc, & ! surface water temperature (Kelvin)
          h2osoi_liq   => waterstate_inst%h2osoi_liq_col, & ! liquid water (kg/m2)
          h2osoi_ice   => waterstate_inst%h2osoi_ice_col, & ! frozen water (kg/m2)
          h2osno       => waterstate_inst%h2osno_col, & ! snow water (mm H2O)

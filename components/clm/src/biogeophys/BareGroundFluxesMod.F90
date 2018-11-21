@@ -19,7 +19,7 @@ module BareGroundFluxesMod
   use WaterstateType       , only : waterstate_type
   use TopounitType         , only : top_as
   use LandunitType         , only : lun_pp
-  use ColumnType           , only : col_pp
+  use ColumnType           , only : col_pp, col_es
   use VegetationType       , only : veg_pp
   !
   ! !PUBLIC TYPES:
@@ -132,7 +132,7 @@ contains
          t_grnd           =>    temperature_vars%t_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]
          thv              =>    temperature_vars%thv_col              , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)
          thm              =>    temperature_vars%thm_patch            , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
-         t_h2osfc         =>    temperature_vars%t_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  surface water temperature
+         t_h2osfc         =>    col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ]  surface water temperature
          beta             =>    temperature_vars%beta_col             , & ! Input:  [real(r8) (:)   ]  coefficient of conective velocity [-]
 
          frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)

@@ -58,6 +58,7 @@ module restFileMod
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
+  use ColumnType           , only : col_es
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -200,6 +201,8 @@ contains
     call temperature_vars%restart (bounds, ncid, flag='define')
 
     call waterflux_vars%restart (bounds, ncid, flag='define')
+    
+    call col_es%restart (bounds, ncid, flag='define')
 
     call waterstate_vars%restart (bounds, ncid, flag='define', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:)) 
@@ -313,6 +316,8 @@ contains
     call temperature_vars%restart (bounds, ncid, flag='write')
 
     call waterflux_vars%restart (bounds, ncid, flag='write')
+    
+    call col_es%restart (bounds, ncid, flag='write')
 
     call waterstate_vars%restart (bounds, ncid, flag='write',  &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
@@ -527,6 +532,8 @@ contains
     call temperature_vars%restart (bounds, ncid, flag='read')
 
     call waterflux_vars%restart (bounds, ncid, flag='read')
+    
+    call col_es%restart (bounds, ncid, flag='read')
 
     call waterstate_vars%restart (bounds, ncid,  flag='read', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )

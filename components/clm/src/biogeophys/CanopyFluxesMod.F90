@@ -39,7 +39,7 @@ module CanopyFluxesMod
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc_pp 
   use TopounitType          , only : top_as, top_af  
-  use ColumnType            , only : col_pp                
+  use ColumnType            , only : col_pp, col_es               
   use VegetationType        , only : veg_pp                
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
@@ -374,7 +374,7 @@ contains
          z0qv                 => frictionvel_vars%z0qv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, latent heat [m]                     
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)                                       
 
-         t_h2osfc             => temperature_vars%t_h2osfc_col             , & ! Input:  [real(r8) (:)   ]  surface water temperature                                             
+         t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature                                             
          t_soisno             => temperature_vars%t_soisno_col             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                                           
          t_grnd               => temperature_vars%t_grnd_col               , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]                                        
          thv                  => temperature_vars%thv_col                  , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)                                
