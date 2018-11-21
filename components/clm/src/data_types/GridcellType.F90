@@ -45,10 +45,12 @@ module GridcellType
      integer , pointer :: pftf         (:) => null() ! ending pft index for each gridcell
      integer , pointer :: npfts        (:) => null() ! number of patches for each gridcell
 
-     ! Daylength
-     real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (s)
+     ! Physical properties
+     real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (seconds)
      real(r8) , pointer :: dayl        (:) => null() ! daylength (seconds)
      real(r8) , pointer :: prev_dayl   (:) => null() ! daylength from previous timestep (seconds)
+     real(r8) , pointer :: elevation   (:) => null() ! mean soil surface elevation, above mean sea level (m)
+     real(r8) , pointer :: froudenum   (:) => null() ! Froude number (dimensionless)
 
      ! indices into landunit-level arrays for landunits in this grid cell (ispval implies
      ! this landunit doesn't exist on this grid cell) [1:max_lunit, begg:endg]
@@ -101,6 +103,9 @@ contains
     allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = nan
     allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = nan
     allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = nan
+    
+    allocate(this%elevation (begg:endg)) ; this%elevation (:) = nan
+    allocate(this%froudenum (begg:endg)) ; this%froudenum (:) = nan 
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
 
@@ -134,6 +139,8 @@ contains
     deallocate(this%max_dayl         )
     deallocate(this%dayl             )
     deallocate(this%prev_dayl        )
+    deallocate(this%elevation        )
+    deallocate(this%froudenum        )
     deallocate(this%landunit_indices )
     
   end subroutine grc_pp_clean

@@ -452,6 +452,8 @@ contains
     ! !USES:
     use domainMod , only : domain_type
     use fileutils , only : getfil
+    use GridcellType, only : grc_pp
+    
     !
     ! !ARGUMENTS:
     type(domain_type),intent(inout) :: domain   ! domain to init
@@ -516,6 +518,8 @@ contains
     call ncd_io(ncid=ncid, varname='TOPO', flag='read', data=domain%topo, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: LONGXY  NOT on topodata file'//errMsg(__FILE__, __LINE__))
+    ! copy the topo information from ldomain into grc_pp data structure, for use in downscaling
+    grc_pp%elevation(beg:end) = domain%topo(beg:end)
 
     deallocate(latc,lonc)
 
