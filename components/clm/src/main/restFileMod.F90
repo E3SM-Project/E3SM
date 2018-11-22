@@ -255,7 +255,7 @@ contains
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
-             soilstate_inst=soilsate_vars )
+             soilstate_inst=soilstate_vars )
     end if
 
 
@@ -366,7 +366,7 @@ contains
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
-             soilstate_inst=soilsate_vars)
+             soilstate_inst=soilstate_vars)
 
     end if
 
@@ -575,7 +575,7 @@ contains
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
-             soilstate_inst=soilsate_vars)
+             soilstate_inst=soilstate_vars)
     end if
 
 

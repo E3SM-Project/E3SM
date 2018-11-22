@@ -930,7 +930,7 @@ contains
    ! ====================================================================================
 
    subroutine restart( this, bounds_proc, ncid, flag, waterstate_inst, &
-                             canopystate_inst, frictionvel_inst, soilsate_inst )
+                             canopystate_inst, frictionvel_inst, soilstate_inst )
 
       ! ---------------------------------------------------------------------------------
       ! The ability to restart the model is handled through three different types of calls
@@ -965,7 +965,7 @@ contains
       type(waterstate_type)          , intent(inout) :: waterstate_inst
       type(canopystate_type)         , intent(inout) :: canopystate_inst
       type(frictionvel_type)         , intent(inout) :: frictionvel_inst
-      type(soilstate_type)           , intent(inout) :: soilstate_inst
+      type(soilstate_type)           , intent(in)    :: soilstate_inst
       
       ! Locals
       type(bounds_type) :: bounds_clump
