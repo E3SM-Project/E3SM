@@ -103,9 +103,9 @@ contains
          sabg                    => solarabs_vars%sabg_patch                , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
 
          emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
-         t_h2osfc                => col_es%t_h2osfc           , & ! Input:  [real(r8) (:)   ]  surface water temperature               
-         tssbef                  => temperature_vars%t_ssbef_col            , & ! Input:  [real(r8) (:,:) ]  soil/snow temperature before update   
-         t_h2osfc_bef            => temperature_vars%t_h2osfc_bef_col       , & ! Input:  [real(r8) (:)   ]  saved surface water temperature         
+         t_h2osfc                => col_es%t_h2osfc                         , & ! Input:  [real(r8) (:)   ]  surface water temperature (K)              
+         tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  soil/snow temperature before update (K)  
+         t_h2osfc_bef            => col_es%t_h2osfc_bef                     , & ! Input:  [real(r8) (:)   ]  saved surface water temperature (K)        
          t_grnd                  => temperature_vars%t_grnd_col             , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno                => temperature_vars%t_soisno_col           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          xmf                     => temperature_vars%xmf_col                , & ! Input:  [real(r8) (:)   ]  

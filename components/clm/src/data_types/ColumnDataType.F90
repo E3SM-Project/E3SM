@@ -23,7 +23,9 @@ module ColumnDataType
   ! Define the data structure that holds energy state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_energy_state
-    real(r8), pointer :: t_h2osfc      (:) => null() ! surface water temperature (K)
+    real(r8), pointer :: t_h2osfc      (:)   => null() ! surface water temperature (K)
+    real(r8), pointer :: t_h2osfc_bef  (:)   => null() ! surface water temperature at start of time step (K)
+    real(r8), pointer :: t_ssbef       (:,:) => null() ! col soil/snow temperature before update (-nlevsno+1:nlevgrnd) 
   contains
     procedure, public :: Init    => col_es_init
     procedure, public :: Restart => col_es_restart
@@ -154,7 +156,9 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_es
     !-----------------------------------------------------------------------
-    allocate(this%t_h2osfc             (begc:endc))              ; this%t_h2osfc           (:)   = nan
+    allocate(this%t_h2osfc         (begc:endc))                     ; this%t_h2osfc           (:)   = nan
+    allocate(this%t_h2osfc_bef     (begc:endc))                     ; this%t_h2osfc_bef       (:)   = nan
+    allocate(this%t_ssbef          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_ssbef            (:,:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for each member of col_es
