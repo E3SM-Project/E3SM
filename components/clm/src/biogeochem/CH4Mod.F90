@@ -37,7 +37,8 @@ module CH4Mod
   use GridcellType       , only : grc_pp
   use TopounitType       , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
-  use ColumnType         , only : col_pp, col_es              
+  use ColumnType         , only : col_pp
+  use ColumnDataType     , only : col_es              
   use VegetationType     , only : veg_pp
   
   !

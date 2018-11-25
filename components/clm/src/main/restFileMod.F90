@@ -58,7 +58,7 @@ module restFileMod
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
-  use ColumnType           , only : col_es
+  use ColumnDataType       , only : col_es
   !
   ! !PUBLIC TYPES:
   implicit none

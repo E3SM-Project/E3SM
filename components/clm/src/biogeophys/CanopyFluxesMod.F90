@@ -39,7 +39,8 @@ module CanopyFluxesMod
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc_pp 
   use TopounitType          , only : top_as, top_af  
-  use ColumnType            , only : col_pp, col_es               
+  use ColumnType            , only : col_pp
+  use ColumnDataType        , only : col_es               
   use VegetationType        , only : veg_pp                
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type

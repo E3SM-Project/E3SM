@@ -11,7 +11,8 @@ module TotalWaterAndHeatMod
   use decompMod          , only : bounds_type
   use clm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
   use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
-  use ColumnType         , only : col_pp, col_es
+  use ColumnType         , only : col_pp
+  use ColumnDataType     , only : col_es
   use LandunitType       , only : lun_pp
   use subgridAveMod      , only : p2c
   use SoilHydrologyType  , only : soilhydrology_type

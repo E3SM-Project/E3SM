@@ -25,7 +25,8 @@ module SoilTemperatureMod
   use TemperatureType   , only : temperature_type
   use TopounitType      , only : top_af
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp, col_es                
+  use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_es                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:

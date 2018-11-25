@@ -28,7 +28,8 @@ module clm_interface_funcsMod
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
-  use ColumnType            , only : col_pp, col_es 
+  use ColumnType            , only : col_pp
+  use ColumnDataType        , only : col_es 
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
