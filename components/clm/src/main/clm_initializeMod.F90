@@ -27,8 +27,9 @@ module clm_initializeMod
   use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp, top_as, top_af, top_es
   use LandunitType           , only : lun_pp                
-  use ColumnType             , only : col_pp, col_es                
-  use VegetationType         , only : veg_pp                
+  use ColumnType             , only : col_pp
+  use ColumnDataType         , only : col_es  
+  use VegetationType         , only : veg_pp  
   use clm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
   use clm_varctl             , only : do_budgets

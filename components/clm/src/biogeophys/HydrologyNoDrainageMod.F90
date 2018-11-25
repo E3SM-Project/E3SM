@@ -18,7 +18,8 @@ Module HydrologyNoDrainageMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp, col_es                
+  use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_es                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
