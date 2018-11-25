@@ -199,16 +199,16 @@ contains
          soilalpha        =>    soilstate_vars%soilalpha_col          , & ! Output: [real(r8) (:)   ] factor that reduces ground saturated specific humidity (-)
          soilalpha_u      =>    soilstate_vars%soilalpha_u_col        , & ! Output: [real(r8) (:)   ] Urban factor that reduces ground saturated specific humidity (-)
 
-         t_h2osfc         =>    col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ] surface water temperature               
+         t_h2osfc         =>    col_es%t_h2osfc                       , & ! Input:  [real(r8) (:)   ] surface water temperature (K)              
          t_soisno         =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
          beta             =>    temperature_vars%beta_col             , & ! Output: [real(r8) (:)   ] coefficient of convective velocity [-]   
          emg              =>    temperature_vars%emg_col              , & ! Output: [real(r8) (:)   ] ground emissivity                        
          emv              =>    temperature_vars%emv_patch            , & ! Output: [real(r8) (:)   ] vegetation emissivity                    
-         t_h2osfc_bef     =>    temperature_vars%t_h2osfc_bef_col     , & ! Output: [real(r8) (:)   ] saved surface water temperature         
+         t_h2osfc_bef     =>    col_es%t_h2osfc_bef                   , & ! Output: [real(r8) (:)   ] saved surface water temperature (K)         
          t_grnd           =>    temperature_vars%t_grnd_col           , & ! Output: [real(r8) (:)   ] ground temperature (Kelvin)              
          thv              =>    temperature_vars%thv_col              , & ! Output: [real(r8) (:)   ] virtual potential temperature (kelvin)   
          thm              =>    temperature_vars%thm_patch            , & ! Output: [real(r8) (:)   ] intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
-         tssbef           =>    temperature_vars%t_ssbef_col            & ! Output: [real(r8) (:,:) ] soil/snow temperature before update    
+         tssbef           =>    col_es%t_ssbef                          & ! Output: [real(r8) (:,:) ] soil/snow temperature before update (K)   
          )
 
       do j = -nlevsno+1, nlevgrnd

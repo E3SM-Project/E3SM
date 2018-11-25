@@ -279,8 +279,8 @@ contains
          emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
          hc_soi                  => temperature_vars%hc_soi_col             , & ! Input:  [real(r8) (:)   ]  soil heat content (MJ/m2)               ! TODO: make a module variable
          hc_soisno               => temperature_vars%hc_soisno_col          , & ! Input:  [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2) !TODO: make a module variable
-         tssbef                  => temperature_vars%t_ssbef_col            , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
-         t_h2osfc                => col_es%t_h2osfc           , & ! Output: [real(r8) (:)   ]  surface water temperature               
+         tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
+         t_h2osfc                => col_es%t_h2osfc                         , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => temperature_vars%t_soisno_col           , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd                  => temperature_vars%t_grnd_col             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
          t_building              => temperature_vars%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
