@@ -22,7 +22,8 @@ module SnowSnicarMod
   use TemperatureType , only : temperature_type
   use GridcellType    , only : grc_pp       
   use LandunitType    , only : lun_pp       
-  use ColumnType      , only : col_pp       
+  use ColumnType      , only : col_pp
+  use ColumnDataType  , only : col_es  
   !
   implicit none
   save
@@ -1222,7 +1223,7 @@ contains
          snw_rds_top        => waterstate_vars%snw_rds_top_col    , & ! Output: [real(r8) (:)   ]  effective grain radius, top layer (col) [microns, m-6]
          sno_liq_top        => waterstate_vars%sno_liq_top_col    , & ! Output: [real(r8) (:)   ]  liquid water fraction (mass) in top snow layer (col) [frc]
 
-         t_soisno           => temperature_vars%t_soisno_col      , & ! Input:  [real(r8) (:,:) ]  soil and snow temperature (col,lyr) [K]
+         t_soisno           => col_es%t_soisno      , & ! Input:  [real(r8) (:,:) ]  soil and snow temperature (col,lyr) [K]
          t_grnd             => temperature_vars%t_grnd_col        , & ! Input:  [real(r8) (:)   ]  ground temperature (col) [K]            
          snot_top           => temperature_vars%snot_top_col      , & ! Output: [real(r8) (:)   ]  temperature in top snow layer (col) [K]            
          dTdz_top           => temperature_vars%dTdz_top_col        & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1]

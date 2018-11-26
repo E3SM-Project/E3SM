@@ -22,8 +22,9 @@ module DecompCascadeBGCMod
   use SoilStateType          , only : soilstate_type
   use CanopyStateType        , only : canopystate_type
   use TemperatureType        , only : temperature_type 
-  use CH4Mod                 , only : ch4_type
-  use ColumnType             , only : col_pp                
+  use ch4Mod                 , only : ch4_type
+  use ColumnType             , only : col_pp
+  use ColumnDataType         , only : col_es  
   !
   implicit none
   save
@@ -679,7 +680,7 @@ contains
 
          alt_indx       => canopystate_vars%alt_indx_col , & ! Input:  [integer  (:)     ]  current depth of thaw                                     
 
-         t_soisno       => temperature_vars%t_soisno_col , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)       
+         t_soisno       => col_es%t_soisno , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)       
 
          o2stress_sat   => ch4_vars%o2stress_sat_col     , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
          o2stress_unsat => ch4_vars%o2stress_unsat_col   , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)

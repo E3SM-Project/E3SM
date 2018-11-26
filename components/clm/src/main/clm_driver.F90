@@ -128,7 +128,8 @@ module clm_driver
   use GridcellType           , only : grc_pp
   use TopounitType           , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
-  use ColumnType             , only : col_pp                
+  use ColumnType             , only : col_pp 
+  use ColumnDataType         , only : col_es  
   use VegetationType         , only : veg_pp
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
@@ -1014,7 +1015,7 @@ contains
 
          if (use_betr)then
            call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
-              temperature_vars%t_soisno_col(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
+              col_es%t_soisno(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
               soilstate_vars, waterstate_vars, soil_water_retention_curve)
 
            call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,                         &

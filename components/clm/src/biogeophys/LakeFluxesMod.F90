@@ -19,7 +19,8 @@ module LakeFluxesMod
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp   
   use TopounitType         , only : top_as, top_af ! atmospheric state and flux variables  
-  use ColumnType           , only : col_pp                
+  use ColumnType           , only : col_pp
+  use ColumnDataType       , only : col_es  
   use VegetationType       , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
@@ -178,7 +179,7 @@ contains
          h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
 
          t_lake           =>    temperature_vars%t_lake_col            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)                       
-         t_soisno         =>    temperature_vars%t_soisno_col          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)             
+         t_soisno         =>    col_es%t_soisno          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)             
 
          forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch      , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft level [m]     
          forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch      , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft level [m]

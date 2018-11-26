@@ -90,6 +90,7 @@ module CLMFatesInterfaceMod
    use GridcellType      , only : grc_pp
    use TopounitType      , only : top_as
    use ColumnType        , only : col_pp
+   use ColumnDataType    , only : col_es
    use LandunitType      , only : lun_pp
    use landunit_varcon   , only : istsoil
    use abortutils        , only : endrun
@@ -1493,7 +1494,7 @@ contains
          watsat      => soilstate_inst%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          bsw         => soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" 
          eff_porosity => soilstate_inst%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice       
-         t_soisno    => temperature_inst%t_soisno_col       , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
+         t_soisno     => col_es%t_soisno                    , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          h2osoi_liqvol => waterstate_inst%h2osoi_liqvol_col , & ! Input: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
          btran       => energyflux_inst%btran_patch         , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1) 
          btran2       => energyflux_inst%btran2_patch       , & ! Output: [real(r8) (:)   ]  
@@ -1668,7 +1669,7 @@ contains
 
     call t_startf('edpsn')
     associate(&
-          t_soisno  => temperature_inst%t_soisno_col , &
+          t_soisno  => col_es%t_soisno               , &
           t_veg     => temperature_inst%t_veg_patch  , &
           tgcm      => temperature_inst%thm_patch    , &
           forc_pbot => top_as%pbot                   , &

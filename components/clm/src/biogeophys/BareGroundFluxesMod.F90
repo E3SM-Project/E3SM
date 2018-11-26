@@ -129,7 +129,7 @@ contains
          watsat           =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          soilbeta         =>    soilstate_vars%soilbeta_col           , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity
 
-         t_soisno         =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
+         t_soisno         =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          t_grnd           =>    temperature_vars%t_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]
          thv              =>    temperature_vars%thv_col              , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)
          thm              =>    temperature_vars%thm_patch            , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)

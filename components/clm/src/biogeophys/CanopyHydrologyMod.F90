@@ -24,7 +24,8 @@ module CanopyHydrologyMod
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
   use TopounitType    , only : top_as, top_af ! Atmospheric state and flux variables
-  use ColumnType      , only : col_pp                
+  use ColumnType      , only : col_pp 
+  use ColumnDataType  , only : col_es  
   use VegetationType       , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -194,7 +195,7 @@ contains
           esai                 => canopystate_vars%esai_patch              , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
 
           t_grnd               => temperature_vars%t_grnd_col              , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
-          t_soisno             => temperature_vars%t_soisno_col            , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)  
+          t_soisno             => col_es%t_soisno            , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)  
 
           do_capsnow           => waterstate_vars%do_capsnow_col           , & ! Output: [logical  (:)   ]  true => do snow capping                  
           h2ocan               => waterstate_vars%h2ocan_patch             , & ! Output: [real(r8) (:)   ]  total canopy water (mm H2O)             

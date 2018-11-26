@@ -19,8 +19,9 @@ module LakeTemperatureMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use ColumnType        , only : col_pp                
-  use VegetationType         , only : veg_pp                
+  use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_es  
+  use VegetationType    , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -243,7 +244,7 @@ contains
          qflx_snofrz_col =>   waterflux_vars%qflx_snofrz_col       , & ! Output: [real(r8) (:)   ]  column-integrated snow freezing rate (kg m-2 s-1) [+]
 
          t_grnd          =>   temperature_vars%t_grnd_col          , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
-         t_soisno        =>   temperature_vars%t_soisno_col        , & ! Output: [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)   
+         t_soisno        =>   col_es%t_soisno        , & ! Output: [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)   
          t_lake          =>   temperature_vars%t_lake_col          , & ! Output: [real(r8) (:,:) ]  col lake temperature (Kelvin)             
          hc_soi          =>   temperature_vars%hc_soi_col          , & ! Output: [real(r8) (:)   ]  soil heat content (MJ/m2)               
          hc_soisno       =>   temperature_vars%hc_soisno_col       , & ! Output: [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2)
@@ -1124,7 +1125,7 @@ contains
           h2osoi_liq  => waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)]  liquid water (kg/m2)                  
           h2osoi_ice  => waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)]  ice lens (kg/m2)                      
 
-          t_soisno    => temperature_vars%t_soisno_col    & ! Input:  [real(r8) (:,:)]  soil temperature (Kelvin)             
+          t_soisno    => col_es%t_soisno    & ! Input:  [real(r8) (:,:)]  soil temperature (Kelvin)             
           )
 
        ! Thermal conductivity of soil from Farouki (1981)
@@ -1308,7 +1309,7 @@ contains
           qflx_snomelt    => waterflux_vars%qflx_snomelt_col    , & ! Output: [real(r8)  (:)   ] snow melt (mm H2O /s)                   
           qflx_snofrz_col => waterflux_vars%qflx_snofrz_col     , & ! Output: [real(r8)  (:)   ] column-integrated snow freezing rate (kg m-2 s-1) [+]
 
-          t_soisno        => temperature_vars%t_soisno_col      , & ! Input:  [real(r8)  (:,:) ] soil temperature (Kelvin)             
+          t_soisno        => col_es%t_soisno      , & ! Input:  [real(r8)  (:,:) ] soil temperature (Kelvin)             
           t_lake          => temperature_vars%t_lake_col        , & ! Input:  [real(r8)  (:,:) ] lake temperature (Kelvin)             
           imelt           => temperature_vars%imelt_col         , & ! Output: [integer   (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
 

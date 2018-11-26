@@ -52,6 +52,7 @@ module clm_instMod
 
   use LandunitType               , only : lun_pp
   use ColumnType                 , only : col_pp
+  use ColumnDataType             , only : col_es
   use VegetationType             , only : veg_pp
 
   use clm_interface_dataType     , only : clm_interface_data_type
@@ -340,6 +341,8 @@ contains
          urbanparams_vars%em_improad(begl:endl), &
          urbanparams_vars%em_perroad(begl:endl))
 
+    call col_es%init(bounds_proc%begc_all, bounds_proc%endc_all)
+    
     call canopystate_vars%init(bounds_proc)
 
     call soilstate_vars%init(bounds_proc)
@@ -348,7 +351,7 @@ contains
          h2osno_col(begc:endc),                    &
          snow_depth_col(begc:endc),                &
          soilstate_vars%watsat_col(begc:endc, 1:), &
-         temperature_vars%t_soisno_col(begc:endc, -nlevsno+1:) )
+         col_es%t_soisno(begc:endc, -nlevsno+1:) )
 
 
     call waterflux_vars%init(bounds_proc)

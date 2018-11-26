@@ -305,7 +305,7 @@ contains
     
     ! Initialize the column data types
     call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
-    call col_es%Init (bounds_proc%begc_all, bounds_proc%endc_all)
+!    call col_es%Init (bounds_proc%begc_all, bounds_proc%endc_all)
     
     ! Initialize the vegetation (PFT) data types
     call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)

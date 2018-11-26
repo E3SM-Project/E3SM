@@ -7,12 +7,14 @@ module ColumnDataType
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
+  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use clm_varcon     , only : spval, ispval
-  use histFileMod    , only : hist_addfld1d
+  use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio      , only : file_desc_t, ncd_double
   use decompMod      , only : bounds_type
   use restUtilMod
+  use ColumnType     , only : col_pp
+  use LandunitType   , only : lun_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -25,7 +27,8 @@ module ColumnDataType
   type, public :: column_energy_state
     real(r8), pointer :: t_h2osfc      (:)   => null() ! surface water temperature (K)
     real(r8), pointer :: t_h2osfc_bef  (:)   => null() ! surface water temperature at start of time step (K)
-    real(r8), pointer :: t_ssbef       (:,:) => null() ! col soil/snow temperature before update (-nlevsno+1:nlevgrnd) 
+    real(r8), pointer :: t_ssbef       (:,:) => null() ! col soil/snow temperature before update (K) (-nlevsno+1:nlevgrnd) 
+    real(r8), pointer :: t_soisno      (:,:) => null() ! col soil temperature (K)  (-nlevsno+1:nlevgrnd) 
   contains
     procedure, public :: Init    => col_es_init
     procedure, public :: Restart => col_es_restart
@@ -147,32 +150,131 @@ contains
   subroutine col_es_init(this, begc, endc)
     !
     ! !USES:
+    use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
+    use clm_varctl     , only : iulog, use_vancouver, use_mexicocity
+    use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
     !
     ! !ARGUMENTS:
     class(column_energy_state) :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
-    
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: c,l,j                        ! indices
+    real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
+
+    !------------------------------------------------------------------------------
+    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
+
     !-----------------------------------------------------------------------
     ! allocate for each member of col_es
     !-----------------------------------------------------------------------
     allocate(this%t_h2osfc         (begc:endc))                     ; this%t_h2osfc           (:)   = nan
     allocate(this%t_h2osfc_bef     (begc:endc))                     ; this%t_h2osfc_bef       (:)   = nan
     allocate(this%t_ssbef          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_ssbef            (:,:) = nan
+    allocate(this%t_soisno         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_soisno           (:,:) = nan
 
     !-----------------------------------------------------------------------
-    ! initialize history fields for each member of col_es
+    ! initialize history fields for select members of col_es
     !-----------------------------------------------------------------------
     this%t_h2osfc(begc:endc) = spval
     call hist_addfld1d (fname='TH2OSFC',  units='K',  &
          avgflag='A', long_name='surface water temperature', &
          ptr_col=this%t_h2osfc)
 
+    this%t_soisno(begc:endc,-nlevsno+1:0) = spval
+    data2dptr => this%t_soisno(:,-nlevsno+1:0)
+    call hist_addfld2d (fname='SNO_T', units='K', type2d='levsno',  &
+         avgflag='A', long_name='Snow temperatures', &
+         ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
+
+    this%t_soisno(begc:endc,:) = spval
+    call hist_addfld2d (fname='TSOI',  units='K', type2d='levgrnd', &
+         avgflag='A', long_name='soil temperature (vegetated landunits only)', &
+         ptr_col=this%t_soisno, l2g_scale_type='veg')
+
+    this%t_soisno(begc:endc,:) = spval
+    call hist_addfld2d (fname='TSOI_ICE',  units='K', type2d='levgrnd', &
+         avgflag='A', long_name='soil temperature (ice landunits only)', &
+         ptr_col=this%t_soisno, l2g_scale_type='ice')
+
     !-----------------------------------------------------------------------
-    ! set cold-start initial values for each member of col_es
+    ! set cold-start initial values for select members of col_es
     !-----------------------------------------------------------------------
     this%t_h2osfc = 274._r8
     
+    ! Initialize soil+snow temperatures
+    do c = begc,endc
+       l = col_pp%landunit(c)
+
+       ! Snow level temperatures - all land points
+       if (snl(c) < 0) then
+          do j = snl(c)+1, 0
+             this%t_soisno(c,j) = 250._r8
+          end do
+       end if
+
+       ! Below snow temperatures - nonlake points (lake points are set below)
+       if (.not. lun_pp%lakpoi(l)) then 
+
+          if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+             this%t_soisno(c,1:nlevgrnd) = 250._r8
+
+          else if (lun_pp%itype(l) == istwet) then
+             this%t_soisno(c,1:nlevgrnd) = 277._r8
+
+          else if (lun_pp%urbpoi(l)) then
+             if (use_vancouver) then
+                if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
+                   ! Set road top layer to initial air temperature and interpolate other
+                   ! layers down to 20C in bottom layer
+                   do j = 1, nlevgrnd
+                      this%t_soisno(c,j) = 297.56 - (j-1) * ((297.56-293.16)/(nlevgrnd-1)) 
+                   end do
+                   ! Set wall and roof layers to initial air temperature
+                else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                     .or. col_pp%itype(c) == icol_roof) then
+                   this%t_soisno(c,1:nlevurb) = 297.56
+                else
+                   this%t_soisno(c,1:nlevgrnd) = 283._r8
+                end if
+             else if (use_mexicocity) then
+                if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
+                   ! Set road top layer to initial air temperature and interpolate other
+                   ! layers down to 22C in bottom layer
+                   do j = 1, nlevgrnd
+                      this%t_soisno(c,j) = 289.46 - (j-1) * ((289.46-295.16)/(nlevgrnd-1)) 
+                   end do
+                else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                     .or. col_pp%itype(c) == icol_roof) then
+                   ! Set wall and roof layers to initial air temperature
+                   this%t_soisno(c,1:nlevurb) = 289.46
+                else
+                   this%t_soisno(c,1:nlevgrnd) = 283._r8
+                end if
+             else
+                if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
+                   this%t_soisno(c,1:nlevgrnd) = 274._r8
+                else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                     .or. col_pp%itype(c) == icol_roof) then
+                   ! Set sunwall, shadewall, roof to fairly high temperature to avoid initialization
+                   ! shock from large heating/air conditioning flux
+                   this%t_soisno(c,1:nlevurb) = 292._r8
+                end if
+             end if
+          else
+             this%t_soisno(c,1:nlevgrnd) = 274._r8
+          endif
+       endif
+       
+       if (lun_pp%lakpoi(l)) then ! lake
+          this%t_soisno(c,1:nlevgrnd) = 277._r8
+       end if
+       
+    end do
+    
+    end associate
+
   end subroutine col_es_init
     
   !------------------------------------------------------------------------
@@ -200,6 +302,11 @@ contains
     if (flag=='read' .and. .not. readvar) then
        this%t_h2osfc(bounds%begc:bounds%endc) = 274.0_r8
     end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='T_SOISNO', xtype=ncd_double,   &
+         dim1name='column', dim2name='levtot', switchdim=.true., &
+         long_name='soil-snow temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_soisno)
 
   end subroutine col_es_restart
 

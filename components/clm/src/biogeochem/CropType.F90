@@ -14,6 +14,7 @@ module CropType
   use clm_varcon          , only : spval
   use clm_varpar          , only : crop_prog
   use clm_varctl          , only : iulog, use_crop
+  use ColumnDataType      , only : col_es
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -435,8 +436,8 @@ contains
           ivt = veg_pp%itype(p)
           c = veg_pp%column(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               ((temperature_vars%t_soisno_col(c,1)*col_pp%dz(c,1) + &
-               temperature_vars%t_soisno_col(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
+               ((col_es%t_soisno(c,1)*col_pp%dz(c,1) + &
+               col_es%t_soisno(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
                (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)
