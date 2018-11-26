@@ -26,7 +26,8 @@ module SnowHydrologyMod
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
   use LandunitType    , only : lun_pp                
-  use ColumnType      , only : col_pp                
+  use ColumnType      , only : col_pp 
+  use ColumnDataType  , only : col_es  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -566,7 +567,7 @@ contains
           n_melt       => col_pp%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter                      
           ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type                             
 
-          t_soisno     => temperature_vars%t_soisno_col    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
+          t_soisno     => col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
           imelt        => temperature_vars%imelt_col       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
 
           snow_depth   => waterstate_vars%snow_depth_col   , & ! Input:  [real(r8) (:)   ] snow height (m)                         
@@ -716,7 +717,7 @@ contains
           ltype            => lun_pp%itype                           , & ! Input:  [integer  (:)   ] landunit type                             
           urbpoi           => lun_pp%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
 
-          t_soisno         => temperature_vars%t_soisno_col       , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
+          t_soisno         => col_es%t_soisno       , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
 
           mss_bcphi        => aerosol_vars%mss_bcphi_col          , & ! Output: [real(r8) (:,:) ] hydrophilic BC mass in snow (col,lyr) [kg]
           mss_bcpho        => aerosol_vars%mss_bcpho_col          , & ! Output: [real(r8) (:,:) ] hydrophobic BC mass in snow (col,lyr) [kg]
@@ -1094,7 +1095,7 @@ contains
      !-----------------------------------------------------------------------
      
      associate(                                            & 
-          t_soisno   => temperature_vars%t_soisno_col    , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
+          t_soisno   => col_es%t_soisno    , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
 
           h2osoi_ice => waterstate_vars%h2osoi_ice_col   , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq => waterstate_vars%h2osoi_liq_col   , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   

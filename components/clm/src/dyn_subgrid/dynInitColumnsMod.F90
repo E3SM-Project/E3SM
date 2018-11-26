@@ -19,6 +19,7 @@ module dynInitColumnsMod
   use TopounitType      , only : top_pp
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_es
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -300,7 +301,7 @@ contains
 
     ! For now, just copy t_soisno
     ! TODO: Figure out what else should be copied
-    temperature_vars%t_soisno_col(c_new,:) = temperature_vars%t_soisno_col(c_template,:)
+    col_es%t_soisno(c_new,:) = col_es%t_soisno(c_template,:)
     
     ! TODO(wjs, 2016-08-31) If we had more general uses of this initial template col
     ! infrastructure (copying state between very different landunits), then we might need

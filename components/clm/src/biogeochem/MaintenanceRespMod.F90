@@ -22,7 +22,8 @@ module MaintenanceRespMod
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use VegetationType           , only : veg_pp                
+  use ColumnDataType      , only : col_es
+  use VegetationType      , only : veg_pp                
   !
   implicit none
   save
@@ -115,7 +116,7 @@ contains
 
          rootfr         =>    soilstate_vars%rootfr_patch           , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
 
-         t_soisno       =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         t_soisno       =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          t_ref2m        =>    temperature_vars%t_ref2m_patch        , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
 
          lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)

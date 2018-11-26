@@ -290,12 +290,6 @@ contains
          avgflag='A', long_name='lake temperature', &
          ptr_col=this%t_lake_col)
 
-    this%t_soisno_col(begc:endc,-nlevsno+1:0) = spval
-    data2dptr => this%t_soisno_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_T', units='K', type2d='levsno',  &
-         avgflag='A', long_name='Snow temperatures', &
-         ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
-
     this%t_ref2m_patch(begp:endp) = spval
     call hist_addfld1d (fname='TSA', units='K',  &
          avgflag='A', long_name='2m air temperature', &
@@ -355,16 +349,6 @@ contains
     call hist_addfld1d (fname='TG_R', units='K',  &
          avgflag='A', long_name='Rural ground temperature', &
          ptr_col=this%t_grnd_r_col, set_spec=spval)
-
-    this%t_soisno_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='TSOI',  units='K', type2d='levgrnd', &
-         avgflag='A', long_name='soil temperature (vegetated landunits only)', &
-         ptr_col=this%t_soisno_col, l2g_scale_type='veg')
-
-    this%t_soisno_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='TSOI_ICE',  units='K', type2d='levgrnd', &
-         avgflag='A', long_name='soil temperature (ice landunits only)', &
-         ptr_col=this%t_soisno_col, l2g_scale_type='ice')
 
     this%t_soi10cm_col(begc:endc) = spval
     call hist_addfld1d (fname='TSOI_10CM',  units='K', &
@@ -737,11 +721,6 @@ contains
     integer :: j,c       ! indices
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_SOISNO', xtype=ncd_double,   &
-         dim1name='column', dim2name='levtot', switchdim=.true., &
-         long_name='soil-snow temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_soisno_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='T_VEG', xtype=ncd_double,  &
          dim1name='pft', &

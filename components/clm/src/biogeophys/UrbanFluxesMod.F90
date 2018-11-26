@@ -25,7 +25,8 @@ module UrbanFluxesMod
   use GridcellType         , only : grc_pp
   use TopounitType         , only : top_as  
   use LandunitType         , only : lun_pp                
-  use ColumnType           , only : col_pp                
+  use ColumnType           , only : col_pp
+  use ColumnDataType       , only : col_es  
   use VegetationType       , only : veg_pp                
   use SurfaceResistanceMod , only : do_soilevap_beta
   !
@@ -208,7 +209,7 @@ contains
          rootr               =>   soilstate_vars%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
 
          t_grnd              =>   temperature_vars%t_grnd_col               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)                    
-         t_soisno            =>   temperature_vars%t_soisno_col             , & ! Input:  [real(r8) (:,:) ]  soil temperature (K)                            
+         t_soisno            =>   col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (K)                            
          t_ref2m             =>   temperature_vars%t_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (K)            
          t_ref2m_u           =>   temperature_vars%t_ref2m_u_patch          , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface air temperature (K)     
          t_veg               =>   temperature_vars%t_veg_patch              , & ! Output: [real(r8) (:)   ]  vegetation temperature (K)                        

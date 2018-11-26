@@ -20,7 +20,8 @@ module LakeHydrologyMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
   use TopounitType         , only : top_as, top_af    ! atmospheric state and flux variables
-  use ColumnType           , only : col_pp                
+  use ColumnType           , only : col_pp
+  use ColumnDataType       , only : col_es  
   use VegetationType       , only : veg_pp                
   use atm2lndType          , only : atm2lnd_type
   use AerosolType          , only : aerosol_type
@@ -138,7 +139,7 @@ contains
 
          t_lake               =>  temperature_vars%t_lake_col           , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)             
          t_grnd               =>  temperature_vars%t_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
-         t_soisno             =>  temperature_vars%t_soisno_col         , & ! Output: [real(r8) (:,:) ]  snow temperature (Kelvin)             
+         t_soisno             =>  col_es%t_soisno         , & ! Output: [real(r8) (:,:) ]  snow temperature (Kelvin)             
          dTdz_top             =>  temperature_vars%dTdz_top_col         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
          snot_top             =>  temperature_vars%snot_top_col         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO
 
