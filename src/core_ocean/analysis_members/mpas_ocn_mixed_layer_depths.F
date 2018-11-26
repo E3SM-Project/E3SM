@@ -161,6 +161,8 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: mixedLayerDepthsAM
+      type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: scratchPool
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve
@@ -172,8 +174,12 @@ contains
       logical,pointer :: tThresholdFlag, dThresholdFlag
       logical,pointer :: tGradientFlag, dGradientFlag
 !      real (kind=RKIND), dimension(:), pointer ::  areaCell
-      real (kind=RKIND), dimension(:), pointer :: tThresholdMLD, tGradientMLD
-      real (kind=RKIND), dimension(:), pointer :: dThresholdMLD, dGradientMLD
+      type(field2DReal), pointer :: pressureAdjustedForLandIceField
+      real (kind=RKIND), dimension(:,:), pointer :: pressureAdjustedForLandIce 
+
+      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraft
+      real (kind=RKIND), dimension(:), pointer :: dThreshMLD, dGradientMLD, landIcePressure
+      integer, dimension(:), pointer :: landIceMask 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:), pointer :: zTop, zMid, pressure
       real (kind=RKIND), dimension(:,:), pointer :: potentialDensity
@@ -216,8 +222,15 @@ contains
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block % structs, 'mixedLayerDepthsAM', mixedLayerDepthsAMPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+         !Use work array for storing of pressure, potentially modified by landIce
+         call mpas_pool_get_subpool(block % structs, 'mixedLayerDepthAMScratch', scratchPool)
+         call mpas_pool_get_field(scratchPool, 'pressureAdjustedForLandIceScratch', pressureAdjustedForLandIceField)
+         call mpas_allocate_scratch_field(pressureAdjustedForLandIceField, .true.)
+         pressureAdjustedForLandIce => pressureAdjustedForLandIceField % array
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
@@ -230,14 +243,27 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', &
                         potentialDensity)
          call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
+         call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
+         pressureAdjustedForLandIce(:,:) = pressure(:,:)
+         !If landice cavity remove land ice pressure to search for ML depth
+         if ( associated(landIcePressure) ) THEN
+           do iCell = 1,nCellsSolve
+             do k = 1,maxLevelCell(iCell)
+                pressureAdjustedForLandIce(k,iCell) = pressureAdjustedForLandIce(k,iCell)   &
+                                                        - landIcePressure(iCell)
+             enddo
+           enddo
+         endif
 
          if(tThresholdFlag) then
-            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThresholdMLD)
+            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThreshMLD)
             do iCell = 1,nCellsSolve
 
                !Initialize RefIndex for cases of very shallow columns
@@ -246,9 +272,9 @@ contains
                found_temp_mld = .false.
 
                do k=1, maxLevelCell(iCell)-1
-                  if(pressure(k+1,iCell) > refPress) then
+                  if(pressureAdjustedForLandIce(k+1,iCell) > refPress) then
                      localvals(2:3)=tracers(index_temperature,k:k+1,iCell)
-                     localvals(5:6)=pressure(k:k+1,iCell)
+                     localvals(5:6)=pressureAdjustedForLandIce(k:k+1,iCell)
 
                      call interp_bw_levels(localVals(2),localVals(3), &
                                    localVals(5),localVals(6),refPress,interp_local,                &
@@ -268,19 +294,26 @@ contains
                         call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, tempThresh,     &
                                    interp_local, mldTemp)!,dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
-                        tThresholdMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
+                        tThreshMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
                         found_temp_mld = .true.
                         exit
                      endif
                 enddo
 
 ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
-                   if(.not. found_temp_mld) tThresholdMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
+                   if(.not. found_temp_mld) tThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
                enddo !iCell
+
+               if (associated(landIceMask) ) THEN
+                  do iCell = 1, nCellsSolve
+                     tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+                  enddo
+               endif
+
           endif !end tThresh MLD search
 
          if(dThresholdFlag) then
-            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThresholdMLD)
+            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
 
             do iCell = 1,nCellsSolve
 
@@ -289,9 +322,9 @@ contains
                found_den_mld = .false.
 
                do k=1, maxLevelCell(iCell)-1
-                  if(pressure(k+1,iCell) > refPress) then
+                  if(pressureAdjustedForLandIce(k+1,iCell) > refPress) then
                      localvals(2:3)=potentialDensity(k:k+1,iCell)
-                     localvals(5:6)=pressure(k:k+1,iCell)
+                     localvals(5:6)=pressureAdjustedForLandIce(k:k+1,iCell)
 
                      call interp_bw_levels(localVals(2),localVals(3), &
                                    localVals(5),localVals(6),refPress,interp_local,                &
@@ -310,7 +343,7 @@ contains
                         call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, denThresh,     &
                                    interp_local, mldTemp)!, dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
-                        dThresholdMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
+                        dThreshMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
                         found_den_mld = .true.
                         exit
                      endif
@@ -318,9 +351,18 @@ contains
 
 ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
 
-                    if(.not. found_den_mld) dThresholdMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
+                    if(.not. found_den_mld) dThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
 
              enddo !iCell
+
+             if (associated(landIceMask) ) THEN
+               do iCell = 1, nCellsSolve
+                  dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+               enddo
+
+
+             endif
+
 
         endif !end dThresh MLD search
 
@@ -339,7 +381,7 @@ contains
                found_temp_mld=.false.
 
                do k=2,maxLevelCell(iCell)-1
-                     dz=abs(pressure(k-1,iCell)-pressure(k,iCell))
+                     dz=abs(pressureAdjustedForLandIce(k-1,iCell)-pressureAdjustedForLandIce(k,iCell))
                      temperatureGradient(k,1) = abs(tracers(index_temperature,k-1,iCell) - tracers(index_temperature,k,iCell)) / dz
                      temperatureGradient(k,2) = k
                enddo
@@ -373,6 +415,14 @@ contains
 
          enddo !icell
 
+         !normalize MLD to top of ice cavity
+         if (associated(landIceMask) ) THEN
+           do iCell = 1, nCellsSolve
+             tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+           enddo
+         endif
+
+
          deallocate(temperatureGradient)
 
        endif !if(temperaturegradientflag)
@@ -390,7 +440,7 @@ contains
                found_den_mld=.false.
 
                do k=2,maxLevelCell(iCell)-1
-                     dz=abs(pressure(k-1,iCell)-pressure(k,iCell))
+                     dz=abs(pressureAdjustedForLandIce(k-1,iCell)-pressureAdjustedForLandIce(k,iCell))
                      densityGradient(k,1) = abs(potentialDensity(k-1,iCell)-potentialDensity(k,iCell)) / dz
                      densityGradient(k,2) = k
                enddo
@@ -422,12 +472,18 @@ contains
 
          enddo !icell
 
+         if (associated(landIceMask) ) THEN
+           do iCell = 1, nCellsSolve
+             dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+           enddo
+         endif
+
          deallocate(densityGradient)
        endif !if(densitygradientflag)
 
+         call mpas_deallocate_scratch_field(pressureAdjustedForLandIceField, .true.)
          block => block % next
       end do
-
 
       ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the

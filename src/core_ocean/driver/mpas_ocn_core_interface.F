@@ -121,6 +121,7 @@ module ocn_core_interface
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
+      logical, pointer :: gmActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -143,6 +144,7 @@ module ocn_core_interface
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_use_frazil_ice_formation
+      logical, pointer :: config_use_standardGM
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -275,6 +277,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          inSituEOSActive = .true.
+      end if
+
+      !
+      ! test for use of gm
+      !
+      call mpas_pool_get_package(packagePool, 'gmActive', gmActive)
+      call mpas_pool_get_config(configPool, 'config_use_standardGM', config_use_standardGM)
+      if (config_use_standardGM) then
+         gmActive = .true.
       end if
 
       !
