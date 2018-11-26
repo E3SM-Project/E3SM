@@ -33,7 +33,7 @@ class ERIO(SystemTestsCommon):
         self._case.flush()
 
         expect(self._stop_n > 2, "ERROR: stop_n value {:d} too short".format(self._stop_n))
-        logger.info("doing an {} {} initial test with restart file at {} {} with pio type {}".format(str(self._stop_n), stop_option, str(rest_n), stop_option, pio_type))
+        logger.info("doing an {0} {1} initial test with restart file at {2} {1} with pio type {3}".format(str(self._stop_n), stop_option, str(rest_n), pio_type))
         self.run_indv(suffix=pio_type)
 
     def _restart_run(self, pio_type, other_pio_type):
