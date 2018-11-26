@@ -391,8 +391,27 @@
 					description="Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth"
 					possible_values="Any positive real value, typically between 100 and 500 m."
 		/>
-		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$"
+		<nml_option name="config_GM_Bolus_kappa_function" type="character" default_value="constant" units="unitless"
+					description="Control what type of function is used for GM Bolus kappa"
+					possible_values="'constant' and 'ramp'"
+		/>
+		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_Bolus_kappa_function is set to constant."
+		/>
+		<nml_option name="config_GM_Bolus_kappa_min" type="real" default_value="0.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_Bolus_kappa_max" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_Bolus_cell_size_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for GM $kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_Bolus_cell_size_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for GM $kappa$ ramp function.  Here cell size refers to dcEdge"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
@@ -1204,6 +1223,7 @@
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
+		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
 	</packages>
 
 	<streams>
@@ -2562,6 +2582,10 @@
 		<var name="GMStreamFuncMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
+		/>
+		<var name="gmBolusKappa" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 packages="gm"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."

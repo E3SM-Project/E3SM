@@ -228,7 +228,7 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_short_wave_absorption_init(domain,err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_gm_init(err_tmp)
+      call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
