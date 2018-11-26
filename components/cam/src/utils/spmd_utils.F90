@@ -34,6 +34,8 @@ module spmd_utils
 !-----------------------------------------------------------------------
    use shr_kind_mod,     only: r8 => shr_kind_r8
    use cam_abortutils,   only: endrun
+   use shr_taskmap_mod,  only: shr_taskmap_write
+   use perf_mod,         only: t_startf, t_stopf
 
 #if ( defined SPMD )
    use mpishorthand, only: mpiint, mpii8, mpichar, mpilog, mpipk,      &
@@ -178,7 +180,7 @@ contains
 
 !========================================================================
   
-  subroutine spmdinit( mpicom_atm )
+  subroutine spmdinit( mpicom_atm, calc_proc_smp_map )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: MPI initialization routine:  
@@ -192,24 +194,17 @@ contains
 
     implicit none
     integer, intent(in) :: mpicom_atm
+    ! calculate proc_smp_map within the routine? default is true
+    logical, optional, intent(in) :: calc_proc_smp_map  
+       
 
 #if ( defined SPMD )
     !
     ! Local workspace
     !
-    integer i,j,c             ! indices
-    integer npthreads         ! thread status
-    integer ier               ! return error status    
-    integer length            ! length of name
-    integer max_len           ! maximum name length
-    integer, allocatable :: lengths(:)! max lengths of names for use in gatherv
-    integer, allocatable :: displs(:) ! offsets for use in gatherv
-    logical done
-    character, allocatable                             :: proc_name(:)  ! processor name, this task
-    character, allocatable                             :: proc_names(:) ! processor names, all tasks
-    character(len=mpi_max_processor_name)              :: tmp_name      ! temporary storage
-    character(len=mpi_max_processor_name), allocatable :: smp_names(:)  ! SMP name
-    logical mpi_running       ! returned value indicates if MPI_INIT has been called
+    integer          :: ier                 ! return error status    
+    logical          :: docalc_proc_smp_map ! calculcate proc_smp_map here
+    character(len=8) :: c_npes              ! number of pes
 
     !---------------------------------------------------------------------------
     !
@@ -229,8 +224,9 @@ contains
     mpic16  = mpi_complex16
     mpipk   = mpi_packed
     mpimax  = mpi_max
+
     !
-    ! Get my id  
+    ! Get process id
     !
     call mpi_comm_rank (mpicom, iam, ier) 
     masterprocid = DEFAULT_MASTERPROC
@@ -239,95 +235,45 @@ contains
     else
        masterproc = .false.
     end if
+
     !
-    ! Get number of processors
+    ! Get number of processes
     !
-    max_len = mpi_max_processor_name
     call mpi_comm_size (mpicom, npes, ier)
-    allocate ( displs(npes) )
-    allocate ( lengths(npes) )
-    allocate ( proc_name(max_len) )
-    allocate ( proc_names(max_len*npes) )
  
     !
-    ! Get processor names and send to root. 
-    !
-    call mpi_get_processor_name (tmp_name, length, ier)
-    proc_name(:) = ' '
-    do i = 1, length
-       proc_name(i) = tmp_name(i:i)
-    end do
-
-    proc_names(:) = ' '
-    lengths(:) = max_len
-    do i=1,npes
-       displs(i) = (i-1)*max_len
-    enddo
-    call fc_gathervc (proc_name,  max_len, mpichar, &
-                      proc_names, lengths, displs, mpichar, &
-                      0, mpicom, flow_cntl=-1)
-    if (masterproc) then
-       write(iulog,*) npes, 'pes participating in computation'
-       write(iulog,*) '-----------------------------------'
-       write(iulog,*) 'TASK#  NAME'
-       do i=0,min(npes-1,256)  ! dont print too many of these
-          do c=1,max_len
-             tmp_name(c:c) = proc_names(i*max_len+c)
-          enddo
-          write(iulog,'(i3,2x,a)') i,trim(tmp_name)
-       end do
-       if(npes-1>256) then
-          write(iulog,*) '... list truncated at 256'
-       end if
-    end if
-    !
-    ! Identify SMP nodes and process/SMP mapping.
-    ! (Assume that processor names are SMP node names on SMP clusters.)
+    ! Allocate space to save process/SMP mapping.
     !
     allocate ( proc_smp_map(0:npes-1) )
-    if (masterproc) then
-       allocate ( smp_names(0:npes-1) )
-       smp_names(:) = ' '
-       proc_smp_map(:) = -1
-       !
-       nsmps = 1
-       do c=1,max_len
-          tmp_name(c:c) = proc_names(c)
-       enddo
-       smp_names(0) = trim(tmp_name)
-       proc_smp_map(0) = 0
-       !
-       do i=1,npes-1
-          do c=1,max_len
-             tmp_name(c:c) = proc_names(i*max_len+c)
-          enddo
+    proc_smp_map(:) = -1
 
-          j = 0
-          done = .false.
-          do while ((.not. done) .and. (j < nsmps))
-             if (smp_names(j) .eq. trim(tmp_name)) then
-                proc_smp_map(i) = j
-                done = .true.
-             endif
-             j = j + 1
-          enddo
-
-          if (.not. done) then
-             smp_names(nsmps) = trim(tmp_name)
-             proc_smp_map(i) = nsmps
-             nsmps = nsmps + 1
-          endif
-
-       enddo
-       deallocate(smp_names)
-    endif
-    call mpibcast(nsmps, 1, mpiint, 0, mpicom)
-    call mpibcast(proc_smp_map, npes, mpiint, 0, mpicom)
     !
-    deallocate(displs)
-    deallocate(lengths)
-    deallocate(proc_name)
-    deallocate(proc_names)
+    ! If not calculated elsewhere, identify SMP nodes and process/SMP mapping.
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+    !
+    if (present(calc_proc_smp_map)) then
+       docalc_proc_smp_map = calc_proc_smp_map
+    else
+       docalc_proc_smp_map = .true.
+    endif
+
+    if (docalc_proc_smp_map) then
+
+       write(c_npes,'(i8)') npes
+
+       if (masterproc) then
+          write(iulog,100) trim(adjustl(c_npes))
+100       format(/,a,' pes participating in computation of CAM instance')
+          call flush(iulog)
+       endif
+
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(iulog, mpicom, 'ATM', &
+                              save_nnodes=nsmps, &
+                              save_task_node_map=proc_smp_map)
+       call t_stopf("shr_taskmap_write")
+
+    endif
 
 #else
     !	
