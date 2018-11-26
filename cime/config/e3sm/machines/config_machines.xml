@@ -2417,8 +2417,8 @@
 		<modules>
 			<command name="load">netcdf/4.4.1</command>
 		</modules>
-		<!modules>
-			<!command name="load">parallel-netcdf/1.5.0</command>
+		<!modules; deactivate as the module does not load correctly-cxu>
+			<!command name="load" parallel-netcdf/1.5.0 command>
 		<!/modules>
 	</module_system>
 	<environment_variables>
