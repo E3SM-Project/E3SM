@@ -14,7 +14,8 @@ def cellWidthVsLatLon():
     params["trans_start"] = 400.0*km
     params["mesh_type"] = "EC"
 
-    params["plot_box"] = np.array([-80,-30,30,90]) 
+    #params["plot_box"] = np.array([-80,-30,30,90]) 
+    params["plot_box"] = ct.Entire_Globe
 
     print "***Gulf Coast***"
     params["region_box"] = ct.US_Gulf_Coast
@@ -86,14 +87,35 @@ def cellWidthVsLatLon():
     params["restrict_box"] = ct.Empty
     params["trans_width"] = 600.0*km
     params["trans_start"] = 400.0*km
+    params["lon_wrap"] = False
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print "***Greenland***"
     Greenland = {"include":[np.array([-49,-45,60,61])],
-                    "exclude":[]}
+                 "exclude":[]}
     params["region_box"] = Greenland 
     params["restrict_box"] = ct.Empty
     params["trans_start"] = 900.0*km
+    cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print"***Central America (West Coast)***"
+    Central_America = {"include":[np.array([[-110.26,20.69],
+                                            [-87.84, 8.94 ],
+                                            [-84.55, 12.03],
+                                            [-104.26,23.11]]),
+                                  np.array([[-88.02, 10.47],
+                                            [-81.53, 6.14],
+                                            [-81.45, 8.07],
+                                            [-84.80, 11.51]]),
+                                  np.array([[-81.92, 7.76],
+                                            [-76.84, 4.51],
+                                            [-77.41, 8.22],
+                                            [-79.23, 9.28]])],
+                       "exclude":[]}
+    params["region_box"] = Central_America 
+    params["restrict_box"] = ct.Empty
+    params["trans_width"] = 600.0*km
+    params["trans_start"] = 400.0*km
     cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
     
     return cell_width / km, lon, lat
