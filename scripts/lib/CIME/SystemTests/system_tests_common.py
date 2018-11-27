@@ -32,6 +32,7 @@ class SystemTestsCommon(object):
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
         self._skip_pnl = False
+        self._cpllog = 'cpl'
 
     def _init_environment(self, caseroot):
         """
