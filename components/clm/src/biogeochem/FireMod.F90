@@ -45,7 +45,8 @@ module FireMod
   use WaterstateType         , only : waterstate_type
   use GridcellType           , only : grc_pp
   use TopounitType           , only : top_as, top_af ! atmospheric state and flux variables  
-  use ColumnType             , only : col_pp                
+  use ColumnType             , only : col_pp
+  use ColumnDataType         , only : col_es  
   use VegetationType         , only : veg_pp                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
@@ -199,7 +200,7 @@ contains
          prec60             =>    top_af%prec60d                            , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation, mm liquid H2O/s 
          prec10             =>    top_af%prec10d                            , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation, mm liquid H2O/s 
          
-         tsoi17             =>    temperature_vars%t_soi17cm_col            , & ! Input:  [real(r8) (:)     ]  soil T for top 0.17 m                             
+         tsoi17             =>    col_es%t_soi17cm            , & ! Input:  [real(r8) (:)     ]  soil T for top 0.17 m                             
          
          btran2             =>    energyflux_vars%btran2_patch              , & ! Input:  [real(r8) (:)     ]  root zone soil wetness                            
          

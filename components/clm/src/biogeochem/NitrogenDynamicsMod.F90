@@ -21,7 +21,8 @@ module NitrogenDynamicsMod
   use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
-  use ColumnType          , only : col_pp                
+  use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_es  
   use VegetationType           , only : veg_pp
   use VegetationPropertiesType      , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
@@ -660,7 +661,7 @@ contains
          nfix_to_ecosysn       => nitrogenflux_vars%nfix_to_ecosysn_col, &
          pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
          benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
-         t_soi10cm_col         => temperature_vars%t_soi10cm_col       , &
+         t_soi10cm_col         => col_es%t_soi10cm       , &
          h2osoi_vol            => waterstate_vars%h2osoi_vol_col       , &
          t_scalar              => carbonflux_vars%t_scalar_col           &
          )

@@ -106,7 +106,7 @@ contains
          t_h2osfc                => col_es%t_h2osfc                         , & ! Input:  [real(r8) (:)   ]  surface water temperature (K)              
          tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  soil/snow temperature before update (K)  
          t_h2osfc_bef            => col_es%t_h2osfc_bef                     , & ! Input:  [real(r8) (:)   ]  saved surface water temperature (K)        
-         t_grnd                  => temperature_vars%t_grnd_col             , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
+         t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          xmf                     => temperature_vars%xmf_col                , & ! Input:  [real(r8) (:)   ]  
          xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  

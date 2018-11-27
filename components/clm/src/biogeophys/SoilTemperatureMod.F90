@@ -282,7 +282,7 @@ contains
          tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
          t_h2osfc                => col_es%t_h2osfc                         , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => col_es%t_soisno                         , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
-         t_grnd                  => temperature_vars%t_grnd_col             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
+         t_grnd                  => col_es%t_grnd             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
          t_building              => temperature_vars%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
          xmf                     => temperature_vars%xmf_col                , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
          xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Output: [real(r8) (:)   ] latent heat of phase change of surface water [col]
@@ -1767,7 +1767,7 @@ end subroutine SolveTemperature
          
          emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
          t_h2osfc                => col_es%t_h2osfc           , & ! Input:  [real(r8) (:)   ]  surface water temperature               
-         t_grnd                  => temperature_vars%t_grnd_col             , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]          
+         t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]          
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          
          htvp                    => energyflux_vars%htvp_col                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]

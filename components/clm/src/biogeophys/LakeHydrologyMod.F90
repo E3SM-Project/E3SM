@@ -137,8 +137,8 @@ contains
 
          watsat               =>  soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
 
-         t_lake               =>  temperature_vars%t_lake_col           , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)             
-         t_grnd               =>  temperature_vars%t_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
+         t_lake               =>  col_es%t_lake           , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)             
+         t_grnd               =>  col_es%t_grnd           , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno             =>  col_es%t_soisno         , & ! Output: [real(r8) (:,:) ]  snow temperature (Kelvin)             
          dTdz_top             =>  temperature_vars%dTdz_top_col         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
          snot_top             =>  temperature_vars%snot_top_col         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO

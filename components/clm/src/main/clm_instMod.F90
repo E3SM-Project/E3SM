@@ -360,7 +360,7 @@ contains
     ! WJS (6-24-14): Without the following write statement, the assertion in
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
     ! this write statement in place as a workaround for this problem.
-    call energyflux_vars%init(bounds_proc, temperature_vars%t_grnd_col(begc:endc))
+    call energyflux_vars%init(bounds_proc, col_es%t_grnd(begc:endc))
 
     call aerosol_vars%Init(bounds_proc)
 

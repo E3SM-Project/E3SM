@@ -1224,7 +1224,7 @@ contains
          sno_liq_top        => waterstate_vars%sno_liq_top_col    , & ! Output: [real(r8) (:)   ]  liquid water fraction (mass) in top snow layer (col) [frc]
 
          t_soisno           => col_es%t_soisno      , & ! Input:  [real(r8) (:,:) ]  soil and snow temperature (col,lyr) [K]
-         t_grnd             => temperature_vars%t_grnd_col        , & ! Input:  [real(r8) (:)   ]  ground temperature (col) [K]            
+         t_grnd             => col_es%t_grnd        , & ! Input:  [real(r8) (:)   ]  ground temperature (col) [K]            
          snot_top           => temperature_vars%snot_top_col      , & ! Output: [real(r8) (:)   ]  temperature in top snow layer (col) [K]            
          dTdz_top           => temperature_vars%dTdz_top_col        & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1]
          )
