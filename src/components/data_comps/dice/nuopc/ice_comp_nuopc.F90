@@ -36,7 +36,7 @@ module ice_comp_nuopc
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dice_shr_mod          , only : dice_shr_read_namelists
   use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info 
+  use mct_mod               , only : mct_Avect, mct_Avect_info
 
 
   implicit none
@@ -250,7 +250,7 @@ contains
     integer                 :: current_tod               ! model sec into model date
     real(R8)                :: cosarg                    ! for setting ice temp pattern
     real(R8)                :: jday, jday0               ! elapsed day counters
-    logical                 :: write_restart 
+    logical                 :: write_restart
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -428,6 +428,7 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -448,12 +449,13 @@ contains
     integer                 :: day           ! day in month
     real(R8)                :: cosarg        ! for setting ice temp pattern
     real(R8)                :: jday, jday0   ! elapsed day counters
+    character(len=CL)       :: cvalue
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    call shr_nuopc_memcheck(subname, 5, my_task==master_task)
     !--------------------------------
     ! Reset shr logging to my log file
     !--------------------------------
@@ -537,14 +539,10 @@ contains
     if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    endif
 
     if (my_task == master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_log_clock_advance(clock, 'ICE', logunit)
     end if
 
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)

@@ -41,7 +41,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : logunit
-
+    use perf_mod              , only : t_startf, t_stopf
     character(len=*)             , intent(in)            :: compout_name ! component name for FBOut
     type(ESMF_FieldBundle)       , intent(inout)         :: FBOut        ! Merged output field bundle
     type(ESMF_FieldBundle)       , intent(inout)         :: FBfrac       ! Fraction data for FBOut
@@ -65,12 +65,11 @@ contains
     character(CL) :: mrgstr   ! temporary string
     logical                :: init_mrgstr
     character(len=*),parameter  :: subname='(med_merge_auto)'
-    ! integer                       :: dbrc
+    integer                       :: dbrc
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
-    ! if (dbug_flag > 5) then
-    !    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    ! endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     call shr_nuopc_methods_FB_reset(FBOut, value=czero, rc=rc)
@@ -185,9 +184,8 @@ contains
     !--- clean up
     !---------------------------------------
 
-    ! if (dbug_flag > 5) then
-    !    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    ! endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call t_stopf('MED:'//subname)
 
   end subroutine med_merge_auto
 

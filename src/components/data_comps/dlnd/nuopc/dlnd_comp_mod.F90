@@ -14,12 +14,12 @@ module dlnd_comp_mod
   use mct_mod               , only : mct_avect_init, mct_avect_lsize
   use shr_sys_mod           , only : shr_sys_abort
   use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
+  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX
   use shr_string_mod        , only : shr_string_listGetName
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain 
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
   use shr_strdata_mod       , only : shr_strdata_init_mapping
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
@@ -32,7 +32,7 @@ module dlnd_comp_mod
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use dshr_nuopc_mod        , only : fld_list_type
   use dshr_nuopc_mod        , only : dshr_fld_add
-  use glc_elevclass_mod     , only : glc_get_num_elevation_classes, glc_elevclass_as_string, glc_elevclass_init 
+  use glc_elevclass_mod     , only : glc_get_num_elevation_classes, glc_elevclass_as_string, glc_elevclass_init
   use dlnd_shr_mod          , only : datamode        ! namelist input
   use dlnd_shr_mod          , only : rest_file       ! namelist input
   use dlnd_shr_mod          , only : rest_file_strm  ! namelist input
@@ -92,7 +92,7 @@ contains
     character(len=*)     , intent(out) :: flds_x2l
     integer              , intent(out) :: rc
 
-    ! local variables 
+    ! local variables
     integer :: n
     character(nec_len) :: nec_str         ! elevation class, as character string
     character(len=CS)  :: data_fld_name
@@ -106,7 +106,7 @@ contains
     !-------------------
     ! export fields
     !-------------------
-    
+
     ! scalar fields that need to be advertised
 
     fldsFrLnd_num=1
@@ -164,7 +164,7 @@ contains
     ! "Fall_flxdst2"
     ! "Fall_flxdst3"
     ! "Fall_flxdst4"
-    
+
     do n = 1,fldsFrLnd_num
        call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -204,13 +204,13 @@ contains
     character(len=*)       , intent(in)    :: calendar     ! calendar name
     integer                , intent(in)    :: current_ymd  ! model date
     integer                , intent(in)    :: current_tod  ! model sec into model date
-    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh 
+    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
 
     !--- local variables ---
     integer                      :: n,k             ! generic counters
     integer                      :: lsize           ! local size
     logical                      :: exists          ! file existance
-    logical                      :: write_restart 
+    logical                      :: write_restart
     integer                      :: nu              ! unit number
     type(ESMF_DistGrid)          :: distGrid
     integer, allocatable, target :: gindex(:)
@@ -223,7 +223,7 @@ contains
     integer                      :: spatialDim
     integer                      :: numOwnedElements
     real(R8), pointer            :: ownedElemCoords(:)
-    integer                      :: klat, klon, kfrac  ! AV indices 
+    integer                      :: klat, klon, kfrac  ! AV indices
     real(R8)                     :: domlon,domlat      ! domain lats and lots
     real(R8), pointer            :: xc(:), yc(:)       ! mesh lats and lons
     integer                      :: rc
@@ -241,7 +241,7 @@ contains
     call shr_strdata_pioinit(SDLND, compid)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global segmap 
+    ! Create a data model global segmap
     !----------------------------------------------------------------------------
 
     call t_startf('dlnd_strdata_init')
@@ -249,9 +249,9 @@ contains
     if (my_task == master_task) write(logunit,F00) ' initialize SDLND gsmap'
 
     ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -343,7 +343,7 @@ contains
     lfrac(:) = SDLND%grid%data%rAttr(kfrac,:)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDLND attributes for streams and mapping of streams to model domain 
+    ! Initialize SDLND attributes for streams and mapping of streams to model domain
     !----------------------------------------------------------------------------
 
     call shr_strdata_init_streams(SDLND, compid, mpicom, my_task)
@@ -533,14 +533,6 @@ contains
        call shr_strdata_restWrite(trim(rest_file_strm),SDLND,mpicom,trim(case_name),'SDLND strdata')
        call t_stopf('dlnd_restart')
     endif
-
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) ' dlnd: model date ', target_ymd,target_tod
-    end if
 
     call t_stopf('DLND_RUN')
 

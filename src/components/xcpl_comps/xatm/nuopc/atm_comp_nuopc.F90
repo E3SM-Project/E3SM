@@ -415,7 +415,7 @@ module atm_comp_nuopc
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
-    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -432,9 +432,7 @@ module atm_comp_nuopc
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     call shr_nuopc_memcheck(subname, 3, mastertask)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
@@ -501,14 +499,10 @@ module atm_comp_nuopc
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-
-    call ESMF_ClockPrint(clock, options="currTime", unit=clockstr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mastertask) write(logunit, *) "------->Advancing ATM from: ",trim(clockstr)
-    call ESMF_ClockPrint(clock, options="stopTime", unit=clockstr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mastertask) write(logunit, *) "--------------------------------> to: ",trim(clockstr)
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if(mastertask) then
+       call shr_nuopc_log_clock_advance(clock, 'ATM', logunit)
+    endif
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelAdvance
 

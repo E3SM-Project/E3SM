@@ -125,9 +125,7 @@ module ESM
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
     use NUOPC                 , only : NUOPC_CompAttributeAdd, NUOPC_CompAttributeSet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp, NUOPC_DriverGetComp
-    use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
-    use seq_comm_mct          , only : seq_comm_printcomms, seq_comm_petlist
-    use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
+
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
     use shr_file_mod          , only : shr_file_setLogunit, shr_file_getunit
     use med                   , only : med_SS         => SetServices
@@ -769,6 +767,7 @@ module ESM
     use ESMF             , only : ESMF_Clock, ESMF_ClockGet, ESMF_Time, ESMF_TimeGet
     use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
     use ESMF             , only : ESMF_RC_NOT_VALID
+    use ESMF             , only : ESMF_GridCompIsPetLocal, ESMF_VMBroadcast
     use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
     use seq_comm_mct     , only : CPLID, OCNID
@@ -794,7 +793,6 @@ module ESM
     character(SHR_KIND_CL)          :: errstring
     character(SHR_KIND_CL)          :: cvalue
     integer                         :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
-    logical                         :: iamroot_med           ! mediator masterproc
     logical                         :: drv_threading         ! driver threading control
     logical                         :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
     real(SHR_KIND_R8)               :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
@@ -806,6 +804,8 @@ module ESM
     integer                         :: orb_iyear_align       ! associated with model year
     integer                         :: orb_cyear             ! orbital year for current orbital computation
     integer                         :: orb_nyear             ! orbital year associated with currrent model year
+    integer                         :: orbitmp(4)            ! array for integer parameter broadcast
+    real(SHR_KIND_R8)               :: orbrtmp(6)            ! array for real parameter broadcast
     real(SHR_KIND_R8)               :: orb_eccen             ! orbital eccentricity
     real(SHR_KIND_R8)               :: orb_obliq             ! obliquity in degrees
     real(SHR_KIND_R8)               :: orb_mvelp             ! moving vernal equinox long
@@ -828,6 +828,7 @@ module ESM
     integer                         :: i, it, n
     integer                         :: unitn                 ! Namelist unit number to read
     integer                         :: dbrc
+    integer                         :: localPet, rootpe_med
     integer          , parameter    :: ens1=1                ! use first instance of ensemble only
     integer          , parameter    :: fix1=1                ! temporary hard-coding to first ensemble, needs to be fixed
     real(SHR_KIND_R8), parameter    :: epsilo = shr_const_mwwv/shr_const_mwdair
@@ -943,9 +944,12 @@ module ESM
        return  ! bail out
     endif
 
+    call NUOPC_CompAttributeGet(driver, name='cpl_rootpe', value=cvalue, rc=rc)
+    read(cvalue, *) rootpe_med
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_GridCompGet(driver, localPet=localPet, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     ! Determine orbital params
-
-    call seq_comm_getinfo(CPLID, iamroot=iamroot_med)
     if (trim(orb_mode) == trim(orb_variable_year)) then
        call ESMF_GridCompGet(driver, clock=clock, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -958,16 +962,16 @@ module ESM
 
        orb_cyear = orb_iyear + (year - orb_iyear_align)
        call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
-                           orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
+            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
     else
        call shr_orb_params(orb_iyear, orb_eccen, orb_obliq, orb_mvelp, &
-                           orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
+            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
     end if
 
     if (orb_eccen  == SHR_ORB_UNDEF_REAL .or. &
-        orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
-        orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
-        orb_lambm0 == SHR_ORB_UNDEF_REAL) then
+         orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
+         orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
+         orb_lambm0 == SHR_ORB_UNDEF_REAL) then
        write (msgstr, *) subname//' ERROR: orb params incorrect'
        call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
        return  ! bail out
@@ -1522,8 +1526,8 @@ module ESM
        if(.not. allocated(petlist)) then
           allocate(petlist(ntasks))
        endif
-       cnt=1
 
+       cnt=1
        do ntask = rootpe, (rootpe+ntasks*stride)-1, stride
           petlist(cnt) = ntask
           cnt=cnt+1
@@ -1538,8 +1542,6 @@ module ESM
           call seq_comm_setcomm(CPLID, pelist, nthreads=nthrds, iname='CPL')
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'ATM') then
           ATMID(1) = i+1
           pelist(1,1) = rootpe
@@ -1547,8 +1549,6 @@ module ESM
           pelist(3,1) = stride
           call seq_comm_setcomm(ATMID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ATMSetServices, petList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'LND') then
           LNDID(1) = i+1
@@ -1558,8 +1558,6 @@ module ESM
           call seq_comm_setcomm(LNDID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), LNDSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'OCN') then
           OCNID(1) = i+1
           pelist(1,1) = rootpe
@@ -1567,8 +1565,6 @@ module ESM
           pelist(3,1) = stride
           call seq_comm_setcomm(OCNID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), OCNSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         elseif(trim(compLabels(i)) .eq. 'ICE') then
           ICEID(1) = i+1
@@ -1578,8 +1574,6 @@ module ESM
           call seq_comm_setcomm(ICEID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ICESetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'GLC') then
           GLCID(1) = i+1
           pelist(1,1) = rootpe
@@ -1588,8 +1582,6 @@ module ESM
           call seq_comm_setcomm(GLCID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), GLCSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'ROF') then
           ROFID(1) = i+1
           pelist(1,1) = rootpe
@@ -1598,8 +1590,6 @@ module ESM
           call seq_comm_setcomm(ROFID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ROFSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'WAV') then
           WAVID(1) = i+1
           pelist(1,1) = rootpe
@@ -1608,8 +1598,6 @@ module ESM
           call seq_comm_setcomm(WAVID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), WAVSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
 !       elseif(trim(compLabels(i)) .eq. 'ESP') then
 !          ESPID(1) = i+1
 !          pelist(1,1) = rootpe
@@ -1618,11 +1606,14 @@ module ESM
 !          call seq_comm_setcomm(ESPID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
 !          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
        endif
+       call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
           call ESMF_GridCompGet(child, vm=vm, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
           ! Attach methods for handling reading/writing of restart pointer file
           call ESMF_MethodAdd(child, label="GetRestartFileToWrite", &
                userRoutine=GetRestartFileToWrite, rc=rc)

@@ -42,11 +42,13 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
     with Case(caseroot, read_only=False) as case:
+        comp_interface = case.get_value("COMP_INTERFACE")
         gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
         gmake_opts = "-f {}/Makefile install -C {} MACFILE={} MODEL=gptl GPTL_DIR={} GPTL_LIBDIR={}"\
-            " SHAREDPATH={}"\
+            " SHAREDPATH={} COMP_INTERFACE={}"\
             .format(gptl_dir , bldroot, os.path.join(caseroot,"Macros.make"),
-                    gptl_dir, bldroot, installpath)
+                    gptl_dir, bldroot, installpath, comp_interface)
+
         build_threaded = case.get_build_threaded()
         if build_threaded:
             gmake_opts += " compile_threaded=true "

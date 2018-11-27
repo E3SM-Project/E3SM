@@ -14,6 +14,14 @@ module perf_mod
 !-----------------------------------------------------------------------
 !- Uses ----------------------------------------------------------------
 !-----------------------------------------------------------------------
+#ifdef NUOPC_INTERFACE
+#define TIMERSTART call ESMF_TraceRegionEnter
+#define TIMERSTOP  call ESMF_TraceRegionExit
+  use ESMF, only: ESMF_TraceRegionEnter, ESMF_TraceRegionExit
+#else
+#define TIMERSTART ierr = GPTLstart
+#define TIMERSTOP  ierr = GPTLstop
+#endif
 
 #ifndef USE_CSM_SHARE
    use perf_utils
@@ -25,13 +33,12 @@ module perf_mod
    use shr_file_mod,      only: shr_file_getUnit, shr_file_freeUnit
    use namelist_utils,    only: find_group_name
 #endif
-
+   use mpi
 !-----------------------------------------------------------------------
 !- module boilerplate --------------------------------------------------
 !-----------------------------------------------------------------------
    implicit none
    private                   ! Make the default access private
-#include <mpif.h>
    save
 
 !-----------------------------------------------------------------------
@@ -111,7 +118,9 @@ module perf_mod
    integer, parameter :: init_timing_detail = 0                ! init
    integer, private   :: cur_timing_detail = init_timing_detail
                          ! current timing detail level
-
+#ifdef NUOPC_INTERFACE
+   integer, private   :: cur_timing_depth = 0
+#endif
    logical, parameter :: def_perf_single_file = .false.         ! default
    logical, private   :: perf_single_file = def_perf_single_file
                          ! flag indicating whether the performance timer
@@ -148,11 +157,11 @@ module perf_mod
 
    character(len=SHR_KIND_CS), private :: event_prefix
                          ! current prefix for all event names.
-                         ! Default defined to be blank via 
+                         ! Default defined to be blank via
                          ! prefix_len_def
    integer, parameter :: prefix_len_def = 0                    ! default
    integer, private   :: prefix_len = prefix_len_def
-                         ! For convenience, contains len_trim of 
+                         ! For convenience, contains len_trim of
                          ! event_prefix, if set.
 
 #ifdef HAVE_MPI
@@ -621,10 +630,10 @@ contains
 !========================================================================
 !
    subroutine t_set_prefixf(prefix_string)
-!----------------------------------------------------------------------- 
-! Purpose: Set prefix for subsequent time event names. 
+!-----------------------------------------------------------------------
+! Purpose: Set prefix for subsequent time event names.
 !          Ignored in threaded regions.
-! Author: P. Worley 
+! Author: P. Worley
 !-----------------------------------------------------------------------
 !---------------------------Input arguments-----------------------------
 !
@@ -658,10 +667,10 @@ contains
 !========================================================================
 !
    subroutine t_unset_prefixf()
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 ! Purpose: Unset prefix for subsequent time event names.
 !          Ignored in threaded regions.
-! Author: P. Worley 
+! Author: P. Worley
 !
 !---------------------------Externals-----------------------------------
 !
@@ -739,35 +748,39 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
+#ifdef NUOPC_INTERFACE
+   cur_timing_depth = cur_timing_depth + 1
+   if(cur_timing_depth > timer_depth_limit) return
+#endif
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         ierr = GPTLstart( &
+         TIMERSTART( &
             '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
             event(1:str_length)//'"')
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstart('"'//cdetail//"_"//event(1:str_length)//'"')
+         TIMERSTART('"'//cdetail//"_"//event(1:str_length)//'"')
       endif
 
    else
 
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstart('"'//event_prefix(1:prefix_len)// &
+         TIMERSTART('"'//event_prefix(1:prefix_len)// &
               event(1:str_length)//'"')
       else
          str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstart('"'//trim(event)//'"')
+         TIMERSTART('"'//trim(event)//'"')
       endif
 
 !pw   if ( present (handle) ) then
-!pw      ierr = GPTLstart_handle(event, handle)
+!pw      TIMERSTART_handle(event, handle)
 !pw   else
-!pw      ierr = GPTLstart(event)
+!pw      TIMERSTART(event)
 !pw   endif
 
    endif
@@ -803,35 +816,38 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
-
+#ifdef NUOPC_INTERFACE
+   cur_timing_depth = cur_timing_depth - 1
+   if(cur_timing_depth > timer_depth_limit) return
+#endif
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         ierr = GPTLstop( &
+         TIMERSTOP( &
               '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
               event(1:str_length)//'"')
       else
          str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstop('"'//cdetail//"_"//event(1:str_length)//'"')
+         TIMERSTOP('"'//cdetail//"_"//event(1:str_length)//'"')
       endif
 
    else
 
       if (prefix_len > 0) then
          str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstop('"'//event_prefix(1:prefix_len)// &
+         TIMERSTOP('"'//event_prefix(1:prefix_len)// &
               event(1:str_length)//'"')
      else
          str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstop('"'//trim(event)//'"')
+         TIMERSTOP('"'//trim(event)//'"')
      endif
 
 !pw   if ( present (handle) ) then
-!pw      ierr = GPTLstop_handle(event, handle)
+!pw      TIMERSTOP_handle(event, handle)
 !pw   else
-!pw      ierr = GPTLstop(event)
+!pw      TIMERSTOP(event)
 !pw   endif
 
    endif
@@ -865,7 +881,7 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
-   integer  str_length, i                 ! support for adding 
+   integer  str_length, i                 ! support for adding
                                           !  detail prefix
    character(len=2) cdetail               ! char variable for detail
    real(shr_kind_r8) wtime                ! walltime increment (seconds)
@@ -1155,6 +1171,9 @@ contains
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return
+#ifdef NUOPC_INTERFACE
+   return
+#endif
 
    call t_startf("t_prf")
 !$OMP MASTER

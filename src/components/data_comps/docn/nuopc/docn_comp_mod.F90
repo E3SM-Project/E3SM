@@ -857,14 +857,6 @@ contains
        call t_stopf('docn_restart')
     endif
 
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) ' docn: model date ', target_ymd,target_tod
-    end if
-
     firstcall = .false.
 
     call t_stopf('docn')

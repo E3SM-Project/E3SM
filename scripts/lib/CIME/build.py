@@ -137,7 +137,7 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
 
     debugdir = "debug" if debug else "nodebug"
     threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded) else "nothreads"
-    sharedpath = os.path.join(compiler, mpilib, debugdir, threaddir)
+    sharedpath = os.path.join(compiler, mpilib, debugdir, threaddir, comp_interface)
 
     logger.debug("compiler={} mpilib={} debugdir={} threaddir={}"
                  .format(compiler,mpilib,debugdir,threaddir))
