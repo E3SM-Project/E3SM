@@ -19,6 +19,7 @@ module ocn_comp_mct
    use shr_file_mod 
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
+   use shr_taskmap_mod,   only : shr_taskmap_write
    use shr_pio_mod
    use perf_mod
 
@@ -145,12 +146,13 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam, ierr, ierr_local
+    integer :: iam, npes, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
     character(len=StrKIND)  :: nml_filename
     character(len=16) :: inst_suffix
+    integer :: inst_index
     integer :: lbnum
 
     type (MPAS_Time_Type) :: alarmStartTime
@@ -177,6 +179,8 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
+    character(len=8) :: c_inst_index ! instance number
+    character(len=8) :: c_npes       ! number of pes
     type (MPAS_Time_type) :: start_time
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
@@ -314,6 +318,24 @@ contains
     if (iam==0) write(ocnLogUnit,'(a,i6)') '=== Beginning ocn_init_mct: rank=',iam
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_o)
+
+    ! Identify SMP nodes and process/SMP mapping for this instance
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+    call MPI_comm_size(mpicom_o,npes,ierr)
+    write(c_npes,'(i8)') npes
+
+    inst_index = seq_comm_inst(ocnID)
+    write(c_inst_index,'(i8)') inst_index
+
+    if (iam==0) then
+       write(ocnLogUnit,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
+100    format(/,a,' pes participating in computation of MPAS-OCEAN instance #',a)
+       call flush(ocnLogUnit)
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(ocnLogUnit, mpicom_o, 'OCN #'//trim(adjustl(c_inst_index)))
+    call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MPASO core and domain types
     call ocn_setup_core(corelist)
@@ -1505,7 +1527,8 @@ contains
                        config_use_DMSTracers,    &
                        config_use_DMSTracers_sea_ice_coupling,  &
                        config_use_MacroMoleculesTracers,  &
-                       config_use_MacroMoleculesTracers_sea_ice_coupling
+                       config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                       config_remove_AIS_coupler_runoff
 
    character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
                                       config_ecosys_atm_alt_co2_option
@@ -1513,6 +1536,8 @@ contains
    real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
 
    real (kind=RKIND), pointer :: config_density0
+
+   real (kind=RKIND), pointer :: totalRemovedRiverRunoffFlux, totalRemovedIceRunoffFlux
 
    type (block_type), pointer :: block_ptr
 
@@ -1529,10 +1554,11 @@ contains
                                   latentHeatFluxField, sensibleHeatFluxField, &
                                   longWaveHeatFluxUpField, &
                                   longWaveHeatFluxDownField, &
-                                  evaporationFluxField, seaIceHeatFluxField, &
-                                  snowFluxField, seaIceFreshWaterFluxField, &
+                                  evaporationFluxField, seaIceHeatFluxField, icebergHeatFluxField, &
+                                  snowFluxField, seaIceFreshWaterFluxField, icebergFreshWaterFluxField, &
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
+                                  removedRiverRunoffFluxField, removedIceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
                                   atmosphericPressureField, iceFractionField, &
                                   seaIcePressureField, windSpeedSquared10mField, &
@@ -1556,10 +1582,11 @@ contains
                                                latentHeatFlux, sensibleHeatFlux, &
                                                longWaveHeatFluxUp, &
                                                longWaveHeatFluxDown, &
-                                               evaporationFlux, seaIceHeatFlux, &
-                                               snowFlux, seaIceFreshWaterFlux, &
+                                               evaporationFlux, seaIceHeatFlux, icebergHeatFlux, &
+                                               snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
+                                               removedRiverRunoffFlux, removedIceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
                                                atmosphericPressure, iceFraction, &
                                                seaIcePressure, windSpeedSquared10m, &
@@ -1575,11 +1602,15 @@ contains
                                                iceFluxFeParticulate, &
                                                iceFluxFeDissolved, &
                                                iceFluxDust
-           
+
+   real (kind=RKIND), dimension(:), pointer :: latCell
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
                                                  iceFluxDOC
-   
+
+   real (kind=RKIND) :: removedRiverRunoffFluxThisProc, removedIceRunoffFluxThisProc
+   real (kind=RKIND) :: removedRiverRunoffFluxReduced, removedIceRunoffFluxReduced
+
 !----------------------------------------------------------------------- 
 !
 !  zero out padded cells 
@@ -1606,8 +1637,12 @@ contains
                                                 config_use_DMSTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_remove_AIS_coupler_runoff', config_remove_AIS_coupler_runoff)
 
    n = 0
+   removedRiverRunoffFluxThisProc = 0.0_RKIND
+   removedIceRunoffFluxThisProc = 0.0_RKIND
+
    block_ptr => domain % blocklist
    do while(associated(block_ptr))
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh',    meshPool)
@@ -1623,8 +1658,10 @@ contains
       call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDownField)
       call mpas_pool_get_field(forcingPool, 'evaporationFlux', evaporationFluxField)
       call mpas_pool_get_field(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'icebergHeatFlux', icebergHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'snowFlux', snowFluxField)
       call mpas_pool_get_field(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFluxField)
       call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
       call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
@@ -1634,6 +1671,8 @@ contains
       call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFluxField)
 
       windStressZonal => windStressZonalField % array
       windStressMeridional => windStressMeridionalField % array
@@ -1643,8 +1682,10 @@ contains
       longWaveHeatFluxDown => longWaveHeatFluxDownField % array
       evaporationFlux => evaporationFluxField % array
       seaIceHeatFlux => seaIceHeatFluxField % array
+      icebergHeatFlux => icebergHeatFluxField % array
       snowFlux => snowFluxField % array
       seaIceFreshWaterFlux => seaIceFreshWaterFluxField % array
+      icebergFreshWaterFlux => icebergFreshWaterFluxField % array
       seaIceSalinityFlux => seaIceSalinityFluxField % array
       riverRunoffFlux => riverRunoffFluxField % array
       iceRunoffFlux => iceRunoffFluxField % array
@@ -1654,6 +1695,10 @@ contains
       seaIcePressure => seaIcePressureField % array
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
+      removedRiverRunoffFlux => removedRiverRunoffFluxField % array
+      removedIceRunoffFlux => removedIceRunoffFluxField % array
+
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
       ! BGC fields
       if (config_use_ecosysTracers) then
@@ -1711,6 +1756,12 @@ contains
          iceFluxDMSP => iceFluxDMSPField % array
       endif
 
+      if (config_remove_AIS_coupler_runoff) then
+         ! Initialize these fields
+         removedRiverRunoffFlux(:) = 0.0_RKIND
+         removedIceRunoffFlux(:) = 0.0_RKIND
+      endif
+
       do i = 1, nCellsSolve
         n = n + 1
         if ( windStressZonalField % isActive ) then
@@ -1738,26 +1789,44 @@ contains
         if ( seaIceHeatFluxField % isActive ) then
            seaIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_melth, n)
         end if
+        if ( icebergHeatFluxField % isActive ) then
+           icebergHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_bergh, n)
+        end if
         if ( snowFluxField % isActive ) then
            snowFlux(i) = x2o_o % rAttr(index_x2o_Faxa_snow, n)
         end if
-
         if ( seaIceFreshWaterFluxField % isActive ) then
            seaIceFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltw, n)
+        end if
+        if ( icebergFreshWaterFluxField % isActive ) then
+           icebergFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_bergw, n)
         end if
         if ( seaIceSalinityFluxField % isActive ) then
            seaIceSalinityFlux(i) = x2o_o % rAttr(index_x2o_Fioi_salt, n)
         end if
         if ( riverRunoffFluxField % isActive ) then
            riverRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofl, n)
+           if (config_remove_AIS_coupler_runoff) then
+              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+                 removedRiverRunoffFlux(i) = riverRunoffFlux(i)
+                 riverRunoffFlux(i) = 0.0_RKIND
+                 removedRiverRunoffFluxThisProc = removedRiverRunoffFluxThisProc + removedRiverRunoffFlux(i)
+               endif
+           endif
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
            if(iceRunoffFlux(n) < 0.0_RKIND) then
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
+           if (config_remove_AIS_coupler_runoff) then
+              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+                 removedIceRunoffFlux(i) = iceRunoffFlux(i)
+                 iceRunoffFlux(i) = 0.0_RKIND
+                 removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)
+              endif
+           endif
         end if
-
         if ( shortWaveHeatFluxField % isActive ) then
            shortWaveHeatFlux(i) = max(x2o_o % rAttr(index_x2o_Foxx_swnet, n), 0.0_RKIND)
         end if
@@ -1880,8 +1949,10 @@ contains
    call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDownField)
    call mpas_pool_get_field(forcingPool, 'evaporationFlux', evaporationFluxField)
    call mpas_pool_get_field(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'icebergHeatFlux', icebergHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'snowFlux', snowFluxField)
    call mpas_pool_get_field(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFluxField)
+   call mpas_pool_get_field(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFluxField)
    call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
    call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
    call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
@@ -1890,7 +1961,6 @@ contains
    call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
    call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
    call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
-   call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
 
    ! BGC fields
    if (config_use_ecosysTracers) then
@@ -1947,11 +2017,17 @@ contains
    if ( seaIceHeatFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(seaIceHeatFluxField)
    end if
+   if ( icebergHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(icebergHeatFluxField)
+   end if
    if ( snowFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(snowFluxField)
    end if
    if ( seaIceFreshWaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(seaIceFreshWaterFluxField)
+   end if
+   if ( icebergFreshWaterFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(icebergFreshWaterFluxField)
    end if
    if ( seaIceSalinityFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(seaIceSalinityFluxField)
@@ -2034,6 +2110,23 @@ contains
       if ( iceFluxDMSPField % isActive ) then
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
+   endif
+
+   ! global sum of removed runoff
+   if (config_remove_AIS_coupler_runoff) then
+      call MPAS_dmpar_sum_real(domain % dminfo, removedRiverRunoffFluxThisProc, removedRiverRunoffFluxReduced)
+      call MPAS_dmpar_sum_real(domain % dminfo, removedIceRunoffFluxThisProc, removedIceRunoffFluxReduced)
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+         call mpas_pool_get_array(forcingPool, 'totalRemovedRiverRunoffFlux', totalRemovedRiverRunoffFlux)
+         call mpas_pool_get_array(forcingPool, 'totalRemovedIceRunoffFlux', totalRemovedIceRunoffFlux)
+         totalRemovedRiverRunoffFlux = removedRiverRunoffFluxReduced
+         totalRemovedIceRunoffFlux = removedIceRunoffFluxReduced
+
+         block_ptr => block_ptr % next
+      end do
    endif
 
 !-----------------------------------------------------------------------

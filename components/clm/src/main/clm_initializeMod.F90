@@ -25,11 +25,13 @@ module clm_initializeMod
   ! Definition of component types
   !-----------------------------------------
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_pp, top_es, top_ws
+  use TopounitType           , only : top_pp, top_as, top_af, top_es
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp                
   use clm_instMod
+  use WaterBudgetMod         , only : WaterBudget_Reset
+  use clm_varctl             , only : do_budgets
   !
   implicit none
   save
@@ -60,7 +62,7 @@ contains
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
-    use ch4varcon                 , only: ch4conrd
+    use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn
@@ -293,8 +295,9 @@ contains
     
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
+    call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
+    call top_af%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric flux variables (forcings)
     call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
-    call top_ws%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! water state
     
     ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
@@ -348,7 +351,7 @@ contains
     ! look for several optional parameters on surfdata file.
 
     if (use_lch4) then
-       call ch4conrd()
+       call CH4conrd()
     end if
 
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
@@ -416,10 +419,10 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use EcosystemDynMod     , only : EcosystemDynInit
     use pdepStreamMod         , only : pdep_init, pdep_interp
-    use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
-    use CNDecompCascadeCNMod  , only : init_decompcascade_cn
+    use DecompCascadeBGCMod , only : init_decompcascade_bgc
+    use DecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
     use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
@@ -475,6 +478,8 @@ contains
     !----------------------------------------------------------------------
 
     call t_startf('clm_init2')
+
+    if (do_budgets) call WaterBudget_Reset('all')
 
     ! ------------------------------------------------------------------------
     ! Determine processor bounds and clumps for this processor
@@ -615,6 +620,10 @@ contains
     call t_startf('init_accflds')
 
     call atm2lnd_vars%initAccBuffer(bounds_proc)
+    
+    call top_as%InitAccBuffer(bounds_proc)
+    
+    call top_af%InitAccBuffer(bounds_proc)
 
     call temperature_vars%initAccBuffer(bounds_proc)
 
@@ -650,7 +659,7 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       call EcosystemDynInit(bounds_proc)
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -834,6 +843,8 @@ contains
     ! must be called after the restart file is read 
 
     call atm2lnd_vars%initAccVars(bounds_proc)
+    call top_as%InitAccVars(bounds_proc)
+    call top_af%InitAccVars(bounds_proc)
     call temperature_vars%initAccVars(bounds_proc)
     call canopystate_vars%initAccVars(bounds_proc)
     if (use_cndv) then

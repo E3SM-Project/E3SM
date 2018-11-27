@@ -16,23 +16,37 @@ module prim_driver_base
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
   use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
   use element_ops,      only: copy_state
+  use gridgraph_mod,    only: GridVertex_t, GridEdge_t
   use hybrid_mod,       only: hybrid_t
   use kinds,            only: real_kind, iulog
+  use metagraph_mod,    only: MetaVertex_t
   use perf_mod,         only: t_startf, t_stopf
-  use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
+  use quadrature_mod,   only: quadrature_t, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
-  use restart_io_mod ,  only : RestFile,readrestart
-  use test_mod,         only : set_test_initial_conditions, compute_test_forcing
+  use restart_io_mod ,  only : readrestart
+  use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
   implicit none
 
   private
   public :: prim_init1, prim_init2 , prim_run_subcycle, prim_finalize
+  public :: prim_init1_geometry, prim_init1_elem_arrays, prim_init1_buffers, prim_init1_cleanup
+#ifndef CAM
+  public :: prim_init1_no_cam
+#endif
+
   public :: smooth_topo_datasets, deriv1
+
+  ! Service variables used to partition the mesh.
+  ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
+  type (GridVertex_t), pointer :: GridVertex(:)
+  type (GridEdge_t),   public, pointer :: GridEdge(:)
+  type (MetaVertex_t), public :: MetaVertex
+  logical :: can_scalably_init_grid
 
   type (quadrature_t)   :: gp                     ! element GLL points
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
@@ -41,123 +55,108 @@ module prim_driver_base
 contains
 
   subroutine prim_init1(elem, par, dom_mt, Tl)
-
-    ! --------------------------------
-    use thread_mod, only : nthreads, hthreads, vthreads
-    ! --------------------------------
-    use control_mod, only : runtype, restartfreq, integration, topology, &
-         partmethod, use_semi_lagrange_transport, z2_map_method, cubed_sphere_map
-    ! --------------------------------
-    use prim_state_mod, only : prim_printstate_init
-    ! --------------------------------
-    use namelist_mod, only : readnl
-    ! --------------------------------
-    use mesh_mod, only : MeshUseMeshFile
-    ! --------------------------------
-    use time_mod, only : nmax, time_at, timelevel_init, timelevel_t
-    ! --------------------------------
-    use mass_matrix_mod, only : mass_matrix
-    ! --------------------------------
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
-                          set_corner_coordinates, assign_node_numbers_to_elem, &
-                          set_area_correction_map0, set_area_correction_map2
-    ! --------------------------------
-    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
-    ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
-    ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
-    ! --------------------------------
-    use schedtype_mod, only : schedule
-    ! --------------------------------
-    use schedule_mod, only : genEdgeSched,  PrintSchedule
-    ! --------------------------------
-    use prim_advection_mod, only: prim_advec_init1
-    ! --------------------------------
-    use prim_advance_mod, only: prim_advance_init1
-    ! --------------------------------
-#ifdef TRILINOS
-    use prim_implicit_mod, only : prim_implicit_init
-#endif
-    ! --------------------------------
-    use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
-#ifdef _MPI
-    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
-#endif
-    ! --------------------------------
-    use metis_mod, only : genmetispart
-    ! --------------------------------
-    use spacecurve_mod, only : genspacepart
-    ! --------------------------------
-    use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
-    ! --------------------------------
-    use params_mod, only : SFCURVE
-    ! --------------------------------
-    use zoltan_mod, only: genzoltanpart, getfixmeshcoordinates, printMetrics, is_zoltan_partition, is_zoltan_task_mapping
-    ! --------------------------------
-    use domain_mod, only : domain1d_t, decompose
-    ! --------------------------------
-    use physical_constants, only : dd_pi
-    ! --------------------------------
-    use bndry_mod, only : sort_neighbor_buffer_mapping
-    ! --------------------------------
-    use edge_mod, only : initedgebuffer, edge_g
-    ! --------------------------------
-#ifndef CAM
-    use repro_sum_mod,      only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
-#else
-    use infnan,             only: nan, assignment(=)
-    use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
-#endif
-
-#ifdef TRILINOS
-    use prim_implicit_mod,  only : prim_implicit_init
-#endif
-
-    implicit none
-
+    use domain_mod,    only : domain1d_t
+    use parallel_mod,  only : parallel_t
+    use time_mod,      only : TimeLevel_t, TimeLevel_init
+    !
+    ! Inputs
+    !
     type (element_t),   pointer     :: elem(:)
     type (parallel_t),  intent(in)  :: par
     type (domain1d_t),  pointer     :: dom_mt(:)
     type (timelevel_t), intent(out) :: Tl
+    !
+    ! Locals
+    !
 
-    type (GridVertex_t), target,allocatable :: GridVertex(:)
-    type (GridEdge_t),   target,allocatable :: Gridedge(:)
-    type (MetaVertex_t), target,allocatable :: MetaVertex(:)
+    ! Note: resist the temptation to collapse these routines into prim_init1!
+    !       They have been split up to allow kokkos targets to work correctly.
+    !       For instance, kokkos builds do not need to init communication buffers,
+    !       since they have their own C++ based communication system. Also,
+    !       the C++ communication graph is built from the Fortran one.
+    !       So, the prim_init1 routine in the kokkos targets' prim_driver_mod
+    !       will call *some* of the following pieces, but not all. Moreover,
+    !       we pulled GridEdge and MetaVertex out of the prim_init1_geometry
+    !       chunk, so that the kokkos targets can do the following:
+    !         a) call prim_init1_geometry
+    !         b) use the info in GridEdge and MetaVertex to build a C++
+    !            communication structure
+    !         c) call prim_init1_cleanup to deallocate GridEdge and MetaVertex
+    !       The overall behavior is the same as it was before, when there was
+    !       a single big prim_init1 subroutine. However, this split-up
+    !       implementation allows kokkos targets to avoid unnecessary pieces,
+    !       as well as to inject code in between pieces that is needed to
+    !       properly setup the C++ structures.
 
-    integer :: ii,ie, ith
-    integer :: nets, nete
-    integer :: nelem_edge,nedge
-    integer :: nstep
-    integer :: nlyr
-    integer :: iMv
-    integer :: err, ierr, l, j
-    logical, parameter :: Debug = .FALSE.
-
-    integer  :: i
-    integer,allocatable :: TailPartition(:)
-    integer,allocatable :: HeadPartition(:)
-
-    integer total_nelem
-    real(kind=real_kind) :: approx_elements_per_task
-    type (quadrature_t)   :: gp                     ! element GLL points
-
-
-    real (kind=real_kind) ,  allocatable :: coord_dim1(:)
-    real (kind=real_kind) ,  allocatable :: coord_dim2(:)
-    real (kind=real_kind) ,  allocatable :: coord_dim3(:)
-    integer :: coord_dimension = 3
 #ifndef CAM
+    ! Initialize a few things that CAM would take care of (e.g., parsing namelist)
+    call prim_init1_no_cam (par)
+#endif
+
+    ! ==================================
+    ! Initialize derivative structure
+    ! ==================================
+    call derivinit(deriv1)
+
+    ! ==================================
+    ! Initialize and partition the geometry
+    ! ==================================
+    call prim_init1_geometry(elem,par,dom_mt)
+
+    ! ==================================
+    ! Initialize element pointers (if any)
+    ! ==================================
+    ! TODO: this is for OPENACC only. preqx_acc should define its own prim_init1,
+    !       which should do the same things as in this prim_init1, including
+    !       the call to setup_element_pointers, which should be removed from
+    !       the base version of prim_init1
+    call setup_element_pointers(elem)
+
+    ! ==================================
+    ! Initialize element arrays (fluxes and state)
+    ! ==================================
+    call prim_init1_elem_arrays(elem,par)
+
+    ! ==================================
+    ! Initialize the buffers for exchanges
+    ! ==================================
+    call prim_init1_buffers(elem,par)
+
+    ! Initialize the time levels
+    call TimeLevel_init(tl)
+
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup ()
+
+    if(par%masterproc) write(iulog,*) 'end of prim_init1'
+  end subroutine prim_init1
+
+
+#ifndef CAM
+  subroutine prim_init1_no_cam(par)
+    use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
+    use cube_mod,       only : cubeelemcount
+    use parallel_mod,   only : parallel_t, abortmp
+    use namelist_mod,   only : readnl
+    use quadrature_mod, only : test_gauss, test_gausslobatto
+    use repro_sum_mod,  only : repro_sum_defaultopts, repro_sum_setopts
+    use time_mod,       only : nmax, time_at
+    !
+    ! Inputs
+    !
+    type (parallel_t),  intent(in)  :: par
+    !
+    ! Locals
+    !
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
-#endif
+    real(kind=real_kind) :: approx_elements_per_task
+    integer :: total_nelem
 
     ! =====================================
     ! Read in model control information
     ! =====================================
     ! cam readnl is called in spmd_dyn (needed prior to mpi_init)
-#ifndef CAM
     call readnl(par)
     if (MeshUseMeshFile) then
        total_nelem = MeshCubeElemCount()
@@ -185,9 +184,7 @@ contains
        repro_sum_master=par%masterproc,                      &
        repro_sum_logunit=6                           )
        if(par%masterproc) print *, "Initialized repro_sum"
-#endif
 
-#ifndef CAM
     if (par%masterproc) then
        ! =============================================
        ! Compute total simulated time...
@@ -201,32 +198,114 @@ contains
        call test_gauss(np)
        call test_gausslobatto(np)
     end if
+  end subroutine prim_init1_no_cam
 #endif
-    ! ==================================
-    ! Initialize derivative structure
-    ! ==================================
-    call derivinit(deriv1)
+
+  subroutine prim_init1_geometry(elem, par, dom_mt)
+
+    ! --------------------------------
+    use thread_mod, only : nthreads, hthreads, vthreads
+    ! --------------------------------
+    use control_mod, only : topology, partmethod, z2_map_method, cubed_sphere_map
+    ! --------------------------------
+    use prim_state_mod, only : prim_printstate_init
+    ! --------------------------------
+    use mass_matrix_mod, only : mass_matrix
+    ! --------------------------------
+    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
+                          set_corner_coordinates, &
+                          set_area_correction_map0, set_area_correction_map2
+    ! --------------------------------
+    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
+                         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+    ! --------------------------------
+    use metagraph_mod, only : localelemcount, initmetagraph, printmetavertex
+    ! --------------------------------
+    use gridgraph_mod, only : allocate_gridvertex_nbrs
+    ! --------------------------------
+    use schedtype_mod, only : schedule
+    ! --------------------------------
+    use schedule_mod, only : genEdgeSched,  PrintSchedule
+    ! --------------------------------
+    use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
+#ifdef _MPI
+    use parallel_mod, only : mpiinteger_t, mpireal_t, mpi_max, mpi_sum, haltmp
+#endif
+    ! --------------------------------
+    use metis_mod, only : genmetispart
+    ! --------------------------------
+    use spacecurve_mod, only : genspacepart
+    ! --------------------------------
+    use scalable_grid_init_mod, only : sgi_init_grid
+    ! --------------------------------
+    use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
+    ! --------------------------------
+    use params_mod, only : SFCURVE
+    ! --------------------------------
+    use zoltan_mod, only: genzoltanpart, getfixmeshcoordinates, printMetrics, is_zoltan_partition, is_zoltan_task_mapping
+    ! --------------------------------
+    use domain_mod, only : domain1d_t, decompose
+    ! --------------------------------
+    use physical_constants, only : dd_pi
+    ! --------------------------------
+
+    implicit none
+    !
+    ! Locals
+    !
+
+    type (element_t),   pointer     :: elem(:)
+    type (parallel_t),  intent(in)  :: par
+    type (domain1d_t),  pointer     :: dom_mt(:)
+
+    integer :: ii,ie, ith
+    integer :: nelem_edge,nedge
+    integer :: nstep
+    integer :: nlyr
+    integer :: iMv
+    integer :: err, ierr, l, j
+    logical, parameter :: Debug = .FALSE.
+
+    integer  :: i
+
+    type (quadrature_t)   :: gp                     ! element GLL points
+
+
+    real (kind=real_kind) ,  allocatable :: coord_dim1(:)
+    real (kind=real_kind) ,  allocatable :: coord_dim2(:)
+    real (kind=real_kind) ,  allocatable :: coord_dim3(:)
+    integer :: coord_dimension = 3
 
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
-    if (topology=="cube") then
+    if (MeshUseMeshFile) then
+       nelem = MeshCubeElemCount()
+       nelem_edge = MeshCubeEdgeCount()
+    else
+       nelem      = CubeElemCount()
+       nelem_edge = CubeEdgeCount()
+    end if
+
+    ! we want to exit elegantly when we are using too many processors.
+    if (nelem < par%nprocs) then
+       call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
+    end if
+
+    can_scalably_init_grid = &
+         topology == "cube" .and. &
+         .not. MeshUseMeshFile .and. &
+         partmethod .eq. SFCURVE .and. &
+         .not. (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method))
+
+    if (can_scalably_init_grid) then
+       call sgi_init_grid(par, GridVertex, GridEdge, MetaVertex)
+    end if
+
+    if (topology=="cube" .and. .not. can_scalably_init_grid) then
 
        if (par%masterproc) then
           write(iulog,*)"creating cube topology..."
-       end if
-
-       if (MeshUseMeshFile) then
-           nelem = MeshCubeElemCount()
-           nelem_edge = MeshCubeEdgeCount()
-       else
-           nelem      = CubeElemCount()
-           nelem_edge = CubeEdgeCount()
-       end if
-
-       ! we want to exit elegantly when we are using too many processors.
-       if (nelem < par%nprocs) then
-          call abortmp('Error: too many MPI tasks. set dyn_npes <= nelem')
        end if
 
        allocate(GridVertex(nelem))
@@ -259,22 +338,24 @@ contains
 
     call t_startf('PartitioningTime')
 
-    if(partmethod .eq. SFCURVE) then
-       if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
-       !if the partitioning method is space filling curves
-       call genspacepart(GridEdge,GridVertex)
-       if (is_zoltan_task_mapping(z2_map_method)) then
-          if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+    if (.not. can_scalably_init_grid) then
+       if(partmethod .eq. SFCURVE) then
+          if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
+          !if the partitioning method is space filling curves
+          call genspacepart(GridEdge,GridVertex)
+          if (is_zoltan_task_mapping(z2_map_method)) then
+             if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
+             call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+          endif
+          !if zoltan2 partitioning method is asked to run.
+       elseif ( is_zoltan_partition(partmethod)) then
+          if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
+          call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+       else
+          if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
+          call genmetispart(GridEdge,GridVertex)
        endif
-    !if zoltan2 partitioning method is asked to run.
-    elseif ( is_zoltan_partition(partmethod)) then
-        if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
-        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-    else
-        if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
-       call genmetispart(GridEdge,GridVertex)
-    endif
+    endif ! .not. can_scalably_init_grid
 
     call t_stopf('PartitioningTime')
 
@@ -286,26 +367,20 @@ contains
     ! ===========================================================
     ! given partition, count number of local element descriptors
     ! ===========================================================
-    allocate(MetaVertex(1))
     allocate(Schedule(1))
 
     nelem_edge=SIZE(GridEdge)
 
-    allocate(TailPartition(nelem_edge))
-    allocate(HeadPartition(nelem_edge))
-    do i=1,nelem_edge
-       TailPartition(i)=GridEdge(i)%tail%processor_number
-       HeadPartition(i)=GridEdge(i)%head%processor_number
-    enddo
-
     ! ====================================================
     !  Generate the communication graph
     ! ====================================================
-    call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
+    if (.not. can_scalably_init_grid) then
+       call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
+    end if
 
-    nelemd = LocalElemCount(MetaVertex(1))
+    nelemd = LocalElemCount(MetaVertex)
     if(par%masterproc .and. Debug) then 
-        call PrintMetaVertex(MetaVertex(1))
+        call PrintMetaVertex(MetaVertex)
     endif
 
     if(nelemd .le. 0) then
@@ -320,7 +395,6 @@ contains
 
     if (nelemd>0) then
        allocate(elem(nelemd))
-       call setup_element_pointers(elem)
        call allocate_element_desc(elem)
     endif
 
@@ -328,7 +402,7 @@ contains
     !  Generate the communication schedule
     ! ====================================================
 
-    call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
+    call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
 
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
@@ -402,7 +476,6 @@ contains
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-           call assign_node_numbers_to_elem(elem, GridVertex)
        end if
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
@@ -448,11 +521,37 @@ contains
 
     call SetElemOffset(par,elem, GlobalUniqueCols)
 
-    call prim_printstate_init(par)
+    allocate(dom_mt(0:hthreads-1))
+    do ith=0,hthreads-1
+       dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
+    end do
+
+  end subroutine prim_init1_geometry
+
+  subroutine prim_init1_elem_arrays (elem,par)
+    ! --------------------------------
+    use prim_state_mod, only : prim_printstate_init
+    use parallel_mod,   only : parallel_t
+    use control_mod,    only : runtype, restartfreq
+#ifndef CAM
+    use restart_io_mod, only : RestFile,readrestart
+#endif
+
+    implicit none
+    !
+    ! Inputs
+    !
+    type (element_t),   pointer     :: elem(:)
+    type (parallel_t),  intent(in)  :: par
+    !
+    ! Locals
+    !
+    integer :: ie
+
     ! Initialize output fields for plotting...
+    call prim_printstate_init(par)
 
     ! initialize flux terms to 0
-
     do ie=1,nelemd
        elem(ie)%derived%FM=0.0
        elem(ie)%derived%FQ=0.0
@@ -468,7 +567,6 @@ contains
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0
-
     enddo
 
     ! ==========================================================
@@ -480,28 +578,45 @@ contains
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
 #endif
-    !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-    deallocate(GridEdge)
-    do j =1,nelem
-       call deallocate_gridvertex_nbrs(GridVertex(j))
-    end do
-    deallocate(GridVertex)
+  end subroutine prim_init1_elem_arrays
 
-    do j = 1, MetaVertex(1)%nmembers
-       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
-    end do
-    do j = 1, MetaVertex(1)%nedges
-       deallocate(MetaVertex(1)%edges(j)%members)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrS)
-       deallocate(MetaVertex(1)%edges(j)%edgeptrP_ghost)
-    end do
-    deallocate(MetaVertex(1)%edges)
-    deallocate(MetaVertex(1)%members)
-    deallocate(MetaVertex)
-    deallocate(TailPartition)
-    deallocate(HeadPartition)
+  subroutine prim_init1_cleanup ()
+    use gridgraph_mod, only : deallocate_gridvertex_nbrs
+    use metagraph_mod, only : destroyMetaGraph
+    use scalable_grid_init_mod, only : sgi_finalize
+
+    integer :: j
+
+    if (can_scalably_init_grid) then
+       call sgi_finalize()
+    else
+       deallocate(GridEdge)
+       call destroyMetaGraph(MetaVertex)
+       do j =1,nelem
+          call deallocate_gridvertex_nbrs(GridVertex(j))
+       end do
+       deallocate(GridVertex)
+    end if
+
+  end subroutine prim_init1_cleanup
+
+  subroutine prim_init1_buffers (elem,par)
+    use bndry_mod,          only : sort_neighbor_buffer_mapping
+    use control_mod,        only : integration, use_semi_lagrange_transport
+    use edge_mod,           only : initedgebuffer, edge_g
+    use parallel_mod,       only : parallel_t
+    use prim_advance_mod,   only : prim_advance_init1
+    use prim_advection_mod, only : prim_advec_init1
+    use thread_mod,         only : hthreads
+#ifdef TRILINOS
+    use prim_implicit_mod,  only : prim_implicit_init
+#endif
+    !
+    ! Inputs
+    !
+    type (element_t),   pointer     :: elem(:)
+    type (parallel_t),  intent(in)  :: par
 
     ! single global edge buffer for all models:
     ! hydrostatic 4*nlev      NH:  6*nlev+1
@@ -510,34 +625,22 @@ contains
     call initEdgeBuffer(par,edge_g,elem,max((qsize+1)*nlev,6*nlev+1))
 
 
-    allocate(dom_mt(0:hthreads-1))
-    do ith=0,hthreads-1
-       dom_mt(ith)=decompose(1,nelemd,hthreads,ith)
-    end do
-    ith=0
-    nets=1
-    nete=nelemd
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
     call Prim_Advec_Init1(par, elem)
 
-
     if ( use_semi_lagrange_transport) then
       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
     end if
 
-    call TimeLevel_init(tl)
-
-    if(par%masterproc) write(iulog,*) 'end of prim_init'
-
-  end subroutine prim_init1
+  end subroutine prim_init1_buffers
 
   !_____________________________________________________________________
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
-    use control_mod,          only: runtype, integration, test_case, &
+    use control_mod,          only: runtype, test_case, &
                                     debug_level, vfile_int, vform, vfile_mid, &
                                     topology,rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
@@ -547,9 +650,8 @@ contains
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_mod,          only: prim_set_mass
-    use prim_advance_mod,     only: vertical_mesh_init2
     use prim_advection_mod,   only: prim_advec_init2
-    use model_init_mod,       only: model_init2
+    use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
 
 #ifndef CAM

@@ -40,7 +40,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
             comments += "Missing baseline namelist '{}'\n".format(baseline_counterpart)
             all_match = False
         else:
-            if is_namelist_file(item):
+            if not item.endswith("runconfig") and is_namelist_file(item):
                 success, current_comments = compare_namelist_files(baseline_counterpart, item, test)
             else:
                 success, current_comments = compare_files(baseline_counterpart, item, test)

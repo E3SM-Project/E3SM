@@ -79,6 +79,8 @@ private
   public  :: divergence_sphere_wk
   public  :: laplace_sphere_wk
   public  :: vlaplace_sphere_wk
+  public  :: vlaplace_sphere_wk_contra
+  public  :: vlaplace_sphere_wk_cartesian
 !  public  :: laplace_eta
   public  :: laplace_z
   public  :: element_boundary_integral

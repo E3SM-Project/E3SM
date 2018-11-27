@@ -124,6 +124,7 @@ class TestScheduler(object):
     ###########################################################################
         self._cime_root       = get_cime_root()
         self._cime_model      = get_model()
+        self._cime_driver     = "mct"
         self._save_timing     = save_timing
         self._queue           = queue
         self._test_data       = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -434,13 +435,17 @@ class TestScheduler(object):
             create_newcase_cmd += " --pesfile {} ".format(self._pesfile)
 
         if test_mods is not None:
-            files = Files()
+            files = Files(comp_interface=self._cime_driver)
+
             if test_mods.find('/') != -1:
                 (component, modspath) = test_mods.split('/', 1)
             else:
                 error = "Missing testmod component. Testmods are specified as '${component}-${testmod}'"
                 self._log_output(test, error)
                 return False, error
+
+            comp_root_dir_cpl = files.get_value( "COMP_ROOT_DIR_CPL", resolved=False)
+            files.set_value("COMP_ROOT_DIR_CPL", comp_root_dir_cpl)
 
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
@@ -474,8 +479,9 @@ class TestScheduler(object):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
                 elif case_opt.startswith('V'):
-                    driver = case_opt[1:]
-                    create_newcase_cmd += " --driver {}".format(driver)
+                    self._cime_driver = case_opt[1:]
+                    create_newcase_cmd += " --driver {}".format(self._cime_driver)
+
 
         # create_test mpilib option overrides default but not explicitly set case_opt mpilib
         if mpilib is None and self._mpilib is not None:
@@ -522,7 +528,7 @@ class TestScheduler(object):
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
-        files = Files()
+        files = Files(comp_interface=self._cime_driver)
         drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file, "CPL")
         envtest.add_elements_by_group(files, {}, "env_test.xml")
@@ -767,7 +773,7 @@ class TestScheduler(object):
 
         if not success:
             status_str += "\n    Case dir: {}\n".format(self._get_test_dir(test))
-            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.encode('utf-8').splitlines()))
+            status_str += "    Errors were:\n        {}\n".format("\n        ".join(str(errors.encode('utf-8')).splitlines()))
 
         logger.info(status_str)
 

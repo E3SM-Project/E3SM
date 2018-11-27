@@ -22,7 +22,7 @@ module CNCarbonStateType
   use ColumnType             , only : col_pp                
   use clm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
-  use CNSpeciesMod           , only : species_from_string
+  use SpeciesMod           , only : species_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
 
   ! bgc interface & pflotran
@@ -1017,11 +1017,6 @@ contains
        call hist_addfld1d (fname='C13_TOTPRODC', units='gC13/m^2', &
              avgflag='A', long_name='C13 total wood product C', &
              ptr_col=this%totprodc_col)
-
-       this%seedc_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
-            avgflag='A', long_name='C13 pool for seeding new PFTs via dynamic landcover', &
-            ptr_gcell=this%seedc_grc)
 
        if (use_crop) then
           this%grainc_patch(begp:endp) = spval
@@ -3329,7 +3324,7 @@ contains
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
-    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
     class(carbonstate_type)        , intent(inout) :: this

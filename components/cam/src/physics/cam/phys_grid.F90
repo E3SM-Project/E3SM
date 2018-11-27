@@ -127,7 +127,7 @@ module phys_grid
    integer, public :: ngcols_p         ! global column count in physics grid 
                                        ! (without holes)
 
-   integer, dimension(:), allocatable, private :: dyn_to_latlon_gcol_map
+   integer, dimension(:), allocatable, public :: dyn_to_latlon_gcol_map
                                        ! map from unsorted (dynamics) to lat/lon sorted grid indices
    integer, dimension(:), allocatable, public :: latlon_to_dyn_gcol_map !now beingh used in RRTMG radiation.F90
                                        ! map from lat/lon sorted grid to unsorted (dynamics) indices

@@ -57,7 +57,8 @@ module WaterstateType
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
      real(r8), pointer :: ice2_grc               (:)   ! grc post land cover change total ice content
      real(r8), pointer :: tws_grc                (:)   ! grc total water storage (mm H2O)
-
+     real(r8), pointer :: tws_month_beg_grc      (:)   ! grc total water storage at the beginning of a month
+     real(r8), pointer :: tws_month_end_grc      (:)   ! grc total water storage at the end of a month
 
      real(r8), pointer :: total_plant_stored_h2o_col(:) ! col water that is bound in plants, including roots, sapwood, leaves, etc
                                                         ! in most cases, the vegetation scheme does not have a dynamic
@@ -96,11 +97,29 @@ module WaterstateType
 
      real(r8), pointer :: begwb_patch            (:)   ! water mass begining of the time step
      real(r8), pointer :: begwb_col              (:)   ! water mass begining of the time step
+     real(r8), pointer :: begwb_grc              (:)   ! water mass begining of the time step
      real(r8), pointer :: endwb_patch            (:)   ! water mass end of the time step
      real(r8), pointer :: endwb_col              (:)   ! water mass end of the time step
+     real(r8), pointer :: endwb_grc              (:)   ! water mass end of the time step
      real(r8), pointer :: errh2o_patch           (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
+     real(r8), pointer :: errh2o_grc             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
+
+     real(r8), pointer :: h2osoi_liq_depth_intg_col(:) ! grid-level depth integrated liquid soil water
+     real(r8), pointer :: h2osoi_ice_depth_intg_col(:) ! grid-level depth integrated ice soil water
+
+     real(r8), pointer :: beg_h2ocan_grc         (:)   ! grid-level canopy water at begining of the time step (mm H2O)
+     real(r8), pointer :: beg_h2osno_grc         (:)   ! grid-level snow water at begining of the time step (mm H2O)
+     real(r8), pointer :: beg_h2osfc_grc         (:)   ! grid-level surface water at begining of the time step (mm H2O)
+     real(r8), pointer :: beg_h2osoi_liq_grc     (:)   ! grid-level liquid water at begining of the time step (kg/m2)
+     real(r8), pointer :: beg_h2osoi_ice_grc     (:)   ! grid-level ice lens at begining of the time step (kg/m2)
+
+     real(r8), pointer :: end_h2ocan_grc         (:)   ! grid-level canopy water at end of the time step (mm H2O)
+     real(r8), pointer :: end_h2osno_grc         (:)   ! grid-level snow water at end of the time step (mm H2O)
+     real(r8), pointer :: end_h2osfc_grc         (:)   ! grid-level surface water at end of the time step (mm H2O)
+     real(r8), pointer :: end_h2osoi_liq_grc     (:)   ! grid-level liquid water at end of the time step (kg/m2)
+     real(r8), pointer :: end_h2osoi_ice_grc     (:)   ! grid-level ice lens at end of the time step (kg/m2)
 
      ! For VSFM
      real(r8), pointer :: vsfm_fliq_col_1d       (:)   ! fraction of liquid saturation for VSFM [-]
@@ -210,6 +229,8 @@ contains
     allocate(this%ice1_grc               (begg:endg))                     ; this%ice1_grc               (:)   = nan
     allocate(this%ice2_grc               (begg:endg))                     ; this%ice2_grc               (:)   = nan
     allocate(this%tws_grc                (begg:endg))                     ; this%tws_grc                (:)   = nan
+    allocate(this%tws_month_beg_grc      (begg:endg))                     ; this%tws_month_beg_grc      (:)   = nan
+    allocate(this%tws_month_end_grc      (begg:endg))                     ; this%tws_month_end_grc      (:)   = nan
 
     allocate(this%total_plant_stored_h2o_col(begc:endc))                  ; this%total_plant_stored_h2o_col(:) = nan
 
@@ -241,11 +262,29 @@ contains
 
     allocate(this%begwb_patch            (begp:endp))                     ; this%begwb_patch            (:)   = nan
     allocate(this%begwb_col              (begc:endc))                     ; this%begwb_col              (:)   = nan
+    allocate(this%begwb_grc              (begg:endg))                     ; this%begwb_grc              (:)   = nan
     allocate(this%endwb_patch            (begp:endp))                     ; this%endwb_patch            (:)   = nan
     allocate(this%endwb_col              (begc:endc))                     ; this%endwb_col              (:)   = nan
+    allocate(this%endwb_grc              (begg:endg))                     ; this%endwb_grc              (:)   = nan
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
+    allocate(this%errh2o_grc             (begg:endg))                     ; this%errh2o_grc             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
+
+    allocate(this%h2osoi_liq_depth_intg_col(begc:endc))                   ; this%h2osoi_liq_depth_intg_col(:) = nan
+    allocate(this%h2osoi_ice_depth_intg_col(begc:endc))                   ; this%h2osoi_ice_depth_intg_col(:) = nan
+
+    allocate(this%beg_h2ocan_grc          (begg:endg))                    ; this%beg_h2ocan_grc         (:)   = nan
+    allocate(this%beg_h2osno_grc          (begg:endg))                    ; this%beg_h2osno_grc         (:)   = nan
+    allocate(this%beg_h2osfc_grc          (begg:endg))                    ; this%beg_h2osfc_grc         (:)   = nan
+    allocate(this%beg_h2osoi_liq_grc      (begg:endg))                    ; this%beg_h2osoi_liq_grc     (:)   = nan
+    allocate(this%beg_h2osoi_ice_grc      (begg:endg))                    ; this%beg_h2osoi_ice_grc     (:)   = nan
+
+    allocate(this%end_h2ocan_grc          (begg:endg))                    ; this%end_h2ocan_grc         (:)   = nan
+    allocate(this%end_h2osno_grc          (begg:endg))                    ; this%end_h2osno_grc         (:)   = nan
+    allocate(this%end_h2osfc_grc          (begg:endg))                    ; this%end_h2osfc_grc         (:)   = nan
+    allocate(this%end_h2osoi_liq_grc      (begg:endg))                    ; this%end_h2osoi_liq_grc     (:)   = nan
+    allocate(this%end_h2osoi_ice_grc      (begg:endg))                    ; this%end_h2osoi_ice_grc     (:)   = nan
 
     ncells = (endc - begc + 1)*nlevgrnd
     allocate(this%vsfm_fliq_col_1d(          ncells))                     ; this%vsfm_fliq_col_1d       (:)   = nan
@@ -357,6 +396,16 @@ contains
     call hist_addfld1d (fname='TWS',  units='mm',  &
          avgflag='A', long_name='total water storage', &
          ptr_lnd=this%tws_grc)
+
+    this%tws_month_beg_grc(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_MONTH_BEGIN',  units='mm',  &
+         avgflag='I', long_name='total water storage at the beginning of a month', &
+         ptr_lnd=this%tws_month_beg_grc)
+
+    this%tws_month_end_grc(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_MONTH_END',  units='mm',  &
+         avgflag='I', long_name='total water storage at the end of a month', &
+         ptr_lnd=this%tws_month_end_grc)
 
     ! Humidity
 
@@ -795,6 +844,7 @@ contains
     use clm_varctl       , only : bound_h2osoi
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod
+    use subgridAveMod    , only : c2g
     !
     ! !ARGUMENTS:
     class(waterstate_type) :: this
@@ -1000,6 +1050,15 @@ contains
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%wf_col) 
     end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
+         dim1name='gridcell', &
+         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
+          interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
+
+    call restartvar(ncid=ncid, flag=flag, varname='ENDWB_COL', xtype=ncd_double, &
+         dim1name='column', long_name='col-level water mass end of the time step', &
+         units='mm', interpinic_flag='interp', readvar=readvar, data=this%endwb_col)
 
   end subroutine Restart
 

@@ -178,9 +178,9 @@ contains
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
-    use CNCStateUpdate1Mod   , only : CStateUpdateDynPatch
-    use CNNStateUpdate1Mod   , only : NStateUpdateDynPatch
-    use PStateUpdate1Mod     , only : PStateUpdateDynPatch
+    use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
+    use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
+    use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -312,15 +312,15 @@ contains
                nitrogenstate_vars, nitrogenflux_vars,&
                phosphorusstate_vars,phosphorusflux_vars)
 
-          call CStateUpdateDynPatch(bounds_clump, &
+          call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                carbonflux_vars, carbonstate_vars)
 
-          call NStateUpdateDynPatch(bounds_clump, &
+          call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                nitrogenflux_vars, nitrogenstate_vars)
 
-          call PStateUpdateDynPatch(bounds_clump, &
+          call PhosphorusStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
                phosphorusflux_vars, phosphorusstate_vars)
 

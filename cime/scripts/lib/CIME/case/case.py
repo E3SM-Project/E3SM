@@ -362,11 +362,12 @@ class Case(object):
 
         return item
 
-    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False, return_file=False):
         """
         If a file has been defined, and the variable is in the file,
-        then that value will be set in the file object and the file
-        name is returned
+        then that value will be set in the file object and the resovled value
+        is returned unless return_file is True, in which case (resolved_value, filename)
+        is returned where filename is the name of the modified file.
         """
         if item == "CASEROOT":
             self._caseroot = value
@@ -376,7 +377,7 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                return result
+                return (result, env_file.filename) if return_file else result
 
         if len(self._files) == 1:
             expect(allow_undefined or result is not None,
@@ -411,7 +412,7 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def _set_compset(self, compset_name, files):
+    def _set_compset(self, compset_name, files, driver="mct"):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -427,6 +428,11 @@ class Case(object):
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
+
+        self.set_lookup_value("COMP_INTERFACE", driver)
+        if self._cime_model == 'cesm':
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
+            self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
@@ -518,7 +524,6 @@ class Case(object):
 
         Assumes that self._primary_component has already been set.
         """
-
         component = self.get_primary_component()
 
         compset_spec_file = files.get_value("COMPSETS_SPEC_FILE",
@@ -579,7 +584,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.set_components(comp_classes)
 
-    def _get_component_config_data(self, files):
+    def _get_component_config_data(self, files, driver=None):
         # attributes used for multi valued defaults
         # attlist is a dictionary used to determine the value element that has the most matches
         attlist = {"compset":self._compsetname, "grid":self._gridname, "cime_model":self._cime_model}
@@ -608,6 +613,7 @@ class Case(object):
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
         self.clean_up_lookups(allow_undefined=True)
+
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
         self.set_comp_classes(drv_comp.get_valid_model_components())
@@ -617,11 +623,10 @@ class Case(object):
 
         # will need a change here for new cpl components
         root_dir_node_name = 'COMP_ROOT_DIR_CPL'
-        comp_root_dir = files.get_value(root_dir_node_name,
-                                        {"component":"drv"}, resolved=False)
+        comp_root_dir = files.get_value(root_dir_node_name, {"component":driver}, resolved=False)
+
         if comp_root_dir is not None:
             self.set_value(root_dir_node_name, comp_root_dir)
-
 
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
@@ -644,7 +649,8 @@ class Case(object):
             # For files following version 3 schema this also checks the compsetname validity
 
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
-            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
+            expect(self._component_description[comp_class] is not None,
+                   "No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
@@ -754,7 +760,7 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
-                  pesfile=None,user_grid=False, gridfile=None,
+                  pesfile=None, gridfile=None,
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
@@ -762,22 +768,18 @@ class Case(object):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
-        if driver:
-            self.set_lookup_value("COMP_INTERFACE", driver)
-
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
-        files = Files()
-        compset_alias, science_support = self._set_compset(
-            compset_name, files)
+        files = Files(comp_interface=driver)
+
+        compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
         self._components = self.get_compset_components()
+
         #--------------------------------------------
         # grid
         #--------------------------------------------
-        if user_grid is True and gridfile is not None:
-            self.set_value("GRIDS_SPEC_FILE", gridfile)
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
@@ -790,7 +792,7 @@ class Case(object):
         #--------------------------------------------
         # component config data
         #--------------------------------------------
-        self._get_component_config_data(files)
+        self._get_component_config_data(files, driver=driver)
 
         # This needs to be called after self.set_comp_classes, which is called
         # from self._get_component_config_data
@@ -818,9 +820,9 @@ class Case(object):
             logger.info("Machine is {}".format(machine_name))
 
         nodenames = machobj.get_node_names()
-        nodenames =  [x for x in nodenames if
-                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                      'COMPILER' not in x and 'MPILIB' not in x]
+        nodenames = [x for x in nodenames if
+                     '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
+                     'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -1255,7 +1257,7 @@ directory, NOT in this subdirectory."""
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
-            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
+            return self.get_resolved_value(mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix)
 
         # Things that will have to be matched against mpirun element attributes
         mpi_attribs = {
@@ -1324,7 +1326,7 @@ directory, NOT in this subdirectory."""
             tests_spec_file = self.get_value("TESTS_SPEC_FILE")
 
         testcnt = 0
-        if compset_alias is not None:
+        if os.path.isfile(tests_spec_file) and compset_alias is not None:
             # It's important that we not try to find matching tests if
             # compset_alias is None, since compset=None tells get_tests to find
             # tests of all compsets!
@@ -1410,7 +1412,7 @@ directory, NOT in this subdirectory."""
         self._files.remove(old_object)
         self._files.append(new_object)
 
-    def get_latest_cpl_log(self, coupler_log_path=None):
+    def get_latest_cpl_log(self, coupler_log_path=None, cplname="cpl"):
         """
         find and return the latest cpl log file in the
         coupler_log_path directory
@@ -1418,7 +1420,7 @@ directory, NOT in this subdirectory."""
         if coupler_log_path is None:
             coupler_log_path = self.get_value("RUNDIR")
         cpllog = None
-        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
+        cpllogs = glob.glob(os.path.join(coupler_log_path, '{}.log.*'.format(cplname)))
         if cpllogs:
             cpllog = max(cpllogs, key=os.path.getctime)
             return cpllog
@@ -1428,7 +1430,7 @@ directory, NOT in this subdirectory."""
     def create(self, casename, srcroot, compset_name, grid_name,
                user_mods_dir=None, machine_name=None,
                project=None, pecount=None, compiler=None, mpilib=None,
-               pesfile=None,user_grid=False, gridfile=None,
+               pesfile=None, gridfile=None,
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
@@ -1443,7 +1445,7 @@ directory, NOT in this subdirectory."""
             self.configure(compset_name, grid_name, machine_name=machine_name,
                            project=project,
                            pecount=pecount, compiler=compiler, mpilib=mpilib,
-                           pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                           pesfile=pesfile, gridfile=gridfile,
                            multi_driver=multi_driver, ninst=ninst, test=test,
                            walltime=walltime, queue=queue,
                            output_root=output_root,

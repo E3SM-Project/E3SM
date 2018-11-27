@@ -34,7 +34,7 @@ module CNAllocationBeTRMod
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use PlantMicKineticsMod , only : PlantMicKinetics_type
-  use CNAllocationMod     , only : CNAllocParamsInst
+  use AllocationMod       , only : AllocParamsInst
   !
   implicit none
   save
@@ -46,8 +46,8 @@ module CNAllocationBeTRMod
 
   !!-----------------------------------------------------------------------------------------------------
   !! CNAllocation is divided into 3 subroutines/phases:
-  private :: CNAllocation1_PlantNPDemand     !!Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
-  public :: CNAllocation3_PlantCNPAlloc     !!Plant C/N/P Allocation; called in CNDecompAlloc2
+  private :: Allocation1_PlantNPDemand     !!Plant N/P Demand;       called in EcosystemDynNoLeaching1
+  public :: Allocation3_PlantCNPAlloc     !!Plant C/N/P Allocation; called in SoilLittDecompAlloc2
   !!-----------------------------------------------------------------------------------------------------
   private :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
 
@@ -129,7 +129,7 @@ contains
     dt = real( get_step_size(), r8 )
 
     ! set space-and-time parameters from parameter file
-    dayscrecover = CNAllocParamsInst%dayscrecover
+    dayscrecover = AllocParamsInst%dayscrecover
 
     ! Change namelist settings into private logical variables
     select case(suplnitro)
@@ -214,7 +214,7 @@ contains
     type(PlantMicKinetics_type)      , intent(inout) :: PlantMicKinetics_vars
 
    !calculate the plant nutrient demand
-   call CNAllocation1_PlantNPDemand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+   call Allocation1_PlantNPDemand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
@@ -232,7 +232,7 @@ contains
 
   end subroutine SetPlantMicNPDemand
 !!-------------------------------------------------------------------------------------------------
-  subroutine CNAllocation1_PlantNPDemand (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine Allocation1_PlantNPDemand (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
@@ -589,7 +589,7 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
       ! set space-and-time parameters from parameter file
-      dayscrecover = CNAllocParamsInst%dayscrecover
+      dayscrecover = AllocParamsInst%dayscrecover
 
       call get_curr_date(yr, mon, day, sec)
       if (spinup_state == 1 .and. yr .gt. nyears_ad_carbon_only) then
@@ -923,7 +923,7 @@ contains
 
     end associate
 
- end subroutine CNAllocation1_PlantNPDemand
+ end subroutine Allocation1_PlantNPDemand
 !------------------------------------------------------------------------------
   subroutine calc_plantN_kineticpar(bounds, num_soilc, filter_soilc         , &
                             num_soilp, filter_soilp                         , &
@@ -1087,7 +1087,7 @@ contains
  end subroutine calc_plantN_kineticpar
 
 !!-------------------------------------------------------------------------------------------------
-  subroutine CNAllocation3_PlantCNPAlloc (bounds            , &
+  subroutine Allocation3_PlantCNPAlloc (bounds            , &
         num_soilc, filter_soilc, num_soilp, filter_soilp    , &
         canopystate_vars                                    , &
         cnstate_vars, carbonstate_vars, carbonflux_vars     , &
@@ -1322,7 +1322,7 @@ contains
 !
 !    !-------------------------------------------------------------------
      ! set space-and-time parameters from parameter file
-     dayscrecover = CNAllocParamsInst%dayscrecover
+     dayscrecover = AllocParamsInst%dayscrecover
 
       ! start new pft loop to distribute the available N between the
       ! competing patches on the basis of relative demand, and allocate C and N to
@@ -1509,7 +1509,7 @@ contains
            ! bug fix: set to zero otherwise xsmrpool may grow infinitely when:
            ! (1) at one timestep xsmrpool(p) <0, cpool_to_xsmrpool(p) is set a positive value
            ! (2) later on if xsmrpool(p) >0; then cpool_to_xsmrpool(p) will neither be updated by following codes nor re-set to zero
-           ! (3) each time step in CNCStateUpdate1 xsmrpool(p) = xsmrpool(p) + cpool_to_xsmrpool(p)*dt
+           ! (3) each time step in CarbonStateUpdate1 xsmrpool(p) = xsmrpool(p) + cpool_to_xsmrpool(p)*dt
            cpool_to_xsmrpool(p) = 0.0_r8
 
            ! storage pool turnover
@@ -1930,7 +1930,7 @@ contains
 
     end associate
 
- end subroutine CNAllocation3_PlantCNPAlloc
+ end subroutine Allocation3_PlantCNPAlloc
 
 
 !-----------------------------------------------------------------------

@@ -23,7 +23,7 @@ module CanopyFluxesMod
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SimpleMathMod         , only : array_div_vector
   use SurfaceResistanceMod  , only : do_soilevap_beta
-   use VegetationPropertiesType        , only : veg_vp
+  use VegetationPropertiesType        , only : veg_vp
   use atm2lndType           , only : atm2lnd_type
   use CanopyStateType       , only : canopystate_type
   use CNStateType           , only : cnstate_type
@@ -35,9 +35,10 @@ module CanopyFluxesMod
   use TemperatureType       , only : temperature_type
   use WaterfluxType         , only : waterflux_type
   use WaterstateType        , only : waterstate_type
-  use ch4Mod                , only : ch4_type
+  use CH4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
-  use GridcellType          , only : grc_pp                
+  use GridcellType          , only : grc_pp 
+  use TopounitType          , only : top_as, top_af  
   use ColumnType            , only : col_pp                
   use VegetationType        , only : veg_pp                
   use PhosphorusStateType   , only : phosphorusstate_type
@@ -262,6 +263,7 @@ contains
     integer  :: p                                    ! patch index
     integer  :: c                                    ! column index
     integer  :: l                                    ! landunit index
+    integer  :: t                                    ! topounit index
     integer  :: g                                    ! gridcell index
     integer  :: fp                                   ! lake filter pft index
     integer  :: fn_noveg                             ! number of values in bare ground pft filter
@@ -321,17 +323,17 @@ contains
          dayl                 => grc_pp%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
          max_dayl             => grc_pp%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
 
-         forc_lwrad           => atm2lnd_vars%forc_lwrad_downscaled_col    , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
-         forc_q               => atm2lnd_vars%forc_q_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
-         forc_pbot            => atm2lnd_vars%forc_pbot_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
-         forc_th              => atm2lnd_vars%forc_th_downscaled_col       , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
-         forc_rho             => atm2lnd_vars%forc_rho_downscaled_col      , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                                     
-         forc_t               => atm2lnd_vars%forc_t_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
-         forc_u               => atm2lnd_vars%forc_u_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
-         forc_v               => atm2lnd_vars%forc_v_grc                   , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
-         forc_pco2            => atm2lnd_vars%forc_pco2_grc                , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
-         forc_pc13o2          => atm2lnd_vars%forc_pc13o2_grc              , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)                                           
-         forc_po2             => atm2lnd_vars%forc_po2_grc                 , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
+         forc_lwrad           => top_af%lwrad                              , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
+         forc_q               => top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
+         forc_pbot            => top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_th              => top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)                            
+         forc_rho             => top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                                     
+         forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
+         forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
+         forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
+         forc_pco2            => top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
+         forc_pc13o2          => top_as%pc13o2bot                          , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)                                           
+         forc_po2             => top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
 
          dleaf                => veg_vp%dleaf                          , & ! Input:  [real(r8) (:)   ]  characteristic leaf dimension (m)                                     
          smpso                => veg_vp%smpso                          , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
@@ -449,10 +451,11 @@ contains
       do fp = 1,num_nolakeurbanp
          p = filter_nolakeurbanp(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          if (frac_veg_nosno(p) == 0) then
             btran(p) = 0._r8     
-            t_veg(p) = forc_t(c) 
-            cf_bare  = forc_pbot(c)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
+            t_veg(p) = forc_t(t) 
+            cf_bare  = forc_pbot(t)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
             lbl_rsc_h2o(p)=0._r8
@@ -668,27 +671,28 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Net absorbed longwave radiation by canopy and ground
          ! =air+bir*t_veg**4+cir*t_grnd(c)**4
 
-         air(p) =   emv(p) * (1._r8+(1._r8-emv(p))*(1._r8-emg(c))) * forc_lwrad(c)
+         air(p) =   emv(p) * (1._r8+(1._r8-emv(p))*(1._r8-emg(c))) * forc_lwrad(t)
          bir(p) = - (2._r8-emv(p)*(1._r8-emg(c))) * emv(p) * sb
          cir(p) =   emv(p)*emg(c)*sb
 
          ! Saturated vapor pressure, specific humidity, and their derivatives
          ! at the leaf surface
 
-         call QSat (t_veg(p), forc_pbot(c), el(p), deldT, qsatl(p), qsatldT(p))
+         call QSat (t_veg(p), forc_pbot(t), el(p), deldT, qsatl(p), qsatldT(p))
 
          ! Determine atmospheric co2 and o2
 
-         co2(p) = forc_pco2(g)
-         o2(p)  = forc_po2(g)
+         co2(p) = forc_pco2(t)
+         o2(p)  = forc_po2(t)
 
          if ( use_c13 ) then
-            c13o2(p) = forc_pc13o2(g)
+            c13o2(p) = forc_pc13o2(t)
          end if
 
          ! Initialize flux profile
@@ -696,13 +700,13 @@ contains
          nmozsgn(p) = 0
 
          taf(p) = (t_grnd(c) + thm(p))/2._r8
-         qaf(p) = (forc_q(c)+qg(c))/2._r8
+         qaf(p) = (forc_q(t)+qg(c))/2._r8
 
-         ur(p) = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
+         ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          dth(p) = thm(p)-taf(p)
-         dqh(p) = forc_q(c)-qaf(p)
+         dqh(p) = forc_q(t)-qaf(p)
          delq(p) = qg(c) - qaf(p)
-         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(c)*dqh(p)
+         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - displa(p)
 
          ! Check to see if the forcing height is below the canopy height
@@ -753,6 +757,7 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             tlbef(p) = t_veg(p)
@@ -818,7 +823,7 @@ contains
             ! Done each iteration to account for differences in eah, tv.
 
             svpts(p) = el(p)                         ! pa
-            eah(p) = forc_pbot(c) * qaf(p) / 0.622_r8   ! pa
+            eah(p) = forc_pbot(t) * qaf(p) / 0.622_r8   ! pa
             rhaf(p) = eah(p)/svpts(p)
          end do
 
@@ -895,6 +900,7 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             ! Sensible heat conductance for air, leaf and ground
@@ -926,7 +932,7 @@ contains
                canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
             end if
 
-            efpot = forc_rho(c)*wtl*(qsatl(p)-qaf(p))
+            efpot = forc_rho(t)*wtl*(qsatl(p)-qaf(p))
 
             if (efpot > 0._r8) then
                if (btran(p) > btran0) then
@@ -977,11 +983,11 @@ contains
             wtgaq    = wtaq0(p)+wtgq0     ! air + ground
             wtalq(p) = wtaq0(p)+wtlq0(p)  ! air + leaf
 
-            dc1 = forc_rho(c)*cpair*wtl
-            dc2 = hvap*forc_rho(c)*wtlq
+            dc1 = forc_rho(t)*cpair*wtl
+            dc2 = hvap*forc_rho(t)*wtlq
 
             efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(p)*thm(p))
-            efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q(c))
+            efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q(t))
 
             ! Evaporation flux from foliage
 
@@ -1017,8 +1023,8 @@ contains
             ! result in an imbalance in "hvap*qflx_evap_veg" and
             ! "efe + dc2*wtgaq*qsatdt_veg"
 
-            efpot = forc_rho(c)*wtl*(wtgaq*(qsatl(p)+qsatldT(p)*dt_veg(p)) &
-                 -wtgq0*qg(c)-wtaq0(p)*forc_q(c))
+            efpot = forc_rho(t)*wtl*(wtgaq*(qsatl(p)+qsatldT(p)*dt_veg(p)) &
+                 -wtgq0*qg(c)-wtaq0(p)*forc_q(t))
             qflx_evap_veg(p) = rpp*efpot
 
             ! Calculation of evaporative potentials (efpot) and
@@ -1044,26 +1050,26 @@ contains
             ! Re-calculate saturated vapor pressure, specific humidity, and their
             ! derivatives at the leaf surface
 
-            call QSat(t_veg(p), forc_pbot(c), el(p), deldT, qsatl(p), qsatldT(p))
+            call QSat(t_veg(p), forc_pbot(t), el(p), deldT, qsatl(p), qsatldT(p))
 
             ! Update vegetation/ground surface temperature, canopy air
             ! temperature, canopy vapor pressure, aerodynamic temperature, and
             ! Monin-Obukhov stability parameter for next iteration.
 
             taf(p) = wtg0*t_grnd(c) + wta0(p)*thm(p) + wtl0(p)*t_veg(p)
-            qaf(p) = wtlq0(p)*qsatl(p) + wtgq0*qg(c) + forc_q(c)*wtaq0(p)
+            qaf(p) = wtlq0(p)*qsatl(p) + wtgq0*qg(c) + forc_q(t)*wtaq0(p)
 
             ! Update Monin-Obukhov length and wind speed including the
             ! stability effect
 
             dth(p) = thm(p)-taf(p)
-            dqh(p) = forc_q(c)-qaf(p)
-            delq(p) = wtalq(p)*qg(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
+            dqh(p) = forc_q(t)-qaf(p)
+            delq(p) = wtalq(p)*qg(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
@@ -1084,7 +1090,8 @@ contains
 
          do f = 1, fn
            p = filterp(f)
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+           t = veg_pp%topounit(p)
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
          enddo
             
          ! Test for convergence
@@ -1117,6 +1124,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Energy balance check in canopy
@@ -1132,30 +1140,30 @@ contains
          ! Fluxes from ground to canopy space
 
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         taux(p) = -forc_rho(c)*forc_u(g)/ram1(p)
-         tauy(p) = -forc_rho(c)*forc_v(g)/ram1(p)
-         eflx_sh_grnd(p) = cpair*forc_rho(c)*wtg(p)*delt
+         taux(p) = -forc_rho(t)*forc_u(t)/ram1(p)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p)
+         eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
          delt_snow = wtal(p)*t_soisno(c,snl(c)+1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         eflx_sh_snow(p) = cpair*forc_rho(c)*wtg(p)*delt_snow
+         eflx_sh_snow(p) = cpair*forc_rho(t)*wtg(p)*delt_snow
 
          delt_soil  = wtal(p)*t_soisno(c,1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         eflx_sh_soil(p) = cpair*forc_rho(c)*wtg(p)*delt_soil
+         eflx_sh_soil(p) = cpair*forc_rho(t)*wtg(p)*delt_soil
 
          delt_h2osfc  = wtal(p)*t_h2osfc(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         eflx_sh_h2osfc(p) = cpair*forc_rho(c)*wtg(p)*delt_h2osfc
-         qflx_evap_soi(p) = forc_rho(c)*wtgq(p)*delq(p)
+         eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(p)*delt_h2osfc
+         qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*delq(p)
 
          ! compute individual latent heat fluxes
-         delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
-         qflx_ev_snow(p) = forc_rho(c)*wtgq(p)*delq_snow
+         delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+         qflx_ev_snow(p) = forc_rho(t)*wtgq(p)*delq_snow
 
-         delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
-         qflx_ev_soil(p) = forc_rho(c)*wtgq(p)*delq_soil
+         delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+         qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*delq_soil
 
-         delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(c)
-         qflx_ev_h2osfc(p) = forc_rho(c)*wtgq(p)*delq_h2osfc
+         delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+         qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(p)*delq_h2osfc
 
          ! 2 m height air temperature
 
@@ -1164,29 +1172,29 @@ contains
 
          ! 2 m height specific humidity
 
-         q_ref2m(p) = forc_q(c) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
 
-         call QSat(t_ref2m(p), forc_pbot(c), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
+         call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
          rh_ref2m_r(p) = rh_ref2m(p)
 
          ! Downward longwave radiation below the canopy
 
-         dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(c) + &
+         dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
               emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))
 
          ! Upward longwave radiation above the canopy
 
-         ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(c) &
+         ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
               + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(p)**3*(tlbef(p) + &
               4._r8*dt_veg(p)) + emg(c)*(1._r8-emv(p))*sb*lw_grnd)
 
          ! Derivative of soil energy flux with respect to soil temperature
 
-         cgrnds(p) = cgrnds(p) + cpair*forc_rho(c)*wtg(p)*wtal(p)
-         cgrndl(p) = cgrndl(p) + forc_rho(c)*wtgq(p)*wtalq(p)*dqgdT(c)
+         cgrnds(p) = cgrnds(p) + cpair*forc_rho(t)*wtg(p)*wtal(p)
+         cgrndl(p) = cgrndl(p) + forc_rho(t)*wtgq(p)*wtalq(p)*dqgdT(c)
          cgrnd(p)  = cgrnds(p) + cgrndl(p)*htvp(c)
 
          ! Update dew accumulation (kg/m2)

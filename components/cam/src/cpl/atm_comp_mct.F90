@@ -18,11 +18,12 @@ module atm_comp_mct
                                shr_file_getLogUnit, shr_file_getLogLevel, &
 		               shr_file_setIO
   use shr_sys_mod      , only: shr_sys_flush, shr_sys_abort
+  use shr_taskmap_mod  , only: shr_taskmap_write
 
   use cam_cpl_indices
   use atm_import_export
   use cam_comp
-  use cam_instance     , only: cam_instance_init, inst_suffix
+  use cam_instance     , only: cam_instance_init, inst_index, inst_suffix
   use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
   use radiation        , only: radiation_do, radiation_nextsw_cday
   use phys_grid        , only: get_ncols_p, ngcols, get_gcol_p, get_rlat_all_p, &
@@ -35,10 +36,12 @@ module atm_comp_mct
   use cam_abortutils       , only: endrun
   use filenames        , only: interpret_filename_spec, caseid, brnch_retain_casename
 #ifdef SPMD
-  use spmd_utils       , only: spmdinit, masterproc, iam
+  use spmd_utils       , only: spmdinit, masterproc, iam, npes, nsmps, &
+                               proc_smp_map
   use mpishorthand     , only: mpicom
 #else
-  use spmd_utils       , only: spmdinit, masterproc, mpicom, iam
+  use spmd_utils       , only: spmdinit, masterproc, mpicom, iam, npes, nsmps, &
+                               proc_smp_map
 #endif
   use time_manager     , only: get_curr_calday, advance_timestep, get_curr_date, get_nstep, &
                                get_step_size, timemgr_init, timemgr_check_restart
@@ -142,8 +145,10 @@ CONTAINS
     integer :: perpetual_ymd    ! Perpetual date (YYYYMMDD)
     integer :: shrlogunit,shrloglev ! old values
     logical :: first_time = .true.
-    character(len=SHR_KIND_CS) :: calendar  ! Calendar type
-    character(len=SHR_KIND_CS) :: starttype ! infodata start type
+    character(len=SHR_KIND_CS) :: calendar      ! Calendar type
+    character(len=SHR_KIND_CS) :: starttype     ! infodata start type
+    character(len=8)           :: c_inst_index  ! instance number
+    character(len=8)           :: c_npes        ! number of pes
     integer :: lbnum
     integer :: hdim1_d, hdim2_d ! dimensions of rectangular horizontal grid
                                 ! data structure, If 1D data structure, then
@@ -175,9 +180,11 @@ CONTAINS
 
        call cam_cpl_indices_set()
 
-       ! Redirect share output to cam log
+       ! Initialize MPI for CAM
+
+       call spmdinit(mpicom_atm, calc_proc_smp_map=.false.)
        
-       call spmdinit(mpicom_atm)
+       ! Redirect share output to cam log
        
        if (masterproc) then
           inquire(file='atm_modelio.nml'//trim(inst_suffix), exist=exists)
@@ -191,6 +198,26 @@ CONTAINS
        call shr_file_getLogUnit (shrlogunit)
        call shr_file_getLogLevel(shrloglev)
        call shr_file_setLogUnit (iulog)
+
+       ! Identify SMP nodes and process/SMP mapping for this instance
+       ! (Assume that processor names are SMP node names on SMP clusters.)
+
+       write(c_inst_index,'(i8)') inst_index
+       write(c_npes,'(i8)') npes
+
+       if (masterproc) then
+          write(iulog,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
+100       format(/,a,' pes participating in computation of CAM instance #',a)
+          call flush(iulog)
+       endif
+
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(iulog, mpicom_atm, &
+                              'ATM #'//trim(adjustl(c_inst_index)), &
+                              save_nnodes=nsmps, &
+                              save_task_node_map=proc_smp_map)
+       call t_stopf("shr_taskmap_write")
+
        ! 
        ! Consistency check                              
        !

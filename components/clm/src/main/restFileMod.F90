@@ -18,8 +18,8 @@ module restFileMod
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_betr
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
-  use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
-  use ch4Mod               , only : ch4_type
+  use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
+  use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
   use CNDVType             , only : dgvs_type
@@ -107,6 +107,11 @@ contains
     !
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
+    !
+    use WaterBudgetMod, only : WaterBudget_Restart
+    use clm_varctl    , only : do_budgets
+    !
+    implicit none
     !
     ! !ARGUMENTS:
     type(bounds_type)              , intent(in)    :: bounds          
@@ -270,6 +275,10 @@ contains
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
     end if
 
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='define')
+    end if
+
     call restFile_enddef( ncid )
 
     ! --------------------------------------------
@@ -378,6 +387,10 @@ contains
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
 
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='write')
+    end if
+
     ! --------------------------------------------
     ! Close restart file and write restart pointer file
     ! --------------------------------------------
@@ -421,6 +434,7 @@ contains
     use decompMod        , only : get_proc_clumps, get_clump_bounds
     use decompMod        , only : bounds_type
     use reweightMod      , only : reweight_wrapup
+    use WaterBudgetMod   , only : WaterBudget_Restart
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -585,6 +599,8 @@ contains
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')
+
+    call WaterBudget_Restart(bounds, ncid, flag='read')
 
     ! Do error checking on file
     
@@ -848,6 +864,8 @@ contains
     use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
+    use clm_varctl           , only : do_budgets
+    use WaterBudgetMod       , only : f_size, s_size, p_size
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -855,6 +873,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: dimid               ! netCDF dimension id
     integer :: numg                ! total number of gridcells across all processors
+    integer :: numt                ! total number of topounits across all processors
     integer :: numl                ! total number of landunits across all processors
     integer :: numc                ! total number of columns across all processors
     integer :: nump                ! total number of pfts across all processors
@@ -867,11 +886,12 @@ contains
     character(len= 32) :: subname='restFile_dimset' ! subroutine name
     !------------------------------------------------------------------------
 
-    call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
+    call get_proc_global(ng=numg, nt=numt, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
 
     ! Define dimensions
 
     call ncd_defdim(ncid , nameg      , numg           ,  dimid)
+    call ncd_defdim(ncid , namet      , numt           ,  dimid)
     call ncd_defdim(ncid , namel      , numl           ,  dimid)
     call ncd_defdim(ncid , namec      , numc           ,  dimid)
     call ncd_defdim(ncid , namep      , nump           ,  dimid)
@@ -889,6 +909,11 @@ contains
     call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
     if (create_glacier_mec_landunit) then
        call ncd_defdim(ncid , 'glc_nec', maxpatch_glcmec, dimid)
+    end if
+
+    if (do_budgets) then
+       call ncd_defdim(ncid , 'budg_flux' , f_size*p_size,  dimid)
+       call ncd_defdim(ncid , 'budg_state', s_size*p_size,  dimid)
     end if
 
     ! Define global attributes
@@ -1031,6 +1056,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: numg      ! total number of gridcells across all processors
+    integer :: numt      ! total number of topounits across all processors
     integer :: numl      ! total number of landunits across all processors
     integer :: numc      ! total number of columns across all processors
     integer :: nump      ! total number of pfts across all processors
@@ -1041,8 +1067,9 @@ contains
     ! Get relevant sizes
 
     if ( .not. single_column .or. nsrest /= nsrStartup )then
-       call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
+       call get_proc_global(ng=numg, nt=numt, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
        call check_dim(ncid, nameg, numg)
+       call check_dim(ncid, namet, numt)
        call check_dim(ncid, namel, numl)
        call check_dim(ncid, namec, numc)
        call check_dim(ncid, namep, nump)

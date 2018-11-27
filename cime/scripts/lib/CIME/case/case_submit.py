@@ -6,12 +6,13 @@ if there is no queueing system.  A cesm workflow may include multiple
 jobs.
 submit, check_case and check_da_settings are members of class Case in file case.py
 """
-import socket
-from six.moves                   import configparser
+from six.moves                      import configparser
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CASE_SUCCESS, does_file_have_string
 from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
+
+import socket, glob
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,16 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     if job is None:
         job = case.get_primary_job()
 
-    rundir = case.get_value("RUNDIR")
-    if job != "case.test":
-        continue_run = case.get_value("CONTINUE_RUN")
-        expect(os.path.isdir(rundir) or not continue_run,
-               " CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
+    # Check if CONTINUE_RUN value makes sense
+    if job != "case.test" and case.get_value("CONTINUE_RUN"):
+        rundir = case.get_value("RUNDIR")
+        caseroot = case.get_value("CASEROOT")
+        expect(os.path.isdir(rundir),
+               "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
+        expect(len(glob.glob(os.path.join(rundir, "*.nc"))) > 0,
+               "CONTINUE_RUN is true but this case does not appear to have been run before (no .nc files in RUNDIR)")
+        expect(does_file_have_string(os.path.join(caseroot, "CaseStatus"), "case.run {}".format(CASE_SUCCESS)),
+               "CONTINUE_RUN is true but this case does not appear to have ever run successfully")
 
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
@@ -117,8 +123,8 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
         logger.warning("resubmit_immediate does not work on Mira/Cetus, submitting normally")
         resubmit_immediate = False
 
+    caseroot = self.get_value("CASEROOT")
     if self.get_value("TEST"):
-        caseroot = self.get_value("CASEROOT")
         casebaseid = self.get_value("CASEBASEID")
         # This should take care of the race condition where the submitted job
         # begins immediately and tries to set RUN phase. We proactively assume
@@ -132,7 +138,6 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
 
     # If this is a resubmit check the hidden file .submit_options for
     # any submit options used on the original submit and use them again
-    caseroot = self.get_value("CASEROOT")
     submit_options = os.path.join(caseroot, ".submit_options")
     if resubmit and os.path.exists(submit_options):
         config = configparser.SafeConfigParser()
