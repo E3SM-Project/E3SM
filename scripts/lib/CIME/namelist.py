@@ -1217,7 +1217,6 @@ class Namelist(object):
 
     def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt):
         """Unwrapped version of `write` assuming that a file object is input."""
-
         if groups is None:
             groups = self._groups.keys()
 

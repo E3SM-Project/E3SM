@@ -56,7 +56,7 @@ module Ensemble_driver
     config = ESMF_ConfigCreate(rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ConfigLoadFile(config, "cesm.runconfig", rc=rc)
+    call ESMF_ConfigLoadFile(config, "nuopc.runconfig", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_GridCompSet(ensemble_driver, config=config, rc=rc)

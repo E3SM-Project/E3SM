@@ -91,40 +91,55 @@
             MED med_phases_prep_ice
             MED med_connectors_prep_med2ice
             MED -> ICE :remapMethod=redist
+            #
             MED med_phases_prep_wav
             MED med_connectors_prep_med2wav
             MED -> WAV :remapMethod=redist
+            #
             MED med_phases_prep_lnd
             MED med_connectors_prep_med2lnd
             MED -> LND :remapMethod=redist
+            #
             MED med_phases_prep_glc
             MED med_connectors_prep_med2glc
             MED -> GLC :remapMethod=redist
+            #
             MED med_phases_prep_rof
             MED med_connectors_prep_med2rof
             MED -> ROF :remapMethod=redist
+            #
             ICE
             LND
             ROF
 	    WAV
+            #
             ROF -> MED :remapMethod=redist
             MED med_connectors_post_rof2med
+            #
             LND -> MED :remapMethod=redist
             MED med_connectors_post_lnd2med
+            #
             ICE -> MED :remapMethod=redist
             MED med_connectors_post_ice2med
+            #
             MED med_fraction_set
+            #
             MED med_phases_prep_atm
             MED med_connectors_prep_med2atm
             MED -> ATM :remapMethod=redist
+            #
             ATM
 	    GLC
+            #
             WAV -> MED :remapMethod=redist
             MED med_connectors_post_wav2med
+            #
             GLC -> MED :remapMethod=redist
             MED med_connectors_post_glc2med
+            #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
+	    #
             MED med_phases_history_write
 	    MED med_phases_profile
 	  @
@@ -218,7 +233,8 @@
     <category>nuopc</category>
     <group>nuopc_var</group>
     <values>
-      <value>cesm</value>
+      <value cime_model="cesm">cesm</value>
+      <value cime_model="e3sm">e3sm</value>
     </values>
   </entry>
 
@@ -369,6 +385,7 @@
     <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
+      <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
 
@@ -1739,13 +1756,13 @@ n    </desc>
     </values>
   </entry>
 
-  <!-- 
-       TODO:  
+  <!--
+       TODO:
        need a way to ensure the three values below stay consistent with
        cime/src/drivers/nuopc/shr/shr_nuopc_scalars_mod.F90
        This includes: ScalarFieldCount, ScalarFieldIdxGridNX, ScalarFieldIdxNY
-  -->      
-  
+  -->
+
   <entry id="ScalarFieldCount">
     <type>integer</type>
     <category>expdef</category>
