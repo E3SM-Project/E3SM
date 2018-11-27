@@ -64,7 +64,10 @@ def parse_command_line(args, cimeroot, description):
                         "\nThe default is the first listing in MPILIBS in config_machines.xml.\n")
 
     parser.add_argument("--project", "-project",
-                        help="Specify a project id as used in batch system accounting.")
+                        help="Specify a project id for the case (optional)."
+                        "\nUsed for accounting and directory permissions when on a batch system."
+                        "\nThe default is user or machine specified by PROJECT."
+                        "\nAccounting (only) may be overridden by user or machine specified CHARGE_ACCOUNT.")
 
     parser.add_argument("--pecount", "-pecount",  default="M",
                         help="Specify a target size description for the number of cores. "

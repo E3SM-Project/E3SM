@@ -146,7 +146,6 @@ class ERI(SystemTestsCommon):
 
         _helper(dout_sr1, refdate_2, refsec_2, rundir2)
 
-        self._skip_pnl = False
         # run ref2 case (all component history files will go to short term archiving)
         clone2.case_setup(test_mode=True, reset=True)
 

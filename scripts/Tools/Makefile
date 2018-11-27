@@ -105,7 +105,9 @@ endif
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
-ifneq ($(strip $(DEBUG)),TRUE)
+ifeq ($(strip $(DEBUG)),TRUE)
+   CPPDEFS += -DDEBUG
+else
    CPPDEFS += -DNDEBUG
 endif
 
@@ -592,10 +594,10 @@ ifdef LIB_MPI
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
 endif
+
 ifdef LIB_KOKKOS
    SLIBS += -L$(LIB_KOKKOS) -lkokkos
 endif
-
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)

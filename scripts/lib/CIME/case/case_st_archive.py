@@ -637,8 +637,8 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:
                 sshhost = fd.read()
-            run_cmd("ssh cooleylogin1 ssh {} '{}/case.submit {} --resubmit' "\
-                        .format(sshhost, caseroot, caseroot), verbose=True)
+            run_cmd("ssh cooleylogin1 ssh {} '{case}/case.submit {case} --resubmit' "\
+                        .format(sshhost, case=caseroot), verbose=True)
         else:
             self.submit(resubmit=True)
 
