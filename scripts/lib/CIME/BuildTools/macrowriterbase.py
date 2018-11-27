@@ -271,7 +271,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                                 component = component.replace("NETCDF", "NetCDF").replace("PNETCDF_PATH", "Pnetcdf_PATH")
                                 if is_shell:
                                     fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
-                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "${{TEMP{:d}}}")\n'.format(idx, idx))
+                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{0:d} "${{TEMP{0:d}}}")\n'.format(idx))
                                 else:
                                     fd.write('set(TEMP{:d} "{}")\n'.format(idx, component))
 
