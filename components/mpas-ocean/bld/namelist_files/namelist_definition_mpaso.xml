@@ -593,9 +593,55 @@ Valid values: Any positive real value, typically between 100 and 500 m.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_Bolus_kappa_function" type="char*1024"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Control what type of function is used for GM Bolus kappa
+
+Valid values: 'constant' and 'ramp'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_standardGM_tracer_kappa" type="real"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
 Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_kappa_min" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component),
+$\kappa$, min value in ramp as a function of dcEdge. Used when
+config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_kappa_max" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component),
+$\kappa$, max value in ramp as a function of dcEdge. Used when
+config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_cell_size_min" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Minimum value in grid cell size for GM $kappa$ ramp function.  Here cell size
+refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_cell_size_max" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Maximum value in grid cell size for GM $kappa$ ramp function.  Here cell size
+refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
 
 Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
