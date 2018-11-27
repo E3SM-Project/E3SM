@@ -99,7 +99,7 @@ def make_pr_branch(branch, branch_head):
 ###############################################################################
 def merge_branch(branch, squash=False):
 ###############################################################################
-    stat = run_cmd("git merge {} -m 'Merge {}' -X rename-threshold=25 {}".format("--squash" if squash else "", branch, branch),
+    stat = run_cmd("git merge {} -m 'Merge {branch}' -X rename-threshold=25 {branch}".format("--squash" if squash else "", branch=branch),
                    verbose=True)[0]
     if stat != 0:
         logging.info("There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
