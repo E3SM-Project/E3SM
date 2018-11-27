@@ -208,7 +208,7 @@ contains
          soilbeta            =>   soilstate_vars%soilbeta_col               , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity
          rootr               =>   soilstate_vars%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
 
-         t_grnd              =>   temperature_vars%t_grnd_col               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)                    
+         t_grnd              =>   col_es%t_grnd               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)                    
          t_soisno            =>   col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (K)                            
          t_ref2m             =>   temperature_vars%t_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (K)            
          t_ref2m_u           =>   temperature_vars%t_ref2m_u_patch          , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface air temperature (K)     

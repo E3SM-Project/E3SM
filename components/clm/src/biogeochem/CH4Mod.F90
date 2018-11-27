@@ -2892,7 +2892,7 @@ contains
          cellorg       =>    soilstate_vars%cellorg_col      , & ! Input:  [real(r8) (:,:) ]  column 3D org (kg/m^3 organic matter) (nlevgrnd)
 
          t_soisno      =>    col_es%t_soisno   , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
-         t_grnd        =>    temperature_vars%t_grnd_col     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)                       
+         t_grnd        =>    col_es%t_grnd     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)                       
          t_h2osfc      =>    col_es%t_h2osfc   , & ! Input:  [real(r8) (:)   ]  surface water temperature               
 
          frac_h2osfc   =>    waterstate_vars%frac_h2osfc_col , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)

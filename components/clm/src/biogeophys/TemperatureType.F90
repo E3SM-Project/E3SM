@@ -285,11 +285,6 @@ contains
          avgflag='A', long_name='Urban ground temperature', &
          ptr_col=this%t_grnd_u_col, set_nourb=spval, c2l_scale_type='urbans')
 
-    this%t_lake_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='TLAKE',  units='K', type2d='levlak', &
-         avgflag='A', long_name='lake temperature', &
-         ptr_col=this%t_lake_col)
-
     this%t_ref2m_patch(begp:endp) = spval
     call hist_addfld1d (fname='TSA', units='K',  &
          avgflag='A', long_name='2m air temperature', &
@@ -340,20 +335,10 @@ contains
          avgflag='A', long_name='vegetation temperature', &
          ptr_patch=this%t_veg_patch)
 
-    this%t_grnd_col(begc:endc) = spval
-    call hist_addfld1d (fname='TG',  units='K',  &
-         avgflag='A', long_name='ground temperature', &
-         ptr_col=this%t_grnd_col, c2l_scale_type='urbans')
-
     this%t_grnd_r_col(begc:endc) = spval
     call hist_addfld1d (fname='TG_R', units='K',  &
          avgflag='A', long_name='Rural ground temperature', &
          ptr_col=this%t_grnd_r_col, set_spec=spval)
-
-    this%t_soi10cm_col(begc:endc) = spval
-    call hist_addfld1d (fname='TSOI_10CM',  units='K', &
-         avgflag='A', long_name='soil temperature in top 10cm of soil', &
-         ptr_col=this%t_soi10cm_col, set_urb=spval)
 
     if (use_cndv .or. crop_prog) then
        active = "active"
@@ -726,16 +711,6 @@ contains
          dim1name='pft', &
          long_name='vegetation temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_veg_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_LAKE', xtype=ncd_double,  &
-         dim1name='column', dim2name='levlak', switchdim=.true., &
-         long_name='lake temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_lake_col)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_GRND', xtype=ncd_double,  &
-         dim1name='column', &
-         long_name='ground temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_grnd_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='T_GRND_R', xtype=ncd_double,  &
          dim1name='column', &

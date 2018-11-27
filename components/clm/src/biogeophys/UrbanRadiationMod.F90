@@ -25,7 +25,8 @@ module UrbanRadiationMod
   use EnergyFluxType    , only : energyflux_type
   use TopounitType      , only : top_af
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
+  use ColumnType        , only : col_pp 
+  use ColumnDataType    , only : col_es  
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -127,7 +128,7 @@ contains
          frac_sno           =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
 
          t_ref2m            =>    temperature_vars%t_ref2m_patch             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
-         t_grnd             =>    temperature_vars%t_grnd_col                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
+         t_grnd             =>    col_es%t_grnd                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
 
          em_roof            =>    urbanparams_vars%em_roof                   , & ! Input:  [real(r8) (:)   ]  roof emissivity                                   
          em_improad         =>    urbanparams_vars%em_improad                , & ! Input:  [real(r8) (:)   ]  impervious road emissivity                        

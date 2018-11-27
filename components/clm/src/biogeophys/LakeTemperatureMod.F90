@@ -243,9 +243,9 @@ contains
 
          qflx_snofrz_col =>   waterflux_vars%qflx_snofrz_col       , & ! Output: [real(r8) (:)   ]  column-integrated snow freezing rate (kg m-2 s-1) [+]
 
-         t_grnd          =>   temperature_vars%t_grnd_col          , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
+         t_grnd          =>   col_es%t_grnd          , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno        =>   col_es%t_soisno        , & ! Output: [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)   
-         t_lake          =>   temperature_vars%t_lake_col          , & ! Output: [real(r8) (:,:) ]  col lake temperature (Kelvin)             
+         t_lake          =>   col_es%t_lake          , & ! Output: [real(r8) (:,:) ]  col lake temperature (Kelvin)             
          hc_soi          =>   temperature_vars%hc_soi_col          , & ! Output: [real(r8) (:)   ]  soil heat content (MJ/m2)               
          hc_soisno       =>   temperature_vars%hc_soisno_col       , & ! Output: [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2)
 
@@ -1310,7 +1310,7 @@ contains
           qflx_snofrz_col => waterflux_vars%qflx_snofrz_col     , & ! Output: [real(r8)  (:)   ] column-integrated snow freezing rate (kg m-2 s-1) [+]
 
           t_soisno        => col_es%t_soisno      , & ! Input:  [real(r8)  (:,:) ] soil temperature (Kelvin)             
-          t_lake          => temperature_vars%t_lake_col        , & ! Input:  [real(r8)  (:,:) ] lake temperature (Kelvin)             
+          t_lake          => col_es%t_lake        , & ! Input:  [real(r8)  (:,:) ] lake temperature (Kelvin)             
           imelt           => temperature_vars%imelt_col         , & ! Output: [integer   (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
 
           eflx_snomelt    => energyflux_vars%eflx_snomelt_col     & ! Output: [real(r8)  (:)   ] snow melt heat flux (W/m**2)            

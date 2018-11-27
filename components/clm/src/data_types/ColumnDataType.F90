@@ -25,10 +25,14 @@ module ColumnDataType
   ! Define the data structure that holds energy state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_energy_state
+    real(r8), pointer :: t_soisno      (:,:) => null() ! soil temperature (K)  (-nlevsno+1:nlevgrnd) 
+    real(r8), pointer :: t_ssbef       (:,:) => null() ! soil/snow temperature before update (K) (-nlevsno+1:nlevgrnd) 
     real(r8), pointer :: t_h2osfc      (:)   => null() ! surface water temperature (K)
     real(r8), pointer :: t_h2osfc_bef  (:)   => null() ! surface water temperature at start of time step (K)
-    real(r8), pointer :: t_ssbef       (:,:) => null() ! col soil/snow temperature before update (K) (-nlevsno+1:nlevgrnd) 
-    real(r8), pointer :: t_soisno      (:,:) => null() ! col soil temperature (K)  (-nlevsno+1:nlevgrnd) 
+    real(r8), pointer :: t_soi10cm     (:)   => null() ! soil temperature in top 10cm of soil (K)
+    real(r8), pointer :: t_soi17cm     (:)   => null() ! soil temperature in top 17cm of soil (K)
+    real(r8), pointer :: t_grnd        (:)   => null() ! ground temperature (K)
+    real(r8), pointer :: t_lake        (:,:) => null() ! col lake temperature (K)  (1:nlevlak)          
   contains
     procedure, public :: Init    => col_es_init
     procedure, public :: Restart => col_es_restart
@@ -169,19 +173,18 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_es
     !-----------------------------------------------------------------------
+    allocate(this%t_soisno         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_soisno           (:,:) = nan
+    allocate(this%t_ssbef          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_ssbef            (:,:) = nan
     allocate(this%t_h2osfc         (begc:endc))                     ; this%t_h2osfc           (:)   = nan
     allocate(this%t_h2osfc_bef     (begc:endc))                     ; this%t_h2osfc_bef       (:)   = nan
-    allocate(this%t_ssbef          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_ssbef            (:,:) = nan
-    allocate(this%t_soisno         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_soisno           (:,:) = nan
+    allocate(this%t_soi10cm        (begc:endc))                     ; this%t_soi10cm          (:)   = nan
+    allocate(this%t_soi17cm        (begc:endc))                     ; this%t_soi17cm          (:)   = spval
+    allocate(this%t_grnd           (begc:endc))                     ; this%t_grnd             (:)   = nan
+    allocate(this%t_lake           (begc:endc,1:nlevlak))           ; this%t_lake             (:,:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_es
     !-----------------------------------------------------------------------
-    this%t_h2osfc(begc:endc) = spval
-    call hist_addfld1d (fname='TH2OSFC',  units='K',  &
-         avgflag='A', long_name='surface water temperature', &
-         ptr_col=this%t_h2osfc)
-
     this%t_soisno(begc:endc,-nlevsno+1:0) = spval
     data2dptr => this%t_soisno(:,-nlevsno+1:0)
     call hist_addfld2d (fname='SNO_T', units='K', type2d='levsno',  &
@@ -198,10 +201,29 @@ contains
          avgflag='A', long_name='soil temperature (ice landunits only)', &
          ptr_col=this%t_soisno, l2g_scale_type='ice')
 
+    this%t_h2osfc(begc:endc) = spval
+    call hist_addfld1d (fname='TH2OSFC',  units='K',  &
+         avgflag='A', long_name='surface water temperature', &
+         ptr_col=this%t_h2osfc)
+
+    this%t_soi10cm(begc:endc) = spval
+    call hist_addfld1d (fname='TSOI_10CM',  units='K', &
+         avgflag='A', long_name='soil temperature in top 10cm of soil', &
+         ptr_col=this%t_soi10cm, set_urb=spval)
+
+    this%t_grnd(begc:endc) = spval
+    call hist_addfld1d (fname='TG',  units='K',  &
+         avgflag='A', long_name='ground temperature', &
+         ptr_col=this%t_grnd, c2l_scale_type='urbans')
+
+    this%t_lake(begc:endc,:) = spval
+    call hist_addfld2d (fname='TLAKE',  units='K', type2d='levlak', &
+         avgflag='A', long_name='lake temperature', &
+         ptr_col=this%t_lake)
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_es
     !-----------------------------------------------------------------------
-    this%t_h2osfc = 274._r8
     
     ! Initialize soil+snow temperatures
     do c = begc,endc
@@ -265,13 +287,22 @@ contains
           else
              this%t_soisno(c,1:nlevgrnd) = 274._r8
           endif
+          this%t_grnd(c) = this%t_soisno(c,snl(c)+1)
        endif
        
-       if (lun_pp%lakpoi(l)) then ! lake
+       if (lun_pp%lakpoi(l)) then ! special handling for lake points
           this%t_soisno(c,1:nlevgrnd) = 277._r8
+          this%t_lake(c,1:nlevlak) = 277._r8
+          this%t_grnd(c) = 277._r8
        end if
-       
-    end do
+
+       this%t_soi17cm(c) = this%t_grnd(c)
+    end do ! columns loop
+    
+    
+
+    ! Initialize surface water temperatures
+    this%t_h2osfc = 274._r8
     
     end associate
 
@@ -295,6 +326,11 @@ contains
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
 
+    call restartvar(ncid=ncid, flag=flag, varname='T_SOISNO', xtype=ncd_double,   &
+         dim1name='column', dim2name='levtot', switchdim=.true., &
+         long_name='soil-snow temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_soisno)
+
     call restartvar(ncid=ncid, flag=flag, varname='TH2OSFC', xtype=ncd_double,  &
          dim1name='column', &
          long_name='surface water temperature', units='K', &
@@ -303,10 +339,15 @@ contains
        this%t_h2osfc(bounds%begc:bounds%endc) = 274.0_r8
     end if
 
-    call restartvar(ncid=ncid, flag=flag, varname='T_SOISNO', xtype=ncd_double,   &
-         dim1name='column', dim2name='levtot', switchdim=.true., &
-         long_name='soil-snow temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_soisno)
+    call restartvar(ncid=ncid, flag=flag, varname='T_GRND', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='ground temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_grnd)
+
+    call restartvar(ncid=ncid, flag=flag, varname='T_LAKE', xtype=ncd_double,  &
+         dim1name='column', dim2name='levlak', switchdim=.true., &
+         long_name='lake temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_lake)
 
   end subroutine col_es_restart
 

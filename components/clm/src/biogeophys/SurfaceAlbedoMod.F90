@@ -25,7 +25,8 @@ module SurfaceAlbedoMod
   use WaterstateType    , only : waterstate_type
   use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
+  use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_es  
   use VegetationType    , only : veg_pp                
   !
   implicit none
@@ -998,7 +999,7 @@ contains
    associate(&
           snl          => col_pp%snl                         , & ! Input:  [integer  (:)   ]  number of snow layers                    
 
-          t_grnd       => temperature_vars%t_grnd_col     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
+          t_grnd       => col_es%t_grnd     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
 
           h2osoi_vol   => waterstate_vars%h2osoi_vol_col  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
 
