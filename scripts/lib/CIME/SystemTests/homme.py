@@ -26,19 +26,14 @@ class HOMME(SystemTestsCommon):
             mach     = self._case.get_value("MACH")
             procs    = self._case.get_value("TOTALPES")
             exeroot  = self._case.get_value("EXEROOT")
-            baseline = self._case.get_value("BASELINE_ROOT")
+            baselinedir = self._case.get_value("BASELINE_ROOT")
             basegen  = self._case.get_value("BASEGEN_CASE")
             basecmp  = self._case.get_value("BASECMP_CASE")
             generate = self._case.get_value("GENERATE_BASELINE")
             gmake    = self._case.get_value("GMAKE")
             cprnc    = self._case.get_value("CCSM_CPRNC")
 
-            if compare:
-                basename = basecmp
-                baselinedir = baseline
-            else:
-                basename = ""
-                baselinedir = exeroot
+            basename = basegen if generate else basecmp
 
             cmake_cmd = "cmake -C {0}/components/homme/cmake/machineFiles/{1}.cmake -DUSE_NUM_PROCS={2} {0}/components/homme -DHOMME_BASELINE_DIR={3}/{4} -DCPRNC_DIR={5}/..".format(srcroot, mach, procs, baselinedir, basename, cprnc)
 
