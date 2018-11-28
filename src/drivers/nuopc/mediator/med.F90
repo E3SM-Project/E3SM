@@ -1137,11 +1137,11 @@ contains
                         call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n1))//'_new',rc)
                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                      end if
-                  else                     
+                  else
                      call ESMF_LogWrite(trim(subname)//trim(string)//": NOT replacing mesh for field: "//&
                           trim(fieldNameList(n1)), ESMF_LOGMSG_WARNING, rc=rc)
                      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                  endif                  
+                  endif
                enddo
 
             else  ! geomtype
@@ -1937,7 +1937,7 @@ contains
     use NUOPC_Mediator        , only : NUOPC_MediatorGet
     use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_clock_timeprint
-
+    use shr_nuopc_time_mod    , only : shr_nuopc_time_set_component_stop_alarm
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -2020,6 +2020,9 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_AlarmSet(med_profile_alarm, clock=mediatorclock, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_time_set_component_stop_alarm(gcomp, rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        first_time = .false.

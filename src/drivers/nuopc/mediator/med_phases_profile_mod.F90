@@ -24,7 +24,8 @@ contains
     use ESMF, only : ESMF_Alarm, ESMF_AlarmisRinging, ESMF_VMWtime
     use ESMF, only : ESMF_TimeSyncToRealTime, ESMF_Time, ESMF_TimeSet
     use ESMF, only : ESMF_TimeInterval, ESMF_AlarmGet, ESMF_TimeIntervalGet
-    use ESMF, only : ESMF_ClockGetNextTime, ESMF_TimeGet
+    use ESMF, only : ESMF_ClockGetNextTime, ESMF_TimeGet, ESMF_ClockGet
+    use ESMF, only : operator(-)
     use NUOPC, only : NUOPC_CompAttributeGet
     use shr_nuopc_utils_mod, only : shr_nuopc_utils_chkerr, shr_nuopc_memcheck
     use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag, CS, CL
@@ -43,13 +44,14 @@ contains
     character(len=CS) :: cpl_inst_tag
     type(ESMF_CLOCK) :: clock
     type(ESMF_TIME)  :: wallclocktime, nexttime
+    type(ESMF_TIME), save :: prevtime
     type(ESMF_VM) :: vm
-    type(ESMF_Alarm) :: alarm
-    type(ESMF_TimeInterval) :: ringInterval
+    type(ESMF_Alarm) :: alarm, salarm
+    type(ESMF_TimeInterval) :: ringInterval, timestep
     integer :: yr, mon, day, hr, min, sec
     integer :: iam
     logical :: ispresent
-    logical :: alarmison
+    logical :: alarmison, stopalarmison
     real(R8) :: current_time, wallclockelapsed, ypd
     real(r8) :: msize, mrss, avgdt, ringdays
     integer dbrc
@@ -78,13 +80,6 @@ contains
     endif
 
     !---------------------------------------
-    ! --- Get the clock info
-    !---------------------------------------
-
-    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
     ! --- profiler Alarm
     !---------------------------------------
     if (iterations == 0) then
@@ -93,6 +88,13 @@ contains
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        iterations = iterations + 1
     else
+       !---------------------------------------
+       ! --- Get the clock info
+       !---------------------------------------
+
+       call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
        call ESMF_ClockGetAlarm(clock, alarmname='med_profile_alarm', alarm=alarm, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -102,19 +104,41 @@ contains
           call ESMF_AlarmRingerOff( alarm, rc=rc )
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        else
-          AlarmIsOn = .false.
+          call ESMF_ClockGetAlarm(clock, alarmname='alarm_stop', alarm=salarm, rc=rc)
+          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+          if (ESMF_AlarmIsRinging(salarm, rc=rc)) then
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+             stopalarmIsOn = .true.
+             call ESMF_AlarmRingerOff( salarm, rc=rc )
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+          else
+             AlarmIsOn = .false.
+             stopalarmison = .false.
+          endif
        endif
-
-       if (alarmIsOn .and. mastertask) then
-          call ESMF_AlarmGet( alarm, ringInterval=ringInterval, rc=rc)
-          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_TimeIntervalGet(ringInterval, d_r8=ringdays, rc=rc)
-          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
+       if ((stopalarmison .or. alarmIsOn .or. iterations==1) .and. mastertask) then
           ! We need to get the next time for display
           call ESMF_ClockGetNextTime(clock, nextTime=nexttime, rc=rc)
           if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+          if (alarmison) then
+             call ESMF_AlarmGet( alarm, ringInterval=ringInterval, rc=rc)
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_TimeIntervalGet(ringInterval, d_r8=ringdays, rc=rc)
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+          else if (stopalarmison) then
+             ! Here we need the interval since the last call to this function
+             call ESMF_TimeIntervalGet(nexttime-prevtime, d_r8=ringdays, rc=rc)
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+          else
+             ! Here we are just getting a single timestep interval
+             call ESMF_ClockGet( clock, timestep=timestep, rc=rc)
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
+             call ESMF_TimeIntervalGet(timestep, d_r8=ringdays, rc=rc)
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+          endif
+          prevtime = nexttime
           call ESMF_TimeGet(nexttime, timestring=nexttimestr, rc=dbrc)
           if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
