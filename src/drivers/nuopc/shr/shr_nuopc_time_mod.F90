@@ -23,6 +23,7 @@ module shr_nuopc_time_mod
 
   public  :: shr_nuopc_time_alarmInit  ! initialize an alarm
   public  :: shr_nuopc_time_clockInit  ! initialize driver clock
+  public  :: shr_nuopc_time_set_component_stop_alarm
 
   private :: shr_nuopc_time_timeInit
   private :: shr_nuopc_time_date2ymd
@@ -461,6 +462,51 @@ contains
 
 
  end subroutine shr_nuopc_time_clockInit
+
+ subroutine shr_nuopc_time_set_component_stop_alarm(gcomp, rc)
+   use ESMF, only : ESMF_GridComp, ESMF_Alarm, ESMF_Clock, ESMF_ClockGet
+   use ESMF, only : ESMF_AlarmSet
+   use NUOPC, only : NUOPC_CompAttributeGet
+   use NUOPC_Model, only : NUOPC_ModelGet
+   type(ESMF_gridcomp) :: gcomp
+
+   character(len=256)       :: stop_option    ! Stop option units
+   integer                  :: stop_n         ! Number until stop interval
+   integer                  :: stop_ymd       ! Stop date (YYYYMMDD)
+   type(ESMF_ALARM)         :: stop_alarm
+   character(len=256)       :: cvalue
+   type(ESMF_Clock)         :: mclock
+   type(ESMF_Time)          :: mCurrTime
+   integer                  :: rc
+   !----------------
+   ! Stop alarm
+   !----------------
+   call NUOPC_CompAttributeGet(gcomp, name="stop_option", value=stop_option, rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+   call NUOPC_ModelGet(gcomp, modelClock=mclock, rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+   call ESMF_ClockGet(mclock, CurrTime=mCurrTime, rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+   call NUOPC_CompAttributeGet(gcomp, name="stop_n", value=cvalue, rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+   read(cvalue,*) stop_n
+
+   call NUOPC_CompAttributeGet(gcomp, name="stop_ymd", value=cvalue, rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+   read(cvalue,*) stop_ymd
+   call shr_nuopc_time_alarmInit(mclock, stop_alarm, stop_option, &
+        opt_n   = stop_n,           &
+        opt_ymd = stop_ymd,         &
+        RefTime = mcurrTime,           &
+        alarmname = 'alarm_stop', rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+   call ESMF_AlarmSet(stop_alarm, clock=mclock, rc=rc)
+   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+ end subroutine shr_nuopc_time_set_component_stop_alarm
 
 !===============================================================================
 
