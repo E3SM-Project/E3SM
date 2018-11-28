@@ -150,7 +150,7 @@
 !
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg
-      use w3wdatmd, only: time, w3ndat, w3dimw, w3setw
+      use w3wdatmd, only: time, w3ndat, w3setw
       use w3adatmd, only: lamult, ussx, ussy, w3naux, w3seta
       use w3idatmd, only: flags, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
