@@ -106,7 +106,7 @@ subroutine stepon_init(dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
-     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
+     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (4+pcnst)*nlev)
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -259,8 +259,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    if (.not. single_column) then 
      do ie=1,nelemd
        kptr=0
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
+       kptr=kptr+3*nlev
 
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
        kptr=kptr+nlev
@@ -282,8 +282,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
      if (.not. single_column) then
        kptr=0
 
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
+       kptr=kptr+3*nlev
 
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
        kptr=kptr+nlev
