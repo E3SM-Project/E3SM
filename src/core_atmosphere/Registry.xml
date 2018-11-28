@@ -2634,7 +2634,7 @@
                      description="initial number of time-steps since last snow fall"/>
 
                 <var name="sstsk" type="real" dimensions="nCells Time" units="K"
-                     description="skin sea-aurface temperature"/>
+                     description="skin sea-surface temperature"/>
 
                 <var name="sstsk_dtc" type="real" dimensions="nCells Time" units="K"
                      description="skin sea-surface temperature cooling"/>
