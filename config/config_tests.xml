@@ -186,6 +186,10 @@ TESTRUNFAIL       Insta-fail run step. Used to confirm that model run
 TESTRUNFAILEXC    Insta-fail run step via exception. Used to test correct
                   correct behavior when exceptions are generated.
 
+TESTRUNSTARCFAIL  Insta-fail st_archive step via exception. Used to test correct
+                  behavior when exceptions are generated within in run_phase
+                  for phases other than RUN.
+
 TESTRUNPASS       Insta-pass run step. Used to test that run that work
                   are reported correctly.
 
@@ -348,6 +352,15 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="FUNIT">
+    <DESC>Run fortran unit tests. Grid and compset (and most case settings) are ignored.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="LDSTA">
     <DESC>Tests the short term archiver's last date functionality.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
@@ -391,6 +404,15 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
 
   <test NAME="TESTRUNFAIL" INFRASTRUCTURE_TEST="TRUE">
     <DESC>For testing infra only. Insta-fail run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNSTARCFAIL" INFRASTRUCTURE_TEST="TRUE">
+    <DESC>For testing infra only. Insta-fail st archive test with exception.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
@@ -542,6 +564,20 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <MULTI_DRIVER>TRUE</MULTI_DRIVER>
   </test>
 
+  <test NAME="MVK">
+    <DESC>climate reproducibility test using the multivariate K-S test</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <STOP_OPTION>nmonths</STOP_OPTION>
+    <STOP_N>2</STOP_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <REST_N>$STOP_N</REST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <RESUBMIT>6</RESUBMIT>
+  </test>
+
   <test NAME="NCK">
     <DESC>multi-instance validation vs single instance (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
@@ -601,6 +637,24 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="PGN">
+    <DESC>solution reproducibility test</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="TSC">
+    <DESC>solution reproducibility test based on time-step convergence</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
   </test>
 
   <test NAME="SMS">

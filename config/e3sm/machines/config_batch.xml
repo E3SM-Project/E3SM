@@ -104,6 +104,7 @@
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
+    <batch_env>-env</batch_env>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
@@ -181,11 +182,13 @@
 
   <!-- for lawrence livermore computing -->
   <batch_system type="lc_slurm">
+    <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
     <batch_cancel>scancel</batch_cancel>
     <batch_directive>#SBATCH</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
-    <depend_string> -l depend=jobid</depend_string>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
     <depend_separator>:</depend_separator>
     <walltime_format>%H:%M:%S</walltime_format>
     <batch_mail_flag>--mail-user</batch_mail_flag>
@@ -204,6 +207,7 @@
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
+      <queue walltimemax="00:30:00">pdebug</queue>
     </queues>
   </batch_system>
   <!-- for lawrence livermore computing -->
@@ -366,10 +370,13 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--mail-user=email@pnnl.gov</directive>
+	<directive>--output=slurm.out</directive>
+	<directive>--error=slurm.err</directive>
       </directives>
       <queues>
-	<queue walltimemax="00:30:00" default="true">small</queue>
+	<queue walltimemax="00:59:00" nodemin="1"  nodemax="15"  >small</queue>
+	<queue walltimemax="00:59:00" nodemin="16" nodemax="127" >medium</queue>
+	<queue walltimemax="00:59:00" nodemin="128" default="true" >large</queue>
       </queues>
     </batch_system>
 
@@ -443,16 +450,6 @@
       </queues>
     </batch_system>
 
-   <batch_system MACH="oic2" type="pbs" >
-         <directives>
-                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-		 <directive>-q esd08q</directive>
-         </directives>
-         <queues>
-           <queue default="true">esd08q</queue>
-         </queues>
-   </batch_system>
-
    <batch_system MACH="oic5" type="pbs" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -496,8 +493,12 @@
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
-       <directive>-alloc_flags gpumps</directive>
+     </directives>
+     <directives compiler="!pgiacc">
        <directive>-alloc_flags smt2</directive>
+     </directives>
+     <directives compiler="pgiacc">
+       <directive>-alloc_flags "gpumps smt2"</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>
@@ -519,6 +520,18 @@
 	   >4		1 hour
 	   jobmax = 54nodes*20cores*16th = 8640
 	   -->
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="snl-white" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7G</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="snl-blake" type="slurm" >
+     <queues>
+       <queue walltimemax="02:00" default="true">blake</queue>
      </queues>
    </batch_system>
 

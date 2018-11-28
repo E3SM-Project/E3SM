@@ -177,7 +177,7 @@ def _read_cime_config_file():
     allowed_sections = ("main", "create_test")
 
     allowed_in_main = ("cime_model", "project", "charge_account", "srcroot", "mail_type",
-                       "mail_user", "machine", "mpilib", "compiler", "input_dir")
+                       "mail_user", "machine", "mpilib", "compiler", "input_dir", "cime_driver")
     allowed_in_create_test = ("mail_type", "mail_user", "save_timing", "single_submit",
                               "test_root", "output_root", "baseline_root", "clean",
                               "machine", "mpilib", "compiler", "parallel_jobs", "proc_pool",
@@ -243,6 +243,21 @@ def get_cime_root(case=None):
 
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
+
+def get_cime_default_driver():
+    driver = os.environ.get("CIME_DRIVER")
+    if driver:
+        logger.debug("Setting CIME_DRIVER={} from environment".format(driver))
+    else:
+        cime_config = get_cime_config()
+        if (cime_config.has_option('main','CIME_DRIVER')):
+            driver = cime_config.get('main','CIME_DRIVER')
+            if driver:
+                logger.debug("Setting CIME_driver={} from ~/.cime/config".format(driver))
+    if not driver:
+        driver = "mct"
+    expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
+    return driver
 
 def set_model(model):
     """
@@ -409,7 +424,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
         arg_stderr = _convert_to_fd(arg_stdout, from_dir)
 
     if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
-        logger.info("RUN: {}".format(cmd))
+        logger.info("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -427,12 +442,12 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
-            output = output.decode('utf-8').strip()
+            output = output.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
-            errput = errput.decode('utf-8').strip()
+            errput = errput.decode('utf-8', errors='ignore').strip()
         except AttributeError:
             pass
 
@@ -921,7 +936,7 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
-def get_charge_account(machobj=None):
+def get_charge_account(machobj=None, project=None):
     """
     Hierarchy for choosing CHARGE_ACCOUNT:
     1. Environment variable CHARGE_ACCOUNT
@@ -933,11 +948,11 @@ def get_charge_account(machobj=None):
     >>> import CIME.XML.machines
     >>> machobj = CIME.XML.machines.Machines(machine="theta")
     >>> project = get_project(machobj)
-    >>> charge_account = get_charge_account(machobj)
+    >>> charge_account = get_charge_account(machobj, project)
     >>> project == charge_account
     True
     >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
-    >>> get_charge_account(machobj)
+    >>> get_charge_account(machobj, project)
     'ChargeAccount'
     >>> del os.environ["CHARGE_ACCOUNT"]
     """
@@ -960,7 +975,7 @@ def get_charge_account(machobj=None):
             return charge_account
 
     logger.info("No charge_account info available, using value from PROJECT")
-    return get_project(machobj)
+    return project
 
 def find_files(rootdir, pattern):
     """
@@ -1656,6 +1671,8 @@ def indent_string(the_string, indent_level):
 def verbatim_success_msg(return_val):
     return return_val
 
+CASE_SUCCESS = "success"
+CASE_FAILURE = "error"
 def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functor=None):
     append_case_status(phase, "starting", caseroot=caseroot)
     rv = None
@@ -1663,11 +1680,11 @@ def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functo
         rv = func()
     except:
         e = sys.exc_info()[1]
-        append_case_status(phase, "error", msg=("\n{}".format(e)), caseroot=caseroot)
+        append_case_status(phase, CASE_FAILURE, msg=("\n{}".format(e)), caseroot=caseroot)
         raise
     else:
         custom_success_msg = custom_success_msg_functor(rv) if custom_success_msg_functor else None
-        append_case_status(phase, "success", msg=custom_success_msg, caseroot=caseroot)
+        append_case_status(phase, CASE_SUCCESS, msg=custom_success_msg, caseroot=caseroot)
 
     return rv
 
@@ -1756,3 +1773,17 @@ def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
 
 def get_batch_script_for_job(job):
     return job if "st_archive" in job else "." + job
+
+def string_in_list(_string, _list):
+    """Case insensitive search for string in list
+    returns the matching list value
+    >>> string_in_list("Brack",["bar", "bracK", "foo"])
+    'bracK'
+    >>> string_in_list("foo", ["FFO", "FOO", "foo2", "foo3"])
+    'FOO'
+    >>> string_in_list("foo", ["FFO", "foo2", "foo3"])
+    """
+    for x in _list:
+        if _string.lower() == x.lower():
+            return x
+    return None

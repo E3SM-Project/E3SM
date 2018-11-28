@@ -22,7 +22,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
-    batchsubmit = case.get_value("BATCHSUBMIT")
     rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
 
@@ -42,17 +41,6 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     # load the module environment...
     case.load_env(reset=True)
 
-    # set environment variables
-
-    if batchsubmit is None or len(batchsubmit) == 0:
-        os.environ["LBQUERY"] = "FALSE"
-        os.environ["BATCHQUERY"] = "undefined"
-    elif batchsubmit == 'UNSET':
-        os.environ["LBQUERY"] = "FALSE"
-        os.environ["BATCHQUERY"] = "undefined"
-    else:
-        os.environ["LBQUERY"] = "TRUE"
-
     # create the timing directories, optionally cleaning them if needed.
     if os.path.isdir(os.path.join(rundir, "timing")):
         shutil.rmtree(os.path.join(rundir, "timing"))
@@ -62,11 +50,14 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     # This needs to be done everytime the LID changes in order for log files to be set up correctly
     # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
     # variable while the job is in the queue
+    logger.debug("{} NAMELIST CREATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     if skip_pnl:
         case.create_namelists(component='cpl')
     else:
         logger.info("Generating namelists for {}".format(caseroot))
         case.create_namelists()
+
+    logger.debug("{} NAMELIST CREATION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     logger.info("-------------------------------------------------------------------------")
     logger.info(" - Prestage required restarts into {}".format(rundir))
@@ -78,7 +69,9 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
 ###############################################################################
 
+    logger.debug("{} PRE_RUN_CHECK BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     _pre_run_check(case, lid, skip_pnl=skip_pnl, da_cycle=da_cycle)
+    logger.debug("{} PRE_RUN_CHECK HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     model = case.get_value("MODEL")
 
@@ -86,8 +79,6 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     os.environ["OMP_NUM_THREADS"] = str(case.thread_count)
 
     # Run the model
-    logger.info("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-
     cmd = case.get_mpirun_cmd(allow_unresolved_envvars=False)
     logger.info("run command is {} ".format(cmd))
 
@@ -110,9 +101,15 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     while loop:
         loop = False
 
+        logger.debug("{} SAVE_PRERUN_PROVENANCE BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         save_prerun_provenance(case)
+        logger.debug("{} SAVE_PRERUN_PROVENANCE HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+
+        logger.debug("{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
         stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+        logger.debug("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+
         model_logfile = os.path.join(rundir, model + ".log." + lid)
         # Determine if failure was due to a failed node, if so, try to restart
         if retry_run_re or node_fail_re:
@@ -150,9 +147,9 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
             # We failed and we're not restarting
             expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
-    logger.info("{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-
+    logger.debug("{} POST_RUN_CHECK BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     _post_run_check(case, lid)
+    logger.debug("{} POST_RUN_CHECK HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     return lid
 
@@ -168,15 +165,24 @@ def _post_run_check(case, lid):
 
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
+    driver = case.get_value("COMP_INTERFACE")
+
+    if driver == 'nuopc':
+        file_prefix = 'med'
+    else:
+        file_prefix = 'cpl'
+
     cpl_ninst = 1
     if case.get_value("MULTI_DRIVER"):
         cpl_ninst = case.get_value("NINST_MAX")
     cpl_logs = []
+
     if cpl_ninst > 1:
         for inst in range(cpl_ninst):
-            cpl_logs.append(os.path.join(rundir, "cpl_%04d.log." % (inst+1) + lid))
+            cpl_logs.append(os.path.join(rundir, file_prefix + "_%04d.log." % (inst+1) + lid))
     else:
-        cpl_logs = [os.path.join(rundir, "cpl" + ".log." + lid)]
+        cpl_logs = [os.path.join(rundir, file_prefix + ".log." + lid)]
+
     cpl_logfile = cpl_logs[0]
 
     # find the last model.log and cpl.log
@@ -256,23 +262,30 @@ def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 ###############################################################################
 def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=False):
 ###############################################################################
+    logger.debug("{} CASE.RUN BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
     postrun_script = self.get_value("POSTRUN_SCRIPT")
+    driver = self.get_value("COMP_INTERFACE")
 
     data_assimilation_cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = self.get_value("DATA_ASSIMILATION_SCRIPT")
     data_assimilation = (data_assimilation_cycles > 0 and
                          len(data_assimilation_script) > 0 and
                          os.path.isfile(data_assimilation_script))
+
+    driver = self.get_value("COMP_INTERFACE")
+
     # set up the LID
     lid = new_lid()
 
     if prerun_script:
+        logger.debug("{} PRERUN_SCRIPT BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         self.flush()
         _do_external(prerun_script, self.get_value("CASEROOT"), self.get_value("RUNDIR"),
                     lid, prefix="prerun")
         self.read_xml()
+        logger.debug("{} PRERUN_SCRIPT HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     for cycle in range(data_assimilation_cycles):
         # After the first DA cycle, runs are restart runs
@@ -281,25 +294,41 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
             self.set_value("CONTINUE_RUN",
                            self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
+        logger.debug("{} RUN_MODEL BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         lid = _run_model(self, lid, skip_pnl, da_cycle=cycle)
+        logger.debug("{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-        if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
-            get_timing(self, lid)     # Run the getTiming script
+        # TODO mvertens: remove the hard-wiring for nuopc below
+        if driver != 'nuopc':
+            if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
+                logger.debug("{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+                get_timing(self, lid)     # Run the getTiming script
+                logger.debug("{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+        else:
+            self.set_value("CHECK_TIMING",False)
 
         if data_assimilation:
+            logger.debug("{} DO_DATA_ASSIMILATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
             self.flush()
             _do_data_assimilation(data_assimilation_script, self.get_value("CASEROOT"), cycle, lid,
                                  self.get_value("RUNDIR"))
             self.read_xml()
-        _save_logs(self, lid)
+            logger.debug("{} DO_DATA_ASSIMILATION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+
+        _save_logs(self, lid)       # Copy log files back to caseroot
+
+        logger.debug("{} SAVE_POSTRUN_PROVENANCE BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         save_postrun_provenance(self)
+        logger.debug("{} SAVE_POSTRUN_PROVENANCE HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     if postrun_script:
+        logger.debug("{} POSTRUN_SCRIPT BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         self.flush()
         _do_external(postrun_script, self.get_value("CASEROOT"), self.get_value("RUNDIR"),
                     lid, prefix="postrun")
         self.read_xml()
         _save_logs(self, lid)
+        logger.debug("{} POSTRUN_SCRIPT HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     if set_continue_run:
         self.set_value("CONTINUE_RUN",
@@ -308,5 +337,7 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
     logger.warning("check for resubmit")
     if submit_resubmits:
         _resubmit_check(self)
+
+    logger.debug("{} CASE.RUN HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     return True
