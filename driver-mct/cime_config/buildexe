@@ -32,7 +32,11 @@ def _main_func():
         gmake_j   = case.get_value("GMAKE_J")
         model     = case.get_value("MODEL")
         num_esp   = case.get_value("NUM_COMP_INST_ESP")
+        ocn_model = case.get_value("COMP_OCN")
         os.environ["PIO_VERSION"] = str(case.get_value("PIO_VERSION"))
+
+    if ocn_model == 'mom':
+        os.environ["USE_FMS"] = "TRUE"
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
 
