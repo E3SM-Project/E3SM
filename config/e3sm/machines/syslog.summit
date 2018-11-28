@@ -12,6 +12,8 @@ set dir = $6
 # Wait until some model output appears before saving output file.
 # Target length was determined empirically, so it may need to be adjusted in the future.
 # (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
+# set ntasks = `bjobs -l -UF $jid | grep -F Started | sed 's/.* Started *\([0-9]*\) *Task.*/\1/' `
+# @ nnodes = ($ntasks - 1) / 42
 set nnodes = 0
 @ target_lines = 20 + $nnodes
 sleep 10
