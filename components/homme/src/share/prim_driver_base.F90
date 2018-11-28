@@ -1156,7 +1156,6 @@ contains
 
     call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
 
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
     ! Q    (mixing ratio)
@@ -1175,8 +1174,13 @@ contains
           enddo
        enddo
 #ifdef MODEL_THETA_L
+print *, 'OG- MODEL_THETA_L defined'
        call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
 #endif
+#ifdef CAM
+print *, 'OG- CAM DIRECTIVE defined'
+#endif
+
     enddo
     call t_stopf("prim_run_subcyle_diags")
 
@@ -1356,13 +1360,13 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,nets,nete
 
-  call t_startf("ApplyCAMForcing")
+  call t_startf("ApplyCAMForcing_dp3d")
   if (ftype == 3) then
     call ApplyCAMForcing_dynamics_dp(elem,hvcoord,n0,dt_dyn,nets,nete)
   elseif (ftype == 4) then
     call ApplyCAMForcing_dynamics   (elem,hvcoord,n0,dt_dyn,nets,nete)
   endif
-  call t_stopf("ApplyCAMForcing")
+  call t_stopf("ApplyCAMForcing_dp3d")
   end subroutine applyCAMforcing_dp3d
 
 
@@ -1381,7 +1385,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
 
-  call t_startf("ApplyCAMForcing")
+  call t_startf("ApplyCAMForcing_ps")
   if (ftype==0) then
     call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
     call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
@@ -1398,7 +1402,7 @@ contains
     call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
   endif
 #endif
-  call t_stopf("ApplyCAMForcing")
+  call t_stopf("ApplyCAMForcing_ps")
   end subroutine applyCAMforcing_ps
 
 
@@ -1423,6 +1427,8 @@ contains
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+
+  call t_startf("ApplyCAMForcing_tr")
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -1472,6 +1478,8 @@ contains
         enddo
      enddo
   enddo
+
+  call t_stopf("ApplyCAMForcing_tr")
 
   end subroutine applyCAMforcing_tracers
 

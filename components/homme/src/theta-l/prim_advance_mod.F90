@@ -404,6 +404,8 @@ contains
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
   real(kind=real_kind)                  :: psn1(np,np)
 
+  call t_startf('convert_thermo_forcing')
+
   q = 1
 
   do ie=nets,nete
@@ -461,6 +463,8 @@ contains
 
   enddo
 
+  call t_stopf('convert_thermo_forcing')
+
   end subroutine convert_thermo_forcing
 
 
@@ -483,6 +487,8 @@ contains
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
   real(kind=real_kind)                  :: tn1(np,np,nlev)
 
+  call t_startf('convert_thermo_forcing_eam')
+
   tn1 = elem%derived%T + dt*elem%derived%FT
 
   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
@@ -500,6 +506,8 @@ contains
   ! this method is using new dp, new exner, new-new r*, new t
   elem%derived%FT(:,:,:) = &
       (vthn1 - elem%state%vtheta_dp(:,:,:,nt))/dt
+
+  call t_stopf('convert_thermo_forcing_eam')
 
   end subroutine convert_thermo_forcing_eam
 
@@ -633,7 +641,7 @@ contains
      call get_phinh(hvcoord,elem(ie)%state%phis,&
           exner(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 #endif
-#if 1
+#if 0
      ! phi_ref depends only on ps, theta_ref depends on dp3d
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
      exner(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) ! use as temp array
@@ -642,7 +650,7 @@ contains
 
      call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
 #endif
-#if 0
+#if 1
      ! no reference state, for testing
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
