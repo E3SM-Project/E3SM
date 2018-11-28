@@ -49,7 +49,7 @@
     <category>setup</category>
     <valid_values>0,1,2,3,4,6,8,12,24</valid_values>
     <values>
-        <value>3</value>
+        <value>1</value>
     </values>
     <desc>
       Output frequency (6 = once per 6 hours). A value of 0 turns output off.
