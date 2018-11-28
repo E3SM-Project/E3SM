@@ -353,7 +353,7 @@ def parse_command_line(args, description):
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
-            args.testargs.extend( [line.strip() for line in fd.read().splitlines() if line.strip()] )
+            args.testargs.extend( [line.strip() for line in fd.read().splitlines() if line.strip() and not line.startswith('#')] )
 
     # Compute list of fully-resolved test_names
     test_extra_data = {}

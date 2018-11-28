@@ -67,7 +67,7 @@ class Case(object):
     are listed in the following imports
     """
     from CIME.case.case_setup import case_setup
-    from CIME.case.case_clone import create_clone
+    from CIME.case.case_clone import create_clone, _copy_user_modified_to_clone
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
