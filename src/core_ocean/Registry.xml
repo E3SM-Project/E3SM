@@ -392,7 +392,7 @@
 					possible_values="Any positive real value, typically between 100 and 500 m."
 		/>
 		<nml_option name="config_GM_Bolus_kappa_function" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for GM Bolus kappa"
+					description="Control what type of function is used for GM Bolus $\kappa$"
 					possible_values="'constant' and 'ramp'"
 		/>
 		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
@@ -407,11 +407,11 @@
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_GM_Bolus_cell_size_min" type="real" default_value="20e3" units="m"
-					description="Minimum value in grid cell size for GM $kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_GM_Bolus_cell_size_max" type="real" default_value="30e3" units="m"
-					description="Maximum value in grid cell size for GM $kappa$ ramp function.  Here cell size refers to dcEdge"
+					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
