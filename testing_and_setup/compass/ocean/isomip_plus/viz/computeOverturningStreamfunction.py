@@ -112,7 +112,7 @@ nEdges = len(initFile.dimensions['nEdges'])
 nVertLevels = len(initFile.dimensions['nVertLevels'])
 nTimeIn = len(inFileNames)
 if(continueOutput):
-    nTimeOut = len(outFile.dimensions['Time'])
+    nTimeOut = len(outFile.dimensions['nTime'])
 else:
     nTimeOut = 0
 
@@ -145,8 +145,8 @@ if(continueOutput):
         mask = sectionIndicesArray.mask[xIndex,:] == False
         sectionEdgeIndices.append(sectionIndicesArray[xIndex,:][mask])
         sectionEdgeSigns.append(sectionSignArray[xIndex,:][mask])
-    x = outFile.variables['x'][0,:]
-    z = outFile.variables['z'][:,0]
+    x = outFile.variables['x'][:]
+    z = outFile.variables['z'][:]
     nx = len(x)
     nz = len(z)
     
