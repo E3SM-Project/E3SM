@@ -616,6 +616,7 @@ subroutine microp_aero_run ( &
          select case (trim(eddy_scheme))
          case ('diag_TKE', 'CLUBB_SGS', 'SHOC_SGS')
             wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
+!            write(*,*) 'WSUB ', wsub(i,k), tke(i,k)
             wsub(i,k) = min(wsub(i,k),10._r8)
             wsig(i,k) = max(0.001_r8, wsub(i,k))
          case default 

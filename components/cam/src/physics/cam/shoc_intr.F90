@@ -15,6 +15,7 @@ module shoc_intr
   !------------------------------------------------------------------- !
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
+  use shr_const_mod, only: SHR_CONST_PI
   use ppgrid,        only: pver, pverp
   use phys_control,  only: phys_getopts
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, &
@@ -25,6 +26,7 @@ module shoc_intr
   use spmd_utils,    only: masterproc
   use cam_logfile,   only: iulog 
   use shoc,          only: linear_interp, largeneg
+  use spmd_utils,    only: masterproc
  
   implicit none	
 
@@ -81,7 +83,7 @@ module shoc_intr
   logical      :: do_tms    
   logical      :: lq(pcnst)
   logical      :: lq2(pcnst)
-  
+ 
   logical            :: history_budget
   integer            :: history_budget_histfile_num  
   logical            :: micro_do_icesupersat
@@ -271,7 +273,8 @@ end function shoc_implements_cnst
     prer_evap_idx   = pbuf_get_index('PRER_EVAP')
     qrl_idx         = pbuf_get_index('QRL')
     cmfmc_sh_idx    = pbuf_get_index('CMFMC_SH')
-    
+    tke_idx         = pbuf_get_index('tke')   
+ 
     if (is_first_step()) then
       call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8) 
     endif
@@ -499,7 +502,7 @@ end function shoc_implements_cnst
    real(r8) :: rvm(pcols,pver)
    real(r8) :: rtm(pcols,pver)
    real(r8) :: rcm(pcols,pver)
-   real(r8) :: tke(pcols,pver)
+!   real(r8) :: tke(pcols,pver)
    real(r8) :: ksrftms(pcols)                   ! Turbulent mountain stress surface drag        [kg/s/m2]
    real(r8) :: tautmsx(pcols)                   ! U component of turbulent mountain stress      [N/m2]
    real(r8) :: tautmsy(pcols)                   ! V component of turbulent mountain stress      [N/m2]
@@ -517,14 +520,14 @@ end function shoc_implements_cnst
    real(r8) :: qw_sec_out(pcols,pverp), qwthl_sec_out(pcols,pverp)
    real(r8) :: wthl_sec_out(pcols,pverp), wqw_sec_out(pcols,pverp)
    real(r8) :: wtke_sec_out(pcols,pverp), uw_sec_out(pcols,pverp)
-   real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pver)
+   real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pverp)
    real(r8) :: wqls_out(pcols,pver)
    real(r8) :: shoc_mix(pcols,pver), tk(pcols,pver), tkh(pcols,pver)
    real(r8) :: w_sec(pcols,pver), thl_sec(pcols,pverp)
    real(r8) :: qw_sec(pcols,pverp), qwthl_sec(pcols,pverp)
    real(r8) :: wthl_sec(pcols,pverp), wqw_sec(pcols,pverp)
    real(r8) :: wtke_sec(pcols,pverp), uw_sec(pcols,pverp)
-   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pver), wqls(pcols,pver)
+   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pverp), wqls(pcols,pver)
 
    real(r8) :: wthl_output(pcols,pverp)
    real(r8) :: wqw_output(pcols,pverp)
@@ -550,7 +553,8 @@ end function shoc_implements_cnst
    ! --------------- !
    ! Pointers        !
    ! --------------- !
-   
+  
+   real(r8), pointer, dimension(:,:) :: tke  ! turbulent kinetic energy 
    real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
@@ -610,6 +614,7 @@ end function shoc_implements_cnst
    itim_old = pbuf_old_tim_idx()     
    
    !  Establish associations between pointers and physics buffer fields   
+   call pbuf_get_field(pbuf, tke_idx,     tke)
    call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -625,8 +630,8 @@ end function shoc_implements_cnst
    call pbuf_get_field(pbuf, relvar_idx,  relvar)
    call pbuf_get_field(pbuf, dp_frac_idx, deepcu)
    call pbuf_get_field(pbuf, sh_frac_idx, shalcu)
-   call pbuf_get_field(pbuf, kvm_idx,     khzt)
-   call pbuf_get_field(pbuf, kvh_idx,     khzm)
+   call pbuf_get_field(pbuf, kvm_idx,     khzm)
+   call pbuf_get_field(pbuf, kvh_idx,     khzt)
    call pbuf_get_field(pbuf, pblh_idx,    pblh)
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr)
    call pbuf_get_field(pbuf, cmfmc_sh_idx, cmfmc_sh)  
@@ -636,7 +641,7 @@ end function shoc_implements_cnst
    !  instances when a 5 min time step will not be possible (based on 
    !  host model time step or on macro-micro sub-stepping   
    
-   dtime = 20._r8  !+DPAB, probably want to make this a namelist variable
+   dtime = 20.0_r8  !+DPAB, probably want to make this a namelist variable
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 
@@ -769,10 +774,20 @@ end function shoc_implements_cnst
    enddo
 
    ! Get Density on the interface grid
-   call linear_interp(zt_g,zi_g,rrho,rrho_i,pver,pverp,ncol,largeneg)       
+   call linear_interp(zt_g(:ncol,:pver),zi_g(:ncol,:pverp),rrho(:ncol,:pver),&
+                      rrho_i(:ncol,:pverp),pver,pverp,ncol,0._r8)
+
+!    do i=1,ncol 
+!      if (rrho_i(i,1) .le. 0._r8) then
+!        write(iulog,*) 'macmic_it ', macmic_it
+!        write(iulog,*) 'WARNingrrho ', rrho(1,:)
+!        write(iulog,*) 'WARNingrrhoi ', rrho_i(1,:)
+!      endif
+!    enddo
 
    do i=1,ncol
       !  Surface fluxes provided by host model
+
       wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho_i(i,1))       ! Sensible heat flux
       wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho_i(i,1))      ! Latent heat flux
       upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,1)               ! Surface meridional momentum flux
@@ -822,24 +837,34 @@ end function shoc_implements_cnst
    ! ------------------------------------------------- !
    ! Actually call SHOC                                !
    ! ------------------------------------------------- !   
-   
+
+!   write(iulog,*) 'FLUXES', cam_in%wsx(:ncol), cam_in%wsy(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol)
+
    do t=1,nadv
-   
+
      call shoc_main( &
-          pcols, pver, pverp, dtime, &                         ! Input
-	  host_dx_in, host_dy_in, &                            ! Input
-          zt_g, zi_g, pres_in, pdel_in,&                       ! Input
-	  wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &         ! Input
-	  wtracer_sfc, edsclr_dim, wm_zt, &                    ! Input
-	  tke_in, thlm_in, rtm_in, &                           ! Input/Ouput
-	  um_in, vm_in, rcm_in, edsclr_in, &                   ! Input/Output
-	  wthv_in, &                                           ! Input/Output
-	  cloudfrac_shoc, rcm_shoc, &                          ! Output
-          shoc_mix_out, tk_out, tkh_out, isotropy_out, &       ! Output (diagnostic)
-          w_sec_out, thl_sec_out, qw_sec_out, qwthl_sec_out, & ! Output (diagnostic)          
-          wthl_sec_out, wqw_sec_out, wtke_sec_out, &           ! Output (diagnostic)
-          uw_sec_out, vw_sec_out, w3_out, &                    ! Output (diagnostic)
-          wqls_out)
+          ncol, pver, pverp, dtime, &                   ! Input
+	  host_dx_in(:ncol), host_dy_in(:ncol), &                            ! Input
+          zt_g(:ncol,:), zi_g(:ncol,:), pres_in(:ncol,:), pdel_in(:ncol,:),&                       ! Input
+	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), &         ! Input
+	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), &
+	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), &                           ! Input/Ouput
+	  um_in(:ncol,:), vm_in(:ncol,:), rcm_in(:ncol,:), edsclr_in(:ncol,:,:), &                   ! Input/Output
+	  wthv_in(:ncol,:), &                                           ! Input/Output
+	  cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), &                          ! Output
+          shoc_mix_out(:ncol,:), tk_out(:ncol,:), tkh_out(:ncol,:), isotropy_out(:ncol,:), &       ! Output (diagnostic)
+          w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
+          wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), &           ! Output (diagnostic)
+          uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), &                    ! Output (diagnostic)
+          wqls_out(:ncol,:))
+
+          do k=1,pver
+            do i=1,ncol
+              if (thlm(i,k) .lt. 0._r8) then 
+                write(iulog,*) 'THLMZERO ', thlm(i,k), i, k
+              endif
+            enddo
+          enddo
 
          rcm_in(:,:) = rcm_shoc(:,:)
 
@@ -866,7 +891,6 @@ end function shoc_implements_cnst
        tk(i,k) = tk_out(i,pver-k+1)
        tkh(i,k) = tkh_out(i,pver-k+1)
        isotropy(i,k) = isotropy_out(i,pver-k+1)
-       w3(i,k) = w3_out(i,pver-k+1)
        w_sec(i,k) = w_sec_out(i,pver-k+1)
        wqls(i,k) = wqls_out(i,pver-k+1)
  
@@ -876,6 +900,7 @@ end function shoc_implements_cnst
    do k=1,pverp
      do i=1,ncol
 
+       w3(i,k) = w3_out(i,pverp-k+1)
        thl_sec(i,k) = thl_sec_out(i,pverp-k+1)
        qw_sec(i,k) = qw_sec_out(i,pverp-k+1)
        qwthl_sec(i,k) = qwthl_sec_out(i,pverp-k+1)
@@ -887,6 +912,11 @@ end function shoc_implements_cnst
 
      enddo
    enddo
+
+   call linear_interp(state%zm(:ncol,:pver),state%zi(:ncol,:pverp),&
+                tk(:ncol,:pver),khzm(:ncol,:pverp),pver,pverp,ncol,0._r8)
+   call linear_interp(state%zm(:ncol,:pver),state%zi(:ncol,:pverp),&
+                tkh(:ncol,:pver),khzt(:ncol,:pverp),pver,pverp,ncol,0._r8)
    
    ! Compute integrals for static energy, kinetic energy, water vapor, and liquid water
    ! after SHOC is called.  This is for energy conservation purposes. 
@@ -903,6 +933,13 @@ end function shoc_implements_cnst
        ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)/gravit
        wv_a(i) = wv_a(i) + (rtm(i,k)-rcm(i,k))*state1%pdel(i,k)/gravit
        wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)/gravit
+
+       if (shoc_t(i,k) .lt. 0._r8 .or. rtm(i,k) .lt. 0._r8 .or. rcm(i,k) .lt. 0._r8) then 
+         write(iulog,*) 'SHOCTlessthanzero', shoc_t(i,k), i, k, macmic_it
+         write(iulog,*) 'RTMandRCM ', rtm(i,k), rcm(i,k)
+         write(iulog,*) 'LOCATION',state%lat(i)*(180._r8/SHR_CONST_PI), state%lon(i)*(180._r8/SHR_CONST_PI)
+       endif
+
      enddo    
    enddo     
   
@@ -942,7 +979,7 @@ end function shoc_implements_cnst
      do i=1,ncol
        
        ptend_loc%u(i,k) = (um(i,k)-state1%u(i,k))/hdtime
-       ptend_loc%v(i,k)   = (vm(i,k)-state1%v(i,k))/hdtime           
+       ptend_loc%v(i,k) = (vm(i,k)-state1%v(i,k))/hdtime           
        ptend_loc%q(i,k,ixq) = (rtm(i,k)-rcm(i,k)-state1%q(i,k,ixq))/hdtime ! water vapor
        ptend_loc%q(i,k,ixcldliq) = (rcm(i,k)-state1%q(i,k,ixcldliq))/hdtime   ! Tendency of liquid water
        ptend_loc%s(i,k) = (shoc_s(i,k)-state1%s(i,k))/hdtime
