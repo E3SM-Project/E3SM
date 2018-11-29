@@ -406,7 +406,6 @@
         <command name="rm">zlib</command>
 
         <!-- first load basic defaults, then remove/swap/load as necessary -->
-        <command name="load">python/2.7-anaconda-5.2</command>
         <command name="load">craype</command>
         <command name="load">PrgEnv-intel</command>
         <command name="load">cray-mpich</command>
@@ -1659,6 +1658,72 @@
     </environment_variables>
     <environment_variables DEBUG="TRUE">
       <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="jlse">
+    <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
+    <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>acme_developer</TESTS>
+    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="soft">
+      <init_path lang="sh">/etc/bashrc</init_path>
+      <cmd_path lang="sh">source</cmd_path>
+      <modules>
+        <command name="ignore">/soft/compilers/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+      <env name="MPICH_MEMORY_REPORT">1</env>
+      <env name="PATH">/home/azamat/perl5/bin:$ENV{PATH}</env>
+      <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
+      <env name="PERL_LOCAL_LIB_ROOT">/home/azamat/perl5</env>
+      <env name="PERL_MB_OPT">"--install_base \"/home/azamat/perl5\""</env>
+      <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/intel18</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/intel18</env>
+      <env name="I_MPI_DEBUG">10</env>
+      <env name="I_MPI_PIN_CELL">core</env>
+    </environment_variables>
+    <environment_variables compiler="!intel">
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/gnu-arm</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/gnu-arm</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+      <env name="KMP_AFFINITY">verbose,granularity=thread,scatter</env>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
 

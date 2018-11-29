@@ -259,6 +259,11 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -fp-model source -qopenmp </base>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
@@ -1405,11 +1410,14 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="snl-white">
-  <MPICXX>/ascldap/users/mdeakin/tpl-sources/kokkos/bin/nvcc_wrapper</MPICXX>
-  <KOKKOS_PATH>/ascldap/users/mdeakin/white/kokkos-release</KOKKOS_PATH>
+  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
+  <MPICXX>${KOKKOS_ROOT}/bin/nvcc_wrapper</MPICXX>
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
+  <LDFLAGS>
+    <append> -lstdc++ -lcudart </append>
+  </LDFLAGS>
 </compiler>
 
 <compiler COMPILER="intel18" MACH="snl-blake">
@@ -1434,7 +1442,7 @@ for mct, etc.
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
   </FFLAGS>
   <LDFLAGS>
-    <base> -mkl </base>
+    <base> -mkl -lstdc++ </base>
     <append compile_threaded="true"> -qopenmp </append>
     <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
   </LDFLAGS>
@@ -1460,7 +1468,7 @@ for mct, etc.
     <base> -cxxlib </base>
   </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <KOKKOS_PATH>/ascldap/users/mdeakin/blake/kokkos-release</KOKKOS_PATH>
+  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
 </compiler>
 
 <compiler MACH="mesabi" COMPILER="intel">
@@ -1599,6 +1607,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1938,6 +1947,43 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR}/lib -lnetcdff -L$ENV{NETCDF_DIR}/lib -lnetcdf -Wl,-rpath -Wl,$ENV{NETCDF_DIR}/lib </append>
     <append> -mkl -lpthread </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="jlse" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
+  </FFLAGS>
+  <MPIFC>mpiifort</MPIFC>
+  <MPICC>mpiicc</MPICC>
+  <MPICXX>mpiicpc</MPICXX>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <SFC>ifort</SFC>
+  <SLIBS>
+    <append>$SHELL{$(NETCDF_PATH)/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -mkl</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="jlse" COMPILER="gnu">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <SLIBS>
+    <append>$SHELL{$(NETCDF_PATH)/bin/nf-config --flibs} -Wl,-rpath -Wl,$(NETCDF_PATH)/lib -L/home/azamat/soft/libs -llapack -lblas</append>
   </SLIBS>
 </compiler>
 

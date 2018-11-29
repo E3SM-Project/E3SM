@@ -293,6 +293,8 @@ module seq_diag_mct
   integer :: index_x2o_Faxa_snow
   integer :: index_x2o_Fioi_melth
   integer :: index_x2o_Fioi_meltw
+  integer :: index_x2o_Fioi_bergh
+  integer :: index_x2o_Fioi_bergw
   integer :: index_x2o_Fioi_salt
 
   integer :: index_i2x_Fioi_melth
@@ -1402,6 +1404,8 @@ contains
        if (first_time) then
           index_x2o_Fioi_melth  = mct_aVect_indexRA(x2o_o,'Fioi_melth')
           index_x2o_Fioi_meltw  = mct_aVect_indexRA(x2o_o,'Fioi_meltw')
+          index_x2o_Fioi_bergh  = mct_aVect_indexRA(x2o_o,'PFioi_bergh', perrWith='quiet')
+          index_x2o_Fioi_bergw  = mct_aVect_indexRA(x2o_o,'PFioi_bergw', perrWith='quiet')
           index_x2o_Fioi_salt   = mct_aVect_indexRA(x2o_o,'Fioi_salt')
           index_x2o_Foxx_swnet  = mct_aVect_indexRA(x2o_o,'Foxx_swnet')
           index_x2o_Faxa_lwdn   = mct_aVect_indexRA(x2o_o,'Faxa_lwdn')
@@ -1455,8 +1459,21 @@ contains
           ca_o =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
-          nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
-          nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
+
+          if (index_x2o_Fioi_bergw == 0) then
+             nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
+          else
+             nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
+                  (ca_o+ca_i)*(x2o_o%rAttr(index_x2o_Fioi_meltw,n)+x2o_o%rAttr(index_x2o_Fioi_bergw,n))
+          endif
+
+          if (index_x2o_Fioi_bergh == 0) then
+             nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
+          else
+             nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
+                  (ca_o+ca_i)*(x2o_o%rAttr(index_x2o_Fioi_melth,n)+x2o_o%rAttr(index_x2o_Fioi_bergh,n))
+          endif
+
           if (trim(cime_model) == 'cesm') then
              nf = f_wsalt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_salt,n) * SFLXtoWFLX
           endif

@@ -1787,3 +1787,9 @@ def string_in_list(_string, _list):
         if _string.lower() == x.lower():
             return x
     return None
+
+def model_log(model, arg_logger, msg, debug_others=True):
+    if get_model() == model:
+        arg_logger.info(msg)
+    elif debug_others:
+        arg_logger.debug(msg)
