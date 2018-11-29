@@ -446,7 +446,7 @@ subroutine update_prognostics_implicit( &
  
   do k=1,nlev-1
     do i=1,shcol
-      tmpi(i,k) = dtime * (1._r8*ggr*rho_zi(i,k)) / (zt_grid(i,k+1) - zt_grid(i,k))
+      tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / (zt_grid(i,k+1) - zt_grid(i,k))
     enddo
   enddo
  
@@ -1625,8 +1625,8 @@ subroutine vd_shoc_decomp( &
   do k=2,nlev
     do i=1,shcol
       
-      ca(i,k) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k)
-      cc(i,k-1) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k-1)
+      ca(i,k) = kv_term(i,k) * tmpi(i,k) * rdz_zt(i,k)
+      cc(i,k-1) = kv_term(i,k) * tmpi(i,k) * rdz_zt(i,k-1)
       
     enddo
   enddo 
@@ -1708,7 +1708,8 @@ subroutine vd_shoc_solve(&
     var(i,nlev) = zf(i,nlev)
   enddo
   
-  do k=1,nlev-1
+!  do k=1,nlev-1
+  do k=nlev-1,1,-1
     do i=1,shcol
       var(i,k) = zf(i,k) + ze(i,k)*var(i,k+1)
     enddo
