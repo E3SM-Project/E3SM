@@ -18,7 +18,8 @@
 		<option name="config_use_cvmix_convection">.true.</option>
 		<option name="config_cvmix_convective_diffusion">0.1</option>
 		<option name="config_cvmix_convective_viscosity">0.1</option>
-		<option name="config_use_cvmix_shear">.true.</option>
+		<option name="config_use_cvmix_shear">.false.</option>
+		<option name="config_cvmix_use_BLD_smoothing">.false.</option>
 		<option name="config_use_bulk_thickness_flux">.true.</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
 		<option name="config_land_ice_flux_attenuation_coefficient">10.0</option>
