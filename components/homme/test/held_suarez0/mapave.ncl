@@ -33,7 +33,7 @@ ncdf     = addfile(name ,"c")  ; open output netCDF file
 
 ncdf->zeta = dim_avg_n_Wrap(fuv->zeta,0)
 ncdf->div = dim_avg_n_Wrap(fuv->div,0)
-ncdf->omega = dim_avg_n_Wrap(fuv->omega,0)
+;ncdf->omega = dim_avg_n_Wrap(fuv->omega,0)
 
 ncdf->gw = fuv->gw
 ncdf->ilev = fuv->ilev

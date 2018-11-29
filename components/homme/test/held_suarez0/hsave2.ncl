@@ -111,6 +111,14 @@ wks = gsn_open_wks("pdf","hszonal")
    res@cnLevelSpacingF      = 5.
    c=gsn_csm_contour(wks,field,res)     ; Draw a contour plot.  ;
 
+   field@long_name = "Temperature Eddy Variance"
+   print("TEV min/max = "+min(field)+" "+max(field))
+   field@units = "K^2"
+   res@cnMinLevelValF       = 0.
+   res@cnMaxLevelValF       = 150.
+   res@cnLevelSpacingF      = 10.
+   c=gsn_csm_contour(wks,field,res)     ; Draw a contour plot.  ;
+
 
 ;   field=fuv->RH
 ;   print("RH min/max = "+min(field)+" "+max(field))
