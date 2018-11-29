@@ -285,9 +285,9 @@ contains
           else if (atm2lnd_vars%metsource == 4) then 
             atm2lnd_vars%endyear_met_trans  = 2014
           else if (atm2lnd_vars%metsource == 5) then
-            atm2lnd_vars%startyear_met      = 76
-            atm2lnd_vars%endyear_met_spinup = 100
-            atm2lnd_vars%endyear_met_trans  = 100
+            atm2lnd_vars%startyear_met      = 566 !76
+            atm2lnd_vars%endyear_met_spinup = 590 !100
+            atm2lnd_vars%endyear_met_trans  = 590 !100
           end if
 
           if (use_livneh) then 
@@ -384,7 +384,8 @@ contains
                     metdata_fname = 'GSWP3_Daymet3_' // trim(metvars(v)) // '_1980-2010_z' // zst(2:3) // '.nc' 
                 end if
             else if (atm2lnd_vars%metsource == 5) then 
-                    metdata_fname = 'WCYCL1850S.ne30_' // trim(metvars(v)) // '_0076-0100_z' // zst(2:3) // '.nc'
+                    !metdata_fname = 'WCYCL1850S.ne30_' // trim(metvars(v)) // '_0076-0100_z' // zst(2:3) // '.nc'
+                    metdata_fname = 'CBGC1850S.ne30_' // trim(metvars(v)) // '_0566-0590_z' // zst(2:3) // '.nc'
             end if
   
             ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, met_ncids(v))
@@ -825,8 +826,8 @@ contains
 
         !DMR note - ndep will NOT be correct if more than 1850 years of model
         !spinup (model year > 1850)
-        nindex(1) = min(max(yr-1848,2), 158)
-        nindex(2) = min(nindex(1)+1, 158)
+        nindex(1) = min(max(yr-1848,2), 168)
+        nindex(2) = min(nindex(1)+1, 168)
 
         if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
@@ -921,7 +922,7 @@ contains
             ierr = nf90_inq_varid(ncid, 'lon', varid)      
             ierr = nf90_get_var(ncid, varid, smap2_lon)
             starti(1:2) = 1
-            starti(3)   = max((min(yr,2006)-1849)*12+1, 13)-1
+            starti(3)   = max((min(yr,2100)-1849)*12+1, 13)-1
             counti(1)   = 144
             counti(2)   = 96
             counti(3)   = 14
@@ -1173,7 +1174,7 @@ contains
         end if
 
         !get weights/indices for interpolation (assume values represent annual averages)
-        nindex(1) = min(max(yr,1850),2006)-1764
+        nindex(1) = min(max(yr,1850),2100)-1764
         if (thiscalday .le. 182.5) then 
           nindex(2) = nindex(1)-1  
         else
