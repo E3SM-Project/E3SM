@@ -595,7 +595,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_GM_Bolus_kappa_function" type="char*1024"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Control what type of function is used for GM Bolus kappa
+Control what type of function is used for GM Bolus $\kappa$
 
 Valid values: 'constant' and 'ramp'
 Default: Defined in namelist_defaults.xml
@@ -631,7 +631,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_GM_Bolus_cell_size_min" type="real"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Minimum value in grid cell size for GM $kappa$ ramp function.  Here cell size
+Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size
 refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
 
 Valid values: Any positive real value.
@@ -640,7 +640,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_GM_Bolus_cell_size_max" type="real"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Maximum value in grid cell size for GM $kappa$ ramp function.  Here cell size
+Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size
 refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
 
 Valid values: Any positive real value.
