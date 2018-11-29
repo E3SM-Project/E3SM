@@ -290,7 +290,7 @@ contains
        endif
 
        do tl=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,n0,1)
+          call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
        enddo
     end do
 
