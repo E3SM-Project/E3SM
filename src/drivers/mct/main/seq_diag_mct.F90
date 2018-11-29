@@ -1460,14 +1460,14 @@ contains
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
 
-          if (index_x2o_Fioi_bergw.eq.0) then
+          if (index_x2o_Fioi_bergw == 0) then
              nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_meltw,n)
           else
              nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                   (ca_o+ca_i)*(x2o_o%rAttr(index_x2o_Fioi_meltw,n)+x2o_o%rAttr(index_x2o_Fioi_bergw,n))
           endif
 
-          if (index_x2o_Fioi_bergh.eq.0) then
+          if (index_x2o_Fioi_bergh == 0) then
              nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_melth,n)
           else
              nf = f_hmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
