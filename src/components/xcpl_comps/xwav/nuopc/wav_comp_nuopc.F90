@@ -54,7 +54,6 @@ module wav_comp_nuopc
   character(CXX)             :: flds_x2w = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
-  integer                    :: mpicom               ! mpi communicator
   integer                    :: my_task              ! my task in mpi communicator mpicom
   integer                    :: inst_index           ! number of current instance (ie. 1)
   character(len=16)          :: inst_name            ! fullname of current instance (ie. "wav_0001")
@@ -63,22 +62,21 @@ module wav_comp_nuopc
   integer, parameter :: master_task = 0
   logical :: mastertask
   character(len=*),parameter :: grid_option = "mesh" ! grid_de, grid_arb, grid_reg, mesh
-  integer                    :: dbrc
   character(*),parameter     :: modName =  "(xwav_comp_nuopc)"
   character(*),parameter     :: u_FILE_u = __FILE__
   integer, parameter         :: dbug = 10
 
 !===============================================================================
 contains
-!===============================================================================
-
+  !===============================================================================
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -99,22 +97,22 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! attach specializing method(s)
-
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, specRoutine=ModelAdvance, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_MethodRemove(gcomp, label=model_label_SetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_SetRunClock, specRoutine=ModelSetRunClock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine SetServices
+
 
   !===============================================================================
 
@@ -128,7 +126,6 @@ contains
 
     ! local variables
     type(ESMF_VM)      :: vm
-    integer            :: lmpicom
     character(CL)      :: cvalue
     character(CS)      :: stdname
     integer            :: n
@@ -143,20 +140,15 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    !----------------------------------------------------------------------------
-    ! generate local mpi comm
-    !----------------------------------------------------------------------------
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localpet=my_task, rc=rc)
+    call ESMF_VMGet(vm, localpet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call mpi_comm_dup(lmpicom, mpicom, ierr)
     mastertask = my_task == 0
 
     !----------------------------------------------------------------------------
@@ -226,8 +218,8 @@ contains
        allocate(x2d(FldsToWav_num,lsize)); x2d(:,:)  = 0._r8
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
@@ -256,9 +248,8 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
+
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
@@ -273,7 +264,7 @@ contains
     ! grid_option specifies grid or mesh
     !--------------------------------
 
-    call shr_nuopc_grid_MeshInit(gcomp, nxg, nyg, mpicom, gindex, lon, lat, Emesh, rc)
+    call shr_nuopc_grid_MeshInit(gcomp, nxg, nyg, gindex, lon, lat, Emesh, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
     !--------------------------------
@@ -315,11 +306,11 @@ contains
        end if
     end do
 
-    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -352,7 +343,7 @@ contains
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine InitializeRealize
 
@@ -373,7 +364,7 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
     call shr_nuopc_memcheck(subname, 3, mastertask)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
@@ -438,7 +429,7 @@ contains
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine ModelAdvance
 
@@ -457,11 +448,11 @@ contains
     !--------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
 
     call dead_final_nuopc('wav', logunit)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine ModelFinalize
 
