@@ -2,7 +2,7 @@ module med_io_mod
   ! !DESCRIPTION: Writes attribute vectors to netcdf
 
   ! !USES:
-  use ESMF, only : ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VM
+  use ESMF, only : ESMF_VM
   use med_constants_mod          , only : CL
   use pio, only : file_desc_t, iosystem_desc_t
   use shr_nuopc_utils_mod, only : shr_nuopc_utils_ChkErr
@@ -60,19 +60,24 @@ module med_io_mod
 !=================================================================================
 contains
 !=================================================================================
-  subroutine broadcast_logical(vm, exists)
-    use ESMF, only : ESMF_VM, ESMF_VMBroadCast
-    type(ESMF_VM) :: vm
-    logical, intent(inout) :: exists
+  logical function med_io_file_exists(vm, iam, filename)
+    use ESMF, only : ESMF_VMBroadCast
+    type(ESMF_VM)                :: vm
+    integer,          intent(in) :: iam
+    character(len=*), intent(in) :: filename
+
+    logical :: exists
     integer :: tmp(1)
     integer :: rc
 
-    if (exists) tmp(1) = 1
+    med_io_file_exists = .false.
+    if (iam==0) inquire(file=trim(filename),exist=med_io_file_exists)
+    if (med_io_file_exists) tmp(1) = 1
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if(tmp(1) == 1) exists = .true.
+    if(tmp(1) == 1) med_io_file_exists = .true.
 
-  end subroutine broadcast_logical
+  end function med_io_file_exists
 
   subroutine med_io_init()
     use seq_comm_mct          , only : CPLID
@@ -84,7 +89,7 @@ contains
   end subroutine med_io_init
 
   !===============================================================================
-  subroutine med_io_wopen(filename, clobber, file_ind, model_doi_url)
+  subroutine med_io_wopen(filename, vm, iam, clobber, file_ind, model_doi_url)
     ! !DESCRIPTION: open netcdf file
     use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
     use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
@@ -93,12 +98,13 @@ contains
     use med_internalstate_mod, only : logunit
     ! input/output arguments
     character(*),            intent(in) :: filename
+    type(ESMF_VM)                       :: vm
+    integer,                 intent(in) :: iam
     logical,       optional, intent(in) :: clobber
     integer,       optional, intent(in) :: file_ind
     character(CL), optional, intent(in) :: model_doi_url
 
     ! local variables
-    type(ESMF_VM) :: vm
     logical       :: exists
     logical       :: lclobber
     integer       :: tmp(1)
@@ -106,15 +112,10 @@ contains
     integer       :: nmode
     integer       :: lfile_ind
     integer       :: rc
-    integer       :: iam
     character(CL) :: lversion
     character(CL) :: lmodel_doi_url
     character(*),parameter :: subName = '(med_io_wopen) '
     !-------------------------------------------------------------------------------
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     lversion=trim(version)
 
@@ -131,10 +132,8 @@ contains
 
        ! filename not open
        wfilename = filename
-       if (iam==0) inquire(file=trim(filename),exist=exists)
-       call broadcast_logical(vm, exists)
 
-       if (exists) then
+       if (med_io_file_exists(vm, iam, filename)) then
           if (lclobber) then
              nmode = pio_clobber
              ! only applies to classic NETCDF files.
@@ -936,7 +935,7 @@ contains
   end subroutine med_io_write_time
 
   !===============================================================================
-  subroutine med_io_read_FB(filename, FB, pre, rc)
+  subroutine med_io_read_FB(filename, vm, iam, FB, pre, rc)
     use med_constants_mod, only : R8, CL
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use ESMF, only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
@@ -958,12 +957,14 @@ contains
 
     ! !input/output arguments
     character(len=*)          ,intent(in)  :: filename ! file
+    type(ESMF_VM)                          :: vm
+    integer                   ,intent(in)  :: iam
     type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
     character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
     integer                   ,intent(out) :: rc
 
     ! local variables
-    type(ESMF_VM)       :: vm
+
     type(ESMF_Field)    :: field
     type(ESMF_Mesh)     :: mesh
     type(ESMF_Distgrid) :: distgrid
@@ -985,7 +986,6 @@ contains
     integer, pointer    :: maxIndexPTile(:,:)
     integer             :: dimCount, tileCount
     integer, pointer    :: Dof(:)
-    integer             :: iam
     real(r8), pointer   :: fldptr1(:)
     character(CL)       :: tmpstr
 
@@ -993,11 +993,6 @@ contains
     !-------------------------------------------------------------------------------
     rc = ESMF_Success
     call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     lpre = ' '
@@ -1029,10 +1024,8 @@ contains
        endif
        return
     endif
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call broadcast_logical(vm, exists)
 
-    if (exists) then
+    if (med_io_file_exists(vm, iam, trim(filename))) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        call ESMF_LogWrite(trim(subname)//' open file '//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1135,12 +1128,14 @@ contains
   end subroutine med_io_read_FB
 
   !===============================================================================
-  subroutine med_io_read_int(filename, idata, dname)
+  subroutine med_io_read_int(filename, vm, iam, idata, dname)
 
     ! !DESCRIPTION:  Read scalar integer from netcdf file
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
+    type(ESMF_VM)                    :: vm
+    integer          , intent(in)    :: iam
     integer          , intent(inout) :: idata    ! integer data
     character(len=*) , intent(in)    :: dname    ! name of data
 
@@ -1149,13 +1144,13 @@ contains
     character(*),parameter :: subName = '(med_io_read_int) '
     !-------------------------------------------------------------------------------
 
-    call med_io_read_int1d(filename, i1d, dname)
+    call med_io_read_int1d(filename, vm, iam, i1d, dname)
     idata = i1d(1)
 
   end subroutine med_io_read_int
 
   !===============================================================================
-  subroutine med_io_read_int1d(filename, idata, dname)
+  subroutine med_io_read_int1d(filename, vm, iam, idata, dname)
     ! !DESCRIPTION: Read 1d integer array from netcdf file
     use shr_sys_mod, only : shr_sys_abort
     use med_constants_mod, only : R8
@@ -1166,29 +1161,25 @@ contains
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
+    type(ESMF_VM)                   :: vm
+    integer,          intent(in)    :: iam
     integer         , intent(inout) :: idata(:) ! integer data
     character(len=*), intent(in)    :: dname    ! name of data
 
     ! local variables
-    type(ESMF_VM)     :: vm
     integer           :: rcode
     type(file_desc_t) :: pioid
     type(var_desc_t)  :: varid
     logical           :: exists
     character(CL)     :: lversion
     character(CL)     :: name1
-    integer           :: iam
     integer           :: rc
     character(*),parameter :: subName = '(med_io_read_int1d) '
     !-------------------------------------------------------------------------------
 
     lversion=trim(version)
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call broadcast_logical(vm, exists)
 
-    if (exists) then
+    if (med_io_file_exists(vm, iam, filename)) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
@@ -1210,13 +1201,15 @@ contains
   end subroutine med_io_read_int1d
 
   !===============================================================================
-  subroutine med_io_read_r8(filename, rdata, dname)
+  subroutine med_io_read_r8(filename, vm, iam, rdata, dname)
     use med_constants_mod, only : R8
 
     ! !DESCRIPTION: Read scalar double from netcdf file
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
+    type(ESMF_VM)                    :: vm
+    integer          , intent(in)    :: iam
     real(r8)         , intent(inout) :: rdata    ! real data
     character(len=*) , intent(in)    :: dname    ! name of data
 
@@ -1225,12 +1218,12 @@ contains
     character(*),parameter :: subName = '(med_io_read_r8) '
     !-------------------------------------------------------------------------------
 
-    call med_io_read_r81d(filename, r1d,dname)
+    call med_io_read_r81d(filename, vm, iam, r1d,dname)
     rdata = r1d(1)
   end subroutine med_io_read_r8
 
   !===============================================================================
-  subroutine med_io_read_r81d(filename, rdata, dname)
+  subroutine med_io_read_r81d(filename, vm, iam, rdata, dname)
     use med_constants_mod, only : R8
     use pio, only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
     use pio, only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
@@ -1241,16 +1234,17 @@ contains
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
+    type(ESMF_VM)                   :: vm
+    integer         , intent(in)    :: iam
     real(r8)        , intent(inout) :: rdata(:) ! real data
     character(len=*), intent(in)    :: dname    ! name of data
 
     ! local variables
-    type(ESMF_VM) :: vm
     integer           :: rcode
     type(file_desc_T) :: pioid
     type(var_desc_t)  :: varid
     logical           :: exists
-    integer           :: iam
+
     integer           :: rc
     character(CL)     :: lversion
     character(CL)     :: name1
@@ -1258,12 +1252,8 @@ contains
     !-------------------------------------------------------------------------------
 
     lversion=trim(version)
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call broadcast_logical(vm, exists)
 
-    if (exists) then
+    if (med_io_file_exists(vm, iam, filename)) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
@@ -1285,7 +1275,7 @@ contains
   end subroutine med_io_read_r81d
 
   !===============================================================================
-  subroutine med_io_read_char(filename, rdata, dname)
+  subroutine med_io_read_char(filename, vm, iam, rdata, dname)
     use pio, only : file_desc_t, var_desc_t, pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
     use pio, only : pio_closefile, pio_inq_varid, pio_get_var
     use pio, only : pio_openfile, pio_global, pio_get_att, pio_nowrite
@@ -1295,16 +1285,16 @@ contains
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
+    type(ESMF_VM)                   :: vm
+    integer, intent(in)             :: iam
     character(len=*), intent(inout) :: rdata    ! character data
     character(len=*), intent(in)    :: dname    ! name of data
 
     ! local variables
-    type(ESMF_VM) :: vm
     integer           :: rcode
     type(file_desc_T) :: pioid
     type(var_desc_t)  :: varid
     logical           :: exists
-    integer           :: iam
     integer           :: rc
     character(CL)     :: lversion
     character(CL)     :: name1
@@ -1313,12 +1303,8 @@ contains
     !-------------------------------------------------------------------------------
 
     lversion=trim(version)
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call broadcast_logical(vm, exists)
 
-    if (exists) then
+    if (med_io_file_exists(vm, iam, filename)) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        ! write(logunit,*) subname,' open file ',trim(filename)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)

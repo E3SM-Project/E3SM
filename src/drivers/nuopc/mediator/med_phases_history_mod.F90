@@ -73,7 +73,6 @@ contains
     type(InternalState)     :: is_local
     character(CS)           :: histavg_option ! Histavg option units
     integer                 :: i,j,m,n,n1,ncnt
-    integer                 :: mpicom, iam
     integer                 :: start_ymd      ! Starting date YYYYMMDD
     integer                 :: start_tod      ! Starting time-of-day (s)
     integer                 :: nx,ny          ! global grid size
@@ -93,6 +92,7 @@ contains
     real(r8)                :: tbnds(2)       ! CF1.0 time bounds
     logical                 :: whead,wdata    ! for writing restart/history cdf files
     integer                 :: dbrc
+    integer                 :: iam
     logical,save            :: first_call = .true.
     character(len=*), parameter :: subname='(med_phases_history_write)'
     logical :: isPresent
@@ -111,7 +111,7 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=iam, rc=rc)
+    call ESMF_VMGet(vm, localPet=iam, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
@@ -249,7 +249,7 @@ contains
        write(hist_file,"(6a)") &
             trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
        call ESMF_LogWrite(trim(subname)//": write "//trim(hist_file), ESMF_LOGMSG_INFO, rc=dbrc)
-       call med_io_wopen(hist_file, mpicom, iam, clobber=.true.)
+       call med_io_wopen(hist_file, vm, iam, clobber=.true.)
 
        do m = 1,2
           whead=.false.

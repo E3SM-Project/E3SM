@@ -1645,14 +1645,8 @@ module ESM
     character(CL) :: timing_dir        ! timing directory
     character(len=5) :: inst_suffix
     logical :: isPresent
-    type(ESMF_VM) :: vm
-    integer       :: mpicomm
 
     rc = ESMF_SUCCESS
-    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_VMGet(vm, mpiCommunicator=mpicomm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(driver, name="timing_dir",value=timing_dir, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1665,8 +1659,6 @@ module ESM
     else
        inst_suffix = ""
     endif
-    call t_prf(trim(timing_dir)//'/model_timing'//trim(inst_suffix), &
-         mpicom=mpicomm)
 
     call t_finalizef()
 
