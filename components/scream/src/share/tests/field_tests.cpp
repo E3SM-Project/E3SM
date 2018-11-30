@@ -104,18 +104,21 @@ TEST_CASE("field_repo", "") {
   fid2.set_dimensions(dims2);
 
   FieldRepository<Real,ExecMemSpace>  repo_dev;
+
+  repo_dev.registration_begins();
   repo_dev.register_field(fid1);
   repo_dev.register_field(fid2);
-  repo_dev.registration_complete();
+  repo_dev.registration_ends();
+
+  // Check registration is indeed closed
+  REQUIRE (repo_dev.repository_state()==RepoState::CLOSED);
+  REQUIRE (repo_dev.size()==2);
 
   auto f1 = repo_dev.get_field(fid1);
   auto f2 = repo_dev.get_field(fid2);
 
   // Check the two fields identifiers are indeed different
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
-
-  // Check registration is indeed closed
-  REQUIRE (!repo_dev.is_registration_open());
 }
 
 } // anonymous namespace

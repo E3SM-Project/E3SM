@@ -24,6 +24,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   m_atm_process_group->initialize(m_atm_comm);
 
   // Let the processes register their fields in the repo
+  m_device_field_repo.registration_begins();
   m_atm_process_group->register_fields(m_device_field_repo);
 
   // TODO: this is the correct location where you should make sure all the fields
@@ -34,7 +35,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   //       make sure all dimensions are set.
 
   // Prohibit further additions to the repo, and allocate fields.
-  m_device_field_repo.registration_complete();
+  m_device_field_repo.registration_ends();
 
   // TODO: this is a good place where we can insert a DAG analysis, to make sure all
   //       processes have their dependency met.

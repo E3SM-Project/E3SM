@@ -60,7 +60,7 @@ public:
 
   // ---- Setters ---- //
 
-  //Allocate the actual view
+  // Allocate the actual view
   void allocate_view ();
 
 protected:
@@ -180,6 +180,13 @@ Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
 template<typename ScalarType, typename MemSpace, typename MemManagement>
 void Field<ScalarType,MemSpace,MemManagement>::allocate_view ()
 {
+  // Not sure if simply returning would be safe enough. Re-allocating
+  // would definitely be error prone (someone may have already gotten
+  // a subview of the field). However, it *seems* suspicious to call
+  // this method twice, and I think it's more likely than not that
+  // such a scenario would indicate a bug. Therefore, I am prohibiting it.
+  error::runtime_check(!m_allocated, "Error! View was already allocated.\n");
+
   // Short names
   const auto& id = m_header->get_identifier();
   auto& alloc_prop = m_header->get_alloc_properties();

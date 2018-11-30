@@ -16,6 +16,12 @@ namespace scream
   *  the memory space of the views.
   */
 
+enum class RepoState {
+  CLEAN,
+  OPEN,
+  CLOSED
+};
+
 template<typename ScalarType, typename MemSpace>
 class FieldRepository {
 public:
@@ -25,7 +31,7 @@ public:
   using field_type      = Field<scalar_type,MemSpace,MemoryManaged>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
-  using view_type       = typename field_type::view_type;
+  using map_type        = std::map<identifier_type,field_type>;
 
   // Constructor(s)
   FieldRepository ();
@@ -35,48 +41,35 @@ public:
   FieldRepository (const FieldRepository&) = delete;
   FieldRepository& operator= (const FieldRepository&) = delete;
 
+  // Change the state of the database
+  void registration_begins ();
+  void registration_ends ();
+  void clean_up ();
+
   // Deduce the pack size from the scalar type (which must be of type Pack<ScalarType,N>, for some int N>0, or ScalarType)
   template<typename RequestedValueType = scalar_type>
   void register_field (const identifier_type& identifier);
 
   // Methods to query the database
+  int size () const { return m_fields.size(); }
+  bool has_field (const identifier_type& identifier) const { return m_fields.find(identifier)!=m_fields.end(); }
   field_type get_field (const identifier_type& identifier) const;
-
-  // Closes the field registration phase.
-  // Using this checkpoint, allows to confine all the fields registration in one confined phase,
-  // allowing for better debugging.
-  void registration_complete ();
-
-  // Queries whether the database is open for registration
-  bool is_registration_open () const { return !m_registration_completed; }
-
-  // Queries whether the database is cleaned up (used only for integridy checks)
-  bool is_cleaned_up () const { return m_cleaned_up; }
-  
-  // Cleans up the repo. This is needed since this class will most likely be contained inside
-  // some singleton with static storage, which will be destroyed only after exit from main.
-  // However, Kokkos prohibits to keep view objects alive after the call to Kokkos::finalize(),
-  // which will be right before returning from main.
-  void clean_up ();
+  RepoState repository_state () const { return m_state; }
 
 protected:
 
-  // When true, no more fields are allowed to be added to the repo
-  bool                                  m_registration_completed;
+  // The state of the repository
+  RepoState     m_state;
 
-  // Used only to perform some checks on the status of the repo
-  bool                                  m_cleaned_up;
-
-  // A map identifier->field
-  std::map<identifier_type,field_type>  m_fields;
+  // The actual repo
+  map_type  m_fields;
 };
 
 // ============================== IMPLEMENTATION ============================= //
 
 template<typename ScalarType, typename MemSpace>
 FieldRepository<ScalarType,MemSpace>::FieldRepository ()
- : m_registration_completed (false)
- , m_cleaned_up             (true)
+ : m_state (RepoState::CLEAN)
 {
   // Nothing to be done here
 }
@@ -91,22 +84,19 @@ void FieldRepository<ScalarType,MemSpace>::register_field (const identifier_type
                 "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
   
   // Sanity checks
-  error::runtime_check(!m_registration_completed,"Error! Registration of new fields no longer allowed.\n");
+  error::runtime_check(m_state==RepoState::OPEN,"Error! Registration of new fields no longer allowed.\n");
 
   // Try to create the field. Allow case where it is already existing.
   auto it_bool = m_fields.emplace(id,id);
 
   // Make sure the field can accommodate the requested value type
   it_bool.first->second.get_header().get_alloc_properties().template request_value_type_allocation<RequestedValueType>();
-
-  // No longer cleaned up
-  m_cleaned_up = false;
 }
 
 template<typename ScalarType, typename MemSpace>
 typename FieldRepository<ScalarType,MemSpace>::field_type
 FieldRepository<ScalarType,MemSpace>::get_field (const identifier_type& id) const {
-  error::runtime_check(m_registration_completed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
+  error::runtime_check(m_state==RepoState::CLOSED,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   auto it = m_fields.find(id);
   error::runtime_check(it!=m_fields.end(), "Error! Field not found.\n");
@@ -114,21 +104,26 @@ FieldRepository<ScalarType,MemSpace>::get_field (const identifier_type& id) cons
 }
 
 template<typename ScalarType, typename MemSpace>
-void FieldRepository<ScalarType,MemSpace>::registration_complete () {
+void FieldRepository<ScalarType,MemSpace>::registration_begins () {
+  // Update the state of the repo
+  m_state = RepoState::OPEN;
+}
+
+template<typename ScalarType, typename MemSpace>
+void FieldRepository<ScalarType,MemSpace>::registration_ends () {
   // Proceed to allocate fields
   for (auto& it : m_fields) {
     it.second.allocate_view();
   }
 
   // Prohibit further registration of fields
-  m_registration_completed = true;
+  m_state = RepoState::CLOSED;
 }
 
 template<typename ScalarType, typename MemSpace>
 void FieldRepository<ScalarType,MemSpace>::clean_up() {
   m_fields.clear();
-  m_registration_completed = false;
-  m_cleaned_up = true;
+  m_state = RepoState::CLEAN;
 }
 
 

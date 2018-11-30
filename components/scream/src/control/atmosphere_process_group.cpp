@@ -83,8 +83,16 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, ExecMemSpace
     atm_proc->register_fields(field_repo);
 
     // Make sure processes are not calling methods they shouldn't on the repo
-    error::runtime_check(field_repo.is_registration_open(), "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
-    error::runtime_check(!field_repo.is_cleaned_up(),       "Error! Atmosphere processes are *not* allowed to modify the state of the repository, and should register at least one field.\n");
+    error::runtime_check(field_repo.repository_state()==RepoState::OPEN,
+                         "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
+
+    // Check that the required fields are indeed in the repo now
+    for (const auto& id : atm_proc->get_required_fields()) {
+      error::runtime_check(field_repo.has_field(id), "Error! Process '" + atm_proc->name() +"' failed to register required field '" + id.get_identifier() + "'.\n");
+    }
+    for (const auto& id : atm_proc->get_computed_fields()) {
+      error::runtime_check(field_repo.has_field(id), "Error! Process '" + atm_proc->name() +"' failed to register computed field '" + id.get_identifier() + "'.\n");
+    }
   }
 }
 
