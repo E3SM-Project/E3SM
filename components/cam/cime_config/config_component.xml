@@ -256,9 +256,9 @@
     <values>
       <value compset="_CAM.*%RCO2"> scenario_ghg=&apos;RAMP_CO2_ONLY&apos;ramp_co2_annual_rate=1 </value> 
       <value compset="_BGC%BDRD"> co2_cycle_rad_passive=.true. </value>
-      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6  </value>
+      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.317e-6  </value>
       <value compset="_BGC%BCRD"> co2_cycle_rad_passive=.true. </value>
-      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6 </value>
+      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.317e-6 </value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
