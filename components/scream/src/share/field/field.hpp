@@ -3,6 +3,7 @@
 
 #include "field_header.hpp"
 #include <share/scream_types.hpp>
+#include <share/scream_kokkos_meta.hpp>
 #include <share/util/scream_std_meta.hpp>
 #include <share/util/scream_kokkos_utils.hpp>
 
@@ -54,7 +55,8 @@ public:
   const view_type&   get_view   () const { return  m_view;   }
 
   template<typename DT>
-  ViewType<DT,MemSpace,MemoryUnmanaged> get_reshaped_view () const;
+  ko::Unmanaged<ViewType<DT,MemSpace,MemManagement>>
+  get_reshaped_view () const;
 
   bool is_allocated () const { return m_allocated; }
 
@@ -134,7 +136,7 @@ operator= (const Field<SrcScalarType,MemSpace,MemManagement>& src) {
 
 template<typename ScalarType, typename MemSpace, typename MemManagement>
 template<typename DT>
-ViewType<DT,MemSpace,MemoryUnmanaged>
+ko::Unmanaged<ViewType<DT,MemSpace,MemManagement>>
 Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
   // The dst value types
   using DstValueType = typename util::ValueType<DT>::type;
@@ -153,8 +155,8 @@ Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
   error::runtime_check(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
-  // The destination field and view types
-  using DstView = ViewType<DT,MemSpace,MemoryUnmanaged>;
+  // The destination view type
+  using DstView = ko::Unmanaged<ViewType<DT,MemSpace,MemManagement>>;
   typename DstView::traits::array_layout layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
