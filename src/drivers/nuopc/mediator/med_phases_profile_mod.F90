@@ -121,10 +121,6 @@ contains
           call ESMF_ClockGetNextTime(clock, nextTime=nexttime, rc=rc)
           if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          prevtime = nexttime
-          call ESMF_TimeGet(nexttime, timestring=nexttimestr, rc=rc)
-          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
           call ESMF_VMWtime(current_time, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -150,6 +146,9 @@ contains
              if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              avgdt = wallclockelapsed/ringdays
           endif
+          prevtime = nexttime
+          call ESMF_TimeGet(nexttime, timestring=nexttimestr, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
           ! get current wall clock time
           call ESMF_TimeSet(wallclocktime, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
