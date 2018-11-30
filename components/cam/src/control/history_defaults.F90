@@ -145,7 +145,6 @@ CONTAINS
          call add_default (trim(cnst_name(m))//'_dqfx',2,' ')
        endif
     end do
-
     call addfld ('shflx',horiz_only,    'A','W/m2','Surface sensible heat flux for scam')
     call add_default ('shflx ',2,' ')
     call addfld ('lhflx',horiz_only,    'A','W/m2','Surface latent heat flux for scam')

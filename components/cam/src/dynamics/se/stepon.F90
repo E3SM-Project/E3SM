@@ -28,6 +28,7 @@ module stepon
    use scamMod,        only: use_iop, doiopupdate, single_column, &
                              setiopupdate, readiopdata
    use element_mod,    only: element_t
+   use shr_const_mod,       only: SHR_CONST_PI
 
    implicit none
    private
@@ -167,7 +168,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
-  use se_single_column_mod, only: scm_setfield
+  use se_single_column_mod, only: scm_setfield, scm_setinitial
   implicit none
 !
 ! !OUTPUT PARAMETERS:
@@ -208,8 +209,8 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   if (single_column) then
     iop_update_surface = .true. 
     if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
-    call scm_setfield(elem,iop_update_surface)
-  endif  
+    call scm_setfield(elem,iop_update_surface)       
+  endif 
   
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
@@ -535,11 +536,15 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use se_single_column_mod, only: scm_setfield, scm_setinitial
    use dyn_comp, only: TimeLevel
    use cam_history,     only: outfld   
+   use cam_logfile, only: iulog
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
-               out_v(npsq,nlev), out_psv(npsq)   
+               out_v(npsq,nlev), out_psv(npsq)  
+   real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
+   real(r8), parameter :: fac = 1000._r8	
+   real(r8) :: term1, term2        
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
@@ -601,7 +606,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
 	        ftmp_q(i,j,k,p,ie))/dtime
 	   enddo
-	  
 	   
 	 enddo
        enddo

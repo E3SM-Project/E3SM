@@ -47,7 +47,7 @@ module atm_comp_mct
   use cam_logfile      , only: iulog
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
-  use scamMod          , only: single_column,scmlat,scmlon
+  use scamMod          , only: use_camiop,single_column,scmlat,scmlon
 
 !
 ! !PUBLIC TYPES:
@@ -338,7 +338,7 @@ CONTAINS
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
           call atm_import( x2a_a%rattr, cam_in )
-	  if (single_column) then
+	  if (single_column .and. use_camiop) then
 	    call scam_use_iop_srf( cam_in )
 	  endif
           call cam_run1 ( cam_in, cam_out ) 

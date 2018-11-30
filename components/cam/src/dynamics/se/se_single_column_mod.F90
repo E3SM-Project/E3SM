@@ -8,6 +8,7 @@ use scamMod
 use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime
+use ppgrid, only: begchunk
 
 implicit none
 
@@ -122,7 +123,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance, do_column_scm
-    real(kind=real_kind), parameter :: rad2deg = 180.0 / SHR_CONST_PI
+    real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
     integer :: ie,k,i,j,t,nm_f
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
@@ -173,14 +174,14 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     stateQin2(:,:) = stateQin_qfcst(:,:)        
 
     if (.not. use_3dfrc) then
-      dummy1(:) = 0.0
+      dummy1(:) = 0.0_real_kind
     else
       dummy1(:) = elem(ie)%derived%fT(i,j,:)
     endif
-    dummy2(:) = 0.0
+    dummy2(:) = 0.0_real_kind
     forecast_ps = elem(ie)%state%ps_v(i,j,t1)
 
-    call forecast(97,elem(ie)%state%ps_v(i,j,t1),&
+    call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
            elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
            forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
