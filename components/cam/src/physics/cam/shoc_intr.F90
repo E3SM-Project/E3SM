@@ -641,7 +641,7 @@ end function shoc_implements_cnst
    !  instances when a 5 min time step will not be possible (based on 
    !  host model time step or on macro-micro sub-stepping   
    
-   dtime = 20.0_r8  !+DPAB, probably want to make this a namelist variable
+   dtime = 300.0_r8  !+DPAB, probably want to make this a namelist variable
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 

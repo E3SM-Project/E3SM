@@ -186,6 +186,16 @@ subroutine shoc_main ( &
          tke,&				      ! Input/Output
 	 tk,tkh,isotropy)                     ! Output
   
+  if (do_implicit) then
+    call update_prognostics_implicit(&        ! Input
+           shcol,nlev,nlevi,num_qtracers,&    ! Input
+	   dtime,dz_zt,dz_zi,rho_zt,&         ! Input
+	   zt_grid,zi_grid,tk,tkh,&           ! Input
+           uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
+           thetal,qw,qtracers,tke,&           ! Input/Output
+	   u_wind,v_wind)                     ! Input/Output
+  endif	 
+
   ! Diagnose the second order moments
   call diag_second_shoc_moments(&
          shcol,nlev,nlevi,&                   ! Input
@@ -223,16 +233,6 @@ subroutine shoc_main ( &
 	   u_wind,v_wind)                       ! Input/Output
   endif
 	 
-  if (do_implicit) then
-    call update_prognostics_implicit(&        ! Input
-           shcol,nlev,nlevi,num_qtracers,&    ! Input
-	   dtime,dz_zt,dz_zi,rho_zt,&         ! Input
-	   zt_grid,zi_grid,tk,tkh,&           ! Input
-           uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
-           thetal,qw,qtracers,tke,&           ! Input/Output
-	   u_wind,v_wind)                     ! Input/Output
-  endif	 
-  
   ! Call the PDF to close on SGS cloud and turbulence
   call shoc_assumed_pdf(&
          shcol,nlev,nlevi,&                   ! Input
@@ -1256,7 +1256,7 @@ subroutine shoc_tke(&
   real(r8) :: shear_prod_zt(shcol,nlev)	
   real(r8) :: grd,betdz,Ck,Ce,Ces,Ce1,Ce2,smix,Pr,Cee,Cs
   real(r8) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
-  real(r8) :: lstarn, lstarp, bbb, omn, omp
+  real(r8) :: lstarn, lstarp, bbb, omn, omp, ustar
   real(r8) :: qsatt,dqsat,tk_in, uw_sec, vw_sec
   real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
   integer i,j,k,kc,kb	 
@@ -1286,20 +1286,15 @@ subroutine shoc_tke(&
   
   ! Set lower and upper bound (check this)
   do i=1,shcol
-    grid_dz = 0.5_r8/dz_zi(i,1)
+    grid_dz = 0.5_r8*dz_zi(i,1)
 
-    uw_sec = grid_dz*u_wind(i,1)
-    vw_sec = grid_dz*v_wind(i,1)
-    shear_prod(i,1) = (-1._r8 * uw_sfc(i) * uw_sec) - (vw_sfc(i) * vw_sec) 
-!     shear_prod(i,1) = 0._r8
+    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
+    shear_prod(i,1) = ustar**3/(0.4_r8*grid_dz) 
   enddo
   
   shear_prod(:,nlevi) = 0._r8
  
   call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
-
-!  write(iulog,*) 'SHEARprod', shear_prod_zt(1,:)
-!  write(iulog,*) 'TKEBEFOREadv', tke(1,:)
 
   do k=1,nlev
     do i=1,shcol
@@ -1322,11 +1317,7 @@ subroutine shoc_tke(&
       Cee=Ce1+Ce2*ratio  
       
       tke(i,k)=max(0._r8,tke(i,k))
-!      if (k .gt. 1) then
-!        a_prod_sh=(tk_in+0.001_r8)*shear_prod_zt(i,k)
-!      else
-        a_prod_sh=shear_prod_zt(i,k)
-!      endif
+      a_prod_sh=shear_prod_zt(i,k)
       a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
       tke(i,k)=max(0._r8,tke(i,k)+dtime*(max(0._r8,a_prod_sh+a_prod_bu)-a_diss))  
       
@@ -1335,30 +1326,17 @@ subroutine shoc_tke(&
       tscale1=(2._r8*tke(i,k))/a_diss
       lambda=0.04_r8
       if (buoy_sgs_save .le. 0) lambda=0._r8
-      if (tke(i,k) .lt. mintke .and. tscale1 .gt. maxiso) then
-        lambda=40._r8
-        if (buoy_sgs_save .lt. 0) buoy_sgs_save=-1._r8*buoy_sgs_save
-      endif
       
       isotropy(i,k)=min(maxiso,tscale1/(1._r8+lambda*buoy_sgs_save*tscale1**2))
 
-!      if (isotropy(i,k) .eq. maxiso) then
-!        write(iulog,*) 'MAXISO ', isotropy(i,k), k, lambda, tscale1, buoy_sgs_save, a_diss, tke(i,k), shoc_mix(i,k)
-!      endif
-
-!      tk(i,k) = 0._r8 
       tk(i,k)=Ck*smix*sqrt(tke(i,k))
-!      tkh(i,k)=Ck*smix*sqrt(tke(i,k))
       tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
       tk(i,k)=tkh(i,k)  
-!      tk(i,1)=0._r8
  
       tke(i,k) = max(mintke,tke(i,k))
  
     enddo ! end i loop
   enddo ! end k loop
- 
-!  write(iulog,*) 'TKEAFTERadv ', tke(1,:)
  
   return
   
@@ -1625,8 +1603,8 @@ subroutine vd_shoc_decomp( &
   do k=2,nlev
     do i=1,shcol
       
-      ca(i,k) = kv_term(i,k) * tmpi(i,k) * rdz_zt(i,k)
-      cc(i,k-1) = kv_term(i,k) * tmpi(i,k) * rdz_zt(i,k-1)
+      ca(i,k) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k)
+      cc(i,k-1) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k-1)
       
     enddo
   enddo 
