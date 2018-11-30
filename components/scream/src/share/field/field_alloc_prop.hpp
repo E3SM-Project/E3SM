@@ -12,7 +12,6 @@
 namespace scream
 {
 
-
 /*
  *  Small structure holding a few properties of the field allocation
  *
@@ -26,11 +25,17 @@ namespace scream
  *  a packed way, as View<Pack<Real,4>**>. The second view will have
  *  dimensions (3,4), in terms of its value type (i.e., Pack<Real,4>).
  *  This means the field needs an allocation bigger than 30 Real's, namely
- *  36 Real's. This class keeps track of all the requested sizes, so
- *  that 1) the field is allocated with enough memory to accommodate all
- *  uses, and 2) customers of the field can check what the allocation
- *  was, so that they know whether there is padding in the field.
+ *  36 Real's. This class does the book-keeping for the allocation size,
+ *  so that 1) the field can be allocated with enough memory to accommodate
+ *  all requests, 2) customers of the field can check what the allocation
+ *  is, so that they know whether there is padding in the field, and
+ *  3) query whether the allocation is compatible with a given value type.
+ *
+ *  Note: at every request for a new value_type, this class checks the
+ *        underlying scalar_type. We ASSUME that the dimensions in the
+ *        field identifier refer to that scalar_type.
  */
+
 class FieldAllocProp {
 public:
 
@@ -50,15 +55,19 @@ public:
   template<typename ValueType>
   bool is_allocation_compatible_with_value_type () const;
 
+  // This is here just in case we need it for debugging.
+  const std::vector<int>& get_requested_value_types_sizes () const { return m_value_type_sizes; }
+
 protected:
 
   const FieldIdentifier& m_fid;
 
-  int   m_value_type_size;  // The size of the largest value type that we need to accommodate
-  int   m_scalar_type_size;
-  int   m_alloc_size;
+  std::vector<int> m_value_type_sizes;
 
+  int         m_scalar_type_size;
   std::string m_scalar_type_name;
+
+  int   m_alloc_size;
 
   bool  m_committed;
 };
@@ -70,34 +79,30 @@ void FieldAllocProp::request_value_type_allocation () {
 
   error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
 
-  constexpr int vts = sizeof(ValueType);
   if (m_scalar_type_size==0) {
+    // This is the first time we receive a request. Set the scalar type properties
     m_scalar_type_size = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
-    m_value_type_size = vts;
     m_scalar_type_name = util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name();
-  } else {
-    // Make sure the scalar_type of the new requested type is at least compatible with the one already stored
-    error::runtime_check(util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name,
-                         "Error! There was already a value type request for this allocation, and the stored scalar_type name (" +
-                         m_scalar_type_name + ") does not match the one from the new request (" + util::TypeName<ValueType>::name() + ").\n");
-    error::runtime_check(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)==m_scalar_type_size,
-                         "Error! There was already a value type request for this allocation, and the stored scalar_type_size does not match the one from the new request.\n");
   }
 
-  // If the current value type is large than the currently stored one, update the stored one.
-  if (vts>m_value_type_size) {
-    // Safety check: old current stored value size should divide the new one,
-    // so that memory allocated for the new value type can be safely reinterpreted
-    // as pointing to the old value type.
-    // NOTE: we are thinking about Pack<T,N> and T's, and we only allow N=2^n for some n>0.
-    error::runtime_check(vts%m_value_type_size == 0, "Error! You are requesting a ValueType whose size is not a multiple or divisor of the currently stored value type size.\n");
+  // Make sure the scalar_type of the new requested type coincides with the one already stored
+  error::runtime_check(util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name,
+                       "Error! There was already a value type request for this allocation, and the stored scalar_type name (" +
+                       m_scalar_type_name + ") does not match the one from the new request (" + util::TypeName<ValueType>::name() + ").\n");
+  error::runtime_check(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)==m_scalar_type_size,
+                       "Error! There was already a value type request for this allocation, and the size of the stored scalar_type (" +
+                       std::to_string(m_scalar_type_size) + ") does not match the size of the scalar_type of the new request (" +
+                       std::to_string(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)) + ").\n");
 
-    m_value_type_size = vts;
-  } else {
-    // The new request is a smaller data type. We check at least that the new type has
-    // a size that divides the currently stored one
-    error::runtime_check(m_value_type_size%vts == 0, "Error! You are requesting a ValueType whose size is not a multiple or divisor of the currently stored value type size.\n");
-  }
+  constexpr int vts = sizeof(ValueType);
+
+  // This should always pass, given that the previous two did, but better safe than sorry
+  error::runtime_check(vts % m_scalar_type_size == 0,
+                       "Error! The size of the scalar_type (" + std::to_string(m_scalar_type_size) +
+                       ") does not divide the size of the given value_type (" + std::to_string(vts) + ").\n");
+
+  // Store the size of the value type.
+  m_value_type_sizes.push_back(vts);
 }
 
 inline int FieldAllocProp::get_alloc_size () const {
