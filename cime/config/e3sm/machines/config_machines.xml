@@ -2387,8 +2387,8 @@
 	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
-		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-		<init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+		<init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+		<init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
 		<init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
 		<init_path lang="sh">/etc/profile.d/z00_lmod.sh</init_path>	
 		<cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
@@ -2417,9 +2417,8 @@
 		<modules>
 			<command name="load">netcdf/4.4.1</command>
 		</modules>
-		<!modules; deactivate as the module does not load correctly-cxu>
-			<!command name="load" parallel-netcdf/1.5.0 command>
-		<!/modules>
+		<!--deactivate parallel-netcdf as it is not loaded properly:cxu-->
+		<!--command name="load" parallel-netcdf/1.5.0 command-->
 	</module_system>
 	<environment_variables>
 		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
