@@ -162,7 +162,7 @@ contains
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, shrloglev)
+    call shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit, shrloglev)
 
     !----------------------------------------------------------------------------
     ! Initialize xwav
@@ -191,7 +191,7 @@ contains
        call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_hstokes' , flds_concat=flds_w2x)
 
        do n = 1,fldsFrWav_num
-          write(logunit,*)'Advertising From Xwav ',trim(fldsFrWav(n)%stdname)
+          if (mastertask) write(logunit,*)'Advertising From Xwav ',trim(fldsFrWav(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -208,7 +208,7 @@ contains
        call fld_list_add(fldsToWav_num, fldsToWav, 'So_bldepth' , flds_concat=flds_x2w)
 
        do n = 1,fldsToWav_num
-          write(logunit,*)'Advertising To Xwav ',trim(fldsToWav(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xwav ',trim(fldsToWav(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToWav(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

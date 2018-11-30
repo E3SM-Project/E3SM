@@ -190,7 +190,7 @@ contains
        call fld_list_add(fldsFrRof_num, fldsFrRof, 'Flrr_volrmch')
 
        do n = 1,fldsFrRof_num
-          write(logunit,*)'Advertising From Xrof ',trim(fldsFrRof(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising From Xrof ',trim(fldsFrRof(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrRof(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -205,7 +205,7 @@ contains
        call fld_list_add(fldsToRof_num, fldsToRof, 'Flrl_irrig')
 
        do n = 1,fldsToRof_num
-          write(logunit,*)'Advertising To Xrof',trim(fldsToRof(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xrof',trim(fldsToRof(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToRof(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

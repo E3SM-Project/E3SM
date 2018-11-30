@@ -216,7 +216,7 @@ module ice_comp_nuopc
        call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   , flds_concat=flds_i2x)
 
        do n = 1,fldsFrIce_num
-          write(logunit,*)'Advertising From Xice ',trim(fldsFrIce(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising From Xice ',trim(fldsFrIce(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrIce(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -257,7 +257,7 @@ module ice_comp_nuopc
        call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet4'  , flds_concat=flds_x2i)
 
        do n = 1,fldsToIce_num
-          write(logunit,*)'Advertising To Xice ',trim(fldsToIce(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xice ',trim(fldsToIce(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

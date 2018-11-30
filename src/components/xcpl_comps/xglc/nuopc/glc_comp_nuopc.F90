@@ -202,7 +202,7 @@ contains
        call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Flgg_hflx'                 , flds_concat=flds_g2x)
 
        do n = 1,fldsFrGlc_num
-          write(logunit,*)'Advertising From Xglc ',trim(fldsFrGlc(n)%stdname)
+          if (mastertask) write(logunit,*)'Advertising From Xglc ',trim(fldsFrGlc(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrglc(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -220,7 +220,7 @@ contains
        end do
 
        do n = 1,fldsToGlc_num
-          write(logunit,*)'Advertising To Xglc ',trim(fldsToGlc(n)%stdname)
+          if (mastertask) write(logunit,*)'Advertising To Xglc ',trim(fldsToGlc(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToglc(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

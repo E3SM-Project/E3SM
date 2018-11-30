@@ -223,7 +223,7 @@ module atm_comp_nuopc
        call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry4'  , flds_concat=flds_a2x)
 
        do n = 1,fldsFrAtm_num
-          write(logunit,*)'Advertising From Xatm ',trim(fldsFrAtm(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising From Xatm ',trim(fldsFrAtm(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -256,7 +256,7 @@ module atm_comp_nuopc
        call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_evap' , flds_concat=flds_x2a)
 
        do n = 1,fldsToAtm_num
-          write(logunit,*)'Advertising To Xatm',trim(fldsToAtm(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xatm',trim(fldsToAtm(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

@@ -140,7 +140,7 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -201,7 +201,7 @@ contains
        call fld_list_add(fldsFrOcn_num, fldsFrOcn, "Fioo_q"        , flds_concat=flds_o2x)
 
        do n = 1,fldsFrOcn_num
-          write(logunit,*)'Advertising From Xocn ',trim(fldsFrOcn(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising From Xocn ',trim(fldsFrOcn(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -227,7 +227,7 @@ contains
        call fld_list_add(fldsToOcn_num, fldsToOcn, "Sa_pslv"       , flds_concat=flds_x2o)
 
        do n = 1,fldsToOcn_num
-          write(logunit,*)'Advertising To Xocn',trim(fldsToOcn(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xocn',trim(fldsToOcn(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -237,7 +237,7 @@ contains
        allocate(x2d(FldsToOcn_num,lsize)); x2d(:,:)  = 0._r8
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values

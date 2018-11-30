@@ -214,7 +214,7 @@ contains
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Fall_flxdst4'  , flds_concat=flds_l2x)
 
        do n = 1,fldsFrLnd_num
-          write(logunit,*)'Advertising From Xlnd ',trim(fldsFrLnd(n)%stdname)
+          if (mastertask) write(logunit,*)'Advertising From Xlnd ',trim(fldsFrLnd(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -256,7 +256,7 @@ contains
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Faxa_dstwet4' , flds_concat=flds_x2l)
 
        do n = 1,fldsToLnd_num
-          write(logunit,*)'Advertising To Xlnd',trim(fldsToLnd(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xlnd',trim(fldsToLnd(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToLnd(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
