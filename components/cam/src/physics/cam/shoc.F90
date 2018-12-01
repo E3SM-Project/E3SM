@@ -434,12 +434,22 @@ subroutine update_prognostics_implicit( &
   real(r8) :: tkh_zi(shcol,nlevi)
   real(r8) :: tk_zi(shcol,nlevi)
   real(r8) :: rho_zi(shcol,nlevi)
+ 
+  real(r8) :: flux_dummy(shcol)
+  real(r8) :: ws(shcol)
+  real(r8) :: tau(shcol)
+  real(r8) :: ksrf(shcol)
   
   real(r8) :: ca(shcol,nlev)
   real(r8) :: cc(shcol,nlev)
   real(r8) :: denom(shcol,nlev)
   real(r8) :: ze(shcol,nlev)
+
+  real(r8) :: wsmin, ksrfmin
   
+  wsmin = 1._r8
+  ksrfmin = 1.e-4_r8
+
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
@@ -456,22 +466,28 @@ subroutine update_prognostics_implicit( &
     enddo
   enddo  
 
+  do i=1,shcol
+    ws(i) = max(sqrt(u_wind(i,1)**2._r8 + v_wind(i,1)**2._r8),wsmin)
+    tau(i) = sqrt( (rho_zi(i,1)*uw_sfc(i))**2._r8 + &
+                   (rho_zi(i,1)*vw_sfc(i))**2._r8 )
+    ksrf(i) = max(tau(i) / ws(i), ksrfmin)
+  enddo
+
   ! Apply the surface fluxes explicitly
-  u_wind(:,1) = u_wind(:,1) + dtime * ggr * rdz_zt(:,1) * rho_zi(:,1) * uw_sfc(:) 
-  v_wind(:,1) = v_wind(:,1) + dtime * ggr * rdz_zt(:,1) * rho_zi(:,1) * vw_sfc(:)
   thetal(:,1) = thetal(:,1) + dtime * (ggr * rho_zi(:,1) * rdz_zt(:,1)) * wthl_sfc(:)  
   qw(:,1) = qw(:,1) + dtime * (ggr * rho_zi(:,1) * rdz_zt(:,1)) * wqw_sfc(:)
 
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdz_zt,dtime,&
-	 ca,cc,denom,ze)
+	 ksrf,ca,cc,denom,ze)
 
   call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,u_wind)
 
   call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,v_wind)
 
-! Call decomp for thermo variables 
+! Call decomp for thermo variables
+  flux_dummy(:) = 0._r8 
   call vd_shoc_decomp(shcol,nlev,nlevi,tkh_zi,tmpi,rdz_zt,dtime,&
-	 ca,cc,denom,ze)
+	 flux_dummy,ca,cc,denom,ze)
 
   call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,thetal)
 
@@ -1577,6 +1593,7 @@ end subroutine shoc_length
 subroutine vd_shoc_decomp( &
              shcol,nlev,nlevi,&          ! Input
 	     kv_term,tmpi,rdz_zt,dtime,&  ! Input
+             flux, &                      ! Input
 	     ca,cc,denom,ze)              ! Output
 	     
   implicit none
@@ -1590,6 +1607,8 @@ subroutine vd_shoc_decomp( &
   real(r8), intent(in) :: kv_term(shcol,nlevi)
   real(r8), intent(in) :: tmpi(shcol,nlevi)
   real(r8), intent(in) :: rdz_zt(shcol,nlev)
+
+  real(r8), intent(in) :: flux(shcol)
   
   ! Output Variables
   real(r8), intent(out) :: ca(shcol,nlev)
@@ -1618,7 +1637,8 @@ subroutine vd_shoc_decomp( &
   ! tridiagonal matrix as defined by the implicit diffusion equation.   
   
   do i=1,shcol
-    denom(i,1) = 1._r8/(1._r8 + cc(i,1))
+    denom(i,1) = 1._r8/ &
+      (1._r8 + cc(i,1) + flux(i)*dtime*ggr*rdz_zt(i,1))
     ze(i,1) = cc(i,1) * denom(i,1)
   enddo
   

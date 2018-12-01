@@ -972,6 +972,8 @@ end function shoc_implements_cnst
        shoc_s(i,k) = shoc_s(i,k) - se_dis(i)*gravit
      enddo
    enddo
+
+  ! write(*,*) 'uwind', um(:,:)
    
    !  Now compute the tendencies of CLUBB to CAM, note that pverp is the ghost point
    !  for all variables and therefore is never called in this loop
