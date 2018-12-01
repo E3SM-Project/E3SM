@@ -786,10 +786,10 @@ module shr_nuopc_methods_mod
     do n = 1, fieldCount
       call ESMF_FieldBundleGet(FB, fieldName=lfieldnamelist(n), field=field, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call ESMF_FieldDestroy(field, rc=rc)
+      call ESMF_FieldDestroy(field, rc=rc, noGarbage=.true.)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
-    call ESMF_FieldBundleDestroy(FB, rc=rc)
+    call ESMF_FieldBundleDestroy(FB, rc=rc, noGarbage=.true.)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     deallocate(lfieldnamelist)
 
