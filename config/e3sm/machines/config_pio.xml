@@ -85,10 +85,10 @@
   </entry>
   -->
 
-
   <entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
       <value MACH="sandiatoss3">1</value>
+      <value MACH="ghost">1</value>
     </values>
   </entry>
 

@@ -45,7 +45,7 @@ class FUNIT(SystemTestsCommon):
             os.remove(log)
 
         test_spec_dir = self.get_test_spec_dir()
-        unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
+        unit_test_tool = os.path.abspath(os.path.join(get_cime_root(),"scripts","fortran_unit_testing","run_tests.py"))
         args = "--build-dir {} --test-spec-dir {} --machine {}".format(exeroot, test_spec_dir, mach)
         stat = run_cmd("{} {} >& funit.log".format(unit_test_tool, args), from_dir=rundir)[0]
 

@@ -67,7 +67,7 @@ class Case(object):
     are listed in the following imports
     """
     from CIME.case.case_setup import case_setup
-    from CIME.case.case_clone import create_clone
+    from CIME.case.case_clone import create_clone, _copy_user_modified_to_clone
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
@@ -348,15 +348,9 @@ class Case(object):
         return result
 
     def get_resolved_value(self, item, recurse=0, allow_unresolved_envvars=False):
-        #reference_re = re.compile(r'\${?(\w+)}?')
         num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
-            # for m in reference_re.finditer(item):
-            #     var = m.groups()[0]
-            #     if var in self.lookups:
-            #         item = item.replace(m.group(), self.lookups[var])
-
             for env_file in self._env_entryid_files:
                 item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)
@@ -826,9 +820,9 @@ class Case(object):
             logger.info("Machine is {}".format(machine_name))
 
         nodenames = machobj.get_node_names()
-        nodenames =  [x for x in nodenames if
-                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                      'COMPILER' not in x and 'MPILIB' not in x]
+        nodenames = [x for x in nodenames if
+                     '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
+                     'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -891,19 +885,16 @@ class Case(object):
         self.set_value("REALUSER", os.environ["USER"])
 
         # Set project id
+        if project is None:
+            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
-            self.set_value("CHARGE_ACCOUNT", project)
-        else:
-            project = get_project(machobj)
-            if project is not None:
-                self.set_value("PROJECT", project)
-            elif machobj.get_value("PROJECT_REQUIRED"):
-                expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-            # Get charge_account id if it exists
-            charge_account = get_charge_account(machobj)
-            if charge_account is not None:
-                self.set_value("CHARGE_ACCOUNT", charge_account)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj, project)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -1263,7 +1254,7 @@ directory, NOT in this subdirectory."""
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
-            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
+            return self.get_resolved_value(mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix)
 
         # Things that will have to be matched against mpirun element attributes
         mpi_attribs = {
