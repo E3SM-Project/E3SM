@@ -66,7 +66,6 @@ contains
     use med_constants_mod     , only : CL, CS
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
     use shr_cal_mod           , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_calendarname
-    use shr_mpi_mod           , only : shr_mpi_bcast
 
     ! input/output variables
     type(ESMF_GridComp)  :: ensemble_driver, esmdriver
@@ -120,7 +119,6 @@ contains
     character(CL)           :: tmpstr              ! temporary
     character(CS)           :: calendar_name       ! Calendar name
     character(CS)           :: inst_suffix
-    integer                 :: mpicom              ! MPI communicator
     integer                 :: tmp(6)              ! Array for Broadcast
     integer                 :: dbrc
     logical                 :: isPresent

@@ -61,8 +61,6 @@ def create_namelists(self, component=None):
 
     logger.info("Creating component namelists")
 
-    cime_model = self.get_value("MODEL")
-
     # Create namelists - must have cpl last in the list below
     # Note - cpl must be last in the loop below so that in generating its namelist,
     # it can use xml vars potentially set by other component's buildnml scripts
