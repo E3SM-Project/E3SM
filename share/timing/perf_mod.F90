@@ -121,10 +121,6 @@ module perf_mod
 #ifdef NUOPC_INTERFACE
    integer, private   :: cur_timing_depth = 0
 #endif
-   integer, parameter :: init_num_threads = 1                  ! init
-   integer, private   :: num_threads = init_num_threads
-                         ! current maximum number of threads per process
-
 
    integer, parameter :: init_num_threads = 1                  ! init
    integer, private   :: num_threads = init_num_threads
@@ -750,16 +746,13 @@ contains
 !$OMP END MASTER
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
-
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
       ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
-
    else
-
       str_length = min(SHR_KIND_CM,len_trim(event))
       ierr = GPTLstart(event(1:str_length))
-
+   endif
 !$OMP MASTER
    if (perf_ovhd_measurement) then
 #ifdef HAVE_MPI
@@ -894,7 +887,7 @@ contains
 !
    integer  ierr                          ! GPTL error return
 
-   integer  str_length, i                 ! support for adding 
+   integer  str_length, i                 ! support for adding
                                           !  detail suffix
    character(len=2) cdetail               ! char variable for detail
    integer  callcnt                       ! call count increment
