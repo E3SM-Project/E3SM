@@ -213,8 +213,6 @@ contains
 
        ki = mct_aVect_indexRA(d2x,"Si_ifrac",perrWith=subname)
        d2x%rAttr(ki,:) = min(1.0_R8,max(0.0_R8,d2x%rAttr(ki,:)))
-       ki = mct_aVect_indexRA(d2x,"Si_imask",perrWith=subname)
-       d2x%rAttr(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x%rAttr(ki,:)))))
 
     case('glc')
 
