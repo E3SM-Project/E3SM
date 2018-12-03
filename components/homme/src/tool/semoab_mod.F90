@@ -429,12 +429,23 @@ contains
 
       ! create a new tag, for transfer example ; will use it now for temperature on the surface
       !  (bottom atm to surface of ocean)
-      tagname='a2oTAG'//CHAR(0) !  atm to ocean tag
+      tagname='a2oTbot'//CHAR(0) !  atm to ocean temp bottom tag
       tagtype = 1  ! dense, double
       numco = np*np !  usually, it is 16; each element will have the same order as dofs
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
-        call endrun('Error: fail to create atm to ocean tag')
+        call endrun('Error: fail to create atm to ocean temp bottom tag')
+
+      tagname='a2oUbot'//CHAR(0) !  atm to ocean U bottom tag
+      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to create atm to ocean U velocity bottom tag')
+
+      tagname='a2oVbot'//CHAR(0) !  atm to ocean V bottom tag
+      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call endrun('Error: fail to create atm to ocean U velocity bottom tag')
+
 
       ! create a new tag, for transfer example ; will use it now for temperature on the surface
       !  (bottom atm to surface of ocean); for debugging, use it on fine mesh
@@ -519,14 +530,46 @@ contains
       enddo
     enddo
     ! set the tag
-    tagname='a2oTAG'//CHAR(0) !  atm to ocean tag
+    tagname='a2oTbot'//CHAR(0) !  atm to ocean tag for temperature
     ent_type = 1 ! element type
     ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
     if (ierr > 0 )  &
-      call endrun('Error: fail to set a2oTAG tag for coarse elements')
+      call endrun('Error: fail to set a2oTbot tag for coarse elements')
+
+    ! loop now for U velocity ( a2oUbot tag)
+    do ie=1,num_elem
+      do j=1,np
+        do i=1,np
+          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%v(i,j,1,nlev,1) ! time level 1, U comp
+        enddo
+      enddo
+    enddo
+    ! set the tag
+    tagname='a2oUbot'//CHAR(0) !  atm to ocean tag for U velocity
+    ent_type = 1 ! element type
+    ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set a2oUbot tag for coarse elements')
+
+    ! loop now for U velocity ( a2oUbot tag)
+    do ie=1,num_elem
+      do j=1,np
+        do i=1,np
+          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%v(i,j,2,nlev,1) ! time level 1, V comp
+        enddo
+      enddo
+    enddo
+    ! set the tag
+    tagname='a2oVbot'//CHAR(0) !  atm to ocean tag for V velocity
+    ent_type = 1 ! element type
+    ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set a2oVbot tag for coarse elements')
+
 
     !     write out the mesh file to disk, in parallel
-    outfile = 'wholeATM_T.h5m'//CHAR(0)
+    write(lnum,"(I0.2)")num_calls_export
+    outfile = 'wholeATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
     wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
     ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
     if (ierr > 0 )  &
@@ -549,11 +592,11 @@ contains
     ent_type = 0 ! vertex type
     ierr = iMOAB_SetDoubleTagStorage ( MHFID, tagname, nvert(1), ent_type, valuesTag)
     if (ierr > 0 )  &
-      call endrun('Error: fail to set a2oTAG tag for coarse elements')
+      call endrun('Error: fail to set a2oDBG tag for fine vertices')
 
     !     write out the mesh file to disk, in parallel
 
-    write(lnum,"(I0.2)")num_calls_export
+
     outfile = 'wholeFineATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
 
     ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
