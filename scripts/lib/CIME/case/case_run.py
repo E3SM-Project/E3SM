@@ -248,7 +248,7 @@ def _do_external(script_name, caseroot, rundir, lid, prefix):
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
     append_status("Starting script {}".format(script_name), "CaseStatus")
-    run_sub_or_cmd(script_name, [caseroot], (os.path.basename(script_name).split('.',1))[0], [caseroot], logfile=outfile)
+    run_sub_or_cmd(script_name, [caseroot], (os.path.basename(script_name).split('.',1))[0], [caseroot], logfile=outfile) # For sub, use case?
     append_status("Completed script {}".format(script_name), "CaseStatus")
 
 ###############################################################################
@@ -257,7 +257,7 @@ def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     expect(os.path.isfile(da_script), "Data Assimilation script {} not found".format(da_script))
     filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile)
+    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile) # For sub, use case?
 
 ###############################################################################
 def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=False):

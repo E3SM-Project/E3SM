@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_batch.xml"):
+    def __init__(self, case_root=None, infile="env_batch.xml", read_only=False):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
@@ -23,7 +23,7 @@ class EnvBatch(EnvBase):
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
-        super(EnvBatch,self).__init__(case_root, infile, schema=schema)
+        super(EnvBatch,self).__init__(case_root, infile, schema=schema, read_only=read_only)
 
     # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
