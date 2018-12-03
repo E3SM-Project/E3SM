@@ -179,7 +179,6 @@ class _TimingParser:
             if m:
                 minval += float(m.group(2))
                 maxval += float(m.group(2))
-                logger.debug("{} time={} sum={}".format(line, minval, minval))
 
         return(minval, maxval)
 
