@@ -125,6 +125,11 @@ module perf_mod
    integer, private   :: num_threads = init_num_threads
                          ! current maximum number of threads per process
 
+
+   integer, parameter :: init_num_threads = 1                  ! init
+   integer, private   :: num_threads = init_num_threads
+                         ! current maximum number of threads per process
+
    logical, parameter :: def_perf_single_file = .false.        ! default
    logical, private   :: perf_single_file = def_perf_single_file
                          ! flag indicating whether the performance timer
@@ -731,6 +736,19 @@ contains
    endif
 !$OMP END MASTER
 
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_start = mpi_wtime()
+#else
+      usr = 0.0
+      sys = 0.0
+      ierr = GPTLstamp(ovhd_start, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd - ovhd_start
+   endif
+!$OMP END MASTER
+
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
@@ -741,7 +759,17 @@ contains
 
       str_length = min(SHR_KIND_CM,len_trim(event))
       ierr = GPTLstart(event(1:str_length))
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_stop = mpi_wtime()
+#else
+      ierr = GPTLstamp(ovhd_stop, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
+!$OMP END MASTER
 
 !$OMP MASTER
    if (perf_ovhd_measurement) then
@@ -787,6 +815,7 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
+
 !$OMP MASTER
    if (perf_ovhd_measurement) then
 #ifdef HAVE_MPI
@@ -803,17 +832,26 @@ contains
    cur_timing_depth = cur_timing_depth - 1
    if(cur_timing_depth > timer_depth_limit) return
 #endif
-   if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
+   if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
       ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
-
    else
-
       str_length = min(SHR_KIND_CM,len_trim(event))
       ierr = GPTLstop(event(1:str_length))
    endif
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_stop = mpi_wtime()
+#else
+      ierr = GPTLstamp(ovhd_stop, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
+   endif
+!$OMP END MASTER
 
 !$OMP MASTER
    if (perf_ovhd_measurement) then
@@ -855,7 +893,8 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
-   integer  str_length, i                 ! support for adding
+
+   integer  str_length, i                 ! support for adding 
                                           !  detail suffix
    character(len=2) cdetail               ! char variable for detail
    integer  callcnt                       ! call count increment
@@ -910,6 +949,17 @@ contains
       ierr = GPTLstartstop_vals(trim(event), wtime, callcnt)
 
    endif
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_stop = mpi_wtime()
+#else
+      ierr = GPTLstamp(ovhd_stop, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
+   endif
+!$OMP END MASTER
 
 !$OMP MASTER
    if (perf_ovhd_measurement) then

@@ -300,6 +300,7 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
             get_timing(self, lid)     # Run the getTiming script
             model_log("e3sm", logger, "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
+
         if data_assimilation:
             model_log("e3sm", logger, "{} DO_DATA_ASSIMILATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
             self.flush()
