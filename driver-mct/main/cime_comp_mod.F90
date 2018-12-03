@@ -2483,7 +2483,7 @@ contains
        !| GLC SETUP-SEND
        !----------------------------------------------------------
        if (glc_present .and. glcrun_alarm) then
-          call cime_run_glc_setup_send()
+          call cime_run_glc_setup_send(lnd2glc_averaged_now)
        endif
 
        !----------------------------------------------------------
@@ -3688,7 +3688,9 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_glc_setup_send()
+  subroutine cime_run_glc_setup_send(lnd2glc_averaged_now)
+
+    logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
 
     !----------------------------------------------------
     !| glc prep-merge
@@ -3702,6 +3704,7 @@ contains
           ! NOTE - only create appropriate input to glc if the avg_alarm is on
           if (glcrun_avg_alarm) then
              call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+             lnd2glc_averaged_now = .true.
 
              ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
              call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
@@ -4123,11 +4126,6 @@ contains
     !----------------------------------------------------------
     ! Write history file, only AVs on CPLID
     !----------------------------------------------------------
-
-    ! local variables
-    logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
-    type(ESMF_Time)    :: etime_curr            ! Current model time
-    real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
 
     if (iamin_CPLID) then
 
