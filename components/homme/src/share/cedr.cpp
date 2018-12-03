@@ -4595,10 +4595,11 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
               }
             for (int trial = 0; trial < 2; ++trial) {
               int info;
-              if (limiter_option == 8)
+              if (limiter_option == 8) {
                 info = cedr::local::solve_1eq_bc_qp(
                   np2, wa, wa, Qm, qlo, qhi, y, x);
-              else {
+                if (info == 1) info = 0;
+              } else {
                 info = 0;
                 cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
               }
