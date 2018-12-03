@@ -24,7 +24,7 @@ class AtmosphereDynamics : public AtmosphereProcess
 public:
 
   // Constructor(s)
-  AtmosphereDynamics (const ParameterList& params);
+  explicit AtmosphereDynamics (const ParameterList& params);
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }

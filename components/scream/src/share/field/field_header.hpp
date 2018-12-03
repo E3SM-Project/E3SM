@@ -26,7 +26,7 @@ public:
   // Constructor(s)
   FieldHeader () = default;
   FieldHeader (const FieldHeader&) = default;
-  FieldHeader (const identifier_type& id);
+  explicit FieldHeader (const identifier_type& id);
 
   // Assignment (defaulted)
   FieldHeader& operator= (const FieldHeader&) = default;

@@ -22,7 +22,7 @@ public:
   Comm ();
 
   // This constructor wraps the given MPI_Comm
-  Comm (MPI_Comm mpi_comm);
+  explicit Comm (MPI_Comm mpi_comm);
 
   // This method resets the stored MPI_Comm to the given one,
   // updating m_size and m_rank accordingly.

@@ -3,13 +3,13 @@
 namespace scream {
 
 FieldAllocProp::FieldAllocProp (const FieldIdentifier& fid)
- : m_fid       (fid)
- , m_committed (false)
+ : m_fid              (fid)
+ , m_scalar_type_size (0)
+ , m_scalar_type_name ("")
+ , m_alloc_size       (0)
+ , m_committed        (false)
 {
-  // This is to have invalid initial sizes for the allocation
-  m_scalar_type_name = "";
-  m_scalar_type_size = 0;
-  m_alloc_size       = 0;
+  // Nothing to be done here
 }
 
 void FieldAllocProp::commit ()

@@ -12,7 +12,7 @@ class ParameterList {
 public:
 
   ParameterList () = default;
-  ParameterList (const std::string& name) : m_name(name) {}
+  explicit ParameterList (const std::string& name) : m_name(name) {}
 
   template<typename T>
   T& get (const std::string& name);

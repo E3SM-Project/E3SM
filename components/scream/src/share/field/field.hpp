@@ -36,8 +36,8 @@ public:
 
   // Constructor(s)
   Field () = delete;
-  Field (const identifier_type& id);
-  Field (const header_type& header);
+  explicit Field (const identifier_type& id);
+  explicit Field (const header_type& header);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
@@ -132,6 +132,8 @@ operator= (const Field<SrcScalarType,MemSpace,MemManagement>& src) {
     m_view      = src.get_view();
     m_allocated = src.is_allocated();
   }
+
+  return *this;
 }
 
 template<typename ScalarType, typename MemSpace, typename MemManagement>

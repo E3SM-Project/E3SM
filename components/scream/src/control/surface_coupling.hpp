@@ -15,7 +15,7 @@ public:
   template<typename MS>
   using field_repo_type = FieldRepository<Real,MS>;
 
-  SurfaceCoupling (const ParameterList& params);
+  explicit SurfaceCoupling (const ParameterList& params);
 
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Coupling; }

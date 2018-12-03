@@ -59,13 +59,17 @@ class holder : public holder_base {
 public:
 
   template<typename... Args>
-  holder (const Args&... args) {
-    m_value = std::make_shared<HeldType>(args...);
+  explicit holder (const Args&... args)
+   : m_value (std::make_shared<HeldType>(args...))
+  {
+    // Nothing to be done here
   }
 
   template<typename T>
-  holder (typename std::enable_if<std::is_base_of<HeldType,T>::value,std::shared_ptr<T>>::type ptr) {
-    m_value = ptr;
+  explicit holder (typename std::enable_if<std::is_base_of<HeldType,T>::value,std::shared_ptr<T>>::type ptr)
+   : m_value (ptr)
+  {
+    // Nothing to be done here
   }
 
   const std::type_info& type () const { return typeid(HeldType); }

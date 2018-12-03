@@ -31,7 +31,7 @@ public:
   };
 
   // Constructor(s)
-  AtmosphereProcessGroup (const ParameterList& params);
+  explicit AtmosphereProcessGroup (const ParameterList& params);
 
   virtual ~AtmosphereProcessGroup () = default;
 

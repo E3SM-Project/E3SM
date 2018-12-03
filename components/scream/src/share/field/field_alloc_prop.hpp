@@ -39,7 +39,7 @@ namespace scream
 class FieldAllocProp {
 public:
 
-  FieldAllocProp (const FieldIdentifier& id);
+  explicit FieldAllocProp (const FieldIdentifier& id);
   
   // Request allocation able to accommodate the given ValueType
   template<typename ValueType>
