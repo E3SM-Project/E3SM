@@ -1,5 +1,5 @@
 !!!! temp
-#define MODEL_THETA_L
+!#define MODEL_THETA_L
 
 module gravity_waves_sources
   use derivative_mod, only : derivative_t

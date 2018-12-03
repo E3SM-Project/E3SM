@@ -4,7 +4,7 @@
 !-------------------------------------------------------------------------------
 
 !!!!!!!!!!!TEMP
-#define MODEL_THETA_L
+!#define MODEL_THETA_L
 
 
 module dp_coupling

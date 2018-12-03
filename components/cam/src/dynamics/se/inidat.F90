@@ -1,5 +1,5 @@
 !temp to mahe theta-l work
-#define MODEL_THETA_L
+!#define MODEL_THETA_L
 
 module inidat
   !----------------------------------------------------------------------- 

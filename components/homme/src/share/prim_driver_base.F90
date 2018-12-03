@@ -1,5 +1,5 @@
 !temp!!!!!
-#define  MODEL_THETA_L
+!#define  MODEL_THETA_L
 
 ! ------------------------------------------------------------------------------------------------
 ! prim_driver_mod: 
@@ -1007,20 +1007,6 @@ contains
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in
     logical :: compute_diagnostics
 
-
-!print *, 'OG BEFORE SUB'
-
-!do ie=nets,nets
-!print *, 'ie', ie
-!print *, 'ps_v',elem(ie)%state%ps_v(1,1,tl%nstep0)
-!print *, 'vtheta',elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
-!print *, 'u',elem(ie)%state%v(1,1,1,1,tl%nstep0)
-!print *, 'v',elem(ie)%state%v(1,1,2,1,tl%nstep0)
-!print *, 'omega',elem(ie)%derived%omega_p(1,1,1)
-!print *, 'Q',elem(ie)%state%Q(1,1,1,1)
-!enddo
-
-
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -1176,6 +1162,9 @@ contains
        enddo
 #ifdef MODEL_THETA_L
        call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+#else
+       !!this can be cleaned to use only get_temp, but for now get_temp is used in other parts (grep?)...
+       !elem(ie)%derived%T => elem(ie)%state%T(:,:,:,tl%np1)
 #endif
     enddo
     call t_stopf("prim_run_subcyle_diags")

@@ -60,6 +60,9 @@ module element_state
     real (kind=real_kind) :: FT(np,np,nlev)                           ! temperature forcing
     real (kind=real_kind) :: FQps(np,np)                              ! forcing of FQ on ps_v
 
+!dont use yet
+!    real (kind=real_kind), pointer  :: T(np,np,nlev)                  ! temperature ptr
+
   end type derived_state_t
   
 

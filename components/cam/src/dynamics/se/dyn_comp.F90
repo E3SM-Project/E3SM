@@ -1,5 +1,5 @@
 !!!!!!!!! TEMP
-#define MODEL_THETA_L
+!#define MODEL_THETA_L
 
 
 Module dyn_comp
@@ -242,7 +242,9 @@ CONTAINS
     use comsrf,           only: landm, sgh, sgh30
     use nctopo_util_mod,  only: nctopo_util_driver
     use cam_instance,     only: inst_index
+#ifdef MODEL_THETA_L
     use element_ops,      only: set_thermostate_from_derived_T
+#endif
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
@@ -298,7 +300,7 @@ CONTAINS
                    call set_thermostate_from_derived_T(elem(ie),hvcoord,tlev)
                 enddo
 #else
-                elem(ie)%state%T(:,:,:,:) = Tinit
+                elem(ie)%state%T(:,:,:,:) = Tinit                
 #endif               
 
              end do

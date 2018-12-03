@@ -2916,6 +2916,10 @@ sub write_cppdefs
 	print $fh " -DUSE_KOKKOS_KERNELS "
     }
 
+    if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
+        print $fh " -DMODEL_THETA_L "
+    }
+
     print $fh "\n";
 
     $fh->close;

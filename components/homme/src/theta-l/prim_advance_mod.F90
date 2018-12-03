@@ -633,7 +633,7 @@ contains
      call get_phinh(hvcoord,elem(ie)%state%phis,&
           exner(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 #endif
-#if 0
+#if 1
      ! phi_ref depends only on ps, theta_ref depends on dp3d
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
      exner(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) ! use as temp array
@@ -642,7 +642,7 @@ contains
 
      call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
 #endif
-#if 1
+#if 0
      ! no reference state, for testing
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
