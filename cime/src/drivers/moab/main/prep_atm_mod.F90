@@ -310,7 +310,8 @@ contains
   subroutine prep_atm_migrate_moab(infodata)
   !---------------------------------------------------------------
     ! Description
-    ! After a2oTAG was loaded on atm mesh, it needs to be migrated to the coupler pes, for weight application later
+    ! After a2oTbot, a2oUbot, a2oVbot tags were loaded on atm mesh,
+    !  they need to be migrated to the coupler pes, for weight application later
     !
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
@@ -343,9 +344,10 @@ contains
 
 
 
-    ! now send the tag a2oTAG from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
-    tagName = 'a2oTAG'//CHAR(0) ! it is defined in semoab_mod.F90!!!
-    tagNameProj = 'a2oTAG_proj'//CHAR(0)
+    ! now send the tags a2o?bot  from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
+    tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
+    !  the separator will be ';' semicolon
+    tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
     wgtIdef = 'scalar'//CHAR(0)
     if (mhid .ge. 0) then !  send because we are on atm pes
 

@@ -1383,9 +1383,10 @@ contains
   subroutine prep_ocn_migrate_moab(infodata)
   !---------------------------------------------------------------
     ! Description
-    ! After a2oTAG_proj was computed on ocn mesh on coupler, it needs to be migrated to the ocean pes
+    ! After a2oTbot_proj, a2oVbot_proj, a2oUbot_proj were computed on ocn mesh on coupler, they need
+    !   to be migrated to the ocean pes
     !  maybe the ocean solver will use it (later)?
-    ! in this method, ocn temp on coupler pes from atm is moved to ocean pes
+    ! in this method, ocn values on coupler pes from atm are moved to ocean pes
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
 
@@ -1415,8 +1416,8 @@ contains
     ocnid   = ocn(1)%compid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-    ! now send the tag a2oTAG_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2oTAG_proj'//CHAR(0) ! it is defined in prep_atm_mod.F90!!!
+    ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
+    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
