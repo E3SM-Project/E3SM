@@ -45,6 +45,11 @@ class GenericXML(object):
         if filename in cls._FILEMAP:
             del cls._FILEMAP[filename]
 
+    @classmethod
+    def invalidate(cls, filename):
+        if filename in cls._FILEMAP:
+            del cls._FILEMAP[filename]
+
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None, read_only=True):
         """
         Initialize an object
@@ -333,7 +338,6 @@ class GenericXML(object):
                 xmlout.write(xmlstr)
 
         self._FILEMAP[self.filename] = self.CacheEntry(self.tree, self.root, os.path.getmtime(self.filename))
-
         self.needsrewrite = False
 
     def scan_child(self, nodename, attributes=None, root=None):
