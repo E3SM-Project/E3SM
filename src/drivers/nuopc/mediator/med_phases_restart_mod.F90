@@ -43,7 +43,7 @@ contains
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod            , only : med_io_sec2hms
-
+    use perf_mod              , only : t_startf, t_stopf
 
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -83,13 +83,14 @@ contains
     logical                    :: alarmIsOn      ! generic alarm flag
     real(R8)                   :: tbnds(2)       ! CF1.0 time bounds
     logical                    :: whead,wdata    ! for writing restart/restart cdf files
-    integer                    :: iam,mpicom     ! vm stuff
+    integer                    :: iam            ! vm stuff
     character(len=ESMF_MAXSTR) :: tmpstr
     integer                        :: dbrc
     logical             :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
 
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -106,7 +107,7 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=iam, rc=rc)
+    call ESMF_VMGet(vm, localPet=iam, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
@@ -223,7 +224,7 @@ contains
        endif
 
        call ESMF_LogWrite(trim(subname)//": write "//trim(restart_file), ESMF_LOGMSG_INFO, rc=dbrc)
-       call med_io_wopen(restart_file, mpicom, iam, clobber=.true.)
+       call med_io_wopen(restart_file, vm, iam, clobber=.true.)
 
        do m = 1,2
           if (m == 1) then
@@ -321,6 +322,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_restart_write
 
@@ -331,7 +333,7 @@ contains
 
     use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_MAXSTR
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-    use ESMF                  , only : ESMF_LOGMSG_ERROR
+    use ESMF                  , only : ESMF_LOGMSG_ERROR, ESMF_VMBroadCast
     use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_TimeGet
     use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
@@ -340,9 +342,8 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : InternalState
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
-    use shr_mpi_mod           , only : shr_mpi_bcast
     use med_io_mod            , only : med_io_read
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Input/output variables
     type(ESMF_GridComp)              :: gcomp
     integer, intent(out)             :: rc
@@ -356,7 +357,7 @@ contains
     integer                :: i,j,m,n,n1,ncnt
     integer                :: ierr, unitn
     integer                :: yr,mon,day,sec ! time units
-    integer                :: iam,mpicom     ! vm stuff
+    integer                :: iam            ! vm stuff
     character(ESMF_MAXSTR) :: case_name      ! case name
     character(ESMF_MAXSTR) :: restart_file   ! Local path to restart filename
     character(ESMF_MAXSTR) :: restart_pfile  ! Local path to restart pointer filename
@@ -366,7 +367,7 @@ contains
     logical   :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_read)'
     !---------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -382,7 +383,7 @@ contains
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_VMGet(vm, localPet=iam, mpiCommunicator=mpicom, rc=rc)
+    call ESMF_VMGet(vm, localPet=iam, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
@@ -444,31 +445,31 @@ contains
        call ESMF_LogWrite(trim(subname)//' restart file from rpointer = '//trim(restart_file), &
             ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-    call shr_mpi_bcast(restart_file, mpicom)
+    call ESMF_VMBroadCast(vm, restart_file, len(restart_file), 0, rc=rc)
 
     call ESMF_LogWrite(trim(subname)//": read "//trim(restart_file), ESMF_LOGMSG_INFO, rc=dbrc)
 
-    call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBExpAccumCnt, dname='ExpAccumCnt')
+    call med_io_read(restart_file, vm, iam, is_local%wrap%FBExpAccumCnt, dname='ExpAccumCnt')
 
     do n = 1,ncomps
        if (is_local%wrap%comp_present(n)) then
           ! Read import field bundle
           if (ESMF_FieldBundleIsCreated(is_local%wrap%FBimp(n,n),rc=rc)) then
-             call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBimp(n,n), &
+             call med_io_read(restart_file, vm, iam, is_local%wrap%FBimp(n,n), &
                  pre=trim(compname(n))//'Imp', rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
 
           ! Read import fractions
           if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
-             call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBfrac(n), &
+             call med_io_read(restart_file, vm, iam, is_local%wrap%FBfrac(n), &
                  pre=trim(compname(n))//'Frac', rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
 
           ! Read export field bundle accumulator
           if (ESMF_FieldBundleIsCreated(is_local%wrap%FBExpAccum(n),rc=rc)) then
-             call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBExpAccum(n), &
+             call med_io_read(restart_file, vm, iam, is_local%wrap%FBExpAccum(n), &
                  pre=trim(compname(n))//'ExpAccum', rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
@@ -477,7 +478,7 @@ contains
 
     ! Read ocn albedo field bundle (CESM only)
     if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
-       call med_io_read(restart_file, mpicom, iam, is_local%wrap%FBMed_ocnalb_o, &
+       call med_io_read(restart_file, vm, iam, is_local%wrap%FBMed_ocnalb_o, &
             pre='MedOcnAlb_o', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -489,6 +490,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_restart_read
 

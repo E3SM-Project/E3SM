@@ -555,7 +555,7 @@ class EnvBatch(EnvBase):
             return run_args_str
         elif len(run_args_str) > 0:
             batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
-            logger.info("batch_system: {}: ".format(batch_system))
+            logger.debug("batch_system: {}: ".format(batch_system))
             if batch_system == "lsf":
                 return "{} \"all, ARGS_FOR_SCRIPT={}\"".format(batch_env_flag, run_args_str)
             else:

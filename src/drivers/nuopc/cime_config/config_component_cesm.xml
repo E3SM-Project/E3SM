@@ -33,7 +33,7 @@
     <group>run_metadata</group>
     <file>env_case.xml</file>
     <desc>run DOI</desc>
-  </entry> 
+  </entry>
 
   <entry id="DRV_THREADING">
     <type>logical</type>
@@ -84,7 +84,7 @@
 
   <entry id="TIMER_LEVEL">
     <type>integer</type>
-    <default_value>12</default_value>
+    <default_value>4</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Maximum code stack depth of enabled timers.</desc>

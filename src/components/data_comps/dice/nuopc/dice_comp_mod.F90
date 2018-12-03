@@ -5,40 +5,42 @@
 module dice_comp_mod
 
   ! !USES:
+  use NUOPC                 , only : NUOPC_Advertise
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
+  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use mct_mod               , only : mct_gsmap_init
+  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize
+  use med_constants_mod     , only : R8, CS, CXX
+  use shr_const_mod         , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
+  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
+  use shr_mpi_mod           , only : shr_mpi_bcast
+  use shr_frz_mod           , only : shr_frz_freezetemp
+  use shr_cal_mod           , only : shr_cal_calendarname
+  use shr_cal_mod           , only : shr_cal_datetod2string
+  use shr_string_mod        , only : shr_string_listGetName
+  use shr_sys_mod           , only : shr_sys_abort
+  use shr_nuopc_scalars_mod , only : flds_scalar_name
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
+  use shr_strdata_mod       , only : shr_strdata_init_streams
+  use shr_strdata_mod       , only : shr_strdata_init_mapping
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
+  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
+  use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
+  use shr_dmodel_mod        , only : shr_dmodel_translateAV
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
+  use dice_shr_mod          , only : datamode       ! namelist input
+  use dice_shr_mod          , only : rest_file      ! namelist input
+  use dice_shr_mod          , only : rest_file_strm ! namelist input
+  use dice_shr_mod          , only : flux_swpf      ! namelist input -short-wave penatration factor
+  use dice_shr_mod          , only : flux_Qmin      ! namelist input -bound on melt rate
+  use dice_shr_mod          , only : flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
+  use dice_shr_mod          , only : flux_Qacc0     ! namelist input -initial water accumulation value
+  use dice_shr_mod          , only : nullstr
+  use dice_flux_atmice_mod  , only : dice_flux_atmice
   use shr_pcdf_mod
-  use NUOPC                  , only : NUOPC_Advertise
-  use ESMF                   , only : ESMF_State
-  use perf_mod               , only : t_startf, t_stopf
-  use perf_mod               , only : t_adj_detailf, t_barrierf
-  use mct_mod                , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
-  use mct_mod                , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod                , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
-  use med_constants_mod      , only : IN, R8, I8, CS, CL, CXX
-  use shr_const_mod          , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
-  use shr_file_mod           , only : shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod            , only : shr_mpi_bcast
-  use shr_frz_mod            , only : shr_frz_freezetemp
-  use shr_cal_mod            , only : shr_cal_datetod2string
-  use shr_string_mod         , only : shr_string_listGetName
-  use shr_nuopc_scalars_mod  , only : flds_scalar_name
-  use shr_nuopc_methods_mod  , only : shr_nuopc_methods_ChkErr
-
-  use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
-  use shr_strdata_mod        , only : shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod        , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod         , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
-
-  use dshr_nuopc_mod         , only : fld_list_type, dshr_fld_add
-  use dice_shr_mod           , only : datamode       ! namelist input
-  use dice_shr_mod           , only : decomp         ! namelist input
-  use dice_shr_mod           , only : rest_file      ! namelist input
-  use dice_shr_mod           , only : rest_file_strm ! namelist input
-  use dice_shr_mod           , only : flux_swpf      ! namelist input -short-wave penatration factor
-  use dice_shr_mod           , only : flux_Qmin      ! namelist input -bound on melt rate
-  use dice_shr_mod           , only : flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
-  use dice_shr_mod           , only : flux_Qacc0     ! namelist input -initial water accumulation value
-  use dice_shr_mod           , only : nullstr
-  use dice_flux_atmice_mod   , only : dice_flux_atmice
 
   ! !PUBLIC TYPES:
   implicit none
@@ -55,6 +57,9 @@ module dice_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
+  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
 
   real(R8),parameter         :: pi     = shr_const_pi      ! pi
   real(R8),parameter         :: spval  = shr_const_spval   ! flags invalid data
@@ -77,21 +82,21 @@ module dice_comp_mod
   real(R8),parameter         :: ax_nidr = ai_nidr*(1.0_R8-snwfrac) + as_nidr*snwfrac
   real(R8),parameter         :: ax_vsdr = ai_vsdr*(1.0_R8-snwfrac) + as_vsdr*snwfrac
 
-  integer(IN)                :: km
-  integer(IN)                :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
-  integer(IN)                :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
-  integer(IN)                :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
-  integer(IN)                :: ksalinity
-  integer(IN)                :: kbcpho, kbcphi, kflxdst
-  integer(IN)                :: kbcphidry, kbcphodry, kbcphiwet
-  integer(IN)                :: kocphidry, kocphodry, kocphiwet
-  integer(IN)                :: kdstdry1, kdstdry2, kdstdry3, kdstdry4
-  integer(IN)                :: kdstwet1, kdstwet2, kdstwet3, kdstwet4
-  integer(IN)                :: kiFrac_01,kswpen_iFrac_01 ! optional per thickness category fields
+  integer                    :: km
+  integer                    :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
+  integer                    :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
+  integer                    :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
+  integer                    :: ksalinity
+  integer                    :: kbcpho, kbcphi, kflxdst
+  integer                    :: kbcphidry, kbcphodry, kbcphiwet
+  integer                    :: kocphidry, kocphodry, kocphiwet
+  integer                    :: kdstdry1, kdstdry2, kdstdry3, kdstdry4
+  integer                    :: kdstwet1, kdstwet2, kdstwet3, kdstwet4
+  integer                    :: kiFrac_01,kswpen_iFrac_01 ! optional per thickness category fields
+  integer                    :: index_lat, index_lon
 
-  type(mct_rearr)            :: rearr
-  integer(IN) , pointer      :: imask(:)
-  real(R8)    , pointer      :: yc(:)
+  integer     , pointer      :: imask(:)
+  real(R8)    , pointer      :: xc(:), yc(:)       ! arrays of model latitudes and longitudes
   real(R8)    , pointer      :: water(:)
   real(R8)    , pointer      :: tfreeze(:)
   !real(R8)   , pointer      :: ifrac0(:)
@@ -106,7 +111,6 @@ module dice_comp_mod
 
   logical                    :: firstcall = .true. ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
-  integer(IN)                :: dbug = 0           ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -341,9 +345,9 @@ contains
 
   subroutine dice_comp_init(x2i, i2x, &
        flds_x2i_fields, flds_i2x_fields, flds_i2o_per_cat, &
-       SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDICE, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar)
+       scmMode, scmlat, scmlon, calendar, mesh)
 
     ! !DESCRIPTION: initialize dice model
 
@@ -353,60 +357,148 @@ contains
     character(len=*)       , intent(in)    :: flds_i2x_fields  ! fields to mediator
     logical                , intent(in)    :: flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
     type(shr_strdata_type) , intent(inout) :: SDICE            ! dice shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap            ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid            ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom           ! mpi communicator
-    integer(IN)            , intent(in)    :: compid           ! mct comp id
-    integer(IN)            , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task      ! task number of master task
+    integer                , intent(in)    :: mpicom           ! mpi communicator
+    integer                , intent(in)    :: compid           ! mct comp id
+    integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task      ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     character(len=*)       , intent(in)    :: inst_name        ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit          ! logging unit number
+    integer                , intent(in)    :: logunit          ! logging unit number
     logical                , intent(in)    :: read_restart     ! start from restart
     logical                , intent(in)    :: scmMode          ! single column mode
     real(R8)               , intent(in)    :: scmLat           ! single column lat
     real(R8)               , intent(in)    :: scmLon           ! single column lon
     character(len=*)       , intent(in)    :: calendar         ! calendar type
+    type(ESMF_Mesh)        , intent(in)    :: mesh             ! ESMF dice mesh
 
     !--- local variables ---
-    integer(IN)   :: n,k            ! generic counters
-    integer(IN)   :: ierr           ! error code
-    integer(IN)   :: lsize          ! local size
-    integer(IN)   :: kfld           ! field reference
-    logical       :: exists,exists1 ! file existance logical
-    integer(IN)   :: nu             ! unit number
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(dice_comp_init) ',8a)"
-    character(*), parameter :: F01   = "('(dice_comp_init) ',a,2f10.4)"
-    character(*), parameter :: subName = "(dice_comp_init) "
+    integer                      :: n,k            ! generic counters
+    integer                      :: ierr           ! error code
+    integer                      :: lsize          ! local size
+    integer                      :: kfld           ! field reference
+    logical                      :: exists,exists1 ! file existance logical
+    integer                      :: nu             ! unit number
+    type(ESMF_DistGrid)          :: distGrid
+    integer, allocatable, target :: gindex(:)
+    integer                      :: rc
+    integer                      :: dimCount
+    integer                      :: tileCount
+    integer                      :: deCount
+    integer                      :: gsize
+    integer, allocatable         :: elementCountPTile(:)
+    integer, allocatable         :: indexCountPDE(:,:)
+    integer                      :: spatialDim
+    integer                      :: numOwnedElements
+    real(R8), pointer            :: ownedElemCoords(:)
+    character(*), parameter      :: F00   = "('(dice_comp_init) ',8a)"
+    character(*), parameter      :: F01   = "('(dice_comp_init) ',a,2f10.4)"
+    character(*), parameter      :: subName = "(dice_comp_init) "
     !-------------------------------------------------------------------------------
 
     call t_startf('DICE_INIT')
 
+    !----------------------------------------------------------------------------
+    ! Initialize PIO
+    !----------------------------------------------------------------------------
+
     call shr_strdata_pioinit(SDICE, compid)
+
+    !----------------------------------------------------------------------------
+    ! Create a data model global segmap
+    !----------------------------------------------------------------------------
+
+    call t_startf('dice_strdata_init')
+
+    if (my_task == master_task) write(logunit,F00) ' initialize SDICE gsmap'
+
+    ! obtain the distgrid from the mesh that was read in
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determin local size on my processor
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global index space for my processor
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global size of distgrid
+    call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(elementCountPTile(tileCount))
+    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    gsize = 0
+    do n = 1,size(elementCountPTile)
+       gsize = gsize + elementCountPTile(n)
+    end do
+    deallocate(elementCountPTile)
+
+    ! create the data model gsmap given the local size, global size and gindex
+    call mct_gsMap_init( SDICE%gsmap, gindex, mpicom, compid, lsize, gsize)
+    deallocate(gindex)
 
     !----------------------------------------------------------------------------
     ! Initialize SDICE
     !----------------------------------------------------------------------------
 
-    call t_startf('dice_strdata_init')
+    ! The call to shr_strdata_init_model_domain creates the SDICE%gsmap which
+    ! is a '2d1d' decommp (1d decomp of 2d grid) and also create SDICE%grid
 
-    ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
-    ! grid and from that computes SDICE%gsmap and SDICE%ggrid. DICE%gsmap is created
-    ! using the decomp '2d1d' (1d decomp of 2d grid)
+    SDICE%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
     if (scmmode) then
-       if (my_task == master_task) then
-          write(logunit,F01) ' scm lon lat = ',scmlon,scmlat
-       end if
-       call shr_strdata_init(SDICE,mpicom,compid,name='ice', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, &
-            calendar=calendar)
+       if (my_task == master_task) write(logunit,F01) ' scm lon lat = ',scmlon,scmlat
+       call shr_strdata_init_model_domain(SDICE, mpicom, compid, my_task, &
+            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDICE%gsmap)
     else
-       call shr_strdata_init(SDICE,mpicom,compid,name='ice', &
-            calendar=calendar)
+       call shr_strdata_init_model_domain(SDICE, mpicom, compid, my_task, gsmap=SDICE%gsmap)
+    end if
+
+    if (my_task == master_task) then
+       call shr_strdata_print(SDICE,'SDICE data')
     endif
+
+    ! obtain mesh lats and lons
+    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(ownedElemCoords(spatialDim*numOwnedElements))
+    allocate(xc(numOwnedElements), yc(numOwnedElements))
+    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (numOwnedElements /= lsize) then
+       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
+    end if
+    do n = 1,lsize
+       xc(n) = ownedElemCoords(2*n-1)
+       yc(n) = ownedElemCoords(2*n)
+    end do
+
+    ! error check that mesh lats and lons correspond to those on the input domain file
+    index_lon = mct_aVect_indexRA(SDICE%grid%data,'lon')
+    do n = 1, lsize
+       if (abs( SDICE%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-4) then
+          write(6,*)'ERROR: lon diff = ',abs(SDICE%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
+          call shr_sys_abort()
+       end if
+       !SDICE%grid%data%rattr(index_lon,n) = xc(n) ! overwrite ggrid with mesh data
+    end do
+    index_lat = mct_aVect_indexRA(SDICE%grid%data,'lat')
+    do n = 1, lsize
+       if (abs( SDICE%grid%data%rattr(index_lat,n) -  yc(n)) > 1.e-4) then
+          write(6,*)'ERROR: lat diff = ',abs(SDICE%grid%data%rattr(index_lat,n) -  yc(n)),' too large'
+          call shr_sys_abort()
+       end if
+       !SDICE%grid%data%rattr(index_lat,n) = yc(n) ! overwrite ggrid with mesh data
+    end do
+
+    ! Note that the module array, imask, does not change after initialization
+    allocate(imask(lsize))
+    kfld = mct_aVect_indexRA(SDICE%grid%data,'mask')
+    imask(:) = nint(SDICE%grid%data%rAttr(kfld,:))
 
     if (my_task == master_task) then
        call shr_strdata_print(SDICE,'SDICE data')
@@ -415,30 +507,11 @@ contains
     call t_stopf('dice_strdata_init')
 
     !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp
+    ! Initialize SDICE attributes for streams and mapping of streams to model domain
     !----------------------------------------------------------------------------
 
-    call t_startf('dice_initgsmaps')
-    if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the dice_in namelist
-    ! (which by default is "1d")
-    call shr_dmodel_gsmapcreate(gsmap, SDICE%nxg*SDICE%nyg, compid, mpicom, decomp)
-    lsize = mct_gsmap_lsize(gsmap, mpicom)
-
-    ! create a rearranger from the data model SDICE%gsmap to gsmap
-    call mct_rearr_init(SDICE%gsmap, gsmap, mpicom, rearr)
-    call t_stopf('dice_initgsmaps')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT domain
-    !----------------------------------------------------------------------------
-
-    call t_startf('dice_initmctdom')
-    if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_dmodel_rearrGGrid(SDICE%grid, ggrid, gsmap, rearr, mpicom)
-    call t_stopf('dice_initmctdom')
+    call shr_strdata_init_streams(SDICE, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDICE, compid, mpicom, my_task)
 
     !----------------------------------------------------------------------------
     ! Initialize MCT attribute vectors
@@ -450,9 +523,7 @@ contains
     call mct_aVect_init(i2x, rList=flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x)
 
-
     ! optional per thickness category fields
-
     if (flds_i2o_per_cat) then
        kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
        kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
@@ -461,17 +532,9 @@ contains
     call mct_aVect_init(x2i, rList=flds_x2i_fields, lsize=lsize)
     call mct_aVect_zero(x2i)
 
-    allocate(imask(lsize))
-    allocate(yc(lsize))
     allocate(water(lsize))
     allocate(tfreeze(lsize))
     ! allocate(iFrac0(lsize))
-
-    ! Note that the module array, imask, does not change after initialization
-    kfld = mct_aVect_indexRA(ggrid%data,'mask')
-    imask(:) = nint(ggrid%data%rAttr(kfld,:))
-    kfld = mct_aVect_indexRA(ggrid%data,'lat')
-    yc(:) = ggrid%data%rAttr(kfld,:)
 
     if (km /= 0) then
        i2x%rAttr(km, :) = imask(:)
@@ -518,7 +581,7 @@ contains
        if (exists1) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
           call shr_pcdf_readwrite('read',SDICE%pio_subsystem, SDICE%io_type, &
-               trim(rest_file),mpicom,gsmap=gsmap,rf1=water,rf1n='water',io_format=SDICE%io_format)
+               trim(rest_file), mpicom, gsmap=SDICE%gsmap, rf1=water, rf1n='water', io_format=SDICE%io_format)
        else
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
        endif
@@ -551,7 +614,7 @@ contains
   !===============================================================================
 
   subroutine dice_comp_run(x2i, i2x, flds_i2o_per_cat, &
-       SDICE, gsmap, ggrid, mpicom, my_task, master_task, &
+       SDICE, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        calendar, modeldt, target_ymd, target_tod, cosArg, case_name )
 
@@ -562,27 +625,25 @@ contains
     type(mct_aVect)        , intent(inout) :: i2x
     logical                , intent(in)    :: flds_i2o_per_cat     ! .true. if select per ice thickness fields from ice
     type(shr_strdata_type) , intent(inout) :: SDICE
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
-    integer(IN)            , intent(in)    :: mpicom               ! mpi communicator
-    integer(IN)            , intent(in)    :: my_task              ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task          ! task number of master task
+    integer                , intent(in)    :: mpicom               ! mpi communicator
+    integer                , intent(in)    :: my_task              ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task          ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix          ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit              ! logging unit number
+    integer                , intent(in)    :: logunit              ! logging unit number
     logical                , intent(in)    :: read_restart         ! start from restart
     logical                , intent(in)    :: write_restart        ! restart now
     character(len=*)       , intent(in)    :: calendar
-    integer(IN)            , intent(in)    :: modeldt
-    integer(IN)            , intent(in)    :: target_ymd
-    integer(IN)            , intent(in)    :: target_tod
+    integer                , intent(in)    :: modeldt
+    integer                , intent(in)    :: target_ymd
+    integer                , intent(in)    :: target_tod
     real(R8)               , intent(in)    :: cosarg               ! for setting ice temp pattern
-    character(CL)          , intent(in), optional :: case_name     ! case name
+    character(len=*)       , intent(in), optional :: case_name     ! case name
 
     !--- local ---
-    integer(IN)       :: n,nfld            ! indices
-    integer(IN)       :: lsize             ! size of attr vect
+    integer           :: n,nfld            ! indices
+    integer           :: lsize             ! size of attr vect
     real(R8)          :: dt                ! timestep
-    integer(IN)       :: nu                ! unit number
+    integer           :: nu                ! unit number
     real(R8)          :: qmeltall          ! q that would melt all accumulated water
     character(len=CS) :: fldname
     character(len=18) :: date_str
@@ -592,6 +653,20 @@ contains
     character(*), parameter :: F0D   = "('(dice_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
+
+    !--------------------
+    ! Debug output
+    !--------------------
+
+    if (debug_import > 1 .and. my_task == master_task) then
+       do nfld = 1, mct_aVect_nRAttr(x2i)
+          call shr_string_listGetName(trim(flds_x2i_mod), nfld, fldname)
+          do n = 1, mct_aVect_lsize(x2i)
+             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
+                  n, x2i%rattr(nfld,n)
+          end do
+       end do
+    end if
 
     !--------------------
     ! ADVANCE ICE
@@ -612,7 +687,7 @@ contains
        call t_barrierf('dice_scatter_BARRIER',mpicom)
        call t_startf('dice_scatter')
        do n = 1,SDICE%nstreams
-          call shr_dmodel_translateAV(SDICE%avs(n),i2x,avifld,avofld,rearr)
+          call shr_dmodel_translateAV(SDICE%avs(n),i2x,avifld,avofld)
        enddo
        call t_stopf('dice_scatter')
     else
@@ -792,14 +867,7 @@ contains
     ! Debug output
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(x2i)
-          call shr_string_listGetName(trim(flds_x2i_mod), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2i)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2i%rattr(nfld,n)
-          end do
-       end do
+    if (debug_export > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(i2x)
           call shr_string_listGetName(trim(flds_i2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(i2x)
@@ -832,21 +900,13 @@ contains
        endif
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
-            trim(rest_file),mpicom,gsmap,clobber=.true.,rf1=water,rf1n='water')
+            trim(rest_file), mpicom, SDICE%gsmap, clobber=.true., rf1=water, rf1n='water')
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm),SDICE,mpicom,trim(case_name),'SDICE strdata')
        call t_stopf('dice_restart')
     endif
 
     call t_stopf('dice')
-
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) ' dice: model date ', target_ymd,target_tod
-    end if
 
     firstcall = .false.
 
