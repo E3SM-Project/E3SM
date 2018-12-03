@@ -78,7 +78,7 @@ template<typename ValueType>
 void FieldAllocProp::request_value_type_allocation () {
 
   error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
-
+  
   if (m_scalar_type_size==0) {
     // This is the first time we receive a request. Set the scalar type properties
     m_scalar_type_size = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
@@ -93,8 +93,12 @@ void FieldAllocProp::request_value_type_allocation () {
                        "Error! There was already a value type request for this allocation, and the size of the stored scalar_type (" +
                        std::to_string(m_scalar_type_size) + ") does not match the size of the scalar_type of the new request (" +
                        std::to_string(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)) + ").\n");
+  // Furthermore, if not the same as scalar type (by comparing name and size), ValueType *must* be a pack
 
-  constexpr int vts = sizeof(ValueType);
+  constexpr int     vts = sizeof(ValueType);
+  const std::string vtn = util::TypeName<ValueType>::name();
+  error::runtime_check( (m_scalar_type_name==vtn && m_scalar_type_size==vts) || util::ScalarProperties<ValueType>::is_pack,
+                        "Error! Template argument ValueType must be either the ScalarType of this allocation, or a pack type.\n");
 
   // This should always pass, given that the previous two did, but better safe than sorry
   error::runtime_check(vts % m_scalar_type_size == 0,
