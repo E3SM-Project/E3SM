@@ -731,20 +731,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd - ovhd_start
    endif
 !$OMP END MASTER
-
-!$OMP MASTER
-   if (perf_ovhd_measurement) then
-#ifdef HAVE_MPI
-      ovhd_start = mpi_wtime()
-#else
-      usr = 0.0
-      sys = 0.0
-      ierr = GPTLstamp(ovhd_start, usr, sys)
-#endif
-      perf_timing_ovhd = perf_timing_ovhd - ovhd_start
-   endif
-!$OMP END MASTER
-
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
@@ -763,18 +749,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
 !$OMP END MASTER
-
-!$OMP MASTER
-   if (perf_ovhd_measurement) then
-#ifdef HAVE_MPI
-      ovhd_stop = mpi_wtime()
-#else
-      ierr = GPTLstamp(ovhd_stop, usr, sys)
-#endif
-      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
-   endif
-!$OMP END MASTER
-
    return
    end subroutine t_startf
 !
@@ -845,18 +819,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
 !$OMP END MASTER
-
-!$OMP MASTER
-   if (perf_ovhd_measurement) then
-#ifdef HAVE_MPI
-      ovhd_stop = mpi_wtime()
-#else
-      ierr = GPTLstamp(ovhd_stop, usr, sys)
-#endif
-      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
-   endif
-!$OMP END MASTER
-
    return
    end subroutine t_stopf
 !
@@ -953,18 +915,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
 !$OMP END MASTER
-
-!$OMP MASTER
-   if (perf_ovhd_measurement) then
-#ifdef HAVE_MPI
-      ovhd_stop = mpi_wtime()
-#else
-      ierr = GPTLstamp(ovhd_stop, usr, sys)
-#endif
-      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
-   endif
-!$OMP END MASTER
-
    return
    end subroutine t_startstop_valsf
 !
