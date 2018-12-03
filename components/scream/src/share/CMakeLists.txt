@@ -1,12 +1,31 @@
 set(SHARE_SRC
+  error_defs.cpp
+  field/field_alloc_prop.cpp
+  field/field_identifier.cpp
+  field/field_header.cpp
+  field/field_tracking.cpp
   scream_session.cpp
+  mpi/scream_comm.cpp
   util/scream_utils.cpp
   util/array_io.cpp
   util/array_io_mod.f90
 )
 
 set(SHARE_HEADERS
+  atmosphere_process.hpp
+  error_defs.hpp
+  field/field.hpp
+  field/field_alloc_prop.hpp
+  field/field_identifier.hpp
+  field/field_header.hpp
+  field/field_repository.hpp
+  field/field_tag.hpp
+  field/field_tracking.cpp
+  parameter_list.hpp
   scream_session.hpp
+  mpi/scream_comm.hpp
+  util/factory.hpp
+  util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp
 )

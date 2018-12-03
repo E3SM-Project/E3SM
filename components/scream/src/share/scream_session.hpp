@@ -3,8 +3,8 @@
 
 namespace scream {
 
-void initialize(int argc, char **argv);
-void finalize();
+void initialize_scream_session(int argc, char **argv);
+void finalize_scream_session();
 
 } // namespace scream
 

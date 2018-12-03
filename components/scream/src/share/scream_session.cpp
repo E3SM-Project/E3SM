@@ -1,4 +1,4 @@
-#include "scream_session.hpp"
+#include "share/scream_session.hpp"
 #include "share/util/scream_utils.hpp"
 
 #ifdef SCREAM_FPE
@@ -19,13 +19,13 @@ void activate_floating_point_exceptions_if_enabled () {
 #endif
 }
 
-void initialize (int argc, char **argv) {
+void initialize_scream_session (int argc, char **argv) {
   util::activate_floating_point_exceptions_if_enabled();
   Kokkos::initialize(argc, argv);
   std::cout << util::config_string() << "\n";
 }
 
-void finalize () {
+void finalize_scream_session () {
   Kokkos::finalize();
 }
 

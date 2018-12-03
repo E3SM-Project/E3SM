@@ -4,9 +4,10 @@
 //TODO
 // - bounds checking define
 
-#include "util/math_utils.hpp" // for min, max
-#include "scream_types.hpp"    // for Int
-#include "scream_macros.hpp"   // for vector annotations
+#include "util/math_utils.hpp"    // for min, max
+#include "scream_types.hpp"       // for Int
+#include "util/scream_utils.hpp"  // for TypeName
+#include "scream_macros.hpp"      // for vector annotations
 
 namespace scream {
 namespace pack {
@@ -394,6 +395,30 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
 #undef scream_mask_gen_bin_op_all
 
 } // namespace pack
+
+namespace util {
+
+// Specialization of scalar-properties detection helper struct for Pack types
+
+template<typename T, int N>
+struct ScalarProperties<pack::Pack<T,N>> {
+  // This seems funky. But write down a pow of 2 and a non-pow of 2 in binary (both positive), and you'll see why it works
+  static_assert (N>0 && ((N & (N-1))==0), "Error! Packs can only have power of two lengths.\n");
+
+  using scalar_type = typename ScalarProperties<T>::scalar_type;
+  static constexpr bool is_pack = true;
+};
+
+// Specialization of TypeName struct for Pack type
+template<typename T, int N>
+struct TypeName<pack::Pack<T,N>> {
+  static std::string name () {
+    return "Pack<" + TypeName<T>::name() + "," + std::to_string(N) + ">";
+  }
+};
+
+} // namespace util
+
 } // namespace scream
 
 #endif // INCLUDE_SCREAM_PACK

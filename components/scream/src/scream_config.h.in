@@ -13,4 +13,10 @@
 // The number of scalars in a scream::pack::Pack and Mask.
 #cmakedefine SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
 
+// Whether MPI errors should abort
+#cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
+
+// Whether this is a CUDA build
+#cmakedefine CUDA_BUILD
+
 #endif // SCREAM_CONFIG_H

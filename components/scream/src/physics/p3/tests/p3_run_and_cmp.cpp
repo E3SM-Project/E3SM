@@ -145,7 +145,6 @@ void expect_another_arg (int i, int argc) {
 } // namespace anon
 
 int main (int argc, char** argv) {
-  namespace util = scream::util;
 
   int nerr = 0;
 
@@ -173,7 +172,7 @@ int main (int argc, char** argv) {
   std::string baseline_fn(argv[argc-1]);
   baseline_fn += std::to_string(sizeof(scream::Real));
 
-  scream::initialize(argc, argv); {
+  scream::initialize_scream_session(argc, argv); {
     Baseline bln;
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
@@ -182,7 +181,7 @@ int main (int argc, char** argv) {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol);
     }    
-  } scream::finalize();
+  } scream::finalize_scream_session();
 
   return nerr;
 }
