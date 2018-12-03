@@ -121,7 +121,11 @@ module perf_mod
 #ifdef NUOPC_INTERFACE
    integer, private   :: cur_timing_depth = 0
 #endif
-   logical, parameter :: def_perf_single_file = .false.         ! default
+   integer, parameter :: init_num_threads = 1                  ! init
+   integer, private   :: num_threads = init_num_threads
+                         ! current maximum number of threads per process
+
+   logical, parameter :: def_perf_single_file = .false.        ! default
    logical, private   :: perf_single_file = def_perf_single_file
                          ! flag indicating whether the performance timer
                          ! output should be written to a single file
@@ -148,22 +152,14 @@ module perf_mod
    logical, private   :: perf_ovhd_measurement = def_perf_ovhd_measurement
                          ! measure overhead of profiling directly
 
+   real(shr_kind_r8), private :: perf_timing_ovhd = 0.0 ! start/stop overhead
+
    logical, parameter :: def_perf_add_detail = .false.         ! default
    logical, private   :: perf_add_detail = def_perf_add_detail
-                         ! flag indicating whether to prefix the
-                         ! timer name with the current detail level.
+                         ! flag indicating whether to add the current
+                         ! detail level as a suffix to the timer name.
                          ! This requires that even t_startf/t_stopf
                          ! calls do not cross detail level changes
-
-   character(len=SHR_KIND_CS), private :: event_prefix
-                         ! current prefix for all event names.
-                         ! Default defined to be blank via
-                         ! prefix_len_def
-   integer, parameter :: prefix_len_def = 0                    ! default
-   integer, private   :: prefix_len = prefix_len_def
-                         ! For convenience, contains len_trim of
-                         ! event_prefix, if set.
-
 #ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
 #else
@@ -291,7 +287,7 @@ contains
    logical, intent(out), optional :: perf_papi_enable_out
    ! measure overhead of profiling directly
    logical, intent(out), optional :: perf_ovhd_measurement_out
-   ! prefix timer name with current detail level
+   ! 'suffix' timer name with current detail level
    logical, intent(out), optional :: perf_add_detail_out
 !-----------------------------------------------------------------------
    if ( present(timing_disable_out) ) then
@@ -382,7 +378,7 @@ contains
    logical, intent(in), optional :: perf_papi_enable_in
    ! measure overhead of profiling directly
    logical, intent(in), optional :: perf_ovhd_measurement_in
-   ! prefix timer name with current detail level
+   ! 'suffix' timer name with current detail level
    logical, intent(in), optional :: perf_add_detail_in
 !
 !---------------------------Local workspace-----------------------------
@@ -544,32 +540,16 @@ contains
    if ( .not. timing_initialized ) then
 
       if ( present(papi_ctr1_in) ) then
-         if (papi_ctr1_in < 0) then
-            papi_ctr1 = papi_ctr1_in
-         else
-            papi_ctr1 = PAPI_NULL
-         endif
+         papi_ctr1 = papi_ctr1_in
       endif
       if ( present(papi_ctr2_in) ) then
-         if (papi_ctr2_in < 0) then
-            papi_ctr2 = papi_ctr2_in
-         else
-            papi_ctr2 = PAPI_NULL
-         endif
+         papi_ctr2 = papi_ctr2_in
       endif
       if ( present(papi_ctr3_in) ) then
-         if (papi_ctr3_in < 0) then
-            papi_ctr3 = papi_ctr3_in
-         else
-            papi_ctr3 = PAPI_NULL
-         endif
+         papi_ctr3 = papi_ctr3_in
       endif
       if ( present(papi_ctr4_in) ) then
-         if (papi_ctr4_in < 0) then
-            papi_ctr4 = papi_ctr4_in
-         else
-            papi_ctr4 = PAPI_NULL
-         endif
+         papi_ctr4 = papi_ctr4_in
       endif
 !
 #ifdef DEBUG
@@ -632,7 +612,6 @@ contains
    subroutine t_set_prefixf(prefix_string)
 !-----------------------------------------------------------------------
 ! Purpose: Set prefix for subsequent time event names.
-!          Ignored in threaded regions.
 ! Author: P. Worley
 !-----------------------------------------------------------------------
 !---------------------------Input arguments-----------------------------
@@ -642,25 +621,14 @@ contains
 !
 !---------------------------Local workspace-----------------------------
 !
-   integer i                              ! loop index
-!
-!---------------------------Externals-----------------------------------
-!
-#if ( defined _OPENMP )
-   logical omp_in_parallel
-   external omp_in_parallel
-#endif
+   integer  ierr                          ! GPTL error return
+   integer  i                             ! loop index
 !
 !-----------------------------------------------------------------------
 !
-#if ( defined _OPENMP )
-   if (omp_in_parallel()) return
-#endif
+   if (.not. timing_initialized) return
 
-   prefix_len = min(SHR_KIND_CS,len_trim(prefix_string))
-   if (prefix_len > 0) then
-     event_prefix(1:prefix_len) = prefix_string(1:prefix_len)
-   endif
+   ierr = GPTLprefix_set(trim(prefix_string))
 
    end subroutine t_set_prefixf
 !
@@ -672,20 +640,15 @@ contains
 !          Ignored in threaded regions.
 ! Author: P. Worley
 !
-!---------------------------Externals-----------------------------------
+!---------------------------Local workspace-----------------------------
 !
-#if ( defined _OPENMP )
-   logical omp_in_parallel
-   external omp_in_parallel
-#endif
+   integer  ierr                          ! GPTL error return
 !
 !-----------------------------------------------------------------------
 !
-#if ( defined _OPENMP )
-   if (omp_in_parallel()) return
-#endif
+   if (.not. timing_initialized) return
 
-   prefix_len = 0
+   ierr = GPTLprefix_unset()
 
    end subroutine t_unset_prefixf
 !
@@ -741,8 +704,10 @@ contains
 !
    integer  ierr                          ! GPTL error return
    integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+                                          !  detail suffix
    character(len=2) cdetail               ! char variable for detail
+   real(shr_kind_r8) ovhd_start, ovhd_stop, usr, sys
+                                          ! for overhead calculation
 !
 !-----------------------------------------------------------------------
 !
@@ -753,37 +718,41 @@ contains
    if(cur_timing_depth > timer_depth_limit) return
 #endif
 
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_start = mpi_wtime()
+#else
+      usr = 0.0
+      sys = 0.0
+      ierr = GPTLstamp(ovhd_start, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd - ovhd_start
+   endif
+!$OMP END MASTER
+
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         TIMERSTART( &
-            '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
-            event(1:str_length)//'"')
-      else
-         str_length = min(SHR_KIND_CM-5,len_trim(event))
-         TIMERSTART('"'//cdetail//"_"//event(1:str_length)//'"')
-      endif
+      str_length = min(SHR_KIND_CM-3,len_trim(event))
+      ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
 
    else
 
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         TIMERSTART('"'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"')
-      else
-         str_length = min(SHR_KIND_CM-2,len_trim(event))
-         TIMERSTART('"'//trim(event)//'"')
-      endif
-
-!pw   if ( present (handle) ) then
-!pw      TIMERSTART_handle(event, handle)
-!pw   else
-!pw      TIMERSTART(event)
-!pw   endif
-
+      str_length = min(SHR_KIND_CM,len_trim(event))
+      ierr = GPTLstart(event(1:str_length))
    endif
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_stop = mpi_wtime()
+#else
+      ierr = GPTLstamp(ovhd_stop, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
+   endif
+!$OMP END MASTER
 
    return
    end subroutine t_startf
@@ -809,13 +778,27 @@ contains
 !
    integer  ierr                          ! GPTL error return
    integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+                                          !  detail suffix
    character(len=2) cdetail               ! char variable for detail
+   real(shr_kind_r8) ovhd_start, ovhd_stop, usr, sys
+                                          ! for overhead calculation
 !
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_start = mpi_wtime()
+#else
+      usr = 0.0
+      sys = 0.0
+      ierr = GPTLstamp(ovhd_start, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd - ovhd_start
+   endif
+!$OMP END MASTER
 #ifdef NUOPC_INTERFACE
    cur_timing_depth = cur_timing_depth - 1
    if(cur_timing_depth > timer_depth_limit) return
@@ -823,34 +806,25 @@ contains
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         TIMERSTOP( &
-              '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"')
-      else
-         str_length = min(SHR_KIND_CM-5,len_trim(event))
-         TIMERSTOP('"'//cdetail//"_"//event(1:str_length)//'"')
-      endif
+      str_length = min(SHR_KIND_CM-3,len_trim(event))
+      ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
 
    else
 
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         TIMERSTOP('"'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"')
-     else
-         str_length = min(SHR_KIND_CM-2,len_trim(event))
-         TIMERSTOP('"'//trim(event)//'"')
-     endif
-
-!pw   if ( present (handle) ) then
-!pw      TIMERSTOP_handle(event, handle)
-!pw   else
-!pw      TIMERSTOP(event)
-!pw   endif
-
+      str_length = min(SHR_KIND_CM,len_trim(event))
+      ierr = GPTLstop(event(1:str_length))
    endif
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_stop = mpi_wtime()
+#else
+      ierr = GPTLstamp(ovhd_stop, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
+   endif
+!$OMP END MASTER
 
    return
    end subroutine t_stopf
@@ -882,15 +856,30 @@ contains
 !
    integer  ierr                          ! GPTL error return
    integer  str_length, i                 ! support for adding
-                                          !  detail prefix
+                                          !  detail suffix
    character(len=2) cdetail               ! char variable for detail
-   real(shr_kind_r8) wtime                ! walltime increment (seconds)
    integer  callcnt                       ! call count increment
+   real(shr_kind_r8) wtime                ! walltime increment (seconds)
+   real(shr_kind_r8) ovhd_start, ovhd_stop, usr, sys
+                                          ! for overhead calculation
 !
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_start = mpi_wtime()
+#else
+      usr = 0.0
+      sys = 0.0
+      ierr = GPTLstamp(ovhd_start, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd - ovhd_start
+   endif
+!$OMP END MASTER
 
    wtime = 0.0_shr_kind_r8
    if ( present(walltime) ) then
@@ -911,35 +900,27 @@ contains
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
 
       write(cdetail,'(i2.2)') cur_timing_detail
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
-         ierr = GPTLstartstop_vals( &
-            '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
-            event(1:str_length)//'"', wtime, callcnt)
-      else
-         str_length = min(SHR_KIND_CM-5,len_trim(event))
-         ierr = GPTLstartstop_vals( &
-            '"'//cdetail//"_"//event(1:str_length)//'"', wtime, callcnt)
-      endif
+      str_length = min(SHR_KIND_CM-3,len_trim(event))
+      ierr = GPTLstartstop_vals( &
+         event(1:str_length)//'_'//cdetail, wtime, callcnt)
 
    else
 
-      if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
-         ierr = GPTLstartstop_vals('"'//event_prefix(1:prefix_len)// &
-              event(1:str_length)//'"', wtime, callcnt)
-      else
-         str_length = min(SHR_KIND_CM-2,len_trim(event))
-         ierr = GPTLstartstop_vals('"'//trim(event)//'"', wtime, callcnt)
-      endif
-
-!pw   if ( present (handle) ) then
-!pw      ierr = GPTLstartstop_vals_handle(event, wtime, handle)
-!pw   else
-!pw      ierr = GPTLstartstop_vals(event, wtime)
-!pw   endif
+      str_length = min(SHR_KIND_CM,len_trim(event))
+      ierr = GPTLstartstop_vals(trim(event), wtime, callcnt)
 
    endif
+
+!$OMP MASTER
+   if (perf_ovhd_measurement) then
+#ifdef HAVE_MPI
+      ovhd_stop = mpi_wtime()
+#else
+      ierr = GPTLstamp(ovhd_stop, usr, sys)
+#endif
+      perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
+   endif
+!$OMP END MASTER
 
    return
    end subroutine t_startstop_valsf
@@ -1198,11 +1179,11 @@ contains
    unitn = shr_file_getUnit()
 
    ! determine what the current output mode is (append or write)
-   if (GPTLpr_query_write() == 1) then
+   if (GPTLprint_mode_query() == GPTLprint_write) then
      pr_write = .true.
-     ierr = GPTLpr_set_append()
+     ierr = GPTLprint_mode_set(GPTLprint_append)
    else
-     pr_write=.false.
+     pr_write = .false.
    endif
 
    ! Determine whether to write all data to a single fie
@@ -1273,7 +1254,7 @@ contains
       if (me .eq. 0) then
 
          if (glb_stats) then
-            open( unitn, file=trim(fname), status='UNKNOWN' )
+            open( unitn, file=trim(fname), status='UNKNOWN', access='SEQUENTIAL' )
             write( unitn, 100) npes
  100        format(/,"***** GLOBAL STATISTICS (",I6," MPI TASKS) *****",/)
             close( unitn )
@@ -1283,13 +1264,21 @@ contains
 
          if (write_data) then
             if (glb_stats) then
-               open( unitn, file=trim(fname), status='OLD', position='APPEND' )
+               open( unitn, file=trim(fname), status='OLD', access='SEQUENTIAL', position='APPEND' )
             else
-               open( unitn, file=trim(fname), status='UNKNOWN' )
+               open( unitn, file=trim(fname), status='UNKNOWN', access='SEQUENTIAL' )
             endif
 
-            write( unitn, 101) me, gme
- 101        format(/,"************ PROCESS ",I6," (",I6,") ************",/)
+            if (perf_ovhd_measurement) then
+               write( unitn, 101) me, gme
+ 101           format(/,"************ PROCESS ",I6," (",I6,") ************")
+               write( unitn, 102) perf_timing_ovhd
+ 102           format("** TIMING OVERHEAD ",E20.10," SECONDS *",/)
+            else
+               write( unitn, 103) me, gme
+ 103           format(/,"************ PROCESS ",I6," (",I6,") ************",/)
+            endif
+
             close( unitn )
 
             ierr = GPTLpr_file(trim(fname))
@@ -1308,8 +1297,13 @@ contains
          end if
 
          if (write_data) then
-            open( unitn, file=trim(fname), status='OLD', position='APPEND' )
-            write( unitn, 101) me, gme
+            open( unitn, file=trim(fname), status='OLD', access='SEQUENTIAL', position='APPEND' )
+            if (perf_ovhd_measurement) then
+               write( unitn, 101) me, gme
+               write( unitn, 102) perf_timing_ovhd
+            else
+               write( unitn, 103) me, gme
+            endif
             close( unitn )
 
             ierr = GPTLpr_file(trim(fname))
@@ -1333,7 +1327,7 @@ contains
          fname(str_length+1:str_length+6) = '_stats'
 
          if (me .eq. 0) then
-            open( unitn, file=trim(fname), status='UNKNOWN' )
+            open( unitn, file=trim(fname), status='UNKNOWN', access='SEQUENTIAL' )
             write( unitn, 100) npes
             close( unitn )
          endif
@@ -1373,8 +1367,13 @@ contains
          fname(str_length+1:str_length+1) = '.'
          fname(str_length+2:str_length+cme_adj) = cme
 
-         open( unitn, file=trim(fname), status='UNKNOWN' )
-         write( unitn, 101) me, gme
+         open( unitn, file=trim(fname), status='UNKNOWN', access='SEQUENTIAL' )
+         if (perf_ovhd_measurement) then
+            write( unitn, 101) me, gme
+            write( unitn, 102) perf_timing_ovhd
+         else
+            write( unitn, 103) me, gme
+         endif
          close( unitn )
 
          ierr = GPTLpr_file(trim(fname))
@@ -1386,7 +1385,7 @@ contains
 
    ! reset GPTL output mode
    if (pr_write) then
-     ierr = GPTLpr_set_write()
+     ierr = GPTLprint_mode_set(GPTLprint_write)
    endif
 
 !$OMP END MASTER
@@ -1458,6 +1457,13 @@ contains
    character(len=16) papi_ctr4_str
    namelist /papi_inparm/ papi_ctr1_str, papi_ctr2_str,  &
                           papi_ctr3_str, papi_ctr4_str
+!
+!---------------------------Externals-----------------------------------
+!
+#if ( defined _OPENMP )
+   integer omp_get_max_threads
+   external omp_get_max_threads
+#endif
 !-----------------------------------------------------------------------
     if ( timing_initialized ) then
 #ifdef DEBUG
@@ -1467,6 +1473,18 @@ contains
     endif
 
 !$OMP MASTER
+    if ( present(MaxThreads) ) then
+       num_threads = MaxThreads
+    else
+#ifdef _OPENMP
+!$omp parallel
+       num_threads = omp_get_max_threads()
+!$omp end parallel
+#else
+       num_threads = 1
+#endif
+    endif
+
     if ( present(LogUnit) ) then
        call t_setLogUnit(LogUnit)
     else
@@ -1514,7 +1532,7 @@ contains
        unitn = shr_file_getUnit()
 
        ierr = 1
-       open( unitn, file=trim(NLFilename), status='old', iostat=ierr )
+       open( unitn, file=trim(NLFilename), status="OLD", form="FORMATTED", access="SEQUENTIAL", iostat=ierr )
        if (ierr .eq. 0) then
 
           ! Look for prof_inparm group name in the input file.
@@ -1586,7 +1604,7 @@ contains
           unitn = shr_file_getUnit()
 
           ierr = 1
-          open( unitn, file=trim(NLFilename), status='old', iostat=ierr )
+          open( unitn, file=trim(NLFilename), status="OLD", form="FORMATTED", access="SEQUENTIAL", iostat=ierr )
           if (ierr .eq. 0) then
              ! Look for papi_inparm group name in the input file.
              ! If found, leave the file positioned at that namelist group.
@@ -1610,10 +1628,6 @@ contains
               (papi_ctr2_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr3_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr4_str(1:11) .eq. "PAPI_NO_CTR")) then
-!pw              papi_ctr1_str = "PAPI_TOT_CYC"
-!pw              papi_ctr2_str = "PAPI_TOT_INS"
-!pw              papi_ctr3_str = "PAPI_FP_OPS"
-!pw              papi_ctr4_str = "PAPI_FP_INS"
               papi_ctr1_str = "PAPI_FP_OPS"
           endif
 
@@ -1664,11 +1678,17 @@ contains
    !
    if (gptlsetoption (gptlcpu, 0) < 0) call shr_sys_abort (subname//':: gptlsetoption')
    !
+   ! Enable addition of double quotes to the output of timer names
    !
+   if (gptlsetoption (gptldopr_quotes, 1) < 0) &
+     call shr_sys_abort (subname//':: gptlsetoption')
    !
-!pw   if(present(MaxThreads)) then
-!pw      if (gptlsetoption (gptlmaxthreads, MaxThreads) < 0) call shr_sys_abort (subname//':: gptlsetoption')
-!pw   endif
+   ! Set maximum number of threads
+   !
+   if ( present(MaxThreads) ) then
+      if (gptlsetoption (gptlmaxthreads, MaxThreads) < 0) &
+         call shr_sys_abort (subname//':: gptlsetoption')
+   endif
    !
    ! Set max timer depth
    !
