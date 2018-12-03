@@ -64,7 +64,7 @@
       <machine name="theia" compiler="intel" category="prealpha"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:40:00 </option>
     </options>
   </test>
 
@@ -244,7 +244,7 @@
       <machine name="theia" compiler="intel" category="prealpha"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:40:00 </option>
     </options>
   </test>
 
