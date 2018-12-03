@@ -145,7 +145,8 @@ class _TimingParser:
 
         return (0, 0, False)
 
-    def _get_nuopc_phase(self, line, instance, phase):
+@staticmethod
+    def _get_nuopc_phase(line, instance, phase):
         if "[ensemble] Init 1" in line:
             phase = "init"
         elif "[ESM"+instance+"] RunPhase1" in line:
