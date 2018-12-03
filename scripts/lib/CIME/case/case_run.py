@@ -296,9 +296,9 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         lid = _run_model(self, lid, skip_pnl, da_cycle=cycle)
         model_log("e3sm", logger, "{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
-            model_log("e3sm", "{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+            model_log("e3sm", logger, "{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
             get_timing(self, lid)     # Run the getTiming script
-            model_log("e3sm", "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+            model_log("e3sm", logger, "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         if data_assimilation:
             model_log("e3sm", logger, "{} DO_DATA_ASSIMILATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
