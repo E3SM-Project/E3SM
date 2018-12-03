@@ -169,8 +169,13 @@
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
+<config_GM_Bolus_kappa_function>'constant'</config_GM_Bolus_kappa_function>
 <config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
 <config_standardGM_tracer_kappa ocn_grid="oEC60to30v3wLI" ocn_forcing="core_forced_restoring" >600.0</config_standardGM_tracer_kappa>
+<config_GM_Bolus_kappa_min>0.0</config_GM_Bolus_kappa_min>
+<config_GM_Bolus_kappa_max>600.0</config_GM_Bolus_kappa_max>
+<config_GM_Bolus_cell_size_min>20e3</config_GM_Bolus_cell_size_min>
+<config_GM_Bolus_cell_size_max>30e3</config_GM_Bolus_cell_size_max>
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
 <config_max_relative_slope>0.01</config_max_relative_slope>
