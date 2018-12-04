@@ -1183,6 +1183,10 @@ directory, NOT in this subdirectory."""
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
 
+        # User mods may have modified underlying XML files
+        if all_user_mods:
+            self.read_xml()
+
     def _get_comp_user_mods(self, component):
         """
         For a component 'foo', gets the value of FOO_USER_MODS.
