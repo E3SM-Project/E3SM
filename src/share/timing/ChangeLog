@@ -1,3 +1,27 @@
+timing_180912: Moved prefix support from perf_mod.F90 to gptl.c
+               and also added support for setting prefixes in
+               threaded regions.
+               [Patrick Worley]
+timing_180911: Moved detail to end of timer name when specify
+               profile_add_detail (so that will not interfere with
+               planned move of the prefix logic into gptl.c)
+               [Patrick Worley]
+timing_180910: Removed addition of double quotes to timer names in
+               perf_mod.F90 and added this as an output option in 
+               gptl.c (so internally the names do not have the quotes)
+               [Patrick Worley]
+timing_180822: Fixed perf_mod.F90 bug that prevents PAPI derived events 
+               from being recognized.
+               [Patrick Worley]
+timing_180731: Refactored implementation of append/write modes;
+               collected and output "on" events for global statistics
+               [Patrick Worley]
+timing_180730: Added support for setting GPTLmaxthreads. Cleaned up white space.
+               Added SEQUENTIAL to fortran open, to avoid problems on some systems.
+               Added timing overhead measurement to perf_mod. Fixed errors in
+               f_wrappers.c in definition of gptlpr_query_append and 
+               gptlpr_XXX_write.
+               [Patrick Worley (some from Jim Rosinksi)]
 timing_180403: Added GPTLstartstop_val(f) to gptl.h, to provide explicit
                typing and eliminate compile-time warning for some compilers.
                Also do not define the CPP tokens HAVE_COMM_F2C and 

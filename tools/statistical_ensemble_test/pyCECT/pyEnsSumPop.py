@@ -8,12 +8,13 @@ import re
 from asaptools.partition import EqualStride, Duplicate
 import asaptools.simplecomm as simplecomm 
 import pyEnsLib
+#import pdb
 
 def main(argv):
     print 'Running pyEnsSumPop!'
 
     # Get command line stuff and store in a dictionary
-    s = 'nyear= nmonth= npert= tag= res= mach= compset= sumfile= indir= tslice= verbose jsonfile= mpi_enable zscoreonly nrand= rand seq= jsondir='
+    s = 'nyear= nmonth= npert= tag= res= mach= compset= sumfile= indir= tslice= verbose jsonfile= mpi_enable nrand= rand seq= jsondir='
     optkeys = s.split()
     try: 
         opts, args = getopt.getopt(argv, "h", optkeys)
@@ -25,38 +26,39 @@ def main(argv):
     opts_dict={}
 
     # Defaults
-    opts_dict['tag'] = 'cesm1_2_2'
-    opts_dict['compset'] = 'G_NORMAL_YEAR'
+    opts_dict['tag'] = 'cesm2_0_0'
+    opts_dict['compset'] = 'G'
     opts_dict['mach'] = 'cheyenne'
     opts_dict['tslice'] = 0 
-    opts_dict['nyear'] = 3
+    opts_dict['nyear'] = 1
     opts_dict['nmonth'] = 12
     opts_dict['npert'] = 40
     opts_dict['nbin'] = 40
     opts_dict['minrange'] = 0.0
     opts_dict['maxrange'] = 4.0
-    opts_dict['res'] = 'T62_t12'
+    opts_dict['res'] = 'T62_g17'
     opts_dict['sumfile'] = 'ens.pop.summary.nc'
     opts_dict['indir'] = './'
     opts_dict['jsonfile'] = ''
     opts_dict['verbose'] = True
     opts_dict['mpi_enable'] = False
-    opts_dict['zscoreonly'] = False
+    opts_dict['zscoreonly'] = True
     opts_dict['popens'] = True
     opts_dict['nrand'] = 40 
     opts_dict['rand'] = False
     opts_dict['seq'] = 0 
-    opts_dict['jsondir'] = '/glade/scratch/haiyingx/' 
+    opts_dict['jsondir'] = './' 
 
     # This creates the dictionary of input arguments 
-    print "before parseconfig"
+    #print "before parseconfig"
     opts_dict = pyEnsLib.getopt_parseconfig(opts,optkeys,'ESP',opts_dict)
 
     verbose = opts_dict['verbose']
     nbin = opts_dict['nbin']
 
     if verbose:
-       print opts_dict
+        print "opts_dict = "
+        print opts_dict
        
     # Now find file names in indir
     input_dir = opts_dict['indir']
@@ -87,10 +89,12 @@ def main(argv):
            # Get the list of files
            in_files_temp = os.listdir(input_dir)
            in_files=sorted(in_files_temp)
-        # Make sure we have enough
         num_files = len(in_files)
+#        if (verbose == True):
+#            print in_files
+
     else:
-        print 'Input directory: ',input_dir,' not found'
+        print 'ERROR: Input directory: ',input_dir,' not found'
         sys.exit(2)
 
     # Create a mpi simplecomm object
@@ -108,11 +112,11 @@ def main(argv):
         if (os.path.isfile(input_dir+'/' + onefile)):
             o_files.append(Nio.open_file(input_dir+'/' + onefile,"r"))
         else:
-            print "COULD NOT LOCATE FILE "+ input_dir + onefile + "! EXITING...."
+            print "ERROR: Could not locate file: "+ input_dir + onefile 
             sys.exit() 
 
 
-    print in_file_list
+    #print in_file_list
 
     # Store dimensions of the input fields
     if (verbose == True):
@@ -126,6 +130,8 @@ def main(argv):
     ndims = len(input_dims)
 
     # Make sure all files have the same dimensions
+    if (verbose == True):
+        print "Checking dimensions ..."
     for key in input_dims:
         if key == "z_t":
             nlev = input_dims["z_t"]
@@ -199,6 +205,7 @@ def main(argv):
           v_gm = nc_sumfile.create_variable("global_mean", 'f', ('time','nvars', 'ens_size'))
 
 
+
        # Assign vars, var3d and var2d
        if (verbose == True):
            print "Assigning vars, var3d, and var2d ....."
@@ -256,20 +263,41 @@ def main(argv):
     if me.get_rank() == 0:
        v_time[:]=time_array[:]
 
-    # Calculate global mean, average, standard deviation 
+    #Assign zero values to first time slice of RMSZ and avg and stddev for 2d & 3d 
+    #in case of a calculation problem before finishing
+    e_size = opts_dict['npert']
+    b_size =  opts_dict['nbin']
+    z_ens_avg3d=np.zeros((len(Var3d),nlev,nlat,nlon),dtype=np.float32)
+    z_ens_stddev3d=np.zeros((len(Var3d),nlev,nlat,nlon),dtype=np.float32)
+    z_ens_avg2d=np.zeros((len(Var2d),nlat,nlon),dtype=np.float32)
+    z_ens_stddev2d=np.zeros((len(Var2d),nlat,nlon),dtype=np.float32)
+    z_RMSZ = np.zeros(((len(Var3d)+len(Var2d)),e_size,b_size), dtype=np.float32)
+    if me.get_rank() == 0 :
+        v_RMSZ[0,:,:,:]=z_RMSZ[:,:,:]
+        v_ens_avg3d[0,:,:,:,:]=z_ens_avg3d[:,:,:,:]
+        v_ens_stddev3d[0,:,:,:,:]=z_ens_stddev3d[:,:,:,:]
+        v_ens_avg2d[0,:,:,:]=z_ens_avg2d[:,:,:]
+        v_ens_stddev2d[0,:,:,:]=z_ens_stddev2d[:,:,:]
+
+    # Calculate global mean, average, standard deviation and rmse 
     if verbose:
-       print "Calculating global means ....."
+       if not opts_dict['zscoreonly']: 
+           print "Calculating global means ....."
     is_SE = False
     tslice=0
     if not opts_dict['zscoreonly']:
        gm3d,gm2d = pyEnsLib.generate_global_mean_for_summary(o_files,Var3d,Var2d, is_SE,False,opts_dict)
     if verbose:
-       print "Finish calculating global means ....."
+        if not opts_dict['zscoreonly']:
+            print "Finish calculating global means ....."
 
     # Calculate RMSZ scores  
     if (verbose == True):
        print "Calculating RMSZ scores ....."
     zscore3d,zscore2d,ens_avg3d,ens_stddev3d,ens_avg2d,ens_stddev2d,temp1,temp2=pyEnsLib.calc_rmsz(o_files,Var3d,Var2d,is_SE,opts_dict)    
+
+    if (verbose == True):
+        print "Finished with RMSZ scores ....."
 
     # Collect from all processors
     if opts_dict['mpi_enable'] :

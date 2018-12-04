@@ -884,7 +884,7 @@ contains
           end do
        end do
     end if
-    
+
     !--------------------
     ! ADVANCE ATM
     !--------------------
@@ -1418,15 +1418,6 @@ contains
        call shr_strdata_restWrite(trim(rest_file_strm),SDATM,mpicom,trim(case_name),'SDATM strdata')
        call t_stopf('datm_restart')
     endif
-
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    ! Reset shr logging to original values
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,F04) 'datm : model date ', target_ymd,target_tod
-    end if
 
     firstcall = .false.
 

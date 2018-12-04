@@ -110,6 +110,41 @@ def copy(case, suffix):
 
     return comments
 
+def rename_all_hist_files(case, suffix):
+    """Renaming all hist files in a case, adding the given suffix.
+
+    case - The case containing the files you want to save
+    suffix - The string suffix you want to add to saved files, this can be used to find them later.
+    """
+    rundir   = case.get_value("RUNDIR")
+    ref_case = case.get_value("RUN_REFCASE")
+    # Loop over models
+    archive = case.get_env("archive")
+    comments = "Renaming hist files by adding suffix '{}'\n".format(suffix)
+    num_renamed = 0
+    for model in _iter_model_file_substrs(case):
+        comments += "  Renaming hist files for model '{}'\n".format(model)
+        if model == 'cpl':
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+        else:
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+        test_hists = _get_all_hist_files(model, rundir, file_extensions, ref_case=ref_case)
+        num_renamed += len(test_hists)
+        for test_hist in test_hists:
+            new_file = "{}.{}".format(test_hist, suffix)
+            if os.path.exists(new_file):
+                os.remove(new_file)
+
+            comments += "    Renaming '{}' to '{}'\n".format(test_hist, new_file)
+
+           #safe_copy(test_hist, new_file)
+           #os.remove(test_hist)
+            os.rename(test_hist, new_file)
+
+    expect(num_renamed > 0, "renaming failed: no hist files found in rundir '{}'".format(rundir))
+
+    return comments
+
 def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     """
     return (num in set 1 but not 2 , num in set 2 but not 1, matchups)
@@ -195,11 +230,12 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
-    testcase = case.get_value("CASE")
+    casename = case.get_value("CASE")
+    testcase = case.get_value("TESTCASE")
     casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
-    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
+    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(casename, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_driver_compare = False
     archive = case.get_env('archive')
     ref_case = case.get_value("RUN_REFCASE")
@@ -245,8 +281,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
-
-    if num_compared == 0:
+    # PFS test may not have any history files to compare.
+    if num_compared == 0 and testcase != "PFS":
         all_success = False
         comments += "Did not compare any hist files! Missing baselines?\n"
 
@@ -386,21 +422,24 @@ def get_extension(model, filepath):
     """
     basename = os.path.basename(filepath)
     m = None
+    ext_regexes = []
+
+    # First add any model-specific extension regexes; these will be checked before the
+    # general regex
     if model == "mom":
-        for ext in ('frc', 'sfc.day', 'prog', 'hmz', 'hm'):
-            regex_str = r'.*' + model + r'[^_]*_?([0-9]{4})?[.](' + ext + r'.?)([.].*[^.])?[.]nc'
-            ext_regex = re.compile(regex_str)
-            m = ext_regex.match(basename)
-            if m is not None:
-                break
-    elif model == 'cice':
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h_inst.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+        # Need to check 'sfc.day' specially: the embedded '.' messes up the
+        # general-purpose regex
+        ext_regexes.append(r'sfc\.day')
 
-    if m is None:
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+    # Now add the general-purpose extension regex
+    ext_regexes.append(r'\w+')
 
+    for ext_regex in ext_regexes:
+        full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+r')[-\w\.]*\.nc\.?'
+        full_regex = re.compile(full_regex_str)
+        m = full_regex.search(basename)
+        if m is not None:
+            break
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 

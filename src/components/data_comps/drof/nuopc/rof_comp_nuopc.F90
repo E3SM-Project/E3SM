@@ -340,11 +340,11 @@ contains
     call shr_nuopc_grid_ArrayToState(r2x%rattr, flds_r2x, exportState, 'mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDROF%nxg),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDROF%nxg),flds_scalar_index_nx, exportState,  &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDROF%nyg),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDROF%nyg),flds_scalar_index_ny, exportState,  &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -377,7 +377,7 @@ contains
 
   subroutine ModelAdvance(gcomp, rc)
 
-    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -485,15 +485,10 @@ contains
     if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
+    endif
     if (my_task == master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ROF from: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_log_clock_advance(clock, 'ROF', logunit)
     end if
-
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------

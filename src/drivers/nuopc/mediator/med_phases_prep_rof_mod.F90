@@ -323,10 +323,7 @@ contains
     !---------------------------------------
 
     call t_startf('MED:'//subname)
-
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    end if
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -350,23 +347,20 @@ contains
     if (ncnt == 0) then
        call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(comprof), returning", &
             ESMF_LOGMSG_INFO, rc=dbrc)
-       RETURN
-    end if
-
-    !---------------------------------------
-    ! Initialize module field bundles if necessary
-    !---------------------------------------
-
-    if (.not. ESMF_FieldBundleIsCreated(FBImpAccum(complnd,complnd))) then
-       call init_lnd2rof_accum(gcomp, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    !---------------------------------------
-    !--- Get the current time from the clock
-    !---------------------------------------
-
-    if (dbug_flag > 1) then
+    else
+       !---------------------------------------
+       ! Initialize module field bundles if necessary
+       !---------------------------------------
+       
+       if (.not. ESMF_FieldBundleIsCreated(FBImpAccum(complnd,complnd))) then
+          call init_lnd2rof_accum(gcomp, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       
+       !---------------------------------------
+       !--- Get the current time from the clock
+       !---------------------------------------
+       
        call ESMF_GridCompGet(gcomp, clock=clock)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_ClockGet(clock,currtime=time,rc=rc)
@@ -374,92 +368,104 @@ contains
        call ESMF_TimeGet(time,timestring=timestr)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
-    !---------------------------------------
-    !--- average import from land accumuled FB
-    !---------------------------------------
-
-    call shr_nuopc_methods_FB_average(FBImpAccum(complnd,complnd), FBImpAccumCnt(complnd), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call shr_nuopc_methods_FB_diagnose(FBImpAccum(complnd,complnd), &
-         string=trim(subname)//' FBImpAccum(complnd,complnd) after avg ', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- map to create FBImpAccum(complnd,comprof)
-    !---------------------------------------
-
-    ! The following assumes that only land import fields are needed to create the
-    ! export fields for the river component 
-
-    if (is_local%wrap%med_coupling_active(complnd,comprof)) then
-       call med_map_FB_Regrid_Norm( &
-            fldListFr(complnd)%flds, complnd, comprof, &
-            FBImpAccum(complnd,complnd), &
-            FBImpAccum(complnd,comprof), &
-            is_local%wrap%FBFrac(complnd), &
-            is_local%wrap%FBNormOne(complnd,comprof,:), &
-            is_local%wrap%RH(complnd,comprof,:), &
-            string=trim(compname(complnd))//'2'//trim(compname(comprof)), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       ! Reset the irrig_flux_field with the map_lnd2rof_irrig calculation below if appropriate
+       !---------------------------------------
+       !--- average import from land accumuled FB
+       !---------------------------------------
        
-       if ( NUOPC_IsConnected(is_local%wrap%NStateImp(complnd), fieldname=trim(irrig_flux_field))) then
-          call map_lnd2rof_irrig( gcomp, rc=rc )
+       call shr_nuopc_methods_FB_average(FBImpAccum(complnd,complnd), FBImpAccumCnt(complnd), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       call shr_nuopc_methods_FB_diagnose(FBImpAccum(complnd,complnd), &
+            string=trim(subname)//' FBImpAccum(complnd,complnd) after avg ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       !---------------------------------------
+       !--- map to create FBImpAccum(complnd,comprof)
+       !---------------------------------------
+       
+       ! The following assumes that only land import fields are needed to create the
+       ! export fields for the river component 
+       
+       if (is_local%wrap%med_coupling_active(complnd,comprof)) then
+          call med_map_FB_Regrid_Norm( &
+               fldListFr(complnd)%flds, complnd, comprof, &
+               FBImpAccum(complnd,complnd), &
+               FBImpAccum(complnd,comprof), &
+               is_local%wrap%FBFrac(complnd), &
+               is_local%wrap%FBNormOne(complnd,comprof,:), &
+               is_local%wrap%RH(complnd,comprof,:), &
+               string=trim(compname(complnd))//'2'//trim(compname(comprof)), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       else
-          ! This will ensure that no irrig is sent from the land
-          call shr_nuopc_methods_FB_getFldPtr(FBImpAccum(complnd,comprof), &
-               trim(irrig_flux_field), dataptr, rc=rc)
+          
+          ! Reset the irrig_flux_field with the map_lnd2rof_irrig calculation below if appropriate
+          
+          if ( NUOPC_IsConnected(is_local%wrap%NStateImp(complnd), fieldname=trim(irrig_flux_field))) then
+             call map_lnd2rof_irrig( gcomp, rc=rc )
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          else
+             ! This will ensure that no irrig is sent from the land
+             call shr_nuopc_methods_FB_getFldPtr(FBImpAccum(complnd,comprof), &
+                  trim(irrig_flux_field), dataptr, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             dataptr(:) = 0._r8
+          end if
+       endif
+       
+       !---------------------------------------
+       !--- auto merges to create FBExp(comprof)
+       !---------------------------------------
+       
+       call med_merge_auto(trim(compname(comprof)), &
+            is_local%wrap%FBExp(comprof), &
+            is_local%wrap%FBFrac(comprof), &
+            FBImpAccum(:,comprof), &
+            fldListTo(comprof), &
+            document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
+            string=trim(subname)//' FBexp(comprof) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       
+       !---------------------------------------
+       !--- zero accumulator
+       !---------------------------------------
+       
+       FBImpAccumCnt(complnd) = 0
+       
+       call shr_nuopc_methods_FB_reset(FBImpAccum(complnd,complnd), value=czero, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), string=trim(subname)//' FBexp(compatm) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (mastertask) then
+          call ESMF_ClockGet(clock,currtime=time,rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          dataptr(:) = 0._r8
+          call ESMF_TimeGet(time,timestring=timestr)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
+
+       !---------------------------------------
+       !--- custom calculations
+       !---------------------------------------
+
+       !---------------------------------------
+       !--- update local scalar data
+       !---------------------------------------
+
+       !is_local%wrap%scalar_data(1) =
+
+       !---------------------------------------
+       !--- clean up
+       !---------------------------------------
+
+       first_call = .false.
     endif
-            
-    !---------------------------------------
-    !--- auto merges to create FBExp(comprof)
-    !---------------------------------------
-
-    call med_merge_auto(trim(compname(comprof)), &
-         is_local%wrap%FBExp(comprof), &
-         is_local%wrap%FBFrac(comprof), &
-         FBImpAccum(:,comprof), &
-         fldListTo(comprof), &
-         document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
-         string=trim(subname)//' FBexp(comprof) ', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- zero accumulator
-    !---------------------------------------
-
-    FBImpAccumCnt(complnd) = 0
-
-    call shr_nuopc_methods_FB_reset(FBImpAccum(complnd,complnd), value=czero, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- custom calculations
-    !---------------------------------------
-
-    !---------------------------------------
-    !--- update local scalar data
-    !---------------------------------------
-
-    !is_local%wrap%scalar_data(1) =
-
-    !---------------------------------------
-    !--- clean up
-    !---------------------------------------
-
-    first_call = .false.
 
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf('MED:'//subname)

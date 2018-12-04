@@ -14,7 +14,7 @@ module dwav_comp_mod
   use mct_mod               , only : mct_avect_init, mct_avect_lsize
   use shr_sys_mod           , only : shr_sys_abort
   use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
+  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX
   use shr_string_mod        , only : shr_string_listGetName
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
@@ -87,7 +87,7 @@ contains
     character(len=*)     , intent(out) :: flds_x2w
     integer              , intent(out) :: rc
 
-    ! local variables 
+    ! local variables
     integer :: n
     !-------------------------------------------------------------------------------
 
@@ -98,7 +98,7 @@ contains
     !-------------------
     ! export fields
     !-------------------
-    
+
     ! scalar fields that need to be advertised
 
     fldsFrWav_num=1
@@ -155,14 +155,14 @@ contains
     integer                , intent(in)    :: target_ymd   ! model date
     integer                , intent(in)    :: target_tod   ! model sec into model date
     character(len=*)       , intent(in)    :: calendar     ! calendar type
-    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh 
+    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
 
     !--- local variables ---
     integer                      :: n,k       ! generic counters
     integer                      :: lsize     ! local size
     logical                      :: exists    ! file existance
     integer                      :: nu        ! unit number
-    logical                      :: write_restart 
+    logical                      :: write_restart
     type(ESMF_DistGrid)          :: distGrid
     integer, allocatable, target :: gindex(:)
     integer                      :: dimCount
@@ -174,11 +174,11 @@ contains
     integer                      :: spatialDim
     integer                      :: numOwnedElements
     real(R8), pointer            :: ownedElemCoords(:)
-    integer                      :: klat, klon, kfrac   ! AV indices 
+    integer                      :: klat, klon, kfrac   ! AV indices
     real(R8), pointer            :: domlon(:),domlat(:) ! ggrid domain lats and lots
     real(R8), pointer            :: xc(:), yc(:)        ! mesh lats and lons
     real(r8)                     :: maxerr, err
-    integer                      :: maxn 
+    integer                      :: maxn
     real(r8)                     :: tolerance = 1.e-4
     integer                      :: rc
     character(*), parameter      :: F00   = "('(dwav_comp_init) ',8a)"
@@ -194,7 +194,7 @@ contains
     call shr_strdata_pioinit(SDWAV, compid)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global segmap 
+    ! Create a data model global segmap
     !----------------------------------------------------------------------------
 
     call t_startf('dwav_strdata_init')
@@ -202,9 +202,9 @@ contains
     if (my_task == master_task) write(logunit,F00) ' initialize SDWAV gsmap'
 
     ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc) 
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -309,7 +309,7 @@ contains
     deallocate(domlon, domlat)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDLND attributes for streams and mapping of streams to model domain 
+    ! Initialize SDLND attributes for streams and mapping of streams to model domain
     !----------------------------------------------------------------------------
 
     call shr_strdata_init_streams(SDWAV, compid, mpicom, my_task)
@@ -490,14 +490,8 @@ contains
     call t_stopf('dwav')
 
     !----------------------------------------------------------------------------
-    ! Log output for model date
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) 'dwav: model date ', target_ymd,target_tod
-    end if
-
     call t_stopf('DWAV_RUN')
 
   end subroutine dwav_comp_run

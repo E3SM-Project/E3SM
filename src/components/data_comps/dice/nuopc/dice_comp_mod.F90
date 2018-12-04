@@ -908,14 +908,6 @@ contains
 
     call t_stopf('dice')
 
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) ' dice: model date ', target_ymd,target_tod
-    end if
-
     firstcall = .false.
 
     call t_stopf('DICE_RUN')

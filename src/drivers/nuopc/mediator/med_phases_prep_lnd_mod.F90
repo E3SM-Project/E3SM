@@ -4,7 +4,6 @@ module med_phases_prep_lnd_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
-
   implicit none
   private
 
@@ -78,75 +77,71 @@ contains
     if (ncnt == 0) then
        call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(complnd), returning", &
             ESMF_LOGMSG_INFO, rc=dbrc)
-       RETURN
-    end if
+    else
 
-    !---------------------------------------
-    !--- Get the current time from the clock
-    !---------------------------------------
-
-    call ESMF_GridCompGet(gcomp, clock=clock)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(clock,currtime=time,rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_TimeGet(time,timestring=timestr)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    if (mastertask) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    !---------------------------------------
-    !--- Map import fields to the complnd grid
-    !---------------------------------------
-
-    do n1 = 1,ncomps
-       if (is_local%wrap%med_coupling_active(n1,complnd)) then
-          call med_map_FB_Regrid_Norm( &
-               fldListFr(n1)%flds, n1, complnd, &
-               is_local%wrap%FBImp(n1,n1), &
-               is_local%wrap%FBImp(n1,complnd), &
-               is_local%wrap%FBFrac(n1), &
-               is_local%wrap%FBNormOne(n1,complnd,:), &
-               is_local%wrap%RH(n1,complnd,:), &
-               string=trim(compname(n1))//'2'//trim(compname(complnd)), rc=rc)
+       !---------------------------------------
+       !--- Get the current time from the clock
+       !---------------------------------------
+       
+       if (mastertask) then
+          call ESMF_GridCompGet(gcomp, clock=clock)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-    enddo
+          call ESMF_ClockGet(clock,currtime=time,rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_TimeGet(time,timestring=timestr)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
-    !---------------------------------------
-    !--- Merge all required import fields on the complnd grid to create FBExp
-    !---------------------------------------
+       !---------------------------------------
+       !--- Map import fields to the complnd grid
+       !---------------------------------------
 
-    call med_merge_auto(trim(compname(complnd)), &
-         is_local%wrap%FBExp(complnd), is_local%wrap%FBFrac(complnd), &
-         is_local%wrap%FBImp(:,complnd), fldListTo(complnd), &
-         document=first_call, string='(merge_to_lnd)', mastertask=mastertask, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       do n1 = 1,ncomps
+          if (is_local%wrap%med_coupling_active(n1,complnd)) then
+             call med_map_FB_Regrid_Norm( &
+                  fldListFr(n1)%flds, n1, complnd, &
+                  is_local%wrap%FBImp(n1,n1), &
+                  is_local%wrap%FBImp(n1,complnd), &
+                  is_local%wrap%FBFrac(n1), &
+                  is_local%wrap%FBNormOne(n1,complnd,:), &
+                  is_local%wrap%RH(n1,complnd,:), &
+                  string=trim(compname(n1))//'2'//trim(compname(complnd)), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          endif
+       enddo
 
-    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(complnd), string=trim(subname)//' FBexp(complnd) ', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       !---------------------------------------
+       !--- Merge all required import fields on the complnd grid to create FBExp
+       !---------------------------------------
 
-    !---------------------------------------
-    !--- custom calculations
-    !---------------------------------------
+       call med_merge_auto(trim(compname(complnd)), &
+            is_local%wrap%FBExp(complnd), is_local%wrap%FBFrac(complnd), &
+            is_local%wrap%FBImp(:,complnd), fldListTo(complnd), &
+            document=first_call, string='(merge_to_lnd)', mastertask=mastertask, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !---------------------------------------
-    !--- update local scalar data
-    !---------------------------------------
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(complnd), string=trim(subname)//' FBexp(complnd) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !is_local%wrap%scalar_data(1) =
+       !---------------------------------------
+       !--- custom calculations
+       !---------------------------------------
 
-    !---------------------------------------
-    !--- clean up
-    !---------------------------------------
+       !---------------------------------------
+       !--- update local scalar data
+       !---------------------------------------
 
-    first_call = .false.
+       !is_local%wrap%scalar_data(1) =
+
+       !---------------------------------------
+       !--- clean up
+       !---------------------------------------
+
+       first_call = .false.
+    end if
 
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf('MED:'//subname)

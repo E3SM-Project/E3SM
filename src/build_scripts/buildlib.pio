@@ -55,13 +55,13 @@ def buildlib(bldroot, installpath, caseroot):
             os.makedirs(pio_dir)
         casetools = case.get_value("CASETOOLS")
         cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-        gmake_opts = "{}/Makefile -C {} CASEROOT={} MODEL={} USER_CMAKE_OPTS={} "\
-            "PIO_LIBDIR={} CASETOOLS={} PIO_VERSION={} MPILIB={} "\
-            "SHAREDLIBROOT={} EXEROOT={} COMPILER={} BUILD_THREADED={} "\
-            "USER_CPPDEFS=-DTIMING -f {}/Makefile"\
-            .format(pio_dir,pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
-              pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
-              casetools)
+        gmake_opts = "{pio_dir}/Makefile -C {pio_dir} CASEROOT={caseroot} MODEL={pio_model} USER_CMAKE_OPTS={cmake_opts} "\
+            "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} PIO_VERSION={pio_version} MPILIB={mpilib} "\
+            "SHAREDLIBROOT={bldroot} EXEROOT={exeroot} COMPILER={compiler} BUILD_THREADED={bt} "\
+            "USER_CPPDEFS=-DTIMING -f {casetools}/Makefile"\
+            .format(pio_dir=pio_dir, caseroot=caseroot, pio_model=pio_model, cmake_opts=cmake_opts,
+                    casetools=casetools, pio_version=pio_version, mpilib=mpilib, bldroot=bldroot,
+                    exeroot=exeroot, compiler=compiler, bt=build_threaded)
 
         gmake_cmd = case.get_value("GMAKE")
 

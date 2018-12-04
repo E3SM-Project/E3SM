@@ -84,6 +84,12 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
 
+HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+   USE_CXX = true
+   USE_KOKKOS = TRUE
+endif
+
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -139,7 +145,7 @@ ifeq ($(strip $(PIO_VERSION)),1)
 endif
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
@@ -297,6 +303,16 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
+  ifdef KOKKOS_PATH
+    INC_KOKKOS:=$(KOKKOS_PATH)/include
+    LIB_KOKKOS:=$(KOKKOS_PATH)/lib
+  else
+    $(error $(HOMME_TARGET) requires env. variable KOKKOS_ROOT to be set)
+  endif
+	CPPDEFS += -DUSE_KOKKOS_KERNELS
+endif
+
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -441,6 +457,9 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
+ifdef INC_KOKKOS
+  INCLDIR += -I$(INC_KOKKOS)
+endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -525,8 +544,8 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
 endif
 
 ifeq ($(MODEL),cam)
@@ -576,6 +595,9 @@ ifdef LIB_MPI
    endif
 endif
 
+ifdef LIB_KOKKOS
+   SLIBS += -L$(LIB_KOKKOS) -lkokkos
+endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)

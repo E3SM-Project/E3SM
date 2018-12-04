@@ -654,7 +654,6 @@ contains
 
     ! Realize connected Fields with transfer action "provide"
 
-    use MPI                   , only : MPI_Comm_Dup
     use ESMF                  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_TimeInterval
     use ESMF                  , only : ESMF_VMGet, ESMF_StateIsCreated, ESMF_GridCompGet
@@ -675,7 +674,6 @@ contains
     integer                    :: i, j
     real(kind=R8),pointer      :: lonPtr(:), latPtr(:)
     type(InternalState)        :: is_local
-    integer                    :: lmpicom
     real(R8)                   :: intervalSec
     type(ESMF_TimeInterval)    :: timeStep
     ! tcx XGrid
@@ -701,9 +699,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize the internal state members
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call MPI_Comm_Dup(lmpicom, is_local%wrap%mpicom, stat)
+    is_local%wrap%vm = vm
 
     ! Realize States
     do n = 1,ncomps
@@ -1718,7 +1714,7 @@ contains
              if (atCorrectTime) then
                 if (fieldNameList(n) == flds_scalar_name) then
                    call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, &
-                        trim(compname(n1))//'2cpli', is_local%wrap%mpicom, rc)
+                        trim(compname(n1))//'2cpli', is_local%wrap%vm, rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                    call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency CSTI "//trim(compname(n1)), &
                         ESMF_LOGMSG_INFO, rc=rc)
@@ -1906,7 +1902,7 @@ contains
     use NUOPC_Mediator        , only : NUOPC_MediatorGet
     use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_clock_timeprint
-
+    use shr_nuopc_time_mod    , only : shr_nuopc_time_set_component_stop_alarm
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -2003,7 +1999,6 @@ contains
        call NUOPC_CompAttributeGet(gcomp, name="glc_present", value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        glc_present = (cvalue == "true")
-
        if (glc_present) then
           call NUOPC_CompAttributeGet(gcomp, name="glc_avg_period", value=glc_avg_period, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -2030,10 +2025,12 @@ contains
             rc = ESMF_FAILURE
             RETURN
          end if
-         
          call ESMF_AlarmSet(glc_avg_alarm, clock=mediatorclock, rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       end if
+
+      call shr_nuopc_time_set_component_stop_alarm(gcomp, rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        first_time = .false.
     end if

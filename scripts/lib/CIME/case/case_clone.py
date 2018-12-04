@@ -101,6 +101,15 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
 
     # create caseroot
     newcase.create_caseroot(clone=True)
+
+    # Many files in the case will be links back to the source tree
+    # but users may have broken links to modify files locally.  In this case
+    # copy the locally modified file.   We only want to do this for files that
+    # already exist in the clone.
+    #pylint: disable=protected-access
+    self._copy_user_modified_to_clone(self.get_value("CASEROOT"), newcase.get_value("CASEROOT"))
+    self._copy_user_modified_to_clone(self.get_value("CASETOOLS"), newcase.get_value("CASETOOLS"))
+
     newcase.flush(flushall=True)
 
     # copy user_ files
@@ -161,3 +170,16 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     newcase.case_setup()
 
     return newcase
+# pylint: disable=unused-argument
+def _copy_user_modified_to_clone(self, origpath, newpath):
+    """
+    If file_ exists and is a link in newpath, and exists but is not a
+    link in origpath, copy origpath file to newpath
+    """
+    for file_ in os.listdir(newpath):
+        if (os.path.islink(os.path.join(newpath, file_)) and
+            os.path.isfile(os.path.join(origpath, file_)) and
+            not os.path.islink(os.path.join(origpath, file_))):
+            logger.info("Copying user modified file {} to clone".format(file_))
+            os.unlink(os.path.join(newpath, file_))
+            safe_copy(os.path.join(origpath, file_), newpath)

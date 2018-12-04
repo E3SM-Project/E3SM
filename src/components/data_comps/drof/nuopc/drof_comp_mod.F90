@@ -491,14 +491,6 @@ contains
        call t_stopf('drof_restart')
     end if
 
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) ' drof: model date ', target_ymd,target_tod
-    end if
-
     call t_stopf('DROF_RUN')
 
   end subroutine drof_comp_run

@@ -36,7 +36,7 @@ module atm_comp_nuopc
   use datm_shr_mod          , only : datm_shr_read_namelists
   use datm_shr_mod          , only : iradsw, datm_shr_getNextRadCDay
   use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info 
+  use mct_mod               , only : mct_Avect, mct_Avect_info
 
   implicit none
   private ! except
@@ -432,15 +432,15 @@ contains
     call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDATM%nxg),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDATM%nxg),flds_scalar_index_nx, exportState,  &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDATM%nyg),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDATM%nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -472,6 +472,7 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_log_clock_advance, shr_nuopc_memcheck
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -506,6 +507,7 @@ contains
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
+    call shr_nuopc_memcheck(subname, 5, my_task==master_task)
     !--------------------------------
     ! Reset shr logging to my log file
     !--------------------------------
@@ -603,7 +605,7 @@ contains
     call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState,  &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -615,15 +617,9 @@ contains
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
-    if (my_task == master_task) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ATM from: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
+    if(my_task == master_task) then
+       call shr_nuopc_log_clock_advance(clock, 'ATM', logunit)
+    endif
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------

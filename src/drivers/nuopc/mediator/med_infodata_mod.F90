@@ -113,11 +113,12 @@ CONTAINS
   end subroutine med_infodata_init2
 
   !================================================================================
-  subroutine med_infodata_CopyStateToInfodata(State, infodata, type, mpicom, rc)
+  subroutine med_infodata_CopyStateToInfodata(State, infodata, type, vm, rc)
     use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag
     use ESMF                  , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_STATEITEM_NOTFOUND, operator(==)
+    use ESMF                  , only : ESMF_VMBroadCast, ESMF_VM, ESMF_VMGet
     use esmFlds               , only : compname
     use shr_nuopc_scalars_mod , only : flds_scalar_num, flds_scalar_name
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
@@ -125,9 +126,6 @@ CONTAINS
     use shr_nuopc_scalars_mod , only : flds_scalar_index_flood_present
     use shr_nuopc_scalars_mod , only : flds_scalar_index_rofice_present
     use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
-    ! use mpi                 , only : mpi_comm_rank, MPI_ERROR_STRING, mpi_bcast, mpi_real8, MPI_SUCCESS
-    ! use mpi                 , only : MPI_MAX_ERROR_STRING
-    use mpi  ! TODO - have an only for mpi_bcast does not work on hobart
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
 
     ! ----------------------------------------------
@@ -138,13 +136,12 @@ CONTAINS
     type(ESMF_State),        intent(in)     :: State
     type(med_infodata_type), intent(inout)  :: infodata
     character(len=*),        intent(in)     :: type
-    integer,                 intent(in)     :: mpicom
+    type(ESMF_VM)                           :: vm
     integer,                 intent(inout)  :: rc
 
     ! local variables
     integer                         :: n
     integer                         :: mytask, ierr, len
-    character(MPI_MAX_ERROR_STRING) :: lstring
     type(ESMF_Field)                :: field
     type(ESMF_StateItem_Flag)       :: itemType
     real(R8), pointer               :: farrayptr(:,:)
@@ -156,8 +153,9 @@ CONTAINS
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    call ESMF_VMGet(vm, localPet=mytask, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call MPI_COMM_RANK(mpicom, mytask, rc)
     call ESMF_StateGet(State, itemName=trim(flds_scalar_name), itemType=itemType, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -179,13 +177,8 @@ CONTAINS
         data(1:flds_scalar_num) = farrayptr(1,1:flds_scalar_num)
       endif
 
-      call MPI_BCAST(data, flds_scalar_num, MPI_REAL8, 0, mpicom, rc)
-      if (rc /= MPI_SUCCESS) then
-        call MPI_ERROR_STRING(rc,lstring,len,ierr)
-        call ESMF_LogWrite(trim(subname)//": ERROR "//trim(lstring), ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
-        rc = ESMF_FAILURE
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      endif
+      call ESMF_VMBroadCast(vm, data, flds_scalar_num, 0, rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
       do n = 1,ncomps
          ntype = trim(compname(n))//'2cpli'
@@ -252,11 +245,10 @@ CONTAINS
   end subroutine med_infodata_CopyStateToInfodata
 
   !================================================================================
-  subroutine med_infodata_CopyInfodataToState(infodata, State, type, mpicom, rc)
+  subroutine med_infodata_CopyInfodataToState(infodata, State, type, mytask, rc)
     use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
     use ESMF                  , only : operator(==), ESMF_FAILURE
-    use mpi                   , only : mpi_comm_rank
     use shr_nuopc_scalars_mod , only : flds_scalar_num, flds_scalar_name
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
@@ -271,11 +263,10 @@ CONTAINS
     type(med_infodata_type),intent(in):: infodata
     type(ESMF_State),  intent(inout)  :: State
     character(len=*),  intent(in)     :: type
-    integer,           intent(in)     :: mpicom
+    integer         ,  intent(in)     :: mytask
     integer,           intent(inout)  :: rc
 
     ! local variables
-    integer                     :: mytask
     type(ESMF_Field)            :: field
     type(ESMF_StateItem_Flag)   :: ItemType
     real(R8), pointer :: farrayptr(:,:)
@@ -285,8 +276,6 @@ CONTAINS
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
-
-    call MPI_COMM_RANK(mpicom, mytask, rc)
 
     call ESMF_StateGet(State, itemName=trim(flds_scalar_name), itemType=itemType, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

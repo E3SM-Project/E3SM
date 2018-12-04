@@ -332,7 +332,9 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
-      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs23/lib/libg/Linux.intel.64.mpich2.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/8.0.0bs24/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>

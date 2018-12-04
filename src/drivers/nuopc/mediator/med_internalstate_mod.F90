@@ -5,6 +5,7 @@ module med_internalstate_mod
   !-----------------------------------------------------------------------------
 
   use ESMF                  , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
+  use ESMF                  , only : ESMF_VM
   use esmFlds               , only : ncomps
   use shr_nuopc_fldList_mod , only : nmappers
 
@@ -74,7 +75,7 @@ module med_internalstate_mod
     ! Connectors
     integer               :: conn_prep_cnt(ncomps)              ! Connector prep count
     integer               :: conn_post_cnt(ncomps)              ! Connector post count
-    integer               :: mpicom                             ! mediator mpi communicator
+    type(ESMF_VM)         :: vm
 
     ! CESM-specific internal state fields
     type(ESMF_FieldBundle):: FBMed_ocnalb_o                     ! Ocn albedo on ocn grid
