@@ -613,7 +613,6 @@ module advance_clubb_core_module
     logical, intent(in)                 ::  do_liquid_only_in_clubb
 ! <--- h1g, 2012-06-14
 #endif
-
     ! Local Variables
     integer :: i, k 
 

@@ -101,10 +101,10 @@ module parameters_tunable
     C7b         = 0.800000_core_rknd,    & ! High Skewness in C7 Skw. Function   [-]
     C7c         = 0.500000_core_rknd,    & ! Degree of Slope of C7 Skw. Function [-]
     C8          = 3.000000_core_rknd,    & ! Coef. #1 in C8 Skewness Equation    [-]
-    C8b         = 0.020000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
+    C8b         = 0.000000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
     C10         = 3.300000_core_rknd,    & ! Currently Not Used in the Model     [-]
-    C11         = 0.500000_core_rknd,    & ! Low Skewness in C11 Skw. Function   [-]
-    C11b        = 0.500000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
+    C11         = 0.800000_core_rknd,    & ! Low Skewness in C11 Skw. Function   [-]
+    C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
     C11c        = 0.500000_core_rknd,    & ! Degree of Slope of C11 Skw. Fnct.   [-]
     C12         = 1.000000_core_rknd,    & ! Constant in w'^3 Crank-Nich. diff.  [-]
     C13         = 0.100000_core_rknd,    & ! Not currently used in model         [-]
@@ -195,7 +195,7 @@ module parameters_tunable
 
 
   real( kind = core_rknd ), public :: &
-    Skw_max_mag = 10.0_core_rknd     ! Max magnitude of skewness [-]
+    Skw_max_mag = 4.5_core_rknd     ! Max magnitude of skewness [-]
 
 !$omp threadprivate(Skw_max_mag)
 
