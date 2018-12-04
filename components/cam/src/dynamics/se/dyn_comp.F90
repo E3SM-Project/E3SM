@@ -1,7 +1,3 @@
-!!!!!!!!! TEMP
-!#define MODEL_THETA_L
-
-
 Module dyn_comp
 
   use shr_kind_mod, only: r8 => shr_kind_r8
@@ -300,7 +296,7 @@ CONTAINS
                    call set_thermostate_from_derived_T(elem(ie),hvcoord,tlev)
                 enddo
 #else
-                elem(ie)%state%T(:,:,:,:) = Tinit                
+                elem(ie)%state%T(:,:,:,:) = Tinit 
 #endif               
 
              end do

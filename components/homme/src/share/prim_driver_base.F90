@@ -1,13 +1,10 @@
-!temp!!!!!
-!#define  MODEL_THETA_L
-
 ! ------------------------------------------------------------------------------------------------
 ! prim_driver_mod: 
 !
 ! Revisions:
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 ! 03/2018: M. Taylor  fix memory leak
-! 06/2018: O. Guba  code for new ftypes
+! 2018: O. Guba  code for new ftypes
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"

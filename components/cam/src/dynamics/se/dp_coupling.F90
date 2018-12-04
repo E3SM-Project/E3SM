@@ -3,10 +3,6 @@
 ! dynamics - physics coupling module
 !-------------------------------------------------------------------------------
 
-!!!!!!!!!!!TEMP
-!#define MODEL_THETA_L
-
-
 module dp_coupling
   use constituents,   only: pcnst, cnst_name
   use cam_history,    only: outfld, write_inithist, hist_fld_active

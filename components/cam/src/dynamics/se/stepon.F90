@@ -4,10 +4,6 @@
 !
 ! !INTERFACE:
 
-!!!!!!!!!! TEMPORARY
-!#define MODEL_THETA_L
-
-
 module stepon
 
 ! !USES:
