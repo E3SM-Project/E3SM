@@ -993,26 +993,6 @@ endif !scm_observed_aero
        have_t = .true.
      endif
 
-     ! If using CAMIOP need to be sure that surface temperature is read in 
-     !  for first radiation call, to ensure b4b (or close) reproducibility. 
-     !  Else, for other SCM cases, it is fine initialize as a cold start.   
-     if (is_first_step() .and. use_camiop) then      
-       status = nf90_inq_varid( ncid, 'Tg', varid   )
-       if (status .ne. nf90_noerr) then
-         write(iulog,*)'Could not find variable Tg'
-         if ( have_tsair ) then
-           write(iulog,*) 'UsingTsair'
-           tground = tsair     ! use surface value from T field
-         else
-           write(iulog,*) 'UsingTat lowest level'
-           tground = tobs(plev) 
-         endif
-       else
-         call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
-         have_tg = .true.
-       endif    
-     endif 
-
      status = nf90_inq_varid( ncid, 'qsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1298,6 +1278,22 @@ endif !scm_observed_aero
        ptend= srf(1)
      endif
 
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'omega', .true., ptend, fill_ends, scm_crm_mode, &
+       dplevs, nlev,psobs, hyam, hybm, wfld, status )
+     if ( status .ne. nf90_noerr ) then
+       have_omega = .false.
+       write(iulog,*)'Could not find variable omega'
+       if ( .not. use_userdata ) then
+         status = nf90_close( ncid )
+         return
+       else
+         write(iulog,*) 'Using value from Analysis Dataset'
+       endif
+     else
+       have_omega = .true.
+     endif
+
      call plevs0(1    ,plon   ,plev    ,psobs   ,pint,pmid ,pdel)
      call shr_sys_flush( iulog )
 !
@@ -1432,60 +1428,23 @@ endif !scm_observed_aero
        status = nf90_get_var(ncid, varid, srf(1), strt4)
        fixmascam=srf(1)
      endif
-     
-     if (.not. use_camiop) then 
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'omega', .true., ptend, fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, wfld, status )
-     if ( status .ne. nf90_noerr ) then
-       have_omega = .false.
-       write(iulog,*)'Could not find variable omega'
-       if ( .not. use_userdata ) then
-         status = nf90_close( ncid )
-         return
-       else
-         write(iulog,*) 'Using value from Analysis Dataset'
-       endif
-     else
-       have_omega = .true.
-     endif 
-     endif
    
    else ! if read in surface information
    
-        status = nf90_inq_varid( ncid, 'Tg', varid   )
-!     status = nf90_inq_varid( ncid, 'trefht', varid )
+     status = nf90_inq_varid( ncid, 'Tg', varid   )
      if (status .ne. nf90_noerr) then
        write(iulog,*)'Could not find variable Tg'
        if ( have_tsair ) then
-         write(iulog,*) 'UsingTsair'
+         write(iulog,*) 'Using Tsair'
          tground = tsair     ! use surface value from T field
        else
-         write(iulog,*) 'UsingTat lowest level'
+         write(iulog,*) 'Using T at lowest level'
          tground = tobs(plev) 
        endif
      else
        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
        have_tg = .true.
-     endif  
-
-     if (use_camiop) then 
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'omega', .true., ptend, fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, wfld, status )
-     if ( status .ne. nf90_noerr ) then
-       have_omega = .false.
-       write(iulog,*)'Could not find variable omega'
-       if ( .not. use_userdata ) then
-         status = nf90_close( ncid )
-         return
-       else
-         write(iulog,*) 'Using value from Analysis Dataset'
-       endif
-     else
-       have_omega = .true.
-     endif 
-     endif 
+     endif
      
      ! If camiop is used, then need to read in the global
      !   energy fixer

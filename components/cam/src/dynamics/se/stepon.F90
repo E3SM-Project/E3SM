@@ -209,7 +209,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   if (single_column) then
     iop_update_surface = .true. 
     if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
-    call scm_setfield(elem,iop_update_surface)       
+    call scm_setfield(elem)       
   endif 
   
    call t_barrierf('sync_d_p_coupling', mpicom)
@@ -574,7 +574,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      if (doiopupdate) then
        call scm_setinitial(elem)
        call readiopdata(iop_update_surface,hyam,hybm)
-       call scm_setfield(elem, iop_update_surface)
+       call scm_setfield(elem)
      endif   
 
    endif   
