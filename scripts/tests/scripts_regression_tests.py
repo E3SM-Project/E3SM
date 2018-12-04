@@ -21,7 +21,7 @@ from six import assertRaisesRegex
 
 import collections
 
-from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy, touch
+from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy
 import get_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
@@ -523,7 +523,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         self.assertTrue(os.path.exists(testdir))
         self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
 
-        with Case(testdir, read_only=True) as case:
+        with Case(testdir, read_only=False) as case:
             case._compsetname = case.get_value("COMPSET")
             case.set_comp_classes(case.get_values("COMP_CLASSES"))
             primary = case._find_primary_component()
@@ -1444,7 +1444,7 @@ class M_TestCimePerformance(TestCreateTestCommon):
         ts = time.time()
 
         num_repeat = 5
-        for i in xrange(num_repeat):
+        for _ in xrange(num_repeat):
             self._create_test(["cime_tiny --no-build"])
 
         elapsed = time.time() - ts
@@ -2195,7 +2195,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             case.set_value("RUN_TYPE", "branch")
 
         # behind the back detection
-        with self.assertRaises(SystemExit) as context:
+        with self.assertRaises(SystemExit):
             with Case(casedir, read_only=False) as case:
                 time.sleep(0.2)
                 safe_copy(backup, active)
@@ -2203,7 +2203,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         with Case(casedir, read_only=False) as case:
             case.set_value("RUN_TYPE", "branch")
 
-        with self.assertRaises(SystemExit) as context:
+        with self.assertRaises(SystemExit):
             with Case(casedir) as case:
                 time.sleep(0.2)
                 safe_copy(backup, active)
