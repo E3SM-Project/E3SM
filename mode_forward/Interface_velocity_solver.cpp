@@ -1544,28 +1544,26 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
             // -- grounded margin --
             // Check that this margin location is not below sea level!
             if (bedTopographyData[iV] < 0.0) { // This check is probably redundant...
-               thicknessData[iV] = eps*2.0; // insert special value here to make identifying these points easier in exo output
+               thicknessData[iV] = eps*3.0; // insert special value here to make identifying these points easier in exo output
                elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
-               betaData[iV] = 0.0; // free slip under floating ice
             }
          }
       } else {
-         // non-floating ("grounded") boundary
-         // If this margin location is below sea level, we need to force it to have reasonable values.
-         // Otherwise, it will have a surface elevation below sea level,
-         // which is unphysical and can cause large slopes and other issues.
-         if (bedTopographyData[iV] < 0.0) {
-            //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
-            if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), iV*vertexLayerShift) == dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
-               //std::cout<<"  non-floating boundary below sea level node is Dirichlet so skipping. iV="<<iV<<std::endl;
-            } else {
+        // non-floating ("grounded") boundary
+        // If this margin location is below sea level, we need to force it to have reasonable values.
+        // Otherwise, it will have a surface elevation below sea level,
+        // which is unphysical and can cause large slopes and other issues.
+        if (bedTopographyData[iV] < 0.0) {
+          //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
+          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
+            //std::cout<<"  non-floating boundary below sea level node is Dirichlet so skipping. iV="<<iV<<std::endl;
+          } else {
             //for (int i = 0; i < dirichletNodesIDs.size(); i++)
             //            std::cout << dirichletNodesIDs.at(i) << ' ';  // print entire list of Diri nodes for debugging.
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
             elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
-            betaData[iV] = 0.0; // free slip under floating ice
-            }
-         } // if below sea level
+          }
+        } // if below sea level
       }  // floating or not
     } // is boundary
   }  // vertex loop
