@@ -62,7 +62,7 @@ module model_flags
   ! approximated by eddy diffusivity when <u> and <v> are advanced in
   ! subroutine advance_windm_edsclrm.
   logical, public :: &
-    l_predict_upwp_vpwp = .true.
+    l_predict_upwp_vpwp = .false.
 
 !$omp threadprivate( l_predict_upwp_vpwp )
 
@@ -77,13 +77,13 @@ module model_flags
   ! correlation of w and x (w and rt, as well as w and theta-l) within the
   ! limits of -max_mag_correlation_flux to max_mag_correlation_flux.
   logical, public :: &
-    l_min_wp2_from_corr_wx = .true.
+    l_min_wp2_from_corr_wx = .false.
 
   ! Flag to base the threshold minimum value of xp2 (rtp2 and thlp2) on
   ! keeping the overall correlation of w and x within the limits of
   ! -max_mag_correlation_flux to max_mag_correlation_flux.
   logical, public :: &
-    l_min_xp2_from_corr_wx = .true.
+    l_min_xp2_from_corr_wx = .false.
 
   ! Flag to use cloud fraction to adjust the value of the turbulent dissipation
   ! coefficient, C2.
@@ -149,7 +149,7 @@ module model_flags
   ! xm_ma affects rtm, thlm, sclrm, um and vm.
   logical, public :: & 
     l_upwind_wpxp_ta = .false., & 
-    l_upwind_xpyp_ta = .true.,  &
+    l_upwind_xpyp_ta = .false.,  &
     l_upwind_xm_ma   = .true.
 
 !$omp threadprivate(l_upwind_wpxp_ta, l_upwind_xpyp_ta, l_upwind_xm_ma)
@@ -170,20 +170,20 @@ module model_flags
   ! Use 2 calls to pdf_closure and the trapezoidal rule to  compute the 
   ! varibles that are output from high order closure
   logical, private :: &
-    l_vert_avg_closure  = .false.
+    l_vert_avg_closure  = .true.
 !$omp threadprivate(l_vert_avg_closure)
 
   ! These are currently set based on l_vert_avg_closure
   logical, public :: &
-    l_trapezoidal_rule_zt = .false.,    & ! If true, the trapezoidal rule is called for
+    l_trapezoidal_rule_zt = .true.,    & ! If true, the trapezoidal rule is called for
                                           ! the thermodynamic-level variables output 
                                           ! from pdf_closure.  
 
-    l_trapezoidal_rule_zm = .false.,    & ! If true, the trapezoidal rule is called for
+    l_trapezoidal_rule_zm = .true.,    & ! If true, the trapezoidal rule is called for
                                           ! three momentum-level variables - wpthvp,
                                           ! thlpthvp, and rtpthvp - output from pdf_closure.
 
-    l_call_pdf_closure_twice = .false.    ! This logical flag determines whether or not to
+    l_call_pdf_closure_twice = .true.    ! This logical flag determines whether or not to
                                           ! call subroutine pdf_closure twice.  If true,
                                           ! pdf_closure is called first on thermodynamic levels
                                           ! and then on momentum levels so that each variable is
@@ -212,7 +212,7 @@ module model_flags
   ! Use cloud_cover and rcm_in_layer to help boost cloud_frac and rcm to help increase cloudiness
   ! at coarser grid resolutions.
   logical, public :: &
-    l_use_cloud_cover = .false.
+    l_use_cloud_cover = .true.
 
 !$omp threadprivate(l_use_cloud_cover)
 
@@ -260,12 +260,12 @@ module model_flags
 
     l_use_thvm_in_bv_freq = .false.,     & ! Use thvm in the calculation of Brunt-Vaisala frequency
     l_use_wp3_pr3 = .false.,             & ! Include pressure term 3 (pr3) in wp3
-    l_rcm_supersat_adj = .true.            ! Add excess supersaturated vapor to cloud water
+    l_rcm_supersat_adj = .false.            ! Add excess supersaturated vapor to cloud water
 
 
   logical, public :: &
     l_single_C2_Skw = .false.,  & ! Use a single Skewness dependent C2 for rtp2, thlp2, and rtpthlp
-    l_damp_wp3_Skw_squared = .true. ! Set damping on wp3 to use Skw^2 rather than Skw^4
+    l_damp_wp3_Skw_squared = .false. ! Set damping on wp3 to use Skw^2 rather than Skw^4
 
 !$omp threadprivate( l_stability_correct_tau_zm, l_damp_wp2_using_em, &
 !$omp                l_do_expldiff_rtm_thlm, &
