@@ -737,6 +737,7 @@ contains
       ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
    else
       str_length = min(SHR_KIND_CM,len_trim(event))
+      print *,__FILE__,__LINE__,event(1:str_length)
       ierr = GPTLstart(event(1:str_length))
    endif
 !$OMP MASTER
