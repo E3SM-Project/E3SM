@@ -2265,6 +2265,7 @@
 	     <command name="rm">cray-netcdf</command>
 	     <command name="rm">cray-netcdf-hdf5parallel</command>
 	     <command name="rm">netcdf</command>
+	     <command name="rm">papi</command>
 	   </modules>
 	   <modules compiler="intel">
 	     <command name="load">intel/18.0.1.163</command>
