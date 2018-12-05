@@ -365,7 +365,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
 #ifdef MODEL_THETA_L
 !better to place these checks in namelist, but where is it for cam?
-      call endrun( 'stepon_run2: ftype = 0, ftype < 0 not supported for cam target theta-l')
+      if ( (ftype == 1) .or. ( ftype <= 0) ) then
+         call endrun( 'stepon_run2: ftype = 0, ftype < 0 not supported for cam target theta-l')
+      endif
 #else
       if (ftype==1) then
          ! apply forcing to state tl_f

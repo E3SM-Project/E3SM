@@ -613,7 +613,7 @@ contains
 !for preqx model this routine does nothing
   subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt)
   implicit none
-  type (element_t),       intent(inout) :: elem(:)
+  type (element_t),       intent(inout) :: elem
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: nt
   real (kind=real_kind),  intent(in)    :: dt
