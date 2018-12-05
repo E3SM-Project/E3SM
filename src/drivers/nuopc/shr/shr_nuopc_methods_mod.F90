@@ -3820,7 +3820,7 @@ module shr_nuopc_methods_mod
     use ESMF              , only : ESMF_SUCCESS, ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
     use ESMF              , only : ESMF_FAILURE, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
     use ESMF              , only : ESMF_LOGMSG_INFO, ESMF_VM, ESMF_VMBroadCast, ESMF_VMGetCurrent
-
+    use ESMF              , only : ESMF_VMGet
     ! ----------------------------------------------
     ! Get scalar data from State for a particular name and broadcast it to all other pets
     ! ----------------------------------------------
@@ -3837,12 +3837,16 @@ module shr_nuopc_methods_mod
     type(ESMF_VM)     :: vm
     type(ESMF_Field)  :: field
     real(R8), pointer :: farrayptr(:,:)
+    real(r8)          :: tmp(1)
     integer           :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_GetScalar)'
 
     rc = ESMF_SUCCESS
 
     call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, localPet=mytask, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
@@ -3856,10 +3860,11 @@ module shr_nuopc_methods_mod
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
+      tmp(:) = farrayptr(:,scalar_id)
     endif
-    call ESMF_VMBroadCast(vm, farrayptr(:,scalar_id), 1, 0, rc=rc)
+    call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    value = farrayptr(1,scalar_id)
+    value = tmp(1)
 
 
   end subroutine shr_nuopc_methods_State_GetScalar
