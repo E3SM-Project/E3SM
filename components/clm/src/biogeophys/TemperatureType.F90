@@ -280,11 +280,6 @@ contains
     begl = bounds%begl; endl= bounds%endl
     begg = bounds%begg; endg= bounds%endg
 
-    this%t_grnd_u_col(begc:endc) = spval
-    call hist_addfld1d (fname='TG_U', units='K',  &
-         avgflag='A', long_name='Urban ground temperature', &
-         ptr_col=this%t_grnd_u_col, set_nourb=spval, c2l_scale_type='urbans')
-
     this%t_ref2m_patch(begp:endp) = spval
     call hist_addfld1d (fname='TSA', units='K',  &
          avgflag='A', long_name='2m air temperature', &
@@ -334,11 +329,6 @@ contains
     call hist_addfld1d (fname='TV', units='K',  &
          avgflag='A', long_name='vegetation temperature', &
          ptr_patch=this%t_veg_patch)
-
-    this%t_grnd_r_col(begc:endc) = spval
-    call hist_addfld1d (fname='TG_R', units='K',  &
-         avgflag='A', long_name='Rural ground temperature', &
-         ptr_col=this%t_grnd_r_col, set_spec=spval)
 
     if (use_cndv .or. crop_prog) then
        active = "active"
@@ -711,16 +701,6 @@ contains
          dim1name='pft', &
          long_name='vegetation temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_veg_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_GRND_R', xtype=ncd_double,  &
-         dim1name='column', &
-         long_name='rural ground temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_grnd_r_col)
-         
-    call restartvar(ncid=ncid, flag=flag, varname='T_GRND_U', xtype=ncd_double, &
-         dim1name='column',                    &
-         long_name='urban ground temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_grnd_u_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M', xtype=ncd_double,  &
          dim1name='pft', &
