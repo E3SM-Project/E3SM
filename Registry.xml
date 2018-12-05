@@ -470,8 +470,9 @@
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
+			<var name="effectivePressure" packages="higherOrderVelocity"/>
 			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
-                        <var name="uReconstructX" packages="higherOrderVelocity"/>
+            <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
