@@ -101,7 +101,11 @@ subroutine stepon_init(dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
+#ifdef THETA_MODEL_L
      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (4+pcnst)*nlev)
+#else
+     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
+#endif
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -254,10 +258,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    if (.not. single_column) then 
      do ie=1,nelemd
        kptr=0
+#ifdef MODEL_THETA_L
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
        kptr=kptr+3*nlev
-
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+#else
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+#endif
        kptr=kptr+nlev
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
      end do
@@ -276,13 +285,16 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    do ie=1,nelemd
      if (.not. single_column) then
        kptr=0
-
+#ifdef MODEL_THETA_L
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
        kptr=kptr+3*nlev
-
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+#else
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+#endif
        kptr=kptr+nlev
-
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
      endif
 
