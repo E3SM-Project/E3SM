@@ -611,12 +611,11 @@ contains
   end subroutine convert_thermo_forcing
 
 !for preqx model this routine does nothing
-  subroutine convert_thermo_forcing_eam(elem,hvcoord,n0,dt,nets,nete)
+  subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0
+  integer,                intent(in)    :: nt
   real (kind=real_kind),  intent(in)    :: dt
   end subroutine convert_thermo_forcing_eam
 
