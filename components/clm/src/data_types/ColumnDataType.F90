@@ -32,7 +32,9 @@ module ColumnDataType
     real(r8), pointer :: t_soi10cm     (:)   => null() ! soil temperature in top 10cm of soil (K)
     real(r8), pointer :: t_soi17cm     (:)   => null() ! soil temperature in top 17cm of soil (K)
     real(r8), pointer :: t_grnd        (:)   => null() ! ground temperature (K)
-    real(r8), pointer :: t_lake        (:,:) => null() ! col lake temperature (K)  (1:nlevlak)          
+    real(r8), pointer :: t_lake        (:,:) => null() ! lake temperature (K)  (1:nlevlak)          
+    real(r8), pointer :: t_grnd_r      (:)   => null() ! rural ground temperature (K)
+    real(r8), pointer :: t_grnd_u      (:)   => null() ! urban ground temperature (K) (needed by Hydrology2Mod)
   contains
     procedure, public :: Init    => col_es_init
     procedure, public :: Restart => col_es_restart
@@ -181,6 +183,8 @@ contains
     allocate(this%t_soi17cm        (begc:endc))                     ; this%t_soi17cm          (:)   = spval
     allocate(this%t_grnd           (begc:endc))                     ; this%t_grnd             (:)   = nan
     allocate(this%t_lake           (begc:endc,1:nlevlak))           ; this%t_lake             (:,:) = nan
+    allocate(this%t_grnd_r         (begc:endc))                     ; this%t_grnd_r           (:)   = nan
+    allocate(this%t_grnd_u         (begc:endc))                     ; this%t_grnd_u           (:)   = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_es
@@ -220,6 +224,17 @@ contains
     call hist_addfld2d (fname='TLAKE',  units='K', type2d='levlak', &
          avgflag='A', long_name='lake temperature', &
          ptr_col=this%t_lake)
+
+    this%t_grnd_r(begc:endc) = spval
+    call hist_addfld1d (fname='TG_R', units='K',  &
+         avgflag='A', long_name='Rural ground temperature', &
+         ptr_col=this%t_grnd_r, set_spec=spval)
+
+    this%t_grnd_u(begc:endc) = spval
+    call hist_addfld1d (fname='TG_U', units='K',  &
+         avgflag='A', long_name='Urban ground temperature', &
+         ptr_col=this%t_grnd_u, set_nourb=spval, c2l_scale_type='urbans')
+
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_es
@@ -348,6 +363,16 @@ contains
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='lake temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_lake)
+
+    call restartvar(ncid=ncid, flag=flag, varname='T_GRND_R', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='rural ground temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_grnd_r)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='T_GRND_U', xtype=ncd_double, &
+         dim1name='column',                    &
+         long_name='urban ground temperature', units='K', &
+         interpinic_flag='interp', readvar=readvar, data=this%t_grnd_u)
 
   end subroutine col_es_restart
 
