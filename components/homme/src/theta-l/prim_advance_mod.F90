@@ -165,10 +165,8 @@ contains
     else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
-
        call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
-
        ! u2 = u0 + dt/5 RHS(u1)
        call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
@@ -194,7 +192,6 @@ contains
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
-
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 !=========================================================================================
@@ -408,7 +405,7 @@ contains
 
   do ie=nets,nete
 #ifdef CAM
-     tn1 = elem(ie)%derived%T
+     call abortmp('Error: Do not call convert_thermo_forcing() for CAM runs.')
 #else
 ! before tests interfaces are converted to used derived%T as well
      call get_temperature(elem(ie),tn1,hvcoord,n0)
@@ -482,6 +479,10 @@ contains
   real(kind=real_kind)                  :: dpnh_dp_i(np,np,nlevp)
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
   real(kind=real_kind)                  :: tn1(np,np,nlev)
+
+#ifndef CAM
+  call abortmp('Error: Do not call convert_thermo_forcing_eam() for standalone homme.')
+#endif
 
   tn1 = elem%derived%T + dt*elem%derived%FT
 

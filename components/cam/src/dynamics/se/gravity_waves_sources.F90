@@ -1,6 +1,3 @@
-!!!! temp
-!#define MODEL_THETA_L
-
 module gravity_waves_sources
   use derivative_mod, only : derivative_t
   use dimensions_mod, only : np,nlev
@@ -142,9 +139,6 @@ CONTAINS
           
           ! pressure at mid points
           p(:,:)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-
-          ! old preqx call
-          ! theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
 
 #ifdef MODEL_THETA_L          
           temperature(:,:,k) = elem(ie)%derived%T(:,:,k)

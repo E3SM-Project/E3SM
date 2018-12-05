@@ -106,7 +106,7 @@ contains
     ! not going to wrap each scm call in ifdef for now,
     ! but some calls have to be wrapped
     if (single_column) then
-        !abort gracefully
+        call endrun("read_inidat: SCM does not work with cam target theta-l.")
     endif
 #endif
 
@@ -474,7 +474,7 @@ contains
       ! update the redundent columns in the dynamics
       if(par%dynproc) then
 !for nonhydro change size of buf
-!other issues is not inited w_i, phi
+!other issues: not inited w_i, phi?
         call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
       end if
 

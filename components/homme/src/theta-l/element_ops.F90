@@ -156,17 +156,12 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
- 
 
-!unrelated: does this need moist exner? 
   pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*dp(:,:,:))
   
   end subroutine get_pottemp
   
 
-
-! why is hvcoord input here?
-! ps routine. however it makes sense to move all interfaces to use dp as input?
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt)
   !
@@ -325,7 +320,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt)
+  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -334,16 +329,15 @@ contains
   ! ouput:  state variables:   vtheta_dp, phi
   !
   implicit none
-  
+
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  integer, intent(in)               :: nt  
 
   !   local
-  real (kind=real_kind) :: p(np,np,nlev), rstar(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev), aaa
-  integer :: k
+  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  integer :: k,nt,ntQ
 
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
@@ -351,25 +345,17 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
-
   do k=1,nlev
-     !old
-     !elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
-! this is exact inversion of get_temperature in case of hydro
-!however there will be lorenz3 routine get_theta_fromT like that.
-!since this call is needed in standalone dry cases, it needs dry/moist
-!conversion based on nQ=-1
-     elem%state%vtheta_dp(:,:,k,nt)=rstar(:,:,k)/Rgas*dp(:,:,k)*temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
+     elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
+          (p(:,:,k)/p0)**(-kappa)
   enddo
 
-!computes and sets hydrostatic phi, copies state to all timelevels
-  call tests_finalize(elem,hvcoord,nt)
+  call tests_finalize(elem,hvcoord,nt,ntQ)
 
   end subroutine set_thermostate
 
 
-!it is a slightly diff call than get_theta_from_T(hvcoord,Rstar,temperature,dp3d,phi_i,vtheta_dp)
+!moist version of set_thermostate
 !this routine does not need rstar for input
   !_____________________________________________________________________
   subroutine set_thermostate_from_derived_T(elem,hvcoord,nt)
@@ -396,7 +382,6 @@ contains
   enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
   do k=1,nlev
-!get_theta_from_T
      elem%state%vtheta_dp(:,:,k,nt)=rstar(:,:,k)/Rgas*dp(:,:,k)* &
                                     elem%derived%T(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
@@ -619,8 +604,6 @@ contains
   enddo
 
   ntQ=1
-
-!get phi_i
   call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,ns),dp,&
        elem%state%phinh_i(:,:,:,ns))
 

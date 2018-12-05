@@ -1198,18 +1198,6 @@ contains
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     end if
 
-
-!print *, 'OG AFTER SUB'
-!do ie=nets,nets
-!print *, 'ie', ie
-!print *, 'ps_v',elem(ie)%state%ps_v(1,1,tl%nstep0)
-!print *, 'vtheta',elem(ie)%state%vtheta_dp(1,1,1,tl%nstep0)
-!print *, 'u',elem(ie)%state%v(1,1,1,1,tl%nstep0)
-!print *, 'v',elem(ie)%state%v(1,1,2,1,tl%nstep0)
-!print *, 'omega',elem(ie)%derived%omega_p(1,1,1)
-!print *, 'Q',elem(ie)%state%Q(1,1,1,1)
-!enddo
-
   end subroutine prim_run_subcycle
 
 

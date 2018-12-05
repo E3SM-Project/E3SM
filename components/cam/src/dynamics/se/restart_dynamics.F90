@@ -215,6 +215,7 @@ CONTAINS
 
 !replace this with write thermo var? (so T or theta)
 !or recompute? 
+
     ! Write T
 !$omp parallel do private(ie, k, j, i)
     do ie=1,nelemd
@@ -545,9 +546,11 @@ CONTAINS
           do j=1,np
              do i=1,np
                 cnt=cnt+1
-!disabling to move on
-!                elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
-!here we need a routine whcih? we dont have in homme, trivial, assign_thermo_var
+!disabling for theta-l to move on
+!here we need a routine which we dont have in homme yet, trivial, assign_thermo_var
+#ifndef MODEL_THETA_L
+                elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
+#endif
              end do
           end do
        end do

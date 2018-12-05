@@ -49,7 +49,7 @@ subroutine scm_setinitial(elem)
 
 1000 continue
 
-#if 0
+#ifndef MODEL_THETA_L
           if (get_nstep() .le. 1) then
             do k=1,thelev-1
               tobs(k)=elem(ie)%state%T(i,j,k,1)
@@ -181,7 +181,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     dummy2(:) = 0.0
     forecast_ps = elem(ie)%state%ps_v(i,j,t1)
 
-#if 0
+#ifndef MODEL_THETA_L
     call forecast(97,elem(ie)%state%ps_v(i,j,t1),&
            elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&

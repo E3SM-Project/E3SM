@@ -3,7 +3,6 @@
 ! !MODULE: stepon -- FV Dynamics specific time-stepping
 !
 ! !INTERFACE:
-
 module stepon
 
 ! !USES:
@@ -365,9 +364,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (ftype==1) then
 
-#ifndef MODEL_THETA_L
+#ifdef MODEL_THETA_L
+!better to place these checks in namelist, but where is it for cam?
+      call endrun( 'stepon_run2: ftype = 0, ftype < 0 not supported for cam target theta-l')
+#else
+      if (ftype==1) then
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
@@ -424,9 +426,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             end do
          end do
 
-#endif !disabling ftype1 for theta-l
-
-      endif
+      endif ! ftype == 1
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=0 and ftype<0 (debugging options):  just return tendencies to dynamics
@@ -455,7 +455,10 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                end do
             end do
          end do
-      endif
+      endif ! ftype < 0
+
+#endif !disabling ftype =1, ftype<0 for theta-l
+
    end do
    call t_stopf('stepon_bndry_exch')
 
