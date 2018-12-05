@@ -1,9 +1,0 @@
-rm -rf ttt/
-acme-theta-integr/cime/scripts/create_newcase -case ttt -res ne30_ne30 -mach sandiatoss3 -compiler intel -compset FC5AV1C-L
-cd ttt
-./xmlchange CAM_TARGET=theta-l
-./case.setup
-./case.build --sharedlib-only
-./case.build -b atm
-
-
