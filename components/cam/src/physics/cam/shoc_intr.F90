@@ -342,7 +342,7 @@ end function shoc_implements_cnst
     call addfld('SHOC_MIX', (/'lev'/), 'A', 'm', 'SHOC length scale')
     call addfld('TK',(/'lev'/), 'A', 'm2/s','Eddy viscosity for momentum')
     call addfld('TKH', (/'lev'/), 'A', 'm2/s', 'Eddy viscosity for heat')
-    call addfld('W_SEC', (/'ilev'/), 'A', 'm2/s2', 'Vertical velocity variance')
+    call addfld('W_SEC', (/'lev'/), 'A', 'm2/s2', 'Vertical velocity variance')
     call addfld('THL_SEC',(/'ilev'/), 'A', 'K2', 'Temperature variance')
     call addfld('QW_SEC',(/'ilev'/), 'A', 'kg2/kg2', 'Moisture variance')
     call addfld('QWTHL_SEC',(/'ilev'/), 'A', 'K kg/kg', 'Temperature and moisture correlation')
@@ -351,9 +351,10 @@ end function shoc_implements_cnst
     call addfld('WTKE_SEC',(/'ilev'/), 'A', 'm3/s3', 'Vertical flux of turbulence')
     call addfld('UW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
     call addfld('VW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
-    call addfld('W3',(/'lev'/), 'A', 'm3/s3', 'Third moment vertical velocity')
+    call addfld('W3',(/'ilev'/), 'A', 'm3/s3', 'Third moment vertical velocity')
     call addfld('WQL_SEC',(/'lev'/),'A', 'W/m2', 'Liquid water flux')
     call addfld('ISOTROPY',(/'lev'/),'A', 's', 'timescale')
+    call addfld('CONCLD',(/'lev'/),  'A',        'fraction', 'Convective cloud cover')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -372,6 +373,7 @@ end function shoc_implements_cnst
     call add_default('W3', 1, ' ')
     call add_default('WQL_SEC', 1, ' ')
     call add_default('ISOTROPY',1,' ')
+    call add_default('CONCLD',1,' ')
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
     ! ---------------------------------------------------------------!
@@ -1079,7 +1081,7 @@ end function shoc_implements_cnst
     call physics_update(state1,ptend_loc,hdtime)
    
     ! For purposes of this implementaiton, just set relvar and accre_enhan to 1
-    relvar(:,:) = 1._r8   
+    relvar(:,:) = 1.0_r8   
     accre_enhan(:,:) = 1._r8  
    
     ! --------------------------------------------------------------------------------- ! 
@@ -1248,6 +1250,7 @@ end function shoc_implements_cnst
     call outfld('W3', w3, pcols, lchnk)
     call outfld('WQL_SEC',wql_output, pcols, lchnk)
     call outfld('ISOTROPY',isotropy, pcols,lchnk)
+    call outfld('CONCLD',concld,pcols,lchnk)
 
 	 
     return

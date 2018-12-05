@@ -631,7 +631,6 @@ subroutine diag_second_shoc_moments(&
       grid_dz2=(1._r8/dz_zi(i,k))**2 !squared
     
       sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
-!      sm=shoc_mix_zi(i,k)**2
       
       ! Compute variance of thetal
       thl_sec(i,k)=thl2tune*sm*grid_dz2*(thetal(i,k)-thetal(i,kb))**2
@@ -781,7 +780,7 @@ subroutine diag_third_shoc_moments(&
         (w_sec(i,k)-w_sec(i,kb))+ 2._r8 * thedz2 * bet2 * &   
 	isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb)) 
 	
-      f3=thedz * bet2 * isosqrt * w_sec_zi(i,k) * &
+      f3=thedz2 * bet2 * isosqrt * w_sec_zi(i,k) * &
         (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
 	bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,k) - tke(i,kb)))
 	
@@ -822,19 +821,18 @@ subroutine diag_third_shoc_moments(&
   
   ! set upper condition
   w3(:,nlevi) = 0._r8
-  
   ! perform clipping to prevent unrealistically large values from occuring
-  do k=1,nlevi
-    do i=1,shcol
+!  do k=1,nlevi
+!    do i=1,shcol
     
-      tsign = 1._r8
-      theterm = w_sec_zi(i,k)
-      cond = 1.2_r8 * sqrt(2._r8 * theterm**3)
-      if (w3(i,k) .lt. 0) tsign = -1._r8
-      if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
-      
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
+!      tsign = 1._r8
+!      theterm = w_sec_zi(i,k)
+!      cond = 1.2_r8 * sqrt(2._r8 * theterm**3)
+!      if (w3(i,k) .lt. 0) tsign = -1._r8
+!      if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
+     
+!    enddo ! end i loop (column loop)
+!  enddo ! end k loop (vertical loop)
   
   return
   
@@ -1309,7 +1307,7 @@ subroutine shoc_tke(&
   enddo
   
   shear_prod(:,nlevi) = 0._r8
- 
+  
   call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
 
   do k=1,nlev
