@@ -79,6 +79,9 @@ module shr_taskmap_mod
       integer :: start, limit           ! loop bounds
       integer :: head, tail             ! limits of current sequential run
                                         !  of task ids
+!pw++
+      integer :: status(MPI_STATUS_SIZE)! MPI status return
+!pw--
 
       ! flag to indicate whether returning number of nodes
       logical :: broadcast_nnodes
@@ -206,9 +209,23 @@ module shr_taskmap_mod
       ! Gather node names
       !
       task_node_names(:) = ' '
-      call mpi_gather (task_node_name,  max_len, mpi_character, &
-                       task_node_names, max_len, mpi_character, &
-                       0, comm_id, ier)
+!pw      call mpi_gather (task_node_name,  max_len, mpi_character, &
+!pw                       task_node_names, max_len, mpi_character, &
+!pw                       0, comm_id, ier)
+!pw++
+      if (masterproc) then
+         do c=1,max_len
+            task_node_names(c:c) = task_node_name(c)
+         enddo
+         do i=1,npes-1
+           call mpi_send(task_node_name, max_len, mpi_character, i, 0, comm_id, ier)
+           call mpi_recv(task_node_names(i*max_len+1), max_len, mpi_character, i, i, comm_id, status,ier)
+         enddo
+      else
+         call mpi_recv(tmp_name, max_len, mpi_character, 0, 0, comm_id, status, ier)
+         call mpi_send(task_node_name, max_len, mpi_character, 0, iam, comm_id, ier)
+      endif
+!pw--
 
       if (masterproc) then
          !
