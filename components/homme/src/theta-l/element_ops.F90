@@ -320,7 +320,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord,nt)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -333,11 +333,12 @@ contains
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in)               :: nt
 
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  integer :: k,nt,ntQ
+  integer :: k
 
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
@@ -350,7 +351,7 @@ contains
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
-  call tests_finalize(elem,hvcoord,nt,ntQ)
+  call tests_finalize(elem,hvcoord,nt)
 
   end subroutine set_thermostate
 
