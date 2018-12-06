@@ -324,7 +324,7 @@ contains
     integer                  :: mpicom_join
     integer                  :: atmid
     character*32             :: dm1, dm2, tagName, wgtIdef
-    character*32             :: outfile, wopts, tagnameProj
+    character*50             :: outfile, wopts, tagnameProj
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
     integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
