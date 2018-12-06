@@ -1145,23 +1145,13 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_methods_FB_FldChk(FBin , trim(fldin) , rc=rc) .and. &
         shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
 
-       call t_startf(subname//'1')
-
       call shr_nuopc_methods_FB_getFieldByName(FBin, trim(fldin), field1, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call t_stopf(subname//'1')
-
-      call t_startf(subname//'2')
-
       call shr_nuopc_methods_FB_getFieldByName(FBout, trim(fldout), field2, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call t_stopf(subname//'2')
-
-      call t_startf(subname//'3')
       call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
         termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call t_stopf(subname//'3')
    else
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)

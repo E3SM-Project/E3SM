@@ -541,14 +541,12 @@ contains
 
     ! local variables
     integer                     :: i, n
-    type(ESMF_FieldBundle)      :: FBNormDst       ! temporary
     type(ESMF_Field)            :: srcField
     type(ESMF_Field)            :: tmpfield
     integer                     :: mapindex
     character(len=CS)  :: lstring
     character(len=CS)  :: mapnorm
     character(len=CS)  :: fldname
-    character(len=CS)  :: csize1, csize2
     real(R8), allocatable :: data_srctmp(:)  ! temporary
     real(R8), allocatable :: data_dsttmp(:)  ! temporary
     real(R8), pointer     :: data_src(:)
@@ -624,15 +622,14 @@ contains
           CYCLE
        end if
 
-       ! Determine the normalization for the map
-       mapnorm  = fldsSrc(n)%mapnorm(destcomp)
-
        ! Do the mapping
        if (mapindex == mapfcopy) then
 
           call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapindex), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
+          ! Determine the normalization for the map
+          mapnorm  = fldsSrc(n)%mapnorm(destcomp)
           if ( trim(mapnorm) /= 'unset' .and. trim(mapnorm) /= 'one' .and. trim(mapnorm) /= 'none') then
              ! Get field and pointer to source field data in FBSrc
              call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, field=srcfield, rc=rc)
