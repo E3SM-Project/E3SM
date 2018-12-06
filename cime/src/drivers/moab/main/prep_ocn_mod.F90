@@ -1397,8 +1397,9 @@ contains
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atmid
-    character*32             :: dm1, dm2, tagName
-    character*32             :: outfile, wopts, tagnameProj
+    character*32             :: dm1, dm2
+    character*50             :: tagName
+    character*32             :: outfile, wopts
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
     integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
