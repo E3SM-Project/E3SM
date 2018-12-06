@@ -1118,7 +1118,7 @@ module shr_nuopc_methods_mod
     use med_constants_mod, only : R8
     use perf_mod, only : t_startf, t_stopf
 
-    type(ESMF_FieldBundle), intent(inout) :: FBin
+    type(ESMF_FieldBundle), intent(in) :: FBin
     character(len=*)      , intent(in)    :: fldin
     type(ESMF_FieldBundle), intent(inout) :: FBout
     character(len=*)      , intent(in)    :: fldout
