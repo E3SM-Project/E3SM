@@ -509,7 +509,8 @@ contains
     use ESMF                  , only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
     use ESMF                  , only: ESMF_FieldBundle, ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
     use ESMF                  , only: ESMF_RouteHandle, ESMF_RouteHandleIsCreated, ESMF_Field
-    use ESMF                  , only: ESMF_FieldSet, ESMF_FieldBundleAdd
+    use ESMF                  , only: ESMF_FieldSet, ESMF_FieldBundleAdd, ESMF_FieldBundleRemove
+    use ESMF                  , only: ESMF_FieldDestroy, ESMF_FieldIsCreated
     use esmFlds               , only: compname
     use shr_nuopc_scalars_mod , only: flds_scalar_name
     use shr_nuopc_fldList_mod , only: mapnames, mapfcopy
@@ -543,7 +544,8 @@ contains
 !    type(ESMF_FieldBundle)      :: FBSrcTmp        ! temporary
 !    type(ESMF_FieldBundle)      :: FBNormSrc       ! temporary
 !    type(ESMF_FieldBundle)      :: FBNormDst       ! temporary
-    type(ESMF_Field)            :: tmpfield, srcfield, dstfield
+    type(ESMF_Field)            :: srcfield, dstfield
+    type(ESMF_Field)            :: srcRemaptmp, srcNormtmp, dstNormtmp
     integer                     :: mapindex
     character(len=CS)  :: lstring
     character(len=CS)  :: mapnorm
@@ -597,7 +599,6 @@ contains
        ! Determine if field is a scalar - and if so go to next iternation
        fldname  = fldsSrc(n)%shortname
        if (fldname == flds_scalar_name) CYCLE
-
        ! Determine if there is a map index and if its zero go to next iteration
        mapindex = fldsSrc(n)%mapindex(destcomp)
        if (mapindex == 0) CYCLE
@@ -646,11 +647,11 @@ contains
              ! Check if RemapTMP field is defined and define it if not
              call ESMF_FieldBundleGet(FBSrc, 'RemapTMP', isPresent=isPresent, rc=rc)
              if (.not. isPresent) then
-                tmpfield = srcfield
-                call ESMF_FieldSet(tmpfield, name='RemapTMP', rc=rc)
+                srcremaptmp = srcfield
+                call ESMF_FieldSet(srcremaptmp, name='RemapTMP', rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                call ESMF_FieldBundleAdd(FBSrc, (/tmpfield/), rc=rc)
+                call ESMF_FieldBundleAdd(FBSrc, (/srcremaptmp/), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              endif
              ! Get pointer to source field data in
@@ -665,11 +666,11 @@ contains
              if (.not. associated(data_srcnorm)) then
                 call ESMF_FieldBundleGet(FBSrc, 'NormTMP', isPresent=isPresent, rc=rc)
                 if (.not. isPresent) then
-                   tmpfield = srcfield
-                   call ESMF_FieldSet(tmpfield, name='NormTMP', rc=rc)
+                   srcNormtmp = srcfield
+                   call ESMF_FieldSet(srcNormtmp, name='NormTMP', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                   call ESMF_FieldBundleAdd(FBSrc, (/tmpfield/), rc=rc)
+                   call ESMF_FieldBundleAdd(FBSrc, (/srcnormtmp/), rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
                 ! Get pointer to source field data in
@@ -684,11 +685,11 @@ contains
              if (.not. associated(data_dstnorm)) then
                 call ESMF_FieldBundleGet(FBDst, 'NormTMP', isPresent=isPresent, rc=rc)
                 if (.not. isPresent) then
-                   tmpfield = dstfield
-                   call ESMF_FieldSet(tmpfield, name='NormTMP', rc=rc)
+                   dstnormtmp = dstfield
+                   call ESMF_FieldSet(dstnormtmp, name='NormTMP', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                   call ESMF_FieldBundleAdd(FBDst, (/tmpfield/), rc=rc)
+                   call ESMF_FieldBundleAdd(FBDst, (/dstnormtmp/), rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
 
@@ -788,6 +789,23 @@ contains
        end if
 
     end do  ! loop over fields
+
+    ! clean up
+    call ESMF_FieldBundleRemove(FBSrc, (/'RemapTMP', 'NormTMP'/), relaxedflag=.true., rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_FieldBundleRemove(FBDst, (/'NormTMP'/), relaxedflag=.true., rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ESMF_FieldIsCreated(srcremaptmp, rc=rc)) then
+       call ESMF_FieldDestroy(srcremaptmp, nogarbage=.true., rc=rc)
+    endif
+    if (ESMF_FieldIsCreated(srcnormtmp, rc=rc)) then
+       call ESMF_FieldDestroy(srcnormtmp, nogarbage=.true., rc=rc)
+    endif
+    if (ESMF_FieldIsCreated(dstnormtmp, rc=rc)) then
+       call ESMF_FieldDestroy(dstnormtmp, nogarbage=.true., rc=rc)
+    endif
+
+
     call t_stopf('MED:'//subname)
 
   end subroutine med_map_FB_Regrid_Norm
