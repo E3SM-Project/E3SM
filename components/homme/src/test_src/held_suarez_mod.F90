@@ -6,7 +6,7 @@ module held_suarez_mod
 
 
   use coordinate_systems_mod, only: spherical_polar_t
-  use dimensions_mod,         only: nlev,np,qsize
+  use dimensions_mod,         only: nlev,np,qsize,nlevp
   use element_mod,            only: element_t
   use element_state,          only: timelevels
   use element_ops,            only: set_thermostate, get_temperature
@@ -46,6 +46,8 @@ contains
     real (kind=real_kind)                   :: pmid,r0,r1,dtf_q,dp,rdp,FQ
     real (kind=real_kind), dimension(np,np) :: psfrc 
     real (kind=real_kind)                   :: temperature(np,np,nlev)
+    real (kind=real_kind)                   :: v(np,np,3,nlev)
+    real (kind=real_kind)                   :: fv(np,np,3,nlev)
     integer                                 :: i,j,k,q
 
     dtf_q = dt
@@ -60,10 +62,21 @@ contains
     elemin%derived%FT(:,:,:) = elemin%derived%FT(:,:,:) + &
          hs_T_forcing(hvcoord,psfrc(1,1),               &
          temperature,elemin%spherep,np, nlev)
-    
-    elemin%derived%FM(:,:,1:2,:)= elemin%derived%FM(:,:,1:2,:) + &
-         hs_v_forcing(hvcoord,psfrc(1,1),& 
-         elemin%state%v(:,:,:,:,nm1),np,nlev)
+
+    v(:,:,1:2,:) = elemin%state%v(:,:,1:2,:,nm1)
+#if ( defined MODEL_THETA_L ) 
+    v(:,:,3,:) = elemin%state%w_i(:,:,1:nlev,nm1)  ! dont apply at surface
+#else
+    v(:,:,3,:) = 0
+#endif
+
+    fv = hs_v_forcing(hvcoord,psfrc(1,1),v,elemin%state%w_i(:,:,nlevp,nm1),np,nlev)
+
+#if ( defined MODEL_THETA_L ) 
+    elemin%derived%FM(:,:,1:3,:) = elemin%derived%FM(:,:,1:3,:) + fv(:,:,1:3,:)
+#else
+    elemin%derived%FM(:,:,1:2,:) = elemin%derived%FM(:,:,1:2,:) + fv(:,:,1:2,:)
+#endif
 
     if (qsize>=1) then
        ! HS with tracer  (Galewsky type forcing, with flux of  2.3e-5 kg/m^2/s
@@ -100,15 +113,16 @@ contains
     
   end subroutine hs_forcing
 
-  function hs_v_forcing(hvcoord,ps,v,npts,nlevels) result(hs_v_frc)
+  function hs_v_forcing(hvcoord,ps,v,wsurf,npts,nlevels) result(hs_v_frc)
 
     integer, intent(in)               :: npts
     integer, intent(in)               :: nlevels
     type (hvcoord_t), intent(in)       :: hvcoord
     real (kind=real_kind), intent(in) :: ps(npts,npts)
+    real (kind=real_kind), intent(in) :: wsurf(npts,npts)
 
-    real (kind=real_kind), intent(in) :: v(npts,npts,2,nlevels)
-    real (kind=real_kind)             :: hs_v_frc(npts,npts,2,nlevels)
+    real (kind=real_kind), intent(in) :: v(npts,npts,3,nlevels)
+    real (kind=real_kind)             :: hs_v_frc(npts,npts,3,nlevels)
 
     ! Local variables
 
@@ -130,6 +144,12 @@ contains
              k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
              hs_v_frc(i,j,1,k) = -k_v*v(i,j,1,k)
              hs_v_frc(i,j,2,k) = -k_v*v(i,j,2,k)
+
+             etam      = hvcoord%hyai(k) + hvcoord%hybi(k)
+             k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
+!             k_v = 0
+!             hs_v_frc(i,j,3,k) = -k_v*(v(i,j,3,k)-wsurf(i,j))
+             hs_v_frc(i,j,3,k) = -k_v*v(i,j,3,k)
           end do
        end do
     end do
