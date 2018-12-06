@@ -186,7 +186,7 @@ class PGN(SystemTestsCommon):
 
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
         csmdata_atm  = csmdata_root+"/atm/cam/inic/homme/ne4_v1_init/"
-        csmdata_lnd  = csmdata_root+"/lnd/clm2/initdata/ne4_v1_init/"
+        csmdata_lnd  = csmdata_root+"/lnd/clm2/initdata/ne4_v1_init/b58d55680/"
 
         iinst = 1
         for icond in range(ninit_cond):
