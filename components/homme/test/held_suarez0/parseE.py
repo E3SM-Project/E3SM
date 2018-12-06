@@ -42,12 +42,21 @@ def lookfor1(fid,key1,key2="",allow_eof=0):
 KE=[]
 IE=[]
 PE=[]
+KEdiss=[]
+IEdiss=[]
+PEdiss=[]
+IPEdiss=[]
+DELE=[]
 time=[]
 try:
     startstr="number of MPI processes:"
     str = lookfor1(sys.stdin,startstr,"",0)
     str=split(str)
     ncpu=atoi(str[0])
+
+    str = lookfor1(sys.stdin,"theta_hydrostatic_mode ","",0)
+    str=split(str)
+    hydrostatic_mode  = (str[1]=="T")
 
     str = lookfor1(sys.stdin,"tstep ","",0)
     str=split(str)
@@ -67,14 +76,30 @@ try:
         str = lookfor1(sys.stdin,"KE,d/dt","",1)
         str=split(str)
         KE.extend([atof(str[1])])
+        if (len(str) >= 4):
+           KEdiss.extend([atof(str[3])])
 
         str = lookfor1(sys.stdin,"IE,d/dt","",0)
         str=split(str)
         IE.extend([atof(str[1])])
+        if (len(str) >= 4):
+           IEdiss.extend([atof(str[3])])
 
         str = lookfor1(sys.stdin,"PE,d/dt","",0)
         str=split(str)
         PE.extend([atof(str[1])])
+        if (len(str) >= 4):
+           PEdiss.extend([atof(str[3])])
+
+        if ( hydrostatic_mode ):
+           str = lookfor1(sys.stdin,"I+P,d/dt","",0)
+           str=split(str)
+           IPEdiss.extend([atof(str[3])])
+
+        str = lookfor1(sys.stdin," E,d/dt","",0)
+        str=split(str)
+        DELE.extend([atof(str[2])])
+
         #print 'parsed nstep=%i' % ( n)
 
         
@@ -84,23 +109,47 @@ except search_failed,e:
     sys.exit(1)
     
 except eof,e:
-    print 'plotting...'
+    print 'plotting energy...'
     KE2= np.array(KE)
     nlen=KE2.size
     print 'data parsed size=%i' % (nlen)
     time=time[0:nlen]
-    #KE2=KE2/KE2[0]
     KE2=KE2*1e3
     PE2= np.array(PE)
-    #PE2=PE2/PE2[0]
     IE2= np.array(IE)
-    #IE2=IE2/IE2[0]
-    p1,=plt.plot(time,KE2,label='KE*1e3')
-    p2,=plt.plot(time,PE2,label='PE')
-    p2,=plt.plot(time,IE2,label='IE')
-    plt.axis([0, 500, 0, 2.5e9])
+    plt.figure()
+    plt.plot(time,KE2,label='KE*1e3')
+    plt.plot(time,PE2,label='PE')
+    plt.plot(time,IE2,label='IE')
+    #plt.axis([0, 500, 0, 2.5e9])
+    plt.grid(True)
     plt.legend()
-    plt.show()
+    plt.savefig("HS-E.png")
 
+    print 'plotting dissipation rates...'    
+    print 'data parsed size=%i' % (len(IPEdiss))
+    plt.figure()
+    if (len(IPEdiss)>0):
+       print 'plotting Hydrostatic I+P,d/dt,diss data'
+       plt.plot(time,IPEdiss,label='IE+PE dissipation')
+
+    if (len(IEdiss)>0):
+       print 'plotting NH data, sum of IEdiss and PEdiss'
+       IPEdiss = np.array(PEdiss) + np.array(IEdiss)       
+       plt.plot(time,IPEdiss,label='IE+PE dissipation')
+
+    if (len(KEdiss)>0): 
+       plt.plot(time,KEdiss,label='KE dissipation')
+
+    plt.plot(time,DELE,label='TOT E dissipation')
+
+    plt.axis([0, 500, -.5, .1])
+    plt.axis([0, 500, -.1, .1])
+    #plt.axis([1600, 1700, -.4, .2])
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("HS-diss.png")
+
+    plt.show()
     sys.exit(0)
 
