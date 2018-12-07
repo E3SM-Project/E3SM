@@ -973,6 +973,7 @@ contains
   end subroutine seq_comm_setptrs
 !---------------------------------------------------------
   subroutine seq_comm_setnthreads(nthreads)
+    use shr_sys_mod, only : shr_sys_abort
 
     implicit none
     integer,intent(in) :: nthreads

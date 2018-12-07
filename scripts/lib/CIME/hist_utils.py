@@ -230,11 +230,12 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
-    testcase = case.get_value("CASE")
+    casename = case.get_value("CASE")
+    testcase = case.get_value("TESTCASE")
     casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
-    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
+    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(casename, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_driver_compare = False
     archive = case.get_env('archive')
     ref_case = case.get_value("RUN_REFCASE")
@@ -280,8 +281,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
-
-    if num_compared == 0:
+    # PFS test may not have any history files to compare.
+    if num_compared == 0 and testcase != "PFS":
         all_success = False
         comments += "Did not compare any hist files! Missing baselines?\n"
 
@@ -521,8 +522,8 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         logger.warning("No {}.log file found in directory {}".format(cplname,case.get_value("RUNDIR")))
     else:
         safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)))
-
-    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
+    testname = case.get_value("TESTCASE")
+    expect(num_gen > 0 or testname == "PFS", "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:

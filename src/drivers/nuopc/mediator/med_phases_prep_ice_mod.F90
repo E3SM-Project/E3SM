@@ -35,7 +35,7 @@ module med_phases_prep_ice_mod
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, logunit, mastertask
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -56,6 +56,7 @@ module med_phases_prep_ice_mod
     logical,save               :: first_call = .true.
     character(len=*),parameter :: subname='(med_phases_prep_ice)'
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -103,12 +104,12 @@ module med_phases_prep_ice_mod
     if (dbug_flag > 1) then
        call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-
+#if DEBUG
     if (mastertask) then
        call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
-
+#endif
     !---------------------------------------
     !--- map to create FBimp(:,compice)
     !---------------------------------------
@@ -186,6 +187,7 @@ module med_phases_prep_ice_mod
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ice
 
