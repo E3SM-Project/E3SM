@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 ninit_cond = 6 #12
         
 #perturbations for runs
-prt        = [0.0, 1.0e-14, -1.0e-14]
+prt        = [0.0, 1.0e-6, -1.0e-6]
 prtstr     = ['woprt','posprt','negprt']
 
 #file name for file containing PGE cloud
