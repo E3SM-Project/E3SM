@@ -1444,7 +1444,7 @@ class M_TestCimePerformance(TestCreateTestCommon):
         ts = time.time()
 
         num_repeat = 5
-        for _ in xrange(num_repeat):
+        for _ in range(num_repeat):
             self._create_test(["cime_tiny --no-build"])
 
         elapsed = time.time() - ts
