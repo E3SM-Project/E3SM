@@ -652,7 +652,7 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
              ! regrid FBSrc to FBDst
-             ! Copy data_src to data_srctmp and multiply by fraction
+             ! Copy data_src to data_srctmp and multiply by fraction, regrid this then replace with original data_src
              data_srctmp = data_src
              data_src = data_src * data_frac
 
@@ -670,11 +670,12 @@ contains
                 endif
                 allocate(data_dsttmp(size(data_dst)))
              endif
+             ! Copy data_dst to tmp location, regrid fraction from source
              data_dsttmp = data_dst
              data_dst = czero
              call shr_nuopc_methods_FB_FieldRegrid(FBFrac, mapnorm, FBDst, trim(fldname), RouteHandles(mapindex), rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+            
              do i= 1,size(data_dst)
                 if (data_dst(i) /= 0.0_R8) then
                    data_dst(i) = data_dsttmp(i)/data_dst(i)
