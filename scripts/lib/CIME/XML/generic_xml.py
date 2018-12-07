@@ -11,6 +11,7 @@ from distutils.spawn import find_executable
 import getpass
 import six
 from copy import deepcopy
+from collections import namedtuple
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class GenericXML(object):
 
     _FILEMAP = {}
     DISABLE_CACHING = False
+    CacheEntry = namedtuple("CacheEntry", ["tree", "root", "modtime"])
 
     @classmethod
     def invalidate(cls, filename):
@@ -76,7 +78,7 @@ class GenericXML(object):
 
             self.tree = ET.ElementTree(root)
 
-            self._FILEMAP[infile] = (self.tree, self.root, 0.0)
+            self._FILEMAP[infile] = self.CacheEntry(self.tree, self.root, 0.0)
 
     def read(self, infile, schema=None):
         """
@@ -84,7 +86,7 @@ class GenericXML(object):
         """
         cached_read = False
         if not self.DISABLE_CACHING and infile in self._FILEMAP:
-            timestamp_cache = self._FILEMAP[infile][2]
+            timestamp_cache = self._FILEMAP[infile].modtime
             timestamp_file  = os.path.getmtime(infile)
             if timestamp_file == timestamp_cache:
                 logger.debug("read (cached): {}".format(infile))
@@ -104,7 +106,7 @@ class GenericXML(object):
 
             logger.debug("File version is {}".format(str(self.get_version())))
 
-            self._FILEMAP[infile] = (self.tree, self.root, os.path.getmtime(infile))
+            self._FILEMAP[infile] = self.CacheEntry(self.tree, self.root, os.path.getmtime(infile))
 
     def read_fd(self, fd):
         expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"               .format(self.filename))
@@ -302,7 +304,7 @@ class GenericXML(object):
         """
         Write an xml file from data in self
         """
-        timestamp_cache = self._FILEMAP[self.filename][2]
+        timestamp_cache = self._FILEMAP[self.filename].modtime
         if timestamp_cache != 0.0:
             timestamp_file  = os.path.getmtime(self.filename)
             expect(timestamp_file == timestamp_cache,
@@ -330,7 +332,7 @@ class GenericXML(object):
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
 
-        self._FILEMAP[self.filename] = (self.tree, self.root, os.path.getmtime(self.filename))
+        self._FILEMAP[self.filename] = self.CacheEntry(self.tree, self.root, os.path.getmtime(self.filename))
 
         self.needsrewrite = False
 
