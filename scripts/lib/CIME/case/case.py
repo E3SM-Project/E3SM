@@ -195,17 +195,17 @@ class Case(object):
 
     def read_xml(self):
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None, read_only=self._force_read_only))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
-        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(self._caseroot))
-        self._env_generic_files.append(EnvArchive(self._caseroot))
+        self._env_generic_files.append(EnvMachSpecific(self._caseroot, read_only=self._force_read_only))
+        self._env_generic_files.append(EnvArchive(self._caseroot, read_only=self._force_read_only))
         self._files = self._env_entryid_files + self._env_generic_files
 
     def get_case_root(self):
@@ -1182,6 +1182,10 @@ directory, NOT in this subdirectory."""
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
+
+        # User mods may have modified underlying XML files
+        if all_user_mods:
+            self.read_xml()
 
     def _get_comp_user_mods(self, component):
         """
