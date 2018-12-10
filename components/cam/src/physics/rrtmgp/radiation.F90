@@ -1343,6 +1343,9 @@ contains
       nday = count(day_indices(1:ncol) > 0)
       nnight = count(night_indices(1:ncol) > 0)
 
+      ! If no daytime columns in this chunk, then we return without updating the
+      ! radiative fluxes
+      if (nday == 0) return
 
       ! Populate RRTMGP input variables. Use the day_indices index array to
       ! map CAM variables on all columns to the daytime-only arrays, and take
