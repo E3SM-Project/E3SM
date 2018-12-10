@@ -9,15 +9,13 @@ module ESM
   use shr_kind_mod          , only : SHR_KIND_R8, SHR_KIND_CS, SHR_KIND_CL
   use shr_log_mod           , only : shr_log_Unit, shr_log_Level
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
-  use med_internalstate_mod , only : logunit, loglevel
-  use seq_comm_mct, only : num_inst_total
+  use med_internalstate_mod , only : logunit, loglevel, mastertask
   use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
 
   implicit none
   private
 
   character(len=512)             :: msgstr
-  logical                        :: mastertask ! master processor for driver gcomp
   integer                        :: componentCount
   character(len=8)               :: atm_present, lnd_present, ocn_present
   character(len=8)               :: ice_present, rof_present, wav_present
@@ -136,10 +134,9 @@ module ESM
     use wav_comp_nuopc        , only : WAVSetServices => SetServices
     use rof_comp_nuopc        , only : ROFSetServices => SetServices
     use glc_comp_nuopc        , only : GLCSetServices => SetServices
-    use shr_pio_mod           , only : shr_pio_init1
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
     use perf_mod              , only : t_initf
-    use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
+    use shr_mem_mod           , only : shr_mem_init
     use shr_log_mod           , only : shrlogunit=> shr_log_unit
 
     type(ESMF_GridComp)    :: driver
@@ -153,7 +150,6 @@ module ESM
     type(ESMF_GridComp)    :: child
     type(ESMF_Config)      :: config
     integer                :: compid
-    type(file_desc_t)      :: pioid
     integer                :: n, n1, stat
     integer, pointer       :: petList(:)
     character(len=20)      :: model, prefix
@@ -161,10 +157,12 @@ module ESM
     integer                :: localPet, medpet
     logical                :: is_set
     character(SHR_KIND_CS) :: cvalue
+    character(SHR_KIND_CL) :: meminitStr
     character(len=512)     :: diro
     character(len=512)     :: logfile
     integer                :: global_comm
     logical                :: isPresent
+    logical                :: drv_threading         ! driver threading control
     integer                :: maxthreads
     integer                :: dbrc
     integer                :: readunit, iostat
@@ -192,12 +190,6 @@ module ESM
 
     call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=global_comm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (localPet == 0) then
-       mastertask = .true.
-    else
-       mastertask = .false.
-    end if
 
     !-------------------------------------------
     ! determine the generic component labels
@@ -234,65 +226,24 @@ module ESM
     call CheckAttributes(driver, rc)
 
     !-------------------------------------------
-    ! Initialize communicators and PIO
-    !-------------------------------------------
-
-    ! Call first phase of pio initialization The call to pio_init1
-    ! should be the first routine called after mpi_init.  It reads the
-    ! pio default settings (pio_default_inparm) from the file
-    ! 'nlfilename' and if the namelist variable 'pio_async_interface'
-    ! is true, it splits the IO tasks away from the Compute tasks.  It
-    ! then returns the new compute comm in Global_Comm and sets module
-    ! variable io_comm.
-    ! TODO: this must be reconciled with having the asynchronous io
-    ! processors just be a separate gridded component in NUOPC
-    ! TODO: global_comm should be the same as mpicom for the driver vm - however
-    ! cannot set this to mpicom since the call to shr_pio_init1 can possibly change this
-
-    call shr_pio_init1(num_inst_total, nlfilename, global_comm)
-
-    !-------------------------------------------
     ! Initialize other attributes (after initializing driver clock)
     !-------------------------------------------
 
-    call InitAttributes(driver, rc)
+    call InitAttributes(driver, mastertask, rc)
 
     !-------------------------------------------
     ! Initialize component pe layouts
     !-------------------------------------------
 
     call esm_init_pelayout(driver, maxthreads)
-
-    !-------------------------------------------
-    ! Reset log unit for mediator
-    !-------------------------------------------
-    call NUOPC_DriverGetComp(driver, 'MED', comp=mediator, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    medPet = -1
-    if (ESMF_GridCompIsPetLocal(mediator, rc=rc)) then
-       call ESMF_GridCompGet(mediator, vm=vm, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_VMGet(vm, localPet=medPet, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! ensemble_driver set the med pet to task 0 of the member driver, correct it here
-       if(medPet == 0 .and. localPet /= 0) then
-          call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call NUOPC_CompAttributeGet(driver, name="logfile", value=logfile, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          logunit = shr_file_getUnit()
-          open(logunit,file=trim(diro)//"/"//trim(logfile), position='append')
-          mastertask = .true.
-       else
-          logUnit = shrlogunit
-          mastertask = .false.
-       endif
-    else
-       logUnit = shrlogunit
-       mastertask = .false.
-    endif
           ! Print out present flags to mediator log file
-    if (medPet==0) then
+    if (mastertask) then
+       !----------------------------------------------------------
+       ! Memory test
+       !----------------------------------------------------------
+       call shr_mem_init(strbuf=meminitstr)
+
+       write(logunit,*) trim(meminitstr)
        write(logunit,*) trim(subname)//":atm_present="//trim(atm_present)
        write(logunit,*) trim(subname)//":lnd_present="//trim(lnd_present)
        write(logunit,*) trim(subname)//":ocn_present="//trim(ocn_present)
@@ -310,20 +261,12 @@ module ESM
     call t_initf(nlfilename, LogPrint=.true., mpicom=global_comm, &
          mastertask=mastertask, MaxThreads=maxthreads)
 
-    ! finish the pio initialization (this calls shr_pio_init2)
-    call InitPIO(driver, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     !-------------------------------------------
     ! Perform restarts if appropriate
     !-------------------------------------------
 
     call InitRestart(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (pio_file_is_open(pioid)) then
-       call pio_closefile(pioid)
-    end if
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -335,9 +278,10 @@ module ESM
 
   subroutine SetRunSequence(driver, rc)
     use ESMF                  , only : ESMF_GridComp, ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
-    use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_Clock, ESMF_Config
-    use ESMF                  , only : ESMF_GridCompGet, ESMF_ConfigLoadFile, ESMF_ConfigCreate
-    use NUOPC                 , only : NUOPC_FreeFormat, NUOPC_FreeFormatPrint, NUOPC_FreeFormatDestroy
+    use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_Config
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ConfigCreate
+    use ESMF                  , only : ESMF_ConfigLoadFile
+    use NUOPC                 , only : NUOPC_FreeFormat, NUOPC_FreeFormatDestroy
     use NUOPC                 , only : NUOPC_FreeFormatCreate
     use NUOPC_Driver          , only : NUOPC_DriverIngestRunSequence, NUOPC_DriverSetRunSequence
     use NUOPC_Driver          , only : NUOPC_DriverPrint
@@ -382,10 +326,8 @@ module ESM
     !   file=__FILE__)) &
     !   return  ! bail out
 
-    if (mastertask) then
-       call NUOPC_FreeFormatPrint(runSeqFF, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+!    call pretty_print_nuopc_freeformat(runSeqFF, 'run sequence', rc=rc)
+!    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_FreeFormatDestroy(runSeqFF, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -395,6 +337,38 @@ module ESM
     endif
 
   end subroutine SetRunSequence
+
+  subroutine pretty_print_nuopc_freeformat(ffstuff, label, rc)
+    use NUOPC, only : NUOPC_FreeFormat, NUOPC_FreeFormatGet, NUOPC_FreeFormatLen
+    use ESMF,  only : ESMF_SUCCESS
+
+    type(NUOPC_FreeFormat), intent(in) :: ffstuff
+    character(len=*) :: label
+    integer, intent(out) :: rc
+
+    integer                 :: i
+    integer                 :: linecnt
+    character(len=NUOPC_FreeFormatLen), pointer :: outstr(:)
+
+    rc = ESMF_SUCCESS
+    if (mastertask .or. dbug_flag > 3) then
+       write(logunit, *) 'BEGIN: ', trim(label)
+       call NUOPC_FreeFormatGet(ffstuff, linecount=linecnt, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       allocate(outstr(linecnt))
+       call NUOPC_FreeFormatGet(ffstuff, stringList=outstr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       do i=1,linecnt
+          if(len_trim(outstr(i)) > 0) then
+             write(logunit, *) trim(outstr(i))
+          endif
+       enddo
+       write(logunit, *) 'END: ', trim(label)
+       deallocate(outstr)
+    endif
+  end subroutine pretty_print_nuopc_freeformat
+
+
 
   !================================================================================
 
@@ -469,200 +443,6 @@ module ESM
     endif
 
   end subroutine ModifyCplLists
-
-  !================================================================================
-
-  subroutine InitPIO(driver, rc)
-
-    !----------------------------------------------------------
-    ! Initialize MPI communicators,  IO and threading
-    !----------------------------------------------------------
-    use ESMF         , only : ESMF_GridComp, ESMF_LOGMSG_INFO, ESMF_LogWrite, ESMF_SUCCESS
-    use NUOPC        , only : NUOPC_CompAttributeGet
-    use shr_pio_mod  , only : shr_pio_init2
-    use mpi          , only : MPI_COMM_NULL
-    use seq_comm_mct , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
-    use seq_comm_mct , only : num_inst_atm, num_inst_lnd, num_inst_rof
-    use seq_comm_mct , only : num_inst_ocn, num_inst_ice, num_inst_glc
-    use seq_comm_mct , only : num_inst_wav, num_inst_esp
-    use shr_mem_mod  , only : shr_mem_init
-    use seq_comm_mct , only : seq_comm_inst, seq_comm_name, seq_comm_suffix
-    use seq_comm_mct , only : seq_comm_setnthreads, seq_comm_getnthreads
-    use seq_comm_mct , only : seq_comm_iamin, seq_comm_name, seq_comm_namelen, seq_comm_iamroot
-    use seq_comm_mct , only : seq_comm_getinfo => seq_comm_setptrs
-
-    ! input/output variables
-    type(ESMF_GridComp), intent(inout) :: driver
-    integer            , intent(out)   :: rc
-
-    ! local variables
-    integer                         :: it,n
-    integer                         :: mpicom_GLOID          ! MPI global communicator
-    integer                         :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
-    integer                         :: nthreads_GLOID        ! OMP global number of threads
-    integer                         :: nthreads_CPLID        ! OMP cpl number of threads
-    integer                         :: nthreads_ATMID        ! OMP atm number of threads
-    integer                         :: nthreads_LNDID        ! OMP lnd number of threads
-    integer                         :: nthreads_ICEID        ! OMP ice number of threads
-    integer                         :: nthreads_OCNID        ! OMP ocn number of threads
-    integer                         :: nthreads_GLCID        ! OMP glc number of threads
-    integer                         :: nthreads_ROFID        ! OMP glc number of threads
-    integer                         :: nthreads_WAVID        ! OMP wav number of threads
-    integer                         :: nthreads_ESPID        ! OMP esp number of threads
-    integer                         :: pethreads_GLOID       ! OMP number of threads per task
-    logical                         :: drv_threading         ! driver threading control
-    integer                         :: maxthreads
-    integer                         :: comp_id(num_inst_total)
-    integer                         :: comp_comm(num_inst_total)
-    integer                         :: comp_comm_iam(num_inst_total)
-    logical                         :: comp_iamin(num_inst_total)
-    logical                         :: iamroot_med
-    character(SHR_KIND_CL)          :: cvalue
-    character(len=seq_comm_namelen) :: comp_name(num_inst_total)
-    integer :: dbrc
-    character(len=*) , parameter    :: subname = "(esm.F90:InitPIO)"
-    !----------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-    ! set task based threading counts
-    call seq_comm_getinfo(GLOID, pethreads=pethreads_GLOID)
-    call seq_comm_setnthreads(pethreads_GLOID)
-    call seq_comm_getinfo(GLOID, mpicom=mpicom_GLOID, nthreads=nthreads_GLOID)
-
-    ! determine arrays comp_id, comp_comm, comp_iam and comp_name - these are needed for call
-    ! to shr_pio_init2
-
-    comp_comm(:) = MPI_COMM_NULL
-
-    it=1
-    comp_id(it)    = CPLID
-    comp_iamin(it) = seq_comm_iamin(comp_id(it))
-    comp_name(it)  = seq_comm_name(comp_id(it))
-    call seq_comm_getinfo(CPLID, mpicom=comp_comm(it), nthreads=nthreads_CPLID, iam=comp_comm_iam(it))
-
-    do n = 1,num_inst_atm
-       it=it+1
-       comp_id(it)    = ATMID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(ATMID(n), mpicom=comp_comm(it), nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_lnd
-       it=it+1
-       comp_id(it)    = LNDID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(LNDID(n), mpicom=comp_comm(it), nthreads=nthreads_LNDID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_ocn
-       it=it+1
-       comp_id(it)    = OCNID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(OCNID(n), mpicom=comp_comm(it), nthreads=nthreads_OCNID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_ice
-       it=it+1
-       comp_id(it)    = ICEID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(ICEID(n), mpicom=comp_comm(it), nthreads=nthreads_ICEID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_glc
-       it=it+1
-       comp_id(it)    = GLCID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(GLCID(n), mpicom=comp_comm(it), nthreads=nthreads_GLCID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_rof
-       it=it+1
-       comp_id(it)    = ROFID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(ROFID(n), mpicom=comp_comm(it), nthreads=nthreads_ROFID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_wav
-       it=it+1
-       comp_id(it)    = WAVID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(WAVID(n), mpicom=comp_comm(it), nthreads=nthreads_WAVID, iam=comp_comm_iam(it))
-    enddo
-    do n = 1,num_inst_esp
-       it=it+1
-       comp_id(it)    = ESPID(n)
-       comp_iamin(it) = seq_comm_iamin(comp_id(it))
-       comp_name(it)  = seq_comm_name(comp_id(it))
-       call seq_comm_getinfo(ESPID(n), mpicom=comp_comm(it), nthreads=nthreads_ESPID, iam=comp_comm_iam(it))
-    enddo
-    ! ESP components do not use the coupler (they are 'external')
-
-    !----------------------------------------------------------
-    ! Log info about the environment settings
-    !----------------------------------------------------------
-
-    !  When using io servers (pio_async_interface=.true.) the server tasks do not return from
-    !  shr_pio_init2
-    call shr_pio_init2(comp_id, comp_name, comp_iamin, comp_comm, comp_comm_iam)
-
-    ! Timer initialization (has to be after mpi init)
-
-    maxthreads = max(nthreads_GLOID, nthreads_CPLID, nthreads_ATMID,                 &
-                     nthreads_LNDID, nthreads_ICEID, nthreads_OCNID, nthreads_GLCID, &
-                     nthreads_ROFID, nthreads_WAVID, nthreads_ESPID, pethreads_GLOID )
-
-    !----------------------------------------------------------
-    ! Initialize timing library
-    !----------------------------------------------------------
-
-    !----------------------------------------------------------
-    ! Test Threading Setup in driver happens to be valid on all pes for all IDs
-    !----------------------------------------------------------
-
-    call NUOPC_CompAttributeGet(driver, name="drv_threading", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) drv_threading
-
-    if (drv_threading) then
-       if (mastertask) write(logunit,*) ' '
-       if (mastertask) write(logunit,'(2A)    ') subname,' Test Threading in driver'
-       call seq_comm_setnthreads(nthreads_GLOID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_GLOID = ',nthreads_GLOID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_CPLID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_CPLID = ',nthreads_CPLID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_ATMID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_ATMID = ',nthreads_ATMID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_LNDID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_LNDID = ',nthreads_LNDID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_OCNID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_OCNID = ',nthreads_OCNID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_ICEID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_ICEID = ',nthreads_ICEID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_GLCID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_GLCID = ',nthreads_GLCID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_ROFID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_ROFID = ',nthreads_ROFID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_WAVID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_WAVID = ',nthreads_WAVID,seq_comm_getnthreads()
-       call seq_comm_setnthreads(nthreads_ESPID)
-       if (mastertask) write(logunit,'(2A,2I4)') subname,'    nthreads_ESPID = ',nthreads_ESPID,seq_comm_getnthreads()
-       if (mastertask) write(logunit,*) ' '
-       call seq_comm_setnthreads(nthreads_GLOID)
-    endif
-
-    !----------------------------------------------------------
-    ! Memory test
-    !----------------------------------------------------------
-
-    call seq_comm_getinfo(CPLID, iamroot=iamroot_med)
-    call shr_mem_init(prt=iamroot_med)
-
-  end subroutine InitPIO
 
   !================================================================================
 
@@ -760,7 +540,7 @@ module ESM
 
   !================================================================================
 
-  subroutine InitAttributes(driver, rc)
+  subroutine InitAttributes(driver, mastertask, rc)
 
     use shr_sys_mod      , only : shr_sys_abort
     use ESMF             , only : ESMF_GridComp, ESMF_GridCompGet
@@ -770,7 +550,7 @@ module ESM
     use ESMF             , only : ESMF_GridCompIsPetLocal, ESMF_VMBroadcast
     use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
-    use seq_comm_mct     , only : CPLID, OCNID
+    use seq_comm_mct     , only : OCNID
     use seq_comm_mct     , only : seq_comm_getinfo => seq_comm_setptrs
     use shr_assert_mod   , only : shr_assert_in_domain
     use shr_cal_mod      , only : shr_cal_date2ymd
@@ -785,6 +565,7 @@ module ESM
 
     ! input/output variables
     type(ESMF_GridComp) , intent(inout) :: driver
+    logical             , intent(in)    :: mastertask         ! mediator mastertask
     integer             , intent(out)   :: rc                    ! return code
 
     ! local variables
@@ -871,7 +652,7 @@ module ESM
     call NUOPC_CompAttributeGet(driver, name="tfreeze_option", value=tfreeze_option, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_frz_freezetemp_init(tfreeze_option)
+    call shr_frz_freezetemp_init(tfreeze_option, mastertask)
 
     !----------------------------------------------------------
     ! Initialize orbital related values
@@ -962,10 +743,10 @@ module ESM
 
        orb_cyear = orb_iyear + (year - orb_iyear_align)
        call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
-            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
+                           orb_obliqr, orb_lambm0, orb_mvelpp, mastertask)
     else
        call shr_orb_params(orb_iyear, orb_eccen, orb_obliq, orb_mvelp, &
-            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
+                           orb_obliqr, orb_lambm0, orb_mvelpp, mastertask)
     end if
 
     if (orb_eccen  == SHR_ORB_UNDEF_REAL .or. &
@@ -1314,7 +1095,7 @@ module ESM
 
   subroutine ReadAttributes(gcomp, config, label, relaxedflag, formatprint, rc)
     use ESMF, only : ESMF_GridComp, ESMF_Config, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use NUOPC, only : NUOPC_FreeFormatCreate, NUOPC_FreeFormatPrint, NUOPC_CompAttributeIngest
+    use NUOPC, only : NUOPC_FreeFormatCreate, NUOPC_CompAttributeIngest
     use NUOPC, only : NUOPC_FreeFormatDestroy, NUOPC_FreeFormat
 
     type(ESMF_GridComp) , intent(inout)        :: gcomp
@@ -1325,7 +1106,7 @@ module ESM
     integer             , intent(inout)        :: rc
 
     ! local variables
-    type(NUOPC_FreeFormat)      :: attrFF
+    type(NUOPC_FreeFormat)  :: attrFF
     integer :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:ReadAttributes)"
     !-------------------------------------------
@@ -1345,12 +1126,10 @@ module ESM
     call NUOPC_CompAttributeIngest(gcomp, attrFF, addFlag=.true., rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (present (formatprint)) then
-       if (mastertask) then
-          call NUOPC_FreeFormatPrint(attrFF, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end if
+!    if (present (formatprint)) then
+!       call pretty_print_nuopc_freeformat(attrFF, trim(label)//' attributes', rc=rc)
+!       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+!    end if
 
     call NUOPC_FreeFormatDestroy(attrFF, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1391,7 +1170,6 @@ module ESM
     use NUOPC, only : NUOPC_CompAttributeGet
     use NUOPC_Driver, only: NUOPC_DriverAddComp
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_utils_mod, only : shr_nuopc_abort
     use shr_string_mod, only : toLower => shr_string_toLower
     use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag, CS, CL
     use atm_comp_nuopc   , only : ATMSetServices => SetServices
@@ -1407,6 +1185,7 @@ module ESM
     use seq_comm_mct, only: GLOID, CPLID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
     use seq_comm_mct, only: seq_comm_setcomm
     use mct_mod, only : mct_world_init
+    use shr_pio_mod  , only : shr_pio_init2
 
     type(ESMF_GridComp) :: driver
     integer, intent(out) :: maxthreads ! maximum number of threads any component
@@ -1429,6 +1208,8 @@ module ESM
     integer, pointer :: comms(:), comps(:)
     integer :: Global_Comm
     logical :: isPresent
+    integer, allocatable :: comp_comm_iam(:)
+    logical, allocatable :: comp_iamin(:)
     character(len=5) inst_suffix
     character(CL)          :: cvalue
 
@@ -1445,13 +1226,19 @@ module ESM
     call ReadAttributes(driver, config, "PELAYOUT_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, petCount=petCount, localPet=localPet, mpiCommunicator=Global_Comm, rc=rc)
+    call ESMF_VMGet(vm, petCount=petCount, mpiCommunicator=Global_Comm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     allocate(compLabels(componentCount), stat=stat)
+    if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
+         line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
+    allocate(comp_iamin(componentCount), stat=stat)
+    if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
+         line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
+    allocate(comp_comm_iam(componentCount), stat=stat)
     if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
          line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
 
@@ -1534,86 +1321,68 @@ module ESM
        enddo
 ! Initialize mct comm stuff - to be removed
        comps(i+1) = i+1
+       pelist(1,1) = rootpe
+       pelist(2,1) = rootpe+ntasks-1
+       pelist(3,1) = stride
        if (trim(compLabels(i)) .eq. 'MED') then
           CPLID = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(CPLID, pelist, nthreads=nthrds, iname='CPL')
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'ATM') then
           ATMID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(ATMID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ATMSetServices, petList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'LND') then
           LNDID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(LNDID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), LNDSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'OCN') then
           OCNID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(OCNID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), OCNSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         elseif(trim(compLabels(i)) .eq. 'ICE') then
           ICEID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(ICEID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ICESetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'GLC') then
           GLCID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(GLCID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), GLCSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'ROF') then
           ROFID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(ROFID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ROFSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'WAV') then
           WAVID(1) = i+1
-          pelist(1,1) = rootpe
-          pelist(2,1) = rootpe+ntasks-1
-          pelist(3,1) = stride
           call seq_comm_setcomm(WAVID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), WAVSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 !       elseif(trim(compLabels(i)) .eq. 'ESP') then
 !          ESPID(1) = i+1
-!          pelist(1,1) = rootpe
-!          pelist(2,1) = rootpe+ntasks-1
-!          pelist(3,1) = stride
 !          call seq_comm_setcomm(ESPID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
 !          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
        endif
        call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
           call ESMF_GridCompGet(child, vm=vm, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), rc=rc)
+          call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), localPet=comp_comm_iam(i), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+! This code is not supported, we need an optional arg to NUOPC_DriverAddComp to include the
+! per component thread count.  #3614572 in esmf_support
+!          call ESMF_GridCompSetVMMaxPEs(child, maxPeCountPerPet=nthrds, rc=rc)
+!          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           ! Attach methods for handling reading/writing of restart pointer file
           call ESMF_MethodAdd(child, label="GetRestartFileToWrite", &
                userRoutine=GetRestartFileToWrite, rc=rc)
@@ -1622,14 +1391,17 @@ module ESM
           call ESMF_MethodAdd(child, label="GetRestartFileToRead", &
                userRoutine=GetRestartFileToRead, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+          comp_iamin(i) = .true.
        else
           comms(i+1) = MPI_COMM_NULL
+          comp_iamin(i) = .false.
        endif
     enddo
-    call mct_world_init(componentCount, GLOBAL_COMM, comms, comps)
-    deallocate(petlist, comms, comps)
+    call mct_world_init(componentCount+1, GLOBAL_COMM, comms, comps)
 
+    call shr_pio_init2(comps(2:), compLabels, comp_iamin, comms(2:), comp_comm_iam)
+
+    deallocate(petlist, comms, comps, comp_iamin, comp_comm_iam)
   end subroutine esm_init_pelayout
 
   subroutine esm_finalize(driver, rc)
@@ -1645,8 +1417,14 @@ module ESM
     character(CL) :: timing_dir        ! timing directory
     character(len=5) :: inst_suffix
     logical :: isPresent
+    type(ESMF_VM) :: vm
+    integer       :: mpicomm
 
     rc = ESMF_SUCCESS
+    call ESMF_GridCompGet(driver, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, mpiCommunicator=mpicomm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(driver, name="timing_dir",value=timing_dir, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1659,6 +1437,8 @@ module ESM
     else
        inst_suffix = ""
     endif
+    call t_prf(trim(timing_dir)//'/model_timing'//trim(inst_suffix), &
+         mpicom=mpicomm)
 
     call t_finalizef()
 
@@ -1747,7 +1527,6 @@ module ESM
        call shr_file_freeUnit(nu)
     endif
     call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
-
   end subroutine GetRestartFileToWrite
 
   !================================================================================

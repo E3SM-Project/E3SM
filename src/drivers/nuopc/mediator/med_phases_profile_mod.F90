@@ -6,11 +6,14 @@ module med_phases_profile_mod
   implicit none
   private
 
-  public  :: med_phases_profile
+  public  :: med_phases_profile, med_phases_profile_finalize
 
   character(*), parameter :: u_FILE_u  = &
        __FILE__
 
+  real(R8) :: accumulated_time=0_R8, timestep_length
+  real(r8) :: previous_time=0_R8
+  integer  :: iterations=0
 !=================================================================================
 contains
 !=================================================================================
@@ -52,8 +55,6 @@ contains
     logical :: alarmison=.false., stopalarmison=.false.
     real(R8) :: current_time, wallclockelapsed, ypd
     real(r8) :: msize, mrss, ringdays
-    integer, save :: iterations=0
-    real(r8), save :: previous_time=0_R8, accumulated_time=0_R8
     real(r8), save :: avgdt
     character(len=CL) :: walltimestr, nexttimestr
     character(len=*), parameter :: subname='(med_phases_profile)'
@@ -82,18 +83,23 @@ contains
     !---------------------------------------
     ! --- profiler Alarm
     !---------------------------------------
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     if (iterations == 0) then
        ! intialize and return
        call ESMF_VMWtime(previous_time, rc=rc)
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+       ! Here we are just getting a single timestep interval
+       call ESMF_ClockGet( clock, timestep=timestep, rc=rc)
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_TimeIntervalGet(timestep, d_r8=timestep_length, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        iterations = 1
     else
        !---------------------------------------
        ! --- Get the clock info
        !---------------------------------------
-
-       call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_ClockGetAlarm(clock, alarmname='med_profile_alarm', alarm=alarm, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
@@ -138,13 +144,8 @@ contains
              call ESMF_TimeIntervalGet(nexttime-prevtime, d_r8=ringdays, rc=rc)
              if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           else
-             ! Here we are just getting a single timestep interval
-             call ESMF_ClockGet( clock, timestep=timestep, rc=rc)
-             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
-             call ESMF_TimeIntervalGet(timestep, d_r8=ringdays, rc=rc)
-             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-             avgdt = wallclockelapsed/ringdays
+             avgdt = wallclockelapsed/timestep_length
+             ringdays = timestep_length
           endif
           prevtime = nexttime
           call ESMF_TimeGet(nexttime, timestring=nexttimestr, rc=rc)
@@ -168,11 +169,11 @@ contains
 
           write(logunit,105) ' memory_write: model date = ',trim(nexttimestr), &
                ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)'
-          iterations = iterations + 1
-
           previous_time = current_time
        endif
     endif
+    iterations = iterations + 1
+
 101 format( 5A, F8.2, A, F8.2, A, F8.2, A)
 105 format( 3A, f10.2, A, f10.2, A)
     !---------------------------------------
@@ -183,5 +184,27 @@ contains
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_profile
+
+  subroutine med_phases_profile_finalize()
+    use ESMF, only : ESMF_VMWtime
+    use med_internalstate_mod, only : logunit
+    use shr_nuopc_utils_mod, only : shr_nuopc_utils_chkerr
+
+    real(r8) :: SYPD
+    character(*), parameter :: FormatR = '(": =============== ", A31,F12.3,1x,  " ===============")'
+    real(r8) :: current_time, wallclockelapsed
+    integer :: rc
+
+    call ESMF_VMWtime(current_time, rc=rc)
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
+    wallclockelapsed = current_time - previous_time
+    accumulated_time = accumulated_time + wallclockelapsed
+
+    SYPD = real(iterations-1,R8)*timestep_length*86400.0_R8/(365.0_R8*accumulated_time)
+    write(logunit,FormatR) '# simulated years / cmp-day = ', SYPD
+
+  end subroutine med_phases_profile_finalize
+
 
 end module med_phases_profile_mod

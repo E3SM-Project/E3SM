@@ -308,9 +308,10 @@ class SystemTestsCommon(object):
                 fopen = open
             with fopen(cpllog, "rb") as f:
                 for line in f:
-                    m = meminfo.match(line.decode('utf-8'))
-                    if m:
-                        memlist.append((float(m.group(1)), float(m.group(2))))
+                    if "highwater" in line:
+                        m = meminfo.match(line.decode('utf-8'))
+                        if m:
+                            memlist.append((float(m.group(1)), float(m.group(2))))
         # Remove the last mem record, it's sometimes artificially high
         if len(memlist) > 0:
             memlist.pop()
@@ -323,10 +324,11 @@ class SystemTestsCommon(object):
         """
         if cpllog is not None and os.path.isfile(cpllog):
             with gzip.open(cpllog, "rb") as f:
-                cpltext = f.read().decode('utf-8')
-                m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext)
-                if m:
-                    return float(m.group(1))
+                cpltext = f.read()
+                if "simulated" in cpltext:
+                    m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext.decode('utf-8'))
+                    if m:
+                        return float(m.group(1))
         return None
 
     def _phase_modifying_call(self, phase, function):

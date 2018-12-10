@@ -2050,6 +2050,7 @@ contains
   subroutine med_finalize(gcomp, rc)
     use ESMF, only                  : ESMF_GridComp, ESMF_SUCCESS
     use med_internalstate_mod, only : logunit, mastertask
+    use med_phases_profile_mod, only : med_phases_profile_finalize
     use shr_nuopc_utils_mod, only   : shr_nuopc_memcheck
     use shr_file_mod, only          : shr_file_setlogunit
 
@@ -2060,7 +2061,8 @@ contains
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
-       write(logunit,*)' SUCCESSFUL TERMINATION '
+       write(logunit,*)' SUCCESSFUL TERMINATION OF CPL8'
+       call med_phases_profile_finalize()
     end if
 
   end subroutine med_finalize
