@@ -308,6 +308,11 @@ else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
+ifdef LIB_PNETCDF
+   CPPDEFS += -D_PNETCDF
+   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -524,9 +529,6 @@ ifndef SLIBS
   endif
 endif
 
-ifdef LIB_PNETCDF
-   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
-endif
 ifdef LAPACK_LIBDIR
    SLIBS += -L$(LAPACK_LIBDIR) -llapack -lblas
 endif
