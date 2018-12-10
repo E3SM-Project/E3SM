@@ -55,12 +55,12 @@ contains
     use ESMF                  , only : operator(==)
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
     use med_internalstate_mod , only : InternalState
     use med_constants_mod     , only : CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use esmFlds               , only : compatm, compocn
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Arguments
     type(ESMF_GridComp)               :: gcomp
     type(ocnalb_type) , intent(inout) :: ocnalb
@@ -83,7 +83,7 @@ contains
     integer                  :: dbrc
     character(*), parameter  :: subname = '(med_phases_ocnalb_init) '
     !-----------------------------------------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -91,15 +91,15 @@ contains
 
     ! The following is for debugging
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Get the internal state from gcomp
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------
     ! Set pointers to fields needed for albedo calculations
@@ -109,13 +109,13 @@ contains
     ! The following sets pointers to the module arrays
 
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_avsdr', fldptr1=ocnalb%avsdr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_avsdf', fldptr1=ocnalb%avsdf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_anidr', fldptr1=ocnalb%anidr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, fldname='So_anidf', fldptr1=ocnalb%anidf, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------
     ! Get lat, lon, which are time-invariant
@@ -124,18 +124,18 @@ contains
     ! The following assumes that all fields in FBMed_ocnalb_o have the same grid - so
     ! only need to query field 1
     call shr_nuopc_methods_FB_getFieldN(is_local%wrap%FBMed_ocnalb_o, fieldnum=1, field=lfield, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine if first field is on a grid or a mesh - default will be mesh
     call ESMF_FieldGet(lfield, geomtype=geomtype, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (geomtype == ESMF_GEOMTYPE_MESH) then
        call ESMF_LogWrite(trim(subname)//" : FBAtm is on a mesh ", ESMF_LOGMSG_INFO, rc=rc)
        call ESMF_FieldGet(lfield, mesh=lmesh, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        call ESMF_MeshGet(lmesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        lsize = size(ocnalb%anidr)
        if (numOwnedElements /= lsize) then
           write(tempc1,'(i10)') numOwnedElements
@@ -149,7 +149,7 @@ contains
        allocate(ocnalb%lons(numOwnedElements))
        allocate(ocnalb%lats(numOwnedElements))
        call ESMF_MeshGet(lmesh, ownedElemCoords=ownedElemCoords)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        do n = 1,lsize
           ocnalb%lons(n) = ownedElemCoords(2*n-1)
           ocnalb%lats(n) = ownedElemCoords(2*n)
@@ -163,6 +163,7 @@ contains
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_ocnalb_init
 
@@ -188,7 +189,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
     use med_constants_mod     , only : CS, CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use med_internalstate_mod , only : InternalState, logunit
@@ -196,7 +197,7 @@ contains
     use shr_nuopc_scalars_mod , only : flds_scalar_num
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -237,7 +238,7 @@ contains
     logical                 :: first_call = .true.
     character(len=*)  , parameter :: subname='(med_phases_ocnalb_run)'
     !---------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -246,7 +247,7 @@ contains
     ! Get the internal state from Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Note that in the mct version the atm was initialized first so
     ! that nextsw_cday could be passed to the other components - this
@@ -258,10 +259,10 @@ contains
 
        ! Initialize ocean albedo calculation
        call med_phases_ocnalb_init(gcomp, ocnalb, rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
        call NUOPC_CompAttributeGet(gcomp, name='start_type', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) starttype
 
        if (trim(starttype) == trim('startup')) then
@@ -275,47 +276,47 @@ contains
        end if
 
        call ESMF_GridCompGet(gcomp, clock=clock)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (trim(runtype) == 'initial') then
           call ESMF_TimeGet( currTime, dayOfYear_r8=nextsw_cday, rc=rc )
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        else
           call shr_nuopc_methods_State_GetScalar(is_local%wrap%NstateImp(compatm), &
                flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-               scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, mpicom=is_local%wrap%mpicom, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, rc=rc)
+          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        end if
 
        first_call = .false.
 
     else
 
-       ! Note that shr_nuopc_methods_State_GetScalar includes a broadcast to all other pets im mpicom
+       ! Note that shr_nuopc_methods_State_GetScalar includes a broadcast to all other pets
        call shr_nuopc_methods_State_GetScalar(is_local%wrap%NstateImp(compatm), &
             flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-            scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, mpicom=is_local%wrap%mpicom, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, rc=rc)
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     end if
 
     call NUOPC_CompAttributeGet(gcomp, name='flux_albav', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) flux_albav
 
     call NUOPC_CompAttributeGet(gcomp, name='orb_eccen', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) eccen
     call NUOPC_CompAttributeGet(gcomp, name='orb_obliqr', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) obliqr
     call NUOPC_CompAttributeGet(gcomp, name='orb_lambm0', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) lambm0
     call NUOPC_CompAttributeGet(gcomp, name='orb_mvelpp', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) mvelpp
 
     ! Calculate ocean albedos on the ocean grid
@@ -365,21 +366,22 @@ contains
     ! Update current ifrad/ofrad values if albedo was updated in field bundle
     if (update_alb) then
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compocn), fldname='ifrac', fldptr1=ifrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compocn), fldname='ifrad', fldptr1=ifrad, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compocn), fldname='ofrac', fldptr1=ofrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compocn), fldname='ofrad', fldptr1=ofrad, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        ifrad(:) = ifrac(:)
        ofrad(:) = ofrac(:)
     endif
 
     if (dbug_flag > 1) then
        call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_ocnalb_o, string=trim(subname)//' FBMed_ocnalb_o', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     end if
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_ocnalb_run
 
@@ -393,14 +395,14 @@ contains
 
     use ESMF                  , only : ESMF_GridComp
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState
     use med_constants_mod     , only : R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use esmFlds               , only : fldListMed_ocnalb_o
     use esmFlds               , only : compatm, compocn
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Arguments
     type(ESMF_GridComp)    :: gcomp
     integer, intent(out)   :: rc
@@ -410,6 +412,7 @@ contains
     integer             :: dbrc
     character(*), parameter :: subName =   '(med_ocnalb_mapo2a) '
     !-----------------------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -419,7 +422,7 @@ contains
     ! Get the internal state from gcomp
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Map the field bundle from the ocean to the atm grid
     call med_map_FB_Regrid_Norm( &
@@ -430,7 +433,8 @@ contains
          is_local%wrap%FBNormOne(compocn,compatm,:), &
          is_local%wrap%RH(compocn,compatm,:), &
          string='FBMed_ocnalb_o_To_FBMed_ocnalb_a', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_ocnalb_mapo2a
 

@@ -160,12 +160,10 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
                               that need it
     build_optimized (logical) - If True, we'll build in optimized rather than debug mode
     """
-    # Clear CMake cache.
     if clean:
-        pwd_contents = os.listdir(os.getcwd())
-        if "CMakeCache.txt" in pwd_contents:
+        if os.path.isfile("CMakeCache.txt"):
             os.remove("CMakeCache.txt")
-        if "CMakeFiles" in pwd_contents:
+        if os.path.isdir("CMakeFiles"):
             rmtree("CMakeFiles")
 
     if not os.path.isfile("CMakeCache.txt"):
@@ -296,6 +294,13 @@ def _main():
 
     # Switch to the build directory.
     os.chdir(build_dir)
+    if clean:
+        pwd_contents = os.listdir(os.getcwd())
+        # Clear CMake cache.
+        for file_ in pwd_contents:
+            if file_ in ("Macros.cmake", "env_mach_specific.xml") \
+                    or file_.startswith('Depends') or file_.startswith(".env_mach_specific"):
+                os.remove(file_)
 
     #=================================================
     # Functions to perform various stages of build.
@@ -405,7 +410,9 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
+            logger.info("Running '{}'".format(" ".join(ctest_command)))
+            output = run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
+            logger.info(output)
 
 if __name__ == "__main__":
     _main()

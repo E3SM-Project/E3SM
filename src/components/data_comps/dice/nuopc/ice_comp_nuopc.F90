@@ -12,7 +12,7 @@ module ice_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, CXX, CS
+  use med_constants_mod     , only : R8, CXX, CL, CS
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
@@ -26,9 +26,9 @@ module ice_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
+  use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_strdata_mod       , only : shr_strdata_type
   use shr_cal_mod           , only : shr_cal_ymd2julian
   use shr_const_mod         , only : shr_const_pi
@@ -36,7 +36,8 @@ module ice_comp_nuopc
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dice_shr_mod          , only : dice_shr_read_namelists
   use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_advertise
-  use mct_mod
+  use mct_mod               , only : mct_Avect, mct_Avect_info
+
 
   implicit none
   private ! except
@@ -56,14 +57,9 @@ module ice_comp_nuopc
   integer                    :: fldsFrIce_num = 0
   type (fld_list_type)       :: fldsToIce(fldsMax)
   type (fld_list_type)       :: fldsFrIce(fldsMax)
-  character(len=80)          :: myModelName = 'ice'       ! user defined model name
   type(shr_strdata_type)     :: SDICE
-  type(mct_gsMap), target    :: gsMap_target
-  type(mct_gGrid), target    :: ggrid_target
-  type(mct_gsMap), pointer   :: gsMap
-  type(mct_gGrid), pointer   :: ggrid
-  type(mct_aVect)            :: x2d
-  type(mct_aVect)            :: d2x
+  type(mct_aVect)            :: x2i
+  type(mct_aVect)            :: i2x
   integer                    :: compid                    ! mct comp id
   integer                    :: mpicom                    ! mpi communicator
   integer                    :: my_task                   ! my task in mpi communicator mpicom
@@ -72,12 +68,9 @@ module ice_comp_nuopc
   character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit                   ! logging unit number
   integer, parameter         :: master_task=0             ! task number of master task
-  integer                    :: localPet
   logical                    :: read_restart              ! start from restart
   character(len=256)         :: case_name                 ! case name
-  character(len=256)         :: tmpstr                    ! tmp string
   integer                    :: dbrc
-  integer, parameter         :: dbug = 10
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
                                                           ! category fields are passed from ice to ocean
   character(len=80)          :: calendar                  ! calendar name
@@ -87,7 +80,9 @@ module ice_comp_nuopc
   logical                    :: use_esmf_metadata = .false.
   real(R8)    ,parameter     :: pi  = shr_const_pi      ! pi
   character(*),parameter     :: modName =  "(ice_comp_nuopc)"
-  character(*),parameter     :: u_FILE_u =&
+  integer, parameter         :: debug_import = 0          ! if > 0 will diagnose import fields
+  integer, parameter         :: debug_export = 0          ! if > 0 will diagnose export fields
+  character(*),parameter     :: u_FILE_u = &
        __FILE__
 
 !===============================================================================
@@ -100,7 +95,7 @@ contains
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -136,7 +131,7 @@ contains
          specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
 
@@ -156,19 +151,21 @@ contains
     logical            :: ice_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
-    character(len=256) :: cvalue
+    character(len=CL)  :: cvalue
     integer            :: n
     integer            :: ierr           ! error code
     integer            :: shrlogunit     ! original log unit
     integer            :: shrloglev      ! original log level
     logical            :: isPresent
-    character(len=512) :: diro
-    character(len=512) :: logfile
+    character(len=CL)  :: diro
+    character(len=CL)  :: logfile
+    integer            :: localPet
+    character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -200,8 +197,8 @@ contains
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------
 
-    call dice_shr_read_namelists(mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, &
+    filename = "dice_in"//trim(inst_suffix)
+    call dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
          logunit, SDICE, ice_present, ice_prognostic)
 
     !--------------------------------
@@ -220,7 +217,7 @@ contains
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeAdvertise
 
@@ -238,23 +235,14 @@ contains
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_Calendar)     :: esmf_calendar             ! esmf calendar
     type(ESMF_CalKind_Flag) :: esmf_caltype              ! esmf calendar type
-    integer                 :: nx_global, ny_global
-    type(ESMF_VM)           :: vm
-    integer                 :: n
-    character(len=256)      :: cvalue
+    integer                 :: nx_global, ny_global      ! global sizes
+    integer                 :: n                         ! index
+    character(len=256)      :: cvalue                    ! tempoaray character string
     integer                 :: shrlogunit                ! original log unit
     integer                 :: shrloglev                 ! original log level
-    integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    logical                 :: connected                 ! is field connected?
-    real(R8)                :: scalar
-    integer                 :: klon, klat
-    integer                 :: lsize
-    integer                 :: iam
-    real(r8), pointer       :: lon(:),lat(:)
-    integer , pointer       :: gindex(:)
     integer                 :: current_ymd               ! model date
     integer                 :: current_year              ! model year
     integer                 :: current_mon               ! model month
@@ -262,11 +250,12 @@ contains
     integer                 :: current_tod               ! model sec into model date
     real(R8)                :: cosarg                    ! for setting ice temp pattern
     real(R8)                :: jday, jday0               ! elapsed day counters
+    logical                 :: write_restart
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -327,57 +316,24 @@ contains
     end if
 
     !--------------------------------
-    ! Initialize model
-    !--------------------------------
-
-    gsmap => gsmap_target
-    ggrid => ggrid_target
-
-    call dice_comp_init(&
-         x2i=x2d, &
-         i2x=d2x, &
-         flds_x2i_fields=flds_x2i, &
-         flds_i2x_fields=flds_i2x, &
-         flds_i2o_per_cat=flds_i2o_per_cat, &
-         SDICE=SDICE, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         inst_name=inst_name, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         scmMode=scmMode, &
-         scmlat=scmlat, &
-         scmlon=scmlon, &
-         calendar=calendar)
-
-    !--------------------------------
     ! Generate the mesh
     !--------------------------------
 
-    nx_global = SDICE%nxg
-    ny_global = SDICE%nyg
-    lsize = mct_gsMap_lsize(gsMap, mpicom)
-    allocate(lon(lsize))
-    allocate(lat(lsize))
-    allocate(gindex(lsize))
-    klat = mct_aVect_indexRA(ggrid%data, 'lat')
-    klon = mct_aVect_indexRA(ggrid%data, 'lon')
-    call mpi_comm_rank(mpicom, iam, ierr)
-    call mct_gGrid_exportRattr(ggrid,'lon',lon,lsize)
-    call mct_gGrid_exportRattr(ggrid,'lat',lat,lsize)
-    call mct_gsMap_OrderedPoints(gsMap_target, iam, gindex)
-
-    call shr_nuopc_grid_MeshInit(gcomp, nx_global, ny_global, mpicom, gindex, lon, lat, Emesh, rc)
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_ice', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    deallocate(lon)
-    deallocate(lat)
-    deallocate(gindex)
+    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! Initialize model
+    !--------------------------------
+
+    call dice_comp_init(x2i, i2x, &
+         flds_x2i, flds_i2x, flds_i2o_per_cat, &
+         SDICE, mpicom, compid, my_task, master_task, &
+         inst_suffix, inst_name, logunit, read_restart, &
+         scmMode, scmlat, scmlon, calendar, Emesh)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -424,35 +380,23 @@ contains
     call shr_cal_ymd2julian(0, 9,           1,           0,           jDay0, calendar)    ! julian day for Sept 1
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
-    call dice_comp_run(&
-         x2i=x2d, &
-         i2x=d2x, &
-         flds_i2o_per_cat=flds_i2o_per_cat, &
-         SDICE=SDICE, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         write_restart=.false., &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         target_ymd=current_ymd, &
-         target_tod=current_tod, &
-         cosArg=cosArg)
+    write_restart = .false.
+    call dice_comp_run(x2i, i2x, &
+         flds_i2o_per_cat, SDICE, mpicom, my_task, master_task, &
+         inst_suffix, logunit, read_restart, write_restart, &
+         calendar, modeldt, current_ymd, current_tod, cosArg)
 
     ! Pack export state
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_ArrayToState(i2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
+    nx_global = SDICE%nxg
+    ny_global = SDICE%nyg
+    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -460,10 +404,7 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 5) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr=subname//':AV')
-       end if
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -480,13 +421,14 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -499,6 +441,7 @@ contains
     integer                 :: shrlogunit    ! original log unit
     integer                 :: shrloglev     ! original log level
     logical                 :: write_restart ! restart alarm is ringing
+    logical                 :: read_restart  ! read restart flag
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
@@ -506,12 +449,13 @@ contains
     integer                 :: day           ! day in month
     real(R8)                :: cosarg        ! for setting ice temp pattern
     real(R8)                :: jday, jday0   ! elapsed day counters
+    character(len=CL)       :: cvalue
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call shr_nuopc_memcheck(subname, 5, my_task==master_task)
     !--------------------------------
     ! Reset shr logging to my log file
     !--------------------------------
@@ -528,15 +472,15 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-    endif
+    if (debug_import > 0 .and. my_task == master_task) then
+       call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
+    end if
 
     !--------------------------------
     ! Unpack import state
     !--------------------------------
 
-    call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2i, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_StateToArray(importState, x2i%rattr, flds_x2i, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -575,56 +519,33 @@ contains
 
     ! Run dice
 
-    call dice_comp_run(&
-         x2i=x2d, &
-         i2x=d2x, &
-         flds_i2o_per_cat=flds_i2o_per_cat, &
-         SDICE=SDICE, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
-         mpicom=mpicom, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=.false., &
-         write_restart=write_restart, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         target_ymd=next_ymd, &
-         target_tod=next_tod, &
-         cosArg=cosArg, &
-         case_name=case_name)
+    read_restart = .false.
+    call dice_comp_run(x2i, i2x, &
+         flds_i2o_per_cat, SDICE, mpicom, my_task, master_task, &
+         inst_suffix, logunit, read_restart, write_restart, &
+         calendar, modeldt, next_ymd, next_tod, cosArg, case_name)
 
     !--------------------------------
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
+    call shr_nuopc_grid_ArrayToState(i2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 5) then
-       if (my_task == master_task) then
-          call mct_aVect_info(2, d2x, istr=subname//':AV', pe=localPet)
-       end if
-
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
-       if (my_task == master_task) then
-          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing ICE from: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+    if (my_task == master_task) then
+       call shr_nuopc_log_clock_advance(clock, 'ICE', logunit)
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -650,10 +571,10 @@ contains
     rc = ESMF_SUCCESS
     if (my_task == master_task) then
        write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F00) ' dice: end of main integration loop'
        write(logunit,F91)
     end if
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
 

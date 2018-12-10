@@ -67,7 +67,7 @@ class Case(object):
     are listed in the following imports
     """
     from CIME.case.case_setup import case_setup
-    from CIME.case.case_clone import create_clone
+    from CIME.case.case_clone import create_clone, _copy_user_modified_to_clone
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
@@ -348,15 +348,9 @@ class Case(object):
         return result
 
     def get_resolved_value(self, item, recurse=0, allow_unresolved_envvars=False):
-        #reference_re = re.compile(r'\${?(\w+)}?')
         num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
-            # for m in reference_re.finditer(item):
-            #     var = m.groups()[0]
-            #     if var in self.lookups:
-            #         item = item.replace(m.group(), self.lookups[var])
-
             for env_file in self._env_entryid_files:
                 item = env_file.get_resolved_value(item,
                                                    allow_unresolved_envvars=allow_unresolved_envvars)
@@ -368,11 +362,12 @@ class Case(object):
 
         return item
 
-    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False, return_file=False):
         """
         If a file has been defined, and the variable is in the file,
-        then that value will be set in the file object and the file
-        name is returned
+        then that value will be set in the file object and the resovled value
+        is returned unless return_file is True, in which case (resolved_value, filename)
+        is returned where filename is the name of the modified file.
         """
         if item == "CASEROOT":
             self._caseroot = value
@@ -382,7 +377,7 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                return result
+                return (result, env_file.filename) if return_file else result
 
         if len(self._files) == 1:
             expect(allow_undefined or result is not None,
@@ -435,8 +430,9 @@ class Case(object):
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
         self.set_lookup_value("COMP_INTERFACE", driver)
-        comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
-        self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
+        if self._cime_model == 'cesm':
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
+            self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
@@ -764,7 +760,7 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
-                  pesfile=None,user_grid=False, gridfile=None,
+                  pesfile=None, gridfile=None,
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
@@ -780,14 +776,13 @@ class Case(object):
         compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
         self._components = self.get_compset_components()
+
         #--------------------------------------------
         # grid
         #--------------------------------------------
-        if user_grid is True and gridfile is not None:
-            self.set_value("GRIDS_SPEC_FILE", gridfile)
         grids = Grids(gridfile)
 
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname, driver=driver)
 
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
@@ -825,9 +820,9 @@ class Case(object):
             logger.info("Machine is {}".format(machine_name))
 
         nodenames = machobj.get_node_names()
-        nodenames =  [x for x in nodenames if
-                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                      'COMPILER' not in x and 'MPILIB' not in x]
+        nodenames = [x for x in nodenames if
+                     '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
+                     'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -890,19 +885,16 @@ class Case(object):
         self.set_value("REALUSER", os.environ["USER"])
 
         # Set project id
+        if project is None:
+            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
-            self.set_value("CHARGE_ACCOUNT", project)
-        else:
-            project = get_project(machobj)
-            if project is not None:
-                self.set_value("PROJECT", project)
-            elif machobj.get_value("PROJECT_REQUIRED"):
-                expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-            # Get charge_account id if it exists
-            charge_account = get_charge_account(machobj)
-            if charge_account is not None:
-                self.set_value("CHARGE_ACCOUNT", charge_account)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj, project)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -1262,7 +1254,7 @@ directory, NOT in this subdirectory."""
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
-            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
+            return self.get_resolved_value(mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix)
 
         # Things that will have to be matched against mpirun element attributes
         mpi_attribs = {
@@ -1435,7 +1427,7 @@ directory, NOT in this subdirectory."""
     def create(self, casename, srcroot, compset_name, grid_name,
                user_mods_dir=None, machine_name=None,
                project=None, pecount=None, compiler=None, mpilib=None,
-               pesfile=None,user_grid=False, gridfile=None,
+               pesfile=None, gridfile=None,
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
@@ -1450,7 +1442,7 @@ directory, NOT in this subdirectory."""
             self.configure(compset_name, grid_name, machine_name=machine_name,
                            project=project,
                            pecount=pecount, compiler=compiler, mpilib=mpilib,
-                           pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                           pesfile=pesfile, gridfile=gridfile,
                            multi_driver=multi_driver, ninst=ninst, test=test,
                            walltime=walltime, queue=queue,
                            output_root=output_root,

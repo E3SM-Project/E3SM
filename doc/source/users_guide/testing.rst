@@ -226,8 +226,8 @@ TESTMODS     A subdirectory of GROUP containing files which set non-default valu
 
               | GROUP-TESTMODS = cam-outfrq9s points to 
               |    $cesm/components/cam/cime_config/testdefs/testmods_dirs/cam/outfrq9s
-              | while allactive-cesm2dev01 points to 
-              |    $cesm/cime_config/testmods_dirs/allactive/cesm2dev01
+              | while allactive-defaultio points to
+              |    $cesm/cime_config/testmods_dirs/allactive/defaultio
 
 ============ =====================================================================================
 
@@ -436,7 +436,7 @@ The relevant directory branching looks like
        testmods_dirs/drv/{default,5steps,...}
     cime_config/
        testlist_allactive.xml
-       testmods_dirs/allactive/{default,cesm2dev01,cism,...}
+       testmods_dirs/allactive/{defaultio,...}
 
 The contents of each testmods directory can include
 ::

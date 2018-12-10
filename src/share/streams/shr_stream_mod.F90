@@ -779,11 +779,6 @@ contains
        strm%filePath = trim(filePath)
     endif
     if (present(filename)) then
-       if (debug>1 .and. s_loglev > 0) then
-          write(s_logunit,F01) "size of filename = ",size(filename)
-          write(s_logunit,F00) "filename = ",filename
-       endif
-
        do n = 1,size(filename)
           ! Ignore null file names.
           if (trim(filename(n)) /= trim(shr_stream_file_null)) then

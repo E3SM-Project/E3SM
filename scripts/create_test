@@ -183,8 +183,9 @@ def parse_command_line(args, description):
 
     parser.add_argument("-p", "--project",
                         help="Specify a project id for the case (optional)."
-                        "\nUsed for accounting when on a batch system."
-                        "\nThe default is user-specified environment variable PROJECT")
+                        "\nUsed for accounting and directory permissions when on a batch system."
+                        "\nThe default is user or machine specified by PROJECT."
+                        "\nAccounting (only) may be overridden by user or machine specified CHARGE_ACCOUNT.")
 
     parser.add_argument("-t", "--test-id",
                         help="Specify an 'id' for the test. This is simply a string that is appended "
@@ -352,7 +353,7 @@ def parse_command_line(args, description):
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
-            args.testargs.extend( [line.strip() for line in fd.read().splitlines() if line.strip()] )
+            args.testargs.extend( [line.strip() for line in fd.read().splitlines() if line.strip() and not line.startswith('#')] )
 
     # Compute list of fully-resolved test_names
     test_extra_data = {}

@@ -65,15 +65,12 @@ contains
     integer           :: ice_ncat                   ! number of sea ice thickness categories
     integer           :: glc_nec                    ! number of land-ice elevation classes
     integer           :: max_megan
-    integer           :: max_ddep   
+    integer           :: max_ddep
     integer           :: max_fire
     logical           :: flds_i2o_per_cat
     integer           :: dbrc
-    type(ESMF_VM)     :: vm
-    integer           :: localPet
     integer           :: num, i, n
     integer           :: n1, n2, n3, n4
-    integer           :: mpicom
     character(len=3)  :: cnum
     character(len=CL) :: cvalue
     character(len=CS) :: name, fldname
@@ -122,16 +119,10 @@ contains
     max_ddep  = 80
     max_fire  = 10
     glc_nec   = 10
-    ice_ncat  =  5 
+    ice_ncat  =  5
     flds_i2o_per_cat = .true.
 
     rc = ESMF_SUCCESS
-
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='flds_co2a', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1347,7 +1338,7 @@ contains
     end if
 
     !-----------------------------
-    ! lnd -> glc  
+    ! lnd -> glc
     !-----------------------------
 
     ! glc fields with multiple elevation classes: lnd->glc
@@ -1487,7 +1478,7 @@ contains
     !--------------------------------------------
     ! Atmospheric specific humidty at lowest level:
     !--------------------------------------------
-    
+
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Sa_shum_16O', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapbilnr, 'one', atm2ice_smapname)
@@ -1591,7 +1582,7 @@ contains
     !-------------
     ! Isotopic snow:
     !-------------
-    
+
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_snowl_16O', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapbilnr, 'one', atm2lnd_smapname)
     call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)

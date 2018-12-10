@@ -42,6 +42,7 @@ _TESTS = {
                                ("PET_Ln5.ne4_ne4.FC5AV1C-L","allactive-mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
+                               ("ERS_Ld5.ne4_ne4.FC5AV1C-L", "cam-rrtmgp"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
     #atmopheric tests for extra coverage
@@ -64,6 +65,12 @@ _TESTS = {
                         )
                        ),
 
+    #atmopheric nbfb tests
+    "e3sm_atm_nbfb" : (None, None,
+                                 ("PGN_P1x1.ne4_ne4.FC5AV1C-L",
+                                  "TSC.ne4_ne4.FC5AV1C-L")
+                                 ),
+
     "e3sm_developer" : (("e3sm_land_developer","e3sm_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.ne30_g16_rx1.A",
@@ -75,8 +82,8 @@ _TESTS = {
                          "ERS_Ld5.T62_oQU120.CMPASO-NYF",
                          "ERS.f09_g16_g.MALISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
-                         "SMS.f09_g16_a.IGCLM45_MLI"
-                        ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
+                         "SMS.f09_g16_a.IGCLM45_MLI",
+                        ("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
                         )),
 
     "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",

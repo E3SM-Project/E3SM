@@ -23,7 +23,7 @@ module seq_comm_mct
 ! Public interfaces
 !--------------------------------------------------------------------------
 
-  public seq_comm_init
+  public seq_comm_setcomm
   public seq_comm_iamin
   public seq_comm_iamroot
   public seq_comm_mpicom
@@ -747,7 +747,7 @@ contains
   end subroutine seq_comm_init
 
 !---------------------------------------------------------
-  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst)
+  subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst, comm_in)
     use shr_sys_mod, only : shr_sys_abort
     use mpi, only : MPI_COMM_NULL, mpi_comm_group, mpi_comm_create, mpi_group_range_incl
     use mpi, only: mpi_comm_size, mpi_comm_rank
@@ -759,6 +759,7 @@ contains
     character(len=*),intent(IN),optional :: iname  ! name of component
     integer,intent(IN),optional :: inst  ! instance of component
     integer,intent(IN),optional :: tinst ! total number of instances for this component
+    integer,intent(in),optional :: comm_in
 
     integer :: mpigrp_world
     integer :: mpigrp
@@ -772,6 +773,9 @@ contains
     if (ID < 1 .or. ID > ncomps) then
        write(logunit,*) subname,' ID out of range, abort ',ID
        call shr_sys_abort()
+    endif
+    if(present(comm_in)) then
+       GLOBAL_COMM=comm_in
     endif
 
     call mpi_comm_group(GLOBAL_COMM, mpigrp_world, ierr)
@@ -969,6 +973,7 @@ contains
   end subroutine seq_comm_setptrs
 !---------------------------------------------------------
   subroutine seq_comm_setnthreads(nthreads)
+    use shr_sys_mod, only : shr_sys_abort
 
     implicit none
     integer,intent(in) :: nthreads

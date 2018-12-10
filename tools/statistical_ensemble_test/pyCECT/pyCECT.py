@@ -24,7 +24,7 @@ def main(argv):
     s="""verbose sumfile= indir= input_globs= tslice= nPC= sigMul= 
          minPCFail= minRunFail= numRunFile= printVarTest popens 
          jsonfile= mpi_enable nbin= minrange= maxrange= outfile= 
-         casejson= npick= pepsi_gm test_failure pop_tol= web_enabled
+         casejson= npick= pepsi_gm pop_tol= web_enabled
          pop_threshold= prn_std_mean fIndex= lev= eet= json_case= """
     optkeys = s.split()
     try:
@@ -65,12 +65,21 @@ def main(argv):
     opts_dict['json_case'] = ''
     opts_dict['sumfile'] = ''
     opts_dict['web_enabled'] = False
+
     # Call utility library getopt_parseconfig to parse the option keys
     # and save to the dictionary
     caller = 'CECT'
     gmonly = False
     opts_dict = pyEnsLib.getopt_parseconfig(opts,optkeys,caller,opts_dict)
     popens = opts_dict['popens']
+    #some mods for POP-ECT
+    if popens == True:
+        opts_dict['tslice'] = 0
+        opts_dict['numRunFile']= 1
+        opts_dict['eet'] = 0
+        opts_dict['mpi_enable'] = False
+
+        #print opts_dict
 
     # Create a mpi simplecomm object
     if opts_dict['mpi_enable']:
@@ -87,7 +96,7 @@ def main(argv):
         print dt.strftime("%A, %d. %B %Y %I:%M%p")
         print ' '
         if not opts_dict['web_enabled']:
-          print 'Ensemble summary file = '+opts_dict['sumfile']
+         print 'Ensemble summary file = '+opts_dict['sumfile']
         print ' '
         print 'Testcase file directory = '+opts_dict['indir']    
         print ' '
@@ -124,22 +133,28 @@ def main(argv):
                      glob_file=glob.glob(full_glob_str)
                      in_files.extend(glob_file)
        else:
-          print "Error: "+opts_dict['json_case']+" does not exist"
+          print "ERROR: "+opts_dict['json_case']+" does not exist."
           sys.exit()
        print "in_files=",in_files
     else: 
-       wildname='*'+opts_dict['input_globs']+'*'
+       wildname='*'+str(opts_dict['input_globs'])+'*'
        # Open all input files
        if (os.path.exists(opts_dict['indir'])):
           full_glob_str=os.path.join(opts_dict['indir'],wildname)
           glob_files=glob.glob(full_glob_str)
           in_files.extend(glob_files)
           num_file=len(in_files)
+          if num_file == 0:
+              print "ERROR: no matching files for wildcard=" + wildname+ " found in specified --indir"
+              sys.exit()
+          else:
+              print  "Found " + str(num_file) + " matching files in specified --indir"
           if opts_dict['numRunFile'] > num_file:
-             print "You requested more numRunFile than it is available at the indir, please change"
+             print "ERROR: more files needed (" + str(opts_dict['numRunFile']) +") than available in the indir (" + str(num_file) +")."
              sys.exit()
           #in_files_temp=os.listdir(opts_dict['indir'])
     in_files.sort()
+    #print in_files
 
     if popens:
         #Partition the input file list 
@@ -158,7 +173,7 @@ def main(argv):
          if (os.path.isfile(frun_temp)):
              ifiles.append(Nio.open_file(frun_temp,"r"))
          else:
-             print "COULD NOT LOCATE FILE " +frun_temp+" EXISTING"
+             print "ERROR: COULD NOT LOCATE FILE " +frun_temp
              sys.exit()
    
     if opts_dict['web_enabled']:
@@ -168,21 +183,24 @@ def main(argv):
        if len(machineid)!=0 and len(compiler)!=0:
           print ' '
           print 'Validation file    : machineid = '+machineid+', compiler = '+compiler
-          print 'Found summery file : '+opts_dict['sumfile']
+          print 'Found summary file : '+opts_dict['sumfile']
           print ' '
        else:
-          print 'Warning: machineid and compiler are unknown'
+          print 'Warning: machine and compiler are unknown'
 
              
 
     if popens:
         
         # Read in the included var list
+        if not os.path.exists(opts_dict['jsonfile']):
+            print "ERROR: POP-ECT requires the specification of a valid json file via --jsonfile."
+            sys.exit()
         Var2d,Var3d=pyEnsLib.read_jsonlist(opts_dict['jsonfile'],'ESP')
         print ' '
         print 'Z-score tolerance = '+'{:3.2f}'.format(opts_dict['pop_tol'])
         print 'ZPR = '+'{:.2%}'.format(opts_dict['pop_threshold'])
-        zmall,n_timeslice=pyEnsLib.compare_raw_score(opts_dict,ifiles,me.get_rank(),Var3d,Var2d)  
+        zmall,n_timeslice=pyEnsLib.pop_compare_raw_score(opts_dict,ifiles,me.get_rank(),Var3d,Var2d )  
         #zmall = np.concatenate((Zscore3d,Zscore2d),axis=0)
         np.set_printoptions(threshold=np.nan)
 
@@ -193,6 +211,7 @@ def main(argv):
                 for i in range(me.get_size()):
                     for j in zmall[i]:
                         np.savetxt(fout,j,fmt='%-7.2e')
+    #cam
     else:
         # Read all variables from the ensemble summary file
         ens_var_name,ens_avg,ens_stddev,ens_rmsz,ens_gm,num_3d,mu_gm,sigma_gm,loadings_gm,sigma_scores_gm,is_SE_sum,std_gm=pyEnsLib.read_ensemble_summary(opts_dict['sumfile']) 
@@ -208,7 +227,7 @@ def main(argv):
         for k,v in ens_gm.iteritems():
             pyEnsLib.addvariables(variables,k,'gmRange',v)
 
-        # Get 3d variable name list and 2d variable name list seperately
+        # Get 3d variable name list and 2d variable name list separately
         var_name3d=[]
         var_name2d=[]
         for vcount,v in enumerate(ens_var_name):

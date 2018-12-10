@@ -64,7 +64,7 @@ _CIME_TESTS = {
                              "IRT_N2.f19_g16_rx1.A",
                              "ERR.f45_g37_rx1.A",
                              "ERP.f45_g37_rx1.A",
-                             "SMS_D_Ln9.f19_g16_rx1.A",
+                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A",
                              "DAE.ww3a.ADWAV",
                              "PET_P4.f19_f19.A",
                              "PEM_P4.f19_f19.A",
