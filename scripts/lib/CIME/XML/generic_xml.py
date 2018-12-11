@@ -159,10 +159,10 @@ class GenericXML(object):
         return attrib_name in node.xml_element.attrib
 
     def set(self, node, attrib_name, value):
-        expect(not self.read_only, "locked")
-        if attrib_name == "id":
-            expect(not self.locked, "locked")
         if self.get(node, attrib_name) != value:
+            expect(not self.read_only, "locked")
+            if attrib_name == "id":
+                expect(not self.locked, "locked")
             self.needsrewrite = True
             return node.xml_element.set(attrib_name, value)
 

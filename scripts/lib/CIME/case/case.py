@@ -472,9 +472,7 @@ class Case(object):
         progcomps = {}
         spec = {}
         primary_component = None
-
         for comp in self._component_classes:
-
             if comp == "CPL":
                 continue
             spec[comp] = self.get_value("COMP_{}".format(comp))
@@ -802,7 +800,7 @@ class Case(object):
 
         self.clean_up_lookups(allow_undefined=True)
 
-        self.get_compset_var_settings()
+        self.get_compset_var_settings(files)
 
         self.clean_up_lookups(allow_undefined=True)
 
@@ -970,8 +968,10 @@ class Case(object):
         if input_dir is not None:
             self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
-    def get_compset_var_settings(self):
-        compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
+    def get_compset_var_settings(self, files):
+        infile=files.get_value("COMPSETS_SPEC_FILE",
+                              attribute={"component":self._primary_component})
+        compset_obj = Compsets(infile=infile, files=files)
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
         for name, value in matches:
             if len(value) > 0:
