@@ -36,7 +36,6 @@ module med_constants_mod
   integer,  parameter :: med_constants_SecPerDay = 86400    ! Seconds per day
 
   !-----------------------------------------------------------------------------
-  ! TODO: This is not a constant and should be moved elsewhere
   integer :: med_constants_dbug_flag = 0
 
 end module med_constants_mod

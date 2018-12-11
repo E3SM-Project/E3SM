@@ -39,27 +39,29 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-def buildlib(bldroot, installpath, caseroot):
+def buildlib(bldroot, installpath, case):
 ###############################################################################
-    with Case(caseroot, read_only=False) as case:
-        gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
-        gmake_opts = "-f {}/Makefile install -C {} MACFILE={} MODEL=gptl GPTL_DIR={} GPTL_LIBDIR={}"\
-            " SHAREDPATH={}"\
-            .format(gptl_dir , bldroot, os.path.join(caseroot,"Macros.make"),
-                    gptl_dir, bldroot, installpath)
-        build_threaded = case.get_build_threaded()
-        if build_threaded:
-            gmake_opts += " compile_threaded=true "
+    comp_interface = case.get_value("COMP_INTERFACE")
+    caseroot = case.get_value("CASEROOT")
+    gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
+    gmake_opts = "-f {gptl}/Makefile install -C {bldroot} MACFILE={macfile} MODEL=gptl GPTL_DIR={gptl} GPTL_LIBDIR={bldroot}"\
+        " SHAREDPATH={install} COMP_INTERFACE={comp_interface}"\
+        .format(gptl=gptl_dir, bldroot=bldroot, macfile=os.path.join(caseroot,"Macros.make"),
+                install=installpath,comp_interface=comp_interface)
+    build_threaded = case.get_build_threaded()
+    if build_threaded:
+        gmake_opts += " compile_threaded=true "
 
-        gmake_cmd = case.get_value("GMAKE")
+    gmake_cmd = case.get_value("GMAKE")
 
-        # This runs the gptl make command
-        cmd = "{} {}".format(gmake_cmd, gmake_opts)
-        run_bld_cmd_ensure_logging(cmd, logger)
+    # This runs the gptl make command
+    cmd = "{} {}".format(gmake_cmd, gmake_opts)
+    run_bld_cmd_ensure_logging(cmd, logger)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
-    buildlib(bldroot, installpath, caseroot)
+    with Case(caseroot) as case:
+        buildlib(bldroot, installpath, case)
 
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

@@ -39,7 +39,7 @@ def _main_func():
         os.environ["USE_FMS"] = "TRUE"
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
-        
+
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
         out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "cime_driver") + "\n")
@@ -49,6 +49,9 @@ def _main_func():
 
     makefile = os.path.join(casetools, "Makefile")
     exename = os.path.join(exeroot, model + ".exe")
+    # always relink
+    if os.path.isfile(exename):
+        os.remove(exename)
 
     cmd = "%s exec_se -j %d EXEC_SE=%s MODEL=%s LIBROOT=%s -f %s "\
         % (gmake, gmake_j, exename, "driver", libroot, makefile)

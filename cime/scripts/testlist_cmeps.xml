@@ -1,6 +1,44 @@
 <?xml version="1.0"?>
 <testlist version="2.0">
 
+  <test compset="ADWAV" grid="ww3a" name="SMS_Vnuopc_Ld2">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="prealpha"/>
+      <machine name="theia" compiler="intel" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:10:00 </option>
+    </options>
+  </test>
+  <test compset="ADWAV" grid="ww3a" name="SMS_Vmct_Ld2">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="prealpha"/>
+      <machine name="theia" compiler="intel" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:10:00 </option>
+    </options>
+  </test>
+
+  <test compset="A1850DLND" grid="f09_f09_mg17" name="SMS_Vnuopc_Ld3">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="prealpha"/>
+      <machine name="theia" compiler="intel" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:10:00 </option>
+    </options>
+  </test>
+  <test compset="A1850DLND" grid="f09_f09_mg17" name="SMS_Vmct_Ld3">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="prealpha"/>
+      <machine name="theia" compiler="intel" category="prealpha"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:10:00 </option>
+    </options>
+  </test>
+
   <test compset="BMOM" grid="f19_g16" name="SMS_Vnuopc_Ld5" testmods="allactive/nuopc_cap_io">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
@@ -10,7 +48,6 @@
       <option name="wallclock"> 00:40:00 </option>
     </options>
   </test>
-
   <test compset="BMOM" grid="f19_g16" name="SMS_Vmct_Ld5" testmods="allactive/nuopc_cap_io">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
@@ -27,7 +64,7 @@
       <machine name="theia" compiler="intel" category="prealpha"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:40:00 </option>
     </options>
   </test>
 
@@ -81,7 +118,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="SMS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="SMS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -91,7 +128,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="SMS_Vmct_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="SMS_Vmct_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -101,7 +138,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="SMS_Vnuopc">
+  <test compset="X" grid="f19_g17" name="SMS_Vnuopc">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -111,7 +148,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="SMS_Vmct">
+  <test compset="X" grid="f19_g17" name="SMS_Vmct">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -121,7 +158,7 @@
     </options>
   </test>
 
-  <test compset="A" grid="T31_g37_rx1" name="SMS_Vnuopc_Ld1_N3">
+  <test compset="A" grid="f19_g17_rx1" name="SMS_Vnuopc_Ld1_N3">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -131,7 +168,7 @@
     </options>
   </test>
 
-  <test compset="A" grid="T31_g37_rx1" name="SMS_Vmct_Ld1">
+  <test compset="A" grid="f19_g17_rx1" name="SMS_Vmct_Ld1">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -181,7 +218,6 @@
     </options>
   </test>
 
-
   <test compset="BMOM" grid="f19_g16" name="ERR_Vnuopc_Ld5" testmods="allactive/nuopc_cap_io">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
@@ -208,7 +244,7 @@
       <machine name="theia" compiler="intel" category="prealpha"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:40:00 </option>
     </options>
   </test>
 
@@ -228,7 +264,7 @@
       <machine name="theia" compiler="intel" category="prealpha"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 
@@ -262,7 +298,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="ERS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="ERS_Vnuopc_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -272,7 +308,7 @@
     </options>
   </test>
 
-  <test compset="F2000Nuopc" grid="f19_g16" name="ERS_Vmct_Ln5" testmods="cam/nuopc_cap">
+  <test compset="F2000Nuopc" grid="f19_g17" name="ERS_Vmct_Ln5" testmods="cam/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -282,7 +318,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="ERS_Vnuopc_Ln9">
+  <test compset="X" grid="f19_g17" name="ERS_Vnuopc_Ln9">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -292,7 +328,7 @@
     </options>
   </test>
 
-  <test compset="X" grid="f19_g16" name="ERS_Vmct_Ln9">
+  <test compset="X" grid="f19_g17" name="ERS_Vmct_Ln9">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -302,7 +338,7 @@
     </options>
   </test>
 
-  <test compset="A" grid="T31_g37_rx1" name="ERS_Vnuopc_Ln9_N3">
+  <test compset="A" grid="f19_g17_rx1" name="ERS_Vnuopc_Ln9_N3">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>
@@ -312,7 +348,7 @@
     </options>
   </test>
 
-  <test compset="A" grid="T31_g37_rx1" name="ERS_Vmct_Ln9">
+  <test compset="A" grid="f19_g17_rx1" name="ERS_Vmct_Ln9">
     <machines>
       <machine name="cheyenne" compiler="intel" category="prealpha"/>
       <machine name="theia" compiler="intel" category="prealpha"/>

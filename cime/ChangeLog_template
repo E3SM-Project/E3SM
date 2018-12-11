@@ -11,7 +11,7 @@ Brief Summary:
 
 User interface changes: 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 
 Modified files: git diff --name-status [previous_tag]
 

@@ -10,6 +10,7 @@ module shr_nuopc_utils_mod
   public :: shr_nuopc_get_component_instance
   public :: shr_nuopc_set_component_logging
   public :: shr_nuopc_utils_ChkErr
+  public :: shr_nuopc_log_clock_advance
 
   integer, parameter :: memdebug_level=1
   character(*),parameter :: u_FILE_u = __FILE__
@@ -108,5 +109,29 @@ contains
   end function shr_nuopc_utils_ChkErr
 
   !-----------------------------------------------------------------------------
+  subroutine shr_nuopc_log_clock_advance(clock, component, logunit)
+    use ESMF, only : ESMF_Clock, ESMF_ClockPrint
+    use med_constants_mod, only : CL
+
+    type(ESMF_Clock) :: clock
+    character(len=*), intent(in) :: component
+    integer, intent(in) :: logunit
+
+    character(len=CL) :: cvalue, prestring
+    integer :: rc
+
+    write(prestring, *) "------>Advancing ",trim(component)," from: "
+    call ESMF_ClockPrint(clock, options="currTime", unit=cvalue, &
+         preString=trim(prestring), rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    write(logunit, *) trim(cvalue)
+
+    call ESMF_ClockPrint(clock, options="stopTime", unit=cvalue, &
+         preString="--------------------------------> to: ", rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    write(logunit, *) trim(cvalue)
+
+  end subroutine shr_nuopc_log_clock_advance
+
 
 end module shr_nuopc_utils_mod
