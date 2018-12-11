@@ -49,7 +49,7 @@ contains
     integer :: yr, mon, day, hr, min, sec
     integer :: iam
     logical :: ispresent
-    logical :: alarmison, stopalarmison
+    logical :: alarmison=.false., stopalarmison=.false.
     real(R8) :: current_time, wallclockelapsed, ypd
     real(r8) :: msize, mrss, ringdays
     integer, save :: iterations=0
