@@ -708,8 +708,8 @@
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/1.8.7</command>
-        <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+        <command name="load">acme-openmpi/2.1.5/acme</command>
+        <command name="load">acme-netcdf/4.4.1/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
