@@ -1,0 +1,682 @@
+12/4/18
+
+* From the slack, in how to debug:
+
+--------
+  I tackled this issue previously as:
+  - Compile a single test/case with DEBUG=TRUE
+  - Start the job in the interactive queue
+  - cd <RUNDIR>
+  - Launch totalview and run $EXEROOT/e3sm.exe (edited)
+--------
+
+* So, how to start interactive queue?
+
+  https://confluence.pnnl.gov/confluence/display/RC/Using+Debuggers+-+TotalView
+  https://confluence.pnnl.gov/confluence/display/RC/Launching+Interactive+Jobs
+
+=========
+To launch an interactive job, use the isub command:
+
+    isub -A <''your-account''> -W ''mm'' -N ''nn'' -s <''your-shell''>
+
+Arguments:
+
+  -A project account(required): same as the value on your #SBATCH -A line in a batch job
+
+  -W time in minutes (default 30)
+
+  -N number of nodes (= processor core count/24) (default 2)
+
+  -s shell to use (default your current shell)
+
+  -p partition to use (optional, do not change unless you need to)
+
+  -h print a help message
+
+isub requires that you be running X windows (Xming on Windows), since it opens an X terminal.
+
+For example: to run a 30 minute interactive job in csh on 2 nodes under project constancetest:
+
+    isub -A constancetest -W 30 -N 2 -s csh
+Launching an Interactive Shell
+
+You can start an interactive shell as in this example.
+
+    srun -A constancetest -p short --time=45 -I60 --pty -N 2 --ntasks-per-node=24 -u /bin/tcsh
+
+The -I60 means that if the job cannot run within 60 seconds, then the
+    system will stop trying to run it. In this example, a 45 minute time
+    limit is requested, therefore the short partition is picked, since it
+    is generally less busy.
+==========
+
+* So: isub -A gcam -W 45 -I60 -N 4
+
+  I need to figure out how many nodes are used in my test case.  Or just
+  use four.
+
+11/6/2018
+
+* /pic/scratch/d3a230/ERP_Ld3.f45_f45.ICLM45ED.constance_intel.clm-fates.20181101_094300_i966hg
+
+  ./case.build --clean
+  DEBUG=TRUE ./case.build
+
+  Check to see if compiling with -DDEBUG and/or -g or whatever.  If not,
+  figure out how to compile that way.
+
+  Okay, that failed, because I'm in the csh - so:
+
+  setenv DEBUG TRUE
+  ./case.build
+
+  ...and hope that takes.  If not, have to dig deeper...
+
+* Okay, I'm pretty sure that didn't work the way I wanted it to - I'm
+  seeing -DNDEBUG and -O2 and no -g in the compile lines of:
+
+  /pic/scratch/d3a230/csmruns/ERP_Ld3.f45_f45.ICLM45ED.constance_intel.clm-fates.20181101_094300_i966hg/bld/acme.bldlog.181106-145641
+
+* I'm not certain where to go from here - look into the individual make
+  files?  There has to be something in case.setup or case.build that makes
+  DEBUG happen.
+
+  It appears to be set inside of env_build.xml, and other .xml files, so,
+  um, how do those get set?  It seems like, from the timing, that
+  env_build.xml is created from case.build.  Jeepus, I'm going to have to
+  dig into the CASE tools, aren't I?
+
+10/12/18
+
+* Makefile in, I think,
+  /people/d3a230/ACME/cime/config/acme/machines/Makefile
+
+  ...that we have to modify to link with iac.  
+
+  Yup, that did it - add libiac.a in the ULIB thing.
+
+* https://acme-climate.atlassian.net/wiki/spaces/Docs/pages/17006928/Installing+the+ACME+tests
+
+  TL;DR - cd ACME/cime/scripts, ./create_test acme_developer -g.
+  (There's something about "wait_for_tests", which, I didn't really get.)
+
+  Future runs of acme_developer tests can go without the -g, we just need a
+  baseline for the initial run.
+
+  Should probably dump output to a .out file.
+
+10/11/18
+
+* Almost - but I'm not linking with the iac library I build, so we fail on
+  the linking part.  Look at:
+
+  ~/ACME/cime/src/drivers/mct/cime_config/buildexe
+
+  ...to see if you can figure out where I'm missing something.
+
+10/10/18
+
+* Finally tracked down all the .xml changes I need to make, created a siac
+  stub, and did other misc changes.  I need to document what these file
+  changes are - the .xml files, at least, are the configuration changes
+  needed to add a new component class.
+
+@ Fractions - I need to go back to seq_frac_mct.F90 and update the
+  fractions infrastructure for IAC.  Right now, I've passed in the argument
+  and declared everything, because I'm working on compilation right now,
+  but eventually we need to understand what exactly is going on here.  It
+  seems like each component has it's own fractions_zx built, but I can't
+  quite figure out what it is doing and what would be appropriate for the
+  iac to use.  For now we simply do nothing, so fractions_zx will be
+  allocated but unused - I'll have to see later on if that mungs up the
+  interpolation step before we call iac.
+
+* Fractions are the fraction of each grid cell that is lnd, ocn, ice, and
+  atm.  Frac of atm is always 1.0, which makes sense - you have an
+  atmosphere everywhere on the planet.  Fractions of lnd is static, but the
+  fractions of ice change over time, which is why this is important, I
+  think - you need a dynamic update of surface type fractions, so you have
+  to rebuild these fractions every Nth iteration and you have to use these
+  fractions instead of some kind of default mapping.
+
+  But!  Does GCAM use them at all?  Do we need them?  I feel like any time
+  we use data on a grid we need to have the fractions available, even if
+  our couplings (lnd and atm) will never change.
+
+? Something else - writing history and restart files.  We need to figure
+  out if that makes sense for iac and what should be written - it may be
+  that the GCAM outputs are fine for what we want and the total history
+  files aren't needed.  Restart is a little different question, if we have
+  a persistent state inside of gcam that we need to track.
+
+* List of things I need to revisit as I integrate iac/gcam:
+
+1 fractions_zx
+2 seq_rest_read and seq_rest_write - figure out what to dump to a restart
+  file
+3 seq_hist_write, seq_hist_writeavg
+
+10/8/18
+
+* Finally tracked down (I think) the way to add a brand new optional
+  component to the build system.  The issue is that the existing 7
+  components are pretty hardwired into seem, and we don't want to require
+  IAC in the case string if we aren't building with it (which would require
+  retrofactoring every test case string).  Apparently, the ESP component
+  was also added after with the same issues, so it was made optional,
+  giving me a path forward in IAC.
+
+  There's probably more to this, but this is what I've done so far:
+
+1 Modified ~/PIC/ACME/cime/scripts/lib/CIME/case.py c. L526.
+  The way ESP was optional is that we check the number of allowed
+  components vs. the number specified on the case string, and if we had
+  fewer than expected we added 'sesp' (the stub ESP) to the build.  
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  So, do
+  the same thing - if we are short, look for ESP and, separately, IAC, and
+  add the default (stub) if they are missing.  (For now, I'm adding the
+  actual iac build, because I want to test and I haven't written a 'siac'
+  build yet.)
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+! I THINK THIS IS NOT RIGHT - I *believe* the order of things matters - we
+  need the fifth component class to match the fifth component, so we can
+  map one to the other.  That's insane - we should have a mapping in the
+  build, right?  Maybe that's what the case string is for, though, to say
+  "first use this for coupler, then this for atm, etc...
+
+  ALSO, "component class" is 'iac', while "component" is 'gcam'.  Review rules
+  for case string and see if order matters!
+
+  ...this means that we might have to require IAC to be either after or
+  before ESP in our case string.  Probably before, to make cases that work
+  for ESP correct.
+
+* Okay, so some clarity - the order DOES matter, so we pretty much have to
+  tack IAC on to the end, and have to use the count of components to figure
+  out if we have to add ESP and IAC or not.  And, I'm pretty sure we will
+  have to eventually require explicitly an ESP component if we want to use
+  IAC. 
+
+  So, if 2 less, use SESP and SIAC.  If 1 less, add SIAC.
+
+* Also, compsets are defined in config_compsets.xml, but these are all over
+  the place - in the mct area, and in a lot of component areas.  This is
+  where the strings are built, so probably an IAC config_compsets.xml is
+  the way to build our gcam runs.
+
+* Finally, the case strings *do* give the model - for example, in
+  .../components/cam/cime_config/config_compsets.xml, we define the F1850
+  compset with this string:
+
+  1850_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV
+
+  So, use cam4, clm40, and cice models, then the data ocean model and stub
+  rof, glc, and wav.
+
+* So, this explains why we have to have a 'siac' - it's in the place of a
+  real component, because we can't consider iac and gcam as the same thing
+  - we may eventually want to run another economic model as the iac
+  component (or another version of gcam).
+
+* I know other versions of our models are used - cam4 and cam5, clm40 and
+  clm45.  So somewhere in the build system must be a way to map the "CAM4"
+  string into telling it to compile cam4 vs. cam5.
+
+  My guess is it will show up in the buildlib script somewhere...
+
+* Okay, this ALSO means that I need to modify the buildlib for
+  mct/coupler/whatever - that's the one that decides to build the
+  iac_foo.mod stuff I coded up.  That's the key one to get the default
+  tests up and running.
+
+2 Modified .../cime/src/drivers/mct/cime_config/config_component.xml,
+  adding IAC to the COMP_CLASSES.  That will get my component_classes right
+  for the above check to work.
+
+3 buildnml
+  buildlib for iac component (not yet finished)
+
+  Hopefully, the above config changes will automatically send it into the
+  iac component directory and run these scripts to build and create the
+  namelists.  But we probably have some more work to do to force it to link
+  or install correctly - hopefully not.
+
+  Update: yes, there is more work.  Only the coupler understands "iac" - we
+  have to somewhere tell it to build gcam when we want the iac component.
+  In this way, we can swap out 
+
+* Everybody uses perl for buildnml; only clm uses python for buildlib.
+  That's almost certainly no longer true with recent branches, which is an
+  issue, because I should use python... (they are porting to python).
+
+  
+
+7/2/18
+
+@Xseq_com_mct.F90 mods are done - mostly cut and paste and mod to iac, IAC,
+  and 'z'.  It mostly is just counting up and assigning indeces to the
+  procs and stuff, so it's all the same for each component.
+
+? Next up is figuring out how to set an iac component type.
+
+6/27/18
+
+* Modifications to seq_infodata_mod.F90:
+
+* mostly just search for "lnd", and wherever you see variable definitions
+  or function arguments that have that, you'll see similar sections for
+  every component, so add an "iac" version.
+
+! But!  Down in the function seq_infodata_Exchange() there's a little more
+  to it - that function is used to broadcast some of infodata between pes
+  to exchange information (really, just make it global).  But I need to
+  analyze that function first to see what is involve - I could just mimic
+  rof or wav or somethign like that, but I'd rather get a sense of what
+  this function is doing wrt to what I think iac should be doing.
+
+  ...okay, it looks like just an interface for broadcasting the simple
+  infodata info like "lnd_present" and whatever.  Good, I can just copy
+  it. 
+
+* Okay, seq_infodata_mod.F90 all done!
+
+* The final thing is seq_comm_mct.F90, I think, before I'm ready for the
+  initial commit.
+
+  (okay, I committed without setting seq_comm_mct.F90.)
+
+! Need to track down component type.
+
+@Xcomponent_type_mod.F90
+  
+  Trivial!  Just declare the iac(:) type and make sure num_inst_iac is
+  available, plus there was one  public thing.
+
+@Xcomponent_mod.F90
+
+  Also, pretty trivial - some "one letter" stuff to add in 'z' for iac, and
+  that's it.  But, this is where component_run() is, so it's worth looking
+  that function over (and adding a 'z' one-letterism to it).  Also,
+  component_exch() and component_diag(), which are things I need to build
+  hooks for, eventually.
+
+? There is some stuff in component_mod.F90 about "aream", in domains where
+  appropriate.  That includes most of the domains, apparently, but since I
+  don't understand waht it does yet I'ma going to leave out any iac
+  additions there.  But if it's something abouut "area matching", which it
+  might be because there's a lot of "samegrid_xy" stuff, then maybe it
+  makes sense to keep iac on the lnd grid and this is the infrastructure
+  for doing that?
+
+  I should review prep_lnd_get_mapper_Sa2l(), which suggests it's something
+  like mapping state variables from atmos to lnd or something.
+
+6/25/18
+
+* Some random notes on things I've been wondering about:
+
+* xxx_prognostic means "does model xxx need input from the driver",
+  according to the description in seq_infodata_mod.F90.   I suspect this is
+  to allow the model to run several time steps while only interacting with
+  the driver some of them - once per day, etc.  This means xxx_prognostic
+  is probably set at the top of every driver loop.
+
+* xxx_present means "does xxx component actually exist", so it's set at run
+  time. 
+
+? My current question I'm pondering is what do we do when we are in the
+  coupler, the lnd (e.g.) model is running, so it does the standard
+  prep_lnd_calc_z2x_lx() call to set up getting the inputs from iac ('z')
+  to lnd ('l')...but it's not the one time a year in which the iac is run?
+  What does the z2x_lx(:) Avect hold when the model hasn't run this loop?
+  What does the lnd model do with that information?  Does
+  prep_lnd_calc_z2x_lx() have some kind of interface or alarm for
+  determining that iac has run now and now we need to apply its output this
+  run, or do we assume we are going to use the same iac outputs for every
+  sample of the upcoming year, or what?
+
+* There's a lot of stuff in seq_infodata_mod.F90 that comes from the
+  namelist or is set in some other way, so it's going to take me a bit to
+  track down all the various ways adding iac to this mod will matter.
+
+5/23/18
+
+* I'm way far behind, because of personal stuff, but we want to be ready
+  with some kind of initial checkin for the code review on July 1.  And we
+  don't want to dump a whole garbage can full of code modifications all at
+  once and have them tell me I'm doing it wrong.
+
+  So, my initial checkin will be modifications mostly to the coupler code
+  to have IAC sections in there - stubbing out the actual calls to setup
+  and run GCAM, but getting all the infrastructure together, possibly with
+  an initial version of the GCAM code at least in its directory.
+
+  This will let code reviewers see what I'm planning on doing, and also
+  might allow somebody to look it over and help me figure out some of the
+  problems I've been having.
+
+1/5/18
+
+* Here is my checklist and working notes as I continue the port.  I'm
+  losing track of all the new variables and mods and files I need to change
+  for each thing I add, so I need a place to scratch them down and mark
+  them off.
+
+* cesm_comp_mod.F90:
+
+@ Create iac_comp_mct:
+  iac_init_mct
+  iac_run_mct
+  iac_final_mct
+
+@ modify seq_comm_mct:
+  IACID
+  ALLIACID
+  CPLALLIACID
+  CPLIACID
+  num_inst_iac
+
+@ modify seq_timemgr_mod:
+  seq_timemgr_alarm_iacrun  
+
+? seq_diag_mct:
+  seq_diag_iac_mct, maybe more - review what diagnostics we might need
+
+@ seq_flds_mod: (Iac one digit is 'z', because the next best thing to being
+  right is to be very wrong):
+
+  seq_flds_z2x_fluxes 
+  seq_flds_x2z_fluxes
+
+  Actually, I'm not sure if we are using fluxes or scalars or whatever.
+  I'll have to figure that out.
+
+@ component_type_mod:
+
+  iac - component
+
+@ prep_iac_mod:
+
+  Whole thing, to prep the iac component.
+
+? At this point, I'm not sure if we need the prep routines as listed in
+  line 197-204.  Revisit.
+
+? Don't know what fractions_?x(:) arrays do, but I better stick one in on
+  line 223:  fractions_zx(:)
+
+@ c. Line 272: Figure out how to set and use iacrun_alarm and EClock_z
+
+? c. Line 365: iac_prognostic - "iac component expects input", which, okay,
+  but I'm not sure what this logical means.  Does it get set somewhere as
+  part of the alarm mechanism?
+
+? L418: Don't know what "iac_gnam" means.
+
+* L431: samegrid_zl - my belief is that gcam is set up to take data on the
+  land grid and convert to regions from there; hence, I'm adding a
+  samegrid_zl logcial, because there's a bunch of those around.  But I
+  don't really know when it is used or how it is set...
+
+? It appears to be used for SCM, so the question is, do we need to care
+  about IAC and SCM?
+
+? L445 et al - do we want to create history files wiht iac?  For now, say
+  no.
+
+? L536+ - I guess I'll add in mpicomp ids and "iamin" for IAC, but who
+  knows how they are really used.
+
+? L588: "component instance counters"?  Okay, ezi.
+
+* cesm_pre_init1():
+
+! L662: Finally, some coding.  I need to follow suit with these, as they
+  set up all the communication stuff.  Make sure we have defined all these
+  approporiate seq_comm_name and seq_comm_iamin arrays.
+
+* cesm_pre_init2():
+
+* L930: call to seq_infodata_GetData() to find iac_present, etc.  So I have
+  to make sure the right stuff is in the infodata structure, too.
+
+* L1128: iac_phase in seq_infodata_putData().  Hurm.
+
+? L1146: we now get to some specials about single_column modelling on a
+  non-aqua planet.  Leave them alone for now.
+
+* cesm_init():
+
+  Awesome - we have two pre-init functions before we finally init!
+
+@ L1215+
+  component_init_pre()
+  component_init_cc()
+  component_init_cx()  
+
+  ...all called with iac, but probably generically.  Check, though.
+
+@ L1342+
+  component_get_iamin_compid()
+  component_get_name()
+
+@ L1369: Review seq_infodata_exchange()
+
+  Again, lots of these are called generically and set up to allow
+  components to talk to each other.  But it's still pretty opaque.
+
+@ Coupling flags: L1508.  I'm just faking it here, and maybe I need to
+  check on prognostic...
+
+  I *think* we may need to do prognostic here - the comments at the top 
+  sketchily suggest that "prognostic" means "expect input", which is what
+  lnd and atm need from iac.  The question is - do we need an
+  iac_prognostic to to couple lnd_c2_iac?
+
+? L1691: prognostic instances, and making sure num_inst_xxx =
+  num_inst_max.  I really don't understand that, but I'll need to figure
+  out the prognostic stuff, first.
+
+* L1719: prep_iac_init() - this is obviously something I have to write.
+
+? L1765: seq_domain_check() - I suspect this won't be needed for iac, but
+  check into it nonetheless.  I'm not sure what "domains" are in this
+  section, and there are some component-based elements in the call to
+  seq_domain_check(), but they seem linked to the "samegrid_xx" variables. 
+
+? L1813: compnent_init_areacor(): some kind of area corrections that I
+  don't understand.  In this case, they do seem to call for every
+  component, so add it in and figure it out later.
+
+? L1860: component_diag(), something about "recv IC xxx", which I don't
+  understand either.  This probably means I need to develop diagnostics for
+  iac. 
+
+* L1890: more about fractions, which I still don't get.
+
+@ L1894: seq_frac_init() - modify for iac and fractions_zx.
+
+? L1980+ Okay, we are starting to get into initialization and prep for
+  model runs, with a lot of specific component related elements.   Look for
+  lnd_ and atm_ prep for coupling with other components...
+
+* L2043: this component_exch(atm, flow='x2c',...) - This is an init, so
+  we haven't looped over timesteps yet, so maybe it doesn't need to get
+  anything out of the iac output yet.  But this is the kind of thing we are
+  looking at.
+
+* seq_flds_x2a_fluxes - this is the array (I think) of fields that we need
+  to grab from the coupler into the atm model.  So I will have to modify
+  this somewhere to include feedback from iac.
+
+? L2109+ - once again, figure out what kind of thing is happening with
+  these calls to prep_lnd_calc_r2x_lx() et al.  They describe it as mapping
+  initial r2x_rx and g2x_gx to _ox, _ix, and _lx, which I guess is some
+  kind of grid mapping from the glc and rof components to ocean, ice, and
+  lnd.  I'm hoping this kind of thing doesn't matter for iac - right now we
+  expect the lnd mapping on input to gcam, and hopefully the lnd and atm
+  mapping are the same.  Otherwise, maybe see how we do land to atm
+  mapping, and make sure the gcam outputs go along with that?
+
+? seq_hist_write() - add in iac and fractions_zx.
+
+! Finally, cesm_run(), which is I think something I know a little about.
+  Let's find out how wrong I am!
+
+@ L2167: seq_comm_mct.mod.F90, iac_layout
+
+* L2171: hashcnt - I have notes on this somewhere, but I still don't know
+  if it applies to iac or not.  We'll have to revisit this.
+
+? L2193: Do I need to set iac_phase=1?  We don't have wav or rof, and iac
+  is less connected than anything, so why don't I skip this for now.
+
+@ L2252: define iacrun_alarm somewhere, seq_timmgr_alarmIsOn(),
+  seq_timemgr_alarm_iacrun.  This hopefully will make it clearer how alarms
+  go and when to run things.  Also, maybe review glcrun_avg_alarm and
+  ocnnext_alarm and see why they need extra alarms for those comps.
+
+@ L2542: prep_lnd_calc_z2x_lx() - need to write this function, to do the
+  iac preparations for updating the land model.  I need to do something
+  like this for atm prep, as well.
+
+? 
+? The Big Quesiton I have so far is how this works with the fact that we
+? run IAC yearly or five yearly, not on the same time grid as the lnd and
+  atm models.  Presumably, prep_lnd_calc_z2x_lx() and
+  prep_atm_calc_z2x_lx() will simply do nothing except on the right time
+  scale, but it's not clear to me how that works.  Do any other components
+  have this delayed and/or long term application?
+
+! OKay, as I understand it, we want to run IAC at the start of a given
+  year (or 5-year block), which finally uses the averaged inputs from the
+  previous year, and then use that input to modify atm and lnd.  So, if my
+  understanding is right, that means we RUN iac before we SETUP lnd and
+  atm.  Is that right?  Do we do a full setup/run/post on IAC before doing
+  anything else?  That suggests we should put the IAC stuff right at the
+  top.
+
+  Let me review other modules and see if I can see that - right now it
+  seems like we do setup (all comps), run (all comps), post (all comps),
+  but that could be just because they are all on the same time scale.
+
+  Alternatively, I guess, we could run iac at the end, and that post will
+  then be available to the next one.  But don't do this - let's run right
+  at the top.
+
+  I'm pretty sure it's okay - we apparently have a lot of options for when
+  ocn/atm models are run and how they are set up, and they happen spread
+! throughout this function.  So, my guess is that I will have to couple in
+  iac in a couple different places - stick with the lnd stuff; whereever we
+  see lnd_c2_atm then activate an iac_c2_atm as well.
+
+! 
+! Okay, I think I'm gonna revise my plan, and just implement iac just like
+! all the other components - serial in setup, then use the same parallel
+  mechanism and barriers as other components.  I believe what this means is
+  that we'll have the previous one year of lnd as input to iac, and then
+  the resulting output of the iac will apply on the *second* timestep of
+  the year for lnd and cam.  I don't think this is a gross violation of the
+  methodolgy, and allows GCAM to be run fully in parallel like other
+  components. 
+
+  It's probably not a big deal either way, as GCAM is not computationally
+  intensive and runs once a year anyway, but if I ran GCAM serially in the
+  coupler before running everybody else's setup (which is essentially how
+  it runs in iESM) it would make this component different than the others,
+  which is harder to maintain and, crucially, more likely for me to get
+  wrong.  Also, who is to say we won't have a CPU intensive IAC module to
+  hook in some point in the future?
+
+! l. 2349 - iac_prognostic - I'm not sure what this means, but I think it
+  suggests that if we are providing input to IAC this is the section where
+  we build those inputs.  When would iac_prognostic NOT be on?  I need to
+  ask Kate about this, but for now I'm keeping the form that the other
+  modules use.  (I'm following ROF as a template).
+
+? Could iac_prognostic be variable, so it's set only on time steps where we
+  need to do stuff?  Hmm.
+
+* prep_iac_accum_avg() - this function should take the average of the accum
+  vars.  I know this one.
+
+* prep_iac_calc_l2r_rx() - I still don't know what fractions_Xx suggest,
+  but thi sis obviously the function that grabs the lnd vars out of the
+  coupler and makes them availalbe (or ready?) for iac to use.
+
+! l. 2361 - prep_iac_mrg() - review what it means to "merge" in this
+  context.  Is this just prep work for the diagnostic in the next line, or
+@ is this more setup for iac to use?  Review what ROF merge does.
+
+! l. 2376 - figure out how component_exch() works, what it does and what
+  all the arguments are.  I'm not sure the timer/barrier format string, but maybe
+  it doesn't matter that much.
+
+* l.2772 - the run call is straightforward, but I still am not sure whether
+  "_fluxes" is what we are sending or not.  I need to know the difference
+  between a flux and state variable, since they seem to be treated
+  differently.  
+
+* l.2849 - Just to be cheeky, I'm putting the IAC RECV before everybody
+  else.  I'm 78% sure it doesn't really matter, as everything is in
+  parallel, but just in case it does I want to run at the top so the lnd
+  can use it later.  Also, this WILL matter if at some point we decide to
+  simply run in the coupler before doing anything else, or something like
+  that (although I think at that point we'll move all these things together
+  in one block).
+
+@ l.2878+ - prep_lnd_calc_z2x_lx() and prep_atm_calc_z2x_ax() - functions
+  in the land and atm components that I have to write to pull the important
+  outputs from iac.  This might be the toughest thing, because I'm not at
+  all conversent in those other models and do not know how they use these
+  inputs.  I hope the iESM code helps with regard to this, but since it
+  couples differently I'm not at all sure that will be the case.
+
+  (Also, make sure these functions are named correctly - I'm still a little
+  shaky on the naming arcana).
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXX See below, after seq_hist_write()
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+! l.2895_ - not sure what do_hist_z2x might imply - writing out history
+  files?  Just follow the template and figure it out later.  It may mean
+  figuring out seq_hist_writeaux() to add in the var names or something.
+
+  (especially with regard to nx, ny, the write_now argument?  I set
+  write_now to the t1yr_alarm, because we run yearly, but, yes, well, hmm.) 
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+@ l.3779 - restart file - seq_rest_write() - another in the endless string
+  of functions that I hope are easy to modify to deal with an iac
+  component.  Add in fractions_zx and the iac component, and hope for the
+  best.  
+
+@ l.3803 - seq_hist_write() - same thing.
+  l.3812 - seq_hist_write_avg()
+
+? Huh, down here is where some do_hist_a2x stuff happens.  Also the 1 year
+  lnd writes; maybe move iac down here?  Do we even need iac hist writes?
+
+! You know what? Screw the do_hist_z2x stuff.  We'll add it in later if we
+  want it,  maybe right here, maybe after iac post like rof does.
+
+* Restart -
+  l.3953 - seq_rest_read()
+
+* l.4032 - just follow the pattern - see if root, whatever.
+
+! Whoo-hoo, done with cesm_run - now cesm_final():
+
+* l. 4129 - component_final() - review.  It might be part of what you do to
+  create a component in the first place.
+
+* Hey, that's it. For cesm_comp_mod.F90.
+
+6/27/17
+
+  Script to run the model, from Balwinder:
+
+  /people/sing201/runscr/int/acme/acme_def_cime5_03022017/acme_def_cime5_03022017

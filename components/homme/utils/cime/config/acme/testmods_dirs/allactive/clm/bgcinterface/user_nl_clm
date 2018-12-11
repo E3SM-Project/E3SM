@@ -1,0 +1,2 @@
+use_clm_interface = .true.
+use_clm_bgc = .true.

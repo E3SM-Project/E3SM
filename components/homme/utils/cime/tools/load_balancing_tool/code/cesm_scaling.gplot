@@ -1,0 +1,38 @@
+set term gif
+
+set xlabel "Cores"
+
+set ylabel "simulated years/day"
+set output 'tp.gif'
+set title "Model Throughput"
+plot 'tp.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set ylabel "pe-hrs/simulated year"
+set output 'cost.gif'
+set title "Model Cost"
+plot 'cost.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set ylabel "runtime (seconds)"
+set output 'atm.gif'
+set title "CAM"
+plot 'ATM.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set title "POP2"
+set output 'ocn.gif'
+plot 'OCN.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set title "CPL"
+set output 'cpl.gif'
+plot 'CPL.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set title "CICE"
+set output 'ice.gif'
+plot 'ICE.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set title "CLM"
+set output 'lnd.gif'
+plot 'LND.dat' using 1:2 with linespoints lc rgb "red" lw 2
+
+set title "ROF"
+set output 'rof.gif'
+plot 'ROF.dat' using 1:2 with linespoints lc rgb "red" lw 2

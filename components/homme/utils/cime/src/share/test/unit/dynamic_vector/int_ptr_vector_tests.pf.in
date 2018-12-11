@@ -1,0 +1,105 @@
+module int_ptr_vector_tests
+! Module to test dynamic vector template on
+! a derived type.
+
+use pfunit_mod
+
+use shr_log_mod, only: OOBMsg => shr_log_OOBMsg
+
+use ptr_wrapper, only: &
+     int_ptr
+
+use dynamic_vector_int_ptr, only: &
+     int_ptr_vector
+
+#define TYPE_NAME int_ptr
+#define TYPE_DECL type(TYPE_NAME)
+#define VECTOR_NAME int_ptr_vector
+
+implicit none
+
+integer, target, save :: i1, i2, i3, i4, i5
+
+type(int_ptr), save :: test_array(3)
+
+type(int_ptr), save :: test_array_2(5)
+
+type(int_ptr), save :: new_val
+
+interface assertEqual
+   module procedure assertEqual_int_ptr_0D_0D
+   module procedure assertEqual_int_ptr_0D_1D
+   module procedure assertEqual_int_ptr_1D_1D
+end interface
+
+contains
+
+! This is necessary because pFUnit only knows about integers, not the
+! pointer type that we've defined.
+subroutine assertEqual_int_ptr_0D_0D(expected, found, message, location)
+  type(int_ptr), intent(in) :: expected
+  type(int_ptr), intent(in) :: found
+  character(len=*), optional, intent(in) :: message
+  type (SourceLocation), optional, intent(in) :: location
+
+  call assertTrue(expected == found, message, location)
+
+end subroutine assertEqual_int_ptr_0D_0D
+
+subroutine assertEqual_int_ptr_0D_1D(expected, found, message, location)
+  type(int_ptr), intent(in) :: expected
+  type(int_ptr), intent(in) :: found(:)
+  character(len=*), optional, intent(in) :: message
+  type (SourceLocation), optional, intent(in) :: location
+
+  call assertAll(expected == found, message, location)
+
+end subroutine assertEqual_int_ptr_0D_1D
+
+subroutine assertEqual_int_ptr_1D_1D(expected, found, message, location)
+  type(int_ptr), intent(in) :: expected(:)
+  type(int_ptr), intent(in) :: found(:)
+  character(len=*), optional, intent(in) :: message
+  type (SourceLocation), optional, intent(in) :: location
+
+  call assertAll(expected == found, message, location)
+
+end subroutine assertEqual_int_ptr_1D_1D
+
+@Before
+subroutine setUp()
+
+  test_array(1)%p => i1
+  test_array(2)%p => i2
+  test_array(3)%p => i3
+
+  test_array_2(1)%p => i5
+  test_array_2(2)%p => i4
+  nullify(test_array_2(3)%p)
+  test_array_2(4)%p => i2
+  test_array_2(5)%p => i1
+
+  new_val%p => i4
+
+end subroutine setUp
+
+@After
+subroutine tearDown()
+
+  integer :: i
+
+  do i = 1, size(test_array)
+     nullify(test_array(i)%p)
+  end do
+
+  do i = 1, size(test_array_2)
+     nullify(test_array_2(i)%p)
+  end do
+
+  nullify(new_val%p)
+
+end subroutine tearDown
+
+#include "dynamic_vector_base_tests.inc"
+
+end module int_ptr_vector_tests

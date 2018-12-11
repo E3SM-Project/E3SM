@@ -1,0 +1,39 @@
+
+NOTES: 
+Most of the tests have been moved to python in cime/utils/python/CIME/SystemTests
+See the README there for more info.
+
+The remaining tests are:
+
+======================================================================
+    Multi-Instance Tests (smoke)
+======================================================================
+
+NOC    multi-instance validation for single instance ocean (default length)
+       do an initial run test with NINST 2 (other than ocn), with mod to instance 1 (suffix: inst1_base, inst2_mod)
+       do an initial run test with NINST 2 (other than ocn), with mod to instance 2 (suffix: inst1_base, inst2_mod)
+       compare inst1_base with inst2_base 
+       compare inst1_mod  with inst2_mod  
+
+
+======================================================================
+    Performance Tests
+======================================================================
+
+ICP    cice performance test 
+OCP    pop performance test 
+
+======================================================================
+    Archiving Tests
+======================================================================
+
+LAR    long term archive test 
+
+======================================================================
+    Other
+======================================================================
+
+HOMME
+
+
+

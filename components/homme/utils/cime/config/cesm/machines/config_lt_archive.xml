@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<config_lt_archive version="1.0">
+    <machine name="default">
+      <lt_archive_args></lt_archive_args>
+    </machine>
+    <machine name="pleiades-has">
+      <lt_archive_args>--mode copy_dirs_ssh --ssh_loc lfe --rm_loc_files TRUE</lt_archive_args>
+    </machine>
+    <machine name="pleiades-ivy">
+      <lt_archive_args>--mode copy_dirs_ssh --ssh_loc lfe --rm_loc_files TRUE</lt_archive_args>
+    </machine>
+    <machine name="pleiades-wes">
+      <lt_archive_args>--mode copy_dirs_ssh --ssh_loc lfe --rm_loc_files TRUE</lt_archive_args>
+    </machine>
+    <machine name="pleiades-san">
+      <lt_archive_args>--mode copy_dirs_ssh --ssh_loc lfe --rm_loc_files TRUE</lt_archive_args>
+    </machine>
+</config_lt_archive>

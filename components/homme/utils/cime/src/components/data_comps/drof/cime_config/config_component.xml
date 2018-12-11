@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id>
+
+  <entry id="COMP_ROF">
+    <type>char</type>
+    <valid_values>drof</valid_values>
+    <default_value>drof</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of rof component</desc>
+  </entry>
+
+  <entry id="DROF_MODE">
+    <type>char</type>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL</valid_values>
+    <default_value>DIATREN_ANN_RX1</default_value>
+    <values>
+      <value compset="_DROF%NULL">NULL</value>
+      <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
+      <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
+      <value compset="_DROF%CPLHIST">CPLHIST</value>
+      <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
+    </values>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>DROF mode. Values are CPLHIST, *_RX1, and NULL. In *_RX1 mode,
+    observational climatological or interannual
+    1-degree runoff data is used. In CPLHIST mode, runoff
+    data from a previous model run is read in. In NULL mode, the runoff
+    data is set to zero. In CPLHIST mode, runoff forcing data from a previous
+    model run is output by the coupler and read in by the data rof
+    model. In NULL mode, runoff forcing is set to zero and not used. The
+    default is DIATREN_ANN_RX1.</desc>
+  </entry>
+
+  <entry id="DROF_CPLHIST_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DROF_CPLHIST_CASE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>case name for coupler history data mode (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DROF_CPLHIST_YR_ALIGN">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>1</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>year align (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DROF_CPLHIST_YR_START">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>1</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <entry id="DROF_CPLHIST_YR_END">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>1</default_value>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over (only used for CPLHIST mode)</desc>
+  </entry>
+
+  <description>
+    <desc compset="_DROF%NULL">NULL drof mode:</desc>
+    <desc compset="_DROF%NYF" >COREv2 drof normal year forcing:</desc>
+    <desc compset="_DROF%IAF" >COREv2 drof interannual year forcing:</desc>
+    <desc compset="_DROF%CPLHIST">CPLHIST mode:</desc>
+  </description>
+
+  <help>
+    =========================================
+    DROF naming conventions
+    =========================================
+  </help>
+
+</entry_id>
