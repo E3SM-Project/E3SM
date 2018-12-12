@@ -60,7 +60,7 @@ prt        = [0.0, 1.0e-14, -1.0e-14]
 prtstr     = ['woprt','posprt','negprt']
 
 #file name for file containing PGE cloud
-fcld_nc  = 'cloud.nc'
+fcld_nc  = 'PGN_cloud.nc'
 
 #For preparing paths for namelist files for initial condition files
 file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
@@ -432,7 +432,7 @@ class PGN(SystemTestsCommon):
 
         #Extract last element of each PGE curve of the cloud
         path_cld_nc  = os.path.join(base_dir,fcld_nc)
-        expect(fcld_nc, "ERROR: "+fcld_nc+"  does not exist at:"+path_cld_nc)
+        expect(os.path.isfile(path_cld_nc), "ERROR: "+fcld_nc+"  does not exist at:"+path_cld_nc)
 
         fcld         = Dataset(path_cld_nc,'r', format='NETCDF4')
 
@@ -570,53 +570,57 @@ class PGN(SystemTestsCommon):
                 
                 iinst += 1
 
+        #cloud generation
+
+        if(debug):
+            print("PGN_INFO: cloud generation-gen base")
+            
+        var_list     = self.get_var_list()
+        len_var_list = len(var_list)
+        nprt         = len(prt)
+        
+        #for trusted cloud sims
+        if(debug):
+            print("PGN_INFO: Computing cloud")
+            
+        cld_res = np.empty([len_var_list])
+            
+        #---------------------------------------------
+        # Write netcdf file for cloud in rundir
+        #---------------------------------------------
+        os.chdir(rundir)
+        fcld, cld_rmse_nc = self.nc_write_handle(fcld_nc,'cld_rmse')
+
+        iinst = 0
+        for icond in range(ninit_cond):
+            iinst += 1;  iprt = 0
+            ifile_cntl = os.path.join(rundir,self.get_fname_wo_ext('',casename,iinst)+'_'+prtstr[iprt]+'.nc')
+            expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
+            if(debug):
+                print("PGN_INFO:CNTL_CLD:"+ifile_cntl)            
+            
+            for aprt in prtstr[1:]:
+                iinst += 1;
+                iprt = prtstr.index(aprt) - 1 # subtracted 1 as we will only get two curves for each inic (wo-pos and wo-neg)
+                ifile_test = os.path.join(rundir,self.get_fname_wo_ext('',casename,iinst)+'_'+aprt+'.nc')
+                expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
+                cld_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
+                if(debug):
+                    print("PGN_INFO:Compared to CLD:"+ifile_test)
+
+        fcld.close()
 
         if(self._case.get_value("GENERATE_BASELINE")):
-
-            #first copy files to the baseline directory
-            self._generate_baseline()#BALLI-CHECK IF THIS IS OKAY
-            if(debug):
-                print("PGN_INFO: cloud generation-gen base")
-
-            var_list     = self.get_var_list()
-            len_var_list = len(var_list)
-            nprt         = len(prt)
-
+            
             #baseline directory names
             base_root = self._case.get_value("BASELINE_ROOT")
             base_gen  = self._case.get_value("BASEGEN_CASE")
-
+        
             #baseline directory is:base_root/base_gen
             base_dir = os.path.join(base_root,base_gen)
 
-            #for trusted cloud sims
-            if(debug):
-                print("PGN_INFO: Computing cloud")
-            cld_res = np.empty([len_var_list])
-            
-            #---------------------------------------------
-            # Write netcdf file for cloud
-            #---------------------------------------------
-            fcld, cld_rmse_nc = self.nc_write_handle(fcld_nc,'cld_rmse')
-
-            iinst = 0
-            for icond in range(ninit_cond):
-                iinst += 1;  iprt = 0
-                ifile_cntl = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+prtstr[iprt]+'.nc')
-                expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
-                if(debug):
-                    print("PGN_INFO:CNTL_CLD:"+ifile_cntl)            
-            
-                for aprt in prtstr[1:]:
-                    iinst += 1;
-                    iprt = prtstr.index(aprt) - 1 # subtracted 1 as we will only get two curves for each inic (wo-pos and wo-neg)
-                    ifile_test = os.path.join(base_dir,self.get_fname_wo_ext('','',iinst)+'_'+aprt+'.nc')
-                    expect(os.path.isfile(ifile_test), "ERROR: File "+ifile_test+" does not exist")
-                    cld_rmse_nc[icond,iprt,0:len_var_list] = self.rmse_var(ifile_test, ifile_cntl,  var_list, 't_' )
-                    if(debug):
-                        print("PGN_INFO:Compared to CLD:"+ifile_test)
-
-            fcld.close()
+            #first copy files to the baseline directory
+            self._generate_baseline()#BALLI-CHECK IF THIS IS OKAY
 
             #copy cloud.nc file to baseline directory
             if(debug):
