@@ -20,6 +20,26 @@
     Used to set the driver namelist variable "drv_threading".</desc>
   </entry>
 
+  <entry id="INFO_TASKMAP_MODEL">
+    <type>integer</type>
+    <valid_values>0,1,2</valid_values>
+    <default_value>2</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of task-to-node mapping output for the whole model 
+    (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
+  <entry id="INFO_TASKMAP_COMP">
+    <type>integer</type>
+    <valid_values>0,1,2</valid_values>
+    <default_value>0</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of task-to-node mapping output for supported component models
+    (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
   <entry id="SAVE_TIMING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
