@@ -575,7 +575,11 @@ class EnvBatch(EnvBase):
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-                getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                try:
+                    getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                except Exception as e:
+                    # We don't want exception from the run phases getting into submit phase
+                    logger.warning("Exception from {}: {}".format(function_name, str(e)))
 
             return
 
