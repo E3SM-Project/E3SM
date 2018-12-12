@@ -595,7 +595,7 @@ contains
     integer           :: nu     ! unit number
     character(len=18) :: date_str
     character(len=CS) :: fldname
-
+    character(len=CS) :: local_case_name
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
@@ -622,7 +622,11 @@ contains
 
     call t_startf('DOCN_RUN')
     call t_barrierf('docn_BARRIER',mpicom)
-
+    if(present(case_name)) then
+       local_case_name = case_name
+    else
+       local_case_name = " "
+    endif
     !--------------------
     ! ADVANCE OCN
     !--------------------
