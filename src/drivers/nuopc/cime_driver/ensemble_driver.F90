@@ -14,7 +14,6 @@ module Ensemble_driver
 
   public  :: SetServices
   private :: SetModelServices
-  logical :: mastertask
 
   character(*),parameter :: u_FILE_u = __FILE__
 
@@ -56,7 +55,7 @@ module Ensemble_driver
     config = ESMF_ConfigCreate(rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ConfigLoadFile(config, "cesm.runconfig", rc=rc)
+    call ESMF_ConfigLoadFile(config, "nuopc.runconfig", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_GridCompSet(ensemble_driver, config=config, rc=rc)
@@ -97,6 +96,7 @@ module Ensemble_driver
     character(len=20)      :: model, prefix
     integer                :: petCount, i
     integer                :: localPet
+    integer                :: rootpe_med
     logical                :: is_set
     character(len=512)     :: diro
     character(len=512)     :: logfile
@@ -129,12 +129,6 @@ module Ensemble_driver
 
     call ESMF_VMGet(vm, localPet=localPet, PetCount=PetCount, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (localPet == 0) then
-       mastertask=.true.
-    else
-       mastertask = .false.
-    end if
 
     !-------------------------------------------
     ! Initialize clocks
@@ -179,6 +173,10 @@ module Ensemble_driver
 
     allocate(petList(ntasks_per_member))
 
+    call NUOPC_CompAttributeGet(ensemble_driver, name='cpl_rootpe', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue, *) rootpe_med
+
     do inst=1,number_of_members
 
        petList(1) = (inst-1) * ntasks_per_member
@@ -213,8 +211,8 @@ module Ensemble_driver
 
           call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          ! Set the mediator log to the driver task 0, this is corrected to be the ROOTPE_CPL in esm.F90
-          if (localPet == petlist(1)) then
+
+          if (mod(localPet, ntasks_per_member) == rootpe_med) then
              call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call NUOPC_CompAttributeGet(driver, name="logfile", value=logfile, rc=rc)

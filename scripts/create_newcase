@@ -64,7 +64,10 @@ def parse_command_line(args, cimeroot, description):
                         "\nThe default is the first listing in MPILIBS in config_machines.xml.\n")
 
     parser.add_argument("--project", "-project",
-                        help="Specify a project id as used in batch system accounting.")
+                        help="Specify a project id for the case (optional)."
+                        "\nUsed for accounting and directory permissions when on a batch system."
+                        "\nThe default is user or machine specified by PROJECT."
+                        "\nAccounting (only) may be overridden by user or machine specified CHARGE_ACCOUNT.")
 
     parser.add_argument("--pecount", "-pecount",  default="M",
                         help="Specify a target size description for the number of cores. "
@@ -82,16 +85,10 @@ def parse_command_line(args, cimeroot, description):
                         help="Full pathname of an optional pes specification file. "
                         "\nThe file can follow either the config_pes.xml or the env_mach_pes.xml format.")
 
-    parser.add_argument("--user-grid", action="store_true",
-                        help="If set, then the --res argument is treated as a user specified grid, "
-                        "\nthe additional argument --gridfile must also be specified "
-                        "\nand all of the grid settings in the --res argument name (which must be a grid longname "
-                        "\nmust defined in the grid file pointed to by --gridfile.")
-
     parser.add_argument("--gridfile",
                         help="Full pathname of config grid file to use. "
-                        "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. "
-                        "\nThis argument is required if --user-grid is an argument.")
+                        "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. \n")
+
 
     if cime_config and cime_config.has_option('main','SRCROOT'):
         srcroot_default = cime_config.get('main', 'srcroot')
