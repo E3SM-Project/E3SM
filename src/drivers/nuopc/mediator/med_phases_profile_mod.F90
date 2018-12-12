@@ -93,6 +93,9 @@ contains
        call ESMF_ClockGet( clock, timestep=timestep, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
+       call ESMF_ClockGet(clock, currTime=prevtime, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        call ESMF_TimeIntervalGet(timestep, d_r8=timestep_length, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        iterations = 1
