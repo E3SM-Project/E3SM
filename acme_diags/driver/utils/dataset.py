@@ -64,7 +64,7 @@ class Dataset():
                 self.derived_vars[derived_var] = original_vars
 
 
-    def get_variable(self, var, season, extra_vars=[]):
+    def get_variable(self, var, season, extra_vars=[], *args, **kwargs):
         """
         For a given season, get the variable and any extra variables.
         These variables can either be from the test data or reference data.
@@ -85,22 +85,22 @@ class Dataset():
         if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
             data_path = self.parameters.reference_data_path
-            variables = self._get_timeseries_var(data_path, season)
+            variables = self._get_timeseries_var(data_path, season, *args, **kwargs)
             
         elif self.test and self.is_timeseries():
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
-            variables = self._get_timeseries_var(data_path, season)
+            variables = self._get_timeseries_var(data_path, season, *args, **kwargs)
 
         elif self.ref:
             # Get the reference variable from climo files.
             filename = general.get_ref_filename(self.parameters, season)
-            variables = self._get_climo_var(filename)
+            variables = self._get_climo_var(filename, *args, **kwargs)
 
         elif self.test:
             # Get the test variable from climo files.
             filename = general.get_test_filename(self.parameters, season)
-            variables = self._get_climo_var(filename)
+            variables = self._get_climo_var(filename, *args, **kwargs)
 
         else:
             msg = '''
@@ -141,7 +141,7 @@ class Dataset():
         if not extra_vars:
             raise RuntimeError('Extra variables cannot be empty.')
 
-        return self.get_variable(var, season, extra_vars)[1:]
+        return self.get_variable(var, season, extra_vars, extra_vars_only=True)
 
 
     def get_attr_from_climo(self, attr, season):
@@ -284,14 +284,17 @@ class Dataset():
         return start_slice*12, end_slice*12
 
 
-    def _get_climo_var(self, filename):
+    def _get_climo_var(self, filename, extra_vars_only=False):
         """
         For a given season and climo input data,
         get the variable (self.var).
 
         If self.extra_vars is also defined, get them as well.
         """
-        vars_to_get = [self.var]
+        
+        vars_to_get = []
+        if not extra_vars_only:
+            vars_to_get.append(self.var)
         vars_to_get.extend(self.extra_vars)
         return_variables = []
 
@@ -389,7 +392,7 @@ class Dataset():
             return vars_to_func_dict[k]
 
 
-    def _get_timeseries_var(self, data_path, season):
+    def _get_timeseries_var(self, data_path, season, extra_vars_only=False):
         """
         For a given season and timeseries input data,
         get the variable (self.var).
@@ -412,17 +415,19 @@ class Dataset():
             # These are checked, so there are valid timeseries files in data_path for these variables.
             vars_to_func_dict = self._get_first_valid_vars_timeseries(possible_vars_and_funcs, data_path)
 
-            # Open the files of the variables and get the cdms2.TransientVariables.
-            # Ex: [PRECC, PRECL], where both are TransientVariables.
-            variables = self._get_original_vars_timeseries(vars_to_func_dict, data_path)
+            # We do want the self.var.
+            if not extra_vars_only:
+                # Open the files of the variables and get the cdms2.TransientVariables.
+                # Ex: [PRECC, PRECL], where both are TransientVariables.
+                variables = self._get_original_vars_timeseries(vars_to_func_dict, data_path)
 
-            # Get the corresponding function.
-            # Ex: The func in {('PRECC', 'PRECL'): func}.
-            func = self._get_func(vars_to_func_dict)
+                # Get the corresponding function.
+                # Ex: The func in {('PRECC', 'PRECL'): func}.
+                func = self._get_func(vars_to_func_dict)
 
-            # Call the function with the variables.
-            derived_var = func(*variables)
-            return_variables.append(derived_var)
+                # Call the function with the variables.
+                derived_var = func(*variables)
+                return_variables.append(derived_var)
 
             # Add any extra variables.
             # For a variable that is a derived variable, get all of the extra variables
@@ -436,9 +441,11 @@ class Dataset():
 
         # Or if the timeseries file for the var exists, get that.
         elif self._get_timeseries_file_path(self.var, data_path):
-            # Find {var}_{start_yr}01_{end_yr}12.nc in data_path and get var from it.
-            v = self._get_var_from_timeseries_file(self.var, data_path)
-            return_variables.append(v)
+            # We do want the self.var.
+            if not extra_vars_only:
+                # Find {var}_{start_yr}01_{end_yr}12.nc in data_path and get var from it.
+                v = self._get_var_from_timeseries_file(self.var, data_path)
+                return_variables.append(v)
 
             # Also get any extra vars.
             for extra_var in self.extra_vars:
