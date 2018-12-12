@@ -95,8 +95,13 @@ def has_non_local_commits(filepath, non_local_path, local_tag):
 def reset_file(version, srcpath, dstpath):
 ###############################################################################
     os.remove(dstpath)
-    run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
-    run_cmd_no_fail("git add {}".format(dstpath))
+    try:
+        run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
+    except:
+        # If the above failes, then the file was deleted
+        run_cmd_no_fail("git rm -f {}".format(dstpath))
+    else:
+        run_cmd_no_fail("git add {}".format(dstpath))
 
 ###############################################################################
 def get_last_merge(branch_name):
