@@ -14,6 +14,14 @@ module perf_mod
 !-----------------------------------------------------------------------
 !- Uses ----------------------------------------------------------------
 !-----------------------------------------------------------------------
+#ifdef NUOPC_INTERFACE
+#define TIMERSTART call ESMF_TraceRegionEnter
+#define TIMERSTOP  call ESMF_TraceRegionExit
+  use ESMF, only: ESMF_TraceRegionEnter, ESMF_TraceRegionExit
+#else
+#define TIMERSTART ierr = GPTLstart
+#define TIMERSTOP  ierr = GPTLstop
+#endif
 
 #ifndef USE_CSM_SHARE
    use perf_utils
@@ -25,13 +33,12 @@ module perf_mod
    use shr_file_mod,      only: shr_file_getUnit, shr_file_freeUnit
    use namelist_utils,    only: find_group_name
 #endif
-
+   use mpi
 !-----------------------------------------------------------------------
 !- module boilerplate --------------------------------------------------
 !-----------------------------------------------------------------------
    implicit none
    private                   ! Make the default access private
-#include <mpif.h>
    save
 
 !-----------------------------------------------------------------------
@@ -111,6 +118,9 @@ module perf_mod
    integer, parameter :: init_timing_detail = 0                ! init
    integer, private   :: cur_timing_detail = init_timing_detail
                          ! current timing detail level
+#ifdef NUOPC_INTERFACE
+   integer, private   :: cur_timing_depth = 0
+#endif
 
    integer, parameter :: init_num_threads = 1                  ! init
    integer, private   :: num_threads = init_num_threads
@@ -147,11 +157,10 @@ module perf_mod
 
    logical, parameter :: def_perf_add_detail = .false.         ! default
    logical, private   :: perf_add_detail = def_perf_add_detail
-                         ! flag indicating whether to add the current 
+                         ! flag indicating whether to add the current
                          ! detail level as a suffix to the timer name.
                          ! This requires that even t_startf/t_stopf
                          ! calls do not cross detail level changes
-
 #ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
 #else
@@ -705,6 +714,10 @@ contains
 !
    if (.not. timing_initialized) return
    if (timing_disable_depth > 0) return
+#ifdef NUOPC_INTERFACE
+   cur_timing_depth = cur_timing_depth + 1
+   if(cur_timing_depth > timer_depth_limit) return
+#endif
 
 !$OMP MASTER
    if (perf_ovhd_measurement) then
@@ -718,26 +731,14 @@ contains
       perf_timing_ovhd = perf_timing_ovhd - ovhd_start
    endif
 !$OMP END MASTER
-
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
-
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
       ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
-
    else
-
       str_length = min(SHR_KIND_CM,len_trim(event))
       ierr = GPTLstart(event(1:str_length))
-
-!pw   if ( present (handle) ) then
-!pw      ierr = GPTLstart_handle(event, handle)
-!pw   else
-!pw      ierr = GPTLstart(event)
-!pw   endif
-
    endif
-
 !$OMP MASTER
    if (perf_ovhd_measurement) then
 #ifdef HAVE_MPI
@@ -748,7 +749,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
 !$OMP END MASTER
-
    return
    end subroutine t_startf
 !
@@ -795,24 +795,18 @@ contains
       perf_timing_ovhd = perf_timing_ovhd - ovhd_start
    endif
 !$OMP END MASTER
+#ifdef NUOPC_INTERFACE
+   cur_timing_depth = cur_timing_depth - 1
+   if(cur_timing_depth > timer_depth_limit) return
+#endif
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
-
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
       ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
-
    else
-
       str_length = min(SHR_KIND_CM,len_trim(event))
       ierr = GPTLstop(event(1:str_length))
-
-!pw   if ( present (handle) ) then
-!pw      ierr = GPTLstop_handle(event, handle)
-!pw   else
-!pw      ierr = GPTLstop(event)
-!pw   endif
-
    endif
 
 !$OMP MASTER
@@ -825,7 +819,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
 !$OMP END MASTER
-
    return
    end subroutine t_stopf
 !
@@ -855,7 +848,8 @@ contains
 !---------------------------Local workspace-----------------------------
 !
    integer  ierr                          ! GPTL error return
-   integer  str_length, i                 ! support for adding 
+
+   integer  str_length, i                 ! support for adding
                                           !  detail suffix
    character(len=2) cdetail               ! char variable for detail
    integer  callcnt                       ! call count increment
@@ -909,12 +903,6 @@ contains
       str_length = min(SHR_KIND_CM,len_trim(event))
       ierr = GPTLstartstop_vals(trim(event), wtime, callcnt)
 
-!pw   if ( present (handle) ) then
-!pw      ierr = GPTLstartstop_vals_handle(event, wtime, handle)
-!pw   else
-!pw      ierr = GPTLstartstop_vals(event, wtime)
-!pw   endif
-
    endif
 
 !$OMP MASTER
@@ -927,7 +915,6 @@ contains
       perf_timing_ovhd = perf_timing_ovhd + ovhd_stop
    endif
 !$OMP END MASTER
-
    return
    end subroutine t_startstop_valsf
 !
@@ -1158,6 +1145,9 @@ contains
 !-----------------------------------------------------------------------
 !
    if (.not. timing_initialized) return
+#ifdef NUOPC_INTERFACE
+   return
+#endif
 
    call t_startf("t_prf")
 !$OMP MASTER
@@ -1631,10 +1621,6 @@ contains
               (papi_ctr2_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr3_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr4_str(1:11) .eq. "PAPI_NO_CTR")) then
-!pw              papi_ctr1_str = "PAPI_TOT_CYC"
-!pw              papi_ctr2_str = "PAPI_TOT_INS"
-!pw              papi_ctr3_str = "PAPI_FP_OPS"
-!pw              papi_ctr4_str = "PAPI_FP_INS"
               papi_ctr1_str = "PAPI_FP_OPS"
           endif
 
