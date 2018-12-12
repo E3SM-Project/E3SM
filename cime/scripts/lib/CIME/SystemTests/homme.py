@@ -39,7 +39,7 @@ class HOMME(SystemTestsCommon):
                 basename = ""
                 baselinedir = exeroot
 
-            cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, srcroot, baselinedir, basename, cprnc)
+            cmake_cmd = "cmake -C {0}/components/homme/cmake/machineFiles/{1}.cmake -DUSE_NUM_PROCS={2} {0}/components/homme -DHOMME_BASELINE_DIR={3}/{4} -DCPRNC_DIR={5}/..".format(srcroot, mach, procs, baselinedir, basename, cprnc)
 
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
             run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)

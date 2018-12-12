@@ -1,9 +1,116 @@
+Originator: Bill Sacks
+Date: 11-01-2018
+Tag: cime5.7.5
+Answer Changes: None
+Tests: scripts_regression_tests, CTSM's aux_clm test suite
+Dependencies:
+
+Brief Summary: Miscellaneous minor bug fixes, including getting
+               mpi-serial working again
+
+User interface changes: none
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+e882c1c06 Merge pull request #2897 from billsacks/fix_histutils_regex
+fc14d5870 Merge pull request #2895 from billsacks/fix_lnd2glc_averaged_now
+beff2289e Merge pull request #2892 from ESMCI/jhkennedy/mpi-serial-2890
+44aa1f2c8 Merge pull request #2888 from ESMCI/jhkennedy/charge-account-2886
+610ac40c5 Merge pull request #2889 from dabail10/pop_som_frc
+a25d2b4c1 Merge pull request #2887 from billsacks/funit_fix_path
+6c7981abd Merge pull request #2872 from billsacks/datm_wiso_typo
+9087ed3ab Merge pull request #2883 from ESMCI/jgfouca/add_nuopc_e3sm_config
+90e595c21 Merge pull request #2882 from jedwards4b/resolve_mpi_run_command
+14bb217ec Merge pull request #2876 from ESMCI/jgfouca/fix_pet_no_batch
+7720b1e83 Merge pull request #2877 from ESMCI/sarich/update-e3sm-config-driver
+ddec7ebf0 Merge pull request #2854 from ESMCI/jhkennedy/machine-missing-2686
+
+Modified files: git diff --name-status [previous_tag]
+M       ChangeLog
+M       config/e3sm/config_files.xml
+M       config/e3sm/machines/config_machines.xml
+M       config/e3sm/machines/config_pio.xml
+M       config/xml_schemas/config_machines.xsd
+M       doc/source/users_guide/cime-config.rst
+M       scripts/create_clone
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/lib/CIME/SystemTests/funit.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M       scripts/lib/CIME/utils.py
+M       scripts/lib/get_tests.py
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/docn/tools/pop_som_frc/README
+M       src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlann.ncl
+M       src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlt.ncl
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/component_mod.F90
+A       src/drivers/nuopc/cime_config/config_component_e3sm.xml
+M       src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+
+Originator: Chris Fischer
+Date: 11-17-2018
+Tag: cime_cesm2_1_rel_05
+Answer Changes: None
+Tests:  ./create_test cime_developer on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Do not include time of day in cpl auxiliary hist file names.
+
+User interface changes:
+    - Changes names of cpl auxiliary history files.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+b3fc9d6 Merge pull request #2914 from billsacks/auxhist_no_time
+
+Modified files: git diff --name-status [previous_tag]
+M       src/drivers/mct/main/seq_hist_mod.F90
+
+======================================================================
+======================================================================
+
+Originator: Chris Fischer
+Date: 11-13-2018
+Tag: cime_cesm2_1_rel_04
+Answer Changes: None
+Tests:
+Dependencies:
+
+Brief Summary:
+    - Fix 2010 period for datm GSWP3v1.
+    - Update pyCECT to v3.0.8
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+2e72d20 Merge pull request #2908 from ekluzek/fix2010datm
+5f4a911 Merge pull request #2905 from ESMCI/fischer/pyCECT_v3.0.8
+
+Modified files: git diff --name-status [previous_tag]
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M       tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M       tools/statistical_ensemble_test/pyCECT/README_pyEnsSumPop.rst
+M       tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+D       tools/statistical_ensemble_test/pyCECT/pyEnsSumPop_test.sh
+M       tools/statistical_ensemble_test/pyCECT/test_pop_CECT.sh
+D       tools/statistical_ensemble_test/pyCECT/test_pop_ensemble.sh
+A       tools/statistical_ensemble_test/pyCECT/test_pyEnsSumPop.sh
+
+
 ======================================================================
 
 Originator: Chris Fischer
 Date: 10-22-2018
 Tag: cime5.7.4
-Answer Changes: None
+Answer Changes: I compsets (with datm) change answers due to #2828
+                (merged to master as #2847)
 Tests: scripts_regression_tests, by hand
 Dependencies:
 
@@ -30,7 +137,7 @@ Brief Summary:
     - another driver issue
     - fix e3sm cdash issue
     - fix cdash issues
-    - Merge of the nuopc development branch. 
+    - Merge of the nuopc development branch.
     - OS is not an environment variable on all systems.
     - Add Daint and Euler machines.
     - Merge acme split 2018-09-10.
@@ -38,11 +145,11 @@ Brief Summary:
     - Add /cluster/torque/bin to path on hobart.
 
 
-User interface changes: 
+User interface changes:
     - Python scripts instead of shell scripts for ECT.
     - Adds CIME_DRIVER env and config variable to set the default driver.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 9355d97 Merge pull request #2868 from ESMCI/jgfouca/remove_old_batch_stuff
 479c666 Merge pull request #2869 from ESMCI/jgfouca/f90_bug_fix
 9839983 Merge pull request #2864 from allibco/master
@@ -394,6 +501,111 @@ M	tools/statistical_ensemble_test/ensemble.py
 D	tools/statistical_ensemble_test/ensemble.sh
 M	tools/statistical_ensemble_test/single_run.py
 D	tools/statistical_ensemble_test/single_run.sh
+
+Originator: Chris Fischer
+Date: 11-5-2018
+Tag: cime_cesm2_1_rel_03
+Answer Changes: None
+Tests: code_checker, stand-alone tests, scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Add Total Time parsing for timeseries and xconform to archive_metadata
+    - Fine tuning for CMIP6 cases in archive_metadata.
+    - CESM-CECT update.
+    - Python3 compatibility update for archive_metadata.
+    - Remove reference to deleted testmods directories.
+    - Compute tasks_per_node via floor division.
+    - Response to review comments of pr 2844 and remove user-grid option.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+c515c37 Merge pull request #2900 from bertinia/maint-5.6_archive_metadata
+47f3970 Merge pull request #2884 from bertinia/maint-5.6_archive_metadata
+3ad6a6e Merge pull request #2866 from jedwards4b/set_update
+a2b6885 Merge pull request #2865 from bertinia/maint-5.6_archive_metadata
+b56664c Merge pull request #2862 from billsacks/doc_testmods
+ad361d2 Merge pull request #2860 from jedwards4b/py3fix
+7e82e9b Merge pull request #2853 from jedwards4b/cleanuppr
+
+
+Modified files: git diff --name-status [previous_tag]
+M       doc/source/users_guide/testing.rst
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       tools/statistical_ensemble_test/README
+M       tools/statistical_ensemble_test/ensemble.py
+D       tools/statistical_ensemble_test/ensemble.sh
+M       tools/statistical_ensemble_test/single_run.py
+D       tools/statistical_ensemble_test/single_run.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 10-12-2018
+Tag: cime_cesm2_1_rel_02
+Answer Changes: None
+Tests: Z_FullSystemTest, scripts_regression_tests, hand tests
+Dependencies:
+
+Brief Summary:
+    - Add a default value of idmap_ignore for certain mapping files.
+    - Improve clean function.
+    - Add ability for testfile to contain comments.
+    - Clean and alphabetize (by MACH name) the config/cesm/machines/*.xml files.
+    - Improve case clone functionality.
+    - Improve error message for issues in user_nl_* namelist files.
+    - Write cpl.hr2x files at ENDOFRUN when forecast is < 24 hours.
+    - Backporting PR #2833(Propagate logging settings to submitted jobs) to maint-5.6 branch.
+    - Remove overzelous debug code.
+    - Change default for flux_convergence for all but 1 degree case.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+fd439ba Merge pull request #2845 from jedwards4b/improve_idmap_test
+be6c214 Merge pull request #2844 from jedwards4b/run_tests_clean
+c2cab2f Merge pull request #2838 from jedwards4b/testfile_comments
+d68fa9c Merge pull request #2849 from jedwards4b/cleanup_xml
+cb81444 Merge pull request #2843 from jedwards4b/clone_modified_Tools
+f3f5f69 Merge pull request #2840 from jedwards4b/user_nl_error_msg
+61132ee Merge pull request #2832 from kdraeder/hr2x_at_endofrun
+d3457ec Merge pull request #2842 from jedwards4b/propagate_logging
+ad9c0f5 Merge pull request #2839 from jedwards4b/remove_debug_code
+6a7d374 Merge pull request #2837 from jedwards4b/tuning1.9
+
+
+Modified files: git diff --name-status [previous_tag]
+M       .travis.yml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/XML/batch.py
+M       scripts/lib/CIME/XML/compilers.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/XML/namelist_definition.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_clone.py
+M       scripts/lib/CIME/nmlgen.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/CMake/FindpFUnit.cmake
+M       src/drivers/mct/cime_config/buildnml
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/share/streams/shr_stream_mod.F90
+
 ======================================================================
 
 ======================================================================

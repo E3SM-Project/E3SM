@@ -6,30 +6,33 @@ module dwav_comp_mod
   ! !USES:
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS
-  use perf_mod              , only : t_startf, t_stopf
-  use perf_mod              , only : t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
+  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
+  use mct_mod               , only : mct_gsmap_init
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize
   use shr_sys_mod           , only : shr_sys_abort
   use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX 
+  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX
   use shr_string_mod        , only : shr_string_listGetName
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
+  use shr_strdata_mod       , only : shr_strdata_init_streams
+  use shr_strdata_mod       , only : shr_strdata_init_mapping
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use shr_dmodel_mod        , only : shr_dmodel_translateAV
+  use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use dshr_nuopc_mod        , only : fld_list_type
   use dshr_nuopc_mod        , only : dshr_fld_add
   use dwav_shr_mod          , only : datamode       ! namelist input
-  use dwav_shr_mod          , only : decomp         ! namelist input
   use dwav_shr_mod          , only : rest_file      ! namelist input
   use dwav_shr_mod          , only : rest_file_strm ! namelist input
   use dwav_shr_mod          , only : nullstr
@@ -51,12 +54,10 @@ module dwav_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
-  type(mct_rearr)             :: rearr
   character(len=CS), pointer  :: avifld(:) ! character array for field names coming from streams
   character(len=CS), pointer  :: avofld(:) ! character array for field names to be sent/received from mediator
   character(len=CXX)          :: flds_w2x_mod
   character(len=CXX)          :: flds_x2w_mod
-  integer                     :: dbug = 2  ! debug level (higher is more)
   character(len=*), parameter :: rpfile = 'rpointer.wav'
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
@@ -86,7 +87,7 @@ contains
     character(len=*)     , intent(out) :: flds_x2w
     integer              , intent(out) :: rc
 
-    ! local variables 
+    ! local variables
     integer :: n
     !-------------------------------------------------------------------------------
 
@@ -97,7 +98,7 @@ contains
     !-------------------
     ! export fields
     !-------------------
-    
+
     ! scalar fields that need to be advertised
 
     fldsFrWav_num=1
@@ -135,36 +136,53 @@ contains
   !===============================================================================
 
   subroutine dwav_comp_init(x2w, w2x, &
-       w2x_fields, x2w_fields, &
-       SDWAV, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, calendar)
+       SDWAV, mpicom, compid, my_task, master_task, &
+       inst_suffix, logunit, read_restart, &
+       target_ymd, target_tod, calendar, mesh)
 
     ! !DESCRIPTION: initialize dwav model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2w, w2x            ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: x2w_fields          ! fields to mediator
-    character(len=*)       , intent(in)    :: w2x_fields          ! fields from mediator
-    type(shr_strdata_type) , intent(inout) :: SDWAV               ! model
-    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid               ! model ggrid (output)
-    integer                , intent(in)    :: mpicom              ! mpi communicator
-    integer                , intent(in)    :: compid              ! mct comp id
-    integer                , intent(in)    :: my_task             ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task         ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix         ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name           ! fullname of current instance (ie. "wav_0001")
-    integer                , intent(in)    :: logunit             ! logging unit number
-    logical                , intent(in)    :: read_restart        ! start from restart
-    character(len=*)       , intent(in)    :: calendar         ! calendar type
+    type(mct_aVect)        , intent(inout) :: x2w, w2x     ! input/output attribute vectors
+    type(shr_strdata_type) , intent(inout) :: SDWAV        ! model
+    integer                , intent(in)    :: mpicom       ! mpi communicator
+    integer                , intent(in)    :: compid       ! mct comp id
+    integer                , intent(in)    :: my_task      ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task  ! task number of master task
+    character(len=*)       , intent(in)    :: inst_suffix  ! char string associated with instance
+    integer                , intent(in)    :: logunit      ! logging unit number
+    logical                , intent(in)    :: read_restart ! start from restart
+    integer                , intent(in)    :: target_ymd   ! model date
+    integer                , intent(in)    :: target_tod   ! model sec into model date
+    character(len=*)       , intent(in)    :: calendar     ! calendar type
+    type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
 
     !--- local variables ---
-    integer       :: n,k       ! generic counters
-    integer       :: lsize     ! local size
-    logical       :: exists    ! file existance
-    integer       :: nu        ! unit number
-    character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
-    character(*), parameter :: subName = "(dwav_comp_init) "
+    integer                      :: n,k       ! generic counters
+    integer                      :: lsize     ! local size
+    logical                      :: exists    ! file existance
+    integer                      :: nu        ! unit number
+    logical                      :: write_restart
+    type(ESMF_DistGrid)          :: distGrid
+    integer, allocatable, target :: gindex(:)
+    integer                      :: dimCount
+    integer                      :: tileCount
+    integer                      :: deCount
+    integer                      :: gsize
+    integer, allocatable         :: elementCountPTile(:)
+    integer, allocatable         :: indexCountPDE(:,:)
+    integer                      :: spatialDim
+    integer                      :: numOwnedElements
+    real(R8), pointer            :: ownedElemCoords(:)
+    integer                      :: klat, klon, kfrac   ! AV indices
+    real(R8), pointer            :: domlon(:),domlat(:) ! ggrid domain lats and lots
+    real(R8), pointer            :: xc(:), yc(:)        ! mesh lats and lons
+    real(r8)                     :: maxerr, err
+    integer                      :: maxn
+    real(r8)                     :: tolerance = 1.e-4
+    integer                      :: rc
+    character(*), parameter      :: F00   = "('(dwav_comp_init) ',8a)"
+    character(*), parameter      :: subName = "(dwav_comp_init) "
     !-------------------------------------------------------------------------------
 
     call t_startf('DWAV_INIT')
@@ -176,49 +194,128 @@ contains
     call shr_strdata_pioinit(SDWAV, compid)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDWAV
+    ! Create a data model global segmap
     !----------------------------------------------------------------------------
 
     call t_startf('dwav_strdata_init')
 
-    ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
-    ! grid and from that computes SDWAV%gsmap and SDWAV%ggrid. DWAV%gsmap is created
-    ! using the decomp '2d1d' (1d decomp of 2d grid)
+    if (my_task == master_task) write(logunit,F00) ' initialize SDWAV gsmap'
 
-    call shr_strdata_init(SDWAV,mpicom,compid,name='wav', calendar=calendar)
+    ! obtain the distgrid from the mesh that was read in
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determin local size on my processor
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global index space for my processor
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global size of distgrid
+    call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(elementCountPTile(tileCount))
+    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    gsize = 0
+    do n = 1,size(elementCountPTile)
+       gsize = gsize + elementCountPTile(n)
+    end do
+    deallocate(elementCountPTile)
+
+    ! create the data model gsmap given the local size, global size and gindex
+    call mct_gsMap_init( SDWAV%gsmap, gindex, mpicom, compid, lsize, gsize)
+    deallocate(gindex)
+
+    !----------------------------------------------------------------------------
+    ! Initialize SDWAV
+    !----------------------------------------------------------------------------
+
+    ! The call to shr_strdata_init_model_domain creates the SDWAV%gsmap which
+    ! is a '2d1d' decommp (1d decomp of 2d grid) and also create SDWAV%grid
+
+    SDWAV%calendar = trim(shr_cal_calendarName(trim(calendar)))
+
+    call shr_strdata_init_model_domain(SDWAV, mpicom, compid, my_task, gsmap=SDWAV%gsmap)
 
     if (my_task == master_task) then
        call shr_strdata_print(SDWAV,'SDWAV data')
     endif
 
+    ! obtain mesh lats and lons
+    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(ownedElemCoords(spatialDim*numOwnedElements))
+    allocate(xc(numOwnedElements), yc(numOwnedElements))
+    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (numOwnedElements /= lsize) then
+       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
+    end if
+    do n = 1,lsize
+       xc(n) = ownedElemCoords(2*n-1)
+       yc(n) = ownedElemCoords(2*n)
+    end do
+
+    ! error check that mesh lats and lons correspond to those on the input domain file
+    allocate(domlon(lsize), domlat(lsize))
+
+    maxerr = 0._r8
+    maxn = 0
+    klon = mct_aVect_indexRA(SDWAV%grid%data,'lon')
+    do n = 1, lsize
+       domlon(n) = SDWAV%grid%data%rattr(klon,n)
+       err = abs(domlon(n) -  xc(n))
+       if (err > maxerr) then
+          maxerr = err
+          maxn = n
+       end if
+       !SDWAV%grid%data%rattr(klon,n) = xc(n)
+    end do
+    if (maxerr > 0._r8) then
+       write(6,100) maxn, domlon(maxn), xc(maxn), maxerr
+100    format('WARNING: DWAV n, dom_lon, mesh_lon, max_diff_lon = ',i6,2(f21.13,3x),d21.5)
+    end if
+    if (maxerr > tolerance) then
+       write(6,*)'ERROR: diff of dom_lon and mesh_lon is greater than tolerance of ',tolerance
+       call shr_sys_abort()
+    end if
+
+    maxerr = 0._r8
+    maxn = 0
+    klat = mct_aVect_indexRA(SDWAV%grid%data,'lat')
+    do n = 1, lsize
+       domlat(n) = SDWAV%grid%data%rattr(klat,n)
+       err = abs(domlat(n) -  yc(n))
+       if ( err > maxerr ) then
+          maxerr = err
+          maxn = n
+       end if
+       !SDWAV%grid%data%rattr(klat,n) = yc(n)
+    end do
+    if (maxerr > 0._r8) then
+       write(6,101) maxn, domlat(maxn), yc(maxn), maxerr
+101    format('WARNING: DWAV n, dom_lat, mesh_lat, max_diff_lat = ',i6,2(f21.13,3x),d21.5)
+    end if
+    if (maxerr > tolerance) then
+       write(6,*)'ERROR: diff of dom_lat and mesh_lat is greater than tolerance of ',tolerance
+       call shr_sys_abort()
+    end if
+
+    deallocate(domlon, domlat)
+
+    !----------------------------------------------------------------------------
+    ! Initialize SDLND attributes for streams and mapping of streams to model domain
+    !----------------------------------------------------------------------------
+
+    call shr_strdata_init_streams(SDWAV, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDWAV, compid, mpicom, my_task)
+
     call t_stopf('dwav_strdata_init')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT global seg map, 1d decomp
-    !----------------------------------------------------------------------------
-
-    call t_startf('dwav_initgsmaps')
-
-    if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the dwav_in namelist
-    ! (which by default is "1d")
-    call shr_dmodel_gsmapcreate(gsmap,SDWAV%nxg*SDWAV%nyg,compid,mpicom,decomp)
-    lsize = mct_gsmap_lsize(gsmap,mpicom)
-
-    ! create a rearranger from the data model SDWAV%gsmap to gsmap
-    call mct_rearr_init(SDWAV%gsmap,gsmap,mpicom,rearr)
-    call t_stopf('dwav_initgsmaps')
-
-    !----------------------------------------------------------------------------
-    ! Initialize MCT domain
-    !----------------------------------------------------------------------------
-
-    call t_startf('dwav_initmctdom')
-    if (my_task == master_task) write(logunit,F00) 'copy domains'
-    call shr_dmodel_rearrGGrid(SDWAV%grid, ggrid, gsmap, rearr, mpicom)
-    call t_stopf('dwav_initmctdom')
 
     !----------------------------------------------------------------------------
     ! Initialize MCT attribute vectors
@@ -226,9 +323,9 @@ contains
 
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_avect_init(w2x, rlist=w2x_fields, lsize=lsize)
+    call mct_avect_init(w2x, rlist=flds_w2x_mod, lsize=lsize)
     call mct_avect_zero(w2x)
-    call mct_avect_init(x2w, rlist=x2w_fields, lsize=lsize)
+    call mct_avect_init(x2w, rlist=flds_x2w_mod, lsize=lsize)
     call mct_avect_zero(x2w)
 
     !----------------------------------------------------------------------------
@@ -270,6 +367,20 @@ contains
        endif
     endif
 
+    !----------------------------------------------------------------------------
+    ! Set initial wav state
+    !----------------------------------------------------------------------------
+
+    write_restart = .false.
+    call dwav_comp_run(x2w, w2x, &
+         SDWAV, mpicom, my_task, master_task, &
+         inst_suffix, logunit, read_restart, write_restart, &
+         target_ymd, target_tod)
+
+    if (my_task == master_task) then
+       write(logunit,F00) 'dwav_comp_init done'
+    end if
+
     call t_stopf('DWAV_INIT')
 
   end subroutine dwav_comp_init
@@ -277,7 +388,7 @@ contains
   !===============================================================================
 
   subroutine dwav_comp_run(x2w, w2x, &
-       SDWAV, gsmap, ggrid, mpicom, my_task, master_task, &
+       SDWAV, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
@@ -287,8 +398,6 @@ contains
     type(mct_aVect)        , intent(inout) :: x2w
     type(mct_aVect)        , intent(inout) :: w2x
     type(shr_strdata_type) , intent(inout) :: SDWAV
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
     integer                , intent(in)    :: mpicom           ! mpi communicator
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task      ! task number of master task
@@ -301,11 +410,10 @@ contains
     character(CL)          , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer       :: n                     ! indices
-    integer       :: idt                   ! integer timestep
-    integer       :: nu                    ! unit number
-    character(len=18) :: date_str
-
+    integer                 :: n                     ! indices
+    integer                 :: idt                   ! integer timestep
+    integer                 :: nu                    ! unit number
+    character(len=18)       :: date_str
     character(*), parameter :: F00   = "('(dwav_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(dwav_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(dwav_comp_run) "
@@ -336,7 +444,7 @@ contains
     call t_barrierf('dwav_scatter_BARRIER',mpicom)
     call t_startf('dwav_scatter')
     do n = 1,SDWAV%nstreams
-       call shr_dmodel_translateAV(SDWAV%avs(n),w2x,avifld,avofld,rearr)
+       call shr_dmodel_translateAV(SDWAV%avs(n), w2x, avifld, avofld)
     enddo
     call t_stopf('dwav_scatter')
 
@@ -349,7 +457,6 @@ contains
 
     case('COPYALL')
        ! do nothing extra
-
     end select
 
     call t_stopf('datamode')
@@ -360,8 +467,8 @@ contains
 
     if (write_restart) then
        call t_startf('dwav_restart')
-       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
-       write(rest_file,"(6a)") &
+       call shr_cal_datetod2string(date_str,  target_ymd,  target_tod)
+       write(rest_file, "(6a)") &
             trim(case_name), '.dwav',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
        write(rest_file_strm,"(6a)") &
@@ -383,14 +490,8 @@ contains
     call t_stopf('dwav')
 
     !----------------------------------------------------------------------------
-    ! Log output for model date
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) 'dwav: model date ', target_ymd,target_tod
-    end if
-
     call t_stopf('DWAV_RUN')
 
   end subroutine dwav_comp_run

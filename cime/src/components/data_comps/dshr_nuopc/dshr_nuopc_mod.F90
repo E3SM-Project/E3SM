@@ -13,7 +13,7 @@ module dshr_nuopc_mod
 
   public :: dshr_fld_add
   public :: fld_list_add     ! TODO: remove
-  public :: fld_list_realize ! TODO: rename to dshr_realize 
+  public :: fld_list_realize ! TODO: rename to dshr_realize
   public :: ModelInitPhase   ! TODO: rename to dshr_modelinit
   public :: ModelSetRunClock ! TODO: rename to dshr_setrunclock
   public :: ModelSetMetaData ! TODO rename to dshr_setmetadata
@@ -72,7 +72,7 @@ contains
     else
        model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
     end if
-       
+
     if (present(model_fld_index)) then
        call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
     end if
@@ -89,7 +89,7 @@ contains
     use ESMF          , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
 
     ! input/output variables
-    character(len=*)   , intent(in)               :: data_fld 
+    character(len=*)   , intent(in)               :: data_fld
     character(len=*)   , pointer                  :: data_fld_array(:)
     character(len=*)   , intent(in)               :: model_fld
     character(len=*)   , pointer                  :: model_fld_array(:)
@@ -105,12 +105,12 @@ contains
     character(len=CS), pointer  :: new_model_fld_array(:)
     character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add_model_and_data) '
     ! ----------------------------------------------
-    
+
     !----------------------------------
-    ! Create new data_fld_array and model_fld_array 
+    ! Create new data_fld_array and model_fld_array
     !----------------------------------
-    
-    ! 1) determine new index 
+
+    ! 1) determine new index
     if (associated(data_fld_array)) then
        oldsize = size(data_fld_array)
     else
@@ -158,7 +158,7 @@ contains
        else
           model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
        end if
-       
+
        ! Get model field index if appropriated
        if (present(model_fld_index)) then
           call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
@@ -219,7 +219,7 @@ contains
           flds_concat = trim(flds_concat)//':'//trim(stdname)
        end if
     end if
-       
+
   end subroutine fld_list_add
 
   !===============================================================================

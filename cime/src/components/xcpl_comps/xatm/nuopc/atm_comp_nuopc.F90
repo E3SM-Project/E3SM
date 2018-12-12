@@ -56,14 +56,12 @@ module atm_comp_nuopc
   character(CXX)             :: flds_x2a = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
-  integer                    :: mpicom               ! mpi communicator
-  integer                    :: my_task              ! my task in mpi communicator mpicom
+  integer                    :: my_task              ! my task in mpi communicator
   integer                    :: inst_index           ! number of current instance (ie. 1)
   character(len=12)          :: inst_name            ! fullname of current instance (ie. "lnd_0001")
   character(len=5)          :: inst_suffix      ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit              ! logging unit number
   logical :: mastertask
-  integer                    :: dbrc
   logical                    :: atm_prognostic
 
   !----- formats -----
@@ -81,7 +79,8 @@ module atm_comp_nuopc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -113,7 +112,8 @@ module atm_comp_nuopc
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine SetServices
 
@@ -130,7 +130,6 @@ module atm_comp_nuopc
 
     ! local variables
     type(ESMF_VM)      :: vm
-    integer            :: lmpicom
     character(CL)      :: cvalue
     character(CS)      :: stdname
     integer            :: n
@@ -145,19 +144,14 @@ module atm_comp_nuopc
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-
-    !----------------------------------------------------------------------------
-    ! generate local mpi comm
-    !----------------------------------------------------------------------------
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localpet=my_task, rc=rc)
+    call ESMF_VMGet(vm, localpet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call mpi_comm_dup(lmpicom, mpicom, ierr)
     mastertask = my_task==0
     !----------------------------------------------------------------------------
     ! determine instance information
@@ -229,7 +223,7 @@ module atm_comp_nuopc
        call fld_list_add(fldsFrAtm_num, fldsFrAtm, 'Faxa_dstdry4'  , flds_concat=flds_a2x)
 
        do n = 1,fldsFrAtm_num
-          write(logunit,*)'Advertising From Xatm ',trim(fldsFrAtm(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising From Xatm ',trim(fldsFrAtm(n)%stdname)
           call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -262,7 +256,7 @@ module atm_comp_nuopc
        call fld_list_add(fldsToAtm_num, fldsToAtm, 'Faxx_evap' , flds_concat=flds_x2a)
 
        do n = 1,fldsToAtm_num
-          write(logunit,*)'Advertising To Xatm',trim(fldsToAtm(n)%stdname)
+          if(mastertask) write(logunit,*)'Advertising To Xatm',trim(fldsToAtm(n)%stdname)
           call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, &
                TransferOfferGeomObject='will provide', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -279,7 +273,7 @@ module atm_comp_nuopc
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine InitializeAdvertise
 
@@ -303,7 +297,7 @@ module atm_comp_nuopc
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -318,7 +312,7 @@ module atm_comp_nuopc
     ! generate the mesh
     !--------------------------------
 
-    call shr_nuopc_grid_MeshInit(gcomp, nxg, nyg, mpicom, gindex, lon, lat, Emesh, rc)
+    call shr_nuopc_grid_MeshInit(gcomp, nxg, nyg, gindex, lon, lat, Emesh, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -360,11 +354,11 @@ module atm_comp_nuopc
        end if
     end do
 
-    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -375,7 +369,7 @@ module atm_comp_nuopc
     call ESMF_TimeGet(nextTime, dayOfYear_r8=nextsw_cday)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -408,14 +402,14 @@ module atm_comp_nuopc
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine InitializeRealize
 
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
-    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -432,9 +426,7 @@ module atm_comp_nuopc
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
     call shr_nuopc_memcheck(subname, 3, mastertask)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
@@ -486,7 +478,7 @@ module atm_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, &
-         mpicom, flds_scalar_name, flds_scalar_num, rc)
+          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -501,14 +493,10 @@ module atm_comp_nuopc
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
-
-    call ESMF_ClockPrint(clock, options="currTime", unit=clockstr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mastertask) write(logunit, *) "------->Advancing ATM from: ",trim(clockstr)
-    call ESMF_ClockPrint(clock, options="stopTime", unit=clockstr, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (mastertask) write(logunit, *) "--------------------------------> to: ",trim(clockstr)
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if(mastertask) then
+       call shr_nuopc_log_clock_advance(clock, 'ATM', logunit)
+    endif
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine ModelAdvance
 
@@ -527,11 +515,11 @@ module atm_comp_nuopc
     !--------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
 
     call dead_final_nuopc('atm', logunit)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine ModelFinalize
 

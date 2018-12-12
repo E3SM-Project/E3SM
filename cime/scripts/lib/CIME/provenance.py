@@ -268,7 +268,7 @@ def _save_prerun_timing_e3sm(case, lid):
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.{}".format(lid))
             os.mkdir(archive_checkpoints)
             touch("{}/e3sm.log.{}".format(rundir, lid))
-            syslog_jobid = run_cmd_no_fail("./mach_syslog {:d} {} {} {} {}/timing/checkpoints {} >& /dev/null & echo $!".format(sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
+            syslog_jobid = run_cmd_no_fail("./mach_syslog {si} {jobid} {lid} {rundir} {rundir}/timing/checkpoints {ac} >& /dev/null & echo $!".format(si=sample_interval, jobid=job_id, lid=lid, rundir=rundir, ac=archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
                 fd.write("{}\n".format(syslog_jobid))

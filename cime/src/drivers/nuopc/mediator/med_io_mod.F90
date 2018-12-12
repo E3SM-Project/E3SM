@@ -2,9 +2,10 @@ module med_io_mod
   ! !DESCRIPTION: Writes attribute vectors to netcdf
 
   ! !USES:
+  use ESMF, only : ESMF_VM
   use med_constants_mod          , only : CL
   use pio, only : file_desc_t, iosystem_desc_t
-
+  use shr_nuopc_utils_mod, only : shr_nuopc_utils_ChkErr
   implicit none
   private
 
@@ -59,6 +60,24 @@ module med_io_mod
 !=================================================================================
 contains
 !=================================================================================
+  logical function med_io_file_exists(vm, iam, filename)
+    use ESMF, only : ESMF_VMBroadCast
+    type(ESMF_VM)                :: vm
+    integer,          intent(in) :: iam
+    character(len=*), intent(in) :: filename
+
+    logical :: exists
+    integer :: tmp(1)
+    integer :: rc
+
+    med_io_file_exists = .false.
+    if (iam==0) inquire(file=trim(filename),exist=med_io_file_exists)
+    if (med_io_file_exists) tmp(1) = 1
+    call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if(tmp(1) == 1) med_io_file_exists = .true.
+
+  end function med_io_file_exists
 
   subroutine med_io_init()
     use seq_comm_mct          , only : CPLID
@@ -70,9 +89,8 @@ contains
   end subroutine med_io_init
 
   !===============================================================================
-  subroutine med_io_wopen(filename, mpicom, iam, clobber, file_ind, model_doi_url)
+  subroutine med_io_wopen(filename, vm, iam, clobber, file_ind, model_doi_url)
     ! !DESCRIPTION: open netcdf file
-    use shr_mpi_mod, only : shr_mpi_bcast
     use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
     use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
     use pio, only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
@@ -80,7 +98,7 @@ contains
     use med_internalstate_mod, only : logunit
     ! input/output arguments
     character(*),            intent(in) :: filename
-    integer,                 intent(in) :: mpicom
+    type(ESMF_VM)                       :: vm
     integer,                 intent(in) :: iam
     logical,       optional, intent(in) :: clobber
     integer,       optional, intent(in) :: file_ind
@@ -89,9 +107,11 @@ contains
     ! local variables
     logical       :: exists
     logical       :: lclobber
+    integer       :: tmp(1)
     integer       :: rcode
     integer       :: nmode
     integer       :: lfile_ind
+    integer       :: rc
     character(CL) :: lversion
     character(CL) :: lmodel_doi_url
     character(*),parameter :: subName = '(med_io_wopen) '
@@ -112,12 +132,8 @@ contains
 
        ! filename not open
        wfilename = filename
-       if (iam==0) then
-          inquire(file=trim(filename),exist=exists)
-       end if
-       call shr_mpi_bcast(exists, mpicom, 'med_io_wopen exists')
 
-       if (exists) then
+       if (med_io_file_exists(vm, iam, filename)) then
           if (lclobber) then
              nmode = pio_clobber
              ! only applies to classic NETCDF files.
@@ -291,7 +307,6 @@ contains
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     use pio, only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
     use pio, only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
@@ -346,7 +361,7 @@ contains
     !-------------------------------------------------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
     endif
     rc = ESMF_Success
 
@@ -361,9 +376,9 @@ contains
     endif
 
     if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=rc)
        if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
        endif
        rc = ESMF_Success
        return
@@ -377,7 +392,7 @@ contains
     if (.not.lwhead .and. .not.lwdata) then
        ! should we write a warning?
        if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
        endif
        return
     endif
@@ -390,34 +405,34 @@ contains
 
     call ESMF_FieldBundleGet(FB, fieldCount=nf, rc=rc)
     write(tmpstr,*) subname//' field count = '//trim(lpre),nf
-    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
     if (nf < 1) then
-       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=rc)
        if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
        endif
        rc = ESMF_Success
        return
     endif
 
     call shr_nuopc_methods_FB_getFieldN(FB, 1, field, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_FieldGet(field, mesh=mesh, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_MeshGet(mesh, elementDistgrid=distgrid, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     allocate(minIndexPTile(dimCount, tileCount), maxIndexPTile(dimCount, tileCount))
     call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, maxIndexPTile=maxIndexPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     !    write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
-    !    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    !    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     ! TODO: this is not getting the global size correct for a FB coming in that does not have
     ! all the global grid values in the distgrid - e.g. CTSM
@@ -439,7 +454,7 @@ contains
     endif
     if (lnx*lny /= ng) then
        write(tmpstr,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny
-       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
        !TODO: this should not be an error for say CTSM which does not send a global grid
        !rc = ESMF_FAILURE
@@ -459,17 +474,17 @@ contains
        endif
 
        write(tmpstr,*) subname,' tcx dimid = ',dimid
-       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
        do k = 1,nf
           call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(itemc)
              call shr_nuopc_fldList_GetMetadata(itemc,longname=lname,stdname=sname,units=cunit)
-             call ESMF_LogWrite(trim(subname)//':'//trim(itemc)//':'//trim(name1),ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(subname)//':'//trim(itemc)//':'//trim(name1),ESMF_LOGMSG_INFO, rc=rc)
              if (luse_float) then
                 rcode = pio_def_var(io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
                 rcode = pio_put_att(io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
@@ -494,19 +509,19 @@ contains
     if (lwdata) then
        ! use distgrid extracted from field 1 above
        call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        allocate(dof(ns))
        call ESMF_DistGridGet(distgrid, localDE=0, seqIndexList=dof, rc=rc)
        write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
-       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
        call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
        deallocate(dof)
 
        do k = 1,nf
           call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
@@ -523,7 +538,7 @@ contains
     end if
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
     endif
 
   end subroutine med_io_write_FB
@@ -920,7 +935,7 @@ contains
   end subroutine med_io_write_time
 
   !===============================================================================
-  subroutine med_io_read_FB(filename, mpicom, iam, FB, pre, rc)
+  subroutine med_io_read_FB(filename, vm, iam, FB, pre, rc)
     use med_constants_mod, only : R8, CL
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use ESMF, only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
@@ -933,9 +948,8 @@ contains
     use pio, only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
     use pio, only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
     use pio, only : pio_read_darray, pio_initdecomp
-    use shr_mpi_mod, only : shr_mpi_bcast
+
     use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
@@ -943,13 +957,14 @@ contains
 
     ! !input/output arguments
     character(len=*)          ,intent(in)  :: filename ! file
-    integer                   ,intent(in)  :: mpicom
+    type(ESMF_VM)                          :: vm
     integer                   ,intent(in)  :: iam
     type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
     character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
     integer                   ,intent(out) :: rc
 
     ! local variables
+
     type(ESMF_Field)    :: field
     type(ESMF_Mesh)     :: mesh
     type(ESMF_Distgrid) :: distgrid
@@ -966,20 +981,19 @@ contains
     integer             :: lnx,lny
     real(r8)            :: lfillvalue
     logical             :: exists
+    integer             :: tmp(1)
     integer, pointer    :: minIndexPTile(:,:)
     integer, pointer    :: maxIndexPTile(:,:)
     integer             :: dimCount, tileCount
     integer, pointer    :: Dof(:)
     real(r8), pointer   :: fldptr1(:)
     character(CL)       :: tmpstr
-    integer             :: dbrc
+
     character(*),parameter :: subName = '(med_io_read_FB) '
     !-------------------------------------------------------------------------------
-
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
     rc = ESMF_Success
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     lpre = ' '
     if (present(pre)) then
@@ -987,46 +1001,50 @@ contains
     endif
 
     if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-       rc = ESMF_Success
        return
     endif
 
     call ESMF_FieldBundleGet(FB, fieldCount=nf, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     write(tmpstr,*) subname//' field count = '//trim(lpre),nf
-    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (nf < 1) then
-       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" empty", ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-       rc = ESMF_Success
        return
     endif
 
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'med_io_read_fb exists')
-    if (exists) then
+    if (med_io_file_exists(vm, iam, trim(filename))) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
-       call ESMF_LogWrite(trim(subname)//' open file '//trim(filename), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//' open file '//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
        call ESMF_LogWrite(trim(subname)//' ERROR: file invalid '//trim(filename), &
-       ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+       ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=rc)
        rc = ESMF_FAILURE
        return
     endif
 
     do k = 1,nf
        call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
        name1 = trim(lpre)//'_'//trim(itemc)
-       call ESMF_LogWrite(trim(subname)//' read field '//trim(name1), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//' read field '//trim(name1), ESMF_LOGMSG_INFO, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
        rcode = pio_inq_varid(pioid,trim(name1),varid)
        if (rcode == pio_noerr) then
@@ -1034,12 +1052,12 @@ contains
           if (k == 1) then
              rcode = pio_inq_varndims(pioid, varid, ndims)
              write(tmpstr,*) trim(subname),' ndims = ',ndims,k
-             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
              allocate(dimid(ndims))
              rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
              rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
              write(tmpstr,*) trim(subname),' lnx = ',lnx
-             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
              if (ndims>=2) then
                 rcode = pio_inq_dimlen(pioid, dimid(2), lny)
              else
@@ -1047,28 +1065,28 @@ contains
              end if
              deallocate(dimid)
              write(tmpstr,*) trim(subname),' lny = ',lny
-             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
              ng = lnx * lny
 
              call shr_nuopc_methods_FB_getFieldN(FB, k, field, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              call ESMF_FieldGet(field, mesh=mesh, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              call ESMF_MeshGet(mesh, elementDistgrid=distgrid, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              call ESMF_DistGridGet(distgrid, dimCount=dimCount, tileCount=tileCount, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              allocate(minIndexPTile(dimCount, tileCount), &
                       maxIndexPTile(dimCount, tileCount))
              call ESMF_DistGridGet(distgrid, minIndexPTile=minIndexPTile, &
                       maxIndexPTile=maxIndexPTile, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              !write(tmpstr,*) subname,' counts = ',dimcount,tilecount,minindexptile,maxindexptile
-             !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
              if (ng > maxval(maxIndexPTile)) then
                 write(tmpstr,*) subname,' ERROR: dimensions do not match', lnx, lny, maxval(maxIndexPTile)
-                call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=rc)
 
                 !TODO: this should not be an error for say CTSM which does not send a global grid
                 !rc = ESMF_Failure
@@ -1076,11 +1094,11 @@ contains
              endif
 
              call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
              allocate(dof(ns))
              call ESMF_DistGridGet(distgrid, localDE=0, seqIndexList=dof, rc=rc)
              write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
-             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+             call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
              call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
              deallocate(dof)
           endif
@@ -1104,19 +1122,19 @@ contains
     call pio_closefile(pioid)
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
     endif
 
   end subroutine med_io_read_FB
 
   !===============================================================================
-  subroutine med_io_read_int(filename, mpicom, iam, idata, dname)
+  subroutine med_io_read_int(filename, vm, iam, idata, dname)
 
     ! !DESCRIPTION:  Read scalar integer from netcdf file
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
-    integer          , intent(in)    :: mpicom
+    type(ESMF_VM)                    :: vm
     integer          , intent(in)    :: iam
     integer          , intent(inout) :: idata    ! integer data
     character(len=*) , intent(in)    :: dname    ! name of data
@@ -1126,16 +1144,15 @@ contains
     character(*),parameter :: subName = '(med_io_read_int) '
     !-------------------------------------------------------------------------------
 
-    call med_io_read_int1d(filename, mpicom, iam, i1d, dname)
+    call med_io_read_int1d(filename, vm, iam, i1d, dname)
     idata = i1d(1)
 
   end subroutine med_io_read_int
 
   !===============================================================================
-  subroutine med_io_read_int1d(filename, mpicom, iam, idata, dname)
+  subroutine med_io_read_int1d(filename, vm, iam, idata, dname)
     ! !DESCRIPTION: Read 1d integer array from netcdf file
     use shr_sys_mod, only : shr_sys_abort
-    use shr_mpi_mod, only : shr_mpi_bcast
     use med_constants_mod, only : R8
     use pio, only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
     use pio, only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile, pio_nowrite, pio_openfile, pio_global
@@ -1144,7 +1161,7 @@ contains
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom
+    type(ESMF_VM)                   :: vm
     integer,          intent(in)    :: iam
     integer         , intent(inout) :: idata(:) ! integer data
     character(len=*), intent(in)    :: dname    ! name of data
@@ -1156,15 +1173,13 @@ contains
     logical           :: exists
     character(CL)     :: lversion
     character(CL)     :: name1
+    integer           :: rc
     character(*),parameter :: subName = '(med_io_read_int1d) '
     !-------------------------------------------------------------------------------
 
     lversion=trim(version)
 
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'med_io_read_int1d exists')
-
-    if (exists) then
+    if (med_io_file_exists(vm, iam, filename)) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
@@ -1186,14 +1201,14 @@ contains
   end subroutine med_io_read_int1d
 
   !===============================================================================
-  subroutine med_io_read_r8(filename, mpicom, iam, rdata, dname)
+  subroutine med_io_read_r8(filename, vm, iam, rdata, dname)
     use med_constants_mod, only : R8
 
     ! !DESCRIPTION: Read scalar double from netcdf file
 
     ! input/output arguments
     character(len=*) , intent(in)    :: filename ! file
-    integer          , intent(in)    :: mpicom
+    type(ESMF_VM)                    :: vm
     integer          , intent(in)    :: iam
     real(r8)         , intent(inout) :: rdata    ! real data
     character(len=*) , intent(in)    :: dname    ! name of data
@@ -1203,25 +1218,24 @@ contains
     character(*),parameter :: subName = '(med_io_read_r8) '
     !-------------------------------------------------------------------------------
 
-    call med_io_read_r81d(filename, mpicom, iam, r1d,dname)
+    call med_io_read_r81d(filename, vm, iam, r1d,dname)
     rdata = r1d(1)
   end subroutine med_io_read_r8
 
   !===============================================================================
-  subroutine med_io_read_r81d(filename, mpicom, iam, rdata, dname)
+  subroutine med_io_read_r81d(filename, vm, iam, rdata, dname)
     use med_constants_mod, only : R8
     use pio, only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
     use pio, only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
     use pio, only : pio_nowrite, pio_openfile, pio_global, pio_get_att
     use med_internalstate_mod, only : logunit
     use shr_sys_mod, only : shr_sys_abort
-    use shr_mpi_mod, only : shr_mpi_bcast
     ! !DESCRIPTION: Read 1d double array from netcdf file
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom
-    integer,          intent(in)    :: iam
+    type(ESMF_VM)                   :: vm
+    integer         , intent(in)    :: iam
     real(r8)        , intent(inout) :: rdata(:) ! real data
     character(len=*), intent(in)    :: dname    ! name of data
 
@@ -1230,6 +1244,8 @@ contains
     type(file_desc_T) :: pioid
     type(var_desc_t)  :: varid
     logical           :: exists
+
+    integer           :: rc
     character(CL)     :: lversion
     character(CL)     :: name1
     character(*),parameter :: subName = '(med_io_read_r81d) '
@@ -1237,10 +1253,7 @@ contains
 
     lversion=trim(version)
 
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'med_io_read_r81d exists')
-
-    if (exists) then
+    if (med_io_file_exists(vm, iam, filename)) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
@@ -1262,19 +1275,18 @@ contains
   end subroutine med_io_read_r81d
 
   !===============================================================================
-  subroutine med_io_read_char(filename, mpicom, iam, rdata, dname)
+  subroutine med_io_read_char(filename, vm, iam, rdata, dname)
     use pio, only : file_desc_t, var_desc_t, pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
     use pio, only : pio_closefile, pio_inq_varid, pio_get_var
     use pio, only : pio_openfile, pio_global, pio_get_att, pio_nowrite
-    use shr_mpi_mod, only : shr_mpi_bcast
     use med_internalstate_mod, only : logunit
     use shr_sys_mod, only : shr_sys_abort
     ! !DESCRIPTION: Read char string from netcdf file
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
-    integer,          intent(in)    :: mpicom
-    integer,          intent(in)    :: iam
+    type(ESMF_VM)                   :: vm
+    integer, intent(in)             :: iam
     character(len=*), intent(inout) :: rdata    ! character data
     character(len=*), intent(in)    :: dname    ! name of data
 
@@ -1283,6 +1295,7 @@ contains
     type(file_desc_T) :: pioid
     type(var_desc_t)  :: varid
     logical           :: exists
+    integer           :: rc
     character(CL)     :: lversion
     character(CL)     :: name1
     character(CL)                  :: charvar   ! buffer for string read/write
@@ -1291,10 +1304,7 @@ contains
 
     lversion=trim(version)
 
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'med_io_read_char exists')
-
-    if (exists) then
+    if (med_io_file_exists(vm, iam, filename)) then
        rcode = pio_openfile(io_subsystem, pioid, pio_iotype, trim(filename),pio_nowrite)
        ! write(logunit,*) subname,' open file ',trim(filename)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)

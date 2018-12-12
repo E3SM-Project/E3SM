@@ -41,113 +41,115 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
-    with Case(caseroot, read_only=False) as case:
-        pio_version = case.get_value("PIO_VERSION")
-        mpilib = case.get_value("MPILIB")
-        exeroot = case.get_value("EXEROOT")
-        pio_model = "pio{}".format(pio_version)
-        pio_dir = os.path.join(bldroot, pio_model)
-        compiler = case.get_value("COMPILER")
-        build_threaded = case.get_build_threaded()
-        if not os.path.isdir(pio_dir):
-            os.makedirs(pio_dir)
-        casetools = case.get_value("CASETOOLS")
-        cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-        gmake_opts = "{}/Makefile -C {} CASEROOT={} MODEL={} USER_CMAKE_OPTS={} "\
-            "PIO_LIBDIR={} CASETOOLS={} PIO_VERSION={} MPILIB={} "\
-            "SHAREDLIBROOT={} EXEROOT={} COMPILER={} BUILD_THREADED={} "\
-            "USER_CPPDEFS=-DTIMING -f {}/Makefile"\
-            .format(pio_dir,pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
-              pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
-              casetools)
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    pio_version = case.get_value("PIO_VERSION")
+    mpilib = case.get_value("MPILIB")
+    caseroot = case.get_value("CASEROOT")
+    exeroot = case.get_value("EXEROOT")
+    pio_model = "pio{}".format(pio_version)
+    pio_dir = os.path.join(bldroot, pio_model)
+    compiler = case.get_value("COMPILER")
+    build_threaded = case.get_build_threaded()
+    if not os.path.isdir(pio_dir):
+        os.makedirs(pio_dir)
+    casetools = case.get_value("CASETOOLS")
+    cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
+    gmake_opts = "{pio_dir}/Makefile -C {pio_dir} CASEROOT={caseroot} MODEL={pio_model} USER_CMAKE_OPTS={cmake_opts} "\
+        "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} PIO_VERSION={pio_version} MPILIB={mpilib} "\
+        "SHAREDLIBROOT={bldroot} EXEROOT={exeroot} COMPILER={compiler} BUILD_THREADED={bt} "\
+        "USER_CPPDEFS=-DTIMING -f {casetools}/Makefile"\
+        .format(pio_dir=pio_dir, caseroot=caseroot, pio_model=pio_model, cmake_opts=cmake_opts,
+                casetools=casetools, pio_version=pio_version, mpilib=mpilib, bldroot=bldroot,
+                exeroot=exeroot, compiler=compiler, bt=build_threaded)
 
-        gmake_cmd = case.get_value("GMAKE")
+    gmake_cmd = case.get_value("GMAKE")
 
-        # This runs the pio cmake command from the cime case Makefile
-        cmd = "{} {}".format(gmake_cmd, gmake_opts)
-        run_bld_cmd_ensure_logging(cmd, logger, from_dir=pio_dir)
+    # This runs the pio cmake command from the cime case Makefile
+    cmd = "{} {}".format(gmake_cmd, gmake_opts)
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=pio_dir)
 
-        # This runs the pio make command from the cmake generated Makefile
-        run_bld_cmd_ensure_logging("{} -j {}".format(gmake_cmd, case.get_value("GMAKE_J")), logger, from_dir=pio_dir)
+    # This runs the pio make command from the cmake generated Makefile
+    run_bld_cmd_ensure_logging("{} -j {}".format(gmake_cmd, case.get_value("GMAKE_J")), logger, from_dir=pio_dir)
 
-        if pio_version == 1:
-            installed_lib = os.path.join(installpath,"lib","libpio.a")
-            installed_lib_time = 0
-            if os.path.isfile(installed_lib):
-                installed_lib_time = os.path.getmtime(installed_lib)
-            newlib = os.path.join(pio_dir,"pio","libpio.a")
-            newlib_time = os.path.getmtime(newlib)
-            if newlib_time > installed_lib_time:
-                logger.info("Installing pio version 1")
-                safe_copy(newlib, installed_lib)
-                for glob_to_copy in ("*.h", "*.mod"):
-                    for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
-                        safe_copy(item, "{}/include".format(installpath))
-            expect_string = "D_NETCDF;"
-            pnetcdf_string = "D_PNETCDF"
-            netcdf4_string = "D_NETCDF4"
-        else:
-            globs_to_copy = (os.path.join("src","clib","libpioc.*"),
-                             os.path.join("src","flib","libpiof.*"),
-                             os.path.join("src","clib","*.h"),
-                             os.path.join("src","flib","*.mod"))
-            for glob_to_copy in globs_to_copy:
-                installed_file_time = 0
-                for item in glob.glob(os.path.join(pio_dir,glob_to_copy)):
-                    if item.endswith(".a") or item.endswith(".so"):
-                        installdir = "lib"
-                    else:
-                        installdir = "include"
-                    installed_file = os.path.join(installpath,installdir,os.path.basename(item))
-                    item_time = os.path.getmtime(item)
-                    if os.path.isfile(installed_file):
-                        installed_file_time = os.path.getmtime(installed_file)
-                    if item_time  > installed_file_time:
-                        safe_copy(item, installed_file)
-            expect_string = "NetCDF_C_LIBRARY-ADVANCED"
-            pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
-            netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
+    if pio_version == 1:
+        installed_lib = os.path.join(installpath,"lib","libpio.a")
+        installed_lib_time = 0
+        if os.path.isfile(installed_lib):
+            installed_lib_time = os.path.getmtime(installed_lib)
+        newlib = os.path.join(pio_dir,"pio","libpio.a")
+        newlib_time = os.path.getmtime(newlib)
+        if newlib_time > installed_lib_time:
+            logger.info("Installing pio version 1")
+            safe_copy(newlib, installed_lib)
+            for glob_to_copy in ("*.h", "*.mod"):
+                for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
+                    safe_copy(item, "{}/include".format(installpath))
+        expect_string = "D_NETCDF;"
+        pnetcdf_string = "D_PNETCDF"
+        netcdf4_string = "D_NETCDF4"
+    else:
+        globs_to_copy = (os.path.join("src","clib","libpioc.*"),
+                         os.path.join("src","flib","libpiof.*"),
+                         os.path.join("src","clib","*.h"),
+                         os.path.join("src","flib","*.mod"))
+        for glob_to_copy in globs_to_copy:
+            installed_file_time = 0
+            for item in glob.glob(os.path.join(pio_dir,glob_to_copy)):
+                if item.endswith(".a") or item.endswith(".so"):
+                    installdir = "lib"
+                else:
+                    installdir = "include"
+                installed_file = os.path.join(installpath,installdir,os.path.basename(item))
+                item_time = os.path.getmtime(item)
+                if os.path.isfile(installed_file):
+                    installed_file_time = os.path.getmtime(installed_file)
+                if item_time  > installed_file_time:
+                    safe_copy(item, installed_file)
+        expect_string = "NetCDF_C_LIBRARY-ADVANCED"
+        pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
+        netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
 
 
-        # make sure case pio_typename valid_values is set correctly
-        expect_string_found = False
-        pnetcdf_found = False
-        netcdf4_parallel_found = False
+    # make sure case pio_typename valid_values is set correctly
+    expect_string_found = False
+    pnetcdf_found = False
+    netcdf4_parallel_found = False
 
-        cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
-        for line in cache_file:
-            if re.search(expect_string, line):
-                expect_string_found = True
-            if re.search(pnetcdf_string, line):
-                pnetcdf_found = True
-            if re.search(netcdf4_string, line):
-                netcdf4_parallel_found = True
+    cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
+    for line in cache_file:
+        if re.search(expect_string, line):
+            expect_string_found = True
+        if re.search(pnetcdf_string, line):
+            pnetcdf_found = True
+        if re.search(netcdf4_string, line):
+            netcdf4_parallel_found = True
 
-        expect(expect_string_found, "CIME models require NETCDF in PIO build")
-        valid_values = "netcdf"
-        if pnetcdf_found:
-            valid_values += ",pnetcdf"
-        if netcdf4_parallel_found:
-            valid_values += ",netcdf4p,netcdf4c"
-        logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
+    expect(expect_string_found, "CIME models require NETCDF in PIO build")
+    valid_values = "netcdf"
+    if pnetcdf_found:
+        valid_values += ",pnetcdf"
+    if netcdf4_parallel_found:
+        valid_values += ",netcdf4p,netcdf4c"
+    logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
 
-        case.set_valid_values("PIO_TYPENAME",valid_values)
-        # nothing means use the general default
-        valid_values += ",nothing"
+    case.set_valid_values("PIO_TYPENAME",valid_values)
+    # nothing means use the general default
+    valid_values += ",nothing"
 
-        for comp in case.get_values("COMP_CLASSES"):
-            comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
-            case.set_valid_values(comp_pio_typename,valid_values)
-            current_value = case.get_value(comp_pio_typename)
-            if current_value not in valid_values:
-                logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
-                case.set_value(comp_pio_typename,"netcdf")
+    for comp in case.get_values("COMP_CLASSES"):
+        comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
+        case.set_valid_values(comp_pio_typename,valid_values)
+        current_value = case.get_value(comp_pio_typename)
+        if current_value not in valid_values:
+            logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
+            case.set_value(comp_pio_typename,"netcdf")
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
-    buildlib(bldroot, installpath, caseroot)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, installpath, case)
 
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

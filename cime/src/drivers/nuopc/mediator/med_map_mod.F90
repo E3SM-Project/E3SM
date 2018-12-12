@@ -69,7 +69,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : InternalState
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(in)  :: llogunit
@@ -98,6 +98,7 @@ contains
     character(len=*), parameter :: subname=' (module_med_map: RouteHandles_init) '
     integer                       :: dbrc
     !-----------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 1) then
        call ESMF_LogWrite("Starting to initialize RHs", ESMF_LOGMSG_INFO)
@@ -276,6 +277,7 @@ contains
     if (dbug_flag > 1) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_map_RouteHandles_init
 
@@ -292,7 +294,7 @@ contains
     use shr_nuopc_fldList_mod , only : mapnames, mapconsf
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-
+    use perf_mod              , only : t_startf, t_stopf
     !---------------------------------------------
     ! Initialize initialize additional route handles
     ! for mapping fractions
@@ -319,6 +321,7 @@ contains
     integer            :: dbrc
     character(len=*), parameter :: subname=' (med_map_fractions_init: ) '
     !---------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 1) then
        call ESMF_LogWrite("Initializing RHs not yet created and needed for mapping fractions", &
@@ -382,6 +385,7 @@ contains
     if (dbug_flag > 1) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_map_Fractions_init
 
@@ -406,7 +410,7 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
-
+    use perf_mod              , only: t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(in)  :: llogunit
@@ -422,6 +426,7 @@ contains
     integer                    :: dbrc
     character(len=*),parameter :: subname='(module_MED_MAP:MapNorm_init)'
     !-----------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 1) then
        call ESMF_LogWrite("Starting to initialize unity map normalizations", ESMF_LOGMSG_INFO)
@@ -486,6 +491,7 @@ contains
     if (dbug_flag > 1) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_map_MapNorm_init
 
@@ -516,6 +522,7 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Field_diagnose
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
     use shr_nuopc_utils_mod   , only: shr_nuopc_memcheck
+    use perf_mod              , only: t_startf, t_stopf
     ! ----------------------------------------------
     ! Map field bundles with appropriate fraction weighting
     ! ----------------------------------------------
@@ -553,9 +560,8 @@ contains
     integer :: dbrc
 
     !-------------------------------------------------------------------------------
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call t_startf('MED:'//subname)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     call shr_nuopc_memcheck(subname, 1, mastertask)
 
     !---------------------------------------
@@ -580,10 +586,8 @@ contains
     ! the destination field bundle accordingly
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//" *** mapping from "//trim(compname(srccomp))//" to "//&
-            trim(compname(destcomp))//" ***", ESMF_LOGMSG_INFO, rc=dbrc)
-    end if
+    call ESMF_LogWrite(trim(subname)//" *** mapping from "//trim(compname(srccomp))//" to "//&
+         trim(compname(destcomp))//" ***", ESMF_LOGMSG_INFO, rc=dbrc)
 
     do n = 1,size(fldsSrc)
        ! Determine if field is a scalar - and if so go to next iternation
@@ -597,13 +601,9 @@ contains
 
        ! Error checks
        if (.not. shr_nuopc_methods_FB_FldChk(FBSrc, fldname, rc=rc)) then
-          if (dbug_flag > 1) then
-             call ESMF_LogWrite(trim(subname)//" field not found in FBSrc: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
-          endif
+          call ESMF_LogWrite(trim(subname)//" field not found in FBSrc: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
        else if (.not. shr_nuopc_methods_FB_FldChk(FBDst, fldname, rc=rc)) then
-          if (dbug_flag > 1) then
-             call ESMF_LogWrite(trim(subname)//" field not found in FBDst: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
-          endif
+          call ESMF_LogWrite(trim(subname)//" field not found in FBDst: "//trim(fldname), ESMF_LOGMSG_INFO, rc=dbrc)
        else if (.not. ESMF_RouteHandleIsCreated(RouteHandles(mapindex), rc=rc)) then
           call ESMF_LogWrite(trim(subname)//trim(lstring)//&
                ": ERROR RH not available for "//mapnames(mapindex)//": fld="//trim(fldname), &
@@ -711,10 +711,8 @@ contains
 
              ! regrid FBSrcTmp to FBDst
              if (trim(fldname) == trim(flds_scalar_name)) then
-                if (dbug_flag > 1) then
-                   call ESMF_LogWrite(trim(subname)//trim(lstring)//": skip : fld="//trim(fldname), &
-                        ESMF_LOGMSG_INFO, rc=dbrc)
-                endif
+                call ESMF_LogWrite(trim(subname)//trim(lstring)//": skip : fld="//trim(fldname), &
+                     ESMF_LOGMSG_INFO, rc=dbrc)
              else
                 call shr_nuopc_methods_FB_FieldRegrid( FBSrcTmp, 'data_srctmp', FBDst, fldname, RouteHandles(mapindex), rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -789,6 +787,7 @@ contains
        call shr_nuopc_methods_FB_clean(FBNormDst, rc=rc)
        if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
     end if
+    call t_stopf('MED:'//subname)
 
   end subroutine med_map_FB_Regrid_Norm
 

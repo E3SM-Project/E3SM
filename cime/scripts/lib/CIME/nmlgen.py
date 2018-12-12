@@ -573,7 +573,7 @@ class NamelistGenerator(object):
                         continue
                     file_path = character_literal_to_string(literal)
                     # NOTE - these are hard-coded here and a better way is to make these extensible
-                    if file_path == 'UNSET' or file_path == 'unset' or file_path == 'idmap':
+                    if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore' or file_path == 'unset':
                         continue
                     if file_path == 'null':
                         continue
@@ -624,7 +624,7 @@ class NamelistGenerator(object):
                         for literal in literals:
                             file_path = character_literal_to_string(literal)
                             # NOTE - these are hard-coded here and a better way is to make these extensible
-                            if file_path == 'UNSET' or file_path == 'idmap':
+                            if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore':
                                 continue
                             if input_pathname == 'abs':
                                 # No further mangling needed for absolute paths.
@@ -701,8 +701,14 @@ class NamelistGenerator(object):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
         groups = self._namelist.get_group_names()
-        self._namelist.write(filename, groups=groups, format_='nuopc', sorted_groups=False,
+        if "nuopc_runseq" in groups:
+            self._namelist.write(os.path.dirname(filename)+os.sep+"nuopc.runseq", groups=["nuopc_runseq"],
+                                 format_='nuopc',sorted_groups=False,
                              skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+            groups.remove("nuopc_runseq")
+
+        self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
+
         if data_list_path is not None:
             # append to input_data_list file
             self._write_input_files(data_list_path)

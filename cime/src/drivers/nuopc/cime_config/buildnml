@@ -30,7 +30,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # Set up config dictionary
     #--------------------------------
     config = {}
-    config['cime_model'] = get_model()
+    cime_model = get_model()
+    config['cime_model'] = cime_model
     config['iyear'] = case.get_value('COMPSET').split('_')[0]
     config['BGC_MODE'] = case.get_value("CCSM_BGC")
     config['CPL_I2O_PER_CAT'] = case.get_value('CPL_I2O_PER_CAT')
@@ -234,7 +235,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     atm_cpl_dt = nmlgen.get_value('atm_cpl_dt')
     ocn_cpl_dt = nmlgen.get_value('ocn_cpl_dt')
-    nuopc_config_file = os.path.join(confdir, "cesm.runconfig")
+
+    nuopc_config_file = os.path.join(confdir, "nuopc.runconfig")
     nmlgen.write_nuopc_config_file(nuopc_config_file, data_list_path=data_list_path,
                                    skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
 
@@ -312,7 +314,7 @@ def _create_component_modelio_namelists(confdir, case, files):
         maxinst = case.get_value("NINST_MAX")
         multi_driver = True
 
-    nuopc_config_file = os.path.join(confdir, "cesm.runconfig")
+    nuopc_config_file = os.path.join(confdir, "nuopc.runconfig")
     for model in case.get_values("COMP_CLASSES"):
         model = model.lower()
         with NamelistGenerator(case, definition_file) as nmlgen:
@@ -339,7 +341,7 @@ def _create_component_modelio_namelists(confdir, case, files):
                     modelio_file = model + "_modelio.nml" + inst_string
                     nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
 
-                # Output the following to cesm.runconfig
+                # Output the following to nuopc.runconfig
                 moddiro = case.get_value('RUNDIR')
                 if model == 'cpl':
                     logfile = 'med' + inst_string + ".log." + str(lid)
@@ -409,10 +411,11 @@ def buildnml(case, caseroot, component):
     # create the files comp_modelio.nml where comp = [atm, lnd...]
     _create_component_modelio_namelists(confdir, case, files)
 
-    # copy drv_in, drv_flds_in, cesm.runconfig and all *modio* fiels to rundir
+    # copy drv_in, drv_flds_in, nuopc.runconfig and all *modio* fiels to rundir
     rundir = case.get_value("RUNDIR")
     shutil.copy(os.path.join(confdir,"drv_in"), rundir)
-    shutil.copy(os.path.join(confdir,"cesm.runconfig"), rundir)
+    shutil.copy(os.path.join(confdir,"nuopc.runconfig"), rundir)
+    shutil.copy(os.path.join(confdir,"nuopc.runseq"), rundir)
 
     # copy fd.yaml to rundir
     config_dir = os.path.dirname(definition_file[0])

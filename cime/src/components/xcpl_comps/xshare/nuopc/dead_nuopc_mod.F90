@@ -61,7 +61,7 @@ contains
     use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*)       , intent(in)    :: model
-    character(len=16)      , intent(in)    :: inst_suffix ! char string associated with instance
+    character(len=*)      , intent(in)    :: inst_suffix ! char string associated with instance
     integer(IN)            , intent(in)    :: logunit     ! logging unit number
     integer(IN)		   , intent(out)   :: nproc_x
     integer(IN)            , intent(out)   :: seg_len
