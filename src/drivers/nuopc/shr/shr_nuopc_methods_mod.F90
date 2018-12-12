@@ -773,9 +773,7 @@ module shr_nuopc_methods_mod
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_clean)'
     ! ----------------------------------------------
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     call ESMF_FieldBundleGet(FB, fieldCount=fieldCount, rc=rc)
@@ -783,19 +781,18 @@ module shr_nuopc_methods_mod
     allocate(lfieldnamelist(fieldCount))
     call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     do n = 1, fieldCount
       call ESMF_FieldBundleGet(FB, fieldName=lfieldnamelist(n), field=field, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       call ESMF_FieldDestroy(field, rc=rc, noGarbage=.true.)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
+
     call ESMF_FieldBundleDestroy(FB, rc=rc, noGarbage=.true.)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     deallocate(lfieldnamelist)
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine shr_nuopc_methods_FB_clean
 
@@ -1119,7 +1116,9 @@ module shr_nuopc_methods_mod
     use ESMF, only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
     use ESMF, only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
     use med_constants_mod, only : R8
-    type(ESMF_FieldBundle), intent(inout) :: FBin
+    use perf_mod, only : t_startf, t_stopf
+
+    type(ESMF_FieldBundle), intent(in) :: FBin
     character(len=*)      , intent(in)    :: fldin
     type(ESMF_FieldBundle), intent(inout) :: FBout
     character(len=*)      , intent(in)    :: fldout
@@ -1133,13 +1132,15 @@ module shr_nuopc_methods_mod
     integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldRegrid)'
     integer :: rank
+    logical :: checkflag = .false.
     character(len=8) :: filename
     ! ----------------------------------------------
-
+#ifdef DEBUG
+    checkflag = .true.
+#endif
+    call t_startf(subname)
     rc = ESMF_SUCCESS
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
 
     if (shr_nuopc_methods_FB_FldChk(FBin , trim(fldin) , rc=rc) .and. &
         shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
@@ -1148,23 +1149,16 @@ module shr_nuopc_methods_mod
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       call shr_nuopc_methods_FB_getFieldByName(FBout, trim(fldout), field2, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
       call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
-        termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.true., rc=rc)
-
+        termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
    else
-
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)
       endif
-
     endif
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call t_stopf(subname)
   end subroutine shr_nuopc_methods_FB_FieldRegrid
 
   !-----------------------------------------------------------------------------
@@ -1966,7 +1960,6 @@ module shr_nuopc_methods_mod
     ! Copy common field names from FBin to FBout
     ! ----------------------------------------------
     use ESMF, only : ESMF_FieldBundle
-
     type(ESMF_FieldBundle), intent(inout) :: FBout
     type(ESMF_FieldBundle), intent(in)    :: FBin
     integer               , intent(out)   :: rc
@@ -1974,9 +1967,7 @@ module shr_nuopc_methods_mod
     integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_copyFB2FB)'
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     call shr_nuopc_methods_FB_accum(FBout, FBin, copy=.true., rc=rc)
@@ -2552,7 +2543,7 @@ module shr_nuopc_methods_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, rc)
+  subroutine shr_nuopc_methods_FB_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, field, rc)
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_Field
 
@@ -2565,6 +2556,7 @@ module shr_nuopc_methods_mod
     real(R8), pointer      , intent(inout), optional :: fldptr2(:,:)
     integer                , intent(out),   optional :: rank
     integer                , intent(out),   optional :: rc
+    type(ESMF_Field)       , intent(out),   optional :: field
 
     ! local variables
     type(ESMF_Field) :: lfield
@@ -2603,7 +2595,9 @@ module shr_nuopc_methods_mod
     if (present(rank)) then
       rank = lrank
     endif
-
+    if (present(field)) then
+       field = lfield
+    endif
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -3814,7 +3808,7 @@ module shr_nuopc_methods_mod
     use ESMF              , only : ESMF_SUCCESS, ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
     use ESMF              , only : ESMF_FAILURE, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
     use ESMF              , only : ESMF_LOGMSG_INFO, ESMF_VM, ESMF_VMBroadCast, ESMF_VMGetCurrent
-
+    use ESMF              , only : ESMF_VMGet
     ! ----------------------------------------------
     ! Get scalar data from State for a particular name and broadcast it to all other pets
     ! ----------------------------------------------
@@ -3831,12 +3825,16 @@ module shr_nuopc_methods_mod
     type(ESMF_VM)     :: vm
     type(ESMF_Field)  :: field
     real(R8), pointer :: farrayptr(:,:)
+    real(r8)          :: tmp(1)
     integer           :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_GetScalar)'
 
     rc = ESMF_SUCCESS
 
     call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, localPet=mytask, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
@@ -3850,10 +3848,11 @@ module shr_nuopc_methods_mod
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
+      tmp(:) = farrayptr(:,scalar_id)
     endif
-    call ESMF_VMBroadCast(vm, farrayptr(:,scalar_id), 1, 0, rc=rc)
+    call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    value = farrayptr(1,scalar_id)
+    value = tmp(1)
 
 
   end subroutine shr_nuopc_methods_State_GetScalar
