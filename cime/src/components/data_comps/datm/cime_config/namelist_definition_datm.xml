@@ -396,7 +396,7 @@
       <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Precip6Hrly</value>
-      <value stream="CLM_QIAN_WISO.TPQW	">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
+      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly</value>
       <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly</value>
       <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly</value>

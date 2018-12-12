@@ -48,16 +48,17 @@ module ESM
     use NUOPC_Driver , only : driver_routine_SS             => SetServices
     use NUOPC_Driver , only : driver_label_SetModelServices => label_SetModelServices
     use NUOPC_Driver , only : driver_label_SetRunSequence   => label_SetRunSequence
+    use NUOPC_Driver , only : driver_label_Finalize         => label_Finalize
     use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
-    use ESMF         , only : ESMF_ConfigCreate, ESMF_METHOD_INITIALIZE
+    use ESMF         , only : ESMF_METHOD_INITIALIZE
     use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
 
     type(ESMF_GridComp)  :: driver
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Config) :: config
     integer           :: dbrc
+    type(ESMF_Config)    :: runSeq
     character(len=*), parameter :: subname = "(esm.F90:SetServices)"
     !---------------------------------------
 
@@ -92,14 +93,14 @@ module ESM
       phaseLabelList=(/"IPDv05p1"/), userRoutine=InitAdvertize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! Set a finalize method
+    call NUOPC_CompSpecialize(driver, specLabel=driver_label_Finalize, &
+         specRoutine=esm_finalize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     ! Create, open and set the config
-    config = ESMF_ConfigCreate(rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ConfigLoadFile(config, "cesm.runconfig", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_GridCompSet(driver, config=config, rc=rc)
+    call ESMF_GridCompSet(driver, configFile="nuopc.runconfig", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
@@ -118,11 +119,13 @@ module ESM
     use ESMF                  , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE
     use ESMF                  , only : ESMF_VMisCreated, ESMF_GridCompIsPetLocal
+    use ESMF                  , only : ESMF_RC_FILE_OPEN, ESMF_RC_FILE_READ
+    use ESMF                  , only : ESMF_AttributeUpdate, ESMF_VMBroadcast
+    use ESMF                  , only : ESMF_MethodAdd
     use NUOPC                 , only : NUOPC_CompSetInternalEntryPoint, NUOPC_CompAttributeGet
-    use NUOPC_Driver          , only : NUOPC_DriverGetComp
-    use seq_comm_mct          , only : CPLID, GLOID, ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
-    use seq_comm_mct          , only : seq_comm_printcomms, seq_comm_petlist
-    use seq_comm_mct          , only : seq_comm_getinfo => seq_comm_setptrs
+    use NUOPC                 , only : NUOPC_CompAttributeAdd, NUOPC_CompAttributeSet
+    use NUOPC_Driver          , only : NUOPC_DriverAddComp, NUOPC_DriverGetComp
+
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
     use shr_file_mod          , only : shr_file_setLogunit, shr_file_getunit
     use med                   , only : med_SS         => SetServices
@@ -135,6 +138,7 @@ module ESM
     use glc_comp_nuopc        , only : GLCSetServices => SetServices
     use shr_pio_mod           , only : shr_pio_init1
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
+    use perf_mod              , only : t_initf
     use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
     use shr_log_mod           , only : shrlogunit=> shr_log_unit
 
@@ -161,7 +165,11 @@ module ESM
     character(len=512)     :: logfile
     integer                :: global_comm
     logical                :: isPresent
+    integer                :: maxthreads
     integer                :: dbrc
+    integer                :: readunit, iostat
+    logical                :: is_restart
+    character(len=512)     :: restartfile
     character(len=*), parameter    :: subname = "(esm.F90:SetModelServices)"
     !-------------------------------------------
 
@@ -186,7 +194,7 @@ module ESM
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (localPet == 0) then
-       mastertask=.true.
+       mastertask = .true.
     else
        mastertask = .false.
     end if
@@ -253,7 +261,8 @@ module ESM
     ! Initialize component pe layouts
     !-------------------------------------------
 
-    call esm_init_pelayout(driver)
+    call esm_init_pelayout(driver, maxthreads)
+
     !-------------------------------------------
     ! Reset log unit for mediator
     !-------------------------------------------
@@ -295,14 +304,21 @@ module ESM
     end if
 
     !-------------------------------------------
-    ! Perform restarts if appropriate
+    ! Timer initialization (has to be after pelayouts are determined)
     !-------------------------------------------
+
+    call t_initf(nlfilename, LogPrint=.true., mpicom=global_comm, &
+         mastertask=mastertask, MaxThreads=maxthreads)
 
     ! finish the pio initialization (this calls shr_pio_init2)
     call InitPIO(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call InitRestart(driver, logunit, rc)
+    !-------------------------------------------
+    ! Perform restarts if appropriate
+    !-------------------------------------------
+
+    call InitRestart(driver, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (pio_file_is_open(pioid)) then
@@ -320,7 +336,7 @@ module ESM
   subroutine SetRunSequence(driver, rc)
     use ESMF                  , only : ESMF_GridComp, ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_Time, ESMF_TimeInterval, ESMF_Clock, ESMF_Config
-    use ESMF                  , only : ESMF_GridCompGet
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ConfigLoadFile, ESMF_ConfigCreate
     use NUOPC                 , only : NUOPC_FreeFormat, NUOPC_FreeFormatPrint, NUOPC_FreeFormatDestroy
     use NUOPC                 , only : NUOPC_FreeFormatCreate
     use NUOPC_Driver          , only : NUOPC_DriverIngestRunSequence, NUOPC_DriverSetRunSequence
@@ -331,7 +347,7 @@ module ESM
 
     ! local variables
     integer                 :: localrc
-    type(ESMF_Config)       :: config
+    type(ESMF_Config)       :: runSeq
     type(NUOPC_FreeFormat)  :: runSeqFF
     integer                 :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:SetRunSequence)"
@@ -345,11 +361,15 @@ module ESM
     ! Run Sequence and Connectors
     !--------
 
-    ! read free format run sequence from config
-    call ESMF_GridCompGet(driver, config=config, rc=rc)
+    ! read free format run sequence
+
+    runSeq = ESMF_ConfigCreate(rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    runSeqFF = NUOPC_FreeFormatCreate(config, label="runSeq::", rc=rc)
+    call ESMF_ConfigLoadFile(runSeq, "nuopc.runseq", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    runSeqFF = NUOPC_FreeFormatCreate(runSeq, label="runSeq::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
@@ -470,7 +490,6 @@ module ESM
     use seq_comm_mct , only : seq_comm_setnthreads, seq_comm_getnthreads
     use seq_comm_mct , only : seq_comm_iamin, seq_comm_name, seq_comm_namelen, seq_comm_iamroot
     use seq_comm_mct , only : seq_comm_getinfo => seq_comm_setptrs
-    use perf_mod     , only : t_initf
 
     ! input/output variables
     type(ESMF_GridComp), intent(inout) :: driver
@@ -601,8 +620,6 @@ module ESM
     ! Initialize timing library
     !----------------------------------------------------------
 
-    call t_initf(nlfilename, LogPrint=.true., mpicom=mpicom_GLOID, mastertask=mastertask, MaxThreads=maxthreads)
-
     !----------------------------------------------------------
     ! Test Threading Setup in driver happens to be valid on all pes for all IDs
     !----------------------------------------------------------
@@ -649,7 +666,49 @@ module ESM
 
   !================================================================================
 
-  subroutine InitRestart(driver, logunit, rc)
+  function IsRestart(gcomp, rc)
+
+    use ESMF         , only : ESMF_GridComp, ESMF_SUCCESS
+    use ESMF         , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_RC_NOT_VALID
+    use NUOPC        , only : NUOPC_CompAttributeGet
+
+    ! input/output variables
+    logical                                :: IsRestart
+    type(ESMF_GridComp)    , intent(inout) :: gcomp
+    integer                , intent(out)   :: rc
+
+    ! locals
+    character(len=*) , parameter :: start_type_start = "startup"
+    character(len=*) , parameter :: start_type_cont  = "continue"
+    character(len=*) , parameter :: start_type_brnch = "branch"
+    character(SHR_KIND_CL)       :: start_type     ! Type of startup
+    character(len=*), parameter  :: subname = "(esm.F90:IsRestart)"
+
+    rc = ESMF_SUCCESS
+
+    ! First Determine if restart is read
+    call NUOPC_CompAttributeGet(gcomp, name='start_type', value=start_type, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if ((trim(start_type) /= start_type_start) .and.  &
+        (trim(start_type) /= start_type_cont ) .and.  &
+        (trim(start_type) /= start_type_brnch)) then
+       write (msgstr, *) subname//': start_type invalid = '//trim(start_type)
+       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+       return
+    end if
+
+    !TODO: this is hard-wired to CIME start/continue types in terms of gcomp
+    IsRestart = .false.
+    if (trim(start_type) == trim(start_type_cont) .or. trim(start_type) == trim(start_type_brnch)) then
+       IsRestart = .true.
+    end if
+
+  end function IsRestart
+
+  !================================================================================
+
+  subroutine InitRestart(driver, rc)
 
     !-----------------------------------------------------
     ! Determine if will restart and read pointer file
@@ -664,38 +723,37 @@ module ESM
 
     ! input/output variables
     type(ESMF_GridComp)    , intent(inout) :: driver
-    integer                , intent(in)    :: logunit
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)                :: vm
     character(SHR_KIND_CL)       :: cvalue         ! temporary
-    integer                      :: ierr           ! error return
-    integer                      :: lmpicom        ! driver mpi communicator
-    integer                      :: unitn          ! Namelist unit number to read
-    character(SHR_KIND_CL)       :: restart_file   ! Full archive path to restart file
-    character(SHR_KIND_CL)       :: restart_pfile  ! Restart pointer file
+    logical                      :: read_restart   ! read the restart file, based on start_type
     character(SHR_KIND_CL)       :: rest_case_name ! Short case identification
-    character(len=*) , parameter :: sp_str = 'str_undefined'
-    integer :: dbrc
     character(len=*) , parameter :: subname = "(esm.F90:InitRestart)"
     !-------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
     endif
 
     !-----------------------------------------------------
     ! Carry out restart if appropriate
     !-----------------------------------------------------
 
-    ! Add rest_case_name to driver attributes
-    call NUOPC_CompAttributeAdd(driver, attrList=(/'rest_case_name'/), rc=rc)
+    read_restart = IsRestart(driver, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Add rest_case_name and read_restart to driver attributes
+    call NUOPC_CompAttributeAdd(driver, attrList=(/'rest_case_name','read_restart'/), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     rest_case_name = ' '
     call NUOPC_CompAttributeSet(driver, name='rest_case_name', value=rest_case_name, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    write(cvalue,*) read_restart
+    call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine InitRestart
@@ -709,6 +767,7 @@ module ESM
     use ESMF             , only : ESMF_Clock, ESMF_ClockGet, ESMF_Time, ESMF_TimeGet
     use ESMF             , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LogSetError, ESMF_LOGMSG_INFO
     use ESMF             , only : ESMF_RC_NOT_VALID
+    use ESMF             , only : ESMF_GridCompIsPetLocal, ESMF_VMBroadcast
     use NUOPC            , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
     use seq_comm_mct     , only : CPLID, OCNID
@@ -734,7 +793,6 @@ module ESM
     character(SHR_KIND_CL)          :: errstring
     character(SHR_KIND_CL)          :: cvalue
     integer                         :: mpicom_OCNID          ! MPI ocn communicator for ensemble member 1
-    logical                         :: iamroot_med           ! mediator masterproc
     logical                         :: drv_threading         ! driver threading control
     logical                         :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
     real(SHR_KIND_R8)               :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
@@ -746,6 +804,8 @@ module ESM
     integer                         :: orb_iyear_align       ! associated with model year
     integer                         :: orb_cyear             ! orbital year for current orbital computation
     integer                         :: orb_nyear             ! orbital year associated with currrent model year
+    integer                         :: orbitmp(4)            ! array for integer parameter broadcast
+    real(SHR_KIND_R8)               :: orbrtmp(6)            ! array for real parameter broadcast
     real(SHR_KIND_R8)               :: orb_eccen             ! orbital eccentricity
     real(SHR_KIND_R8)               :: orb_obliq             ! obliquity in degrees
     real(SHR_KIND_R8)               :: orb_mvelp             ! moving vernal equinox long
@@ -768,6 +828,7 @@ module ESM
     integer                         :: i, it, n
     integer                         :: unitn                 ! Namelist unit number to read
     integer                         :: dbrc
+    integer                         :: localPet, rootpe_med
     integer          , parameter    :: ens1=1                ! use first instance of ensemble only
     integer          , parameter    :: fix1=1                ! temporary hard-coding to first ensemble, needs to be fixed
     real(SHR_KIND_R8), parameter    :: epsilo = shr_const_mwwv/shr_const_mwdair
@@ -883,9 +944,12 @@ module ESM
        return  ! bail out
     endif
 
+    call NUOPC_CompAttributeGet(driver, name='cpl_rootpe', value=cvalue, rc=rc)
+    read(cvalue, *) rootpe_med
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_GridCompGet(driver, localPet=localPet, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     ! Determine orbital params
-
-    call seq_comm_getinfo(CPLID, iamroot=iamroot_med)
     if (trim(orb_mode) == trim(orb_variable_year)) then
        call ESMF_GridCompGet(driver, clock=clock, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -898,16 +962,16 @@ module ESM
 
        orb_cyear = orb_iyear + (year - orb_iyear_align)
        call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
-                           orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
+            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
     else
        call shr_orb_params(orb_iyear, orb_eccen, orb_obliq, orb_mvelp, &
-                           orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_med)
+            orb_obliqr, orb_lambm0, orb_mvelpp, localPet==rootpe_med )
     end if
 
     if (orb_eccen  == SHR_ORB_UNDEF_REAL .or. &
-        orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
-        orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
-        orb_lambm0 == SHR_ORB_UNDEF_REAL) then
+         orb_obliqr == SHR_ORB_UNDEF_REAL .or. &
+         orb_mvelpp == SHR_ORB_UNDEF_REAL .or. &
+         orb_lambm0 == SHR_ORB_UNDEF_REAL) then
        write (msgstr, *) subname//' ERROR: orb params incorrect'
        call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
        return  ! bail out
@@ -1159,7 +1223,6 @@ module ESM
     ! Now add component specific attributes
     call ReadAttributes(gcomp, config, trim(compname)//"_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    print *,__FILE__,__LINE__,trim(compname)
     call ReadAttributes(gcomp, config, "ALLCOMP_attributes::", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1319,12 +1382,12 @@ module ESM
 
   end subroutine InitAdvertize
 
-  subroutine esm_init_pelayout(driver)
+  subroutine esm_init_pelayout(driver, maxthreads)
     use ESMF, only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
     use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_Config
     use ESMF, only : ESMF_ConfigGetLen, ESMF_LogFoundAllocError, ESMF_ConfigGetAttribute
     use ESMF, only : ESMF_RC_NOT_VALID, ESMF_LogSetError
-    use ESMF, only : ESMF_GridCompIsPetLocal
+    use ESMF, only : ESMF_GridCompIsPetLocal, ESMF_MethodAdd
     use NUOPC, only : NUOPC_CompAttributeGet
     use NUOPC_Driver, only: NUOPC_DriverAddComp
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
@@ -1346,6 +1409,7 @@ module ESM
     use mct_mod, only : mct_world_init
 
     type(ESMF_GridComp) :: driver
+    integer, intent(out) :: maxthreads ! maximum number of threads any component
     type(ESMF_GridComp) :: child
     type(ESMF_VM) :: vm
     type(ESMF_Config) :: config
@@ -1374,7 +1438,7 @@ module ESM
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
-
+    maxthreads = 1
     call ESMF_GridCompGet(driver, vm=vm, config=config, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1431,6 +1495,8 @@ module ESM
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) nthrds
 
+       if(nthrds > maxthreads) maxthreads = nthrds
+
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_rootpe', value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) rootpe
@@ -1460,8 +1526,8 @@ module ESM
        if(.not. allocated(petlist)) then
           allocate(petlist(ntasks))
        endif
-       cnt=1
 
+       cnt=1
        do ntask = rootpe, (rootpe+ntasks*stride)-1, stride
           petlist(cnt) = ntask
           cnt=cnt+1
@@ -1474,11 +1540,8 @@ module ESM
           pelist(2,1) = rootpe+ntasks-1
           pelist(3,1) = stride
           call seq_comm_setcomm(CPLID, pelist, nthreads=nthrds, iname='CPL')
-          print *,__FILE__,__LINE__,CPLID
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'ATM') then
           ATMID(1) = i+1
           pelist(1,1) = rootpe
@@ -1486,8 +1549,6 @@ module ESM
           pelist(3,1) = stride
           call seq_comm_setcomm(ATMID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ATMSetServices, petList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'LND') then
           LNDID(1) = i+1
@@ -1497,8 +1558,6 @@ module ESM
           call seq_comm_setcomm(LNDID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), LNDSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'OCN') then
           OCNID(1) = i+1
           pelist(1,1) = rootpe
@@ -1507,9 +1566,7 @@ module ESM
           call seq_comm_setcomm(OCNID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), OCNSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
-       elseif(trim(compLabels(i)) .eq. 'ICE') then
+        elseif(trim(compLabels(i)) .eq. 'ICE') then
           ICEID(1) = i+1
           pelist(1,1) = rootpe
           pelist(2,1) = rootpe+ntasks-1
@@ -1517,8 +1574,6 @@ module ESM
           call seq_comm_setcomm(ICEID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ICESetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'GLC') then
           GLCID(1) = i+1
           pelist(1,1) = rootpe
@@ -1527,8 +1582,6 @@ module ESM
           call seq_comm_setcomm(GLCID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), GLCSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'ROF') then
           ROFID(1) = i+1
           pelist(1,1) = rootpe
@@ -1537,8 +1590,6 @@ module ESM
           call seq_comm_setcomm(ROFID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ROFSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        elseif(trim(compLabels(i)) .eq. 'WAV') then
           WAVID(1) = i+1
           pelist(1,1) = rootpe
@@ -1547,8 +1598,6 @@ module ESM
           call seq_comm_setcomm(WAVID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), WAVSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
 !       elseif(trim(compLabels(i)) .eq. 'ESP') then
 !          ESPID(1) = i+1
 !          pelist(1,1) = rootpe
@@ -1557,22 +1606,217 @@ module ESM
 !          call seq_comm_setcomm(ESPID(1), pelist, nthreads=nthrds, iname=trim(compLabels(i)))
 !          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
        endif
+       call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) call shr_nuopc_abort()
        if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
           call ESMF_GridCompGet(child, vm=vm, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! Attach methods for handling reading/writing of restart pointer file
+          call ESMF_MethodAdd(child, label="GetRestartFileToWrite", &
+               userRoutine=GetRestartFileToWrite, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          call ESMF_MethodAdd(child, label="GetRestartFileToRead", &
+               userRoutine=GetRestartFileToRead, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        else
           comms(i+1) = MPI_COMM_NULL
        endif
     enddo
-    print *, __FILE__,__LINE__,"Here ", componentcount, " comms: ", comms, " comps: ",comps
-
     call mct_world_init(componentCount, GLOBAL_COMM, comms, comps)
-    print *,__FILE__,__LINE__
-
     deallocate(petlist, comms, comps)
 
   end subroutine esm_init_pelayout
+
+  subroutine esm_finalize(driver, rc)
+    use ESMF,  only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
+    use ESMF,  only : ESMF_SUCCESS
+    use NUOPC, only : NUOPC_CompAttributeGet
+    use shr_nuopc_methods_mod, only : shr_nuopc_methods_ChkErr
+    use perf_mod, only : t_prf, t_finalizef
+    use med_constants_mod, only : CL
+
+    type(ESMF_GridComp) :: driver
+    integer, intent(out) :: rc
+    character(CL) :: timing_dir        ! timing directory
+    character(len=5) :: inst_suffix
+    logical :: isPresent
+
+    rc = ESMF_SUCCESS
+
+    call NUOPC_CompAttributeGet(driver, name="timing_dir",value=timing_dir, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(driver, name="inst_suffix", isPresent=isPresent, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent) then
+       call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       inst_suffix = ""
+    endif
+
+    call t_finalizef()
+
+  end subroutine esm_finalize
+
+  !================================================================================
+
+  ! Method to be attached to components to handle
+  ! CESM specific ways of writing restart files
+  !
+  ! This is used with MOM6 now and may need to be
+  ! extended or generalized to other components
+  subroutine GetRestartFileToWrite(gcomp, rc)
+    use ESMF,         only: ESMF_GridComp, ESMF_GridCompGet
+    use ESMF,         only: ESMF_LogSetError, ESMF_SUCCESS, ESMF_RC_FILE_OPEN
+    use ESMF,         only: ESMF_RC_ATTR_NOTSET
+    use ESMF,         only: ESMF_Time, ESMF_TimeGet
+    use ESMF,         only: ESMF_Clock, ESMF_ClockGetNextTime
+    use ESMF,         only: ESMF_VM, ESMF_VMGet
+    use ESMF,         only: ESMF_MAXSTR, ESMF_LogWrite, ESMF_LOGMSG_INFO
+    use NUOPC,        only: NUOPC_CompAttributeGet, NUOPC_CompAttributeSet
+    use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
+
+    type(ESMF_GridComp)                 :: gcomp
+    integer            , intent(out)    :: rc
+
+    type(ESMF_VM)           :: vm
+    integer                 :: localPet, nu, iostat
+    type(ESMF_Clock)        :: clock
+    type(ESMF_Time)         :: nextTime
+    character(ESMF_MAXSTR)  :: casename, restartname
+    logical                 :: isPresent, isSet
+    integer                 :: year, month, day, seconds
+    character(len=*), parameter :: subname='GetRestartFileToWrite'
+
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
+    rc = ESMF_SUCCESS
+
+    call NUOPC_CompAttributeGet(gcomp, name='case_name', value=casename, &
+         isPresent=isPresent, isSet=isSet, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (.not. isPresent .or. .not. isSet) then
+       call ESMF_LogSetError(ESMF_RC_ATTR_NOTSET, &
+            msg=subname//": case_name attribute must be set to generate restart filename",  &
+            line=__LINE__, file=__FILE__, rcToReturn=rc)
+       return
+    endif
+
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Need to use next time step since clock is
+    ! not advanced until the end of the time interval
+    call ESMF_ClockGetNextTime(clock, nextTime, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet(nextTime, yy=year, mm=month, dd=day, s=seconds, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    write(restartname,'(A,".mom6.r.",I4.4,"-",I2.2,"-",I2.2,"-",I5.5)') &
+         trim(casename), year, month, day, seconds
+
+    call NUOPC_CompAttributeSet(gcomp, name="RestartFileToWrite", &
+         value=trim(restartname), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (localPet == 0) then
+       ! Write name of restart file in the rpointer file
+       ! This is currently hard-coded for the ocean
+       nu = shr_file_getUnit()
+       open(nu, file='rpointer.ocn', form='formatted', &
+            status='unknown', iostat=iostat)
+       if (iostat /= 0) then
+          call ESMF_LogSetError(ESMF_RC_FILE_OPEN, &
+               msg=subname//' ERROR opening rpointer.ocn', &
+               line=__LINE__, file=u_FILE_u, rcToReturn=rc)
+          return
+       endif
+       write(nu,'(a)') trim(restartname)//'.nc'
+       close(nu)
+       call shr_file_freeUnit(nu)
+    endif
+    call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
+
+  end subroutine GetRestartFileToWrite
+
+  !================================================================================
+
+  subroutine GetRestartFileToRead(gcomp, rc)
+
+    use ESMF,         only: ESMF_GridComp, ESMF_GridCompGet
+    use ESMF,         only: ESMF_LogSetError, ESMF_SUCCESS, ESMF_RC_FILE_OPEN
+    use ESMF,         only: ESMF_RC_FILE_READ
+    use ESMF,         only: ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
+    use ESMF,         only: ESMF_MAXSTR, ESMF_LogWrite, ESMF_LOGMSG_INFO
+    use NUOPC,        only: NUOPC_CompAttributeSet
+    use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
+
+    type(ESMF_GridComp)                 :: gcomp
+    integer            , intent(out)    :: rc
+
+    type(ESMF_VM)           :: vm
+    integer                 :: localPet, readunit, iostat
+    logical                 :: is_restart
+    character(ESMF_MAXSTR)  :: restartname
+    character(len=*), parameter :: subname='GetRestartFileToRead'
+
+    rc = ESMF_SUCCESS
+    if (dbug_flag > 5) then
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
+    endif
+
+    is_restart = IsRestart(gcomp, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (is_restart) then
+       restartname = ""
+
+       call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (localPet == 0) then
+          readunit = shr_file_getUnit()
+          ! this hard coded for rpointer.ocn right now
+          open(readunit, file='rpointer.ocn', form='formatted', status='old', iostat=iostat)
+          if (iostat /= 0) then
+             call ESMF_LogSetError(ESMF_RC_FILE_OPEN, msg=subname//' ERROR opening rpointer.ocn', &
+                  line=__LINE__, file=u_FILE_u, rcToReturn=rc)
+             return
+          endif
+          read(readunit,'(a)', iostat=iostat) restartname
+          if (iostat /= 0) then
+             call ESMF_LogSetError(ESMF_RC_FILE_READ, msg=subname//' ERROR reading rpointer.ocn', &
+                  line=__LINE__, file=u_FILE_u, rcToReturn=rc)
+             return
+          endif
+          close(readunit)
+       endif
+
+       ! broadcast attribute set on master task to all tasks
+       call ESMF_VMBroadcast(vm, restartname, count=ESMF_MAXSTR-1, rootPet=0, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       !write(logunit,*) trim(subname)//":restartfile after broadcast = "//trim(restartfile)
+
+       call NUOPC_CompAttributeSet(gcomp, name='RestartFileToRead', &
+            value=trim(restartname), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
+    call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
+
+  end subroutine GetRestartFileToRead
 
 end module ESM

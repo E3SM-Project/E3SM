@@ -37,7 +37,7 @@ module med_phases_mod
     use med_merge_mod           , only : med_merge_auto
     use med_map_mod             , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod   , only : InternalState
-
+    use perf_mod                , only : t_startf, t_stopf
     !----------------------------------------------------------
     ! Initialize field bundles, etc. that are needed as part of
     ! the med_phases routines
@@ -55,8 +55,9 @@ module med_phases_mod
     character(CL), pointer :: fldnames(:)
     logical                       :: mastertask
     character(*)      , parameter :: u_FILE_u  = __FILE__
-
+    character(len=*)  , parameter :: subname="med_phases_init"
     !-----------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 1) then
        call ESMF_LogWrite("Starting to initialize mediator phases", ESMF_LOGMSG_INFO)
@@ -142,6 +143,7 @@ module med_phases_mod
        !      STgeom=is_local%wrap%NStateImp(complnd), fieldnamelist=flds_g2x_to_lnd, name='FBMed_g2x_to_lnd', rc=rc)
        ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_init
 

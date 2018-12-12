@@ -8,7 +8,6 @@ The summary file calculates global means, RMSZ scores, PCA loadings, and max err
 This summary file is required for pyCECT.py.
 
 :AUTHORS: Haiying Xu, Allison Baker
-:VERSION: 1.0.0
 :COPYRIGHT: See the document entitled LICENSE.txt
 
 Send questions and comments to Haiying Xu (haiyingx@ucar.edu).

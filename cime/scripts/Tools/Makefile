@@ -143,7 +143,7 @@ ifeq ($(strip $(PIO_VERSION)),1)
 endif
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
@@ -592,10 +592,10 @@ ifdef LIB_MPI
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
 endif
+
 ifdef LIB_KOKKOS
    SLIBS += -L$(LIB_KOKKOS) -lkokkos
 endif
-
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)

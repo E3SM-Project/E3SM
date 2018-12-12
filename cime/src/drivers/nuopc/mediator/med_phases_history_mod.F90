@@ -54,7 +54,7 @@ contains
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod            , only : med_io_sec2hms
-
+    use perf_mod              , only : t_startf, t_stopf
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -73,7 +73,6 @@ contains
     type(InternalState)     :: is_local
     character(CS)           :: histavg_option ! Histavg option units
     integer                 :: i,j,m,n,n1,ncnt
-    integer                 :: mpicom, iam
     integer                 :: start_ymd      ! Starting date YYYYMMDD
     integer                 :: start_tod      ! Starting time-of-day (s)
     integer                 :: nx,ny          ! global grid size
@@ -93,12 +92,13 @@ contains
     real(r8)                :: tbnds(2)       ! CF1.0 time bounds
     logical                 :: whead,wdata    ! for writing restart/history cdf files
     integer                 :: dbrc
+    integer                 :: iam
     logical,save            :: first_call = .true.
     character(len=*), parameter :: subname='(med_phases_history_write)'
     logical :: isPresent
 
     !---------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -111,7 +111,7 @@ contains
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=iam, rc=rc)
+    call ESMF_VMGet(vm, localPet=iam, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
@@ -172,13 +172,6 @@ contains
     if (dbug_flag > 1) then
        call ESMF_LogWrite(trim(subname)//": nexttime = "//trim(nexttimestr), ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-
-    if (mastertask) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
-            " mediating for: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
     timediff = nexttime - reftime
     call ESMF_TimeIntervalGet(timediff, d=day, s=sec, rc=rc)
     dayssince = day + sec/real(SecPerDay,R8)
@@ -215,6 +208,13 @@ contains
        alarmIsOn = .true.
        call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#if DEBUG
+       if (mastertask) then
+          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
+               " history alarm for: ", rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+#endif
     else
        alarmisOn = .false.
     endif
@@ -249,7 +249,7 @@ contains
        write(hist_file,"(6a)") &
             trim(case_name), '.cpl',trim(cpl_inst_tag),'.hi.', trim(nexttimestr),'.nc'
        call ESMF_LogWrite(trim(subname)//": write "//trim(hist_file), ESMF_LOGMSG_INFO, rc=dbrc)
-       call med_io_wopen(hist_file, mpicom, iam, clobber=.true.)
+       call med_io_wopen(hist_file, vm, iam, clobber=.true.)
 
        do m = 1,2
           whead=.false.
@@ -306,6 +306,7 @@ contains
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_history_write
 

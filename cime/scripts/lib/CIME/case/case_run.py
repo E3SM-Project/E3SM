@@ -233,7 +233,7 @@ def _resubmit_check(case):
     elif dout_s and mach == 'mira':
         caseroot = case.get_value("CASEROOT")
         cimeroot = case.get_value("CIMEROOT")
-        cmd = "ssh cooleylogin1 'cd {}; CIMEROOT={} ./case.submit {} --job case.st_archive'".format(caseroot, cimeroot, caseroot)
+        cmd = "ssh cooleylogin1 'cd {case}; CIMEROOT={root} ./case.submit {case} --job case.st_archive'".format(case=caseroot, root=cimeroot)
         run_cmd(cmd, verbose=True)
 
     if resubmit:
@@ -248,7 +248,7 @@ def _do_external(script_name, caseroot, rundir, lid, prefix):
     filename = "{}.external.log.{}".format(prefix, lid)
     outfile = os.path.join(rundir, filename)
     append_status("Starting script {}".format(script_name), "CaseStatus")
-    run_sub_or_cmd(script_name, [caseroot], (os.path.basename(script_name).split('.',1))[0], [caseroot], logfile=outfile)
+    run_sub_or_cmd(script_name, [caseroot], (os.path.basename(script_name).split('.',1))[0], [caseroot], logfile=outfile) # For sub, use case?
     append_status("Completed script {}".format(script_name), "CaseStatus")
 
 ###############################################################################
@@ -257,7 +257,7 @@ def _do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
     expect(os.path.isfile(da_script), "Data Assimilation script {} not found".format(da_script))
     filename = "da.log.{}".format(lid)
     outfile = os.path.join(rundir, filename)
-    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile)
+    run_sub_or_cmd(da_script, [caseroot, cycle], os.path.basename(da_script), [caseroot, cycle], logfile=outfile) # For sub, use case?
 
 ###############################################################################
 def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=False):
@@ -266,7 +266,6 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
     # Set up the run, run the model, do the postrun steps
     prerun_script = self.get_value("PRERUN_SCRIPT")
     postrun_script = self.get_value("POSTRUN_SCRIPT")
-    driver = self.get_value("COMP_INTERFACE")
 
     data_assimilation_cycles = self.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = self.get_value("DATA_ASSIMILATION_SCRIPT")
@@ -274,7 +273,6 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
                          len(data_assimilation_script) > 0 and
                          os.path.isfile(data_assimilation_script))
 
-    driver = self.get_value("COMP_INTERFACE")
 
     # set up the LID
     lid = new_lid()
@@ -297,15 +295,11 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         model_log("e3sm", logger, "{} RUN_MODEL BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
         lid = _run_model(self, lid, skip_pnl, da_cycle=cycle)
         model_log("e3sm", logger, "{} RUN_MODEL HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+        if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
+            model_log("e3sm", logger, "{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+            get_timing(self, lid)     # Run the getTiming script
+            model_log("e3sm", logger, "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-        # TODO mvertens: remove the hard-wiring for nuopc below
-        if driver != 'nuopc':
-            if self.get_value("CHECK_TIMING") or self.get_value("SAVE_TIMING"):
-                model_log("e3sm", logger, "{} GET_TIMING BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-                get_timing(self, lid)     # Run the getTiming script
-                model_log("e3sm", logger, "{} GET_TIMING HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-        else:
-            self.set_value("CHECK_TIMING",False)
 
         if data_assimilation:
             model_log("e3sm", logger, "{} DO_DATA_ASSIMILATION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))

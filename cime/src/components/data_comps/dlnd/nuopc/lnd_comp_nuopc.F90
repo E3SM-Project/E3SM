@@ -25,15 +25,15 @@ module lnd_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
+  use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_strdata_mod       , only : shr_strdata_type
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dlnd_shr_mod          , only : dlnd_shr_read_namelists
   use dlnd_comp_mod         , only : dlnd_comp_init, dlnd_comp_run, dlnd_comp_advertise
-  use mct_mod
+  use mct_mod               , only : mct_Avect, mct_Avect_info
 
   implicit none
   private ! except
@@ -54,12 +54,7 @@ module lnd_comp_nuopc
   type (fld_list_type)       :: fldsToLnd(fldsMax)
   type (fld_list_type)       :: fldsFrLnd(fldsMax)
 
-  character(len=3)           :: myModelName = 'lnd'       ! user defined model name
   type(shr_strdata_type)     :: SDLND
-  type(mct_gsMap), target    :: gsMap_target
-  type(mct_gGrid), target    :: ggrid_target
-  type(mct_gsMap), pointer   :: gsMap
-  type(mct_gGrid), pointer   :: ggrid
   type(mct_aVect)            :: x2d
   type(mct_aVect)            :: d2x
   integer                    :: compid                    ! mct comp id
@@ -70,18 +65,15 @@ module lnd_comp_nuopc
   character(len=16)          :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
   integer                    :: logunit                   ! logging unit number
   integer    ,parameter      :: master_task=0             ! task number of master task
-  integer                    :: localPet
-  logical                    :: unpack_import
   character(CL)              :: case_name                 ! case name
-  character(CL)              :: tmpstr                    ! tmp string
-  integer                    :: dbrc
-  integer, parameter         :: dbug = 10
-  character(len=*),parameter :: grid_option = "mesh"      ! grid_de, grid_arb, grid_reg, mesh
+  logical                    :: lnd_prognostic            ! data is sent back to dlnd
   character(CXX)             :: flds_l2x = ''
   character(CXX)             :: flds_x2l = ''
   character(len=80)          :: calendar                  ! calendar name
   logical                    :: use_esmf_metadata = .false.
   character(*),parameter     :: modName =  "(lnd_comp_nuopc)"
+  integer, parameter         :: debug_import = 0          ! if > 0 will diagnose import fields
+  integer, parameter         :: debug_export = 0          ! if > 0 will diagnose export fields
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -92,11 +84,13 @@ contains
   subroutine SetServices(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
+
+    integer :: dbrc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -128,13 +122,14 @@ contains
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine SetServices
 
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
 
@@ -148,20 +143,23 @@ contains
     logical            :: lnd_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
-    character(CL)      :: cvalue
+    character(len=CL)  :: cvalue
     integer            :: n
     integer            :: ierr           ! error code
     integer            :: shrlogunit     ! original log unit
     integer            :: shrloglev      ! original log level
     logical            :: isPresent
-    character(len=512) :: diro
-    character(len=512) :: logfile
+    character(len=CL)  :: diro
+    character(len=CL)  :: logfile
     integer            :: glc_nec        ! number of elevation classes
+    integer            :: localPet
+    integer            :: dbrc
+    character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -193,8 +191,9 @@ contains
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------
 
-    call dlnd_shr_read_namelists(mpicom, my_task, master_task, &
-         inst_index, inst_suffix, inst_name,  logunit, SDLND, lnd_present, lnd_prognostic)
+    filename = "dlnd_in"//trim(inst_suffix)
+    call dlnd_shr_read_namelists(filename, mpicom, my_task, master_task, &
+         logunit, SDLND, lnd_present, lnd_prognostic)
 
     !--------------------------------
     ! advertise import and export fields
@@ -210,7 +209,7 @@ contains
        fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, &
        flds_l2x, flds_x2l, rc)
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -230,7 +229,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR)  :: convCIM, purpComp
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_TIME)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
@@ -241,25 +239,19 @@ contains
     integer                 :: current_mon               ! model month
     integer                 :: current_day               ! model day
     integer                 :: current_tod               ! model sec into model date
-    integer                 :: nx_global, ny_global
     character(CL)           :: cvalue
     integer                 :: shrlogunit                ! original log unit
     integer                 :: shrloglev                 ! original log level
-    integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    integer                 :: n, klon, klat
-    integer                 :: lsize
-    integer                 :: iam
-    real(r8), pointer       :: lon(:),lat(:)
-    integer , pointer       :: gindex(:)
     logical                 :: read_restart              ! start from restart
+    integer                 :: dbrc
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -307,44 +299,28 @@ contains
        return
     end if
 
+    !--------------------------------
+    ! Generate the mesh
+    !--------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name='mesh_lnd', value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (my_task == master_task) then
+       write(logunit,*) " obtaining dlnd mesh from " // trim(cvalue)
+    end if
+
+    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     !----------------------------------------------------------------------------
     ! Initialize model
     !----------------------------------------------------------------------------
 
-    gsmap => gsmap_target
-    ggrid => ggrid_target
-
     call dlnd_comp_init(x2d, d2x, &
-         SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, &
-         calendar, current_ymd, current_tod)
-
-    !--------------------------------
-    ! generate the grid or mesh from the gsmap and ggrid
-    ! grid_option specifies grid or mesh
-    !--------------------------------
-
-    nx_global = SDLND%nxg
-    ny_global = SDLND%nyg
-    lsize = mct_gsMap_lsize(gsMap, mpicom)
-    allocate(lon(lsize))
-    allocate(lat(lsize))
-    allocate(gindex(lsize))
-
-    klat = mct_aVect_indexRA(ggrid%data, 'lat')
-    klon = mct_aVect_indexRA(ggrid%data, 'lon')
-    call mpi_comm_rank(mpicom, iam, ierr)
-    call mct_gGrid_exportRattr(ggrid,'lon',lon,lsize)
-    call mct_gGrid_exportRattr(ggrid,'lat',lat,lsize)
-    call mct_gsMap_OrderedPoints(gsMap_target, iam, gindex)
-
-    call shr_nuopc_grid_MeshInit(gcomp, nx_global, ny_global, mpicom, gindex, lon, lat, Emesh, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    deallocate(lon)
-    deallocate(lat)
-    deallocate(gindex)
+         SDLND, mpicom, compid, my_task, master_task, &
+         inst_suffix, logunit, read_restart, &
+         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, Emesh)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -378,14 +354,14 @@ contains
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDLND%nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, mpicom, &
+    call shr_nuopc_methods_State_SetScalar(dble(SDLND%nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -393,7 +369,7 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 5) then
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -406,13 +382,14 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine InitializeRealize
 
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -430,12 +407,15 @@ contains
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
+    integer                 :: dbrc
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+
     call shr_nuopc_memcheck(subname, 5, my_task==master_task)
+
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogLevel(max(shrloglev,1))
@@ -448,7 +428,7 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5 .and. master_task) then
+    if (debug_export > 0 .and. my_task == master_task) then
        call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
     endif
 
@@ -456,8 +436,8 @@ contains
     ! Unpack import state
     !--------------------------------
 
-    if (unpack_import) then
-       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2l, grid_option, rc=rc)
+    if (lnd_prognostic) then
+       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2l, grid_option='mesh', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -490,7 +470,7 @@ contains
     call shr_cal_ymd2date(yr, mon, day, nextymd)
 
     call dlnd_comp_run(x2d, d2x, &
-       SDLND, gsmap, ggrid, mpicom, my_task, master_task, &
+       SDLND, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart=.false., write_restart=write_restart, &
        target_ymd=nextYMD, target_tod=nextTOD, case_name=case_name)
 
@@ -498,26 +478,21 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option, rc=rc)
+    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option='mesh', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
-    if (dbug > 5) then
+    if (debug_export > 0) then
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (my_task == master_task) then
-          call ESMF_ClockPrint(clock, options="currTime", preString="------>Advancing LND from: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_ClockPrint(clock, options="stopTime", preString="--------------------------------> to: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-
-       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
-    end if
+    endif
+    if (my_task == master_task) then
+       call shr_nuopc_log_clock_advance(clock, 'LND', logunit)
+    endif
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
@@ -531,19 +506,20 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
+    integer                 :: dbrc
     character(*), parameter :: F00   = "('(dlnd_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(dlnd_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     if (my_task == master_task) then
        write(logunit,F91)
-       write(logunit,F00) trim(myModelName),': end of main integration loop'
+       write(logunit,F00) ' dlnd : end of main integration loop'
        write(logunit,F91)
     end if
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
   end subroutine ModelFinalize
 
