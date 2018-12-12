@@ -21,7 +21,7 @@ from six import assertRaisesRegex
 
 import collections
 
-from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy
+from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy, CIMEError
 import get_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
@@ -1095,7 +1095,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
 
                 elif (phase == RUN_PHASE):
                     if (test == build_fail_test):
-                        with self.assertRaises(SystemExit):
+                        with self.assertRaises(CIMEError):
                             ct._update_test_status(test, phase, TEST_PEND_STATUS)
                     else:
                         ct._update_test_status(test, phase, TEST_PEND_STATUS)
@@ -1111,22 +1111,22 @@ class O_TestTestScheduler(TestCreateTestCommon):
                     self.assertFalse(ct._work_remains(test))
 
                 else:
-                    with self.assertRaises(SystemExit):
+                    with self.assertRaises(CIMEError):
                         ct._update_test_status(test, ct._phases[idx+1], TEST_PEND_STATUS)
 
-                    with self.assertRaises(SystemExit):
+                    with self.assertRaises(CIMEError):
                         ct._update_test_status(test, phase, TEST_PASS_STATUS)
 
                     ct._update_test_status(test, phase, TEST_PEND_STATUS)
                     self.assertFalse(ct._is_broken(test))
                     self.assertTrue(ct._work_remains(test))
 
-                    with self.assertRaises(SystemExit):
+                    with self.assertRaises(CIMEError):
                         ct._update_test_status(test, phase, TEST_PEND_STATUS)
 
                     ct._update_test_status(test, phase, TEST_PASS_STATUS)
 
-                    with self.assertRaises(SystemExit):
+                    with self.assertRaises(CIMEError):
                         ct._update_test_status(test, phase, TEST_FAIL_STATUS)
 
                     self.assertFalse(ct._is_broken(test))
@@ -2207,7 +2207,7 @@ class K_TestCimeCase(TestCreateTestCommon):
             case.set_value("RUN_TYPE", "branch")
 
         # behind the back detection
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(CIMEError):
             with Case(casedir, read_only=False) as case:
                 time.sleep(0.2)
                 safe_copy(backup, active)
@@ -2215,7 +2215,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         with Case(casedir, read_only=False) as case:
             case.set_value("RUN_TYPE", "branch")
 
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(CIMEError):
             with Case(casedir) as case:
                 time.sleep(0.2)
                 safe_copy(backup, active)
@@ -2578,7 +2578,7 @@ class G_TestMacrosBasic(unittest.TestCase):
         maker = Compilers(MockMachines("mymachine", "SomeOS"), version=2.0)
         bad_string = "argle-bargle."
         with assertRaisesRegex(self,
-                SystemExit,
+                CIMEError,
                 "Unrecognized build system provided to write_macros: " + bad_string):
             get_macros(maker, "This string is irrelevant.", bad_string)
 
@@ -2700,7 +2700,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><MPI_PATH>/path/to/default</MPI_PATH></compiler>"""
         xml2 = """<compiler><MPI_PATH>/path/to/other_default</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
-                SystemExit,
+                CIMEError,
                 "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
@@ -2709,7 +2709,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich</MPI_PATH></compiler>"""
         xml2 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich2</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
-                SystemExit,
+                CIMEError,
                 "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
@@ -2718,7 +2718,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><MPI_PATH MPILIB="mpich">/path/to/mpich</MPI_PATH></compiler>"""
         xml2 = """<compiler><MPI_PATH DEBUG="FALSE">/path/to/mpi-debug</MPI_PATH></compiler>"""
         with assertRaisesRegex(self,
-                SystemExit,
+                CIMEError,
                 "Variable MPI_PATH is set ambiguously in config_compilers.xml."):
             self.xml_to_tester(xml1+xml2)
 
@@ -2857,7 +2857,7 @@ class H_TestMakeMacros(unittest.TestCase):
         # references.
         xml1 = """<MPI_LIB_NAME>${MPI_LIB_NAME}</MPI_LIB_NAME>"""
         err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
-        with assertRaisesRegex(self,SystemExit, err_msg):
+        with assertRaisesRegex(self,CIMEError, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
     def test_config_reject_cyclical_references(self):
@@ -2865,7 +2865,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<MPI_LIB_NAME>${MPI_PATH}</MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH>${MPI_LIB_NAME}</MPI_PATH>"""
         err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
-        with assertRaisesRegex(self,SystemExit, err_msg):
+        with assertRaisesRegex(self,CIMEError, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
     def test_variable_insertion_with_machine_specific_setting(self):
@@ -2874,7 +2874,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler MACH="{}"><MPI_LIB_NAME>$MPI_PATH</MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
         err_msg = r".* has bad \$VAR references. Check for circular references or variables that are used in a \$VAR but not actually defined."
-        with assertRaisesRegex(self,SystemExit, err_msg):
+        with assertRaisesRegex(self,CIMEError, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
     def test_override_with_machine_and_new_attributes(self):
@@ -3240,7 +3240,7 @@ OR
 
     try:
         unittest.main(verbosity=2, catchbreak=True)
-    except SystemExit as e:
+    except CIMEError as e:
         if e.__str__() != "False":
             print("Detected failures, leaving directory:", TEST_ROOT)
         else:

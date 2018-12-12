@@ -162,7 +162,7 @@ class Machines(GenericXML):
         >>> machobj.set_machine("trump")
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: No machine trump found
+        CIMEError: ERROR: No machine trump found
         """
         if machine == "Query":
             self.machine = machine

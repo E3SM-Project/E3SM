@@ -393,7 +393,7 @@ class EnvBatch(EnvBase):
                     if " " in val:
                         try:
                             rval = eval(val)
-                        except:
+                        except Exception:
                             rval = val
                     else:
                         rval = val
@@ -435,7 +435,7 @@ class EnvBatch(EnvBase):
                 else:
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
-            except:
+            except Exception:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
 
             if prereq:

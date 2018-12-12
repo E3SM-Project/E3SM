@@ -623,21 +623,21 @@ def literal_to_python_value(literal, type_=None):
     >>> literal_to_python_value("bacon")
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: 'bacon' is not a valid literal for any Fortran type.
+    CIMEError: ERROR: 'bacon' is not a valid literal for any Fortran type.
     >>> literal_to_python_value("1", type_="real")
     1.0
     >>> literal_to_python_value("bacon", type_="logical")
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: 'bacon' is not a valid literal of type 'logical'.
+    CIMEError: ERROR: 'bacon' is not a valid literal of type 'logical'.
     >>> literal_to_python_value("1", type_="booga")
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: Invalid Fortran type for a namelist: 'booga'
+    CIMEError: ERROR: Invalid Fortran type for a namelist: 'booga'
     >>> literal_to_python_value("2*1")
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: Cannot use repetition syntax in literal_to_python_value
+    CIMEError: ERROR: Cannot use repetition syntax in literal_to_python_value
     >>> literal_to_python_value("")
     >>> literal_to_python_value("-1.D+10")
     -10000000000.0
@@ -858,15 +858,13 @@ def shouldRaise(eclass, method, *args, **kw):
     """
     try:
         method(*args, **kw)
-    except:
+    except BaseException:
         e = sys.exc_info()[1]
         if not isinstance(e, eclass):
             raise
         return
     raise Exception("Expected exception %s not raised" %
                     str(eclass))
-
-
 
 class Namelist(object):
 
@@ -968,7 +966,7 @@ class Namelist(object):
         >>> parse(text='&foo bar=1 / &bazz bar=1 /').get_value('bar')  # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Namelist.get_value: Variable {} is present in multiple groups: ...
+        CIMEError: ERROR: Namelist.get_value: Variable {} is present in multiple groups: ...
         >>> parse(text='&foo bar=1 / &bazz /').get_value('Bar')
         ['1']
         >>> parse(text='&foo bar(2)=1 / &bazz /').get_value('Bar(2)')
@@ -2065,7 +2063,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("foo(1:2)=1,2,3 ")._parse_name_and_values(allow_eof_end=True)
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Too many values for array foo(1:2)
+        CIMEError: ERROR: Too many values for array foo(1:2)
         >>> _NamelistParser("foo=1,")._parse_name_and_values(allow_eof_end=True)
         ('foo', ['1', ''], False)
         >>> _NamelistParser("foo+=1")._parse_name_and_values(allow_eof_end=True)
