@@ -120,7 +120,7 @@ def expect(condition, error_msg, exc_type=CIMEError, error_prefix="ERROR:"):
     checking user error, not programming error.
 
     >>> expect(True, "error1")
-    >>> expect(False, "error2")
+    >>> expect(False, "error2") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: error2
@@ -489,7 +489,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
 
     >>> run_cmd_no_fail('echo foo') == 'foo'
     True
-    >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
+    >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
@@ -574,11 +574,11 @@ def parse_test_name(test_name):
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
-    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
-    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV

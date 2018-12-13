@@ -620,21 +620,21 @@ def literal_to_python_value(literal, type_=None):
     True
     >>> literal_to_python_value("Fortune")
     False
-    >>> literal_to_python_value("bacon")
+    >>> literal_to_python_value("bacon") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     CIMEError: ERROR: 'bacon' is not a valid literal for any Fortran type.
     >>> literal_to_python_value("1", type_="real")
     1.0
-    >>> literal_to_python_value("bacon", type_="logical")
+    >>> literal_to_python_value("bacon", type_="logical") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     CIMEError: ERROR: 'bacon' is not a valid literal of type 'logical'.
-    >>> literal_to_python_value("1", type_="booga")
+    >>> literal_to_python_value("1", type_="booga") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     CIMEError: ERROR: Invalid Fortran type for a namelist: 'booga'
-    >>> literal_to_python_value("2*1")
+    >>> literal_to_python_value("2*1") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
     CIMEError: ERROR: Cannot use repetition syntax in literal_to_python_value
@@ -963,7 +963,7 @@ class Namelist(object):
         not require a `group_name`, and it requires that the `variable_name` be
         unique across all groups.
 
-        >>> parse(text='&foo bar=1 / &bazz bar=1 /').get_value('bar')  # doctest: +ELLIPSIS
+        >>> parse(text='&foo bar=1 / &bazz bar=1 /').get_value('bar')  # doctest: +ELLIPSIS +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
         CIMEError: ERROR: Namelist.get_value: Variable {} is present in multiple groups: ...
@@ -2060,7 +2060,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         ('foo', ['2'], False)
         >>> _NamelistParser("foo=1,2")._parse_name_and_values(allow_eof_end=True)
         ('foo', ['1', '2'], False)
-        >>> _NamelistParser("foo(1:2)=1,2,3 ")._parse_name_and_values(allow_eof_end=True)
+        >>> _NamelistParser("foo(1:2)=1,2,3 ")._parse_name_and_values(allow_eof_end=True) # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
         CIMEError: ERROR: Too many values for array foo(1:2)

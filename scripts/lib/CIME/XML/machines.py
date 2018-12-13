@@ -159,7 +159,7 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="melvin")
         >>> machobj.get_machine_name()
         'melvin'
-        >>> machobj.set_machine("trump")
+        >>> machobj.set_machine("trump") # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
         CIMEError: ERROR: No machine trump found

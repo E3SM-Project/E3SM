@@ -124,7 +124,7 @@ def _parse_namelists(namelist_lines, filename):
     >>> _parse_namelists(teststr.splitlines(), 'foo')
     OrderedDict([('fire_emis_nl', OrderedDict([('fire_emis_factors_file', "'fire_emis_factors_c140116.nc'"), ('fire_emis_specifier', ["'bc_a1 = BC'", "'pom_a1 = 1.4*OC'", "'pom_a2 = A*B*C'", "'SO2 = SO2'"])]))])
 
-    >>> _parse_namelists('blah', 'foo')
+    >>> _parse_namelists('blah', 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: File 'foo' does not appear to be a namelist file, skipping
@@ -133,7 +133,7 @@ def _parse_namelists(namelist_lines, filename):
     ... val = 'one', 'two',
     ... val2 = 'three'
     ... /'''
-    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    >>> _parse_namelists(teststr.splitlines(), 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: In file 'foo', Incomplete multiline variable: 'val'
@@ -141,7 +141,7 @@ def _parse_namelists(namelist_lines, filename):
     >>> teststr = '''&nml
     ... val = 'one', 'two',
     ... /'''
-    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    >>> _parse_namelists(teststr.splitlines(), 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: In file 'foo', Incomplete multiline variable: 'val'
@@ -150,7 +150,7 @@ def _parse_namelists(namelist_lines, filename):
     ... val = 'one', 'two',
     ...       'three -> four'
     ... /'''
-    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    >>> _parse_namelists(teststr.splitlines(), 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: In file 'foo', multiline list variable 'val' had dict entries
