@@ -128,13 +128,7 @@ contains
 
     integer i,j,k
     real (kind=real_kind) :: k_v
-    real (kind=real_kind) :: rps(npts,npts)
     real (kind=real_kind) :: p,etam
-    do j=1,npts
-       do i=1,npts
-         rps(i,j)     = 1.0D0/ps(i,j)
-       end do
-    end do
 
     do k=1,nlevels
        do j=1,npts
@@ -147,7 +141,6 @@ contains
 
              etam      = hvcoord%hyai(k) + hvcoord%hybi(k)
              k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
-!             k_v = 0
 !             hs_v_frc(i,j,3,k) = -k_v*(v(i,j,3,k)-wsurf(i,j))
              hs_v_frc(i,j,3,k) = -k_v*v(i,j,3,k)
           end do
@@ -178,8 +171,6 @@ contains
     real (kind=real_kind) :: snlatsq(npts,npts)
     real (kind=real_kind) :: cslatsq(npts,npts)
 
-    real (kind=real_kind) :: rps(npts,npts)
-
     real (kind=real_kind) :: rec_one_minus_sigma_b
 
     integer i,j,k
@@ -191,7 +182,6 @@ contains
          snlat        = SIN(sphere(i,j)%lat)
          snlatsq(i,j) = snlat*snlat
          cslatsq(i,j) = 1.0D0 - snlatsq(i,j)
-         rps(i,j)     = 1.0D0/ps(i,j)
        end do
     end do
 

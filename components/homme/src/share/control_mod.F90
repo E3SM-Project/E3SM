@@ -41,8 +41,11 @@ module control_mod
 !                         (solid wall bc's, high-order throughout)
 !                      2  PPM vertical remap without mirroring at the boundaries
 !                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
-  integer, public :: vert_remap_q_alg = 0
+ integer, public :: vert_remap_q_alg = 0
 
+! advect theta 0: conservation form 
+!              1: expanded divergence form (less noisy, non-conservative)
+ integer, public :: theta_advect_form = 0
 
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)

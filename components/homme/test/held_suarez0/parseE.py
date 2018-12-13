@@ -144,7 +144,7 @@ except eof,e:
     plt.plot(time,DELE,label='TOT E dissipation')
 
     plt.axis([0, 500, -.5, .1])
-    plt.axis([0, 500, -.1, .1])
+    #plt.axis([0, 500, -.1, .1])
     #plt.axis([1600, 1700, -.4, .2])
     plt.grid(True)
     plt.legend()
