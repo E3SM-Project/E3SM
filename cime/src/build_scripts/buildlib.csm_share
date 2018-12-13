@@ -25,10 +25,18 @@ my $NINST_GLC		= `./xmlquery NINST_GLC		-value`;
 my $NINST_LND		= `./xmlquery NINST_LND		-value`;
 my $NINST_OCN		= `./xmlquery NINST_OCN		-value`;
 my $NINST_ROF		= `./xmlquery NINST_ROF		-value`;
+my $NINST_IAC		= `./xmlquery NINST_IAC		-value`;
 my $NINST_WAV		= `./xmlquery NINST_WAV		-value`;
 my $NINST_ESP		= `./xmlquery NINST_ESP		-value`;
 my $NINST_VALUE		= `./xmlquery NINST_VALUE	-value`;
 $ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	-value`;
+
+# Kludge to allow the IAC stub without modifying the xml files for each
+# test.  I honestly have no idea how NINST_FOO are set
+if ("$NINST_IAC" == "") {
+  $NINST_IAC=0;
+}
+
 #--------------------------------------------------------------------
 # Filepath: list of source code directories (in order of importance).
 #--------------------------------------------------------------------
@@ -82,6 +90,7 @@ $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ICE=$NINST_ICE";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_GLC=$NINST_GLC";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_WAV=$NINST_WAV";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ROF=$NINST_ROF";
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_IAC=$NINST_IAC";
 $multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ESP=$NINST_ESP";
 
 my $bld = "$GMAKE  complib -j $GMAKE_J MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $CASETOOLS/Makefile ";

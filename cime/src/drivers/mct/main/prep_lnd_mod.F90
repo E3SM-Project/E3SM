@@ -490,7 +490,7 @@ contains
 
     ! Stub
 
-  end subroutine prep_lnd_calc_g2x_lx
+  end subroutine prep_lnd_calc_z2x_lx
 
   !================================================================================================
 
@@ -512,7 +512,7 @@ contains
   function prep_lnd_get_z2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_z2x_lx(:)
     prep_lnd_get_z2x_lx => z2x_lx(:)
-  end function prep_lnd_get_g2x_lx
+  end function prep_lnd_get_z2x_lx
 
   function prep_lnd_get_mapper_Sa2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Sa2l

@@ -219,10 +219,11 @@ contains
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_frac_init( infodata,         &
-     atm, ice, lnd, ocn, glc, rof, wav,     &
-     fractions_a, fractions_i, fractions_l, &
-     fractions_o, fractions_g, fractions_r, fractions_w)
+subroutine seq_frac_init( infodata,          &
+     atm, ice, lnd, ocn, glc, rof, wav, iac, &
+     fractions_a, fractions_i, fractions_l,  &
+     fractions_o, fractions_g, fractions_r,  &
+     fractions_w, fractions_z)
 
 ! !INPUT/OUTPUT PARAMETERS:
    type(seq_infodata_type) , intent(in)    :: infodata
@@ -233,6 +234,7 @@ subroutine seq_frac_init( infodata,         &
    type(component_type)    , intent(in)    :: glc
    type(component_type)    , intent(in)    :: rof
    type(component_type)    , intent(in)    :: wav
+   type(component_type)    , intent(in)    :: iac
    type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_l   ! Fractions on lnd grid/decomp
@@ -240,6 +242,7 @@ subroutine seq_frac_init( infodata,         &
    type(mct_aVect)         , intent(inout) :: fractions_g   ! Fractions on glc grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_r   ! Fractions on rof grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_w   ! Fractions on wav grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_z   ! Fractions on iac grid/decomp
 !EOP
 
    !----- local -----
@@ -250,6 +253,7 @@ subroutine seq_frac_init( infodata,         &
    type(mct_ggrid), pointer    :: dom_g
    type(mct_ggrid), pointer    :: dom_r
    type(mct_ggrid), pointer    :: dom_w
+   type(mct_ggrid), pointer    :: dom_z
 
    logical :: atm_present   ! .true. => atm is present
    logical :: ice_present   ! .true. => ice is present
@@ -258,6 +262,7 @@ subroutine seq_frac_init( infodata,         &
    logical :: glc_present   ! .true. => glc is present
    logical :: rof_present   ! .true. => rof is present
    logical :: wav_present   ! .true. => wav is present
+   logical :: iac_present   ! .true. => iac is present
    logical :: dead_comps    ! .true. => dead models present
 
    integer :: j,n            ! indices
@@ -273,6 +278,7 @@ subroutine seq_frac_init( infodata,         &
    character(*),parameter :: fraclist_g = 'gfrac:lfrac'
    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
    character(*),parameter :: fraclist_w = 'wfrac'
+   character(*),parameter :: fraclist_z = 'afrac:lfrac'
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_frac_init) '
@@ -289,6 +295,7 @@ subroutine seq_frac_init( infodata,         &
         ocn_present=ocn_present,       &
         glc_present=glc_present,       &
         wav_present=wav_present,       &
+        iac_present=wav_present,       &
         dead_comps=dead_comps)
 
    dom_a => component_get_dom_cx(atm)
@@ -298,6 +305,7 @@ subroutine seq_frac_init( infodata,         &
    dom_r => component_get_dom_cx(rof)
    dom_g => component_get_dom_cx(glc)
    dom_w => component_get_dom_cx(wav)
+   dom_w => component_get_dom_cx(iac)
 
    debug_old = seq_frac_debug
    seq_frac_debug = 2

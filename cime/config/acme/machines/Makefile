@@ -795,6 +795,7 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
      ULIBDEP += $(LIBROOT)/libesp.a
+     ULIBDEP += $(LIBROOT)/libiac.a
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
        ifeq ($(CISM_USE_TRILINOS), TRUE)

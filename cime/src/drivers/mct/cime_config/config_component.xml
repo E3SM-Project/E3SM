@@ -11,7 +11,7 @@
 
   <entry id="COMP_CLASSES">
     <type>char</type>
-    <default_value>CPL,ATM,LND,ICE,OCN,ROF,GLC,WAV,ESP</default_value>
+    <default_value>CPL,ATM,LND,ICE,OCN,ROF,GLC,WAV,ESP,IAC</default_value>
     <file>env_case.xml</file>
     <group>case_comp</group>
     <desc>List of component classes supported by this driver</desc>
@@ -1942,6 +1942,7 @@
       <value component="ROF"> 0</value>
       <value component="LND"> 0</value>
       <value component="ESP"> 0</value>
+      <value component="IAC"> 0</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -1960,6 +1961,7 @@
       <value component="ROF">1</value>
       <value component="LND">1</value>
       <value component="ESP">1</value>
+      <value component="IAC">1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -1978,6 +1980,7 @@
       <value component="ROF">0</value>
       <value component="LND">0</value>
       <value component="ESP">0</value>
+      <value component="IAC">0</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -1995,6 +1998,7 @@
       <value component="ROF">1</value>
       <value component="LND">1</value>
       <value component="ESP">1</value>
+      <value component="IAC">1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2013,6 +2017,7 @@
       <value component="ROF">concurrent</value>
       <value component="LND">concurrent</value>
       <value component="ESP">concurrent</value>
+      <value component="IAC">concurrent</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2031,6 +2036,7 @@
       <value component="ROF">1</value>
       <value component="LND">1</value>
       <value component="ESP">1</value>
+      <value component="IAC">1</value>
     </values>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
@@ -2215,6 +2221,7 @@
       <value component="ROF">default</value>
       <value component="LND">default</value>
       <value component="ESP">default</value>
+      <value component="IAC">default</value>
     </values>
   </entry>
 
@@ -2236,6 +2243,7 @@
       <value component="ROF"></value>
       <value component="LND"></value>
       <value component="ESP"></value>
+      <value component="IAC"></value>
     </values>
   </entry>
 
@@ -2256,6 +2264,7 @@
       <value component="ROF"></value>
       <value component="LND"></value>
       <value component="ESP"></value>
+      <value component="IAC"></value>
     </values>
   </entry>
 
@@ -2274,6 +2283,7 @@
       <value component="ROF">1</value>
       <value component="LND">1</value>
       <value component="ESP">1</value>
+      <value component="IAC">1</value>
     </values>
   </entry>
 
@@ -2295,6 +2305,7 @@
       <value component="ROF">-99</value>
       <value component="LND">-99</value>
       <value component="ESP">-99</value>
+      <value component="IAC">-99</value>
     </values>
   </entry>
 

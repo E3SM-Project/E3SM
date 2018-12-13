@@ -102,6 +102,7 @@ module seq_rest_mod
    logical     :: glc_present            ! .true.  => glc is present
    logical     :: wav_present            ! .true.  => wav is present
    logical     :: esp_present            ! .true.  => esp is present
+   logical     :: iac_present            ! .true.  => iac is present
 
    logical     :: atm_prognostic         ! .true.  => atm comp expects input
    logical     :: lnd_prognostic         ! .true.  => lnd comp expects input
@@ -111,6 +112,7 @@ module seq_rest_mod
    logical     :: glc_prognostic         ! .true.  => glc comp expects input
    logical     :: wav_prognostic         ! .true.  => wav comp expects input
    logical     :: esp_prognostic         ! .true.  => esp comp expects input
+   logical     :: iac_prognostic         ! .true.  => iac comp expects input
 
    integer(IN) :: info_debug = 0         ! local info_debug level
 
@@ -130,9 +132,9 @@ contains
 !===============================================================================
 
   subroutine seq_rest_read(rest_file, infodata, &
-       atm, lnd, ice, ocn, rof, glc, wav, esp,  &
+       atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-       fractions_rx, fractions_gx, fractions_wx)
+       fractions_rx, fractions_gx, fractions_wx, fractions_zx)
 
    implicit none
 
@@ -146,6 +148,7 @@ contains
    type (component_type) , intent(inout) :: glc(:)
    type (component_type) , intent(inout) :: wav(:)
    type (component_type) , intent(inout) :: esp(:)
+   type (component_type) , intent(inout) :: iac(:)
    type(mct_aVect)  , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
    type(mct_aVect)  , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
    type(mct_aVect)  , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -153,6 +156,7 @@ contains
    type(mct_aVect)  , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
    type(mct_aVect)  , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
    type(mct_aVect)  , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
+   type(mct_aVect)  , intent(inout) :: fractions_zx(:)   ! Fractions on iac grid/decomp
 
    integer(IN)          :: n,n1,n2,n3
    real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
@@ -185,6 +189,7 @@ contains
         glc_present=glc_present,        &
         wav_present=wav_present,        &
         esp_present=esp_present,        &
+        iac_present=iac_present,        &
         atm_prognostic=atm_prognostic,      &
         lnd_prognostic=lnd_prognostic,      &
         ice_prognostic=ice_prognostic,      &
@@ -193,6 +198,7 @@ contains
         ocnrof_prognostic=ocnrof_prognostic,    &
         glc_prognostic=glc_prognostic,      &
         wav_prognostic=wav_prognostic,      &
+        iac_prognostic=iac_prognostic,      &
         esp_prognostic=esp_prognostic)
 
    if (iamin_CPLID) then
@@ -283,9 +289,9 @@ end subroutine seq_rest_read
 !===============================================================================
 
 subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
-     atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
+     atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-     fractions_rx, fractions_gx, fractions_wx)
+     fractions_rx, fractions_gx, fractions_wx, fractions_zx)
 
    implicit none
 
@@ -300,6 +306,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    type (component_type)       , intent(inout) :: glc(:)
    type (component_type)       , intent(inout) :: wav(:)
    type (component_type)       , intent(inout) :: esp(:)
+   type (component_type)       , intent(inout) :: iac(:)
    type(mct_aVect)        , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -307,6 +314,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
    type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
    type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
+   type(mct_aVect)        , intent(inout) :: fractions_zx(:)   ! Fractions on iac grid/decomp
 
    integer(IN)   :: n,n1,n2,n3,fk
    integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -353,6 +361,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
         glc_present=glc_present,        &
         wav_present=wav_present,        &
         esp_present=esp_present,        &
+        iac_present=iac_present,        &
         atm_prognostic=atm_prognostic,      &
         lnd_prognostic=lnd_prognostic,      &
         ice_prognostic=ice_prognostic,      &
@@ -362,6 +371,7 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
         glc_prognostic=glc_prognostic,      &
         wav_prognostic=wav_prognostic,      &
         esp_prognostic=esp_prognostic,      &
+        iac_prognostic=iac_prognostic,      &
         cpl_cdf64=cdf64,            &
         case_name=case_name)
 

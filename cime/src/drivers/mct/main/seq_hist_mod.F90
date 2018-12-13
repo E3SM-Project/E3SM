@@ -129,9 +129,9 @@ contains
 !===============================================================================
 
 subroutine seq_hist_write(infodata, EClock_d, &
-     atm, lnd, ice, ocn, rof, glc, wav, &
+     atm, lnd, ice, ocn, rof, glc, wav, iac, &
      fractions_ax, fractions_lx, fractions_ix, fractions_ox, fractions_rx,  &
-     fractions_gx, fractions_wx)
+     fractions_gx, fractions_wx, fractions_zx)
 
    implicit none
    !
@@ -145,6 +145,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    type (component_type)   , intent(inout) :: rof(:)
    type (component_type)   , intent(inout) :: glc(:)
    type (component_type)   , intent(inout) :: wav(:)
+   type (component_type)   , intent(inout) :: iac(:)
    type(mct_aVect)         , intent(inout) :: fractions_ax(:) ! Fractions on atm grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_lx(:) ! Fractions on lnd grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_ix(:) ! Fractions on ice grid/decomp
@@ -152,6 +153,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
    type(mct_aVect)         , intent(inout) :: fractions_rx(:) ! Fractions on rof grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_gx(:) ! Fractions on glc grid/decomp
    type(mct_aVect)         , intent(inout) :: fractions_wx(:) ! Fractions on wav grid/decomp
+   type(mct_aVect)         , intent(inout) :: fractions_zx(:) ! Fractions on iac grid/decomp
    !
    ! Local Variables
    integer(IN)   :: curr_ymd     ! Current date YYYYMMDD
@@ -391,7 +393,7 @@ end subroutine seq_hist_write
 !===============================================================================
 
 subroutine seq_hist_writeavg(infodata, EClock_d, &
-     atm, lnd, ice, ocn, rof, glc, wav, write_now)
+     atm, lnd, ice, ocn, rof, glc, wav, iac, write_now)
 
    implicit none
 
@@ -404,6 +406,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
    type (component_type)   ,  intent(in) :: rof(:)
    type (component_type)   ,  intent(in) :: glc(:)
    type (component_type)   ,  intent(in) :: wav(:)
+   type (component_type)   ,  intent(in) :: iac(:)
    logical                 ,  intent(in) :: write_now  ! write or accumulate
 
    integer(IN)           :: curr_ymd     ! Current date YYYYMMDD

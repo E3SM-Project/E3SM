@@ -140,7 +140,7 @@ module cesm_comp_mod
    use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
    use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
    use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
-   use seq_diag_mct, only : seq_diag_iac_mct
+   !!use seq_diag_mct, only : seq_diag_iac_mct
 
    ! list of fields transferred between components
    use seq_flds_mod, only : seq_flds_a2x_fluxes, seq_flds_x2a_fluxes
@@ -2089,9 +2089,9 @@ subroutine cesm_init()
    call seq_diag_zero_mct(mode='all')
    if (read_restart .and. iamin_CPLID) then
       call seq_rest_read(rest_file, infodata, &
-           atm, lnd, ice, ocn, rof, glc, wav, esp, &
+           atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-           fractions_rx, fractions_gx, fractions_wx)
+           fractions_rx, fractions_gx, fractions_wx, fractions_zx)
    endif
 
    call t_adj_detailf(-2)
@@ -2340,7 +2340,7 @@ end subroutine cesm_init
       !----------------------------------------------------------
       !| IAC SETUP-SEND
       !----------------------------------------------------------
-      if (iac_present .and. iac_alarm) then
+      if (iac_present .and. iacrun_alarm) then
          !-------------------------------------------------------
          ! | iac prep-merge
          !-------------------------------------------------------
@@ -2884,7 +2884,7 @@ end subroutine cesm_init
             endif
 
             if (iac_c2_atm) then
-               call prep_atm_calc_z2x_ax(timer='CPL:iacpost_iac2atm')
+               call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:iacpost_iac2atm')
             endif
 
             call t_drvstopf  ('CPL:IACPOST', cplrun=.true.)
@@ -3790,7 +3790,7 @@ end subroutine cesm_init
          endif
 
          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
-              atm, lnd, ice, ocn, rof, glc, wav, esp, iac             &
+              atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
               fractions_rx, fractions_gx, fractions_wx, fractions_zx)
 

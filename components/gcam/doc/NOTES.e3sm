@@ -1,3 +1,54 @@
+12/11/18
+
+* I'm having trouble committing my changes to git.  I wanted to just commit
+  the rename from components/iac to components/gcam, but that's not
+  working, so I'm going to try and commit all my changes.
+
+* Thus, here are the files I changed to get it to compile with the iac
+  stub:
+
+        modified:   cime/config/acme/config_files.xml
+        modified:   cime/config/acme/machines/Makefile
+        modified:   cime/scripts/lib/CIME/case.py
+        modified:   cime/src/build_scripts/buildlib.csm_share
+        modified:   cime/src/drivers/mct/cime_config/config_component.xml
+        modified:   cime/src/drivers/mct/main/cesm_comp_mod.F90
+        modified:   cime/src/drivers/mct/main/prep_lnd_mod.F90
+        modified:   cime/src/drivers/mct/main/seq_frac_mct.F90
+        modified:   cime/src/drivers/mct/main/seq_hist_mod.F90
+        modified:   cime/src/drivers/mct/main/seq_rest_mod.F90
+        modified:   cime/src/drivers/mct/shr/seq_flds_mod.F90
+        modified:   cime/src/drivers/mct/shr/seq_timemgr_mod.F90
+        typechange: components/homme/cmake/machineFiles/sandia-srn-sems.cmake
+        deleted:    components/homme/utils/cime
+        modified:   components/mpas-cice/model (modified content)
+        modified:   components/mpas-o/model (modified content)
+        modified:   components/mpasli/model (modified content)
+
+  I have no idea whats going on with the mpas or homme stuff here - it
+  looks like they get modified by the build process or something.  
+
+* I put the actual diffs in a build.diff file - please don't erase that.
+
+? Huh - well, I had to go into components/mpas*/model directories and do a
+  git commit -a -m'Submodule commit' to get the broader ACME commit to
+  finally go through.  But that begs the question - what exactly is going
+  on with any mpas repository changes?  Seriously, I never modified that at
+  all myself - the only thing I can think of (which is insane) is that the
+  *build* process, somehow, modified the code.  !  Also, these changes were
+  listed as a 'typechange', which, I don't know what that means, but it
+  seems to be something like changing a link to a file or something like
+  that. 
+
+! Anyway, some of my build and testing issues seemed to be related to
+  'mpas', if I remember right.  A 'submodule' is a whole other repository
+  for code to be grabbed from, so could it be that 'mpas' got changed and
+  pulled as part of the build and test, so I have a new version in my
+  working area?  That's completely nuts!  That's just a recipe for code to
+  get changed out from under me, without my knowing it!  
+
+  A lot of weird things that I don't understand going on here...
+
 12/4/18
 
 * From the slack, in how to debug:
