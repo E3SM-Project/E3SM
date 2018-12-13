@@ -8,7 +8,7 @@ submit, check_case and check_da_settings are members of class Case in file case.
 """
 from six.moves                      import configparser
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CASE_SUCCESS, does_file_have_string
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CASE_SUCCESS, does_file_have_string, CIMEError
 from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
 
@@ -71,7 +71,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         env_batch_has_changed = False
         try:
             case.check_lockedfile(os.path.basename(env_batch.filename))
-        except SystemExit:
+        except CIMEError:
             env_batch_has_changed = True
 
         if env_batch.get_batch_system_type() != "none" and env_batch_has_changed:
@@ -159,7 +159,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
                                   batch_args=batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=caseroot,
                                 custom_success_msg_functor=verbatim_success_msg)
-    except:
+    except BaseException: # Want to catch KeyboardInterrupt too
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
         if self.get_value("TEST"):

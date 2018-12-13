@@ -561,7 +561,6 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
 
         lock_file("env_build.xml")
 
-
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):
 ###############################################################################

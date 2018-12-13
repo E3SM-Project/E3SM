@@ -1,4 +1,4 @@
-from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_timestamp
+from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_timestamp, CIMEError
 
 import getpass, logging, os
 
@@ -97,7 +97,7 @@ def reset_file(version, srcpath, dstpath):
     os.remove(dstpath)
     try:
         run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
-    except:
+    except CIMEError:
         # If the above failes, then the file was deleted
         run_cmd_no_fail("git rm -f {}".format(dstpath))
     else:
@@ -203,7 +203,7 @@ def e3sm_cime_split(resume, squash=False, auto_conf=False):
             pr_branch = do_subtree_split(new_split_tag, merge_tag)
 
             run_cmd_no_fail("git checkout {}".format(pr_branch), verbose=True)
-        except:
+        except BaseException:
             # If unexpected failure happens, delete new split tag
             logging.info("Abandoning split due to unexpected failure")
             delete_tag(new_split_tag)
@@ -231,7 +231,7 @@ def e3sm_cime_merge(resume, squash=False, auto_conf=False):
             new_merge_tag = make_new_merge_tag(old_merge_tag)
 
             pr_branch = make_pr_branch(get_branch_from_tag(new_merge_tag), "origin/master")
-        except:
+        except BaseException:
             logging.info("Abandoning merge due to unexpected failure")
             delete_tag(new_merge_tag, remote=ESMCI_REMOTE_NAME)
             raise

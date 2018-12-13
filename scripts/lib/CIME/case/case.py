@@ -1059,7 +1059,6 @@ class Case(object):
             except Exception as e:
                 logger.warning("FAILED to set up exefiles: {}".format(str(e)))
 
-
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
         components.extend(['share', 'drv'])
@@ -1461,7 +1460,7 @@ directory, NOT in this subdirectory."""
 
             # Lock env_case.xml
             lock_file("env_case.xml", self._caseroot)
-        except:
+        except Exception:
             if os.path.exists(self._caseroot):
                 if not logger.isEnabledFor(logging.DEBUG) and not test:
                     logger.warning("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))

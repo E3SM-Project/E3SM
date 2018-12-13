@@ -195,7 +195,7 @@ def parse_command_line(args, description):
     for comp_interface in tmp_comp_interfaces:
         try:
             components = get_components(files[comp_interface])
-        except:
+        except Exception:
             supported_comp_interfaces.remove(comp_interface)
 
         for comp in components:

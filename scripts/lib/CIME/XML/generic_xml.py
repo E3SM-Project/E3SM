@@ -493,7 +493,7 @@ class GenericXML(object):
         if math_re.search(item_data):
             try:
                 tmp = eval(item_data)
-            except:
+            except Exception:
                 tmp = item_data
             item_data = str(tmp)
 
