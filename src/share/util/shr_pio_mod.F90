@@ -178,8 +178,8 @@ contains
        end if
        call pio_set_blocksize(pio_blocksize)
     endif
-
-
+    ! Correct the total_comps value which may be lower in nuopc
+    total_comps = size(comp_iamin)
 
 
     allocate(io_compid(total_comps), io_compname(total_comps))
