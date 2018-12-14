@@ -59,7 +59,7 @@ PRT        = [0.0, 1.0e-14, -1.0e-14]
 PRTSTR     = ['woprt','posprt','negprt']
 
 #file name for file containing PGE cloud
-FCLD_NC  = 'PGN_cloud.nc'
+FCLD_NC  = 'cam.h0.cloud.nc'
 
 #For preparing paths for namelist files for initial condition files
 FILE_PREF_ATM = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
