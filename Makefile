@@ -696,7 +696,7 @@ endif
 endif
 
 
-compiler_test:
+openmp_test:
 ifeq "$(OPENMP)" "true"
 	@echo "Testing compiler for OpenMP support"
 	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
@@ -713,7 +713,47 @@ ifeq "$(OPENMP)" "true"
 endif
 
 
-mpas_main: compiler_test
+pio_test:
+	@#
+	@# Create two test programs: one that should work with PIO1 and a second that should work with PIO2
+	@#
+	@echo "program pio1; use pio; use pionfatt_mod; integer, parameter :: MPAS_IO_OFFSET_KIND = PIO_OFFSET; integer, parameter :: MPAS_INT_FILLVAL = NF_FILL_INT; end program" > pio1.f90
+	@echo "program pio2; use pio; integer, parameter :: MPAS_IO_OFFSET_KIND = PIO_OFFSET_KIND; integer, parameter :: MPAS_INT_FILLVAL = PIO_FILL_INT; end program" > pio2.f90
+
+	@#
+	@# See whether either of the test programs can be compiled
+	@#
+	@echo "Checking for a usable PIO library..."
+	@($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio1.out pio1.f90 &> /dev/null && echo "=> PIO 1 detected") || \
+	 ($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio2.out pio2.f90 &> /dev/null && echo "=> PIO 2 detected") || \
+	 (echo "************ ERROR ************"; \
+	  echo "Failed to compile a PIO test program"; \
+	  echo "Please ensure the PIO environment variable is set to the PIO installation directory"; \
+	  echo "************ ERROR ************"; \
+	  rm -rf pio[12].f90 pio[12].out; exit 1)
+
+	@rm -rf pio[12].out
+
+	@#
+	@# Check that what the user has specified agrees with the PIO library version that was detected
+	@#
+ifeq "$(USE_PIO2)" "true"
+	@($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio2.out pio2.f90 &> /dev/null) || \
+	(echo "************ ERROR ************"; \
+	 echo "PIO 1 was detected, but USE_PIO2=true was specified in the make command"; \
+	 echo "************ ERROR ************"; \
+	 rm -rf pio[12].f90 pio[12].out; exit 1)
+else
+	@($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio1.out pio1.f90 &> /dev/null) || \
+	(echo "************ ERROR ************"; \
+	 echo "PIO 2 was detected. Please specify USE_PIO2=true in the make command"; \
+	 echo "************ ERROR ************"; \
+	 rm -rf pio[12].f90 pio[12].out; exit 1)
+endif
+	@rm -rf pio[12].f90 pio[12].out
+
+
+mpas_main: openmp_test pio_test
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
