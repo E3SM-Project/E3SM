@@ -23,6 +23,7 @@ module med_phases_prep_ice_mod
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet
+    use NUOPC                 , only : NUOPC_IsConnected
     use med_constants_mod     , only : CL, CS, R8
     use esmFlds               , only : compatm, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
@@ -36,6 +37,7 @@ module med_phases_prep_ice_mod
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, logunit, mastertask
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -48,14 +50,20 @@ module med_phases_prep_ice_mod
     real(R8), pointer          :: dataPtr1(:), dataPtr2(:), dataPtr3(:), dataPtr4(:)
     integer                    :: i,n,n1,ncnt
     character(len=CS)          :: fldname
+    logical                    :: air_density_connected
     real(R8), pointer          :: dataptr(:)
+    real(R8), pointer          :: temperature(:)
+    real(R8), pointer          :: pressure(:)
+    real(R8), pointer          :: humidity(:)
+    real(R8), pointer          :: air_density(:)
     character(len=1024)        :: msgString
-    integer                    :: dbrc
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
     real(R8)                   :: flux_epbalfact = 1._R8
     logical,save               :: first_call = .true.
+    integer                    :: dbrc
     character(len=*),parameter :: subname='(med_phases_prep_ice)'
     !---------------------------------------
+
     call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
@@ -95,10 +103,8 @@ module med_phases_prep_ice_mod
 
     call ESMF_GridCompGet(gcomp, clock=clock)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call ESMF_ClockGet(clock,currtime=time,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call ESMF_TimeGet(time,timestring=timestr)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (dbug_flag > 1) then
@@ -138,14 +144,32 @@ module med_phases_prep_ice_mod
          document=first_call, string='(merge_to_ice)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
     !---------------------------------------
     !--- custom calculations
     !---------------------------------------
+
+    ! if air density at lowest model layer is not connected - compute it in mediator
+    ! TODO (mvertens, 2018-12-14): don't hard-wire Sa_dens name
+    air_density_connected = NUOPC_IsConnected(is_local%wrap%NStateImp(compatm), 'Sa_dens', rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (.not. air_density_connected) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_tbot', temperature, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_pbot', pressure, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_shum', humidity, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_dens', air_density, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do n = 1,size(temperature)
+          if (temperature(n) /= 0._R8) then
+             air_density(n) = pressure(n) / (287.058_R8*(1._R8 + 0.608_R8*humidity(n))*temperature(n))
+          else
+             air_density(n) = 0._R8
+          endif
+       end do
+    end if
 
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_rain', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_rain' , dataptr1, rc=rc)
@@ -171,6 +195,11 @@ module med_phases_prep_ice_mod
           write(logunit,'(a)')'(merge_to_ice): Scaling Fixx_rofi by flux_epbalfact '
        end if
     end if
+
+    if (dbug_flag > 1) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
     !---------------------------------------
     !--- update local scalar data

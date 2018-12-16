@@ -523,9 +523,6 @@ contains
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_ChkErr
     use shr_nuopc_utils_mod   , only: shr_nuopc_memcheck
     use perf_mod              , only: t_startf, t_stopf
-    ! ----------------------------------------------
-    ! Map field bundles with appropriate fraction weighting
-    ! ----------------------------------------------
 
     ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer       :: fldsSrc(:)
