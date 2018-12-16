@@ -70,7 +70,7 @@ contains
     v(:,:,3,:) = 0
 #endif
 
-    fv = hs_v_forcing(hvcoord,psfrc(1,1),v,elemin%state%w_i(:,:,nlevp,nm1),np,nlev)
+    fv = hs_v_forcing(hvcoord,psfrc(1,1),v,np,nlev)
 
 #if ( defined MODEL_THETA_L ) 
     elemin%derived%FM(:,:,1:3,:) = elemin%derived%FM(:,:,1:3,:) + fv(:,:,1:3,:)
@@ -113,13 +113,12 @@ contains
     
   end subroutine hs_forcing
 
-  function hs_v_forcing(hvcoord,ps,v,wsurf,npts,nlevels) result(hs_v_frc)
+  function hs_v_forcing(hvcoord,ps,v,npts,nlevels) result(hs_v_frc)
 
     integer, intent(in)               :: npts
     integer, intent(in)               :: nlevels
     type (hvcoord_t), intent(in)       :: hvcoord
     real (kind=real_kind), intent(in) :: ps(npts,npts)
-    real (kind=real_kind), intent(in) :: wsurf(npts,npts)
 
     real (kind=real_kind), intent(in) :: v(npts,npts,3,nlevels)
     real (kind=real_kind)             :: hs_v_frc(npts,npts,3,nlevels)
@@ -141,7 +140,6 @@ contains
 
              etam      = hvcoord%hyai(k) + hvcoord%hybi(k)
              k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
-!             hs_v_frc(i,j,3,k) = -k_v*(v(i,j,3,k)-wsurf(i,j))
              hs_v_frc(i,j,3,k) = -k_v*v(i,j,3,k)
           end do
        end do

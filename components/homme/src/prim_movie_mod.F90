@@ -403,9 +403,11 @@ contains
 
   subroutine prim_movie_output(elem, tl, hvcoord, par)
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
+    use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
     use element_ops, only : get_field
+
 
     type (element_t)    :: elem(:)
 

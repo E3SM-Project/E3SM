@@ -65,7 +65,7 @@ echo using NCPU = $NCPU
 set nlev=26
 set ndays = 1600
 set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
-set rfreq = 16000   # no. of days, or n. of timesteps if ndays=0
+set rfreq = 1600   # no. of days, or n. of timesteps if ndays=0
 
 
 # 0 = normal, 1=restart
