@@ -47,15 +47,15 @@ module med_phases_prep_ice_mod
     type(ESMF_Time)            :: time
     character(len=64)          :: timestr
     type(InternalState)        :: is_local
-    real(R8), pointer          :: dataPtr1(:)
+    real(R8), pointer          :: dataPtr1(:), dataPtr2(:), dataPtr3(:), dataPtr4(:)
     integer                    :: i,n,n1,ncnt
     character(len=CS)          :: fldname
+    logical                    :: air_density_connected
     real(R8), pointer          :: dataptr(:)
     real(R8), pointer          :: temperature(:)
     real(R8), pointer          :: pressure(:)
     real(R8), pointer          :: humidity(:)
     real(R8), pointer          :: air_density(:)
-    real(R8), pointer          :: pot_temp(:)
     character(len=1024)        :: msgString
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
     real(R8)                   :: flux_epbalfact = 1._R8
@@ -88,6 +88,7 @@ module med_phases_prep_ice_mod
 
     call ESMF_FieldBundleGet(is_local%wrap%FBExp(compice), fieldCount=ncnt, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (ncnt == 0) then
        if (dbug_flag > 5) then
           call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compice), returning", &
@@ -147,16 +148,16 @@ module med_phases_prep_ice_mod
     !--- custom calculations
     !---------------------------------------
 
-    ! if air density from atm at lowest model layer is not available - compute it in mediator
-    ! TODO (mvertens, 2018-12-14): don't hard-wire names here
-    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_dens',rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//": computing air density as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
-
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
+    ! if air density at lowest model layer is not connected - compute it in mediator
+    ! TODO (mvertens, 2018-12-14): don't hard-wire Sa_dens name
+    air_density_connected = NUOPC_IsConnected(is_local%wrap%NStateImp(compatm), 'Sa_dens', rc=rc) 
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (.not. air_density_connected) then
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_tbot', temperature, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_pbot', pressure, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_shum', humidity, rc=rc)
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_shum', humidity, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_dens', air_density, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -167,23 +168,6 @@ module med_phases_prep_ice_mod
           else
              air_density(n) = 0._R8
           endif
-       end do
-    end if
-
-    ! if potential temperature from atm at lowest model layer is not available - compute it in mediator
-    ! TODO (mvertens, 2018-12-14): don't hard-wire names here
-    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_ptem',rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//": computing potential temp as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
-
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_ptem', pot_temp, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       do n = 1,size(temperature)
-          pot_temp(n) = temperature(n) * (100000._R8/pressure(n))**0.286_R8 ! Potential temperature (K)
        end do
     end if
 
