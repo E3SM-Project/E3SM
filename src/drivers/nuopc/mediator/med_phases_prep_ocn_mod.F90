@@ -124,6 +124,7 @@ contains
     ! local variables
     type(InternalState)         :: is_local
     integer                     :: n, ncnt
+    real(R8)                    :: c1,c2,c3,c4
     real(R8), pointer           :: dataptr1(:)
     real(R8), pointer           :: ifrac(:), ofrac(:)
     real(R8), pointer           :: ifracr(:), ofracr(:)
@@ -132,8 +133,16 @@ contains
     real(R8), pointer           :: swvdf(:), swndf(:)
     real(R8), pointer           :: swvdr(:), swndr(:)
     real(R8), pointer           :: swpen(:), swnet(:)
-    real(r8), pointer           :: latent(:)
-    real(r8), pointer           :: evap(:)
+    real(R8), pointer           :: mean_net_sw_vis_dir_flx(:)
+    real(R8), pointer           :: mean_net_sw_vis_dif_flx(:)
+    real(R8), pointer           :: mean_net_sw_ir_dir_flx(:)
+    real(R8), pointer           :: mean_net_sw_ir_dif_flx(:)
+    real(R8), pointer           :: swpen_vis_dir(:)
+    real(R8), pointer           :: swpen_vis_dif(:)
+    real(R8), pointer           :: swpen_ir_dir(:)
+    real(R8), pointer           :: swpen_ir_dif(:)
+    real(R8), pointer           :: latent(:)
+    real(R8), pointer           :: evap(:)
     real(R8)                    :: ifrac_scaled, ofrac_scaled
     real(R8)                    :: ifracr_scaled, ofracr_scaled
     real(R8)                    :: frac_sum
@@ -251,6 +260,35 @@ contains
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+          if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', rc=rc)) then
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', &
+                  mean_net_sw_vis_dir_flx, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dif_flx', &
+                  mean_net_sw_vis_dif_flx, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dir_flx', &
+                  mean_net_sw_ir_dir_flx, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dir_flx', &
+                  mean_net_sw_ir_dir_flx, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+
+          if (is_local%wrap%comp_present(compice)) then
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             ! TODO (mvertens, 2018-12-16): currently these are not available from cice
+             ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_vis_dir_flx', swpen_vis_dir, rc=rc)
+             ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_vis_dif_flx', swpen_vis_dif, rc=rc)
+             ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_ir_dir_flx', swpen_ir_dir, rc=rc)
+             ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_ir_dif_flx', swpen_ir_dif, rc=rc)
+             ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', swvdr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', swndr, rc=rc)
@@ -260,15 +298,11 @@ contains
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           
+
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          if (is_local%wrap%comp_present(compice)) then
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
 
           ! determine if ocean albedos are computed in mediator
           compute_ocnalb = ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o, rc=rc)
@@ -290,9 +324,6 @@ contains
              call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              do n = 1,size(swnet)
-                fswabsv  = swvdr(n) * (1.0_R8 - avsdr(n)) + swvdf(n) * (1.0_R8 - avsdf(n))
-                fswabsi  = swndr(n) * (1.0_R8 - anidr(n)) + swndf(n) * (1.0_R8 - anidf(n))
-                swnet(n) = fswabsv + fswabsi
                 if (is_local%wrap%comp_present(compice)) then
                    ifrac_scaled = ifrac(n)
                    ofrac_scaled = ofrac(n)
@@ -309,7 +340,30 @@ contains
                       ofracr_scaled = ofracr(n) / (frac_sum)
                    endif
                 end if
-                swnet(n) = ofracr_scaled*swnet(n) + ifrac_scaled*swpen(n)
+
+                fswabsv  = swvdr(n) * (1.0_R8 - avsdr(n)) + swvdf(n) * (1.0_R8 - avsdf(n))
+                fswabsi  = swndr(n) * (1.0_R8 - anidr(n)) + swndf(n) * (1.0_R8 - anidf(n))
+                swnet(n) = ofracr_scaled*(fswabsv+fswabsi) + ifrac_scaled*swpen(n)
+
+
+                if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', rc=rc)) then
+                   c1 = 0.285
+                   c2 = 0.285
+                   c3 = 0.215
+                   c4 = 0.215
+                   
+                   mean_net_sw_vis_dir_flx(n) = c1 * swnet(n)
+                   mean_net_sw_vis_dif_flx(n) = c2 * swnet(n)
+                   mean_net_sw_ir_dir_flx(n)  = c3 * swnet(n)
+                   mean_net_sw_ir_dif_flx(n)  = c4 * swnet(n)
+
+                   ! TODO (mvertens, 2018-12-16): currently the swpen arrays are not available from cice
+                   ! mean_net_sw_vis_dir_flx(n) = swvdr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + swpen_vis_dir(n)*ifrac_scaled
+                   ! mean_net_sw_vis_dif_flx(n) = swvdf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + swpen_vis_dif(n)*ifrac_scaled
+                   ! mean_net_sw_ir_dir_flx(n)  = swndr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + swpen_ir_dir(n)*ifrac_scaled
+                   ! mean_net_sw_ir_dif_flx(n)  = swndf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + swpen_ir_dif(n)*ifrac_scaled
+                end if
+                   
                 ! TODO (mvertens, 2018-12-16): fill in the following
                 ! if (i2o_per_cat) then
                 !   Sf_ofrac(n)  = ofrac(n)
@@ -324,7 +378,24 @@ contains
              do n = 1,size(swnet)
                 fswabsv  = swvdr(n) * (1.0_R8 - albdif) + swvdf(n) * (1.0_R8 - albdif)
                 fswabsi  = swndr(n) * (1.0_R8 - albdif) + swndf(n) * (1.0_R8 - albdif)
-                swnet(n) = ofrac(n) * (fswabsv + fswabsi) + ifrac(n) * swpen(n)
+                swnet(n) = ofrac(n)*(fswabsv + fswabsi) + ifrac(n)*swpen(n)
+
+                if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', rc=rc)) then
+                   c1 = 0.285
+                   c2 = 0.285
+                   c3 = 0.215
+                   c4 = 0.215
+                   mean_net_sw_vis_dir_flx(n) = c1 * swnet(n)
+                   mean_net_sw_vis_dif_flx(n) = c2 * swnet(n)
+                   mean_net_sw_ir_dir_flx(n)  = c3 * swnet(n)
+                   mean_net_sw_ir_dif_flx(n)  = c4 * swnet(n)
+
+                   ! mean_net_sw_vis_dir_flx(n) = swvdr(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_vis_dir(n)*ifrac_scaled
+                   ! mean_net_sw_vis_dif_flx(n) = swvdf(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_vis_dif(n)*ifrac_scaled
+                   ! mean_net_sw_ir_dir_flx(n)  = swndr(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_ir_dir(n)*ifrac_scaled
+                   ! mean_net_sw_ir_dif_flx(n)  = swndf(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_ir_dif(n)*ifrac_scaled
+                end if
+
              end do
           end if
 
