@@ -806,8 +806,6 @@ contains
             merge_from2=compice, merge_field2='Si_avsdr', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='So_avsdr', merge_type3='merge', merge_fracname3='ofrac')
     end if
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Si_avsdr', &
-         merge_from1=compice, merge_field1='Si_avsdr', merge_type1='copy')
 
     ! ---------------------------------------------------------------------
     ! 'Direct albedo (near-infrared radiation)'
@@ -825,8 +823,6 @@ contains
             merge_from2=compice, merge_field2='Si_anidr', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='So_anidr', merge_type3='merge', merge_fracname3='ofrac')
     end if
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Si_anidr', &
-         merge_from1=compice, merge_field1='Si_anidr', merge_type1='copy')
 
     ! ---------------------------------------------------------------------
     ! 'Diffuse albedo (visible radiation)'
@@ -843,8 +839,6 @@ contains
             merge_from2=compice, merge_field2='Si_avsdf', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='So_avsdf', merge_type3='merge', merge_fracname3='ofrac')
     end if
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Si_avsdf', &
-         merge_from1=compice, merge_field1='Si_avsdf', merge_type1='copy')
 
     ! ---------------------------------------------------------------------
     ! 'Diffuse albedo (near-infrared radiation)' 
@@ -861,8 +855,6 @@ contains
             merge_from2=compice, merge_field2='Si_anidf', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='So_anidf', merge_type3='merge', merge_fracname3='ofrac')
     end if
-    call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Si_anidf', &
-         merge_from1=compice, merge_field1='Si_anidf', merge_type1='copy')
 
     ! ---------------------------------------------------------------------
     ! 'Reference temperature at 2 meters' 
@@ -1016,6 +1008,7 @@ contains
     ! 'Zonal surface stress'
     ! ---------------------------------------------------------------------
     if (use_med_aoflux) then
+       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds , 'Fall_taux', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Faii_taux', fldindex=n1)
@@ -1028,6 +1021,7 @@ contains
             merge_from1=complnd, merge_field1='Fall_taux', merge_type1='merge', merge_fracname1='lfrac', &
             merge_from2=compice, merge_field2='Faii_taux', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='Faox_taux', merge_type3='merge', merge_fracname3='ofrac')
+       ! To ocn
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Fioi_taux', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1) , compice, compocn, mapfcopy, 'unset', 'unset')
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_taux', &

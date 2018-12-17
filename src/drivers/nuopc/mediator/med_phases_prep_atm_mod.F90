@@ -135,7 +135,7 @@ contains
          !---------------------------------------
          !--- map ocean albedos from ocn to atm grid if appropriate
          !---------------------------------------
-         if (compute_ocnalb .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
+         if (.not. compute_ocnalb .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
             call med_phases_ocnalb_mapo2a(gcomp, rc)
          end if
 
@@ -144,7 +144,7 @@ contains
          !---------------------------------------
          ! TODO: should only do this if the fluxes are computed on the ocean grid
 
-         if (compute_aoflux .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
+         if (.not. compute_aoflux .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
             call med_map_FB_Regrid_Norm(&
                  fldListMed_aoflux_o%flds, compocn, compatm, &
                  is_local%wrap%FBMed_aoflux_o, &
@@ -163,13 +163,13 @@ contains
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
                  document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          else
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
+                 FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
                  document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          end if
