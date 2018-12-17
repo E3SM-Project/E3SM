@@ -1,0 +1,18 @@
+<template>
+	<namelist>
+		<option name="config_AM_timeSeriesStatsMonthly_enable">.true.</option>
+		<option name="config_AM_eddyProductVariables_enable">.true.</option>
+	</namelist>
+	<streams>
+		<stream name="timeSeriesStatsMonthlyOutput">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">analysis_members/mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc</attribute>
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="daysSinceStartOfSim" type="var"/>
+				<member name="ssh" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
