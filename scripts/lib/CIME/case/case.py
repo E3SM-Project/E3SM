@@ -565,7 +565,7 @@ class Case(object):
                 continue
             else:
                 element_component = element.split('%')[0].lower()
-                if "ww" not in element_component:
+                if "ww" not in element_component and "fv3" not in element_component:
                     element_component = re.sub(r'[0-9]*',"",element_component)
                 components.append(element_component)
         return components
