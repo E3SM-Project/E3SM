@@ -974,7 +974,7 @@
       <mask>tx0.66v1</mask>
     </model_grid>
 
-    <model_grid alias="C96_t016_rx1" not_compset="_POP" >
+    <model_grid alias="C96_t016" not_compset="_POP" >
       <grid name="atm">C96</grid>
       <grid name="lnd">C96</grid>
       <grid name="ocnice">tx0.66v1</grid>
