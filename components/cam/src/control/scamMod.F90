@@ -567,6 +567,12 @@ subroutine setiopupdate
           doiter=.false.
         endif
       enddo
+      
+      ! Check to make sure we didn't overshoot at the last 
+      !  IOP timestep.  
+      if (iopTimeIdx .gt. ntime) then
+        iopTimeIdx = ntime
+      endif      
 
       if (doiopupdate) then
 

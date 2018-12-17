@@ -79,12 +79,10 @@ CONTAINS
 ! !LOCAL VARIABLES:
     integer m
     character(len=100) dyngrid
-    
-    if (dycore_is('EUL')) then
-      dyngrid = 'gauss_grid'
-    else
-      dyngrid = 'GLL'
-    endif
+
+    ! Currently SE is the only supported dycore for REPLAY    
+    dyngrid = 'GLL'
+
 !-----------------------------------------------------------------------
     call addfld ('CLAT',horiz_only,    'A','none','cos lat for bfb testing', gridname=trim(dyngrid))
     call add_default ('CLAT',2,' ')
