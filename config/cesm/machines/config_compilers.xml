@@ -685,7 +685,7 @@ using a fortran linker.
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
   <FFLAGS>
-    <append MODEL="mom"> -r8 </append>
+    <append MODEL="mom"> -r8 -Duse_LARGEFILE</append>
   </FFLAGS>
 </compiler>
 
@@ -1043,7 +1043,7 @@ using a fortran linker.
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <FFLAGS>
-    <append MODEL="mom"> -r8 </append>
+    <append MODEL="mom"> -r8 -Duse_LARGEFILE</append>
   </FFLAGS>
 </compiler>
 
