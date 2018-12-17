@@ -1056,6 +1056,7 @@
          topographic height
      #
      - standard_name: Sa_dens
+       alias: air_density_height_lowest
        canonical_units: kg m-3
        description: atmosphere export
          density at the lowest model layer (cesm only)
@@ -1083,11 +1084,6 @@
        description: atmosphere export
          bottom layer specific humidity
      #
-     - standard_name: inst_spec_humid_height2m
-       canonical_units: K
-       description: atmosphere export
-         instantaneous specific humidity 2m above ground (fv3 only)
-     #
      - standard_name: Sa_shum_16O
        canonical_units: kg kg-1
        description: atmosphere export
@@ -1102,6 +1098,11 @@
        canonical_units: kg kg-1
        description: atmosphere export
          bottom layer specific humidity HDO (cesm only)
+     #
+     - standard_name: inst_spec_humid_height2m
+       canonical_units: K
+       description: atmosphere export
+         instantaneous specific humidity 2m above ground (fv3 only)
      #
      - standard_name: Sa_tbot
        alias: inst_temp_height_lowest
@@ -1292,7 +1293,6 @@
        description: atmosphere import (cesm) or sent from atm (fv3)
      #
      - standard_name: Faxx_lwup
-       alias: mean_up_lw_flx
        canonical_units: W m-2
        description: atmosphere import
      #
@@ -1791,6 +1791,7 @@
      #-----------------------------------
      #
      - standard_name: Fioo_q
+       alias: freezing_melting_potential
        canonical_units: W m-2
        description: ocean export
      #
@@ -1815,6 +1816,7 @@
        description: ocean export
      #
      - standard_name: So_bldepth
+       alias: mixed_layer_depth
        canonical_units: m
        description: ocean export
      #
@@ -2081,7 +2083,7 @@
          water flux due to runoff (liquid)
      #
      - standard_name: Foxx_swnet
-       alias: mean_net_sw_flx     
+       alias: mean_net_sw_flx
        canonical_units: W m-2
        description: ocean import
          net shortwave radiation penetrating into ocean
