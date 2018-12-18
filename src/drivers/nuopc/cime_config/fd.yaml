@@ -1266,6 +1266,56 @@
      - standard_name: inst_surface_roughness
        canonical_units: tbd
        description: atmosphere export (fv3 only)
+
+######### fv3 work
+
+     - standard_name: Faxa_taux
+       alias: mean_zonal_moment_flx_atm
+       canonical_units: N m-2
+       description: atmosphere export
+         zonal component of momentum flux
+     #
+     - standard_name: Faxa_tauy
+       alias: mean_merid_moment_flx_atm
+       canonical_units: N m-2
+       description: atmosphere export
+         meridional component of momentum flux
+     #
+     - standard_name: Faxa_lat
+       alias: mean_laten_heat_flx_atm
+       canonical_units: W m-2
+       description: atmosphere export         
+     #
+     - standard_name: Faxx_sen
+       alias: mean_sensi_heat_flx_atm
+       canonical_units: W m-2
+       description: atmosphere export
+     #
+     - standard_name: inst_zonal_moment_flx_atm
+       canonical_units: N m-2
+       description: atmosphere export
+         zonal component of momentum flux
+     #
+     - standard_name: inst_merid_moment_flx_atm
+       canonical_units: N m-2
+       description: atmosphere export
+         meridional component of momentum flux
+     #
+     - standard_name: inst_laten_heat_flx_atm
+       canonical_units: W m-2
+       description: atmosphere export         
+     #
+     - standard_name: inst_sensi_heat_flx_atm
+       canonical_units: W m-2
+       description: atmosphere export
+
+
+
+############
+
+     
+
+
      #
      #-----------------------------------
      # atmosphere import
@@ -1303,11 +1353,13 @@
      #
      - standard_name: Faxx_taux
        alias: mean_zonal_moment_flx
+       alias: mean_zonal_moment_flx_atm
        canonical_units: N m-2
        description: atmosphere import
          zonal component of momentum flux
          for fv3, for sea ice covered area
          for cesm, merged ice/ocn/land
+
      #
      - standard_name: Faxx_tauy
        alias: mean_merid_moment_flx
@@ -1756,7 +1808,8 @@
          cesm only
      #
      - standard_name: Si_snowh
-       alias: mean_snow_volume
+# ambiguous with Si_vsno
+#       alias: mean_snow_volume
        canonical_units: m
        description: sea-ice export
          volume of snow per unit area
