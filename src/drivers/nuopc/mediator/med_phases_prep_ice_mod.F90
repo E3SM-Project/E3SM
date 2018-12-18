@@ -150,14 +150,14 @@ module med_phases_prep_ice_mod
 
     ! if air density at lowest model layer is not connected - compute it in mediator
     ! TODO (mvertens, 2018-12-14): don't hard-wire Sa_dens name
-    air_density_connected = NUOPC_IsConnected(is_local%wrap%NStateImp(compatm), 'Sa_dens', rc=rc) 
+    air_density_connected = shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_dens', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (.not. air_density_connected) then
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_tbot', temperature, rc=rc)
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_pbot', pressure, rc=rc)
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compatm), 'Sa_shum', humidity, rc=rc)
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_shum', humidity, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_dens', air_density, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

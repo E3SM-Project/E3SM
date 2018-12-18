@@ -1286,7 +1286,7 @@
        canonical_units: W m-2
        description: atmosphere export         
      #
-     - standard_name: Faxx_sen
+     - standard_name: Faxa_sen
        alias: mean_sensi_heat_flx_atm
        canonical_units: W m-2
        description: atmosphere export
