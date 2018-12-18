@@ -132,6 +132,26 @@ def save_provenance(results_dir, parser):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, 0o775)
 
+    # Create a PHP file to list the contents of the prov dir.
+    php_path = os.path.join(results_dir, 'index.php')
+    with open(php_path, 'w') as f:
+        contents = """
+        <?php
+        # Taken from:
+        # https://stackoverflow.com/questions/3785055/how-can-i-create-a-simple-index-html-file-which-lists-all-files-directories
+        $path = ".";
+        $dh = opendir($path);
+        $i=1;
+        while (($file = readdir($dh)) !== false) {
+            if($file != "." && $file != ".." && $file != "index.php" && $file != ".htaccess" && $file != "error_log" && $file != "cgi-bin") {
+                echo "<a href='$path/$file'>$file</a><br /><br />";
+                $i++;
+            }
+        }
+        closedir($dh);
+        ?>
+        """
+        f.write(contents)
     try:
         _save_env_yml(results_dir)
     except:
