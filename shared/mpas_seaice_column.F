@@ -1605,8 +1605,8 @@ contains
           call column_write_warnings(abortFlag)
           ! code abort
           if (abortFlag) then
+             call seaice_critical_error_write_block(domain, block, abortFlag)
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call seaice_critical_error_write_block(domain, block)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
@@ -1636,14 +1636,6 @@ contains
           endif
 
        enddo ! iCell
-
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif ! columnAbort
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
 
        ! aerosols
        deallocate(specificSnowAerosol)
@@ -1951,22 +1943,14 @@ contains
 
           ! code abort
           if (abortFlag) then
+             call seaice_critical_error_write_block(domain, block, abortFlag)
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call seaice_critical_error_write_block(domain, block)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
        enddo ! iCell
        ! copyout thickness from last loop iteration
        categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
-
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
@@ -2806,22 +2790,14 @@ contains
 
           ! code abort
           if (abortFlag) then
+             call seaice_critical_error_write_block(domain, block, abortFlag)
              call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call seaice_critical_error_write_block(domain, block)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
        enddo ! iCell
        ! copyout thickness from last loop iteration
        categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
-
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
