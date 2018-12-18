@@ -159,6 +159,7 @@
       <xs:element name="HAS_F2008_CONTIGUOUS" type="upperBoolean"/>
       <xs:element name="HDF5_PATH" type="systemPath"/>
       <xs:element name="KOKKOS_PATH" type="systemPath"/>
+      <xs:element name="INCLDIR" type="flagsVar"/>
       <xs:element name="LAPACK_LIBDIR" type="systemPath"/>
       <xs:element name="LD" type="systemPath"/>
       <xs:element name="LDFLAGS" type="flagsVar"/>
