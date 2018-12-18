@@ -436,7 +436,6 @@ contains
 
     use ice_colpkg, only: &
          colpkg_init_orbit, &
-         colpkg_get_warnings, &
          colpkg_clear_warnings
 
     use seaice_constants, only: &
@@ -509,9 +508,6 @@ contains
          config_do_restart, &
          config_use_snicar
 
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
-
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
@@ -525,8 +521,7 @@ contains
        call colpkg_init_orbit(&
             abortFlag, &
             abortMessage)
-       call colpkg_get_warnings(warnings)
-       call column_write_warnings(warnings, abortFlag)
+       call column_write_warnings(abortFlag)
 
        if (abortFlag) then
           call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
@@ -1059,8 +1054,7 @@ contains
 
     use ice_colpkg, only: &
          colpkg_step_therm1, &
-         colpkg_clear_warnings, &
-         colpkg_get_warnings
+         colpkg_clear_warnings
 
     use seaice_constants, only: &
          seaicePuny
@@ -1253,9 +1247,6 @@ contains
     real(kind=RKIND) :: &
          dayOfYear
 
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
-
     ! day of year
     call get_day_of_year(clock, dayOfYear)
 
@@ -1443,7 +1434,8 @@ contains
        abortFlag = .false.
        abortMessage = ""
 
-       ! loop over cells
+       !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
+       !$omp&  specificSnowAerosol,specificIceAerosol,abortFlag,abortMessage)
        do iCell = 1, nCellsSolve
 
           ! initial state values
@@ -1610,11 +1602,13 @@ contains
                dayOfYear, &
                abortFlag, &
                abortMessage)
-          call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings, abortFlag)
-
+          call column_write_warnings(abortFlag)
           ! code abort
-          if (abortFlag) exit
+          if (abortFlag) then
+             call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call seaice_critical_error_write_block(domain, block)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+          endif
 
           ! aerosol
           if (config_use_aerosols) then
@@ -1676,7 +1670,6 @@ contains
 
     use ice_colpkg, only: &
          colpkg_step_therm2, &
-         colpkg_get_warnings, &
          colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
@@ -1772,6 +1765,10 @@ contains
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioConcentrationsUsed
 
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         categoryThicknessLimitsCell, &
+         tracerArrayCategoryCell
+
     logical :: &
          abortFlag, &
          setGetPhysicsTracers, &
@@ -1783,9 +1780,6 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
-
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1865,6 +1859,8 @@ contains
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
+       allocate(categoryThicknessLimitsCell(nCategories+1, nCellsSolve) )
+       allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -1873,12 +1869,15 @@ contains
        abortFlag = .false.
        abortMessage = ""
 
+       !$omp parallel do default(shared) private(iCategory,newlyFormedIceLogical,iBioTracers,iBioData,&
+       !$omp&   oceanBioConcentrationsUsed,tracerArrayCategoryCell,abortFlag,abortMessage)
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
           enddo ! iCategory
+          categoryThicknessLimitsCell(:,iCell) = categoryThicknessLimits(:)
 
           ! read the required ocean concentration fields into the allocated array
           do iBioTracers = 1, ciceTracerObject % nBioTracers
@@ -1887,30 +1886,31 @@ contains
           enddo ! iBioTracers
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call set_cice_tracer_array_category(block, ciceTracerObject,&
+                 tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_clear_warnings()
           call colpkg_step_therm2(&
                config_dt, &
                nCategories, &
                nAerosols, &
-               ciceTracerObject % nBioTracersLayer, &
+               ciceTracerObject % nBioTracersLayer, & !nltrcr, intent(in)
                nIcelayers, &
                nSnowLayers, &
-               categoryThicknessLimits(:), &
+               categoryThicknessLimitsCell(:,iCell), & !hin_max, intent(inout), dimension(0:ncat)
                nBioLayers, &
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
                snowVolumeCategory(1,:,iCell), &
                iceAreaCategoryInitial(:,iCell), &
                iceVolumeCategoryInitial(:,iCell), &
-               ciceTracerObject % tracerArrayCategory, & !trcrn
+               tracerArrayCategoryCell, & !trcrn,   intent(inout)
                openWaterArea(iCell), &
                iceAreaCell(iCell), &
-               ciceTracerObject % parentIndex, & !trcr_depend
-               ciceTracerObject % firstAncestorMask, & !trcr_base
-               ciceTracerObject % ancestorNumber, & !n_trcr_strata
-               ciceTracerObject % ancestorIndices, & !nt_strata
+               ciceTracerObject % parentIndex, & !trcr_depend,     intent(in)
+               ciceTracerObject % firstAncestorMask, & !trcr_base, intent(in)
+               ciceTracerObject % ancestorNumber, & !n_trcr_strata,intent(in)
+               ciceTracerObject % ancestorIndices, & !nt_strata,   intent(in)
                seaFreezingTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
                initialSalinityProfile(:,iCell), &
@@ -1923,22 +1923,21 @@ contains
                oceanFreshWaterFlux(iCell), &
                oceanSaltFlux(iCell), &
                oceanHeatFlux(iCell), &
-               config_update_ocean_fluxes, &
-               biologyGrid(:), &
-               verticalGrid(:), &
-               interfaceBiologyGrid(:), &
+               config_update_ocean_fluxes, &       !update_ocn_f, intent(in)
+               biologyGrid(:), &                   !bgrid, intent(in)
+               verticalGrid(:), &                  !cgrid, intent(in)
+               interfaceBiologyGrid(:), &          !igrid, intent(in)
                oceanAerosolFlux(:,iCell), &
-               newlyFormedIceLogical(:), &
+               newlyFormedIceLogical(:), &         !first_ice, intent(inout)
                zSalinityFlux(iCell), &
                oceanBioFluxes(:,iCell), &
-               oceanBioConcentrationsUsed(:), &
+               oceanBioConcentrationsUsed(:), &    !ocean_bio, intent(in)
                abortFlag, &
                abortMessage, &
                frazilGrowthDiagnostic(iCell), &
                freezeOnset(iCell), &
                dayOfYear)
-          call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings, abortFlag)
+          call column_write_warnings(abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -1947,12 +1946,19 @@ contains
           enddo ! iCategory
 
           ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call get_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
-          if (abortFlag) exit
+          if (abortFlag) then
+             call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call seaice_critical_error_write_block(domain, block)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+          endif
 
        enddo ! iCell
+       ! copyout thickness from last loop iteration
+       categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
 
        ! code abort
        if (abortFlag) then
@@ -1965,6 +1971,8 @@ contains
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioConcentrationsUsed)
+       deallocate(categoryThicknessLimitsCell)
+       deallocate(tracerArrayCategoryCell)
 
        block => block % next
     end do
@@ -2115,7 +2123,6 @@ contains
 
     use ice_colpkg, only: &
          colpkg_step_radiation, &
-         colpkg_get_warnings, &
          colpkg_clear_warnings
 
     use seaice_constants, only: &
@@ -2255,6 +2262,9 @@ contains
     integer, dimension(:), allocatable :: &
          index_shortwaveAerosol
 
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         tracerArrayCategoryCell
+
     real(kind=RKIND) :: &
          dayOfYear, &
          lonCellColumn
@@ -2266,9 +2276,6 @@ contains
     logical :: &
          setGetPhysicsTracers, &
          setGetBGCTracers
-
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -2391,6 +2398,8 @@ contains
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
        allocate(index_shortwaveAerosol(maxAerosolType))
+       allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
+
        if (.not. config_use_column_biogeochemistry) then
           index_shortwaveAerosol(1:maxAerosolType) = 1
        else
@@ -2402,6 +2411,7 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
+       !$omp parallel do default(shared) private(iCategory,iAerosol,aerosolsArray,lonCellColumn,tracerArrayCategoryCell)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -2420,7 +2430,8 @@ contains
           if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0_RKIND * pii
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call set_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_clear_warnings()
           call colpkg_step_radiation(&
@@ -2438,9 +2449,9 @@ contains
                nzAerosols, &
                config_use_shortwave_bioabsorption, &
                ciceTracerObject % index_chlorophyllShortwave, &
-               index_shortwaveAerosol, &
-               verticalShortwaveGrid(:), &
-               verticalGrid(:), &
+               index_shortwaveAerosol, &   ! nlt_zaero_sw, dimension(:), intent(in)
+               verticalShortwaveGrid(:), & ! swgrid, dimension (:), intent(in)
+               verticalGrid(:), &          !  igrid, dimension (:), intent(in)
                brineFraction(1,:,iCell), &
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
@@ -2450,9 +2461,9 @@ contains
                pondArea(1,:,iCell), &
                pondDepth(1,:,iCell), &
                pondLidThickness(1,:,iCell), &
-               aerosolsArray, &
+               aerosolsArray, & ! aeron, dimension(:,:), intent(in)
                bioTracerShortwave(:,:,iCell), &
-               ciceTracerObject % tracerArrayCategory(:,:), &
+               tracerArrayCategoryCell, & ! trcrn, dimension(:,:), intent(in)
                latCell(iCell), &
                lonCellColumn, &
                calendarType, &
@@ -2460,13 +2471,13 @@ contains
                dayOfNextShortwaveCalculation, &
                dayOfYear, &
                secondsIntoDay, &
-               aerosolMassExtinctionCrossSection(:,:), &
-               aerosolSingleScatterAlbedo(:,:), &
-               aerosolAsymmetryParameter(:,:), &
-               modalMassExtinctionCrossSection(:,:), &
-               modalSingleScatterAlbedo(:,:), &
-               modalAsymmetryParameter(:,:), &
-               modalBCabsorptionParameter(:,:,:), &
+               aerosolMassExtinctionCrossSection(:,:), & ! kaer_tab,    dimension(:,:), intent(in)
+               aerosolSingleScatterAlbedo(:,:), &        ! waer_tab,    dimension(:,:), intent(in)
+               aerosolAsymmetryParameter(:,:), &         ! gaer_tab,    dimension(:,:), intent(in)
+               modalMassExtinctionCrossSection(:,:), &   ! kaer_bc_tab, dimension(:,:), intent(in)
+               modalSingleScatterAlbedo(:,:), &          ! waer_bc_tab, dimension(:,:), intent(in)
+               modalAsymmetryParameter(:,:), &           ! gaer_bc_tab, dimension(:,:), intent(in)
+               modalBCabsorptionParameter(:,:,:), &      ! bcenh,       dimension(:,:,:), intent(in)
                config_use_modal_aerosols, &
                shortwaveVisibleDirectDown(iCell), &
                shortwaveVisibleDiffuseDown(iCell), &
@@ -2511,13 +2522,15 @@ contains
           call column_write_warnings(warnings, .false.)
 
           ! set the category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call get_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
 
        ! aerosols array
        deallocate(aerosolsArray)
        deallocate(index_shortwaveAerosol)
+       deallocate(tracerArrayCategoryCell)
 
        block => block % next
     end do
@@ -2540,7 +2553,6 @@ contains
 
     use ice_colpkg, only: &
          colpkg_step_ridge, &
-         colpkg_get_warnings, &
          colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
@@ -2631,6 +2643,10 @@ contains
     logical, dimension(:), allocatable :: &
          newlyFormedIceLogical
 
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         categoryThicknessLimitsCell, &
+         tracerArrayCategoryCell
+
     logical :: &
          abortFlag, &
          setGetPhysicsTracers, &
@@ -2639,9 +2655,6 @@ contains
     character(len=strKIND) :: &
          abortMessage, &
          abortLocation
-
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
 
     block => domain % blocklist
     do while (associated(block))
@@ -2712,6 +2725,8 @@ contains
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
+       allocate(categoryThicknessLimitsCell(nCategories+1, nCellsSolve) )
+       allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -2726,9 +2741,11 @@ contains
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
           enddo ! iCategory
+          categoryThicknessLimitsCell(:,iCell) = categoryThicknessLimits(:)
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call set_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_clear_warnings()
           call colpkg_step_ridge(&
@@ -2738,11 +2755,11 @@ contains
                nSnowLayers, &
                nBioLayers, &
                nCategories, &
-               categoryThicknessLimits, &
+               categoryThicknessLimitsCell(:,iCell), & ! hin_max, dimension(0:ncat), intent(inout)
                ridgeConvergence(iCell), &
                ridgeShear(iCell), &
                iceAreaCategory(1,:,iCell), &
-               ciceTracerObject % tracerArrayCategory, & ! trcrn
+               tracerArrayCategoryCell, &              ! trcrn, dimension(:,:), intent(inout)
                iceVolumeCategory(1,:,iCell), &
                snowVolumeCategory(1,:,iCell), &
                openWaterArea(iCell), &
@@ -2775,8 +2792,7 @@ contains
                oceanBioFluxes(:,iCell), &
                abortFlag, &
                abortMessage)
-          call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings, abortFlag)
+          call column_write_warnings(abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -2785,12 +2801,19 @@ contains
           enddo ! iCategory
 
           ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call get_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
-          if (abortFlag) exit
+          if (abortFlag) then
+             call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call seaice_critical_error_write_block(domain, block)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+          endif
 
        enddo ! iCell
+       ! copyout thickness from last loop iteration
+       categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
 
        ! code abort
        if (abortFlag) then
@@ -2802,6 +2825,8 @@ contains
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
+       deallocate(categoryThicknessLimitsCell)
+       deallocate(tracerArrayCategoryCell)
 
        block => block % next
     end do
@@ -2825,7 +2850,6 @@ contains
     use ice_colpkg, only: &
          colpkg_biogeochemistry, &
          colpkg_init_OceanConcArray, &
-         colpkg_get_warnings, &
          colpkg_clear_warnings
 
     use seaice_constants, only: &
@@ -2994,9 +3018,6 @@ contains
     character(len=strKIND) :: &
          abortMessage, &
          abortLocation
-
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
 
     block => domain % blocklist
     do while (associated(block))
@@ -3188,7 +3209,9 @@ contains
              oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
           enddo ! iBioTracers
 
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          abortFlag = .false.
+
+          call set_cice_tracer_array_category(block, ciceTracerObject, ciceTracerObject%tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_clear_warnings()
           call colpkg_biogeochemistry(&
@@ -3264,13 +3287,12 @@ contains
                nZBGCTracers, &
                abortFlag, &
                abortMessage)
-          call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings, abortFlag)
+          call column_write_warnings(abortFlag)
 
           ! code abort
           if (abortFlag) exit
 
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call get_cice_tracer_array_category(block, ciceTracerObject, ciceTracerObject%tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! update
           totalSkeletalAlgae(iCell) = 0.0_RKIND
@@ -3634,7 +3656,7 @@ contains
        do iCell = 1, nCellsSolve
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call set_cice_tracer_array_category(block, ciceTracerObject, ciceTracerObject%tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_aggregate(&
                nCategories, &
@@ -5328,13 +5350,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine set_cice_tracer_array_category(block, tracerObject, iCell, setPhysicsTracers, setBGCTracers)
+  subroutine set_cice_tracer_array_category(block, tracerObject, trcrn, iCell, setPhysicsTracers, setBGCTracers)
 
     type(block_type), intent(inout) :: &
          block
 
-    type(ciceTracerObjectType), intent(inout) :: &
+    type(ciceTracerObjectType), intent(in) :: &
          tracerObject
+
+    real(kind=RKIND), dimension(:,:), intent(inout) :: trcrn
 
     integer, intent(in) :: &
          iCell
@@ -5345,11 +5369,11 @@ contains
 
     ! get physics tracers
     if (setPhysicsTracers) &
-         call set_cice_physics_tracer_array_category(block, tracerObject, iCell)
+         call set_cice_physics_tracer_array_category(block, trcrn, iCell)
 
     ! get BGC tracers
     if (setBGCTracers) &
-         call set_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+         call set_cice_biogeochemistry_tracer_array_category(block, tracerObject, trcrn, iCell)
 
   end subroutine set_cice_tracer_array_category
 
@@ -5365,13 +5389,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, getBGCTracers)
+  subroutine get_cice_tracer_array_category(block, tracerObject, trcrn, iCell, getPhysicsTracers, getBGCTracers)
 
     type(block_type), intent(inout) :: &
          block
 
     type(ciceTracerObjectType), intent(in) :: &
          tracerObject
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: trcrn
 
     integer, intent(in) :: &
          iCell
@@ -5382,11 +5408,11 @@ contains
 
     ! get physics tracers
     if (getPhysicsTracers) &
-         call get_cice_physics_tracer_array_category(block, tracerObject, iCell)
+         call get_cice_physics_tracer_array_category(block, trcrn, iCell)
 
     ! get BGC tracers
     if (getBGCTracers) &
-         call get_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+         call get_cice_biogeochemistry_tracer_array_category(block, tracerObject, trcrn, iCell)
 
   end subroutine get_cice_tracer_array_category
 
@@ -5476,13 +5502,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine set_cice_physics_tracer_array_category(block, tracerObject, iCell)
+  subroutine set_cice_physics_tracer_array_category(block, trcrn, iCell)
 
     type(block_type), intent(in) :: &
          block
 
-    type(ciceTracerObjectType), intent(inout) :: &
-         tracerObject
+    real(kind=RKIND), dimension(:,:), intent(inout) :: trcrn
 
     integer, intent(in) :: &
          iCell
@@ -5558,38 +5583,38 @@ contains
     nTracers = 1
 
     ! surfaceTemperature
-    tracerObject % tracerArrayCategory(nTracers,:) = surfaceTemperature(1,:,iCell)
+    trcrn(nTracers,:) = surfaceTemperature(1,:,iCell)
     nTracers = nTracers + 1
 
     ! iceEnthalpy
-    tracerObject % tracerArrayCategory(nTracers:nTracers+nIceLayers-1,:) = iceEnthalpy(:,:,iCell)
+    trcrn(nTracers:nTracers+nIceLayers-1,:) = iceEnthalpy(:,:,iCell)
     nTracers = nTracers + nIceLayers
 
     ! snowEnthalpy
-    tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowEnthalpy(:,:,iCell)
+    trcrn(nTracers:nTracers+nSnowLayers-1,:) = snowEnthalpy(:,:,iCell)
     nTracers = nTracers + nSnowLayers
 
     ! ice Salinity
-    tracerObject % tracerArrayCategory(nTracers:nTracers+nIceLayers-1,:) = iceSalinity(:,:,iCell)
+    trcrn(nTracers:nTracers+nIceLayers-1,:) = iceSalinity(:,:,iCell)
     nTracers = nTracers + nIceLayers
 
     ! iceAge
     if (config_use_ice_age) then
-       tracerObject % tracerArrayCategory(nTracers,:) = iceAge(1,:,iCell)
+       trcrn(nTracers,:) = iceAge(1,:,iCell)
        nTracers = nTracers + 1
     endif
 
     ! firstYearIceArea
     if (config_use_first_year_ice) then
-       tracerObject % tracerArrayCategory(nTracers,:) = firstYearIceArea(1,:,iCell)
+       trcrn(nTracers,:) = firstYearIceArea(1,:,iCell)
        nTracers = nTracers + 1
     endif
 
     ! level ice tracers
     if (config_use_level_ice) then
-       tracerObject % tracerArrayCategory(nTracers,:) = levelIceArea(1,:,iCell)
+       trcrn(nTracers,:) = levelIceArea(1,:,iCell)
        nTracers = nTracers + 1
-       tracerObject % tracerArrayCategory(nTracers,:) = levelIceVolume(1,:,iCell)
+       trcrn(nTracers,:) = levelIceVolume(1,:,iCell)
        nTracers = nTracers + 1
     endif
 
@@ -5597,16 +5622,16 @@ contains
     if (config_use_cesm_meltponds .or. &
         config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
-       tracerObject % tracerArrayCategory(nTracers,:) = pondArea(1,:,iCell)
+       trcrn(nTracers,:) = pondArea(1,:,iCell)
        nTracers = nTracers + 1
-       tracerObject % tracerArrayCategory(nTracers,:) = pondDepth(1,:,iCell)
+       trcrn(nTracers,:) = pondDepth(1,:,iCell)
        nTracers = nTracers + 1
     endif
 
     ! level or topo ponds
     if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
-       tracerObject % tracerArrayCategory(nTracers,:) = pondLidThickness(1,:,iCell)
+       trcrn(nTracers,:) = pondLidThickness(1,:,iCell)
        nTracers = nTracers + 1
     end if
 
@@ -5614,10 +5639,10 @@ contains
     if (config_use_aerosols) then
        do iAerosol = 1, nAerosols
 
-          tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)  ,:) = snowScatteringAerosol(iAerosol,:,iCell)
-          tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)+1,:) = snowBodyAerosol(iAerosol,:,iCell)
-          tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)+2,:) = iceScatteringAerosol(iAerosol,:,iCell)
-          tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)+3,:) = iceBodyAerosol(iAerosol,:,iCell)
+          trcrn(nTracers+4*(iAerosol-1)  ,:) = snowScatteringAerosol(iAerosol,:,iCell)
+          trcrn(nTracers+4*(iAerosol-1)+1,:) = snowBodyAerosol(iAerosol,:,iCell)
+          trcrn(nTracers+4*(iAerosol-1)+2,:) = iceScatteringAerosol(iAerosol,:,iCell)
+          trcrn(nTracers+4*(iAerosol-1)+3,:) = iceBodyAerosol(iAerosol,:,iCell)
 
        enddo ! iAerosol
     endif
@@ -5636,13 +5661,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_physics_tracer_array_category(block, tracerObject, iCell)
+  subroutine get_cice_physics_tracer_array_category(block, trcrn, iCell)
 
     type(block_type), intent(inout) :: &
          block
 
-    type(ciceTracerObjectType), intent(in) :: &
-         tracerObject
+    real(kind=RKIND), dimension(:,:), intent(in) :: trcrn
 
     integer, intent(in) :: &
          iCell
@@ -5718,38 +5742,38 @@ contains
     nTracers = 1
 
     ! surfaceTemperature
-    surfaceTemperature(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+    surfaceTemperature(1,:,iCell) = trcrn(nTracers,:)
     nTracers = nTracers + 1
 
     ! iceEnthalpy
-    iceEnthalpy(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nIceLayers-1,:)
+    iceEnthalpy(:,:,iCell) = trcrn(nTracers:nTracers+nIceLayers-1,:)
     nTracers = nTracers + nIceLayers
 
     ! snowEnthalpy
-    snowEnthalpy(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+    snowEnthalpy(:,:,iCell) = trcrn(nTracers:nTracers+nSnowLayers-1,:)
     nTracers = nTracers + nSnowLayers
 
     ! ice Salinity
-    iceSalinity(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nIceLayers-1,:)
+    iceSalinity(:,:,iCell) = trcrn(nTracers:nTracers+nIceLayers-1,:)
     nTracers = nTracers + nIceLayers
 
     ! iceAge
     if (config_use_ice_age) then
-       iceAge(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       iceAge(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
     endif
 
     ! firstYearIceArea
     if (config_use_first_year_ice) then
-       firstYearIceArea(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       firstYearIceArea(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
     endif
 
     ! level ice tracers
     if (config_use_level_ice) then
-       levelIceArea(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       levelIceArea(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
-       levelIceVolume(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       levelIceVolume(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
     endif
 
@@ -5757,16 +5781,16 @@ contains
     if (config_use_cesm_meltponds .or. &
         config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
-       pondArea(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       pondArea(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
-       pondDepth(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       pondDepth(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
     endif
 
     ! level or topo ponds
     if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
-       pondLidThickness(1,:,iCell) = tracerObject % tracerArrayCategory(nTracers,:)
+       pondLidThickness(1,:,iCell) = trcrn(nTracers,:)
        nTracers = nTracers + 1
     end if
 
@@ -5774,10 +5798,10 @@ contains
     if (config_use_aerosols) then
        do iAerosol = 1, nAerosols
 
-          snowScatteringAerosol(iAerosol,:,iCell) = tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)  ,:)
-          snowBodyAerosol(iAerosol,:,iCell)       = tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)+1,:)
-          iceScatteringAerosol(iAerosol,:,iCell)  = tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)+2,:)
-          iceBodyAerosol(iAerosol,:,iCell)        = tracerObject % tracerArrayCategory(nTracers+4*(iAerosol-1)+3,:)
+          snowScatteringAerosol(iAerosol,:,iCell) = trcrn(nTracers+4*(iAerosol-1)  ,:)
+          snowBodyAerosol(iAerosol,:,iCell)       = trcrn(nTracers+4*(iAerosol-1)+1,:)
+          iceScatteringAerosol(iAerosol,:,iCell)  = trcrn(nTracers+4*(iAerosol-1)+2,:)
+          iceBodyAerosol(iAerosol,:,iCell)        = trcrn(nTracers+4*(iAerosol-1)+3,:)
 
        enddo ! iAerosol
     endif
@@ -6120,13 +6144,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine set_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+  subroutine set_cice_biogeochemistry_tracer_array_category(block, tracerObject, trcrn, iCell)
 
     type(block_type), intent(in) :: &
          block
 
-    type(ciceTracerObjectType), intent(inout) :: &
+    type(ciceTracerObjectType), intent(in) :: &
          tracerObject
+
+    real(kind=RKIND), dimension(:,:), intent(inout) :: trcrn
 
     integer, intent(in) :: &
          iCell
@@ -6266,69 +6292,69 @@ contains
 
     ! brine height fraction
     if (config_use_brine) &
-         tracerObject % tracerArrayCategory(tracerObject % index_brineFraction,:) = brineFraction(1,:,iCell)
+         trcrn(tracerObject % index_brineFraction,:) = brineFraction(1,:,iCell)
 
     if (config_use_skeletal_biochemistry) then
 
        ! algal nitrogen
        do iBioTracers = 1, nAlgae
-          tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers),:) = &
+          trcrn(tracerObject % index_algaeConc(iBioTracers),:) = &
                skeletalAlgaeConc(iBioTracers,:,iCell)
        enddo
 
        ! nitrate
        if (config_use_nitrate) &
-            tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc,:) = skeletalNitrateConc(1,:,iCell)
+            trcrn(tracerObject % index_nitrateConc,:) = skeletalNitrateConc(1,:,iCell)
 
        ! DOC
        if (config_use_carbon) then
           do iBioTracers = 1, nDOC
-             tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers),:) = skeletalDOCConc(iBioTracers,:,iCell)
+             trcrn(tracerObject % index_DOCConc(iBioTracers),:) = skeletalDOCConc(iBioTracers,:,iCell)
           enddo
 
           ! DIC
           do iBioTracers = 1, nDIC
-             tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers),:) = skeletalDICConc(iBioTracers,:,iCell)
+             trcrn(tracerObject % index_DICConc(iBioTracers),:) = skeletalDICConc(iBioTracers,:,iCell)
           enddo
        endif
 
        ! DON
        if (config_use_DON) then
           do iBioTracers = 1, nDON
-             tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers),:) = skeletalDONConc(iBioTracers,:,iCell)
+             trcrn(tracerObject % index_DONConc(iBioTracers),:) = skeletalDONConc(iBioTracers,:,iCell)
           enddo
        endif
 
        ! ammonium
        if (config_use_ammonium) &
-            tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc,:) = skeletalAmmoniumConc(1,:,iCell)
+            trcrn(tracerObject % index_ammoniumConc,:) = skeletalAmmoniumConc(1,:,iCell)
 
        ! silicate
        if (config_use_silicate) &
-            tracerObject % tracerArrayCategory(tracerObject % index_silicateConc,:) = skeletalSilicateConc(1,:,iCell)
+            trcrn(tracerObject % index_silicateConc,:) = skeletalSilicateConc(1,:,iCell)
 
        ! DMS, DMSPp, DMSPd
        if (config_use_DMS) then
-          tracerObject % tracerArrayCategory(tracerObject % index_DMSConc,:) = skeletalDMSConc(1,:,iCell)
-          tracerObject % tracerArrayCategory(tracerObject % index_DMSPpConc,:) = skeletalDMSPpConc(1,:,iCell)
-          tracerObject % tracerArrayCategory(tracerObject % index_DMSPdConc,:) = skeletalDMSPdConc(1,:,iCell)
+          trcrn(tracerObject % index_DMSConc,:) = skeletalDMSConc(1,:,iCell)
+          trcrn(tracerObject % index_DMSPpConc,:) = skeletalDMSPpConc(1,:,iCell)
+          trcrn(tracerObject % index_DMSPdConc,:) = skeletalDMSPdConc(1,:,iCell)
        endif
 
        ! nonreactive mobile tracer
        if (config_use_nonreactive) &
-            tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc,:) = skeletalNonreactiveConc(1,:,iCell)
+            trcrn(tracerObject % index_nonreactiveConc,:) = skeletalNonreactiveConc(1,:,iCell)
        ! humic material
        if (config_use_humics) &
-            tracerObject % tracerArrayCategory(tracerObject % index_humicsConc,:) = skeletalHumicsConc(1,:,iCell)
+            trcrn(tracerObject % index_humicsConc,:) = skeletalHumicsConc(1,:,iCell)
 
        ! Particulate and dissovled Iron
        if (config_use_iron) then
           do iBioTracers = 1, nParticulateIron
-             tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers),:) = &
+             trcrn(tracerObject % index_particulateIronConc(iBioTracers),:) = &
                   skeletalParticulateIronConc(iBioTracers,:,iCell)
           enddo
           do iBioTracers = 1, nDissolvedIron
-             tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers),:) = &
+             trcrn(tracerObject % index_dissolvedIronConc(iBioTracers),:) = &
                   skeletalDissolvedIronConc(iBioTracers,:,iCell)
           enddo
        endif
@@ -6337,7 +6363,7 @@ contains
 
        ! Fraction of biogeochemical tracer in the mobile phase
        do iLayers = 1, tracerObject % nBioTracers
-          tracerObject % tracerArrayCategory(tracerObject % index_mobileFraction+iLayers-1,:) = mobileFraction(iLayers,:,iCell)
+          trcrn(tracerObject % index_mobileFraction+iLayers-1,:) = mobileFraction(iLayers,:,iCell)
        enddo
 
        ! algal nitrogen
@@ -6346,7 +6372,7 @@ contains
           do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                 iBiocount = iBiocount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:) = &
+                trcrn(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:) = &
                      verticalAlgaeConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6355,7 +6381,7 @@ contains
        ! nitrate
        if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc + iLayers-1,:) = &
+             trcrn(tracerObject % index_nitrateConc + iLayers-1,:) = &
                   verticalNitrateConc(iLayers,:,iCell)
           enddo
        endif
@@ -6366,7 +6392,7 @@ contains
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:) = &
+                trcrn(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:) = &
                      verticalDOCConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6376,7 +6402,7 @@ contains
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:) = &
+                trcrn(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:) = &
                      verticalDICConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6388,7 +6414,7 @@ contains
           do iBioTracers = 1, nDON
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:) = &
+                trcrn(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:) = &
                      verticalDONConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6397,7 +6423,7 @@ contains
        ! ammonium
        if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc + iLayers-1,:) = &
+             trcrn(tracerObject % index_ammoniumConc + iLayers-1,:) = &
                   verticalAmmoniumConc(iLayers,:,iCell)
           enddo
        endif
@@ -6405,7 +6431,7 @@ contains
        ! silicate
        if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_silicateConc+iLayers-1,:) = &
+             trcrn(tracerObject % index_silicateConc+iLayers-1,:) = &
                   verticalSilicateConc(iLayers,:,iCell)
           enddo
        endif
@@ -6413,16 +6439,16 @@ contains
        ! DMS, DMSPp, DMSPd
        if (config_use_DMS) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_DMSConc+iLayers-1,:) = verticalDMSConc(iLayers,:,iCell)
-             tracerObject % tracerArrayCategory(tracerObject % index_DMSPpConc+iLayers-1,:) = verticalDMSPpConc(iLayers,:,iCell)
-             tracerObject % tracerArrayCategory(tracerObject % index_DMSPdConc+iLayers-1,:) = verticalDMSPdConc(iLayers,:,iCell)
+             trcrn(tracerObject % index_DMSConc+iLayers-1,:) = verticalDMSConc(iLayers,:,iCell)
+             trcrn(tracerObject % index_DMSPpConc+iLayers-1,:) = verticalDMSPpConc(iLayers,:,iCell)
+             trcrn(tracerObject % index_DMSPdConc+iLayers-1,:) = verticalDMSPdConc(iLayers,:,iCell)
           enddo
        endif
 
        ! nonreactive purely mobile tracers
        if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc+iLayers-1,:) = &
+             trcrn(tracerObject % index_nonreactiveConc+iLayers-1,:) = &
                   verticalNonreactiveConc(iLayers,:,iCell)
           enddo
        endif
@@ -6430,7 +6456,7 @@ contains
        ! humic material
        if (config_use_humics) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_humicsConc+iLayers-1,:) = verticalHumicsConc(iLayers,:,iCell)
+             trcrn(tracerObject % index_humicsConc+iLayers-1,:) = verticalHumicsConc(iLayers,:,iCell)
           enddo
        endif
 
@@ -6440,7 +6466,7 @@ contains
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:) = &
+                trcrn(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:) = &
                      verticalParticulateIronConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6448,7 +6474,7 @@ contains
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:) = &
+                trcrn(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:) = &
                      verticalDissolvedIronConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6460,7 +6486,7 @@ contains
           do iBioTracers = 1, nzAerosols
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:) = &
+                trcrn(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:) = &
                      verticalAerosolsConc(iBioCount,:,iCell)
              enddo
           enddo
@@ -6469,7 +6495,7 @@ contains
        ! salinity used with BL99 thermodynamics
        if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
-             tracerObject % tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
+             trcrn(tracerObject % index_verticalSalinity+iLayers-1,:) = &
                   verticalSalinity(iLayers,:,iCell)
           enddo
        endif
@@ -6489,13 +6515,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+  subroutine get_cice_biogeochemistry_tracer_array_category(block, tracerObject, trcrn, iCell)
 
     type(block_type), intent(inout) :: &
          block
 
     type(ciceTracerObjectType), intent(in) :: &
          tracerObject
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: trcrn
 
     integer, intent(in) :: &
          iCell
@@ -6634,74 +6662,74 @@ contains
     ! biogeochemistry
     ! brine height fraction
     if (config_use_brine) &
-         brineFraction(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_brineFraction,:)
+         brineFraction(1,:,iCell) = trcrn(tracerObject % index_brineFraction,:)
 
     if (config_use_skeletal_biochemistry) then
 
        ! algal nitrogen
        do iBioTracers = 1, nAlgae
           skeletalAlgaeConc(iBioTracers,:,iCell) = &
-               tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers),:)
+               trcrn(tracerObject % index_algaeConc(iBioTracers),:)
        enddo
 
        ! nitrate
        if (config_use_nitrate) &
-            skeletalNitrateConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc,:)
+            skeletalNitrateConc(1,:,iCell) = trcrn(tracerObject % index_nitrateConc,:)
 
        if (config_use_carbon) then
 
           ! DOC
           do iBioTracers = 1, nDOC
              skeletalDOCConc(iBioTracers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers),:)
+                  trcrn(tracerObject % index_DOCConc(iBioTracers),:)
           enddo
 
           ! DIC
           do iBioTracers = 1, nDIC
              skeletalDICConc(iBioTracers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers),:)
+                  trcrn(tracerObject % index_DICConc(iBioTracers),:)
           enddo
        endif
 
        ! DON
        if (config_use_DON) then
           do iBioTracers = 1, nDON
-             skeletalDONConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers),:)
+             skeletalDONConc(iBioTracers,:,iCell) = trcrn(tracerObject % index_DONConc(iBioTracers),:)
           enddo
        endif
 
        ! ammonium
        if (config_use_ammonium) &
-            skeletalAmmoniumConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc,:)
+            skeletalAmmoniumConc(1,:,iCell) = trcrn(tracerObject % index_ammoniumConc,:)
        ! silicate
        if (config_use_silicate) &
-            skeletalSilicateConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_silicateConc,:)
+            skeletalSilicateConc(1,:,iCell) = trcrn(tracerObject % index_silicateConc,:)
        ! DNS, DMSPp, DMSPd
        if (config_use_DMS) then
-          skeletalDMSConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSConc,:)
-          skeletalDMSPpConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPpConc,:)
-          skeletalDMSPdConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPdConc,:)
+          skeletalDMSConc(1,:,iCell) = trcrn(tracerObject % index_DMSConc,:)
+          skeletalDMSPpConc(1,:,iCell) = trcrn(tracerObject % index_DMSPpConc,:)
+          skeletalDMSPdConc(1,:,iCell) = trcrn(tracerObject % index_DMSPdConc,:)
        endif
 
        ! nonreactive tracer
        if (config_use_nonreactive) &
-            skeletalNonreactiveConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc,:)
+            skeletalNonreactiveConc(1,:,iCell) = trcrn(tracerObject % index_nonreactiveConc,:)
        ! humic material
        if (config_use_humics) &
-            skeletalHumicsConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_humicsConc,:)
+            skeletalHumicsConc(1,:,iCell) = trcrn(tracerObject % index_humicsConc,:)
 
        if (config_use_iron) then
 
           ! Particulate Iron
           do iBioTracers = 1, nParticulateIron
              skeletalParticulateIronConc(iBioTracers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers),:)
+                  trcrn(tracerObject % index_particulateIronConc(iBioTracers),:)
           enddo
 
           ! Dissolved Iron
           do iBioTracers = 1, nDissolvedIron
              skeletalDissolvedIronConc(iBioTracers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers),:)
+                  trcrn(tracerObject % index_dissolvedIronConc(iBioTracers),:)
           enddo
        endif
 
@@ -6709,7 +6737,7 @@ contains
 
        ! fraction of biogeochemical tracer in the mobile phase
        do iLayers = 1, tracerObject % nBioTracers
-          mobileFraction(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_mobileFraction+iLayers-1,:)
+          mobileFraction(iLayers,:,iCell) = trcrn(tracerObject % index_mobileFraction+iLayers-1,:)
        enddo
 
        if (config_use_vertical_biochemistry) then
@@ -6720,7 +6748,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBiocount = iBiocount + 1
                 verticalAlgaeConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:)
+                     trcrn(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
        endif
@@ -6729,7 +6757,7 @@ contains
        if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
              verticalNitrateConc(iLayers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc + iLayers-1,:)
+                  trcrn(tracerObject % index_nitrateConc + iLayers-1,:)
           enddo
        endif
 
@@ -6741,7 +6769,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
                 verticalDOCConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:)
+                     trcrn(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:)
              enddo
           enddo
           iBioCount = 0
@@ -6751,7 +6779,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
                 verticalDICConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:)
+                     trcrn(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:)
              enddo
           enddo
        endif
@@ -6763,7 +6791,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
                 verticalDONConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:)
+                     trcrn(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:)
              enddo
           enddo
        endif
@@ -6772,7 +6800,7 @@ contains
        if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
              verticalAmmoniumConc(iLayers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc + iLayers-1,:)
+                  trcrn(tracerObject % index_ammoniumConc + iLayers-1,:)
           enddo
        endif
 
@@ -6780,16 +6808,16 @@ contains
        if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
              verticalSilicateConc(iLayers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_silicateConc+iLayers-1,:)
+                  trcrn(tracerObject % index_silicateConc+iLayers-1,:)
           enddo
        endif
 
        ! DMS, DMSPp, DMSPd
        if (config_use_DMS) then
           do iLayers = 1, nBioLayersP3
-             verticalDMSConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSConc+iLayers-1,:)
-             verticalDMSPpConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPpConc+iLayers-1,:)
-             verticalDMSPdConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPdConc+iLayers-1,:)
+             verticalDMSConc(iLayers,:,iCell) = trcrn(tracerObject % index_DMSConc+iLayers-1,:)
+             verticalDMSPpConc(iLayers,:,iCell) = trcrn(tracerObject % index_DMSPpConc+iLayers-1,:)
+             verticalDMSPdConc(iLayers,:,iCell) = trcrn(tracerObject % index_DMSPdConc+iLayers-1,:)
           enddo
        endif
 
@@ -6797,14 +6825,14 @@ contains
        if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
              verticalNonreactiveConc(iLayers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc+iLayers-1,:)
+                  trcrn(tracerObject % index_nonreactiveConc+iLayers-1,:)
           enddo
        endif
 
        ! humic material
        if (config_use_humics) then
           do iLayers = 1, nBioLayersP3
-             verticalHumicsConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_humicsConc+iLayers-1,:)
+             verticalHumicsConc(iLayers,:,iCell) = trcrn(tracerObject % index_humicsConc+iLayers-1,:)
           enddo
        endif
 
@@ -6816,7 +6844,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
                 verticalParticulateIronConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:)
+                     trcrn(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
           iBioCount = 0
@@ -6826,7 +6854,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
                 verticalDissolvedIronConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:)
+                     trcrn(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
        endif
@@ -6838,7 +6866,7 @@ contains
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
                 verticalAerosolsConc(iBioCount,:,iCell) = &
-                     tracerObject % tracerArrayCategory(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:)
+                     trcrn(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
        endif
@@ -6847,7 +6875,7 @@ contains
        if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
              verticalSalinity(iLayers,:,iCell) = &
-                  tracerObject % tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
+                  trcrn(tracerObject % index_verticalSalinity+iLayers-1,:)
           enddo
        endif
     endif
@@ -11952,7 +11980,7 @@ contains
           endif
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, tracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call set_cice_tracer_array_category(block, tracerObject, tracerObject%tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           if (config_use_vertical_zsalinity) then
              call colpkg_init_zsalinity(&
@@ -12014,7 +12042,7 @@ contains
           endif ! biogeochemistry
 
           ! get the category tracer array
-          call get_cice_tracer_array_category(block, tracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call get_cice_tracer_array_category(block, tracerObject, tracerObject%tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
 
@@ -13316,9 +13344,11 @@ contains
 ! Warning messages
 !-----------------------------------------------------------------------
 
-  subroutine column_write_warnings(warnings, logAsErrors)
+  subroutine column_write_warnings(logAsErrors)
 
-    character(len=strKINDWarnings), dimension(:), intent(in) :: &
+    use ice_colpkg, only: colpkg_get_warnings
+
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
          warnings
 
     logical, intent(in) :: &
@@ -13326,6 +13356,8 @@ contains
 
     integer :: &
          iWarning
+
+    call colpkg_get_warnings(warnings)
 
     if (logAsErrors) then
        do iWarning = 1, size(warnings)

@@ -3525,6 +3525,7 @@
       if (present(uvel)) then
          worku = uvel
       endif
+      ! should this be for vvel,workv?
       if (present(uvel)) then
          worku = uvel
       endif
