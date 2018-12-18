@@ -39,20 +39,20 @@ module seaice_advection_incremental_remap
    ! variables private to this module
 
    type :: geometric_avg_cell_type
-      real(kind=RKIND), dimension(:), pointer :: x    => null()   ! grid cell average of x
-      real(kind=RKIND), dimension(:), pointer :: y    => null()   ! grid cell average of y
-      real(kind=RKIND), dimension(:), pointer :: xx   => null()   ! grid cell average of x^2
-      real(kind=RKIND), dimension(:), pointer :: xy   => null()   ! grid cell average of x*y
-      real(kind=RKIND), dimension(:), pointer :: yy   => null()   ! grid cell average of y^2
-      real(kind=RKIND), dimension(:), pointer :: xxx  => null()   ! grid cell average of x^3
-      real(kind=RKIND), dimension(:), pointer :: xxy  => null()   ! grid cell average of x^2*y
-      real(kind=RKIND), dimension(:), pointer :: xyy  => null()   ! grid cell average of x*y^2
-      real(kind=RKIND), dimension(:), pointer :: yyy  => null()   ! grid cell average of y^3
-      real(kind=RKIND), dimension(:), pointer :: xxxx => null()   ! grid cell average of x^4
-      real(kind=RKIND), dimension(:), pointer :: xxxy => null()   ! grid cell average of x^3*y
-      real(kind=RKIND), dimension(:), pointer :: xxyy => null()   ! grid cell average of x^2*y^2
-      real(kind=RKIND), dimension(:), pointer :: xyyy => null()   ! grid cell average of x*y^3
-      real(kind=RKIND), dimension(:), pointer :: yyyy => null()   ! grid cell average of y^4
+      real(kind=RKIND), dimension(:), contiguous, pointer :: x    => null()   ! grid cell average of x
+      real(kind=RKIND), dimension(:), contiguous, pointer :: y    => null()   ! grid cell average of y
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xx   => null()   ! grid cell average of x^2
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xy   => null()   ! grid cell average of x*y
+      real(kind=RKIND), dimension(:), contiguous, pointer :: yy   => null()   ! grid cell average of y^2
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xxx  => null()   ! grid cell average of x^3
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xxy  => null()   ! grid cell average of x^2*y
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xyy  => null()   ! grid cell average of x*y^2
+      real(kind=RKIND), dimension(:), contiguous, pointer :: yyy  => null()   ! grid cell average of y^3
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xxxx => null()   ! grid cell average of x^4
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xxxy => null()   ! grid cell average of x^3*y
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xxyy => null()   ! grid cell average of x^2*y^2
+      real(kind=RKIND), dimension(:), contiguous, pointer :: xyyy => null()   ! grid cell average of x*y^3
+      real(kind=RKIND), dimension(:), contiguous, pointer :: yyyy => null()   ! grid cell average of y^4
    end type geometric_avg_cell_type
 
    ! parameters private to this module
@@ -4258,7 +4258,7 @@ contains
          mask                !< Input: integer mask for parent tracer;
                              !         = 1 where field values for this tracer are physically meaningful, else = 0
 
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(out) :: &
          xGrad, yGrad        !< Output: x and y components of the gradient
 
     integer, dimension(:), intent(in) ::  &
@@ -4275,29 +4275,23 @@ contains
     integer :: iCell, iEdge, iEdgeOnCell, iCellNeighbor
 
     real(kind=RKIND) :: &
-         signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
+         signGradient,  &  ! = 1 or -1, depending on which direction is taken as positive at a given edge
+         tempGrad
 
     real(kind=RKIND), dimension(:,:), allocatable ::   &
          normalGrad,     & ! normal components of the gradient, defined on cell edges
-         globalGrad,     & ! gradient at cell center, in global x/y/z coordinates
-         globalGradRotate  ! rotated globalGrad vector
-
-    real(kind=RKIND), dimension(:), allocatable ::   &
-         zGrad             ! diagnostic only; should be much smaller than xGrad and yGrad
+         globalGrad        ! gradient at cell center, in global x/y/z coordinates
 
     ! find dimensions and allocate arrays
     nCategories = size(field,1)
-    allocate(zGrad(nCategories))
     allocate(normalGrad(nCategories,maxEdges))
     allocate(globalGrad(nCategories,3))
-    if (config_rotate_cartesian_grid) allocate(globalGradRotate(nCategories,3))
 
     ! initialize the gradient
     xGrad(:,:) = 0.0_RKIND
     yGrad(:,:) = 0.0_RKIND
-    zGrad(:) = 0.0_RKIND  ! diagnostic only
 
-    ! loop over cells
+    !$omp parallel do default(shared) private(normalGrad,globalGrad,iEdgeOnCell,iCellNeighbor,iEdge,iCat,signGradient,tempGrad)
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then  ! ice is present in the cell
@@ -4329,18 +4323,9 @@ contains
 
                       normalGrad(iCat,iEdgeOnCell) = signGradient * (field(iCat,iCellNeighbor) - field(iCat,iCell)) / dcEdge(iEdge)
 
-                   else   ! either or both field values do not have physical meaning; set gradient component = 0
-
-                      normalGrad(iCat,iEdgeOnCell) = 0.0_RKIND
-
                    endif
 
                 enddo   ! iCat
-
-             else   ! there is no cell neighbor on this edge
-
-                ! set gradient component = 0
-                normalGrad(:,iEdgeOnCell) = 0.0_RKIND
 
              endif
 
@@ -4359,10 +4344,11 @@ contains
           !TODO - Rotate the gradient vector if on a plane?
 
           if (config_rotate_cartesian_grid .and. on_a_sphere) then
-             globalGradRotate(:,1) = -globalGrad(:,3)   ! xR = -z
-             globalGradRotate(:,2) =  globalGrad(:,2)   ! yR = y
-             globalGradRotate(:,3) =  globalGrad(:,1)   ! zR = x
-             globalGrad(:,:) = globalGradRotate(:,:)
+             do iCat = 1, nCategories
+                tempGrad = globalGrad(iCat,1)
+                globalGrad(iCat,1) = -globalGrad(iCat,3) ! xR = -z
+                globalGrad(iCat,3) =  tempGrad           ! zR = x
+             enddo   ! iCat
           endif
 
           ! transform from global x/y/z coordinates to local east/west coordinates
@@ -4376,12 +4362,6 @@ contains
              yGrad(:,iCell) = transGlobalToCell(2,1,iCell) * globalGrad(:,1)  &
                             + transGlobalToCell(2,2,iCell) * globalGrad(:,2)  &
                             + transGlobalToCell(2,3,iCell) * globalGrad(:,3)
-
-             ! Note: The zGrad component is never used; it is simply computed as a diagnostic
-             !TODO - Comment out zGrad computation?
-             zGrad(:) = transGlobalToCell(3,1,iCell) * globalGrad(:,1)  &
-                      + transGlobalToCell(3,2,iCell) * globalGrad(:,2)  &
-                      + transGlobalToCell(3,3,iCell) * globalGrad(:,3)
 
           else  ! on a plane; do a simple copy
 
@@ -4405,18 +4385,16 @@ contains
                      realArgs=(/field(iCatTest,iCellNeighbor), normalGrad(iCatTest,iEdgeOnCell)/))
              enddo
              call mpas_log_write(' ')
-             call mpas_log_write('Unlimited center gradient: $r $r $r', &
-                  realArgs=(/xGrad(iCatTest,iCell), yGrad(iCatTest,iCell), zGrad(iCatTest)/))
+             call mpas_log_write('Unlimited center gradient: $r $r', &
+                  realArgs=(/xGrad(iCatTest,iCell), yGrad(iCatTest,iCell)/))
           endif
        endif
 
     enddo  ! iCell
 
     ! cleanup
-    deallocate(zGrad)
     deallocate(normalGrad)
     deallocate(globalGrad)
-    if (config_rotate_cartesian_grid) deallocate(globalGradRotate)
 
   end subroutine compute_gradient_2d
 
@@ -4490,7 +4468,7 @@ contains
          mask                !< Input: integer mask for parent tracer;
                              !         = 1 where field values for this tracer are physically meaningful, else = 0
 
-    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), contiguous, intent(out) :: &
          xGrad, yGrad        !< Output: x and y components of the gradient
 
     integer, dimension(:), intent(in) ::  &
@@ -4508,29 +4486,22 @@ contains
 
     real(kind=RKIND), dimension(:,:,:), allocatable ::   &
          normalGrad,     & ! normal components of the gradient, defined on cell edges
-         globalGrad,     & ! gradient at cell center, in global x/y/z coordinates
-         globalGradRotate  ! rotated globalGrad vector
+         globalGrad        ! gradient at cell center, in global x/y/z coordinates
 
     real(kind=RKIND) :: &
          signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         zGrad             ! diagnostic only; should be much smaller than xGrad and yGrad
-
     ! find dimensions and allocate arrays
     nLayers = size(field,1)
     nCategories = size(field,2)
-    allocate(zGrad(nLayers,nCategories))
     allocate(normalGrad(nLayers,nCategories,maxEdges))
     allocate(globalGrad(nLayers,nCategories,3))
-    if (config_rotate_cartesian_grid) allocate(globalGradRotate(nLayers,nCategories,3))
 
     ! initialize the gradient
     xGrad(:,:,:) = 0.0_RKIND
     yGrad(:,:,:) = 0.0_RKIND
-    zGrad(:,:) = 0.0_RKIND     ! diagnostic only
 
-    ! loop over cells
+    !$omp parallel do default(shared) private(normalGrad,globalGrad,iEdgeOnCell,iCellNeighbor,iEdge,iCat,iLayer,signGradient)
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then  ! ice is present in the cell
@@ -4565,19 +4536,10 @@ contains
                          normalGrad(iLayer,iCat,iEdgeOnCell) = &
                               signGradient * (field(iLayer,iCat,iCellNeighbor) - field(iLayer,iCat,iCell)) / dcEdge(iEdge)
 
-                      else   ! either or both field values do not have physical meaning; set gradient component = 0
-
-                         normalGrad(iLayer,iCat,iEdgeOnCell) = 0.0_RKIND
-
                       endif
 
                    enddo   ! iCat
                 enddo      ! iLayer
-
-             else   ! there is no cell neighbor on this edge
-
-                ! set gradient component = 0
-                normalGrad(:,:,iEdgeOnCell) = 0.0_RKIND
 
              endif
 
@@ -4596,10 +4558,9 @@ contains
           !TODO - Rotate the gradient vector if on a plane?
 
           if (config_rotate_cartesian_grid .and. on_a_sphere) then
-             globalGradRotate(:,:,1) = -globalGrad(:,:,3)   ! xR = -z
-             globalGradRotate(:,:,2) =  globalGrad(:,:,2)   ! yR = y
-             globalGradRotate(:,:,3) =  globalGrad(:,:,1)   ! zR = x
-             globalGrad(:,:,:) = globalGradRotate(:,:,:)
+             normalGrad(:,:,1) =  globalGrad(:,:,1)   ! temp
+             globalGrad(:,:,1) = -globalGrad(:,:,3)   ! xR = -z
+             globalGrad(:,:,3) =  normalGrad(:,:,1)   ! zR = x
           endif
 
           ! transform from global x/y/z coordinates to local east/west coordinates
@@ -4613,12 +4574,6 @@ contains
              yGrad(:,:,iCell) = transGlobalToCell(2,1,iCell) * globalGrad(:,:,1)  &
                               + transGlobalToCell(2,2,iCell) * globalGrad(:,:,2)  &
                               + transGlobalToCell(2,3,iCell) * globalGrad(:,:,3)
-
-             ! Note: The zGrad component is never used; it is simply computed as a diagnostic
-             !TODO - Comment out zGrad computation?
-             zGrad(:,:) = transGlobalToCell(3,1,iCell) * globalGrad(:,:,1)  &
-                        + transGlobalToCell(3,2,iCell) * globalGrad(:,:,2)  &
-                        + transGlobalToCell(3,3,iCell) * globalGrad(:,:,3)
 
           else  ! on a plane; do a simple copy
 
@@ -4642,18 +4597,16 @@ contains
                      realArgs=(/field(iLayerTest,iCatTest,iCellNeighbor), normalGrad(iLayerTest,iCatTest,iEdgeOnCell)/))
              enddo
              call mpas_log_write(' ')
-             call mpas_log_write('Unlimited center gradient: $r $r $r', &
-                  realArgs=(/xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)/))
+             call mpas_log_write('Unlimited center gradient: $r $r', &
+                  realArgs=(/xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell)/))
           endif
        endif
 
     enddo  ! iCell
 
     ! cleanup
-    deallocate(zGrad)
     deallocate(normalGrad)
     deallocate(globalGrad)
-    if (config_rotate_cartesian_grid) deallocate(globalGradRotate)
 
   end subroutine compute_gradient_3d
 
@@ -4670,6 +4623,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
+!DIR$ ATTRIBUTES FORCEINLINE :: compute_barycenter_coordinates
   subroutine compute_barycenter_coordinates(&
        geomAvgCell,                     &
        iCell,                           &
@@ -4828,30 +4782,30 @@ contains
     integer, intent(in) :: &
          nCells            !< Input: number of cells
 
-    integer, dimension(:), intent(in) :: &
+    integer, dimension(:), contiguous, intent(in) :: &
          nEdgesOnCell      !< Input: number of edges per cell
 
-    integer, dimension(:,:), intent(in) ::  &
+    integer, dimension(:,:), contiguous, intent(in) ::  &
          cellsOnCell       !< Input: cell index for each edge neighbor of a given cell
 
-    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) ::  &
          field             !< Input: 2d field for which we are limiting the gradient
 
-    integer, dimension(:,:), intent(in) ::  &
+    integer, dimension(:,:), contiguous, intent(in) ::  &
          fieldMask         !< Input: mask = 1 where field value is physically meaningful, = 0 elsewhere
 
-    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) ::  &
          xVertexOnCell,  & !< Input: x (east) coordinate of vertex relative to cell center in local tangent plane
          yVertexOnCell     !< Input: y (north) coordinate of vertex relative to cell center in local tangent plane
 
-    integer, dimension(:), intent(in) :: &
+    integer, dimension(:), contiguous, intent(in) :: &
          maskCell          !< Input: = 1 for cells with ice, else = 0
 
-    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) ::  &
          xBarycenter,   &  !< Input: x (east) coordinate of barycenter of this tracer's parent
          yBarycenter       !< Input: y (north) coordinate of barycenter of this tracer's parent
 
-    real(kind=RKIND), dimension(:,:), intent(inout) ::  &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(inout) ::  &
          xGrad,         &  !< Input/output: x (east) component of gradient vector
          yGrad             !< Input/output: y (north) coordinate of barycenter of this tracer's parent
                            !  Gradient components are unlimited on input, limited on output
@@ -4887,7 +4841,8 @@ contains
     allocate(maxLocal(nCategories))
     allocate(minLocal(nCategories))
 
-    ! loop over cells
+    !$omp parallel do default(shared) private(maxNeighbor,minNeighbor,iEdgeOnCell,iCellNeighbor,&
+    !$omp&  iCat,maxLocal,minLocal,iVertex,deviationAtVertex,gradFactor,gradFactor1,gradFactor2)
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then   ! ice is present
@@ -5024,35 +4979,35 @@ contains
     integer, intent(in) :: &
          nCells            !< Input: number of cells
 
-    integer, dimension(:), intent(in) :: &
+    integer, dimension(:), contiguous, intent(in) :: &
          nEdgesOnCell      !< Input: number of edges per cell
 
-    integer, dimension(:,:), intent(in) ::  &
+    integer, dimension(:,:), contiguous, intent(in) ::  &
          cellsOnCell       !< Input: cell index for each edge neighbor of a given cell
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) ::  &
+    real(kind=RKIND), dimension(:,:,:), contiguous, intent(in) ::  &
          field             !< Input: 3d field for which we are limiting the gradient
 
-    integer, dimension(:,:,:), intent(in) ::  &
+    integer, dimension(:,:,:), contiguous, intent(in) ::  &
          fieldMask         !< Input: mask = 1 where field value is physically meaningful, = 0 elsewhere
 
-    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) ::  &
          xVertexOnCell,  & !< Input: x (east) coordinate of vertex relative to cell center in local tangent plane
          yVertexOnCell     !< Input: y (north) coordinate of vertex relative to cell center in local tangent plane
 
-    integer, dimension(:), intent(in) :: &
+    integer, dimension(:), contiguous, intent(in) :: &
          maskCell            !< Input: = 1 for cells with ice, else = 0
 
-    real(kind=RKIND), dimension(:,:,:), intent(inout) ::  &
+    real(kind=RKIND), dimension(:,:,:), contiguous, intent(inout) ::  &
          xGrad,         &  !< Input/output: x (east) component of gradient vector
          yGrad             !< Input/output: y (north) coordinate of barycenter of this tracer's parent
                            !  Gradient components are unlimited on input, limited on output
 
-    real(kind=RKIND), dimension(:,:), intent(in), optional ::  &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in), optional ::  &
          xBarycenter2D, &  !< Input: x (east) coordinate of barycenter of this tracer's 2Dparent
          yBarycenter2D     !< Input: y (north) coordinate of barycenter of this tracer's 2D parent
 
-    real(kind=RKIND), dimension(:,:,:), intent(in), optional ::  &
+    real(kind=RKIND), dimension(:,:,:), contiguous, intent(in), optional ::  &
          xBarycenter3D, &  !< Input: x (east) coordinate of barycenter of this tracer's 3D parent
          yBarycenter3D     !< Input: y (north) coordinate of barycenter of this tracer's 3D parent
 
@@ -5099,7 +5054,8 @@ contains
     allocate(maxLocal(nLayers,nCategories))
     allocate(minLocal(nLayers,nCategories))
 
-    ! loop over cells
+    !$omp parallel do default(shared) private(maxNeighbor,minNeighbor,iEdgeOnCell,iCellNeighbor,&
+    !$omp&  iCat,iLayer,maxLocal,minLocal,iVertex,deviationAtVertex,gradFactor,gradFactor1,gradFactor2)
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then  ! ice is present
@@ -6728,12 +6684,10 @@ contains
          dummyTracer       ! dummy tracer with value of 1 everywhere
 
     integer ::   &
-         iEdge, iCell, iCat, iLayer, iTri, iqp
-
-    integer :: &
          nTriPerEdgeRemap,          & ! number of triangles per edge
          nCategories,               & ! number of ice thickness categories
-         nLayers                      ! number of layers
+         nLayers,                   & ! number of layers
+         iEdge, iCell, iCat, iLayer, iTri, iqp
 
     real(kind=RKIND), dimension(:), allocatable ::   &
          tracerIntegral2D         ! integral over a triangle of mass, mass*tracer, etc.
@@ -6835,7 +6789,7 @@ contains
                             ! Note: Parent tracer must have ndims = 2
                             thisTracer % triangleValue2D(iCat,iqp,iTri,iEdge) = &
                                parentTracer % triangleValue2D(iCat,iqp,iTri,iEdge) * &
-                               ( thisTracer % center2D(iCat,iCell) &
+                               ( thisTracer % center2D(iCat,iCell)                              &
                                + thisTracer %  xGrad2D(iCat,iCell) * xTriangle(iqp,iTri,iEdge)  &
                                + thisTracer %  yGrad2D(iCat,iCell) * yTriangle(iqp,iTri,iEdge)  &
                                )
@@ -6851,7 +6805,6 @@ contains
                 enddo    ! nTriPerEdgeRemap
              endif       ! maskEdge = 1
           enddo          ! nEdges
-
           deallocate(tracerIntegral2D)
 
        elseif (thisTracer % ndims == 3) then
@@ -6933,8 +6886,6 @@ contains
                                                thisTracer%center2D(iCat,iCell), &
                                                thisTracer% xGrad2D(iCat,iCell), &
                                                thisTracer% yGrad2D(iCat,iCell) /))
-                               abortFlag = .true.
-                               return
                             endif  ! negative 2D area
                          elseif (thisTracer % ndims == 3) then
                             do iLayer = 1, nLayers
@@ -6947,14 +6898,12 @@ contains
                                        messageType=MPAS_LOG_ERR, &
                                        intArgs=(/iEdge, indexToEdgeID(iEdge), iTri, iqp/))
                                   call mpas_log_write('triangle area, tracer, center, xGrad3D, yGrad3D: $r $r $r $r $r', &
-                                       messageType=MPAS_LOG_ERR, &
+                                       messageType=MPAS_LOG_CRIT, & ! abort
                                        realArgs=(/triangleArea(iTri,iEdge), &
                                                   thisTracer%triangleValue3D(iLayer,iCat,iqp,iTri,iEdge), &
                                                   thisTracer%center3D(iLayer,iCat,iCell), &
                                                   thisTracer% xGrad3D(iLayer,iCat,iCell), &
                                                   thisTracer% yGrad3D(iLayer,iCat,iCell) /))
-                                  abortFlag = .true.
-                                  return
                                endif  ! negative 3D area
                             enddo   ! iLayer
                          endif   ! ndims
@@ -7275,6 +7224,7 @@ contains
 
           allocate (fluxFromCell2D(nCategories))
 
+          !$omp parallel do default(shared) private(fluxFromCell2D,iEdgeOnCell,iEdge,edgeSignOnCell,iCat)
           do iCell = 1, nCellsSolve
 
              fluxFromCell2D = 0.0_RKIND
@@ -7356,6 +7306,7 @@ contains
 
           allocate (fluxFromCell3D(nLayers,nCategories))
 
+          !$omp parallel do default(shared) private(fluxFromCell3D,iEdgeOnCell,iEdge,edgeSignOnCell,iCat,iLayer)
           do iCell = 1, nCellsSolve
 
              fluxFromCell3D = 0.0_RKIND

@@ -46,8 +46,8 @@ module seaice_advection_incremental_remap_tracers
       ! = mass*tracer1 for tracers with one parent
       ! = mass*tracer1*tracer2 for tracers with two parents
       ! = mass*tracer1*tracer2*tracer3 for tracers with three parents
-      real(kind=RKIND), dimension(:,:),     pointer :: massTracerProduct2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: massTracerProduct3D => null()
+      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: massTracerProduct2D => null()
+      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: massTracerProduct3D => null()
 
       !TODO - Replace with one field, 2 time levels?
       ! global sums (over all cells)
@@ -88,11 +88,11 @@ module seaice_advection_incremental_remap_tracers
       ! The barycenter for this tracer is the location where the child tracer value (array2D or array3D) is located.
       ! Only mass-type fields (nParents = 0) are located at the geometric cell center.
 
-      real(kind=RKIND), dimension(:,:),     pointer :: xBarycenter2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: xBarycenter3D => null()
+      real(kind=RKIND), dimension(:,:),     contiguous, pointer :: xBarycenter2D => null()
+      real(kind=RKIND), dimension(:,:,:),   contiguous, pointer :: xBarycenter3D => null()
 
-      real(kind=RKIND), dimension(:,:),     pointer :: yBarycenter2D => null()
-      real(kind=RKIND), dimension(:,:,:),   pointer :: yBarycenter3D => null()
+      real(kind=RKIND), dimension(:,:),     contiguous, pointer :: yBarycenter2D => null()
+      real(kind=RKIND), dimension(:,:,:),   contiguous, pointer :: yBarycenter3D => null()
 
       ! quantities needed for linear reconstruction (value at cell center plus x and y gradients)
       ! Note: The center value is the value at the geometric cell center and generally is
