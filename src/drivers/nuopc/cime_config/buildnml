@@ -337,9 +337,11 @@ def _create_component_modelio_namelists(confdir, case, files):
                 for entry in entries:
                     nmlgen.add_default(entry)
 
-                if model != "cpl":
+                if model == "cpl":
+                    modelio_file = "med_modelio.nml" + inst_string
+                else:
                     modelio_file = model + "_modelio.nml" + inst_string
-                    nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
+                nmlgen.write_nuopc_modelio_file(os.path.join(confdir, modelio_file))
 
                 # Output the following to nuopc.runconfig
                 moddiro = case.get_value('RUNDIR')
