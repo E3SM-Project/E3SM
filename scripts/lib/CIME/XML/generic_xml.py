@@ -11,6 +11,7 @@ from distutils.spawn import find_executable
 import getpass
 import six
 from copy import deepcopy
+from collections import namedtuple
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,12 @@ class GenericXML(object):
 
     _FILEMAP = {}
     DISABLE_CACHING = False
+    CacheEntry = namedtuple("CacheEntry", ["tree", "root", "modtime"])
+
+    @classmethod
+    def invalidate(cls, filename):
+        if filename in cls._FILEMAP:
+            del cls._FILEMAP[filename]
 
     def __init__(self, infile=None, schema=None, root_name_override=None, root_attrib_override=None, read_only=True):
         """
@@ -71,17 +78,25 @@ class GenericXML(object):
 
             self.tree = ET.ElementTree(root)
 
+            self._FILEMAP[infile] = self.CacheEntry(self.tree, self.root, 0.0)
+
     def read(self, infile, schema=None):
         """
         Read and parse an xml file into the object
         """
-        if not self.DISABLE_CACHING and infile in self._FILEMAP and self.read_only:
-            logger.debug("read (cached): " + infile)
-            expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"
-                   .format(self.filename))
-            self.tree, self.root = self._FILEMAP[infile]
-        else:
-            logger.debug("read: " + infile)
+        cached_read = False
+        if not self.DISABLE_CACHING and infile in self._FILEMAP:
+            timestamp_cache = self._FILEMAP[infile].modtime
+            timestamp_file  = os.path.getmtime(infile)
+            if timestamp_file == timestamp_cache:
+                logger.debug("read (cached): {}".format(infile))
+                expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"
+                       .format(self.filename))
+                self.tree, self.root, _ = self._FILEMAP[infile]
+                cached_read = True
+
+        if not cached_read:
+            logger.debug("read: {}".format(infile))
             file_open = (lambda x: open(x, 'r', encoding='utf-8')) if six.PY3 else (lambda x: open(x, 'r'))
             with file_open(infile) as fd:
                 self.read_fd(fd)
@@ -91,7 +106,7 @@ class GenericXML(object):
 
             logger.debug("File version is {}".format(str(self.get_version())))
 
-            self._FILEMAP[infile] = (self.tree, self.root)
+            self._FILEMAP[infile] = self.CacheEntry(self.tree, self.root, os.path.getmtime(infile))
 
     def read_fd(self, fd):
         expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"               .format(self.filename))
@@ -144,10 +159,10 @@ class GenericXML(object):
         return attrib_name in node.xml_element.attrib
 
     def set(self, node, attrib_name, value):
-        expect(not self.read_only, "locked")
-        if attrib_name == "id":
-            expect(not self.locked, "locked")
         if self.get(node, attrib_name) != value:
+            expect(not self.read_only, "locked")
+            if attrib_name == "id":
+                expect(not self.locked, "locked")
             self.needsrewrite = True
             return node.xml_element.set(attrib_name, value)
 
@@ -289,6 +304,12 @@ class GenericXML(object):
         """
         Write an xml file from data in self
         """
+        timestamp_cache = self._FILEMAP[self.filename].modtime
+        if timestamp_cache != 0.0:
+            timestamp_file  = os.path.getmtime(self.filename)
+            expect(timestamp_file == timestamp_cache,
+                   "File {} appears to have changed without a corresponding invalidation, modtimes {:0.2f} != {:0.2f}".format(self.filename, timestamp_cache, timestamp_file))
+
         if not (self.needsrewrite or force_write):
             return
 
@@ -310,6 +331,9 @@ class GenericXML(object):
         else:
             with open(outfile,'w') as xmlout:
                 xmlout.write(xmlstr)
+
+        self._FILEMAP[self.filename] = self.CacheEntry(self.tree, self.root, os.path.getmtime(self.filename))
+
         self.needsrewrite = False
 
     def scan_child(self, nodename, attributes=None, root=None):
@@ -400,6 +424,8 @@ class GenericXML(object):
         for node in valnodes:
             self.set_text(node, value)
 
+        return value if valnodes else None
+
     def get_resolved_value(self, raw_value, allow_unresolved_envvars=False):
         """
         A value in the xml file may contain references to other xml
@@ -448,8 +474,10 @@ class GenericXML(object):
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
             logger.debug("find: {}".format(var))
-            #pylint: disable=assignment-from-none
-            ref = self.get_value(var)
+            # The overridden versions of this method do not simply return None
+            # so the pylint should not be flagging this
+            ref = self.get_value(var) # pylint: disable=assignment-from-none
+
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
                 item_data = item_data.replace(m.group(), self.get_resolved_value(str(ref)))
@@ -465,7 +493,7 @@ class GenericXML(object):
         if math_re.search(item_data):
             try:
                 tmp = eval(item_data)
-            except:
+            except Exception:
                 tmp = item_data
             item_data = str(tmp)
 
