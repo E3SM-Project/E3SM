@@ -2025,6 +2025,52 @@
     <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
   </machine>
 
+  <machine MACH="ubuntu">
+   <!-- customize these fields as appropriate for your system (max tasks) and
+                              desired layout (change '${group}/${USER}' to your
+        prefered location). -->
+      <DESC>Ubuntu linux system</DESC>
+      <NODENAME_REGEX>ubuntu</NODENAME_REGEX>
+      <TESTS>acme_developer</TESTS>
+      <OS>LINUX</OS>
+      <COMPILERS>gnu</COMPILERS>
+      <MPILIBS>mpich</MPILIBS>
+      <CIME_OUTPUT_ROOT>/home/$USER/E3SM_output</CIME_OUTPUT_ROOT>
+      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+      <DIN_LOC_ROOT>/home/$USER/inputdata</DIN_LOC_ROOT>
+      <DIN_LOC_ROOT_CLMFORC>/home/$USER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+      <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+      <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+      <BASELINE_ROOT>/home/$USER/ACME_baselines/$COMPILER</BASELINE_ROOT>
+      <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
+      <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
+      <GMAKE_J>4</GMAKE_J>
+      <MAX_TASKS_PER_NODE>2</MAX_TASKS_PER_NODE>
+      <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
+      <BATCH_SYSTEM>none</BATCH_SYSTEM>
+      <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+      <mpirun mpilib="mpich" compiler="gnu">
+        <executable>mpirun</executable>
+        <arguments>
+          <arg name="num_tasks"> -np $TOTALPES</arg>
+        </arguments>
+      </mpirun>
+      <mpirun mpilib = "mpi-serial">
+        <executable> </executable>
+      </mpirun>
+      <module_system type="none"/>
+      <environment_variables>
+       <!-- hack for PFLOTRAN coupling (this is a temporary solution, and user must manually edit it after case.setup)-->
+       <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
+       <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
+       <!-- dir for pflotran source code -->
+       <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</env>
+       <env name="NETCDF_INCLUDES">/usr/include</env>
+       <env name="NETCDF_LIBS">/usr//lib/x86_64-linux-gnu/</env>
+      </environment_variables>
+  </machine>
+
   <machine MACH="cades">
     <DESC>OR-CONDO, CADES-CCSI, os is Linux, 16 pes/nodes, batch system is PBS</DESC>
     <NODENAME_REGEX>or-condo</NODENAME_REGEX>
