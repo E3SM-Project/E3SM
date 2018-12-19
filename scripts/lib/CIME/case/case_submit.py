@@ -8,11 +8,11 @@ submit, check_case and check_da_settings are members of class Case in file case.
 """
 from six.moves                      import configparser
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CASE_SUCCESS, does_file_have_string, CIMEError
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CIMEError
 from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
 
-import socket, glob
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,6 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # Check if CONTINUE_RUN value makes sense
     if job != "case.test" and case.get_value("CONTINUE_RUN"):
         rundir = case.get_value("RUNDIR")
-        caseroot = case.get_value("CASEROOT")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
         expect(os.path.exists(os.path.join(rundir,"rpointer.drv")),
