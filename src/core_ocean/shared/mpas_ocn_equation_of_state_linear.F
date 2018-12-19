@@ -9,12 +9,12 @@
 !
 !  ocn_equation_of_state_linear
 !
-!> \brief MPAS ocean equation of state driver
-!> \author Mark Petersen, Todd Ringler
-!> \date   September 2011
+!> \brief MPAS ocean linear equation of state
+!> \author Mark Petersen, Todd Ringler, modified Phil Jones
+!> \date   September 2011, modified May 2018
 !> \details
-!>  This module contains the main driver routine for calling
-!>  the equation of state.
+!>  This module contains routines for computing density of sea water
+!>  using a linear approximation.
 !
 !-----------------------------------------------------------------------
 
@@ -46,18 +46,23 @@ module ocn_equation_of_state_linear
    public :: ocn_equation_of_state_linear_density, &
              ocn_equation_of_state_linear_init
 
+   interface ocn_equation_of_state_linear_density
+      module procedure ocn_equation_of_state_linear_density_only
+      module procedure ocn_equation_of_state_linear_density_exp
+   end interface
+
    !--------------------------------------------------------------------
    !
    ! Private module variables
    !
    !--------------------------------------------------------------------
-   real (kind=RKIND), pointer :: config_eos_linear_densityref
-   real (kind=RKIND), pointer :: config_eos_linear_alpha
-   real (kind=RKIND), pointer :: config_eos_linear_beta
-   real (kind=RKIND), pointer :: config_eos_linear_Tref
-   real (kind=RKIND), pointer :: config_eos_linear_Sref
 
-
+   real (kind=RKIND) ::       &
+      ocnEqStateLinearRhoRef, &! reference density
+      ocnEqStateLinearAlpha,  &! scalar temperature expansion coeff
+      ocnEqStateLinearBeta,   &! scalar salinity  contraction coeff
+      ocnEqStateLinearTref,   &! reference density
+      ocnEqStateLinearSref     ! reference density
 
 !***********************************************************************
 
@@ -65,160 +70,301 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_equation_of_state_linear_density
+!  routine ocn_equation_of_state_linear_density_only
 !
-!> \brief   Calls equation of state
-!> \author  Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \brief   Computes density using a linear equation of state
+!> \author  Mark Petersen, Todd Ringler, modified by Phil Jones
+!> \date    September 2011, modified May 2018
 !> \details
-!>  This routine uses a linear equation of state to update the density
+!>  This routine uses a linear equation of state to update the density.
+!>  The density is a linear perturbation from a reference density
+!>  at reference T,S values using fixed (linear) expansion coefficients.
+!>
+!>  While somewhat unnecessary, we make the interface and capability
+!>  of linear eos to be identical to nonlinear eos
+!>
+!>  Density can be computed in-situ using k_displaced=0 and
+!>      displacement_type = 'relative'.
+!>
+!>  Potential density (referenced to top layer) can be computed
+!>      using k_displaced=1 and displacement_type = 'absolute'.
+!>
+!>  The density of SST/SSS after adiabatic displacement to each layer
+!>      can be computed using displacement_type = 'surfaceDisplaced'.
+!>
+!>  When using displacement_type = 'surfaceDisplaced', k_displaced is
+!>      ignored and tracersSurfaceLayerValue must be present.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, & !{{{
-       indexT, indexS, tracers, density, err, tracersSurfaceLayerValue, thermalExpansionCoeff, &
-       salineContractionCoeff)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !  This module contains routines necessary for computing the density
-   !  from model temperature and salinity using an equation of state.
-   !
-   ! Input: mesh - mesh metadata
-   !        s - state: tracers
-   !
-   ! Output: s - state: computed density
-   !
-   !
-   !>  While somewhat unnecessary, we make the interface and capability
-   !>  of linear eos to be identical to nonlinear eos
-   !>
-   !>  Density can be computed in-situ using k_displaced=0 and
-   !>      displacement_type = 'relative'.
-   !>
-   !>  Potential density (referenced to top layer) can be computed
-   !>      using k_displaced=1 and displacement_type = 'absolute'.
-   !>
-   !>  The density of SST/SSS after adiabatic displacement to each layer
-   !>      can be computed using displacement_type = 'surfaceDisplaced'.
-   !>
-   !>  When using displacement_type = 'surfaceDisplaced', k_displaced is
-   !>      ignored and tracersSurfaceLayerValue must be present.
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      implicit none
+   subroutine ocn_equation_of_state_linear_density_only(          &
+              nVertLevels, nCells, kDisplaced, displacementType,  &
+              indexT, indexS, tracers, density, err,              &
+              tracersSurfaceLayerValue)
+      !{{{
+      !-----------------------------------------------------------------
+      !
+      ! Input variables
+      !
+      !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: meshPool
-      integer, intent(in) :: nCells
-      character(len=*), intent(in) :: displacement_type
-      integer, intent(in) :: k_displaced, indexT, indexS
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
-      real (kind=RKIND), dimension(:,:), intent(inout) :: density
-      integer, intent(out) :: err
-      real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceLayerValue
-      real (kind=RKIND), dimension(:,:), intent(out), optional :: &
-         thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)
-         salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
+      integer, intent(in) ::     &
+         nCells,                 &! num of horizontal cells
+         nVertLevels,            &! num of vertical levels
+         kDisplaced,             &! num of levels to displace parcel
+         indexT, indexS           ! index into tracer array for T,S
 
-      integer, dimension(:), pointer :: maxLevelCell
-      integer :: iCell, k, k_displaced_local, k_ref
-      integer, pointer :: nVertLevels
-      character(len=60) :: displacement_type_local
-      type (dm_info) :: dminfo
+      character(len=*), intent(in) :: &
+         displacementType
 
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         tracers                  ! array containing T,S for calculation
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
+         tracersSurfaceLayerValue ! optional sfc tracer values for sfc
+                                  ! displacement option
+
+      !-----------------------------------------------------------------
+      !
+      ! Output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: &
+         err                   ! error flag
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         density               ! computed density
+
+      !-----------------------------------------------------------------
+      !
+      ! Local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: &
+         iCell, k    ! cell and level loop indices
+
+      !-----------------------------------------------------------------
+
+      !*** initialize error flag
 
       err = 0
 
-      ! copy some intent(in) into local work space
-      displacement_type_local = trim(displacement_type)
-      k_displaced_local = k_displaced
+      !*** check for displacement choice
+      !*** for linear EOS, only choice that impacts the
+      !*** density is surface displacement
 
+      ! ignore this test for performance reasons
       ! test of request to address out of bounds
-      if (displacement_type_local == 'absolute' .and.   &
-         (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
-         call mpas_log_write('Abort: In equation_of_state_linear' // &
-             ' k_displaced must be between 1 and nVertLevels for ' // &
-             'displacement_type = absolute', MPAS_LOG_CRIT)
-      endif
+      !if (displacement_type_local == 'absolute' .and.   &
+      !   (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
+      !   call mpas_log_write('Abort: In equation_of_state_linear' // &
+      !       ' k_displaced must be between 1 and nVertLevels for ' // &
+      !       'displacement_type = absolute', MPAS_LOG_CRIT)
+      !endif
 
-      ! if surfaceDisplaced, then compute density at all levels based on surface values
-      if (displacement_type_local == 'surfaceDisplaced') then
+      ! copy some intent(in) into local work space
+
+      !*** if surfaceDisplaced, then compute density at all levels
+      !*** based on input surface values
+
+      if (trim(displacementType) == 'surfaceDisplaced') then
+
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
-            do k = 1, maxLevelCell(iCell)
-               ! Linear equation of state
-               density(k,iCell) =  config_eos_linear_densityref &
-                     - config_eos_linear_alpha * (tracersSurfaceLayerValue(indexT,iCell) - config_eos_linear_Tref) &
-                     + config_eos_linear_beta  * (tracersSurfaceLayerValue(indexS,iCell) - config_eos_linear_Sref)
-            end do
+         do k = 1, nVertLevels
+
+            density(k,iCell) =  ocnEqStateLinearRhoRef &
+                             - ocnEqStateLinearAlpha * &
+                               (tracersSurfaceLayerValue(indexT,iCell) - &
+                                ocnEqStateLinearTref)  &
+                             + ocnEqStateLinearBeta  * &
+                               (tracersSurfaceLayerValue(indexS,iCell) - &
+                                ocnEqStateLinearSref)
+         end do
          end do
          !$omp end do
-      endif
 
+      else  ! all other displacement types
 
-      ! if absolute, then compute density at all levels based on pressure of k_displaced value
-      ! but since linear EOS does not (at present) have a pressure dependency, this just returns density
-      if (displacement_type_local == 'absolute') then
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
-            do k = 1, maxLevelCell(iCell)
-               ! Linear equation of state
-               density(k,iCell) =  config_eos_linear_densityref &
-                     - config_eos_linear_alpha * (tracers(indexT,k,iCell) - config_eos_linear_Tref) &
-                     + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
-            end do
+         do k = 1, nVertLevels
+
+            density(k,iCell) = ocnEqStateLinearRhoRef     &
+                             - ocnEqStateLinearAlpha *    &
+                               (tracers(indexT,k,iCell) - &
+                                ocnEqStateLinearTref)     &
+                             + ocnEqStateLinearBeta  *    &
+                               (tracers(indexS,k,iCell) - &
+                                ocnEqStateLinearSref)
+         end do
          end do
          !$omp end do
+
       endif
 
-      ! if relative, then compute density at all levels based on k+k_displaced pressure value
-      ! but since (at present) linear EOS has not dependence on pressure, it returns density
-      if (displacement_type_local == 'relative') then
+      !-----------------------------------------------------------------
+
+   end subroutine ocn_equation_of_state_linear_density_only!}}}
+
+!***********************************************************************
+!
+!  routine ocn_equation_of_state_linear_density_exp
+!
+!> \brief   Computes density using a linear equation of state
+!> \author  Mark Petersen, Todd Ringler, modified by Phil Jones
+!> \date    September 2011, modified May 2018
+!> \details
+!>  This routine uses a linear equation of state to update the density.
+!>  This instance also returns the expansion coefficients.
+!>
+!-----------------------------------------------------------------------
+
+   subroutine ocn_equation_of_state_linear_density_exp(           &
+              nVertLevels, nCells, kDisplaced, displacementType,  &
+              indexT, indexS, tracers, density, err,              &
+              thermalExpansionCoeff, salineContractionCoeff,      &
+              tracersSurfaceLayerValue)
+      !{{{
+      !-----------------------------------------------------------------
+      !
+      ! Input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) ::     &
+         nCells,                 &! num of horizontal cells
+         nVertLevels,            &! num of vertical levels
+         kDisplaced,             &! num of levels to displace parcel
+         indexT, indexS           ! index into tracer array for T,S
+
+      character(len=*), intent(in) :: &
+         displacementType
+
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         tracers                  ! array containing T,S for calculation
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
+         tracersSurfaceLayerValue ! optional sfc tracer values for sfc
+                                  ! displacement option
+
+      !-----------------------------------------------------------------
+      !
+      ! Output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: &
+         err                   ! error flag
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         density               ! computed density
+
+      ! Optional expansion (contraction) coefficients
+      ! alpha defined as $-1/\rho d\rho/dT$ (note negative sign)
+      ! beta  defined as $1/\rho d\rho/dS$
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         thermalExpansionCoeff,  &! Thermal expansion coeff (alpha)
+         salineContractionCoeff   ! Saline contraction coeff (beta)
+
+      !-----------------------------------------------------------------
+      !
+      ! Local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: &
+         iCell, k    ! cell and level loop indices
+
+      !-----------------------------------------------------------------
+
+      !*** initialize error flag
+
+      err = 0
+
+      !*** check for displacement choice
+      !*** for linear EOS, only choice that impacts the
+      !*** density is surface displacement
+
+      ! ignore this test for performance reasons
+      ! test of request to address out of bounds
+      !if (displacement_type_local == 'absolute' .and.   &
+      !   (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
+      !   call mpas_log_write('Abort: In equation_of_state_linear' // &
+      !       ' k_displaced must be between 1 and nVertLevels for ' // &
+      !       'displacement_type = absolute', MPAS_LOG_CRIT)
+      !endif
+
+      ! copy some intent(in) into local work space
+
+      !*** if surfaceDisplaced, then compute density at all levels
+      !*** based on input surface values
+      !*** return fixed values of expansion coefficients
+
+      if (trim(displacementType) == 'surfaceDisplaced') then
+
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
-            do k = 1, maxLevelCell(iCell)
-               ! Linear equation of state
-               density(k,iCell) =  config_eos_linear_densityref &
-                     - config_eos_linear_alpha * (tracers(indexT,k,iCell) - config_eos_linear_Tref) &
-                     + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
-            end do
+         do k = 1, nVertLevels
+
+            density(k,iCell) =  ocnEqStateLinearRhoRef &
+                             - ocnEqStateLinearAlpha * &
+                               (tracersSurfaceLayerValue(indexT,iCell) - &
+                                ocnEqStateLinearTref)  &
+                             + ocnEqStateLinearBeta  * &
+                               (tracersSurfaceLayerValue(indexS,iCell) - &
+                                ocnEqStateLinearSref)
+
+            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha/ &
+                                             density(k,iCell)
+
+            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta/ &
+                                              density(k,iCell)
+         end do
          end do
          !$omp end do
-      endif
 
-      if (present(thermalExpansionCoeff)) then
+      else  ! all other displacement types
+
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
-            do k = 1, maxLevelCell(iCell)
-               thermalExpansionCoeff(k,iCell) = config_eos_linear_alpha / density(k,iCell)
-            end do
+         do k = 1, nVertLevels
+
+            density(k,iCell) = ocnEqStateLinearRhoRef     &
+                             - ocnEqStateLinearAlpha *    &
+                               (tracers(indexT,k,iCell) - &
+                                ocnEqStateLinearTref)     &
+                             + ocnEqStateLinearBeta  *    &
+                               (tracers(indexS,k,iCell) - &
+                                ocnEqStateLinearSref)
+
+            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha/ &
+                                             density(k,iCell)
+
+            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta/ &
+                                              density(k,iCell)
+         end do
          end do
          !$omp end do
+
       endif
 
-      if (present(salineContractionCoeff)) then
-         !$omp do schedule(runtime) private(k)
-         do iCell = 1, nCells
-            do k = 1, maxLevelCell(iCell)
-               salineContractionCoeff(k,iCell) = config_eos_linear_beta / density(k,iCell)
-            end do
-         end do
-         !$omp end do
-      endif
+      !-----------------------------------------------------------------
 
-   end subroutine ocn_equation_of_state_linear_density!}}}
+   end subroutine ocn_equation_of_state_linear_density_exp!}}}
 
 !***********************************************************************
 !
 !  routine ocn_equation_of_state_linear_init
 !
-!> \brief   Initializes ocean momentum horizontal mixing quantities
-!> \author  Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \brief   Initializes linear ocean equation of state
+!> \author  Mark Petersen, Todd Ringler, modified by Phil Jones
+!> \date    September 2011, modified May 2018
 !> \details
-!>  This routine initializes a variety of quantities related to
-!>  horizontal velocity mixing in the ocean. Since a variety of
-!>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization.
+!>  This routine initializes a variety of quantities for computing
+!>  density from temperature and salinity using a linear approximation.
 !
 !-----------------------------------------------------------------------
 
@@ -228,21 +374,54 @@ contains
 
       !-----------------------------------------------------------------
       !
-      ! call individual init routines for each parameterization
+      ! output variables
       !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err
+      integer, intent(out) :: &
+         err                   ! error flag
 
-      integer :: err1, err2
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), pointer ::    &
+         config_eos_linear_densityref, &! linear options extracted
+         config_eos_linear_alpha,      &!  from input namelist
+         config_eos_linear_beta,       &
+         config_eos_linear_Tref,       &
+         config_eos_linear_Sref
+
+      !-----------------------------------------------------------------
+
+      !*** Initialize error flag
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_densityref', config_eos_linear_densityref)
-      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', config_eos_linear_alpha)
-      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_beta', config_eos_linear_beta)
-      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Tref', config_eos_linear_Tref)
-      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Sref', config_eos_linear_Sref)
+      !***
+      !*** Extract input namelist options into module variables
+      !*** Needed both to rename and because scalar pointers can
+      !*** cause problems for some compilers
+      !***
+
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_densityref', &
+                                             config_eos_linear_densityref)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', &
+                                             config_eos_linear_alpha)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_beta', &
+                                             config_eos_linear_beta)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Tref', &
+                                             config_eos_linear_Tref)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Sref', &
+                                             config_eos_linear_Sref)
+
+      ocnEqStateLinearRhoRef = config_eos_linear_densityref
+      ocnEqStateLinearAlpha  = config_eos_linear_alpha
+      ocnEqStateLinearBeta   = config_eos_linear_beta
+      ocnEqStateLinearTref   = config_eos_linear_Tref
+      ocnEqStateLinearSref   = config_eos_linear_Sref
 
    !--------------------------------------------------------------------
 
