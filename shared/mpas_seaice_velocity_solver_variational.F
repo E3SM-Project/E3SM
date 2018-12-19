@@ -307,7 +307,10 @@ contains
          iVertex, &
          jVertex
 
-    real(kind=RKIND) :: s11, s22, s12
+    real(kind=RKIND) :: &
+         strain11Tmp, &
+         strain22Tmp, &
+         strain12Tmp
 
     integer, pointer :: &
          nCells
@@ -325,7 +328,8 @@ contains
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
     ! loop over cells
-    !$omp parallel do default(shared) private(iCell, iGradientVertex, iBasisVertex, iVertex, jVertex, s11, s22, s12)
+    !$omp parallel do default(shared) private(iCell, iGradientVertex, iBasisVertex, iVertex, jVertex,&
+    !$omp&                                    strain11Tmp, strain22Tmp, strain12Tmp)
     do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
@@ -333,18 +337,18 @@ contains
           ! loop over velocity points surrounding cell - location of stress and derivative
           do iGradientVertex = 1, nEdgesOnCell(iCell)
 
-             s11 = 0.0_RKIND
-             s22 = 0.0_RKIND
-             s12 = 0.0_RKIND
+             strain11Tmp = 0.0_RKIND
+             strain22Tmp = 0.0_RKIND
+             strain12Tmp = 0.0_RKIND
 
              ! loop over basis functions
              do iBasisVertex = 1, nEdgesOnCell(iCell)
 
                 iVertex = verticesOnCell(iBasisVertex,iCell)
 
-                s11 = s11 + uVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell)
-                s22 = s22 + vVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell)
-                s12 = s12 + 0.5_RKIND * (&
+                strain11Tmp = strain11Tmp + uVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell)
+                strain22Tmp = strain22Tmp + vVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell)
+                strain12Tmp = strain12Tmp + 0.5_RKIND * (&
                             uVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell) + &
                             vVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell))
 
@@ -353,9 +357,9 @@ contains
              ! metric terms
              jVertex = verticesOnCell(iGradientVertex,iCell)
 
-             strain11(iGradientVertex,iCell) = s11 - vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
-             strain12(iGradientVertex,iCell) = s12 + uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
-             strain22(iGradientVertex,iCell) = s22
+             strain11(iGradientVertex,iCell) = strain11Tmp - vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
+             strain12(iGradientVertex,iCell) = strain12Tmp + uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
+             strain22(iGradientVertex,iCell) = strain22Tmp
 
           enddo ! jVertexOnCell
 
@@ -446,6 +450,8 @@ contains
 
        !$omp parallel do default(shared) private(iCell, iVertexOnCell)
        do iCell = 1, nCells
+
+          replacementPressure(:,iCell) = 0.0_RKIND
 
           if (solveStress(iCell) == 1) then
 
