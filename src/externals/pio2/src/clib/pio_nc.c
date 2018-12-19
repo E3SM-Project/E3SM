@@ -1103,6 +1103,9 @@ int PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
     int ierr;
 
     /* Find file based on ncid. */
+    if ((ierr = pio_get_file(ncid, &file)))
+        return pio_err(NULL, NULL, ierr, __FILE__, __LINE__);
+    ios = file->iosystem;
     /* User must provide name shorter than NC_MAX_NAME +1. */
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
