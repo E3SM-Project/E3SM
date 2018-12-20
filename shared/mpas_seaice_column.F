@@ -1435,7 +1435,7 @@ contains
        abortMessage = ""
 
        !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
-       !$omp&  specificSnowAerosol,specificIceAerosol,abortFlag,abortMessage)
+       !$omp&  specificSnowAerosol,specificIceAerosol,abortMessage) reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! initial state values
@@ -1603,11 +1603,11 @@ contains
                abortFlag, &
                abortMessage)
           call column_write_warnings(abortFlag)
-          ! code abort
+
+          ! cell-specific abort message
           if (abortFlag) then
-             call seaice_critical_error_write_block(domain, block, abortFlag)
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
           endif
 
           ! aerosol
@@ -1636,6 +1636,10 @@ contains
           endif
 
        enddo ! iCell
+
+       ! error-checking
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        ! aerosols
        deallocate(specificSnowAerosol)
@@ -1862,7 +1866,7 @@ contains
        abortMessage = ""
 
        !$omp parallel do default(shared) private(iCategory,newlyFormedIceLogical,iBioTracers,iBioData,&
-       !$omp&   oceanBioConcentrationsUsed,tracerArrayCategoryCell,abortFlag,abortMessage)
+       !$omp&   oceanBioConcentrationsUsed,tracerArrayCategoryCell,abortMessage) reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -1941,16 +1945,20 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          ! code abort
+          ! cell-specific abort message
           if (abortFlag) then
-             call seaice_critical_error_write_block(domain, block, abortFlag)
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
           endif
 
        enddo ! iCell
+
        ! copyout thickness from last loop iteration
        categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
+
+       ! error checking
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
@@ -2628,7 +2636,6 @@ contains
          newlyFormedIceLogical
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         categoryThicknessLimitsCell, &
          tracerArrayCategoryCell
 
     logical :: &
@@ -2709,7 +2716,6 @@ contains
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
-       allocate(categoryThicknessLimitsCell(nCategories+1, nCellsSolve) )
        allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
 
        setGetPhysicsTracers = .true.
@@ -2725,7 +2731,6 @@ contains
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
           enddo ! iCategory
-          categoryThicknessLimitsCell(:,iCell) = categoryThicknessLimits(:)
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, &
@@ -2739,7 +2744,7 @@ contains
                nSnowLayers, &
                nBioLayers, &
                nCategories, &
-               categoryThicknessLimitsCell(:,iCell), & ! hin_max, dimension(0:ncat), intent(inout)
+               categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
                ridgeConvergence(iCell), &
                ridgeShear(iCell), &
                iceAreaCategory(1,:,iCell), &
@@ -2789,19 +2794,20 @@ contains
                  tracerArrayCategoryCell, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
-          if (abortFlag) then
-             call seaice_critical_error_write_block(domain, block, abortFlag)
-             call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
-          endif
+          if (abortFlag) exit
 
        enddo ! iCell
-       ! copyout thickness from last loop iteration
-       categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
+
+       ! code abort
+       if (abortFlag) then
+          call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+       endif
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
-       deallocate(categoryThicknessLimitsCell)
        deallocate(tracerArrayCategoryCell)
 
        block => block % next
@@ -3300,7 +3306,7 @@ contains
        ! code abort
        if (abortFlag) then
           call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
+          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
        endif
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
