@@ -905,7 +905,7 @@ if (defined $opts{'shoc_sgs'}) {
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $microphys_pkg = 'rk';
 }
-elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
+elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'} and !defined $opts{'shoc_sgs'}) {
     $microphys_pkg = 'mg1';
 }
 

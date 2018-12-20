@@ -34,6 +34,8 @@ module shoc_intr
 
   ! define physics buffer indicies here
   integer :: tke_idx, &     ! turbulent kinetic energy
+             tkh_idx, &
+             tk_idx, &
              wthv_idx, &       ! buoyancy flux
              cld_idx, &          ! Cloud fraction
              concld_idx, &       ! Convective cloud fraction
@@ -133,6 +135,8 @@ module shoc_intr
   
     ! Fields that are not prognostic should be added to PBUF
     call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx) 
+    call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tkh_idx) 
+    call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tk_idx) 
 
     call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/), pblh_idx)
     call pbuf_add_field('tke',        'global', dtype_r8, (/pcols, pverp/), tke_idx)
@@ -277,6 +281,8 @@ end function shoc_implements_cnst
  
     if (is_first_step()) then
       call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8) 
+      call pbuf_set_field(pbuf2d, tkh_idx, 0.0_r8) 
+      call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
     endif
     
     if (prog_modal_aero) then
@@ -485,6 +491,7 @@ end function shoc_implements_cnst
    real(r8) :: edsclr_out(pcols,pver,edsclr_dim)
    real(r8) :: tke_in(pcols,pver)
    real(r8) :: thlm_in(pcols,pver)
+   real(r8) :: thv_in(pcols,pver)
    real(r8) :: qv_in(pcols,pver)
    real(r8) :: rcm_in(pcols,pver)
    real(r8) :: rvm_in(pcols,pver)
@@ -516,7 +523,7 @@ end function shoc_implements_cnst
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
-   real(r8) :: shoc_mix_out(pcols,pver), tk_out(pcols,pver), tkh_out(pcols,pver)
+   real(r8) :: shoc_mix_out(pcols,pver), tk_in(pcols,pver), tkh_in(pcols,pver)
    real(r8) :: isotropy_out(pcols,pver)
    real(r8) :: w_sec_out(pcols,pver), thl_sec_out(pcols,pverp)
    real(r8) :: qw_sec_out(pcols,pverp), qwthl_sec_out(pcols,pverp)
@@ -524,7 +531,7 @@ end function shoc_implements_cnst
    real(r8) :: wtke_sec_out(pcols,pverp), uw_sec_out(pcols,pverp)
    real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pverp)
    real(r8) :: wqls_out(pcols,pver)
-   real(r8) :: shoc_mix(pcols,pver), tk(pcols,pver), tkh(pcols,pver)
+   real(r8) :: shoc_mix(pcols,pver)
    real(r8) :: w_sec(pcols,pver), thl_sec(pcols,pverp)
    real(r8) :: qw_sec(pcols,pverp), qwthl_sec(pcols,pverp)
    real(r8) :: wthl_sec(pcols,pverp), wqw_sec(pcols,pverp)
@@ -558,6 +565,8 @@ end function shoc_implements_cnst
   
    real(r8), pointer, dimension(:,:) :: tke  ! turbulent kinetic energy 
    real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
+   real(r8), pointer, dimension(:,:) :: tkh 
+   real(r8), pointer, dimension(:,:) :: tk
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -618,6 +627,8 @@ end function shoc_implements_cnst
    !  Establish associations between pointers and physics buffer fields   
    call pbuf_get_field(pbuf, tke_idx,     tke)
    call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
+   call pbuf_get_field(pbuf, tkh_idx,      tkh,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
+   call pbuf_get_field(pbuf, tk_idx,       tk,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -708,7 +719,9 @@ end function shoc_implements_cnst
        vm(i,k) = state1%v(i,k)
        
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
-       
+!       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*(state1%q(i,k,ixq)+state1%q(i,k,ixcldliq)))  
+       thv(i,k) = thlm(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
+    
 !       if (macmic_it .eq. 1) then
          tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
 !       endif
@@ -816,8 +829,11 @@ end function shoc_implements_cnst
        rcm_in(i,k)     = rcm(i,pver-k+1)
        rtm_in(i,k)     = rtm(i,pver-k+1)
        thlm_in(i,k)    = thlm(i,pver-k+1)
+       thv_in(i,k)     = thv(i,pver-k+1)
        tke_in(i,k)     = tke(i,pver-k+1)
        wthv_in(i,k)    = wthv(i,pver-k+1)
+       tkh_in(i,k)     = tkh(i,pver-k+1)
+       tk_in(i,k)      = tk(i,pver-k+1)
        pdel_in(i,k)    = state1%pdel(i,pver-k+1)
        pres_in(i,k)    = state1%pmid(i,pver-k+1)
      enddo  
@@ -846,29 +862,21 @@ end function shoc_implements_cnst
 
      call shoc_main( &
           ncol, pver, pverp, dtime, &                   ! Input
-	  host_dx_in(:ncol), host_dy_in(:ncol), &                            ! Input
+	  host_dx_in(:ncol), host_dy_in(:ncol), thv_in(:ncol,:), &                            ! Input
           zt_g(:ncol,:), zi_g(:ncol,:), pres_in(:ncol,:), pdel_in(:ncol,:),&                       ! Input
 	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), &         ! Input
 	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), &
 	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), &                           ! Input/Ouput
 	  um_in(:ncol,:), vm_in(:ncol,:), rcm_in(:ncol,:), edsclr_in(:ncol,:,:), &                   ! Input/Output
-	  wthv_in(:ncol,:), &                                           ! Input/Output
+	  wthv_in(:ncol,:),tkh_in(:ncol,:),tk_in(:ncol,:), &                                           ! Input/Output
 	  cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), &                          ! Output
-          shoc_mix_out(:ncol,:), tk_out(:ncol,:), tkh_out(:ncol,:), isotropy_out(:ncol,:), &       ! Output (diagnostic)
+          shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), &       ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
           wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), &           ! Output (diagnostic)
           uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), &                    ! Output (diagnostic)
           wqls_out(:ncol,:))
 
-          do k=1,pver
-            do i=1,ncol
-              if (thlm(i,k) .lt. 0._r8) then 
-                write(iulog,*) 'THLMZERO ', thlm(i,k), i, k
-              endif
-            enddo
-          enddo
-
-         rcm_in(:,:) = rcm_shoc(:,:)
+          rcm_in(:,:) = rcm_shoc(:,:)
 
    enddo  ! end time loop
    
@@ -890,8 +898,8 @@ end function shoc_implements_cnst
        enddo      
 
        shoc_mix(i,k) = shoc_mix_out(i,pver-k+1)
-       tk(i,k) = tk_out(i,pver-k+1)
-       tkh(i,k) = tkh_out(i,pver-k+1)
+       tk(i,k) = tk_in(i,pver-k+1)
+       tkh(i,k) = tkh_in(i,pver-k+1)
        isotropy(i,k) = isotropy_out(i,pver-k+1)
        w_sec(i,k) = w_sec_out(i,pver-k+1)
        wqls(i,k) = wqls_out(i,pver-k+1)
