@@ -37,6 +37,11 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-JRA</alias>
+    <lname>2000_DATM%JRA_SLND_MPASCICE_MPASO%COREFORCED_DROF%JRA_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-IAF-ISMF</alias>
     <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%ISMFCOREFORCED_DROF%IAFAIS45_SGLC_SWAV</lname>
   </compset>
