@@ -821,7 +821,7 @@ contains
              write(logunit,'(3A)') trim(adjustl(c_cpl_npes)), &
                                    ' pes participating in computation of CPL instance #', &
                                    trim(adjustl(c_cpl_inst))
-             call flush(logunit)
+             call shr_sys_flush(logunit)
           endif
 
           call t_startf("shr_taskmap_write")
