@@ -57,7 +57,7 @@
       <value mach="lawrencium-lr3">netcdf</value>
       <value mach="cades">netcdf</value>
       <value mach="grizzly">netcdf</value>
-      <value mach="wolf">netcdf</value>
+      <value mach="badger">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
     </values>
