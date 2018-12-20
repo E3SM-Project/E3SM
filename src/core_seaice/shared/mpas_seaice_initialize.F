@@ -96,7 +96,7 @@ contains
 
     ! initialize forcing
     call mpas_log_write(" Initialize forcing...")
-    call seaice_forcing_init(domain)
+    call seaice_forcing_init(domain, clock)
 
     ! init dynamics
     call mpas_log_write(" Initialize velocity solver...")
