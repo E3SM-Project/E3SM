@@ -13,6 +13,8 @@
 
 module seaice_forcing
 
+  use mpas_kind_types
+  use mpas_timer
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
@@ -63,9 +65,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_forcing_init(domain)
+  subroutine seaice_forcing_init(domain, clock)
 
     type (domain_type) :: domain
+
+    type (MPAS_Clock_type) :: clock
 
     logical, pointer :: &
          config_use_forcing, &
@@ -85,7 +89,7 @@ contains
     endif
 
     ! init the data iceberg forcing
-    if (config_use_data_icebergs) call init_data_iceberg_forcing(domain)
+    if (config_use_data_icebergs) call init_data_iceberg_forcing(domain, clock)
 
   end subroutine seaice_forcing_init
 
@@ -1622,9 +1626,11 @@ contains
 !>
 !-----------------------------------------------------------------------
 
-  subroutine init_data_iceberg_forcing(domain)
+  subroutine init_data_iceberg_forcing(domain, clock)
 
     type (domain_type) :: domain
+
+    type (MPAS_Clock_type) :: clock
 
     logical, pointer :: &
          config_do_restart
@@ -1633,18 +1639,28 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
+!     type (MPAS_clock_type) :: simulationClock
+     type (MPAS_Time_Type) :: currTime
+     character(len=strKIND) :: timeStamp
+     integer :: ierr
+
     ! get configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
+!    currTime = mpas_get_clock_time(simulationClock, MPAS_NOW, ierr)
+    currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+    timeStamp = '0000'//trim(timeStamp(5:))
+
     ! create own data iceberg forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
          "seaice_data_iceberg_forcing_monthly", &
          domain, &
-         '0000-01-01_00:00:00', &
+         timeStamp, &
          '0000-01-01_00:00:00', &
          '0001-00-00_00:00:00', &
          config_do_restart)
