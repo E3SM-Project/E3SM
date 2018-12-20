@@ -96,8 +96,13 @@ module parameters_tunable
     C8          = 3.000000_core_rknd,    & ! Coef. #1 in C8 Skewness Equation    [-]
     C8b         = 0.000000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
     C10         = 3.300000_core_rknd,    & ! Currently Not Used in the Model     [-]
+#if defined(CLUBB_CAM) && !defined(CLUBBND_CAM)
+    C11         = 0.70000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
+    C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
+#else
     C11         = 0.800000_core_rknd,    & ! Low Skewness in C11 Skw. Function   [-]
     C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
+#endif
     C11c        = 0.500000_core_rknd,    & ! Degree of Slope of C11 Skw. Fnct.   [-]
     C12         = 1.000000_core_rknd,    & ! Constant in w'^3 Crank-Nich. diff.  [-]
     C13         = 0.100000_core_rknd,    & ! Not currently used in model         [-]
@@ -133,14 +138,14 @@ module parameters_tunable
     gamma_coefc = 5.000000_core_rknd, & ! Deg. Slope: gamma coef. Skw. Fnct. [-]
 #ifdef CLUBBND_CAM
     mu          = 1.000E-3_core_rknd, & ! Fract entrain rate per unit alt  [1/m]
-#else 
+#else
     mu          = 1.000E-3_core_rknd, & ! Fract entrain rate per unit alt  [1/m]
 #endif
 #ifdef CLUBBND_CAM
-    mult_coef   = 0.500000_core_rknd, &
+    mult_coef   = 1.500000_core_rknd, &
 #else
-    mult_coef   = 1.000000_core_rknd, & ! Coef. applied to log(avg dz/thresh)[-]
-#endif    
+    mult_coef   = 0.500000_core_rknd, & ! Coef. applied to log(avg dz/thresh)[-]
+#endif
     taumin      = 90.00000_core_rknd, & ! Min. allow. value: time-scale tau  [s]
     taumax      = 3600.000_core_rknd, & ! Max. allow. value: time-scale tau  [s]
     lmin        = 20.00000_core_rknd    ! Min. value for the length scale    [m]
@@ -275,7 +280,15 @@ module parameters_tunable
 
   ! Factor to decrease sensitivity in the denominator of Skw calculation
   real( kind = core_rknd ), public :: &
+#ifdef CLUBB_CAM
+#ifdef CLUBBND_CAM
+    Skw_denom_coef = 0.0_core_rknd
+#else
+    Skw_denom_coef = 0.0_core_rknd
+#endif
+#else
     Skw_denom_coef = 4.0_core_rknd
+#endif
 
 !$omp threadprivate( Skw_denom_coef )
 
