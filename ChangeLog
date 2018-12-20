@@ -10,6 +10,45 @@ Brief Summary: Miscellaneous minor bug fixes, including getting
 
 User interface changes: none
 
+Originator: Chris Fischer 
+Date: 11-29-2018
+Tag: cime_cesm2_1_rel_06
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix new pylint errors.
+    - Update addmetadata for POP-ECT tests.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+5a86646 Merge pull request #2921 from jedwards4b/fixpylint3errors
+98821ff Merge pull request #2919 from ESMCI/fischer/addmetadata
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/BuildTools/macrowriterbase.py
+M       scripts/lib/CIME/SystemTests/erio.py
+M       scripts/lib/CIME/SystemTests/ers.py
+M       scripts/lib/CIME/SystemTests/ers2.py
+M       scripts/lib/CIME/SystemTests/homme.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M       scripts/lib/CIME/case/case_run.py
+M       scripts/lib/CIME/case/case_setup.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/provenance.py
+M       scripts/lib/e3sm_cime_mgmt.py
+M       src/build_scripts/buildlib.gptl
+M       src/build_scripts/buildlib.pio
+M       tools/statistical_ensemble_test/addmetadata.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 e882c1c06 Merge pull request #2897 from billsacks/fix_histutils_regex
 fc14d5870 Merge pull request #2895 from billsacks/fix_lnd2glc_averaged_now
