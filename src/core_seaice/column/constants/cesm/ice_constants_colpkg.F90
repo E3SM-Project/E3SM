@@ -84,8 +84,8 @@
 !tcx note cice snowpatch = 0.02
 
       integer (kind=int_kind), parameter, public :: &
-         nspint = 3              ,& ! number of solar spectral intervals
-         nspint_5bd = 5            ! number of solar spectral intervals used in SNICAR
+         nspint = 3             ,& ! number of solar spectral intervals
+         nspint_5bd = 5            ! number of solar spectral intervals with config_use_snicar
 
       ! weights for albedos 
       ! 4 Jan 2007 BPB  Following are appropriate for complete cloud
