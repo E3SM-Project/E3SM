@@ -4282,14 +4282,19 @@ contains
          normalGrad,     & ! normal components of the gradient, defined on cell edges
          globalGrad        ! gradient at cell center, in global x/y/z coordinates
 
+    !real(kind=RKIND), dimension(:), allocatable ::   &
+    !     zGrad             ! diagnostic only; should be much smaller than xGrad and yGrad
+
     ! find dimensions and allocate arrays
     nCategories = size(field,1)
+    !allocate(zGrad(nCategories))
     allocate(normalGrad(nCategories,maxEdges))
     allocate(globalGrad(nCategories,3))
 
     ! initialize the gradient
     xGrad(:,:) = 0.0_RKIND
     yGrad(:,:) = 0.0_RKIND
+    !zGrad(:) = 0.0_RKIND  ! diagnostic only
 
     !$omp parallel do default(shared) private(normalGrad,globalGrad,iEdgeOnCell,iCellNeighbor,iEdge,iCat,signGradient,tempGrad)
     do iCell = 1, nCells
@@ -4363,6 +4368,11 @@ contains
                             + transGlobalToCell(2,2,iCell) * globalGrad(:,2)  &
                             + transGlobalToCell(2,3,iCell) * globalGrad(:,3)
 
+             ! Note: The zGrad component is never used; it is simply computed as a diagnostic
+             !zGrad(:) = transGlobalToCell(3,1,iCell) * globalGrad(:,1)  &
+             !         + transGlobalToCell(3,2,iCell) * globalGrad(:,2)  &
+             !         + transGlobalToCell(3,3,iCell) * globalGrad(:,3)
+
           else  ! on a plane; do a simple copy
 
              xGrad(:,iCell) = globalGrad(:,1)
@@ -4387,12 +4397,15 @@ contains
              call mpas_log_write(' ')
              call mpas_log_write('Unlimited center gradient: $r $r', &
                   realArgs=(/xGrad(iCatTest,iCell), yGrad(iCatTest,iCell)/))
+             !call mpas_log_write('Unlimited center gradient: $r $r $r', &
+             !     realArgs=(/xGrad(iCatTest,iCell), yGrad(iCatTest,iCell), zGrad(iCatTest)/))
           endif
        endif
 
     enddo  ! iCell
 
     ! cleanup
+    !deallocate(zGrad)
     deallocate(normalGrad)
     deallocate(globalGrad)
 
@@ -4491,15 +4504,20 @@ contains
     real(kind=RKIND) :: &
          signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
 
+    !real(kind=RKIND), dimension(:,:), allocatable :: &
+    !     zGrad             ! diagnostic only; should be much smaller than xGrad and yGrad
+
     ! find dimensions and allocate arrays
     nLayers = size(field,1)
     nCategories = size(field,2)
+    !allocate(zGrad(nLayers,nCategories))
     allocate(normalGrad(nLayers,nCategories,maxEdges))
     allocate(globalGrad(nLayers,nCategories,3))
 
     ! initialize the gradient
     xGrad(:,:,:) = 0.0_RKIND
     yGrad(:,:,:) = 0.0_RKIND
+    !zGrad(:,:) = 0.0_RKIND     ! diagnostic only
 
     !$omp parallel do default(shared) private(normalGrad,globalGrad,iEdgeOnCell,iCellNeighbor,iEdge,iCat,iLayer,signGradient)
     do iCell = 1, nCells
@@ -4558,6 +4576,7 @@ contains
           !TODO - Rotate the gradient vector if on a plane?
 
           if (config_rotate_cartesian_grid .and. on_a_sphere) then
+             ! reusing normalGrad as a temporary variable to rotate globalGrad
              normalGrad(:,:,1) =  globalGrad(:,:,1)   ! temp
              globalGrad(:,:,1) = -globalGrad(:,:,3)   ! xR = -z
              globalGrad(:,:,3) =  normalGrad(:,:,1)   ! zR = x
@@ -4574,6 +4593,11 @@ contains
              yGrad(:,:,iCell) = transGlobalToCell(2,1,iCell) * globalGrad(:,:,1)  &
                               + transGlobalToCell(2,2,iCell) * globalGrad(:,:,2)  &
                               + transGlobalToCell(2,3,iCell) * globalGrad(:,:,3)
+
+             ! Note: The zGrad component is never used; it is simply computed as a diagnostic
+             !zGrad(:,:) = transGlobalToCell(3,1,iCell) * globalGrad(:,:,1)  &
+             !           + transGlobalToCell(3,2,iCell) * globalGrad(:,:,2)  &
+             !           + transGlobalToCell(3,3,iCell) * globalGrad(:,:,3)
 
           else  ! on a plane; do a simple copy
 
@@ -4599,12 +4623,15 @@ contains
              call mpas_log_write(' ')
              call mpas_log_write('Unlimited center gradient: $r $r', &
                   realArgs=(/xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell)/))
+             !call mpas_log_write('Unlimited center gradient: $r $r $r', &
+             !     realArgs=(/xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)/))
           endif
        endif
 
     enddo  ! iCell
 
     ! cleanup
+    !deallocate(zGrad)
     deallocate(normalGrad)
     deallocate(globalGrad)
 

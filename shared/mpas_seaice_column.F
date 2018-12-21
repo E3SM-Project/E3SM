@@ -2510,8 +2510,7 @@ contains
                modalAsymmetryParameter5band(:,:), &
                modalBCabsorptionParameter5band(:,:,:))
 
-          call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings, .false.)
+          call column_write_warnings(.false.)
 
           ! set the category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, &
