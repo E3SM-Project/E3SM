@@ -22,7 +22,7 @@ if (-e /opt/modules/default/init/csh) then
   #ndk 1/28/16  As loading/unloading craype is heavy-weight, let's get this straight upfront.
   # we had some issues where module commands were ill-behaved when craype was unloaded.
   module rm craype
-  module load craype/2.5.0
+  module load craype/2.5.12
 
   module rm PrgEnv-intel
   module rm PrgEnv-cray
@@ -47,13 +47,19 @@ if (-e /opt/modules/default/init/csh) then
   module rm esmf
 endif
 
-module load craype-ivybridge
-module load cray-libsci/13.0.3
-module load pmi/5.0.10-1.0000.11050.0.0.ari
+#module load craype-ivybridge
+#module load cray-libsci/17.09.1
+#loading either cray-libsci or petsc would have error like 'setenv Variable name must contain alphanumeric characters'
+module load pmi/5.0.12
 
 if ( $COMPILER == "intel" ) then
-    module load PrgEnv-intel/5.2.56
-    module load intel/15.0.1.133
+    module rm intel
+    module load PrgEnv-intel/6.0.4
+    module load intel/18.0.2.199
+# somehow  intel/18.0.1.163 remains loaded and cause conflict if to load 17.0.2.174
+# Though saying conflict, still need to load an intel, or compilation can't proceeed
+
+#   module load intel/17.0.2.174
 
     #module use /global/project/projectdirs/ccsm1/modulefiles/edison
     #if( $DEBUG == "TRUE" ) then
@@ -71,20 +77,21 @@ if ( $COMPILER == "gnu" ) then
     module load gcc/5.2.0
 endif
 
-module load cray-mpich/7.3.0
-module load papi/5.4.1.3
+ module load cray-mpich/7.7.0
+ module load papi/5.5.1.4
 
 if ( $MPILIB == "mpi-serial") then
   module load cray-hdf5/1.8.14
   module load cray-netcdf/4.3.3.1
 else
-  module load cray-hdf5-parallel/1.8.14
-  module load cray-netcdf-hdf5parallel/4.3.3.1
-  module load cray-parallel-netcdf/1.6.1
+  module load cray-hdf5-parallel/1.10.1.1
+  module load cray-netcdf-hdf5parallel/4.4.1.1.6
+  module load cray-parallel-netcdf/1.8.1.3
 endif
 
-module load cmake/2.8.11.2
-module load cray-petsc/3.5.3.0
+ module load cmake/3.11.4
+#would have problem loading cray-petsc/3.7.6.0
+#module load cray-petsc/3.8.4.0
 
 module list >& software_environment.txt
 
