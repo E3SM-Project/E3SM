@@ -974,7 +974,14 @@
       <mask>tx0.66v1</mask>
     </model_grid>
 
-    <model_grid alias="C96_t016_rx1" not_compset="_POP" >
+    <model_grid alias="C96_t016" not_compset="_POP" >
+      <grid name="atm">C96</grid>
+      <grid name="lnd">C96</grid>
+      <grid name="ocnice">tx0.66v1</grid>
+      <mask>tx0.66v1</mask>
+    </model_grid>
+
+    <model_grid alias="C96_t016" not_compset="_POP" >
       <grid name="atm">C96</grid>
       <grid name="lnd">C96</grid>
       <grid name="ocnice">tx0.66v1</grid>
@@ -1533,9 +1540,9 @@
     <!--- atm to ocean and ocean to atm mapping files -->
 
     <gridmap atm_grid="C96" ocn_grid="tx0.66v1">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/map_C96_TO_tx0.66v1_aave.181210.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/map_C96_TO_tx0.66v1_blin.181210.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/map_C96_TO_tx0.66v1_patc.181210.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/C96/map_C96_TO_tx0.66v1_aave.181210.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/C96/map_C96_TO_tx0.66v1_blin.181210.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/C96/map_C96_TO_tx0.66v1_patc.181210.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/tx0.66v1/map_tx0.66v1_TO_C96_aave.181210.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/tx0.66v1/map_tx0.66v1_TO_C96_blin.181210.nc</map>
     </gridmap>
