@@ -45,6 +45,8 @@ module parameters_tunable
 
   real( kind = core_rknd ) ::      &
     clubb_C1,                      &
+    clubb_C1b,                     &
+    clubb_C1c,                     &
     clubb_C2rt,                    &
     clubb_C2thl,                   &
     clubb_C2rtthl,                 &
@@ -324,6 +326,8 @@ module parameters_tunable
 
     namelist /clubb_param_nl/      &
     clubb_C1,                      &
+    clubb_C1b,                     &
+    clubb_C1c,                     &
     clubb_C2rt,                    &
     clubb_C2thl,                   &
     clubb_C2rtthl,                 &
@@ -352,6 +356,8 @@ module parameters_tunable
     ! This is made available for tuning 
      
     clubb_C1 = init_value
+    clubb_C1b = init_value
+    clubb_C1c = init_value
     clubb_C2rt = init_value
     clubb_C2thl = init_value
     clubb_C2rtthl = init_value
@@ -387,6 +393,8 @@ module parameters_tunable
 #ifdef SPMD
    ! Broadcast namelist variables
    call mpibcast(clubb_C1,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C1b,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C1c,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rt,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2thl,      1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rtthl,    1, mpir8,  0, mpicom)
@@ -819,7 +827,12 @@ module parameters_tunable
 
     if (clubb_C1 /= init_value) then
        C1 = clubb_C1
-       C1b = C1
+    endif
+    if (clubb_C1b /= init_value) then
+       C1b = clubb_C1b
+    end if
+    if (clubb_C1c /= init_value) then
+       C1c = clubb_C1c
     end if
     ! if clubb_C2thl and clubb_C2rtthl not specified, continue to use C2thl=C2rt, C2rtthl = 1.3*C2rt
     ! to preserve existing compsets that have assumed so and only vary C2rt
