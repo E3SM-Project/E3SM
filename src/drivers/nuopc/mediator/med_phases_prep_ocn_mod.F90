@@ -23,6 +23,7 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_map(gcomp, rc)
+
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
@@ -34,17 +35,19 @@ contains
     use esmFlds               , only : compocn, ncomps, compname
     use perf_mod              , only : t_startf, t_stopf
 
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
     type(InternalState)         :: is_local
     integer                     :: n1, ncnt
+    integer                     :: dbrc
     character(len=*), parameter :: subname='(med_phases_prep_ocn_map)'
-    integer :: dbrc
-
     !-------------------------------------------------------------------------------
+
     call t_startf('MED:'//subname)
+
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
@@ -100,7 +103,7 @@ contains
 
   subroutine med_phases_prep_ocn_merge(gcomp, rc)
 
-    use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
@@ -109,17 +112,19 @@ contains
     use med_constants_mod     , only : R8
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto
+    use esmFlds               , only : fldListMed_ocnalb_o
     use esmFlds               , only : fldListTo
     use esmFlds               , only : compocn, compname, compatm, compice
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
     type(InternalState)         :: is_local
-    integer                     :: n, n1, ncnt
-    integer                     :: lsize
+    integer                     :: n, ncnt
+    real(R8)                    :: c1,c2,c3,c4
     real(R8), pointer           :: dataptr1(:)
     real(R8), pointer           :: ifrac(:), ofrac(:)
     real(R8), pointer           :: ifracr(:), ofracr(:)
@@ -128,17 +133,32 @@ contains
     real(R8), pointer           :: swvdf(:), swndf(:)
     real(R8), pointer           :: swvdr(:), swndr(:)
     real(R8), pointer           :: swpen(:), swnet(:)
+    real(R8), pointer           :: mean_net_sw_vis_dir_flx(:)
+    real(R8), pointer           :: mean_net_sw_vis_dif_flx(:)
+    real(R8), pointer           :: mean_net_sw_ir_dir_flx(:)
+    real(R8), pointer           :: mean_net_sw_ir_dif_flx(:)
+    real(R8), pointer           :: swpen_vis_dir(:)
+    real(R8), pointer           :: swpen_vis_dif(:)
+    real(R8), pointer           :: swpen_ir_dir(:)
+    real(R8), pointer           :: swpen_ir_dif(:)
+    real(R8), pointer           :: latent(:)
+    real(R8), pointer           :: evap(:)
     real(R8)                    :: ifrac_scaled, ofrac_scaled
     real(R8)                    :: ifracr_scaled, ofracr_scaled
     real(R8)                    :: frac_sum
     real(R8)                    :: fswabsv, fswabsi
-    character(len=*), parameter :: ice_fraction_name = 'Si_ifrac'
-    integer                     :: dbrc
-    ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
-    real(R8)                    :: flux_epbalfact = 1._R8
+    real(R8)                    :: flux_epbalfact
+    logical                     :: compute_ocnalb_in_med
+    logical                     :: compute_aoflux_in_med
+    logical                     :: compute_evap_in_med
     logical                     :: first_call = .true.
+    integer                     :: lsize
+    integer                     :: dbrc
+    real(R8)        , parameter :: const_lhvap = 2.501e6_R8  ! latent heat of evaporation ~ J/kg
+    real(R8)        , parameter :: albdif = 0.06_r8          ! 60 deg reference albedo, diffuse
     character(len=*), parameter :: subname='(med_phases_prep_ocn_merge)'
     !---------------------------------------
+
     call t_startf('MED:'//subname)
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
@@ -168,21 +188,38 @@ contains
                ESMF_LOGMSG_INFO, rc=dbrc)
        endif
     else
-
        !---------------------------------------
        !--- auto merges to ocn
        !---------------------------------------
 
-       call med_merge_auto(trim(compname(compocn)), &
-            is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
-            is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
-            FBMed1=is_local%wrap%FBMed_aoflux_o, &
-            document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+       compute_aoflux_in_med = (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc))
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (compute_aoflux_in_med) then
+          call med_merge_auto(trim(compname(compocn)), &
+               is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
+               is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
+               FBMed1=is_local%wrap%FBMed_aoflux_o, &
+               document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       else
+          call med_merge_auto(trim(compname(compocn)), &
+               is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
+               is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
+               document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- custom calculations
        !---------------------------------------
+
+       !-------------
+       ! scale precipitation to ocean
+       !-------------
+
+       ! TODO (mvertens, 2018-12-16): the calculation needs to be set at run time based on receiving it from the ocean
+       flux_epbalfact = 1.0_r8
 
        if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_rain', rc=rc)) then
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_rain' , dataptr1, rc=rc)
@@ -225,10 +262,55 @@ contains
           end if
        end if
 
-       ! Compute swnet to send to ocean if appropriate
+       !-------------
+       ! Compute netsw for ocean
+       !-------------
+
+       if (is_local%wrap%comp_present(compice)) then
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! TODO (mvertens, 2018-12-16): currently these are not available from cice
+          ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_vis_dir_flx', swpen_vis_dir, rc=rc)
+          ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_vis_dif_flx', swpen_vis_dif, rc=rc)
+          ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_ir_dir_flx', swpen_ir_dir, rc=rc)
+          ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'mean_net_sw_ir_dif_flx', swpen_ir_dif, rc=rc)
+          ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+
+       ! netsw_for_ocn = downsw_from_atm * (1-ocn_albedo) * (1-ice_fraction) + pensw_from_ice * (ice_fraction)
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', swvdr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', swndr, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', swvdf, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       else
+          lsize = size(swvdr)
+          allocate(swnet(lsize))
+       end if
+
+       ! determine if ocean albedos are computed in mediator
+       compute_ocnalb_in_med = ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (compute_ocnalb_in_med) then
+
+          ! ocean albedos are computed in mediator
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdr' , avsdr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidr' , anidr, rc=rc)
@@ -237,27 +319,10 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidf' , anidf, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', swvdr, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', swndr, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', swvdf, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          if (is_local%wrap%comp_present(compice)) then
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', swpen, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
 
           do n = 1,size(swnet)
              fswabsv  = swvdr(n) * (1.0_R8 - avsdr(n)) + swvdf(n) * (1.0_R8 - avsdf(n))
@@ -272,7 +337,6 @@ contains
                    ifrac_scaled = ifrac(n) / (frac_sum)
                    ofrac_scaled = ofrac(n) / (frac_sum)
                 endif
-
                 ifracr_scaled = ifracr(n)
                 ofracr_scaled = ofracr(n)
                 frac_sum = ifracr(n) + ofracr(n)
@@ -282,69 +346,124 @@ contains
                 endif
 
                 swnet(n) = ofracr_scaled*swnet(n) + ifrac_scaled*swpen(n)
+
+                if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', rc=rc)) then
+                   call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', &
+                        mean_net_sw_vis_dir_flx, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dif_flx', &
+                        mean_net_sw_vis_dif_flx, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dir_flx', &
+                        mean_net_sw_ir_dir_flx, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dif_flx', &
+                        mean_net_sw_ir_dif_flx, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                   c1 = 0.285
+                   c2 = 0.285
+                   c3 = 0.215
+                   c4 = 0.215
+                   mean_net_sw_vis_dir_flx(n) = c1 * swnet(n)
+                   mean_net_sw_vis_dif_flx(n) = c2 * swnet(n)
+                   mean_net_sw_ir_dir_flx(n)  = c3 * swnet(n)
+                   mean_net_sw_ir_dif_flx(n)  = c4 * swnet(n)
+                   ! TODO (mvertens, 2018-12-16): currently the swpen arrays are not available from cice
+                   ! mean_net_sw_vis_dir_flx(n) = swvdr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + swpen_vis_dir(n)*ifrac_scaled
+                   ! mean_net_sw_vis_dif_flx(n) = swvdf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + swpen_vis_dif(n)*ifrac_scaled
+                   ! mean_net_sw_ir_dir_flx(n)  = swndr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + swpen_ir_dir(n)*ifrac_scaled
+                   ! mean_net_sw_ir_dif_flx(n)  = swndf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + swpen_ir_dif(n)*ifrac_scaled
+                end if
              end if
 
+             ! TODO (mvertens, 2018-12-16): fill in the following
              ! if (i2o_per_cat) then
              !   Sf_ofrac(n)  = ofrac(n)
              !   Sf_ofracr(n) = ofracr(n)
              !   Foxx_swnet_ofracr(n) = (fswabsv + fswabsi) * ofracr_scaled
              ! end if
           end do
+
+       else
+
+          ! ocean albedos are set to a constant (diffuse albedos)
+          do n = 1,size(swnet)
+             fswabsv  = swvdr(n) * (1.0_R8 - albdif) + swvdf(n) * (1.0_R8 - albdif)
+             fswabsi  = swndr(n) * (1.0_R8 - albdif) + swndf(n) * (1.0_R8 - albdif)
+             swnet(n) = ofrac(n)*(fswabsv + fswabsi) + ifrac(n)*swpen(n)
+
+             if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', rc=rc)) then
+                call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', &
+                     mean_net_sw_vis_dir_flx, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dif_flx', &
+                     mean_net_sw_vis_dif_flx, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dir_flx', &
+                     mean_net_sw_ir_dir_flx, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dif_flx', &
+                     mean_net_sw_ir_dif_flx, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                c1 = 0.285
+                c2 = 0.285
+                c3 = 0.215
+                c4 = 0.215
+                mean_net_sw_vis_dir_flx(n) = c1 * swnet(n)
+                mean_net_sw_vis_dif_flx(n) = c2 * swnet(n)
+                mean_net_sw_ir_dir_flx(n)  = c3 * swnet(n)
+                mean_net_sw_ir_dif_flx(n)  = c4 * swnet(n)
+                ! mean_net_sw_vis_dir_flx(n) = swvdr(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_vis_dir(n)*ifrac_scaled
+                ! mean_net_sw_vis_dif_flx(n) = swvdf(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_vis_dif(n)*ifrac_scaled
+                ! mean_net_sw_ir_dir_flx(n)  = swndr(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_ir_dir(n)*ifrac_scaled
+                ! mean_net_sw_ir_dif_flx(n)  = swndf(n)*(1.0_R8-albdif)*ofracr_scaled + swpen_ir_dif(n)*ifrac_scaled
+             end if
+
+          end do
+
        end if
 
-       ! TODO: document merging
+       !-------------
+       ! determine evaporation to send to ocean
+       !-------------
 
-#if (1 == 0)
-       ! atm and ice fraction
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), trim(ice_fraction_name), icewgt, rc=rc)
+       ! In both cesm and nems, evaporation is not sent by atm component
+       ! In cesm, its computed in the mediator in the atm/ocn flux calculation
+       ! In nems (i.e. fv3 is the atm), it will be computed here using the merged latent heat flux
+       ! that is sent to the ocean
+       ! Note - don't need to scale the calculated evap by ofrac - since the merged latent heat
+       ! to the ocean has already had this scaling done
+
+       ! determine if evaporation need to be computed outside of mediator aoflux computation
+       compute_evap_in_med  = (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc))
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       lb1 = lbound(icewgt,1); ub1 = ubound(icewgt,1)
-       lb2 = lbound(icewgt,2); ub2 = ubound(icewgt,2)
-       allocate(atmwgt(lb1:ub1,lb2:ub2), customwgt(lb1:ub1,lb2:ub2))
-       do j = lb2,ub2
-          do i = ub1,ib1
-             atmwgt(i,j) = 1.0_R8 - icewgt(i,j)
-          enddo
-       enddo
-
-       !-------------
-       ! mean_evap_rate = mean_laten_heat_flux * (1-ice_fraction)/const_lhvap
-       !-------------
-       !    customwgt = atmwgt / const_lhvap
-       !    call shr_nuopc_methods_FB_FieldMerge(is_local%wrap%FBExp(compocn),'mean_evap_rate' , &
-       !         FBinA=is_local%wrap%FBImp(compatm,compocn), fnameA='mean_laten_heat_flux', wgtA=customwgt, rc=rc)
-       !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       !-------------
-       ! field_for_ocn = field_from_atm * (1-ice_fraction)
-       !-------------
-       call shr_nuopc_methods_FB_FieldMerge(is_local%wrap%FBExp(compocn),'mean_fprec_rate' , &
-            FBinA=is_local%wrap%FBImp(compatm,compocn), fnameA='mean_fprec_rate', wgtA=atmwgt, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       !-------------
-       ! End merges
-       !-------------
-       deallocate(atmwgt,customwgt)
-
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FB4ocn_AFmrg ', rc=rc)
+       if (.not. compute_evap_in_med) then
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_lat', latent, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-#endif
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_evap', evap, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          ! TODO (mvertens, 2018-12-16): is this the right sign? Minus here is based on nems mediator
+          do n = 1, size(evap)
+             evap(n) = - latent(n)/const_lhvap
+          end do
+       end if
+
+       ! TODO (mvertens, 2018-12-16): document above custom calculation
 
        if (dbug_flag > 1) then
           call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
 
-       first_call = .false.
-
        !---------------------------------------
        !--- clean up
        !---------------------------------------
+
+       first_call = .false.
     endif
+
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf('MED:'//subname)
 
@@ -353,29 +472,32 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_accum_fast(gcomp, rc)
-    use ESMF, only: ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF, only: ESMF_FieldBundleGet
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_accum
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-    use med_internalstate_mod   , only : InternalState, mastertask
-    use esmFlds                 , only : compocn
-    use perf_mod                , only : t_startf, t_stopf
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
 
     ! Carry out fast accumulation for the ocean
+
+    use ESMF                  , only: ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
+    use ESMF                  , only: ESMF_FieldBundleGet
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use med_internalstate_mod , only : InternalState, mastertask
+    use esmFlds               , only : compocn
+    use perf_mod              , only : t_startf, t_stopf
+
+    ! input/output variables
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
 
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: time
     character(len=64)           :: timestr
     type(InternalState)         :: is_local
-    integer                     :: i,j,n,n1,ncnt
+    integer                     :: i,j,n,ncnt
+    integer                     :: dbrc
     character(len=*), parameter :: subname='(med_phases_accum_fast)'
-    integer :: dbrc
     !---------------------------------------
     call t_startf('MED:'//subname)
 
@@ -457,31 +579,34 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_ocn_accum_avg(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_FieldBundleGet
-    use med_constants_mod, only : czero=>med_constants_czero
-    use med_internalstate_mod   , only : InternalState
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_average
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_copy
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-    use esmFlds                 , only : compocn
-    use perf_mod                , only : t_startf, t_stopf
+
+    ! Prepare the OCN import Fields.
+
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_FieldBundleGet
+    use med_constants_mod     , only : czero=>med_constants_czero
+    use med_internalstate_mod , only : InternalState
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_average
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use esmFlds               , only : compocn
+    use perf_mod              , only : t_startf, t_stopf
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    ! Prepares the OCN import Fields.
-
     ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: time
-    character(len=64)           :: timestr
-    type(InternalState)         :: is_local
-    integer                     :: i,j,n,n1,ncnt
-    character(len=*),parameter  :: subname='(med_phases_prep_ocn_accum_avg)'
-    integer :: dbrc
+    type(ESMF_Clock)           :: clock
+    type(ESMF_Time)            :: time
+    character(len=64)          :: timestr
+    type(InternalState)        :: is_local
+    integer                    :: i,j,n,ncnt
+    integer                    :: dbrc
+    character(len=*),parameter :: subname='(med_phases_prep_ocn_accum_avg)'
     !---------------------------------------
     call t_startf('MED:'//subname)
 
