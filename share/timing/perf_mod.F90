@@ -797,7 +797,7 @@ contains
 !$OMP END MASTER
 #ifdef NUOPC_INTERFACE
    cur_timing_depth = cur_timing_depth - 1
-   if(cur_timing_depth > timer_depth_limit) return
+   if(cur_timing_depth >= timer_depth_limit) return
 #endif
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
