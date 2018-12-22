@@ -21,7 +21,7 @@
   nu_s              = 3e16
   nu_p              = 3e16  
   nu_top            = 0e5                     ! default = 2.5e5
-  limiter_option    = 8
+  limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'moist'

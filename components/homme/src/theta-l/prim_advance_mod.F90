@@ -6,8 +6,8 @@
 !  Man dynamics routines for "theta" nonhydrostatic model
 !  Original version: Mark Taylor 2017/1
 !  
-!  2018/8 TOM sponger layer scaling from P. Lauritzen
-!
+!  2018/8 TOM sponge layer scaling from P. Lauritzen
+!  09/2018: O. Guba  code for new ftypes
 module prim_advance_mod
 
   use bndry_mod,          only: bndry_exchangev

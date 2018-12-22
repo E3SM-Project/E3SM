@@ -1041,14 +1041,6 @@ contains
     call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #endif
 
-    ! Apply CAM Physics forcing
-    !   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 3: Q was adjusted by physics, but apply u,T forcing here, forcings are scaled by dp
-    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 1: forcing was applied time-split in CAM coupling layer
-    !   ftype= 0: apply all forcing here
-    !   ftype=-1: do not apply forcing
-
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
     if (compute_diagnostics) then
@@ -1329,9 +1321,14 @@ contains
 
 !----------------------------- APPLYCAMFORCING-PS ----------------------------
 
-!ftype logic
-!should be called with dt_remap, on 'eulerian' levels, only before homme remap
-!timestep
+!Ftype logic: This routine should be called with dt_remap, on 'eulerian' levels, 
+!only before homme remap timestep.
+! Note on ftypes:
+!   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 1: forcing was applied time-split in CAM coupling layer
+!   ftype= 0: apply all forcing here
+!   ftype=-1: do not apply forcing
   subroutine applyCAMforcing_ps(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
@@ -1342,23 +1339,25 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
 
+!in the next pr we will reorder calling _dyn and _tr versions
   call t_startf("ApplyCAMForcing")
-  if (ftype==0) then
+  if (ftype==-1) then
+    !do nothing
+  elseif (ftype==0) then
     call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
     call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+  elseif (ftype==1) then
+    !do nothing
   elseif (ftype==2) then
     call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
-  endif
 #ifndef CAM
-  ! for standalone homme, we need tracer tendencies injected similarly to CAM
-  ! for ftypes of interest, 2,3,4.
-  ! standalone homme does not support ftype=1 (because in standalone version,
-  ! it is identical to ftype=0).
-  ! leaving option ftype=-1 for standalone homme when no forcing is applied ever
-  if ((ftype /= 0 ).and.(ftype > 0)) then
     call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
-  endif
 #endif
+  elseif (ftype==4) then
+#ifndef CAM
+    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+#endif
+  endif
   call t_stopf("ApplyCAMForcing")
   end subroutine applyCAMforcing_ps
 
