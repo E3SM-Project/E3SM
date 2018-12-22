@@ -1756,27 +1756,7 @@
        canonical_units: 1
        description: sea-ice export
      #
-     - standard_name: Si_ifrac_01
-       canonical_units: 1
-       description: sea-ice export
-         cesm only
-     #
-     - standard_name: Si_ifrac_02
-       canonical_units: 1
-       description: sea-ice export
-         cesm only
-     #
-     - standard_name: Si_ifrac_03
-       canonical_units: 1
-       description: sea-ice export
-         cesm only
-     #
-     - standard_name: Si_ifrac_04
-       canonical_units: 1
-       description: sea-ice export
-         cesm only
-     #
-     - standard_name: Si_ifrac_05
+     - standard_name: Si_ifrac_n
        canonical_units: 1
        description: sea-ice export
          cesm only
@@ -2159,34 +2139,10 @@
        description: ocean import
          meridional surface stress
      #
-     - standard_name: PFioi_swpen_ifrac_01
+     - standard_name: Fioi_swpen_ifrac_n
        canonical_units: W m-2
        description: ocean import
          net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 1
-         cesm only
-     #
-     - standard_name: PFioi_swpen_ifrac_02
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 2
-         cesm only
-     #
-     - standard_name: PFioi_swpen_ifrac_03
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 3
-         cesm only
-     #
-     - standard_name: PFioi_swpen_ifrac_04
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 4
-         cesm only
-     #
-     - standard_name: PFioi_swpen_ifrac_05
-       canonical_units: W m-2
-       description: ocean import
-         net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 2
          cesm only
      #
      - standard_name: Sf_afrac

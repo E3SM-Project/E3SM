@@ -597,9 +597,26 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_swnet', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn, mapfcopy, 'unset', 'unset')
 
-    ! 'Net shortwave radiation penetrating into ice and ocean'
+    ! 'Net shortwave radiation penetrating into ocean'
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen', fldindex=n1) ! used for Foxx_swnet
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn, mapfcopy, 'unset', 'unset')
+    if (flds_i2o_per_cat) then
+       ! 'fractional ice coverage wrt ocean for each thickness category '
+       call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Si_ifrac_n', fldindex=n1)
+       call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn, mapfcopy, 'unset', 'unset')
+       ! net shortwave radiation penetrating into ocean for each thickness category
+       call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen_ifrac_n', fldindex=n1)
+       call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn, mapfcopy, 'unset', 'unset')
+       ! 'fractional atmosphere coverage wrt ocean'
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afrac')
+       ! TODO (mvertens, 2018-12-21): add mapping and merging
+       ! 'fractional atmosphere coverage used in radiation computations wrt ocean'
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afracr')
+       ! TODO (mvertens, 2018-12-21): add mapping and merging
+       ! 'net shortwave radiation times atmosphere fraction'
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
+       ! TODO (mvertens, 2018-12-21): add mapping and merging
+    end if
 
     ! To ocean (custom calculation)
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet')
@@ -2201,42 +2218,6 @@ contains
     !    ! stdname  = 'H2_18O_flodding_water_flux_back_to_land'
     !    ! call fld_add(flds_r2x, flds_r2x_map,'Flrr_flood_HDO')
     !    ! call fld_add(flds_x2l, flds_x2l_map,'Flrr_flood_HDO')
-
-    !-----------------------------------------------------------------------------
-    ! optional per thickness category fields
-    !-----------------------------------------------------------------------------
-
-    if (flds_i2o_per_cat) then
-       do num = 1, ice_ncat
-          write(cnum,'(i2.2)') num
-
-          ! 'fractional ice coverage wrt ocean for thickness category ' // cnum
-          name = 'Si_ifrac_' // cnum
-          call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
-          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
-               merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
-          call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-
-          ! Net shortwave radiation
-          name = 'PFioi_swpen_ifrac_' // cnum
-          call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, trim(name), fldindex=n1)
-          call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, trim(name), &
-               merge_from1=compice, merge_field1=trim(name), merge_type1='copy')
-          call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-       end do
-
-       ! 'fractional atmosphere coverage wrt ocean'
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afrac')
-       ! TODO: add mapping and merging
-
-       ! 'fractional atmosphere coverage used in radiation computations wrt ocean'
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Sf_afracr')
-       ! TODO: add mapping and merging
-
-       ! 'net shortwave radiation times atmosphere fraction'
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
-       ! TODO: add mapping and merging
-    end if
 
     !-----------------------------------------------------------------------------
     ! CARMA fields (volumetric soil water)
