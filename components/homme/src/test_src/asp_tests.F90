@@ -1064,7 +1064,7 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
        enddo
        enddo
        do idex=1,timelevels
-          call set_thermostate(elem(ie),temp,hvcoord,idex,1)
+          call set_thermostate(elem(ie),temp,hvcoord,idex)
        enddo
     enddo
 
@@ -1282,7 +1282,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
        enddo
        enddo
        do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+          call set_thermostate(elem(ie),temperature,hvcoord,idex)
        enddo
     enddo
 
@@ -1398,7 +1398,7 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
        enddo
        enddo
        do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+          call set_thermostate(elem(ie),temperature,hvcoord,idex)
        enddo
     enddo
 
@@ -1447,7 +1447,7 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
        enddo
        enddo
        do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+          call set_thermostate(elem(ie),temperature,hvcoord,idex)
        enddo
     enddo
 
@@ -1503,7 +1503,7 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
        enddo
        enddo
        do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+          call set_thermostate(elem(ie),temperature,hvcoord,idex)
        enddo
     enddo
 

@@ -351,7 +351,8 @@ contains
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
-  call tests_finalize(elem,hvcoord,nt)
+!3 below is not used, interface needs to be sorted out
+  call tests_finalize(elem,hvcoord,nt,3)
 
   end subroutine set_thermostate
 
@@ -387,7 +388,8 @@ contains
                                     elem%derived%T(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
 !computes and sets hydrostatic phi, copies state to all timelevels
-  call tests_finalize(elem,hvcoord,nt)
+!3 below is not used, interface needs to be sorted out
+  call tests_finalize(elem,hvcoord,nt,3)
   end subroutine set_thermostate_from_derived_T
 
 
@@ -581,7 +583,7 @@ contains
 
 !name?
   !_____________________________________________________________________
-  subroutine tests_finalize(elem,hvcoord,ns,ie)
+  subroutine tests_finalize(elem,hvcoord,ns,ne,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -589,7 +591,7 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
-  integer,             intent(in)   :: ns
+  integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   integer :: k,tl, ntQ
