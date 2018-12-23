@@ -190,7 +190,7 @@ contains
     endif
 
     call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iulog, mpicom_lnd, &
+    call shr_taskmap_write(iulog, mpicom_lnd,                    &
                            'LND #'//trim(adjustl(c_inst_index)), &
                            verbose=verbose_taskmap_output,       &
                            no_output=no_taskmap_output           )
