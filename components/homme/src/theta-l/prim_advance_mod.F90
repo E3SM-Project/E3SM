@@ -48,7 +48,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applycamforcing_dynamics, applyCAMforcing_dynamics_dp, &
+            applycamforcing_dynamics, &
             convert_thermo_forcing, convert_thermo_forcing_eam
 
 contains
@@ -528,21 +528,6 @@ contains
   enddo
   
   end subroutine applyCAMforcing_dynamics
-
-
-!----------------------------- APPLYCAMFORCING-DYNAMICS-DP ----------------------------
-
-!a dummy with error message
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
-  use hybvcoord_mod,  only: hvcoord_t
-  implicit none
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-  
-  call abortmp('Error: In applyCAMforcing_dyn theta-l model doesnt have ftype=3 option.')
-  end subroutine applyCAMforcing_dynamics_dp
 
 
 !----------------------------- ADVANCE-HYPERVIS ----------------------------

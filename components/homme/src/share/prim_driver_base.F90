@@ -984,7 +984,9 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
+#ifdef MODEL_THETA_L
     use prim_advance_mod,   only: convert_thermo_forcing
+#endif
 
     implicit none
 
@@ -1039,12 +1041,9 @@ contains
     ! by calling it here, it mimics eam forcings computations in standalone
     ! homme.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-
-    ! now that there is derivedT, there is no need to have two diff. logics for
-    ! call convert_forcing.... in
-    ! standalone and cam homme, since now we don't care anymore that tracers are
-    ! adjusted in stepon. clean this later, after the rest works. 
+#ifdef MODEL_THETA_L
     call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+#endif
 #endif
 
     ! Apply CAM Physics forcing
@@ -1323,7 +1322,7 @@ contains
   subroutine applyCAMforcing_dp3d(elem,hvcoord,n0,dt_dyn,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
-  use prim_advance_mod,   only : applycamforcing_dynamics,applycamforcing_dynamics_dp
+  use prim_advance_mod,   only : applycamforcing_dynamics
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_dyn
@@ -1331,9 +1330,7 @@ contains
   integer,                intent(in)    :: n0,nets,nete
 
   call t_startf("ApplyCAMForcing")
-  if (ftype == 3) then
-    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,n0,dt_dyn,nets,nete)
-  elseif (ftype == 4) then
+  if (ftype == 4) then
     call ApplyCAMForcing_dynamics   (elem,hvcoord,n0,dt_dyn,nets,nete)
   endif
   call t_stopf("ApplyCAMForcing")

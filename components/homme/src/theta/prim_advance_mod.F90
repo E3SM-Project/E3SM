@@ -45,7 +45,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
+            applyCAMforcing_dynamics, convert_thermo_forcing
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
@@ -544,19 +544,6 @@ contains
 
   enddo
   end subroutine convert_thermo_forcing
-
-
-
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-
-  call abortmp('Error: theta model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
-
-  end subroutine applyCAMforcing_dynamics_dp
 
 
 ! this is not in sync with WHAT WAS DONE FOR THETA-L AND HAS BUGS

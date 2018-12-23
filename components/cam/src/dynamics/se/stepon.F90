@@ -230,7 +230,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
    use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
+#ifdef MODEL_THETA_L
    use prim_advance_mod,only: convert_thermo_forcing_eam
+#endif
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
@@ -302,7 +304,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
-!what are these for?
       dyn_ps0=ps0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -367,7 +368,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
           end do
          end do
 
+#ifdef MODEL_THETA_L
       call convert_thermo_forcing_eam(dyn_in%elem(ie),hvcoord,tl_f,dtime)
+#endif
 
       endif ! if ftype == 2 or == 3 or == 4
 
