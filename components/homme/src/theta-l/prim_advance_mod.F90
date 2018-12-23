@@ -47,8 +47,7 @@ module prim_advance_mod
   save
   public :: prim_advance_exp, prim_advance_init1, &
        applycamforcing_ps, applycamforcing_dp3d, &
-       applyCAMforcing_dynamics
-
+       applyCAMforcing_dynamics, compute_andor_apply_rhs
 
 
 contains
@@ -75,6 +74,14 @@ contains
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
+#ifdef ARKODE
+    use arkode_mod,     only: parameter_list, update_arkode, get_solution_ptr, &
+                              table_list, set_Butcher_tables, &
+                              calc_nonlinear_stats, update_nonlinear_stats, &
+                              rel_tol, abs_tol, use_column_solver
+#endif
+    use iso_c_binding
+
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
     type (hvcoord_t)                             :: hvcoord
@@ -93,6 +100,13 @@ contains
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
  
+#ifdef ARKODE
+    type(parameter_list) :: arkode_parameters
+    type(table_list) :: arkode_tables
+    type(c_ptr) :: ynp1
+    real(real_kind) :: tout, t
+    integer(C_INT) :: ierr, itask
+#endif
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -218,13 +232,18 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
   
-
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = maxiter ! using existing integer variable to store this value
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
@@ -233,10 +252,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
-
-
+#endif
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
 
@@ -244,13 +267,24 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat4/a4,1d0)
-
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        call update_nonlinear_stats(1, ie+maxiter)
+      end if
+#else
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+#endif
 
 !==============================================================================================
     elseif (tstep_type == 7) then 
@@ -303,15 +337,20 @@ contains
       ahat2 = ( - ahat3*ahat4*ahat5*dhat1 + ahat4*ahat5*dhat1*dhat2 -&
         ahat5*dhat1*dhat2*dhat3 + dhat1*dhat2*dhat3*dhat4)/(-ahat3*ahat4*ahat5)
 
-
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
@@ -319,8 +358,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
@@ -328,8 +373,14 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
@@ -337,18 +388,156 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        ie = ie + maxiter
+      end if
+#else
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+#endif
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
 
+#ifdef ARKODE
+      if (calc_nonlinear_stats) then
+        call update_nonlinear_stats(1, ie+maxiter)
+      end if
+#else
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+#endif
+!=========================================================================================
+#ifdef ARKODE
+    else if (tstep_type==20) then ! ARKode RK2
+      call set_Butcher_tables(arkode_parameters, arkode_tables%RK2)
 
+    else if (tstep_type==21) then ! ARKode Kinnmark, Gray, Ullrich 3rd-order, 5-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%KGU35)
+
+    else if (tstep_type==22) then ! ARKode Ascher 2nd/2nd/2nd-order, 3-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARS232)
+
+    else if (tstep_type==23) then ! ARKode Candidate ARK453 Method
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARK453)
+
+    else if (tstep_type==24) then ! ARKode Ascher 2nd/2nd/2nd-order, 3-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARS222)
+
+    else if (tstep_type==25) then ! ARKode Ascher 3rd/4th/3rd-order, 3-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARS233)
+
+    else if (tstep_type==26) then ! ARKode Ascher 3rd/3rd/3rd-order, 4-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARS343)
+
+    else if (tstep_type==27) then ! ARKode Ascher 3rd/3rd/3rd-order, 5-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARS443)
+
+    else if (tstep_type==28) then ! ARKode Kennedy 3rd/3rd/3rd-order, 4-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARK324)
+
+    else if (tstep_type==29) then ! ARKode Kennedy 4th/4th/4th-order, 6-stage
+      call set_Butcher_tables(arkode_parameters, arkode_tables%ARK436)
+
+    else if (tstep_type==30) then ! ARKode Conde et al ssp3(3,3,3)a (renamed here)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%SSP3333B)
+
+    else if (tstep_type==31) then ! ARKode Conde et al ssp3(3,3,3)b (renamed here)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%SSP3333C)
+
+    else if (tstep_type==32) then ! ARKode IMKG 2nd-order, 4 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232a)
+
+    else if (tstep_type==33) then ! ARKode IMKG 2nd-order, 4 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232b)
+
+    else if (tstep_type==34) then ! ARKode IMKG 2nd-order, 5 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242a)
+
+    else if (tstep_type==35) then ! ARKode IMKG 2nd-order, 5 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242b)
+
+    else if (tstep_type==36) then ! ARKode IMKG 2nd-order, 5 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243a)
+
+    else if (tstep_type==37) then ! ARKode IMKG 2nd-order, 5 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243b)
+
+    else if (tstep_type==38) then ! ARKode IMKG 2nd-order, 6 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252a)
+
+    else if (tstep_type==39) then ! ARKode IMKG 2nd-order, 6 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252b)
+
+    else if (tstep_type==40) then ! ARKode IMKG 2nd-order, 6 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253a)
+
+    else if (tstep_type==41) then ! ARKode IMKG 2nd-order, 6 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253b)
+
+    else if (tstep_type==42) then ! ARKode IMKG 2nd-order, 6 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254a)
+
+    else if (tstep_type==43) then ! ARKode IMKG 2nd-order, 6 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254b)
+
+    else if (tstep_type==44) then ! ARKode IMKG 2nd-order, 6 stage, variant c
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254c)
+
+    else if (tstep_type==45) then ! ARKode IMKG 3rd-order, 5 stage, variant a
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343a)
+
+    else if (tstep_type==46) then ! ARKode IMKG 3rd-order, 5 stage, variant b
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343b)
+
+#endif
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
+#ifdef ARKODE
+    ! Use ARKode to advance solution
+    if (tstep_type >= 20) then
+
+      ! If implicit solves are involved, set corresponding parameters
+      if (arkode_parameters%imex /= 1) then
+        ! linear solver parameters
+        if (.not.use_column_solver) then
+          arkode_parameters%precLR = 0 ! no preconditioning
+          arkode_parameters%gstype = 1 ! classical Gram-Schmidt orthogonalization
+          arkode_parameters%lintol = 0.05d0 ! multiplies NLCOV_COEF in linear conv. criteria
+        end if
+        ! Iteration tolerances (appear in WRMS array as rtol*|u_i| + atol_i)
+        arkode_parameters%rtol = rel_tol
+        if (abs_tol < 0.d0) then
+          arkode_parameters%atol(1) = 1.d1*arkode_parameters%rtol ! assumes u ~ 1e1
+          arkode_parameters%atol(2) = 1.d1*arkode_parameters%rtol ! assumes v ~ 1e1
+          arkode_parameters%atol(3) = 1.d1*arkode_parameters%rtol ! assumes w_i ~ 1e1
+          arkode_parameters%atol(4) = 1.d5*arkode_parameters%rtol ! assumes phinh_i ~ 1e5
+          arkode_parameters%atol(5) = 1.d6*arkode_parameters%rtol ! assumes vtheta_dp ~ 1e6
+          arkode_parameters%atol(6) = 1.d0*arkode_parameters%rtol ! assumes dp3d ~ 1e0
+        else
+          arkode_parameters%atol(:) = abs_tol
+        end if
+      end if
+
+      ! update ARKode solver
+      call update_arkode(elem, nets, nete, deriv, hvcoord, hybrid, &
+                               dt, eta_ave_w, n0, qn0, arkode_parameters)
+
+      ! call ARKode to perform a single step
+      call get_solution_ptr(np1, ynp1)
+      tout = dt
+      itask = 2          ! use 'one-step' mode
+      call farkode(tout, t, ynp1, itask, ierr)
+      if (ierr /= 0) then
+        call abortmp('farkode failed')
+      endif
+      if (calc_nonlinear_stats) then
+        call update_nonlinear_stats()
+      end if
+    end if
+#endif
 
     ! ==============================================
     ! Time-split Horizontal diffusion: nu.del^2 or nu.del^4
@@ -1046,9 +1235,6 @@ contains
            write(iulog,*) 'val2 = ',elem(ie)%state%w_i(:,:,nlevp,n0)
            write(iulog,*) 'diff: ',temp(:,:,1)-elem(ie)%state%w_i(:,:,nlevp,n0)
         endif
-        ! w boundary condition. just in case:
-        elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
-             elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
      endif
 #endif
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
@@ -1598,9 +1784,9 @@ contains
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
 
-
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
+
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: vtheta_dp
   real (kind=real_kind), pointer, dimension(:,:)   :: phis
@@ -1739,19 +1925,30 @@ contains
       ! update iteration count and error measure
       itercount=itercount+1
     end do ! end do for the do while loop
+
+    if (itercount >= maxiter) then
+      call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
+    end if
 !  the following two if-statements are for debugging/testing purposes to track the number of iterations and error attained
 !  by the Newton iteration
-!      if (itercount > itercountmax) then
-!        itercountmax=itercount
-!      end if
+    if (itercount > itercountmax) then
+      itercountmax=itercount
+    end if
 !      if (itererr > itererrmax) then
 !        itererrmax = itererr
 !      end if
   end do ! end do for the ie=nets,nete loop
+#ifdef ARKODE
+  maxiter=itercountmax
+#else
+  ! TODO: note this is not grabbing the maximum iteration count but instead the
+  ! iteration count from the last column attached to this MPI rank
   maxiter=itercount
+#endif
+  ! TODO: note this is not grabbing the maximum final-residual but instead the
+  ! final-residual from the last column attached to this MPI rank
   itertol=itererr
 !  print *, 'max itercount', itercountmax, 'maxitererr ', itererrmax
-
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
@@ -1760,4 +1957,3 @@ contains
 
 
 end module prim_advance_mod
-
