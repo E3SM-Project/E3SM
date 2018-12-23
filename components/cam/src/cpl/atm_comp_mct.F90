@@ -228,8 +228,8 @@ CONTAINS
 
        else
 
-         no_taskmap_output = .true.
-         verbose_taskmap_output = .false.
+          no_taskmap_output = .true.
+          verbose_taskmap_output = .false.
 
        endif
 
