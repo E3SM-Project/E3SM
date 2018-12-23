@@ -44,7 +44,6 @@ real(rl):: zi(nlevp), zm(nlev)                                          ! z coor
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
 real(rl):: ztop
-
 contains
 
 !_____________________________________________________________________
@@ -557,7 +556,7 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
   real(rl), parameter :: ps_test = 100000.0d0
 
   integer :: i,j,k,ie                                                   !
-  real(rl):: lon,lat!,hyam,hybm,hyai,hybi
+  real(rl):: lon,lat,hyam,hybm,hyai,hybi
   real(rl):: p,z,phis,u,v,w,T,ps,rho,dp    !pointwise field values
   real(rl):: q,q1,q2,qarray(3),pressure
   integer :: qs
@@ -570,18 +569,14 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
     do k=1,nlev
       pressure=hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_test
       do j=1,np; do i=1,np
-        !call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-        lon  = elem(ie)%spherep(i,j)%lon
-        lat  = elem(ie)%spherep(i,j)%lat
+        call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
 
         !test4_baroclinic_wave(moist,X,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q,q1,q2)
         !moist 0 or 1, X is Earth scale factor, zcoord=0, q is vapor, q1, q2
         call test4_baroclinic_wave(dcmip4_moist,dcmip4_X,lon,lat,&
                                    pressure,z,zcoords,u,v,w,T,phis,ps,rho,q,q1,q2)
         qarray(1)=q; qarray(2)=q1; qarray(3)=q2;
-        !dp = pressure_thickness(ps,k,hvcoord)
-        dp = (hvcoord%hyai(k+1)-hvcoord%hyai(k))*p0 + (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps
-
+        dp = pressure_thickness(ps,k,hvcoord)
         call set_state(u,v,w,T,ps,phis,pressure,dp,z,g, i,j,k,elem(ie),1,nt)
 
         !init only <=qsize tracers
@@ -592,21 +587,14 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
     do k=1,nlevp
       pressure=hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*ps_test
       do j=1,np; do i=1,np
-        !call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
-        lon  = elem(ie)%spherep(i,j)%lon
-        lat  = elem(ie)%spherep(i,j)%lat
+        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
 
         !test4_baroclinic_wave(moist,X,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q,q1,q2)
         !moist 0 or 1, X is Earth scale factor, zcoord=0, q is vapor, q1, q2
         call test4_baroclinic_wave(dcmip4_moist,dcmip4_X,lon,lat,&
                                    pressure,z,zcoords,u,v,w,T,phis,ps,rho,q,q1,q2)
         qarray(1)=q; qarray(2)=q1; qarray(3)=q2;
-        !dp = pressure_thickness(ps,k,hvcoord)
-        if (k <= nlev) then
-          dp = (hvcoord%hyai(k+1)-hvcoord%hyai(k))*p0 + (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps
-        else
-          dp = (hvcoord%hyai(k)-hvcoord%hyai(k-1))*p0 + (hvcoord%hybi(k)-hvcoord%hybi(k-1))*ps
-        endif
+        dp = pressure_thickness(ps,k,hvcoord)
         call set_state_i(u,v,w,T,ps,phis,pressure,dp,z,g, i,j,k,elem(ie),1,nt)
 
       enddo; enddo; enddo; 
