@@ -397,7 +397,6 @@ contains
 
   if (ftype==-1) return
 
-
   q = 1
   do ie=nets,nete
      call get_temperature(elem(ie),tn1,hvcoord,n0)
