@@ -8,6 +8,8 @@
 !  
 !  2018/8 TOM sponge layer scaling from P. Lauritzen
 !  09/2018: O. Guba  code for new ftypes
+!  2018/12: M. Taylor apply forcing assuming nearly constant p 
+!
 module prim_advance_mod
 
   use bndry_mod,          only: bndry_exchangev
@@ -23,7 +25,7 @@ module prim_advance_mod
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
-  use eos,                only: get_pnh_and_exner,get_theta_from_T,get_phinh,get_dirk_jacobian
+  use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -374,6 +376,14 @@ contains
 !before ps_v is updated.
 !That is, theta tendencies are computed wrt the same pressure levels 
 !that were used to compute temperature tendencies
+!
+! For the hydrostatic model, the pressure is determined from FQ 
+! and conversion from T to Theta is done w.r.t. to this pressure.
+!
+! for NH, we have serveral options to determine the new pressure. For
+! consistency with hydrostatic model, we assume NH perturbation pressure
+! remains constant. this requires addign forcing to the PHI equation
+!
   subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
   use control_mod,        only : use_moisture
 
@@ -388,10 +398,12 @@ contains
   integer,                intent(in)    :: n0,n0q
   integer                               :: ie,i,j,k,q
   real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
-  real (kind=real_kind)                 :: pnh(np,np,nlev)
-  real (kind=real_kind)                 :: dpnh_dp_i(np,np,nlevp)
-
+  real(kind=real_kind)                  :: pnh(np,np,nlev)
+  real(kind=real_kind)                  :: dpnh_dp_i(np,np,nlevp)
+  real(kind=real_kind)                  :: exner(np,np,nlev)
+  real(kind=real_kind)                  :: phi_n1(np,np,nlevp)
   real(kind=real_kind)                  :: rstarn1(np,np,nlev)
+  real(kind=real_kind)                  :: pprime(np,np,nlev)
   real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
   real(kind=real_kind)                  :: psn1(np,np)
 
@@ -399,8 +411,26 @@ contains
 
   q = 1
   do ie=nets,nete
-     call get_temperature(elem(ie),tn1,hvcoord,n0)
-     ! semi-epeated code from applycamforcing_tracers
+
+     ! get current state before forcing
+     do k=1,nlev
+        dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
+     enddo
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
+          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
+     do k=1,nlev
+        ! compute NH pressure perturbation (forcing applied w.r.t. constant pprime)
+        pprime(:,:,k)=pnh(:,:,k) - &
+             ( hvcoord%ps0*hvcoord%hyam(k) + elem(ie)%state%ps_v(:,:,n0)*hvcoord%hybm(k))
+     enddo
+     call get_R_star(rstarn1,elem(ie)%state%Q(:,:,:,1))
+     tn1=exner* elem(ie)%state%vtheta_dp(:,:,:,n0)*(Rgas/rstarn1) / dp
+
+
+     ! now compute new state implied by FQ (Rstar, hydrostatic pressure)
+     ! and FT (temperature)
+     ! semi-repeated code from applycamforcing_tracers
      psn1(:,:) = 0.0
      do k=1,nlev
         do j=1,np
@@ -433,21 +463,36 @@ contains
         !new q
         qn1(:,:,k) = qn1(:,:,k)/dp(:,:,k)
      enddo
-
+     call get_R_star(rstarn1,qn1)
      tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
 
-     call get_R_star(rstarn1,qn1)
 
-     call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
-          elem(ie)%state%phinh_i(:,:,:,n0),vthn1)
+     ! update pressure based on Qdp forcing
+     do k=1,nlev
+        ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
+        !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
+        !     ( elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
+        ! constant NH perturbation pressure
+        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + psn1(:,:)*hvcoord%hybm(k) + pprime(:,:,k)
+        exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+     enddo
+        
+     ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+     vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
+
+     phi_n1(:,:,nlevp)=elem(ie)%state%phinh_i(:,:,nlevp,n0)
+     do k=nlev,1,-1
+        phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+     enddo
 
      !finally, compute difference for FT
      ! this method is using new dp, new exner, new-new r*, new t
      elem(ie)%derived%FT(:,:,:) = &
          (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
 
+     elem(ie)%derived%FPHI(:,:,:) = &
+         (phi_n1 - elem(ie)%state%phinh_i(:,:,:,n0))/dt
   enddo
-
   end subroutine convert_thermo_forcing
 
 
@@ -464,6 +509,7 @@ contains
   do ie=nets,nete
 
      elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
