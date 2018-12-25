@@ -377,13 +377,13 @@ contains
   end subroutine set_state
 
 
-  subroutine set_state_i(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
+  subroutine set_state_i(u,v,w,T,ps,phis,p,zm,g,i,j,k,elem,n0,n1)
   !
   ! set state variables at node(i,j,k) at layer interfaces
   ! used by idealized tests for dry initial conditions
   ! so we use constants cp, kappa  
   !
-  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
   type(element_t),  intent(inout) :: elem
 
