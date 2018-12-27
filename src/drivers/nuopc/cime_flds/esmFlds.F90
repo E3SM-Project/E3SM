@@ -597,9 +597,27 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_swnet', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn, mapfcopy, 'unset', 'unset')
 
-    ! 'Net shortwave radiation penetrating into ocean'
+    ! 'Shortwave radiation penetrating into ocean from ice'
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen', fldindex=n1) ! used for Foxx_swnet
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn, mapfcopy, 'unset', 'unset')
+
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_swpen_vdr')
+    call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen_vdr', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_swpen_vdf')
+    call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen_vdf', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_swpen_idr')
+    call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen_idr', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Fioi_swpen_idf')
+    call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen_idf', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
+
+    ! Per ice thickness fraction and sw penetrating into ocean from ice
     if (flds_i2o_per_cat) then
        ! 'fractional ice coverage wrt ocean for each thickness category '
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Si_ifrac_n', fldindex=n1)
@@ -618,30 +636,12 @@ contains
        ! TODO (mvertens, 2018-12-21): add mapping and merging
     end if
 
-    ! To ocean (custom calculation)
+    ! Net shortwave ocean (custom calculation in prep_phases_ocn_mod.F90)
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_vis_dir_flx')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_vis_dif_flx')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_ir_dir_flx')
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_ir_dif_flx')
-
-    ! TODO (mvertens, 2018-12-16): currently the swpen arrays are not available from cice
-    ! call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'mean_net_sw_vis_dir_flx', fldindex=n1)
-    ! call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-    ! call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_vis_dir_flx', &
-    !      merge_from1=compice, merge_field1='mean_net_sw_vis_dir_flx', merge_type1='copy')
-    ! call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'mean_net_sw_vis_dif_flx', fldindex=n1)
-    ! call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-    ! call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_vis_dif_flx', &
-    !      merge_from1=compice, merge_field1='mean_net_sw_vis_dif_flx', merge_type1='copy')
-    ! call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'mean_net_sw_ir_dir_flx', fldindex=n1)
-    ! call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-    ! call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_ir_dir_flx', &
-    !      merge_from1=compice, merge_field1='mean_net_sw_ir_dir_flx', merge_type1='copy')
-    ! call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'mean_net_sw_ir_dif_flx', fldindex=n1)
-    ! call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
-    ! call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_ir_dif_flx', &
-    !      merge_from1=compice, merge_field1='mean_net_sw_ir_dif_flx', merge_type1='copy')
 
     ! ---------------------------------------------------------------------
     ! 'Hydrophylic black carbon dry deposition flux'

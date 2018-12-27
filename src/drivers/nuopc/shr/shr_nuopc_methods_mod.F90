@@ -81,6 +81,7 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_State_GetScalar
   public shr_nuopc_methods_State_GetNumFields
   public shr_nuopc_methods_State_getFieldN
+  public shr_nuopc_methods_State_FldDebug
   public shr_nuopc_methods_Field_GeomPrint
   public shr_nuopc_methods_Clock_TimePrint
   public shr_nuopc_methods_UpdateTimestamp
@@ -195,6 +196,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_init(FBout, flds_scalar_name, fieldNameList, FBgeom, STgeom, FBflds, STflds, name, rc)
+
     use ESMF              , only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleCreate, ESMF_FieldBundleGet
     use ESMF              , only : ESMF_State, ESMF_Grid, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
     use ESMF              , only : ESMF_StateGet, ESMF_FieldGet, ESMF_FieldBundleAdd, ESMF_FieldCreate
@@ -4017,5 +4019,92 @@ module shr_nuopc_methods_mod
     endif
 
   end subroutine shr_nuopc_methods_Print_FieldExchInfo
+
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_State_FldDebug(state, flds_scalar_name, prefix, ymd, tod, logunit, rc)
+
+    use ESMF              , only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
+    use med_constants_mod , only : R8
+
+    ! input/output variables
+    type(ESMF_State)               :: state
+    character(len=*) , intent(in)  :: flds_scalar_name
+    character(len=*) , intent(in)  :: prefix
+    integer          , intent(in)  :: ymd
+    integer          , intent(in)  :: tod
+    integer          , intent(in)  :: logunit
+    integer          , intent(out) :: rc
+
+    ! local variables
+    integer                                  :: n, nfld, nlev
+    integer                                  :: lsize
+    real(R8), pointer                        :: dataPtr1d(:)
+    real(R8), pointer                        :: dataPtr2d(:,:)
+    integer                                  :: fieldCount
+    integer                                  :: ungriddedUBound(1)
+    character(len=ESMF_MAXSTR)               :: string
+    type(ESMF_Field)           , allocatable :: lfields(:)
+    integer                    , allocatable :: dimCounts(:)
+    character(len=ESMF_MAXSTR) , allocatable :: fieldNameList(:)
+    !-----------------------------------------------------
+
+    ! Determine the list of fields and the dimension count for each field
+    call ESMF_StateGet(state, itemCount=fieldCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(fieldNameList(fieldCount))
+    allocate(lfields(fieldCount))
+    allocate(dimCounts(fieldCount))
+    call ESMF_StateGet(state, itemNameList=fieldNameList, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do nfld=1, fieldCount
+       call ESMF_StateGet(state, itemName=trim(fieldNameList(nfld)), field=lfields(nfld), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_FieldGet(lfields(nfld), dimCount=dimCounts(nfld), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end do
+
+    ! Determine local size of field
+    do nfld=1, fieldCount
+       if (dimCounts(nfld) == 1) then
+          call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr1d, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          lsize = size(dataPtr1d)
+          exit
+       end if
+    end do
+
+    ! Write out debug output
+    do n = 1,lsize
+       do nfld=1, fieldCount
+          if (dimCounts(nfld) == 1) then
+             call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr1d, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (trim(fieldNameList(nfld)) /= flds_scalar_name .and. dataPtr1d(n) /= 0.) then
+                string = trim(prefix) // ' ymd, tod, index, '// trim(fieldNameList(nfld)) //' = '
+                write(logunit,100) trim(string), ymd, tod, n, dataPtr1d(n)
+100             format(a60,3(i8,2x),d21.14)
+             end if
+          else if (dimCounts(nfld) == 2) then
+             call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr2d, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_FieldGet(lfields(nfld), ungriddedUBound=ungriddedUBound, rc=rc)
+             call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr2d, rc=rc)
+             do nlev = 1,ungriddedUBound(1)
+                if (trim(fieldNameList(nfld)) /= flds_scalar_name .and. dataPtr2d(n,nlev) /= 0.) then
+                   string = trim(prefix) // ' ymd, tod, lev, index, '// trim(fieldNameList(nfld)) //' = '
+                   write(logunit,101) trim(string), ymd, tod, nlev, n, dataPtr2d(n,nlev)
+101                format(a60,4(i8,2x),d21.14)
+                end if
+             end do
+          end if
+       end do
+    end do
+
+    deallocate(fieldNameList)
+    deallocate(lfields)
+    deallocate(dimCounts)
+
+  end subroutine shr_nuopc_methods_State_FldDebug
 
 end module shr_nuopc_methods_mod
