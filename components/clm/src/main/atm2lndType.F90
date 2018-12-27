@@ -38,13 +38,13 @@ module atm2lndType
   type, public :: atm2lnd_type
       !DMR additions for CPL_BYPASS option
 #ifdef CPL_BYPASS
-      integer*2, pointer :: atm_input                (:,:,:,:) => null()  !Single-site meteorological input
+      integer(kind=2), pointer :: atm_input          (:,:,:,:) => null()  !Single-site meteorological input
       integer, pointer  :: loaded_bypassdata                   => null()
       real(r8), pointer :: add_offsets                     (:) => null()  !offsets for compressed met drivers
       real(r8), pointer :: scale_factors                   (:) => null()  !scale factors for compressed met drivers      
-      integer(r8), pointer :: startyear_met                    => null()  !staring driver met year
-      integer(r8), pointer :: endyear_met_spinup               => null()  !end driver met year for spinup cycle
-      integer(r8), pointer :: endyear_met_trans                => null()  !end driver met year for transient simulation
+      integer(kind=4), pointer :: startyear_met                => null()  !staring driver met year
+      integer(kind=4), pointer :: endyear_met_spinup           => null()  !end driver met year for spinup cycle
+      integer(kind=4), pointer :: endyear_met_trans            => null()  !end driver met year for transient simulation
       real(r8), pointer :: timeres                         (:) => null()  !time resolution of driver met (hours)
       real(r8), pointer :: var_offset                  (:,:,:) => null()  !correction offset for grid->site driver met (monthly)
       real(r8), pointer :: var_mult                    (:,:,:) => null()  !correction factor for grid->site driver met (monthly)
