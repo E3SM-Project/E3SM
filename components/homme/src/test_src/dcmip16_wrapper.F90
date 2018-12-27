@@ -471,7 +471,6 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
       v(i,j,:)  = v_c(nlev:1:-1)
-      p(i,j,:)  = p_c(nlev:1:-1)
       qv(i,j,:) = qv_c(nlev:1:-1)
       qc(i,j,:) = qc_c(nlev:1:-1)
       qr(i,j,:) = qr_c(nlev:1:-1)
@@ -608,7 +607,6 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
       v(i,j,:)  = v_c(nlev:1:-1)
-      p(i,j,:)  = p_c(nlev:1:-1)
       qv(i,j,:) = qv_c(nlev:1:-1)
       qc(i,j,:) = qc_c(nlev:1:-1)
       qr(i,j,:) = qr_c(nlev:1:-1)
