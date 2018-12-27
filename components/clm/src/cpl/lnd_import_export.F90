@@ -403,9 +403,14 @@ contains
             atm2lnd_vars%timelen_spinup(v) = nyears_spinup*(365*nint(24./atm2lnd_vars%timeres(v)))
     
             ierr = nf90_inq_varid(met_ncids(v), trim(metvars(v)), varid)
+
             !get the conversion factors
             ierr = nf90_get_att(met_ncids(v), varid, 'scale_factor', atm2lnd_vars%scale_factors(v))
+            if (ierr .ne. 0) atm2lnd_vars%scale_factors(v) = 1.0d0
+
             ierr = nf90_get_att(met_ncids(v), varid, 'add_offset', atm2lnd_vars%add_offsets(v))
+            if (ierr .ne. 0) atm2lnd_vars%add_offsets(v) = 0.0d0
+
             !get the met data	     
             starti(1) = 1
             starti(2) = gtoget
