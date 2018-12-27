@@ -52,6 +52,7 @@
       <value compset="_CAM5%AV1C-04"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-04P" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-04P2">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV2C"     >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-H01A">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-H01B">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
@@ -166,6 +167,7 @@
       <value compset="1850_CAM5.*AV1C-04">1850_cam5_av1c-04</value>
       <value compset="1850_CAM5.*AV1C-04P">1850_cam5_av1c-04p</value>
       <value compset="1850_CAM5.*AV1C-04P2">1850_cam5_av1c-04p2</value>
+      <value compset="1850_CAM5.*AV2C"     >1850_cam5_av2c</value>
       <value compset="1850_CAM5.*AV1C-L" >1850_cam5_av1c-04p2</value>
       <value compset="1850_CAM5.*AV1C-H01A">1850_cam5_av1c-h01a</value>
       <value compset="1850_CAM5.*AV1C-H01B">1850_cam5_av1c-h01b</value>
@@ -181,6 +183,7 @@
       <value compset="2000_CAM5.*AV1C-04">2000_cam5_av1c-04</value>
       <value compset="2000_CAM5.*AV1C-04P">2000_cam5_av1c-04p</value>
       <value compset="2000_CAM5.*AV1C-04P2">2000_cam5_av1c-04p2</value>
+      <value compset="2000_CAM5.*AV2C"     >2000_cam5_av2c</value>
       <value compset="2000_CAM5.*AV1C-L" >2000_cam5_av1c-04p2</value>
       <value compset="2000_CAM5.*AV1C-L.*_BGC%B" >2000_cam5_av1c-04p2_bgc</value>
       <value compset="2000_CAM5.*AV1C-H01A">2000_cam5_av1c-h01a</value>
@@ -193,6 +196,7 @@
       <value compset="20TR_CAM5.*AV1C-04">20TR_cam5_av1c-04</value>
       <value compset="20TR_CAM5.*AV1C-04P">20TR_cam5_av1c-04p</value>
       <value compset="20TR_CAM5.*AV1C-04P2">20TR_cam5_av1c-04p2</value>
+      <value compset="20TR_CAM5.*AV2C"     >20TR_cam5_av2c</value>
       <value compset="20TR_CAM5.*AV1C-L">20TR_cam5_av1c-04p2</value>
       <value compset="20TR_CAM5.*AV1C-L.*_BGC%B">20TR_cam5_av1c-04p2_bgc</value>
       <value compset="20TR_CAM5.*AV1C-H01A">20TR_cam5_av1c-h01a</value>
@@ -285,6 +289,7 @@
     <desc compset="_CAM5.*AV1C-04"  >CAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04:</desc>
     <desc compset="_CAM5.*AV1C-04P" >CAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p:</desc>
     <desc compset="_CAM5.*AV1C-04P2">CAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
+    <desc compset="_CAM5.*AV2C"     >CAM with complete set of E3SM atmospheric mods for V2 (72 layers model) and ACES4BGC SOAG emissions:</desc>
     <desc compset="_CAM5.*AV1C-L"   >CAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
     <desc compset="_CAM5.*AV1C-H01A">CAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- vh01a:</desc>
     <desc compset="_CAM5.*AV1C-H01B">CAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- vh01b:</desc>
