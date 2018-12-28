@@ -79,7 +79,7 @@ module parameters_tunable
     C2          = 1.300000_core_rknd,    & ! Low Skewness in C2 Skw. Function    [-]
     C2rt        = 1.000000_core_rknd,    & ! C2 coef. for the rtp2_dp1 term      [-]
     C2thl       = 1.000000_core_rknd,    & ! C2 coef. for the thlp2_dp1 term     [-]
-    C2rtthl     = 2.000000_core_rknd,    & ! C2 coef. for the rtpthlp_dp1 term   [-]
+    C2rtthl     = 1.300000_core_rknd,    & ! C2 coef. for the rtpthlp_dp1 term   [-]
     C2b         = 1.300000_core_rknd,    & ! High Skewness in C2 Skw. Function   [-]
     C2c         = 5.000000_core_rknd,    & ! Degree of Slope of C2 Skw. Function [-]
     C4          = 5.200000_core_rknd,    & ! Used only when l_tke_aniso is true  [-]
@@ -91,16 +91,16 @@ module parameters_tunable
     C6thlb      = 6.000000_core_rknd,    & ! High Skewness in C6thl Skw. Fnct.   [-]
     C6thlc      = 1.000000_core_rknd,    & ! Degree of Slope of C6thl Skw. Fnct. [-]
     C7          = 0.500000_core_rknd,    & ! Low Skewness in C7 Skw. Function    [-]
-    C7b         = 0.800000_core_rknd,    & ! High Skewness in C7 Skw. Function   [-]
+    C7b         = 0.500000_core_rknd,    & ! High Skewness in C7 Skw. Function   [-]
     C7c         = 0.500000_core_rknd,    & ! Degree of Slope of C7 Skw. Function [-]
-    C8          = 3.000000_core_rknd,    & ! Coef. #1 in C8 Skewness Equation    [-]
+    C8          = 4.20000_core_rknd,    & ! Coef. #1 in C8 Skewness Equation    [-]
     C8b         = 0.000000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
     C10         = 3.300000_core_rknd,    & ! Currently Not Used in the Model     [-]
 #if defined(CLUBB_CAM) && !defined(CLUBBND_CAM)
     C11         = 0.70000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
     C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
 #else
-    C11         = 0.800000_core_rknd,    & ! Low Skewness in C11 Skw. Function   [-]
+    C11         = 0.80000_core_rknd,    & ! Low Skewness in C11 Skw. Function   [-]
     C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
 #endif
     C11c        = 0.500000_core_rknd,    & ! Degree of Slope of C11 Skw. Fnct.   [-]
@@ -119,7 +119,7 @@ module parameters_tunable
     C6rt_Lscale0  = 14.0_core_rknd,      & ! Damp C6rt as a fnct. of Lscale  [-]
     C6thl_Lscale0 = 14.0_core_rknd,      & ! Damp C6thl as a fnct. of Lscale [-]
     C7_Lscale0    = 0.8500000_core_rknd, & ! Damp C7 as a fnct. of Lscale    [-]
-    wpxp_L_thresh = 60.0_core_rknd         ! Lscale threshold: damp C6 & C7  [m]
+    wpxp_L_thresh = huge(1.0_core_rknd)    ! Lscale threshold: damp C6 & C7  [m]
 !$omp threadprivate(C6rt_Lscale0, C6thl_Lscale0, C7_Lscale0, wpxp_L_thresh)
 
   ! Note: DD 1987 is Duynkerke & Driedonks (1987).
@@ -144,7 +144,7 @@ module parameters_tunable
 #ifdef CLUBBND_CAM
     mult_coef   = 1.500000_core_rknd, &
 #else
-    mult_coef   = 0.500000_core_rknd, & ! Coef. applied to log(avg dz/thresh)[-]
+    mult_coef   = 1.000000_core_rknd, & ! Coef. applied to log(avg dz/thresh)[-]
 #endif
     taumin      = 90.00000_core_rknd, & ! Min. allow. value: time-scale tau  [s]
     taumax      = 3600.000_core_rknd, & ! Max. allow. value: time-scale tau  [s]
@@ -195,7 +195,7 @@ module parameters_tunable
 !$omp threadprivate(beta)
 
   real( kind = core_rknd ), private :: &
-    lmin_coef = 0.500000_core_rknd   ! Coefficient of lmin    [-]
+    lmin_coef = 0.100000_core_rknd   ! Coefficient of lmin    [-]
 
 !$omp threadprivate(lmin_coef)
 
@@ -294,7 +294,7 @@ module parameters_tunable
 
   ! Momentum coefficient of Kh_zm
   real( kind = core_rknd ), public :: &
-    c_K10 = 1.0_core_rknd
+    c_K10 = 0.6_core_rknd
 
 !$omp threadprivate( c_K10 )
 
