@@ -523,20 +523,6 @@ contains
     end if
 
     ! ---------------------------------------------------------------------
-    !  'Downward longwave heat flux'
-    ! ---------------------------------------------------------------------
-    call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_lwdn', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy_with_weights', merge_fracname1='ofrac')
-
-    ! ---------------------------------------------------------------------
     !  'Direct near-infrared incident solar radiation'
     ! ---------------------------------------------------------------------
     call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_swndr', fldindex=n1)
@@ -1234,10 +1220,25 @@ contains
     end if
 
     ! ---------------------------------------------------------------------
+    !  'Downward longwave heat flux'
+    ! ---------------------------------------------------------------------
+    call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_lwdn', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
+    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
+    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
+    call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
+    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy_with_weights', merge_fracname1='ofrac')
+
+    ! ---------------------------------------------------------------------
     ! 'Surface upward longwave heat flux'
     ! ---------------------------------------------------------------------
+
+    ! To atm
     if (use_med_aoflux) then
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds , 'Fall_lwup', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Faii_lwup', fldindex=n1)
@@ -1250,16 +1251,18 @@ contains
             merge_from1=complnd, merge_field1='Fall_lwup', merge_type1='merge', merge_fracname1='lfrac', &
             merge_from2=compice, merge_field2='Faii_lwup', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='Faox_lwup', merge_type3='merge', merge_fracname3='ofrac')
-       ! To ocn
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lwup', &
-            merge_from1=compmed, merge_field1='Faox_lwup', merge_type1='merge', merge_fracname1='ofrac')
     else
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_lwup', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compatm, mapconsf, 'one', ice2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faii_lwup', &
             merge_from1=compice, merge_field1='Faii_sen', merge_type1='merge', merge_fracname1='ifrac')
-       ! To ocn
+    end if
+
+    ! To ocn
+    if (use_med_aoflux) then
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lwup', &
+            merge_from1=compmed, merge_field1='Faox_lwup', merge_type1='merge', merge_fracname1='ofrac')
+    else
        ! FV3 does not export lwup to mediator, it only exports the mean_net_lw_flx - so would not need lwdn from atm
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds , 'mean_net_lw_flx', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname) ! map atm->ocn

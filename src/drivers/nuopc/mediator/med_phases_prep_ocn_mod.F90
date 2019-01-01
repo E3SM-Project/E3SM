@@ -365,11 +365,6 @@ contains
           export_swnet_by_bands = .false.
        end if
 
-       ! DEBUG
-       !write(6,*)'DEBUG: export_swnet_by_bands = ',export_swnet_by_bands
-       !write(6,*)'DEBUG: import_swpen_by_bands = ',import_swpen_by_bands
-       import_swpen_by_bands = .false.
-
        do n = 1,lsize
           ! Compute total swnet to ocean independent of swpen from sea-ice
           if (compute_ocnalb_in_med) then
