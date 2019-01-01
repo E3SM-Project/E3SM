@@ -3,6 +3,8 @@ This module contains a class that extends unittest.TestCase, adding custom asser
 can be used when testing TestStatus.
 """
 
+from CIME.XML.standard_module_setup import *
+
 import unittest
 import re
 import six
@@ -11,14 +13,32 @@ from CIME import test_status
 
 class CustomAssertionsTestStatus(unittest.TestCase):
 
-    def assert_status_of_phase(self, output, status, phase, test_name):
+    def assert_status_of_phase(self, output, status, phase, test_name, xfail=None):
         """Asserts that 'output' contains a line showing the given
-        status for the given phase for the given test_name"""
-        expected = re.compile(r'^ *{} +'.format(re.escape(status)) +
-                              self._test_name_and_phase_regex(test_name, phase),
-                              flags=re.MULTILINE)
+        status for the given phase for the given test_name.
 
-        six.assertRegex(self, output, expected)
+        'xfail' should have one of the following values:
+        - None (the default): assertion passes regardless of whether there is an
+          EXPECTED/UNEXPECTED string
+        - 'no': The line should end with the phase, with no additional text after that
+        - 'expected': After the phase, the line should contain '(EXPECTED FAILURE)'
+        - 'unexpected': After the phase, the line should contain '(UNEXPECTED'
+        """
+        expected = (r'^ *{} +'.format(re.escape(status)) +
+                    self._test_name_and_phase_regex(test_name, phase))
+
+        if xfail == 'no':
+            # There should be no other text after the testname and phase regex
+            expected += r' *$'
+        elif xfail == 'expected':
+            expected += r' *{}'.format(re.escape(test_status.TEST_EXPECTED_FAILURE_COMMENT))
+        elif xfail == 'unexpected':
+            expected += r' *{}'.format(re.escape(test_status.TEST_UNEXPECTED_FAILURE_COMMENT_START))
+        else:
+            expect(xfail is None, "Unhandled value of xfail argument")
+
+        expected_re = re.compile(expected, flags=re.MULTILINE)
+        six.assertRegex(self, output, expected_re)
 
     def assert_phase_absent(self, output, phase, test_name):
         """Asserts that 'output' does not contain a status line for the
@@ -44,6 +64,12 @@ class CustomAssertionsTestStatus(unittest.TestCase):
                                         phase=phase,
                                         test_name=test_name)
 
+    def assert_num_expected_unexpected_fails(self, output, num_expected, num_unexpected):
+        """Asserts that the number of occurrences of expected and unexpected fails in
+        'output' matches the given numbers"""
+        self.assertEqual(output.count(test_status.TEST_EXPECTED_FAILURE_COMMENT), num_expected)
+        self.assertEqual(output.count(test_status.TEST_UNEXPECTED_FAILURE_COMMENT_START), num_unexpected)
+
     @staticmethod
     def _test_name_and_phase_regex(test_name, phase):
         """Returns a regex matching the portion of a TestStatus line
@@ -54,4 +80,4 @@ class CustomAssertionsTestStatus(unittest.TestCase):
         # changing. By making its regex shared as much as possible with
         # the regex in assert_status_of_phase, we decrease the chances
         # of these false passes.
-        return r'{} +{} *$'.format(re.escape(test_name), re.escape(phase))
+        return r'{} +{}'.format(re.escape(test_name), re.escape(phase))
