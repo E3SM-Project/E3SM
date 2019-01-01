@@ -617,6 +617,13 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Fioi_swpen_idf', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compocn,  mapfcopy, 'unset', 'unset')
 
+    ! Net shortwave ocean (custom calculation in prep_phases_ocn_mod.F90)
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_vdr')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_vdf')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_idr')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_idf')
+
     ! Per ice thickness fraction and sw penetrating into ocean from ice
     if (flds_i2o_per_cat) then
        ! 'fractional ice coverage wrt ocean for each thickness category '
@@ -635,13 +642,6 @@ contains
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
        ! TODO (mvertens, 2018-12-21): add mapping and merging
     end if
-
-    ! Net shortwave ocean (custom calculation in prep_phases_ocn_mod.F90)
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_vis_dir_flx')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_vis_dif_flx')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_ir_dir_flx')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_sw_ir_dif_flx')
 
     ! ---------------------------------------------------------------------
     ! 'Hydrophylic black carbon dry deposition flux'

@@ -132,20 +132,16 @@ contains
     real(R8), pointer           :: anidr(:), anidf(:)
     real(R8), pointer           :: swvdf(:), swndf(:)
     real(R8), pointer           :: swvdr(:), swndr(:)
-    real(R8), pointer           :: swpen(:), swnet(:)
-    real(R8), pointer           :: mean_net_sw_vis_dir_flx(:)
-    real(R8), pointer           :: mean_net_sw_vis_dif_flx(:)
-    real(R8), pointer           :: mean_net_sw_ir_dir_flx(:)
-    real(R8), pointer           :: mean_net_sw_ir_dif_flx(:)
-    real(R8), pointer           :: swpen_vis_dir(:)
-    real(R8), pointer           :: swpen_vis_dif(:)
-    real(R8), pointer           :: swpen_ir_dir(:)
-    real(R8), pointer           :: swpen_ir_dif(:)
+    real(R8), pointer           :: Foxx_swnet(:)
+    real(R8), pointer           :: Foxx_swnet_vdr(:)
+    real(R8), pointer           :: Foxx_swnet_vdf(:)
+    real(R8), pointer           :: Foxx_swnet_idr(:)
+    real(R8), pointer           :: Foxx_swnet_idf(:)
     real(R8), pointer           :: Fioi_swpen(:)
-    real(R8), pointer           :: Fioi_swpen_vis_dir(:)
-    real(R8), pointer           :: Fioi_swpen_vis_dif(:)
-    real(R8), pointer           :: Fioi_swpen_ir_dir(:)
-    real(R8), pointer           :: Fioi_swpen_ir_dif(:)
+    real(R8), pointer           :: Fioi_swpen_vdr(:)
+    real(R8), pointer           :: Fioi_swpen_vdf(:)
+    real(R8), pointer           :: Fioi_swpen_idr(:)
+    real(R8), pointer           :: Fioi_swpen_idf(:)
     real(R8), pointer           :: latent(:)
     real(R8), pointer           :: evap(:)
     real(R8)                    :: ifrac_scaled, ofrac_scaled
@@ -328,15 +324,15 @@ contains
           call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', Fioi_swpen, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vis_dir', rc=rc)) then
+          if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vdr', rc=rc)) then
              import_swpen_by_bands = .true.
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vis_dir', Fioi_swpen_vis_dir, rc=rc)
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vdr', Fioi_swpen_vdr, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vis_dif', Fioi_swpen_vis_dif, rc=rc)
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vdf', Fioi_swpen_vdf, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_ir_dir' , Fioi_swpen_ir_dir , rc=rc)
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_idr', Fioi_swpen_idr, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_ir_dif' , Fioi_swpen_ir_dif , rc=rc)
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_idf', Fioi_swpen_idf, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           else
              import_swpen_by_bands = .false.
@@ -348,33 +344,31 @@ contains
        ! ----------------
 
        if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  swnet, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           lsize = size(swvdr)
-          allocate(swnet(lsize))
+          allocate(Foxx_swnet(lsize))
        end if
 
-       if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', rc=rc)) then
+       if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', rc=rc)) then
           export_swnet_by_bands = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dir_flx', &
-               mean_net_sw_vis_dir_flx, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', Foxx_swnet_vdr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_vis_dif_flx', &
-               mean_net_sw_vis_dif_flx, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdf', Foxx_swnet_vdf, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dir_flx', &
-               mean_net_sw_ir_dir_flx, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_idr', Foxx_swnet_idr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'mean_net_sw_ir_dif_flx', &
-               mean_net_sw_ir_dif_flx, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_idf', Foxx_swnet_idf, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           export_swnet_by_bands = .false.
        end if
 
-       !DEBUG: for bfb compabibility for testing
-       import_swpen_by_bands = .false. 
+       ! DEBUG
+       !write(6,*)'DEBUG: export_swnet_by_bands = ',export_swnet_by_bands
+       !write(6,*)'DEBUG: import_swpen_by_bands = ',import_swpen_by_bands
+       import_swpen_by_bands = .false.
 
        do n = 1,lsize
           ! Compute total swnet to ocean independent of swpen from sea-ice
@@ -385,7 +379,7 @@ contains
              fswabsv  = swvdr(n) * (1.0_R8 - albdif) + swvdf(n) * (1.0_R8 - albdif)
              fswabsi  = swndr(n) * (1.0_R8 - albdif) + swndf(n) * (1.0_R8 - albdif)
           end if
-          swnet(n) = fswabsv + fswabsi
+          Foxx_swnet(n) = fswabsv + fswabsi
 
           ! Add swpen from sea ice if sea ice is present
           if (is_local%wrap%comp_present(compice)) then
@@ -404,28 +398,29 @@ contains
                    ifracr_scaled = ifracr(n) / (frac_sum)
                    ofracr_scaled = ofracr(n) / (frac_sum)
                 endif
-                swnet(n) = ofracr_scaled*swnet(n) + ifrac_scaled*Fioi_swpen(n)
              else
-                swnet(n) = ofrac(n)*swnet(n) + ifrac(n)*Fioi_swpen(n)
+                ofracr_scaled = ofrac(n) 
+                ifrac_scaled  = ifrac(n)
              end if
+             Foxx_swnet(n) = ofracr_scaled*Foxx_swnet(n) + ifrac_scaled*Fioi_swpen(n)
 
              if (export_swnet_by_bands) then
                 if (import_swpen_by_bands) then
                    ! use each individual band for swpen coming from the sea-ice
-                   mean_net_sw_vis_dir_flx(n) = swvdr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + swpen_vis_dir(n)*ifrac_scaled
-                   mean_net_sw_vis_dif_flx(n) = swvdf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + swpen_vis_dif(n)*ifrac_scaled
-                   mean_net_sw_ir_dir_flx(n)  = swndr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + swpen_ir_dir(n)*ifrac_scaled
-                   mean_net_sw_ir_dif_flx(n)  = swndf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + swpen_ir_dif(n)*ifrac_scaled
+                   Foxx_swnet_vdr(n) = swvdr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + Fioi_swpen_vdr(n)*ifrac_scaled
+                   Foxx_swnet_vdf(n) = swvdf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + Fioi_swpen_vdf(n)*ifrac_scaled
+                   Foxx_swnet_idr(n) = swndr(n)*(1.0_R8-avsdr(n))*ofracr_scaled + Fioi_swpen_idr(n)*ifrac_scaled
+                   Foxx_swnet_idf(n) = swndf(n)*(1.0_R8-avsdf(n))*ofracr_scaled + Fioi_swpen_idf(n)*ifrac_scaled
                 else
                    ! scale total Foxx_swnet to get contributions from each band
                    c1 = 0.285
                    c2 = 0.285
                    c3 = 0.215
                    c4 = 0.215
-                   mean_net_sw_vis_dir_flx(n) = c1 * swnet(n)
-                   mean_net_sw_vis_dif_flx(n) = c2 * swnet(n)
-                   mean_net_sw_ir_dir_flx(n)  = c3 * swnet(n)
-                   mean_net_sw_ir_dif_flx(n)  = c4 * swnet(n)
+                   Foxx_swnet_vdr(n) = c1 * Foxx_swnet(n)
+                   Foxx_swnet_vdf(n) = c2 * Foxx_swnet(n)
+                   Foxx_swnet_idr(n) = c3 * Foxx_swnet(n)
+                   Foxx_swnet_idf(n) = c4 * Foxx_swnet(n)
                 end if
              end if
              ! TODO (mvertens, 2018-12-16): fill in the following
