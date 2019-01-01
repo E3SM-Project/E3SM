@@ -394,7 +394,7 @@ contains
                    ofracr_scaled = ofracr(n) / (frac_sum)
                 endif
              else
-                ofracr_scaled = ofrac(n) 
+                ofracr_scaled = ofrac(n)
                 ifrac_scaled  = ifrac(n)
              end if
              Foxx_swnet(n) = ofracr_scaled*Foxx_swnet(n) + ifrac_scaled*Fioi_swpen(n)
