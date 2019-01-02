@@ -8,15 +8,16 @@ module med_merge_mod
   use med_constants_mod, only : spval_init => med_constants_spval_init
   use med_constants_mod, only : spval => med_constants_spval
   use med_constants_mod, only : czero => med_constants_czero
+  use med_constants_mod, only : R8
 
   implicit none
   private
 
-  character(*),parameter :: u_FILE_u = &
-       __FILE__
-
   public  :: med_merge_auto
   private :: med_merge
+
+  character(*),parameter :: u_FILE_u = &
+       __FILE__
 
 !-----------------------------------------------------------------------------
 contains
@@ -36,12 +37,12 @@ contains
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetNameN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : logunit
     use perf_mod              , only : t_startf, t_stopf
+
     character(len=*)             , intent(in)            :: compout_name ! component name for FBOut
     type(ESMF_FieldBundle)       , intent(inout)         :: FBOut        ! Merged output field bundle
     type(ESMF_FieldBundle)       , intent(inout)         :: FBfrac       ! Fraction data for FBOut
@@ -55,17 +56,17 @@ contains
     integer                      , intent(out)           :: rc
 
     ! local variables
-    integer                :: cnt
-    integer                :: n,nf,nm,compsrc
+    integer       :: cnt
+    integer       :: n,nf,nm,compsrc
     character(CX) :: fldname, stdname
     character(CX) :: merge_fields
     character(CX) :: merge_field
     character(CS) :: merge_type
     character(CS) :: merge_fracname
     character(CL) :: mrgstr   ! temporary string
-    logical                :: init_mrgstr
-    character(len=*),parameter  :: subname='(med_merge_auto)'
-    integer                       :: dbrc
+    logical       :: init_mrgstr
+    integer       :: dbrc
+    character(len=*),parameter :: subname=' (module_med_merge_mod: med_merge_auto)'
     !---------------------------------------
     call t_startf('MED:'//subname)
 
@@ -75,11 +76,15 @@ contains
     call shr_nuopc_methods_FB_reset(FBOut, value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Want to loop over all of the fields in FBout here - and find the corresponding index in fldListTo(complnd)
+    ! Want to loop over all of the fields in FBout here - and find the corresponding index in fldListTo(compxxx)
     ! for that field name - then call the corresponding merge routine below appropriately
 
     call ESMF_FieldBundleGet(FBOut, fieldCount=cnt, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (document) then
+       if (mastertask) write(logunit,*) ' '
+    end if
 
     ! Loop over all fields in field bundle FBOut
     do n = 1,cnt
@@ -111,14 +116,21 @@ contains
 
                       ! Document merging if appropriate
                       if (document) then
-                         if (merge_type == 'merge' .or. merge_type == 'accumulate') then
+                         if (merge_type == 'merge' .or. merge_type == 'sum_with_weights') then
                             if (init_mrgstr) then
                                mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
                                     // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
                                init_mrgstr = .false.
                             else
-                               mrgstr = trim(mrgstr) //' + &
-                                    '// trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                               mrgstr = trim(mrgstr) //' + ' &
+                                    // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
+                            end if
+                         else if (merge_type == 'sum') then
+                            if (init_mrgstr) then
+                               mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
+                                    //trim(merge_field) //'('//trim(compname(compsrc))//')'
+                            else
+                               mrgstr = trim(mrgstr) //' + '//trim(merge_field)//'('//trim(compname(compsrc))//')'
                             end if
                          else
                             if (merge_type == 'copy') then
@@ -170,6 +182,7 @@ contains
                             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                          end if
                       end if ! end of single merge
+
                    end if ! end of check of merge_type and merge_field not unset
                 end do ! end of nmerges loop
              end do  ! end of compsrc loop
@@ -192,30 +205,29 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_merge(merge_type, FBout, FBoutfld, FB, FBfld, FBw, fldw, rc)
-    use ESMF, only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogMsg_Error
-    use ESMF, only : ESMF_FieldBundle, ESMF_LogWrite, ESMF_LogMsg_Info
-    use med_constants_mod, only : R8
+
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogMsg_Error
+    use ESMF                  , only : ESMF_FieldBundle, ESMF_LogWrite, ESMF_LogMsg_Info
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use med_internalstate_mod , only : logunit
 
-    character(len=*)      ,intent(in)          :: merge_type
-    type(ESMF_FieldBundle),intent(inout)       :: FBout
-    character(len=*)      ,intent(in)          :: FBoutfld
-    type(ESMF_FieldBundle),intent(in)          :: FB
-    character(len=*)      ,intent(in)          :: FBfld
-    type(ESMF_FieldBundle),intent(inout)          :: FBw !DEBUG - change back to in
-    character(len=*)      ,intent(in)          :: fldw
-    integer               ,intent(out)         :: rc
+    character(len=*)      ,intent(in)    :: merge_type
+    type(ESMF_FieldBundle),intent(inout) :: FBout
+    character(len=*)      ,intent(in)    :: FBoutfld
+    type(ESMF_FieldBundle),intent(in)    :: FB
+    character(len=*)      ,intent(in)    :: FBfld
+    type(ESMF_FieldBundle),intent(inout) :: FBw
+    character(len=*)      ,intent(in)    :: fldw
+    integer               ,intent(out)   :: rc
 
     ! local variables
     real(R8), pointer :: dp1 (:), dp2(:,:)
     real(R8), pointer :: dpf1(:), dpf2(:,:)
     real(R8), pointer :: dpw1(:), dpw2(:,:)
-    integer                     :: lrank
-    character(len=*),parameter  :: subname='(med_merge)'
-    integer                       :: dbrc
+    integer           :: lrank
+    integer           :: dbrc
+    character(len=*),parameter :: subname=' (med_merge_mod: med_merge)'
     !---------------------------------------
 
     rc = ESMF_SUCCESS
@@ -246,7 +258,7 @@ contains
     call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(FBoutfld), fldptr1=dp1, fldptr2=dp2, rank=lrank, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (merge_type == 'copy_with_weights' .or. merge_type == 'merge') then
+    if (merge_type == 'copy_with_weights' .or. merge_type == 'merge' .or. merge_type == 'sum_with_weights') then
        if (lrank == 1) then
           call shr_nuopc_methods_FB_GetFldPtr(FBw, trim(fldw), fldptr1=dpw1, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -288,11 +300,17 @@ contains
        else
           dp2(:,:) = dp2(:,:) + dpf2(:,:)*dpw2(:,:)
        endif
-    else if (trim(merge_type) == 'accumulate') then
+    else if (trim(merge_type) == 'sum') then
        if (lrank == 1) then
           dp1(:) = dp1(:) + dpf1(:)
        else
           dp2(:,:) = dp2(:,:) + dpf2(:,:)
+       endif
+    else if (trim(merge_type) == 'sum_with_weights') then
+       if (lrank == 1) then
+          dp1(:) = dp1(:) + dpf1(:)*dpw1(:)
+       else
+          dp2(:,:) = dp2(:,:) + dpf2(:,:)*dpw2(:,:)
        endif
     else
        call ESMF_LogWrite(trim(subname)//": merge type "//trim(merge_type)//" not supported", &
@@ -300,10 +318,6 @@ contains
        rc = ESMF_FAILURE
        return
     end if
-
-    !---------------------------------------
-    !--- clean up
-    !---------------------------------------
 
   end subroutine med_merge
 

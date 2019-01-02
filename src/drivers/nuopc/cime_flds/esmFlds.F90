@@ -468,9 +468,9 @@ contains
             merge_from1=compatm, merge_field1='Faxa_rainl', merge_type1='copy')
 
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_rain', &
-            merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='accumulate', merge_fracname1='ofrac')
+            merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='sum', merge_fracname1='ofrac')
        call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain', &
-            merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='accumulate')
+            merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='sum')
     else
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_rain', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
@@ -500,9 +500,9 @@ contains
             merge_from1=compatm, merge_field1='Faxa_snowl', merge_type1='copy')
 
        call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow', &
-            merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='accumulate')
+            merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='sum')
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_snow', &
-            merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='accumulate', merge_fracname1='ofrac')
+            merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='sum', merge_fracname1='ofrac')
     else
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_snow', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
@@ -519,8 +519,22 @@ contains
     if (use_med_aoflux) then
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec', &
             merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_snowc:Faxa_rainl:Faxa_snowl', &
-            merge_type1='accumulate', merge_fracname1='ofrac')
+            merge_type1='sum', merge_fracname1='ofrac')
     end if
+
+    ! ---------------------------------------------------------------------
+    !  'Downward longwave heat flux'
+    ! ---------------------------------------------------------------------
+    call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_lwdn', fldindex=n1)
+    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
+    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
+    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
+    call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
+    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
+    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_lwdn', &
+         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy_with_weights', merge_fracname1='ofrac')
 
     ! ---------------------------------------------------------------------
     !  'Direct near-infrared incident solar radiation'
@@ -573,7 +587,7 @@ contains
          merge_from1=compatm, merge_field1='Faxa_swvdf', merge_type1='copy_with_weights', merge_fracname1='ofrac')
 
     ! ---------------------------------------------------------------------
-    ! 'Net shortwave radiation'
+    ! 'Net shortwave radiation' to ocean
     ! ---------------------------------------------------------------------
     ! for budgets only
     call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds, 'Fall_swnet')
@@ -628,6 +642,7 @@ contains
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
        ! TODO (mvertens, 2018-12-21): add mapping and merging
     end if
+
 
     ! ---------------------------------------------------------------------
     ! 'Hydrophylic black carbon dry deposition flux'
@@ -1148,10 +1163,10 @@ contains
     end if
 
     ! ---------------------------------------------------------------------
-    ! 'Surface latent heat flux'
+    ! 'Surface latent heat flux' to atm
     ! ---------------------------------------------------------------------
+    ! To atm
     if (use_med_aoflux) then
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds , 'Fall_lat', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Faii_lat', fldindex=n1)
@@ -1164,18 +1179,22 @@ contains
             merge_from1=complnd, merge_field1='Fall_lat', merge_type1='merge', merge_fracname1='lfrac', &
             merge_from2=compice, merge_field2='Faii_lat', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='Faox_lat', merge_type3='merge', merge_fracname3='ofrac')
-       ! To ocn
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lat', &
-            merge_from1=compmed, merge_field1='Faox_lat', merge_type1='merge', merge_fracname1='ofrac')
     else
-       ! Note: Faxa_lat and mean_laten_heat_flx_atm are aliased, and
-       !       Foxx_lat and mean_laten_heat_flx are aliased
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_lat', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compatm, mapconsf, 'one', ice2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faii_lat', &
             merge_from1=compice, merge_field1='Faii_lat', merge_type1='merge', merge_fracname1='ifrac')
-       ! To ocn
+    end if
+
+    ! ---------------------------------------------------------------------
+    ! Surface latent heat flux to ocn
+    ! ---------------------------------------------------------------------
+    ! Note: Faxa_lat and mean_laten_heat_flx_atm are aliased, and  Foxx_lat and mean_laten_heat_flx are aliased
+    ! Note: the following assumes that Faox_lat is computed on the ocn grid
+    if (use_med_aoflux) then
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lat', &
+            merge_from1=compmed, merge_field1='Faox_lat', merge_type1='merge', merge_fracname1='ofrac')
+    else
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds , 'Faxa_lat', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname) ! map atm->ocn
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lat', &
@@ -1183,10 +1202,10 @@ contains
     end if
 
     ! ---------------------------------------------------------------------
-    ! 'Sensible heat flux'
+    ! Sensible heat flux to atm and ocn
     ! ---------------------------------------------------------------------
+    ! Note: Faxa_sen and mean_sensi_heat_flx_atm are aliased, and Foxx_sen and mean_sensi_heat_flx are aliased
     if (use_med_aoflux) then
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds , 'Fall_sen', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Faii_sen', fldindex=n1)
@@ -1199,18 +1218,20 @@ contains
             merge_from1=complnd, merge_field1='Fall_sen', merge_type1='merge', merge_fracname1='lfrac', &
             merge_from2=compice, merge_field2='Faii_sen', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='Faox_sen', merge_type3='merge', merge_fracname3='ofrac')
-       ! To ocn
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_sen', &
-            merge_from1=compmed, merge_field1='Faox_sen', merge_type1='merge', merge_fracname1='ofrac')
     else
-       ! Note: Faxa_sen and mean_sensi_heat_flx_atm are aliased, and
-       !       Foxx_sen and mean_sensi_heat_flx are aliased
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_sen', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compatm, mapconsf, 'one', ice2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faii_sen', &
             merge_from1=compice, merge_field1='Faii_sen', merge_type1='merge', merge_fracname1='ifrac')
-       ! To ocn
+    end if
+
+    ! ---------------------------------------------------------------------
+    ! Sensible heat flux to ocean
+    ! ---------------------------------------------------------------------
+    if (use_med_aoflux) then
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_sen', &
+            merge_from1=compmed, merge_field1='Faox_sen', merge_type1='merge', merge_fracname1='ofrac')
+    else
        ! TODO (mvertens, 2018-12-14): do we want the addition of Fioi_sen below?
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds , 'Faxa_sen', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one'  , atm2ocn_fmapname) ! map atm->ocn
@@ -1220,24 +1241,8 @@ contains
     end if
 
     ! ---------------------------------------------------------------------
-    !  'Downward longwave heat flux'
+    ! Surface upward longwave heat flux to atm
     ! ---------------------------------------------------------------------
-    call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_lwdn', fldindex=n1)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, complnd, mapconsf, 'one', atm2lnd_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
-    call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname)
-    call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy')
-    call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_lwdn', &
-         merge_from1=compatm, merge_field1='Faxa_lwdn', merge_type1='copy_with_weights', merge_fracname1='ofrac')
-
-    ! ---------------------------------------------------------------------
-    ! 'Surface upward longwave heat flux'
-    ! ---------------------------------------------------------------------
-
-    ! To atm
     if (use_med_aoflux) then
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds , 'Fall_lwup', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
@@ -1258,23 +1263,32 @@ contains
             merge_from1=compice, merge_field1='Faii_sen', merge_type1='merge', merge_fracname1='ifrac')
     end if
 
-    ! To ocn
+    ! ---------------------------------------------------------------------
+    ! Surface upward longwave heat flux to ocean
+    ! ---------------------------------------------------------------------
     if (use_med_aoflux) then
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_lwup', &
-            merge_from1=compmed, merge_field1='Faox_lwup', merge_type1='merge', merge_fracname1='ofrac')
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lwup', &
+            merge_from1=compmed, merge_field1='Faox_lwup', merge_type1='copy_with_weights', merge_fracname1='ofrac')
+    end if
+
+    ! ---------------------------------------------------------------------
+    ! Net longwave heat flux to ocean
+    ! ---------------------------------------------------------------------
+    if (use_med_aoflux) then
+       ! Custom calculation in med_phases_prep_ocn
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lwnet', fldindex=n1)
     else
-       ! FV3 does not export lwup to mediator, it only exports the mean_net_lw_flx - so would not need lwdn from atm
+       ! Directly from atm (i.e. fv3)
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds , 'mean_net_lw_flx', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compocn, mapconsf, 'one', atm2ocn_fmapname) ! map atm->ocn
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'mean_net_lw_flx', &
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_lwnet', &
             merge_from1=compmed, merge_field1='mean_net_lw_flx', merge_type1='merge', merge_fracname1='ofrac')
     end if
 
     ! ---------------------------------------------------------------------
-    ! 'Evaporation water flux'
+    ! Evaporation water flux to atm
     ! ---------------------------------------------------------------------
     if (use_med_aoflux) then
-       ! To atm
        call shr_nuopc_fldList_AddFld(fldListFr(complnd)%flds , 'Fall_evap', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(complnd)%flds(n1) , complnd, compatm, mapconsf, 'lfrin', lnd2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Faii_evap', fldindex=n1)
@@ -1287,14 +1301,20 @@ contains
             merge_from1=complnd, merge_field1='Fall_evap', merge_type1='merge', merge_fracname1='lfrac', &
             merge_from2=compice, merge_field2='Faii_evap', merge_type2='merge', merge_fracname2='ifrac', &
             merge_from3=compmed, merge_field3='Faox_evap', merge_type3='merge', merge_fracname3='ofrac')
-       ! To ocn
+    else
+       call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_evap', fldindex=n1)
+       call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
+    end if
+
+    ! ---------------------------------------------------------------------
+    ! Evaporation water flux to ocean
+    ! ---------------------------------------------------------------------
+    if (use_med_aoflux) then
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_evap', &
             merge_from1=compmed, merge_field1='Faox_evap', merge_type1='merge', merge_fracname1='ofrac')
     else
-       call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds , 'Faii_evap', fldindex=n1)
-       call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1) , compice, compatm, mapconsf, 'ifrac', ice2atm_fmapname)
-       ! To ocn (fv3/mom6 evaporation is computed from the incoming latent heat flux)
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds , 'Foxx_evap')
+       ! Note: custom calculation in med_phases_prep_ocn
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_evap')
     end if
 
     ! ---------------------------------------------------------------------
@@ -1538,8 +1558,8 @@ contains
 
     ! 'Total Water flux into sea water due to runoff (liquid)'
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofl', &
-         merge_from1=comprof, merge_field1='Forr_rofl:Flrr_flood', merge_type1='accumulate', &
-         merge_from2=compglc, merge_field2='Fogg_rofl'           , merge_type2='accumulate')
+         merge_from1=comprof, merge_field1='Forr_rofl:Flrr_flood', merge_type1='sum', &
+         merge_from2=compglc, merge_field2='Fogg_rofl'           , merge_type2='sum')
 
     ! 'glc frozen runoff flux to ocean'
     call shr_nuopc_fldList_AddFld(fldListFr(compglc)%flds, 'Fogg_rofi', fldindex=n1)
@@ -1551,8 +1571,8 @@ contains
 
     ! 'Total Water flux into sea water due to runoff (frozen)'
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofi', &
-         merge_from1=comprof, merge_field1='Forr_rofi', merge_type1='accumulate', &
-         merge_from2=compglc, merge_field2='Fogg_rofi', merge_type2='accumulate')
+         merge_from1=comprof, merge_field1='Forr_rofi', merge_type1='sum', &
+         merge_from2=compglc, merge_field2='Fogg_rofi', merge_type2='sum')
 
     !-----------------------------
     ! rof(frozen)->ice and glc->ice
@@ -1568,8 +1588,8 @@ contains
 
     ! 'Total frozen water flux into sea ice '
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Fixx_rofi', &
-         merge_from1=comprof, merge_field1='Firr_rofi', merge_type1='accumulate', &
-         merge_from2=compglc, merge_field2='Figg_rofi', merge_type2='accumulate')
+         merge_from1=comprof, merge_field1='Firr_rofi', merge_type1='sum', &
+         merge_from2=compglc, merge_field2='Figg_rofi', merge_type2='sum')
 
     !-----------------------------
     ! wav->ocn
@@ -1898,13 +1918,13 @@ contains
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_rain_16O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_16O:Faxa_rainl_16O',&
-         merge_type1='accumulate', merge_fracname1='ofrac')
+         merge_type1='sum', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain_18O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_18O:Faxa_rainl_18O', &
-         merge_type1='accumulate')
+         merge_type1='sum')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain_HDO', &
          merge_from1=compatm, merge_field1='Faxa_rainc_HDO:Faxa_rainl_HDO', &
-         merge_type1='accumulate')
+         merge_type1='sum')
 
     !-------------
     ! Isotopic snow:
@@ -1952,13 +1972,13 @@ contains
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_snow_16O', &
          merge_from1=compatm, merge_field1='Faxa_snowc_16O:Faxa_snowl_16O',&
-         merge_type1='accumulate', merge_fracname1='ofrac')
+         merge_type1='sum', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow_18O', &
          merge_from1=compatm, merge_field1='Faxa_snowc_18O:Faxa_snowl_18O', &
-         merge_type1='accumulate')
+         merge_type1='sum')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow_HDO', &
          merge_from1=compatm, merge_field1='Faxa_snowc_HDO:Faxa_snowl_HDO', &
-         merge_type1='accumulate')
+         merge_type1='sum')
 
     !----------------------------------
     ! Isotopic precipitation (snow+snow):
@@ -1966,15 +1986,15 @@ contains
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec_16O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_16O:Faxa_snowc_16O:Faxa_rainl_16O:Faxa_snowl_16O', &
-         merge_type1='accumulate', merge_fracname1='ofrac')
+         merge_type1='sum', merge_fracname1='ofrac')
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec_18O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_18O:Faxa_snowc_18O:Faxa_rainl_18O:Faxa_snowl_18O', &
-         merge_type1='accumulate', merge_fracname1='ofrac')
+         merge_type1='sum', merge_fracname1='ofrac')
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec_HDO', &
          merge_from1=compatm, merge_field1='Faxa_rainc_HDO:Faxa_snowc_HDO:Faxa_rainl_HDO:Faxa_snowl_HDO', &
-         merge_type1='accumulate', merge_fracname1='ofrac')
+         merge_type1='sum', merge_fracname1='ofrac')
 
     !-------------------------------------
     ! Isotopic two meter reference humidity:

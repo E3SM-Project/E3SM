@@ -142,8 +142,11 @@ contains
     real(R8), pointer           :: Fioi_swpen_vdf(:)
     real(R8), pointer           :: Fioi_swpen_idr(:)
     real(R8), pointer           :: Fioi_swpen_idf(:)
-    real(R8), pointer           :: latent(:)
-    real(R8), pointer           :: evap(:)
+    real(R8), pointer           :: Foxx_latent(:)
+    real(R8), pointer           :: Foxx_evap(:)
+    real(R8), pointer           :: Foxx_lwnet(:)
+    real(R8), pointer           :: Faox_lwup(:)
+    real(R8), pointer           :: Faxa_lwdn(:)
     real(R8)                    :: ifrac_scaled, ofrac_scaled
     real(R8)                    :: ifracr_scaled, ofracr_scaled
     real(R8)                    :: frac_sum
@@ -151,7 +154,6 @@ contains
     real(R8)                    :: flux_epbalfact
     logical                     :: compute_ocnalb_in_med
     logical                     :: compute_aoflux_in_med
-    logical                     :: compute_evap_in_med
     logical                     :: export_swnet_by_bands
     logical                     :: import_swpen_by_bands
     logical                     :: first_call = .true.
@@ -428,36 +430,52 @@ contains
        end do
 
        !-------------
-       ! determine evaporation to send to ocean
+       ! determine evaporation to send to ocean if not computed in mediator
        !-------------
 
-       ! In both cesm and nems, evaporation is not sent by atm component
-       ! In cesm, its computed in the mediator in the atm/ocn flux calculation
-       ! In nems (i.e. fv3 is the atm), it will be computed here using the merged latent heat flux
-       ! that is sent to the ocean
        ! Note - don't need to scale the calculated evap by ofrac - since the merged latent heat
        ! to the ocean has already had this scaling done
 
-       ! determine if evaporation need to be computed outside of mediator aoflux computation
-       compute_evap_in_med  = (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc))
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       if (.not. compute_evap_in_med) then
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_lat', latent, rc=rc)
+       if (.not. compute_aoflux_in_med) then
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_lat', Foxx_latent, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_evap', evap, rc=rc)
+          call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_evap', Foxx_evap, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
           ! TODO (mvertens, 2018-12-16): is this the right sign? Minus here is based on nems mediator
-          do n = 1, size(evap)
-             evap(n) = - latent(n)/const_lhvap
+          do n = 1, size(Foxx_evap)
+             Foxx_evap(n) = - Foxx_latent(n)/const_lhvap
           end do
        end if
 
-       ! TODO (mvertens, 2018-12-16): document above custom calculation
+       !-------------
+       ! determine netlw sent to ocean
+       !-------------
+       if (compute_aoflux_in_med) then
+          if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compocn), 'Foxx_lwnet', rc=rc)) then
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_lwnet', Foxx_lwnet, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBMed_aoflux_o, 'Faox_lwup', Faox_lwup, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_lwdn', Faxa_lwdn, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             do n = 1,size(Foxx_lwnet)
+                Foxx_lwnet(n) = ofrac(n)*Faox_lwup(n) + ofrac(n)*Faxa_lwdn(n)
+             end do
+          end if
+       end if
+
+       !---------------------------------------
+       !--- diagnose output
+       !---------------------------------------
 
        if (dbug_flag > 1) then
           call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
+
+       ! TODO (mvertens, 2018-12-16): document above custom calculation
 
        !---------------------------------------
        !--- clean up

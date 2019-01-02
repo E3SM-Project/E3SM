@@ -812,11 +812,6 @@
        description: atmosphere export
          mean downward SW heat flux
      #
-     - standard_name: mean_net_lw_flx
-       canonical_units: W m-2
-       description: atmosphere export
-         mean NET long wave radiation flux (fv3 only)
-     #
      - standard_name: inst_down_lw_flx
        canonical_units: W m-2
        description: atmosphere export
@@ -2131,6 +2126,12 @@
        canonical_units: W m-2
        description: ocean import
          surface upward longwave heat flux
+     #
+     - standard_name: Foxx_lwnet
+       alias: mean_net_lw_flx
+       canonical_units: W m-2
+       description: ocean import
+         mean NET long wave radiation flux to ocean
      #
      - standard_name: Foxx_rofi
        canonical_units: kg m-2 s-1

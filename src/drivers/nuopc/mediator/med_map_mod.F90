@@ -76,27 +76,27 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(InternalState)              :: is_local
-    type(ESMF_VM)                    :: vm
-    type(ESMF_Field)                 :: fldsrc
-    type(ESMF_Field)                 :: flddst
-    integer                          :: localPet
-    integer                          :: n,n1,n2,m,nf,nflds,ncomp
-    integer                          :: SrcMaskValue
-    integer                          :: DstMaskValue
-    character(len=128)               :: value
-    character(len=128)               :: rhname
-    character(len=128)               :: rhname_file
+    type(InternalState)     :: is_local
+    type(ESMF_VM)           :: vm
+    type(ESMF_Field)        :: fldsrc
+    type(ESMF_Field)        :: flddst
+    integer                 :: localPet
+    integer                 :: n,n1,n2,m,nf,nflds,ncomp
+    integer                 :: SrcMaskValue
+    integer                 :: DstMaskValue
+    character(len=128)      :: value
+    character(len=128)      :: rhname
+    character(len=128)      :: rhname_file
     character(len=CS)       :: mapname
     character(len=CX)       :: mapfile
     character(len=CS)       :: string
-    integer                          :: mapindex
-    logical                          :: rhprint_flag = .false.
-    real(R8)     , pointer :: factorList(:)
+    integer                 :: mapindex
+    logical                 :: rhprint_flag = .false.
+    real(R8)      , pointer :: factorList(:)
     character(CL) , pointer :: fldnames(:)
+    integer                 :: dbrc
     type(ESMF_PoleMethod_Flag), parameter :: polemethod=ESMF_POLEMETHOD_ALLAVG
     character(len=*), parameter :: subname=' (module_med_map: RouteHandles_init) '
-    integer                       :: dbrc
     !-----------------------------------------------------------
     call t_startf('MED:'//subname)
 
@@ -672,7 +672,7 @@ contains
              data_dst = czero
              call shr_nuopc_methods_FB_FieldRegrid(FBFrac, mapnorm, FBDst, trim(fldname), RouteHandles(mapindex), rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
              do i= 1,size(data_dst)
                 if (data_dst(i) /= 0.0_R8) then
                    data_dst(i) = data_dsttmp(i)/data_dst(i)
