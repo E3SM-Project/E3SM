@@ -468,7 +468,7 @@ contains
             merge_from1=compatm, merge_field1='Faxa_rainl', merge_type1='copy')
 
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_rain', &
-            merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='sum', merge_fracname1='ofrac')
+            merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='sum_with_weights', merge_fracname1='ofrac')
        call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain', &
             merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_rainl', merge_type1='sum')
     else
@@ -499,10 +499,10 @@ contains
        call shr_nuopc_fldList_AddFld(fldListTo(complnd)%flds, 'Faxa_snowl', &
             merge_from1=compatm, merge_field1='Faxa_snowl', merge_type1='copy')
 
+       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_snow', &
+            merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='sum_with_weights', merge_fracname1='ofrac')
        call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow', &
             merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='sum')
-       call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_snow', &
-            merge_from1=compatm, merge_field1='Faxa_snowc:Faxa_snowl', merge_type1='sum', merge_fracname1='ofrac')
     else
        call shr_nuopc_fldList_AddFld(fldListFr(compatm)%flds, 'Faxa_snow', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compatm)%flds(n1), compatm, compice, mapconsf, 'one', atm2ice_fmapname)
@@ -519,7 +519,7 @@ contains
     if (use_med_aoflux) then
        call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec', &
             merge_from1=compatm, merge_field1='Faxa_rainc:Faxa_snowc:Faxa_rainl:Faxa_snowl', &
-            merge_type1='sum', merge_fracname1='ofrac')
+            merge_type1='sum_with_weights', merge_fracname1='ofrac')
     end if
 
     ! ---------------------------------------------------------------------
@@ -1556,6 +1556,9 @@ contains
     call shr_nuopc_fldList_AddFld(fldListFr(comprof)%flds, 'Forr_rofl', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, compocn, mapfiler, 'none', rof2ocn_liq_rmapname)
 
+    ! TODO: mvertens(2019-01-01): the following is not correct for the sum - verify that the current implementation does 
+    ! indeed sum fields across components and not just for the colon delimininated string from a given component
+
     ! 'Total Water flux into sea water due to runoff (liquid)'
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofl', &
          merge_from1=comprof, merge_field1='Forr_rofl:Flrr_flood', merge_type1='sum', &
@@ -1568,6 +1571,9 @@ contains
     ! Water flux into sea water due to runoff (frozen)'
     call shr_nuopc_fldList_AddFld(fldListFr(comprof)%flds, 'Forr_rofi', fldindex=n1)
     call shr_nuopc_fldList_AddMap(fldListFr(comprof)%flds(n1), comprof, compocn, mapfiler, 'none', rof2ocn_ice_rmapname)
+
+    ! TODO: mvertens(2019-01-01): the following is not correct for the sum - verify that the current implementation does 
+    ! indeed sum fields across components and not just for the colon delimininated string from a given component
 
     ! 'Total Water flux into sea water due to runoff (frozen)'
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Foxx_rofi', &
@@ -1918,13 +1924,13 @@ contains
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_rain_16O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_16O:Faxa_rainl_16O',&
-         merge_type1='sum', merge_fracname1='ofrac')
+         merge_type1='sum_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain_18O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_18O:Faxa_rainl_18O', &
-         merge_type1='sum')
+         merge_type1='sum_with_weights')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_rain_HDO', &
          merge_from1=compatm, merge_field1='Faxa_rainc_HDO:Faxa_rainl_HDO', &
-         merge_type1='sum')
+         merge_type1='sum_with_weights')
 
     !-------------
     ! Isotopic snow:
@@ -1972,13 +1978,13 @@ contains
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_snow_16O', &
          merge_from1=compatm, merge_field1='Faxa_snowc_16O:Faxa_snowl_16O',&
-         merge_type1='sum', merge_fracname1='ofrac')
+         merge_type1='sum_with_weights', merge_fracname1='ofrac')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow_18O', &
          merge_from1=compatm, merge_field1='Faxa_snowc_18O:Faxa_snowl_18O', &
-         merge_type1='sum')
+         merge_type1='sum_with_weights')
     call shr_nuopc_fldList_AddFld(fldListTo(compice)%flds, 'Faxa_snow_HDO', &
          merge_from1=compatm, merge_field1='Faxa_snowc_HDO:Faxa_snowl_HDO', &
-         merge_type1='sum')
+         merge_type1='sum_with_weights')
 
     !----------------------------------
     ! Isotopic precipitation (snow+snow):
@@ -1986,15 +1992,15 @@ contains
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec_16O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_16O:Faxa_snowc_16O:Faxa_rainl_16O:Faxa_snowl_16O', &
-         merge_type1='sum', merge_fracname1='ofrac')
+         merge_type1='sum_with_weights', merge_fracname1='ofrac')
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec_18O', &
          merge_from1=compatm, merge_field1='Faxa_rainc_18O:Faxa_snowc_18O:Faxa_rainl_18O:Faxa_snowl_18O', &
-         merge_type1='sum', merge_fracname1='ofrac')
+         merge_type1='sum_with_weights', merge_fracname1='ofrac')
 
     call shr_nuopc_fldList_AddFld(fldListTo(compocn)%flds, 'Faxa_prec_HDO', &
          merge_from1=compatm, merge_field1='Faxa_rainc_HDO:Faxa_snowc_HDO:Faxa_rainl_HDO:Faxa_snowl_HDO', &
-         merge_type1='sum', merge_fracname1='ofrac')
+         merge_type1='sum_with_weights', merge_fracname1='ofrac')
 
     !-------------------------------------
     ! Isotopic two meter reference humidity:
