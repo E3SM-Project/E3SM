@@ -271,6 +271,7 @@ contains
     integer                  :: atmid
     character*32             :: dm1, dm2, dofnameATM, dofnameOCN, wgtIdef
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
+    integer                  :: monotonicity
 
     integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
 
@@ -296,13 +297,14 @@ contains
     dofnameOCN="GLOBAL_ID"//CHAR(0)
     orderATM = np !  it should be 4
     orderOCN = 1  !  not much arguing
+    monotonicity = 0 !
     volumetric = 0
     noConserve = 0
     validate = 1
     if (mbintxoa .ge. 0 ) then
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                                volumetric, noConserve, validate, &
+                                                monotonicity, volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
     endif
   end subroutine prep_atm_ocn_moab
