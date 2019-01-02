@@ -9,27 +9,63 @@
 //#define COMPOSE_DEBUG_MPI
 
 //>> cedr_kokkos.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_KOKKOS_HPP
 #define INCLUDE_CEDR_KOKKOS_HPP
 
 #include <Kokkos_Core.hpp>
 
+#define KIF KOKKOS_INLINE_FUNCTION
+
+// Clarify that a class member type is meant to be private but is
+// marked public for Cuda visibility.
+#define PRIVATE_CUDA public
+#define PROTECTED_CUDA public
+
+#if defined KOKKOS_COMPILER_GNU
+// See https://github.com/kokkos/kokkos-kernels/issues/129 
+# define ConstExceptGnu
+#else
+# define ConstExceptGnu const
+#endif
+
 namespace cedr {
 namespace impl {
-template <typename MemoryTraitsType, Kokkos::MemoryTraitsFlags flag>
-using MemoryTraits = Kokkos::MemoryTraits<
-  MemoryTraitsType::Unmanaged | MemoryTraitsType::RandomAccess |
-  MemoryTraitsType::Atomic | flag>;
+
+// Turn a View's MemoryTraits (traits::memory_traits) into the equivalent
+// unsigned int mask.
+template <typename View>
+struct MemoryTraitsMask {
+  enum : unsigned int {
+    value = ((View::traits::memory_traits::RandomAccess ? Kokkos::RandomAccess : 0) |
+             (View::traits::memory_traits::Atomic ? Kokkos::Atomic : 0) |
+             (View::traits::memory_traits::Restrict ? Kokkos::Restrict : 0) |
+             (View::traits::memory_traits::Aligned ? Kokkos::Aligned : 0) |
+             (View::traits::memory_traits::Unmanaged ? Kokkos::Unmanaged : 0))
+      };
+};
+
+// Make the input View Unmanaged, whether or not it already is. One might
+// imagine that View::unmanaged_type would provide this.
+//   Use: Unmanaged<ViewType>
+template <typename View>
+using Unmanaged =
+  // Provide a full View type specification, augmented with Unmanaged.
+  Kokkos::View<typename View::traits::scalar_array_type,
+               typename View::traits::array_layout,
+               typename View::traits::device_type,
+               Kokkos::MemoryTraits<
+                 // All the current values...
+                 MemoryTraitsMask<View>::value |
+                 // ... |ed with the one we want, whether or not it's
+                 // already there.
+                 Kokkos::Unmanaged> >;
 
 template <typename View>
-using Unmanaged = Kokkos::View<
-  typename View::data_type, typename View::array_layout,
-  typename View::device_type, MemoryTraits<typename View::memory_traits,
-                                           Kokkos::Unmanaged> >;
-template <typename View>
-using Const = Kokkos::View<
-  typename View::const_data_type, typename View::array_layout,
-  typename View::device_type, typename View::memory_traits>;
+using Const = typename View::const_type;
+
 template <typename View>
 using ConstUnmanaged = Const<Unmanaged<View> >;
 
@@ -51,6 +87,51 @@ typedef Kokkos::Device<Kokkos::DefaultExecutionSpace::execution_space,
                        Kokkos::DefaultExecutionSpace::memory_space> DefaultDeviceType;
 #endif
 
+template <typename ES> struct OnGpu {
+  enum : bool { value =
+#ifdef COMPOSE_MIMIC_GPU
+                true
+#else
+                false
+#endif
+  };
+};
+#ifdef KOKKOS_ENABLE_CUDA
+template <> struct OnGpu<Kokkos::Cuda> { enum : bool { value = true }; };
+#endif
+
+template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
+struct ExeSpaceUtils {
+  using TeamPolicy = Kokkos::TeamPolicy<ExeSpace>;
+  using Member = typename TeamPolicy::member_type;
+  static TeamPolicy get_default_team_policy (int outer, int inner) {
+#ifdef COMPOSE_MIMIC_GPU
+    const int max_threads =
+#ifdef KOKKOS_ENABLE_OPENMP
+      ExeSpace::concurrency()
+#else
+      1
+#endif
+      ;
+    const int team_size = max_threads < 7 ? max_threads : 7;
+    return TeamPolicy(outer, team_size, 1);
+#else
+    return TeamPolicy(outer, 1, 1);
+#endif
+}
+};
+
+#ifdef KOKKOS_ENABLE_CUDA
+template <>
+struct ExeSpaceUtils<Kokkos::Cuda> {
+  using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
+  using Member = typename TeamPolicy::member_type;
+  static TeamPolicy get_default_team_policy (int outer, int inner) {
+    return TeamPolicy(outer, std::min(128, 32*((inner + 31)/32)), 1);
+  }
+};
+#endif
+
 // GPU-friendly replacements for std::*.
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& min (const T& a, const T& b) { return a < b ? a : b; }
@@ -58,12 +139,16 @@ template <typename T> KOKKOS_INLINE_FUNCTION
 const T& max (const T& a, const T& b) { return a > b ? a : b; }
 template <typename T> KOKKOS_INLINE_FUNCTION
 void swap (T& a, T& b) { const T tmp = a; a = b; b = tmp; }
-}
-}
+
+} // namespace impl
+} // namespace cedr
 
 #endif
 
 //>> cedr.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_HPP
 #define INCLUDE_CEDR_HPP
 
@@ -78,8 +163,8 @@ typedef double Real;
 
 // CDRs in general implement
 // * tracer mass, Qm, conservation;
-// * mixing ratio, q, shape preservation, either local bound preservation or
-//   dynamic range preservation; and
+// * mixing ratio, q, shape preservation: any of local bound preservation,
+//   dynamic range preservation, or simply non-negativity; and
 // * tracer consistency, which follows from dynamic range preservation or
 //   stronger (including local bound preservation) with rhom coming from the
 //   dynamics.
@@ -87,16 +172,27 @@ typedef double Real;
 // One can solve a subset of these.
 //   If !conserve, then the CDR does not alter the tracer mass, but it does not
 // correct for any failure in mass conservation in the field given to it.
-//   If consistent but !shapepreserve, the the CDR solves the dynamic range
+//   If consistent but !shapepreserve, then the CDR solves the dynamic range
 // preservation problem rather than the local bound preservation problem.
 struct ProblemType {
-  enum : Int { conserve = 1, shapepreserve = 1 << 1, consistent = 1 << 2 };
+  enum : Int {
+    conserve = 1, shapepreserve = 1 << 1, consistent = 1 << 2,
+    // The 'nonnegative' problem type can be combined only with 'conserve'. The
+    // caller can implement nonnegativity when running with 'shapepreserve' or
+    // 'consistent' simply by setting Qm_min = 0. The 'nonnegativity' type is
+    // reserved for a particularly efficient type of problem in which
+    // Qm_{min,max} are not specified.
+    nonnegative = 1 << 3
+  };
 };
 }
 
 #endif
 
 //>> cedr_mpi.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_MPI_HPP
 #define INCLUDE_CEDR_MPI_HPP
 
@@ -188,6 +284,9 @@ private:
 #endif
 
 //>> cedr_util.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_UTIL_HPP
 #define INCLUDE_CEDR_UTIL_HPP
 
@@ -274,12 +373,46 @@ Real reldif(const Real* a, const Real* b, const Int n);
 
 struct FILECloser { void operator() (FILE* fh) { fclose(fh); } };
 
+template <typename T, typename ExeSpace>
+struct RawArrayRaft {
+  typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
+  typedef Kokkos::View<T*, Device> List;
+  
+  RawArrayRaft (T* a, const Int n)
+    : a_(a), n_(n)
+  {
+    a_d_ = List("RawArrayRaft::a_d_", n_);
+    a_h_ = typename List::HostMirror(a_, n_);
+  }
+
+  const List& sync_device () {
+    Kokkos::deep_copy(a_d_, a_h_);
+    return a_d_;
+  }
+
+  T* sync_host () {
+    Kokkos::deep_copy(a_h_, a_d_);
+    return a_;
+  }
+
+  T* device_ptr () { return a_d_.data(); }
+
+private:
+  T* a_;
+  Int n_;
+  List a_d_;
+  typename List::HostMirror a_h_;
+};
+
 }
 }
 
 #endif
 
 //>> cedr_cdr.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_CDR_HPP
 #define INCLUDE_CEDR_CDR_HPP
 
@@ -320,33 +453,40 @@ struct CDR {
   // the index into the local cell.
   //
   //   set_rhom must be called before set_Qm.
+  KOKKOS_FUNCTION
   virtual void set_rhom(
     const Int& lclcellidx, const Int& rhomidx,
     // Current total mass in this cell.
-    const Real& rhom) = 0;
+    const Real& rhom) const = 0;
 
+  KOKKOS_FUNCTION
   virtual void set_Qm(
     const Int& lclcellidx, const Int& tracer_idx,
     // Current tracer mass in this cell.
     const Real& Qm,
-    // Minimum and maximum permitted tracer mass in this cell.
+    // Minimum and maximum permitted tracer mass in this cell. Ignored if
+    // ProblemType is 'nonnegative'.
     const Real& Qm_min, const Real& Qm_max,
     // If mass conservation is requested, provide the previous Qm, which will be
     // summed to give the desired global mass.
-    const Real Qm_prev = std::numeric_limits<Real>::infinity()) = 0;
+    const Real Qm_prev = std::numeric_limits<Real>::infinity()) const = 0;
 
   // Run the QLT algorithm with the values set by set_{rho,Q}. It is an error to
   // call this function from a parallel region.
   virtual void run() = 0;
 
   // Get a cell's tracer mass Qm after the QLT algorithm has run.
-  virtual Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) = 0;
+  KOKKOS_FUNCTION
+  virtual Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const = 0;
 };
 } // namespace cedr
 
 #endif
 
 //>> cedr_qlt.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_QLT_HPP
 #define INCLUDE_CEDR_QLT_HPP
 
@@ -360,6 +500,7 @@ struct CDR {
 #include <list>
 
 //#include "cedr_cdr.hpp"
+//#include "cedr_util.hpp"
 
 namespace cedr {
 // QLT: Quasi-local tree-based non-iterative tracer density reconstructor for
@@ -381,17 +522,17 @@ struct NodeSets {
     // Globally unique identifier; cellidx if leaf node, ie, if nkids == 0.
     Int id;
     // This node's parent, a comm partner, if such a partner is required.
-    const Node* parent;
+    Int parent;
     // This node's kids, comm partners, if such partners are required. Parent
     // and kid nodes are pruned relative to the full tree over the mesh to
     // contain just the nodes that matter to this rank.
     Int nkids;
-    const Node* kids[2];
+    Int kids[2];
     // Offset factor into bulk data. An offset is a unit; actual buffer sizes
     // are multiples of this unit.
     Int offset;
 
-    Node () : rank(-1), id(-1), parent(nullptr), nkids(0), offset(-1) {}
+    Node () : rank(-1), id(-1), parent(-1), nkids(0), offset(-1) {}
   };
 
   // A level in the level schedule that is constructed to orchestrate
@@ -415,10 +556,9 @@ struct NodeSets {
     };
     
     // The nodes in the level.
-    std::vector<Node*> nodes;
+    std::vector<Int> nodes;
     // MPI information for this level.
     std::vector<MPIMetaData> me, kids;
-    // Have to keep requests separate so we can call waitall if we want to.
     mutable std::vector<mpi::Request> me_send_req, me_recv_req, kids_req;
   };
   
@@ -430,16 +570,41 @@ struct NodeSets {
   
   // Allocate a node. The list node_mem_ is the mechanism for memory ownership;
   // node_mem_ isn't used for anything other than owning nodes.
-  Node* alloc () {
-    node_mem_.push_front(Node());
-    return &node_mem_.front();
+  Int alloc () {
+    const Int idx = node_mem_.size();
+    node_mem_.push_back(Node());
+    return idx;
+  }
+
+  Int nnode () const { return node_mem_.size(); }
+
+  Node* node_h (const Int& idx) {
+    cedr_assert(idx >= 0 && idx < static_cast<Int>(node_mem_.size()));
+    return &node_mem_[idx];
+  }
+  const Node* node_h (const Int& idx) const {
+    return const_cast<NodeSets*>(this)->node_h(idx);
   }
 
   void print(std::ostream& os) const;
   
 private:
-  std::list<Node> node_mem_;
+  std::vector<Node> node_mem_;
 };
+
+template <typename ExeSpace>
+struct NodeSetsDeviceData {
+  typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
+  typedef Kokkos::View<Int*, Device> IntList;
+  typedef Kokkos::View<NodeSets::Node*, Device> NodeList;
+
+  NodeList node;
+  // lvl(lvlptr(l):lvlptr(l+1)-1) is the list of node indices into node for
+  // level l.
+  IntList lvl, lvlptr;
+};
+
+typedef impl::NodeSetsDeviceData<Kokkos::DefaultHostExecutionSpace> NodeSetsHostData;
 } // namespace impl
 
 namespace tree {
@@ -451,8 +616,8 @@ struct Node {
   Long cellidx;       // If a leaf, the cell to which this node corresponds.
   Int nkids;          // 0 at leaf, 1 or 2 otherwise.
   Node::Ptr kids[2];
-  void* reserved;     // For internal use.
-  Node () : parent(nullptr), rank(-1), cellidx(-1), nkids(0), reserved(nullptr) {}
+  Int reserved;       // For internal use.
+  Node () : parent(nullptr), rank(-1), cellidx(-1), nkids(0), reserved(-1) {}
 };
 
 // Utility to make a tree over a 1D mesh. For testing, it can be useful to
@@ -499,21 +664,21 @@ public:
 
   // lclcellidx is gci2lci(cellidx).
   KOKKOS_INLINE_FUNCTION
-  void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) override;
+  void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const override;
 
   // lclcellidx is gci2lci(cellidx).
   KOKKOS_INLINE_FUNCTION
   void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
               const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-              const Real Qm_prev = std::numeric_limits<Real>::infinity()) override;
+              const Real Qm_prev = std::numeric_limits<Real>::infinity()) const override;
 
   void run() override;
 
   KOKKOS_INLINE_FUNCTION
-  Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) override;
+  Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
 
 protected:
-  typedef Kokkos::View<Int*, Kokkos::LayoutLeft, Device> IntList;
+  typedef Kokkos::View<Int*, Device> IntList;
   typedef cedr::impl::Const<IntList> ConstIntList;
   typedef cedr::impl::ConstUnmanaged<IntList> ConstUnmanagedIntList;
 
@@ -525,8 +690,9 @@ protected:
     std::vector<int> trcr2prob;
   };
 
+PROTECTED_CUDA:
   struct MetaData {
-    enum : Int { nprobtypes = 4 };
+    enum : Int { nprobtypes = 6 };
 
     template <typename IntListT>
     struct Arrays {
@@ -549,37 +715,36 @@ protected:
       IntListT trcr2br2l;
     };
 
-    static int get_problem_type(const int& idx);
+    KOKKOS_INLINE_FUNCTION static int get_problem_type(const int& idx);
     
     // icpc doesn't let us use problem_type_ here, even though it's constexpr.
     static int get_problem_type_idx(const int& mask);
 
-    static int get_problem_type_l2r_bulk_size(const int& mask);
+    KOKKOS_INLINE_FUNCTION static int get_problem_type_l2r_bulk_size(const int& mask);
 
     static int get_problem_type_r2l_bulk_size(const int& mask);
 
     struct CPT {
-      // We could make the l2r buffer smaller by one entry, Qm. However, the
-      // l2r comm is more efficient if it's done with one buffer. Similarly,
-      // we separate the r2l data into a separate buffer for packing and MPI
-      // efficiency.
-      //   There are 7 possible problems.
       //   The only problem not supported is conservation alone. It makes very
       // little sense to use QLT for conservation alone.
-      //   The remaining 6 fall into 4 categories of details. These 4 categories
-      // are tracked by QLT; which of the original 6 problems being solved is
-      // not important.
+      //   The remaining problems fall into 6 categories of details. These
+      // categories are tracked by QLT; which of the original problems being
+      // solved is not important.
       enum {
-        // l2r: rhom, (Qm_min, Qm, Qm_max)*; l2r, r2l: Qm*
+        // l2r: rhom, (Qm_min, Qm, Qm_max)*; r2l: Qm*
         s  = ProblemType::shapepreserve,
         st = ProblemType::shapepreserve | ProblemType::consistent,
-        // l2r: rhom, (Qm_min, Qm, Qm_max, Qm_prev)*; l2r, r2l: Qm*
+        // l2r: rhom, (Qm_min, Qm, Qm_max, Qm_prev)*; r2l: Qm*
         cs  = ProblemType::conserve | s,
         cst = ProblemType::conserve | st,
-        // l2r: rhom, (q_min, Qm, q_max)*; l2r, r2l: Qm*
+        // l2r: rhom, (q_min, Qm, q_max)*; r2l: (Qm, q_min, q_max)*
         t = ProblemType::consistent,
-        // l2r: rhom, (q_min, Qm, q_max, Qm_prev)*; l2r, r2l: Qm*
-        ct = ProblemType::conserve | t
+        // l2r: rhom, (q_min, Qm, q_max, Qm_prev)*; r2l: (Qm, q_min, q_max)*
+        ct = ProblemType::conserve | t,
+        // l2r: rhom, Qm*; r2l: Qm*
+        nn = ProblemType::nonnegative,
+        // l2r: rhom, (Qm, Qm_prev)*; r2l: Qm*
+        cnn = ProblemType::conserve | nn
       };
     };
 
@@ -589,13 +754,12 @@ protected:
     void init(const MetaDataBuilder& mdb);
 
   private:
-    static constexpr Int problem_type_[] = { CPT::st, CPT::cst, CPT::t, CPT::ct };
     Arrays<typename IntList::HostMirror> a_h_;
     Arrays<IntList> a_d_;
   };
 
   struct BulkData {
-    typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
+    typedef Kokkos::View<Real*, Device> RealList;
     typedef cedr::impl::Unmanaged<RealList> UnmanagedRealList;
 
     UnmanagedRealList l2r_data, r2l_data;
@@ -611,23 +775,32 @@ protected:
 
   void init_ordinals();
 
-  KOKKOS_INLINE_FUNCTION
-  static void solve_node_problem(const Int problem_type,
-                                 const Real& rhom, const Real* pd, const Real& Qm,
-                                 const Real& rhom0, const Real* k0d, Real& Qm0,
-                                 const Real& rhom1, const Real* k1d, Real& Qm1);
-
+  /// Pointer data for initialization and host computation.
   Parallel::Ptr p_;
   // Tree and communication topology.
   std::shared_ptr<const impl::NodeSets> ns_;
+  // Data extracted from ns_ for use in run() on device.
+  std::shared_ptr<impl::NodeSetsDeviceData<ExeSpace> > nsdd_;
+  std::shared_ptr<impl::NodeSetsHostData> nshd_;
   // Globally unique cellidx -> rank-local index.
-  std::map<Int,Int> gci2lci_;
+  typedef std::map<Int,Int> Gci2LciMap;
+  std::shared_ptr<Gci2LciMap> gci2lci_;
   // Temporary to collect caller's tracer information prior to calling
   // end_tracer_declarations().
   typename MetaDataBuilder::Ptr mdb_;
+  /// View data for host and device computation.
   // Constructed in end_tracer_declarations().
   MetaData md_;
   BulkData bd_;
+
+PRIVATE_CUDA:
+  void l2r_recv(const impl::NodeSets::Level& lvl, const Int& l2rndps) const;
+  void l2r_combine_kid_data(const Int& lvlidx, const Int& l2rndps) const;
+  void l2r_send_to_parents(const impl::NodeSets::Level& lvl, const Int& l2rndps) const;
+  void root_compute(const Int& l2rndps, const Int& r2lndps) const;
+  void r2l_recv(const impl::NodeSets::Level& lvl, const Int& r2lndps) const;
+  void r2l_solve_qp(const Int& lvlidx, const Int& l2rndps, const Int& r2lndps) const;
+  void r2l_send_to_kids(const impl::NodeSets::Level& lvl, const Int& r2lndps) const;
 };
 
 namespace test {
@@ -657,6 +830,9 @@ Int test_qlt(const Parallel::Ptr& p, const tree::Node::Ptr& tree, const Int& nce
 #endif
 
 //>> cedr_caas.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_CAAS_HPP
 #define INCLUDE_CEDR_CAAS_HPP
 
@@ -701,17 +877,17 @@ public:
 
   // lclcellidx is trivial; it is the user's index for the cell.
   KOKKOS_INLINE_FUNCTION
-  void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) override;
+  void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const override;
 
   KOKKOS_INLINE_FUNCTION
   void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
               const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-              const Real Qm_prev = std::numeric_limits<Real>::infinity()) override;
+              const Real Qm_prev = std::numeric_limits<Real>::infinity()) const override;
 
   void run() override;
 
   KOKKOS_INLINE_FUNCTION
-  Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) override;
+  Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
 
 protected:
   typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
@@ -732,10 +908,13 @@ protected:
   std::shared_ptr<std::vector<Decl> > tracer_decls_;
   bool need_conserve_;
   IntList probs_, t2r_;
+  typename IntList::HostMirror probs_h_;
   RealList d_, send_, recv_;
 
-  void reduce_locally();
   void reduce_globally();
+
+PRIVATE_CUDA:
+  void reduce_locally();
   void finish_locally();
 };
 
@@ -750,6 +929,9 @@ Int unittest(const mpi::Parallel::Ptr& p);
 #endif
 
 //>> cedr_caas_inl.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_CAAS_INL_HPP
 #define INCLUDE_CEDR_CAAS_INL_HPP
 
@@ -760,7 +942,8 @@ namespace cedr {
 namespace caas {
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-void CAAS<ES>::set_rhom (const Int& lclcellidx, const Int& rhomidx, const Real& rhom) {
+void CAAS<ES>::set_rhom (const Int& lclcellidx, const Int& rhomidx,
+                         const Real& rhom) const {
   cedr_kernel_assert(lclcellidx >= 0 && lclcellidx < nlclcells_);
   cedr_kernel_assert(rhomidx >= 0 && rhomidx < nrhomidxs_);
   d_(lclcellidx) = rhom;
@@ -770,7 +953,7 @@ template <typename ES> KOKKOS_INLINE_FUNCTION
 void CAAS<ES>
 ::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
           const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-          const Real Qm_prev) {
+          const Real Qm_prev) const {
   cedr_kernel_assert(lclcellidx >= 0 && lclcellidx < nlclcells_);
   cedr_kernel_assert(tracer_idx >= 0 && tracer_idx < probs_.extent_int(0));
   const Int nt = probs_.size();
@@ -782,7 +965,7 @@ void CAAS<ES>
 }
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-Real CAAS<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) {
+Real CAAS<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) const {
   cedr_kernel_assert(lclcellidx >= 0 && lclcellidx < nlclcells_);
   cedr_kernel_assert(tracer_idx >= 0 && tracer_idx < probs_.extent_int(0));
   return d_((1 + tracer_idx)*nlclcells_ + lclcellidx);
@@ -794,6 +977,9 @@ Real CAAS<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) {
 #endif
 
 //>> cedr_local.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_LOCAL_HPP
 #define INCLUDE_CEDR_LOCAL_HPP
 
@@ -803,14 +989,16 @@ Real CAAS<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) {
 namespace cedr {
 namespace local {
 
-// Solve
-//     min_x sum_i w(i) (x(i) - y(i))^2
-//      st   a' x = b
+// The following routines solve
+//     min_x norm(x - y; w)
+//      st   a'x = b
 //           xlo <= x <= xhi,
-// a(i), w(i) > 0. Return 0 on success and x == y, 1 on success and x != y, -1
-// if infeasible, -2 if max_its hit with no solution. See Section 3 of Bochev,
-// Ridzal, Shashkov, Fast optimization-based conservative remap of scalar fields
-// through aggregate mass transfer. lambda is used in check_1eq_bc_qp_foc.
+// a > 0, w > 0.
+
+// Minimize the weighted 2-norm. Return 0 on success and x == y, 1 on success
+// and x != y, -1 if infeasible, -2 if max_its hit with no solution. See section
+// 3 of Bochev, Ridzal, Shashkov, Fast optimization-based conservative remap of
+// scalar fields through aggregate mass transfer.
 KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp(const Int n, const Real* w, const Real* a, const Real b,
                     const Real* xlo, const Real* xhi,
@@ -821,22 +1009,38 @@ Int solve_1eq_bc_qp_2d(const Real* w, const Real* a, const Real b,
                        const Real* xlo, const Real* xhi,
                        const Real* y, Real* x);
 
-// ClipAndAssuredSum. Does not check for feasibility.
+// ClipAndAssuredSum. Minimize the 1-norm with w = 1s. Does not check for
+// feasibility.
 KOKKOS_INLINE_FUNCTION
 void caas(const Int n, const Real* a, const Real b,
           const Real* xlo, const Real* xhi,
           const Real* y, Real* x);
 
+struct Method { enum Enum { least_squares, caas }; };
+
+// Solve
+//     min_x norm(x - y; w)
+//      st   a'x = b
+//           x >= 0,
+// a, w > 0. Return 0 on success and x == y, 1 on success and x != y, -1 if
+// infeasible. w is used only if lcl_method = least_squares.
+KOKKOS_INLINE_FUNCTION
+Int solve_1eq_nonneg(const Int n, const Real* a, const Real b, const Real* y, Real* x,
+                     const Real* w, const Method::Enum lcl_method);
+
 Int unittest();
 
-}
-}
+} // namespace local
+} // namespace cedr
 
 //#include "cedr_local_inl.hpp"
 
 #endif
 
 //>> cedr_mpi_inl.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_MPI_INL_HPP
 #define INCLUDE_CEDR_MPI_INL_HPP
 
@@ -904,6 +1108,9 @@ int gatherv (const Parallel& p, const T* sendbuf, int sendcount,
 #endif
 
 //>> cedr_local_inl.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_LOCAL_INL_HPP
 #define INCLUDE_CEDR_LOCAL_INL_HPP
 
@@ -916,7 +1123,7 @@ namespace impl {
 KOKKOS_INLINE_FUNCTION
 Real calc_r_tol (const Real b, const Real* a, const Real* y, const Int n) {
   Real ab = std::abs(b);
-  for (Int i = 0; i < n; ++i) ab = std::max(ab, std::abs(a[i]*y[i]));
+  for (Int i = 0; i < n; ++i) ab = cedr::impl::max(ab, std::abs(a[i]*y[i]));
   return 1e1*std::numeric_limits<Real>::epsilon()*std::abs(ab);
 }
 
@@ -924,9 +1131,8 @@ Real calc_r_tol (const Real b, const Real* a, const Real* y, const Int n) {
 // on a common case. Return -1 if infeasible, 1 if a corner is a solution, 0 if
 // feasible and a corner is not.
 KOKKOS_INLINE_FUNCTION
-Int check_lu (const Int n, const Real* a, const Real& b,
-              const Real* xlo, const Real* xhi, const Real* y, const Real& r_tol,
-              Real* x) {
+Int check_lu (const Int n, const Real* a, const Real& b, const Real* xlo,
+              const Real* xhi, const Real& r_tol, Real* x) {
   Real r = -b;
   for (Int i = 0; i < n; ++i) {
     x[i] = xlo[i];
@@ -974,7 +1180,7 @@ Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
                         const Real* xlo, const Real* xhi, 
                         const Real* y, Real* x) {
   const Real r_tol = impl::calc_r_tol(b, a, y, 2);
-  Int info = impl::check_lu(2, a, b, xlo, xhi, y, r_tol, x);
+  Int info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
   if (info != 0) return info;
 
   { // Check if the optimal point ignoring bound constraints is in bounds.
@@ -1058,7 +1264,7 @@ Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
     x[1] = x_base[1] + alpha*x_dir[1];
     clipidx = 1;
     break;
-  default: cedr_assert(0); info = -2;
+  default: cedr_kernel_assert(0); info = -2;
   }
   x[clipidx] = cedr::impl::min(xhi[clipidx], cedr::impl::max(xlo[clipidx], x[clipidx]));
   return info;
@@ -1069,7 +1275,7 @@ Int solve_1eq_bc_qp (const Int n, const Real* w, const Real* a, const Real b,
                      const Real* xlo, const Real* xhi, const Real* y, Real* x,
                      const Int max_its) {
   const Real r_tol = impl::calc_r_tol(b, a, y, n);
-  Int info = impl::check_lu(n, a, b, xlo, xhi, y, r_tol, x);
+  Int info = impl::check_lu(n, a, b, xlo, xhi, r_tol, x);
   if (info != 0) return info;
 
   for (int i = 0; i < n; ++i)
@@ -1203,12 +1409,39 @@ void caas (const Int n, const Real* a, const Real b,
     x[i] = cedr::impl::max(xlo[i], cedr::impl::min(xhi[i], x[i]));
 }
 
+KOKKOS_INLINE_FUNCTION
+Int solve_1eq_nonneg (const Int n, const Real* a, const Real b, const Real* y, Real* x,
+                      const Real* w,  const Method::Enum method) {
+  cedr_kernel_assert(n <= 16);
+  if (b < 0) return -1;
+
+  const Real zero[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  // Set the upper bound to the value that implies that just one slot gets all
+  // of the mass.
+  Real xhi[16];
+  for (int i = 0; i < n; ++i)
+    xhi[i] = b/a[i];
+
+  if (method == Method::caas) {
+    caas(n, a, b, zero, xhi, y, x);
+    return 1;
+  } else {
+    if (n == 2)
+      return solve_1eq_bc_qp_2d(w, a, b, zero, xhi, y, x);
+    else
+      return solve_1eq_bc_qp(n, w, a, b, zero, xhi, y, x);
+  }
+}
+
 } // namespace local
 } // namespace cedr
 
 #endif
 
 //>> cedr_qlt_inl.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_QLT_INL_HPP
 #define INCLUDE_CEDR_QLT_INL_HPP
 
@@ -1220,7 +1453,8 @@ namespace cedr {
 namespace qlt {
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-void QLT<ES>::set_rhom (const Int& lclcellidx, const Int& rhomidx, const Real& rhom) {
+void QLT<ES>::set_rhom (const Int& lclcellidx, const Int& rhomidx,
+                        const Real& rhom) const {
   const Int ndps = md_.a_d.prob2bl2r[md_.nprobtypes];
   bd_.l2r_data(ndps*lclcellidx) = rhom;  
 }
@@ -1229,35 +1463,42 @@ template <typename ES> KOKKOS_INLINE_FUNCTION
 void QLT<ES>::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
                       const Real& Qm,
                       const Real& Qm_min, const Real& Qm_max,
-                      const Real Qm_prev) {
+                      const Real Qm_prev) const {
   const Int ndps = md_.a_d.prob2bl2r[md_.nprobtypes];
   Real* bd; {
     const Int bdi = md_.a_d.trcr2bl2r(tracer_idx);
     bd = &bd_.l2r_data(ndps*lclcellidx + bdi);
   }
-  bd[1] = Qm;
   {
     const Int problem_type = md_.a_d.trcr2prob(tracer_idx);
+    Int next = 0;
     if (problem_type & ProblemType::shapepreserve) {
       bd[0] = Qm_min;
+      bd[1] = Qm;
       bd[2] = Qm_max;
+      next = 3;
     } else if (problem_type & ProblemType::consistent) {
       const Real rhom = bd_.l2r_data(ndps*lclcellidx);
       bd[0] = Qm_min / rhom;
+      bd[1] = Qm;
       bd[2] = Qm_max / rhom;
+      next = 3;
+    } else if (problem_type & ProblemType::nonnegative) {
+      bd[0] = Qm;
+      next = 1;
     } else {
       cedr_kernel_throw_if(true, "set_Q: invalid problem_type.");
     }
     if (problem_type & ProblemType::conserve) {
       cedr_kernel_throw_if(Qm_prev == std::numeric_limits<Real>::infinity(),
                            "Qm_prev was not provided to set_Q.");
-      bd[3] = Qm_prev;
+      bd[next] = Qm_prev;
     }
   }
 }
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-Real QLT<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) {
+Real QLT<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) const {
   const Int ndps = md_.a_d.prob2br2l[md_.nprobtypes];
   const Int bdi = md_.a_d.trcr2br2l(tracer_idx);
   return bd_.r2l_data(ndps*lclcellidx + bdi);
@@ -1315,7 +1556,7 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
       // If the discrepancy is numerical noise, don't act on it.
       const Real tol = 10*std::numeric_limits<Real>::epsilon();
       const Real discrepancy = lo ? Qm_min - Qm : Qm - Qm_max;
-      if (discrepancy > tol*Qm_max) {
+      if (discrepancy > tol*(Qm_max - Qm_min)) {
         const Real rhom_kids[] = {rhom0, rhom1};
         r2l_nl_adjust_bounds(lo ? Qm_min_kids : Qm_max_kids,
                              rhom_kids,
@@ -1341,37 +1582,51 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
   { // Solve the node's QP.
     static const Real ones[] = {1, 1};
     const Real w[] = {1/rhom0, 1/rhom1};
-    Real Qm_kids[2] = {k0d[1], k1d[1]};
+    Real Qm_kids[] = {k0d[1], k1d[1]};
     local::solve_1eq_bc_qp_2d(w, ones, Qm, Qm_min_kids, Qm_max_kids,
                               Qm_orig_kids, Qm_kids);
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   }
 }
-} // namespace impl
 
-template <typename ES> KOKKOS_INLINE_FUNCTION
-void QLT<ES>::solve_node_problem (const Int problem_type,
-                                  const Real& rhom, const Real* pd, const Real& Qm,
-                                  const Real& rhom0, const Real* k0d, Real& Qm0,
-                                  const Real& rhom1, const Real* k1d, Real& Qm1) {
-  if ( ! (problem_type & ProblemType::shapepreserve)) {      
+KOKKOS_INLINE_FUNCTION
+void solve_node_problem (const Int problem_type,
+                         const Real& rhom, const Real* pd, const Real& Qm,
+                         const Real& rhom0, const Real* k0d, Real& Qm0,
+                         const Real& rhom1, const Real* k1d, Real& Qm1) {
+  if ((problem_type & ProblemType::consistent) &&
+      ! (problem_type & ProblemType::shapepreserve)) {      
     Real mpd[3], mk0d[3], mk1d[3];
     mpd[0]  = pd [0]*rhom ; mpd [1] = pd[1] ; mpd [2] = pd [2]*rhom ;
     mk0d[0] = k0d[0]*rhom0; mk0d[1] = k0d[1]; mk0d[2] = k0d[2]*rhom0;
     mk1d[0] = k1d[0]*rhom1; mk1d[1] = k1d[1]; mk1d[2] = k1d[2]*rhom1;
-    impl::solve_node_problem(rhom, mpd, Qm, rhom0, mk0d, Qm0, rhom1, mk1d, Qm1);
+    solve_node_problem(rhom, mpd, Qm, rhom0, mk0d, Qm0, rhom1, mk1d, Qm1);
     return;
+  } else if (problem_type & ProblemType::nonnegative) {
+    static const Real ones[] = {1, 1};
+    const Real w[] = {1/rhom0, 1/rhom1};
+    Real Qm_orig_kids[] = {k0d[0], k1d[0]};
+    Real Qm_kids[2] = {k0d[0], k1d[0]};
+    local::solve_1eq_nonneg(2, ones, Qm, Qm_orig_kids, Qm_kids, w,
+                            local::Method::least_squares);
+    Qm0 = Qm_kids[0];
+    Qm1 = Qm_kids[1];
+  } else {
+    solve_node_problem(rhom, pd, Qm, rhom0, k0d, Qm0, rhom1, k1d, Qm1);
   }
-  impl::solve_node_problem(rhom, pd, Qm, rhom0, k0d, Qm0, rhom1, k1d, Qm1);
 }
 
+} // namespace impl
 } // namespace qlt
 } // namespace cedr
 
 #endif
 
 //>> cedr_test_randomized.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_TEST_RANDOMIZED_HPP
 #define INCLUDE_CEDR_TEST_RANDOMIZED_HPP
 
@@ -1390,6 +1645,7 @@ public:
   // The subclass should call this, probably in its constructor.
   void init();
 
+  template <typename CDRT, typename ExeSpace = Kokkos::DefaultExecutionSpace>
   Int run(const Int nrepeat = 1, const bool write=false);
 
 private:
@@ -1413,30 +1669,49 @@ protected:
     {}
   };
 
-  struct Values {
-    Values (const Int ntracers, const Int ncells)
-      : ncells_(ncells), v_((4*ntracers + 1)*ncells)
-    {}
+  struct ValuesPartition {
     Int ncells () const { return ncells_; }
-    Real* rhom () { return v_.data(); }
-    Real* Qm_min  (const Int& ti) { return v_.data() + ncells_*(1 + 4*ti    ); }
-    Real* Qm      (const Int& ti) { return v_.data() + ncells_*(1 + 4*ti + 1); }
-    Real* Qm_max  (const Int& ti) { return v_.data() + ncells_*(1 + 4*ti + 2); }
-    Real* Qm_prev (const Int& ti) { return v_.data() + ncells_*(1 + 4*ti + 3); }
-    const Real* rhom () const { return const_cast<Values*>(this)->rhom(); }
-    const Real* Qm_min  (const Int& ti) const
-    { return const_cast<Values*>(this)->Qm_min (ti); }
-    const Real* Qm      (const Int& ti) const
-    { return const_cast<Values*>(this)->Qm     (ti); }
-    const Real* Qm_max  (const Int& ti) const
-    { return const_cast<Values*>(this)->Qm_max (ti); }
-    const Real* Qm_prev (const Int& ti) const
-    { return const_cast<Values*>(this)->Qm_prev(ti); }
+    KIF Real* rhom () const { return v_; }
+    KIF Real* Qm_min  (const Int& ti) const { return v_ + ncells_*(1 + 4*ti    ); }
+    KIF Real* Qm      (const Int& ti) const { return v_ + ncells_*(1 + 4*ti + 1); }
+    KIF Real* Qm_max  (const Int& ti) const { return v_ + ncells_*(1 + 4*ti + 2); }
+    KIF Real* Qm_prev (const Int& ti) const { return v_ + ncells_*(1 + 4*ti + 3); }
+  protected:
+    void init (const Int ncells, Real* v) {
+      ncells_ = ncells;
+      v_ = v;
+    }
   private:
     Int ncells_;
+    Real* v_;
+  };
+
+  struct Values : public ValuesPartition {
+    Values (const Int ntracers, const Int ncells)
+      : v_((4*ntracers + 1)*ncells)
+    { init(ncells, v_.data()); }
+    Real* data () { return v_.data(); }
+    size_t size () const { return v_.size(); }
+  private:
     std::vector<Real> v_;
   };
 
+PRIVATE_CUDA:
+  template <typename ExeSpace>
+  struct ValuesDevice : public ValuesPartition {
+    // This Values object is the source of data and gets updated by sync_host.
+    ValuesDevice (Values& v)
+      : rar_(v.data(), v.size())
+    { init(v.ncells(), rar_.device_ptr()); }
+    // Values -> device.
+    void sync_device () { rar_.sync_device(); }
+    // Update Values from device.
+    void sync_host () { rar_.sync_host(); }
+  private:
+    util::RawArrayRaft<Real, ExeSpace> rar_;
+  };
+
+protected:
   // For solution output, if requested.
   struct Writer {
     std::unique_ptr<FILE, cedr::util::FILECloser> fh;
@@ -1499,9 +1774,85 @@ private:
 } // namespace test
 } // namespace cedr
 
+//#include "cedr_test_randomized_inl.hpp"
+
+#endif
+
+//>> cedr_test_randomized_inl.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
+#ifndef INCLUDE_CEDR_TEST_RANDOMIZED_INL_HPP
+#define INCLUDE_CEDR_TEST_RANDOMIZED_INL_HPP
+
+//#include "cedr_test_randomized.hpp"
+
+namespace cedr {
+namespace test {
+
+template <typename CDRT, typename ExeSpace>
+Int TestRandomized::run (const Int nrepeat, const bool write) {
+  const Int nt = tracers_.size(), nlclcells = gcis_.size();
+
+  Values v(nt, nlclcells);
+  generate_rho(v);
+  for (const auto& t : tracers_) {
+    generate_Q(t, v);
+    perturb_Q(t, v);
+  }
+
+  if (write)
+    for (const auto& t : tracers_)
+      write_pre(t, v);
+
+  CDRT cdr = static_cast<CDRT&>(get_cdr());
+  ValuesDevice<ExeSpace> vd(v);
+  vd.sync_device();
+
+  {
+    const auto rhom = vd.rhom();
+    const auto set_rhom = KOKKOS_LAMBDA (const Int& i) {
+      cdr.set_rhom(i, 0, rhom[i]);
+    };
+    Kokkos::parallel_for(nlclcells, set_rhom);
+  }
+  // repeat > 1 runs the same values repeatedly for performance
+  // meaurement.
+  for (Int trial = 0; trial <= nrepeat; ++trial) {
+    const auto set_Qm = KOKKOS_LAMBDA (const Int& j) {
+      const auto ti = j / nlclcells;
+      const auto i = j % nlclcells;
+      cdr.set_Qm(i, ti, vd.Qm(ti)[i], vd.Qm_min(ti)[i], vd.Qm_max(ti)[i],
+                 vd.Qm_prev(ti)[i]);
+    };
+    Kokkos::parallel_for(nt*nlclcells, set_Qm);
+    run_impl(trial);
+  }
+  {
+    const auto get_Qm = KOKKOS_LAMBDA (const Int& j) {
+      const auto ti = j / nlclcells;
+      const auto i = j % nlclcells;
+      vd.Qm(ti)[i] = cdr.get_Qm(i, ti);
+    };
+    Kokkos::parallel_for(nt*nlclcells, get_Qm);
+  }
+  vd.sync_host(); // => v contains computed values
+
+  if (write)
+    for (const auto& t : tracers_)
+      write_post(t, v);
+  return check(cdr_name_, *p_, tracers_, v);
+}
+
+} // namespace test
+} // namespace cedr
+
 #endif
 
 //>> cedr_test.hpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 #ifndef INCLUDE_CEDR_TEST_HPP
 #define INCLUDE_CEDR_TEST_HPP
 
@@ -1526,6 +1877,9 @@ Int run(const mpi::Parallel::Ptr& p, const Input& in);
 #endif
 
 //>> cedr_util.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_util.hpp"
 
 namespace cedr {
@@ -1551,6 +1905,9 @@ Real reldif (const Real* a, const Real* b, const Int n) {
 }
 
 //>> cedr_local.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_local.hpp"
 //#include "cedr_local_inl.hpp"
 
@@ -1645,9 +2002,8 @@ bool check_1eq_bc_qp_foc (
     os << "label: " << label << "\n";
   return ok;
 }
-} // namespace test
 
-Int unittest () {
+Int test_1eq_bc_qp () {
   bool verbose = true;
   Int nerr = 0;
 
@@ -1752,7 +2108,7 @@ Int unittest () {
       b += a[i]*y[i];
   };
 
-  for (n = 2; n <= 16; ++n) {
+  for (n = 2; n <= N; ++n) {
     const Int count = n == 2 ? 100 : 10;
     for (Int i = 0; i < count; ++i) {
       gena();
@@ -1772,10 +2128,85 @@ Int unittest () {
   return  nerr;
 }
 
-}
+Int test_1eq_nonneg () {
+  using cedr::util::urand;
+  using cedr::util::reldif;
+
+  bool verbose = true;
+  Int nerr = 0;
+
+  Int n;
+  static const Int N = 16;
+  Real w[N], a[N], b, xlo[N], xhi[N], y[N], x_ls[N], x_caas[N], x1_ls[N], x1_caas[N];
+
+  for (n = 2; n <= 2; ++n) {
+    const Int count = 20;
+    for (Int trial = 0; trial < count; ++trial) {
+      b = 0.5*n*urand();
+      for (Int i = 0; i < n; ++i) {
+        w[i] = 0.1 + urand();
+        a[i] = 0.1 + urand();
+        xlo[i] = 0;
+        xhi[i] = b/a[i];
+        y[i] = urand();
+        if (urand() > 0.8) y[i] *= -1;
+        x1_caas[i] = urand() > 0.5 ? y[i] : -1;
+        x1_ls[i] = urand() > 0.5 ? y[i] : -1;
+      }
+      solve_1eq_nonneg(n, a, b, y, x1_caas, w, Method::caas);
+      caas(n, a, b, xlo, xhi, y, x_caas);
+      solve_1eq_nonneg(n, a, b, y, x1_ls, w, Method::least_squares);
+      solve_1eq_bc_qp(n, w, a, b, xlo, xhi, y, x_ls);
+      const Real rd_caas = reldif(x_caas, x1_caas, 2);
+      const Real rd_ls = reldif(x_ls, x1_ls, 2);
+      if (rd_ls > 1e1*std::numeric_limits<Real>::epsilon() ||
+          rd_caas > 1e1*std::numeric_limits<Real>::epsilon()) {
+        pr(puf(rd_ls) pu(rd_caas));
+        if (verbose) {
+          using cedr::util::prarr;
+          prarr("w", w, n);
+          prarr("a", a, n);
+          prarr("xhi", xhi, n);
+          prarr("y", y, n);
+          prarr("x_ls", x_ls, n);
+          prarr("x1_ls", x1_ls, n);
+          prarr("x_caas", x_caas, n);
+          prarr("x1_caas", x1_caas, n);
+          prc(b);
+          Real mass = 0;
+          for (Int i = 0; i < n; ++i) mass += a[i]*x_ls[i];
+          prc(mass);
+          mass = 0;
+          for (Int i = 0; i < n; ++i) mass += a[i]*x_ls[i];
+          prc(mass);
+          mass = 0;
+          for (Int i = 0; i < n; ++i) mass += a[i]*x_caas[i];
+          prc(mass);
+        }
+        ++nerr;
+      }
+    }
+  }
+
+  return nerr;
 }
 
+} // namespace test
+
+Int unittest () {
+  Int nerr = 0;
+  nerr += test::test_1eq_bc_qp();
+  nerr += test::test_1eq_nonneg();
+  return nerr;
+}
+
+} // namespace local
+} // namespace cedr
+
 //>> cedr_mpi.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_mpi.hpp"
 //#include "cedr_util.hpp"
 
@@ -1862,6 +2293,9 @@ bool all_ok (const Parallel& p, bool im_ok) {
 } // namespace cedr
 
 //>> cedr_qlt.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_qlt.hpp"
 //#include "cedr_test_randomized.hpp"
 
@@ -1882,7 +2316,7 @@ public:
   enum Op { tree, analyze, qltrun, qltrunl2r, qltrunr2l, snp, waitall,
             total, NTIMERS };
   static inline void init () {
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
     for (int i = 0; i < NTIMERS; ++i) {
       et_[i] = 0;
       cnt_[i] = 0;
@@ -1890,19 +2324,19 @@ public:
 #endif
   }
   static inline void reset (const Op op) {
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
     et_[op] = 0;
     cnt_[op] = 0;
 #endif
   }
   static inline void start (const Op op) {
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
     gettimeofday(&t_start_[op], 0);
     ++cnt_[op];
 #endif
   }
   static inline void stop (const Op op) {
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
     timeval t2;
     gettimeofday(&t2, 0);
     const timeval& t1 = t_start_[op];
@@ -1915,7 +2349,7 @@ public:
            #op, et_[op], 100*et_[op]/tot, cnt_[op], et_[op]/cnt_[op]);  \
   } while (0)
   static void print () {
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
     const double tot = et_[total];
     tpr(tree); tpr(analyze);
     tpr(qltrun); tpr(qltrunl2r); tpr(qltrunr2l); tpr(snp); tpr(waitall);
@@ -1924,13 +2358,13 @@ public:
   }
 #undef tpr
 private:
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
   static timeval t_start_[NTIMERS];
   static double et_[NTIMERS];
   static int cnt_[NTIMERS];
 #endif
 };
-#ifdef QLT_TIME
+#ifdef COMPOSE_QLT_TIME
 timeval Timer::t_start_[Timer::NTIMERS];
 double Timer::et_[Timer::NTIMERS];
 int Timer::cnt_[Timer::NTIMERS];
@@ -1940,7 +2374,7 @@ namespace impl {
 void NodeSets::print (std::ostream& os) const {
   std::stringstream ss;
   if (levels.empty()) return;
-  const Int myrank = levels[0].nodes[0]->rank;
+  const Int myrank = node_h(levels[0].nodes[0])->rank;
   ss << "pid " << myrank << ":";
   ss << " #levels " << levels.size();
   for (size_t i = 0; i < levels.size(); ++i) {
@@ -1948,12 +2382,12 @@ void NodeSets::print (std::ostream& os) const {
     ss << "\n  " << i << ": " << lvl.nodes.size();
     std::set<Int> ps, ks;
     for (size_t j = 0; j < lvl.nodes.size(); ++j) {
-      const auto n = lvl.nodes[j];
+      const auto n = node_h(lvl.nodes[j]);
       for (Int k = 0; k < n->nkids; ++k)
-        if (n->kids[k]->rank != myrank)
-          ks.insert(n->kids[k]->rank);
-      if (n->parent && n->parent->rank != myrank)
-        ps.insert(n->parent->rank);
+        if (node_h(n->kids[k])->rank != myrank)
+          ks.insert(node_h(n->kids[k])->rank);
+      if (n->parent >= 0 && node_h(n->parent)->rank != myrank)
+        ps.insert(node_h(n->parent)->rank);
     }
     ss << " |";
     for (const auto& e : ks) ss << " " << e;
@@ -1967,7 +2401,7 @@ void NodeSets::print (std::ostream& os) const {
 
 // Find tree depth, assign ranks to non-leaf nodes, and init 'reserved'.
 Int init_tree (const Int& my_rank, const tree::Node::Ptr& node, Int& id) {
-  node->reserved = nullptr;
+  node->reserved = -1;
   Int depth = 0;
   for (Int i = 0; i < node->nkids; ++i) {
     cedr_assert(node.get() == node->kids[i]->parent);
@@ -1977,7 +2411,7 @@ Int init_tree (const Int& my_rank, const tree::Node::Ptr& node, Int& id) {
     node->rank = node->kids[0]->rank;
     node->cellidx = id++;
   } else {
-    cedr_throw_if(node->rank == my_rank && node->cellidx < 0 || node->cellidx >= id,
+    cedr_throw_if(node->rank == my_rank && (node->cellidx < 0 || node->cellidx >= id),
                   "cellidx is " << node->cellidx << " but should be between " <<
                   0 << " and " << id);
   }
@@ -2004,36 +2438,38 @@ void level_schedule_and_collect (
   const bool node_is_owned = node->rank == my_rank;
   need_parent_ns_node = node_is_owned;
   if (node_is_owned || make_ns_node) {
-    cedr_assert( ! node->reserved);
-    NodeSets::Node* ns_node = ns.alloc();
+    cedr_assert(node->reserved == -1);
+    const auto ns_node_idx = ns.alloc();
     // Levels hold only owned nodes.
-    if (node_is_owned) ns.levels[level].nodes.push_back(ns_node);
-    node->reserved = ns_node;
+    if (node_is_owned) ns.levels[level].nodes.push_back(ns_node_idx);
+    node->reserved = ns_node_idx;
+    NodeSets::Node* ns_node = ns.node_h(ns_node_idx);
     ns_node->rank = node->rank;
     ns_node->id = node->cellidx;
-    ns_node->parent = nullptr;
     if (node_is_owned) {
       // If this node is owned, it needs to have information about all kids.
       ns_node->nkids = node->nkids;
       for (Int i = 0; i < node->nkids; ++i) {
         const auto& kid = node->kids[i];
-        if ( ! kid->reserved) {
+        if (kid->reserved == -1) {
           // This kid isn't owned by this rank. But need it for irecv.
-          NodeSets::Node* ns_kid;
-          kid->reserved = ns_kid = ns.alloc();
-          ns_node->kids[i] = ns_kid;
+          const auto ns_kid_idx = ns.alloc();
+          NodeSets::Node* ns_kid = ns.node_h(ns_kid_idx);
+          kid->reserved = ns_kid_idx;
+          ns_node = ns.node_h(ns_node_idx);
+          ns_node->kids[i] = ns_kid_idx;
           cedr_assert(kid->rank != my_rank);
           ns_kid->rank = kid->rank;
           ns_kid->id = kid->cellidx;
-          ns_kid->parent = nullptr; // Not needed.
           // The kid may have kids in the original tree, but in the tree pruned
           // according to rank, it does not.
           ns_kid->nkids = 0;
         } else {
           // This kid is owned by this rank, so fill in its parent pointer.
-          NodeSets::Node* ns_kid = static_cast<NodeSets::Node*>(kid->reserved);
-          ns_node->kids[i] = ns_kid;
-          ns_kid->parent = ns_node;
+          NodeSets::Node* ns_kid = ns.node_h(kid->reserved);
+          ns_node = ns.node_h(ns_node_idx);
+          ns_node->kids[i] = kid->reserved;
+          ns_kid->parent = ns_node_idx;
         }
       }
     } else {
@@ -2041,10 +2477,11 @@ void level_schedule_and_collect (
       ns_node->nkids = 0;
       for (Int i = 0; i < node->nkids; ++i) {
         const auto& kid = node->kids[i];
-        if (kid->reserved && kid->rank == my_rank) {
-          NodeSets::Node* ns_kid = static_cast<NodeSets::Node*>(kid->reserved);
-          ns_node->kids[ns_node->nkids++] = ns_kid;
-          ns_kid->parent = ns_node;
+        if (kid->reserved >= 0 && kid->rank == my_rank) {
+          const auto ns_kid_idx = kid->reserved;
+          ns_node->kids[ns_node->nkids++] = ns_kid_idx;
+          NodeSets::Node* ns_kid = ns.node_h(ns_kid_idx);
+          ns_kid->parent = ns_node_idx;
         }
       }
     }
@@ -2109,18 +2546,20 @@ void init_comm (const Int my_rank, NodeSets& ns) {
   ns.nslots = 0;
   for (auto& lvl : ns.levels) {
     Int nkids = 0;
-    for (const auto& n : lvl.nodes)
+    for (const auto& idx : lvl.nodes) {
+      const auto n = ns.node_h(idx);
       nkids += n->nkids;
+    }
 
     std::vector<RankNode> me(lvl.nodes.size()), kids(nkids);
     for (size_t i = 0, mi = 0, ki = 0; i < lvl.nodes.size(); ++i) {
-      const auto& n = lvl.nodes[i];
-      me[mi].first = n->parent ? n->parent->rank : my_rank;
+      const auto n = ns.node_h(lvl.nodes[i]);
+      me[mi].first = n->parent >= 0 ? ns.node_h(n->parent)->rank : my_rank;
       me[mi].second = const_cast<NodeSets::Node*>(n);
       ++mi;
       for (Int k = 0; k < n->nkids; ++k) {
-        kids[ki].first = n->kids[k]->rank;
-        kids[ki].second = const_cast<NodeSets::Node*>(n->kids[k]);
+        kids[ki].first = ns.node_h(n->kids[k])->rank;
+        kids[ki].second = ns.node_h(n->kids[k]);
         ++ki;
       }
     }
@@ -2155,16 +2594,19 @@ NodeSets::ConstPtr analyze (const Parallel::Ptr& p, const Int& ncells,
 }
 
 // Check that the offsets are self consistent.
-Int check_comm (const NodeSets::ConstPtr& ns) {
+Int check_comm (const NodeSets& ns) {
   Int nerr = 0;
-  std::vector<Int> offsets(ns->nslots, 0);
-  for (const auto& lvl : ns->levels)
-    for (const auto& n : lvl.nodes) {
-      cedr_assert(n->offset < ns->nslots);
+  std::vector<Int> offsets(ns.nslots, 0);
+  for (const auto& lvl : ns.levels)
+    for (const auto& idx : lvl.nodes) {
+      const auto n = ns.node_h(idx);
+      cedr_assert(n->offset < ns.nslots);
       ++offsets[n->offset];
-      for (Int i = 0; i < n->nkids; ++i)
-        if (n->kids[i]->rank != n->rank)
-          ++offsets[n->kids[i]->offset];
+      for (Int i = 0; i < n->nkids; ++i) {
+        const auto kid = ns.node_h(n->kids[i]);
+        if (kid->rank != n->rank)
+          ++offsets[kid->offset];
+      }
     }
   for (const auto& e : offsets)
     if (e != 1) ++nerr;
@@ -2173,17 +2615,19 @@ Int check_comm (const NodeSets::ConstPtr& ns) {
 
 // Check that there are the correct number of leaf nodes, and that their offsets
 // all come first and are ordered the same as ns->levels[0]->nodes.
-Int check_leaf_nodes (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
+Int check_leaf_nodes (const Parallel::Ptr& p, const NodeSets& ns,
                       const Int ncells) {
   Int nerr = 0;
-  cedr_assert( ! ns->levels.empty());
-  cedr_assert( ! ns->levels[0].nodes.empty());
+  cedr_assert( ! ns.levels.empty());
+  cedr_assert( ! ns.levels[0].nodes.empty());
   Int my_nleaves = 0;
-  for (const auto& n : ns->levels[0].nodes) {
+  for (const auto& idx : ns.levels[0].nodes) {
+    const auto n = ns.node_h(idx);
     cedr_assert( ! n->nkids);
     ++my_nleaves;
   }
-  for (const auto& n : ns->levels[0].nodes) {
+  for (const auto& idx : ns.levels[0].nodes) {
+    const auto n = ns.node_h(idx);
     cedr_assert(n->offset < my_nleaves);
     cedr_assert(n->id < ncells);
   }
@@ -2195,17 +2639,19 @@ Int check_leaf_nodes (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
 }
 
 // Sum cellidx using the QLT comm pattern.
-Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
+Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets& ns,
                        const Int ncells) {
   Int nerr = 0;
   // Rank-wide data buffer.
-  std::vector<Int> data(ns->nslots);
+  std::vector<Int> data(ns.nslots);
   // Sum this rank's cellidxs.
-  for (auto& n : ns->levels[0].nodes)
+  for (const auto& idx : ns.levels[0].nodes) {
+    const auto n = ns.node_h(idx);
     data[n->offset] = n->id;
+  }
   // Leaves to root.
-  for (size_t il = 0; il < ns->levels.size(); ++il) {
-    auto& lvl = ns->levels[il];
+  for (size_t il = 0; il < ns.levels.size(); ++il) {
+    auto& lvl = ns.levels[il];
     // Set up receives.
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
       const auto& mmd = lvl.kids[i];
@@ -2214,11 +2660,12 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     }
     mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
     // Combine kids' data.
-    for (auto& n : lvl.nodes) {
+    for (const auto& idx : lvl.nodes) {
+      const auto n = ns.node_h(idx);
       if ( ! n->nkids) continue;
       data[n->offset] = 0;
       for (Int i = 0; i < n->nkids; ++i)
-        data[n->offset] += data[n->kids[i]->offset];
+        data[n->offset] += data[ns.node_h(n->kids[i])->offset];
     }
     // Send to parents.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
@@ -2227,8 +2674,8 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     }
   }
   // Root to leaves.
-  for (size_t il = ns->levels.size(); il > 0; --il) {
-    auto& lvl = ns->levels[il-1];
+  for (size_t il = ns.levels.size(); il > 0; --il) {
+    auto& lvl = ns.levels[il-1];
     // Get the global sum from parent.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
@@ -2237,10 +2684,11 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
     }    
     mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
     // Pass to kids.
-    for (auto& n : lvl.nodes) {
+    for (const auto& idx : lvl.nodes) {
+      const auto n = ns.node_h(idx);
       if ( ! n->nkids) continue;
       for (Int i = 0; i < n->nkids; ++i)
-        data[n->kids[i]->offset] = data[n->offset];
+        data[ns.node_h(n->kids[i])->offset] = data[n->offset];
     }
     // Send.
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
@@ -2250,10 +2698,12 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
   }
   { // Check that all leaf nodes have the right number.
     const Int desired_sum = (ncells*(ncells - 1)) / 2;
-    for (const auto& n : ns->levels[0].nodes)
+    for (const auto& idx : ns.levels[0].nodes) {
+      const auto n = ns.node_h(idx);
       if (data[n->offset] != desired_sum) ++nerr;
-    if (p->amroot()) {
-      std::cout << " " << data[ns->levels[0].nodes[0]->offset];
+    }
+    if (false && p->amroot()) {
+      std::cout << " " << data[ns.node_h(ns.levels[0].nodes[0])->offset];
       std::cout.flush();
     }
   }
@@ -2263,14 +2713,18 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
 // Unit tests for NodeSets.
 Int unittest (const Parallel::Ptr& p, const NodeSets::ConstPtr& ns,
               const Int ncells) {
-  Int nerr = 0;
-  nerr += check_comm(ns);
-  if (nerr) return nerr;
-  nerr += check_leaf_nodes(p, ns, ncells);
-  if (nerr) return nerr;
-  for (Int trial = 0; trial < 11; ++trial)
-    nerr += test_comm_pattern(p, ns, ncells);
-  if (nerr) return nerr;
+  Int nerr = 0, ne;
+  ne = check_comm(*ns);
+  if (ne && p->amroot()) pr("check_comm failed");
+  nerr += ne;
+  ne = check_leaf_nodes(p, *ns, ncells);
+  if (ne && p->amroot()) pr("check_leaf_nodes failed");
+  nerr += ne;
+  for (Int trial = 0; trial < 11; ++trial) {
+    ne = test_comm_pattern(p, *ns, ncells);
+    if (ne && p->amroot()) pr("test_comm_pattern failed for trial" pu(trial));
+    nerr += ne;
+  }
   return nerr;
 }
 } // namespace impl
@@ -2282,25 +2736,33 @@ void QLT<ES>::init (const std::string& name, IntList& d,
   h = Kokkos::create_mirror_view(d);
 }
 
-template <typename ES>
+template <typename ES> KOKKOS_INLINE_FUNCTION
 int QLT<ES>::MetaData::get_problem_type (const int& idx) {
-  return problem_type_[idx];
+  static const Int problem_type[] = {
+    CPT::st, CPT::cst, CPT::t, CPT::ct, CPT::nn, CPT::cnn
+  };
+  return problem_type[idx];
 }
     
-// icpc doesn't let us use problem_type_ here, even though it's constexpr.
 template <typename ES>
 int QLT<ES>::MetaData::get_problem_type_idx (const int& mask) {
   switch (mask) {
-  case CPT::s:  case CPT::st:  return 0;
-  case CPT::cs: case CPT::cst: return 1;
-  case CPT::t:  return 2;
-  case CPT::ct: return 3;
+  case CPT::s:   case CPT::st:  return 0;
+  case CPT::cs:  case CPT::cst: return 1;
+  case CPT::t:   return 2;
+  case CPT::ct:  return 3;
+  case CPT::nn:  return 4;
+  case CPT::cnn: return 5;
   default: cedr_kernel_throw_if(true, "Invalid problem type."); return -1;
   }
 }
 
-template <typename ES>
+template <typename ES> KOKKOS_INLINE_FUNCTION
 int QLT<ES>::MetaData::get_problem_type_l2r_bulk_size (const int& mask) {
+  if (mask & ProblemType::nonnegative) {
+    if (mask & ProblemType::conserve) return 2;
+    return 1;
+  }
   if (mask & ProblemType::conserve) return 4;
   return 3;
 }
@@ -2331,7 +2793,7 @@ void QLT<ES>::MetaData::init (const MetaDataBuilder& mdb) {
     const Int r2lbulksz = get_problem_type_r2l_bulk_size(get_problem_type(pi));
     for (Int ti = 0; ti < ntracers; ++ti) {
       const auto problem_type = a_h_.trcr2prob[ti];
-      if (problem_type != problem_type_[pi]) continue;
+      if (problem_type != get_problem_type(pi)) continue;
       const auto tcnt = a_h_.prob2trcrptr[pi+1] - a_h_.prob2trcrptr[pi];
       a_h_.trcr2bl2r[ti] = a_h_.prob2bl2r[pi] + tcnt*l2rbulksz;
       a_h_.trcr2br2l[ti] = a_h_.prob2br2l[pi] + tcnt*r2lbulksz;
@@ -2349,7 +2811,7 @@ void QLT<ES>::MetaData::init (const MetaDataBuilder& mdb) {
   for (Int ti = 0; ti < ntracers; ++ti)
     a_h_.trcr2bidx(a_h_.bidx2trcr(ti)) = ti;
   Kokkos::deep_copy(a_d_.trcr2bidx, a_h_.trcr2bidx);
-            
+
   a_h = a_h_;
 
   // Won't default construct Unmanaged, so have to do pointer stuff and raw
@@ -2375,11 +2837,42 @@ void QLT<ES>::BulkData::init (const MetaData& md, const Int& nslots) {
 }
 
 template <typename ES>
+void init_device_data (const impl::NodeSets& ns, impl::NodeSetsHostData& h,
+                       impl::NodeSetsDeviceData<ES>& d) {
+  typedef impl::NodeSetsDeviceData<ES> NSDD;
+  d.node = typename NSDD::NodeList("NSDD::node", ns.nnode());
+  h.node = Kokkos::create_mirror_view(d.node);
+  d.lvlptr = typename NSDD::IntList("NSDD::lvlptr", ns.levels.size() + 1);
+  h.lvlptr = Kokkos::create_mirror_view(d.lvlptr);
+  Int nnode = 0;
+  for (const auto& lvl : ns.levels)
+    nnode += lvl.nodes.size();
+  d.lvl = typename NSDD::IntList("NSDD::lvl", nnode);
+  h.lvl = Kokkos::create_mirror_view(d.lvl);
+  h.lvlptr(0) = 0;
+  for (size_t il = 0; il < ns.levels.size(); ++il) {
+    const auto& level = ns.levels[il];
+    h.lvlptr(il+1) = h.lvlptr(il) + level.nodes.size();
+    for (Int os = h.lvlptr(il), i = 0; i < h.lvlptr(il+1) - os; ++i)
+      h.lvl(os+i) = level.nodes[i];
+    nnode += level.nodes.size();
+  }
+  for (Int i = 0; i < ns.nnode(); ++i)
+    h.node(i) = *ns.node_h(i);
+  Kokkos::deep_copy(d.node, h.node);
+  Kokkos::deep_copy(d.lvl, h.lvl);
+  Kokkos::deep_copy(d.lvlptr, h.lvlptr);
+}
+
+template <typename ES>
 void QLT<ES>::init (const Parallel::Ptr& p, const Int& ncells,
                     const tree::Node::Ptr& tree) {
   p_ = p;
   Timer::start(Timer::analyze);
   ns_ = impl::analyze(p, ncells, tree);
+  nshd_ = std::make_shared<impl::NodeSetsHostData>();
+  nsdd_ = std::make_shared<impl::NodeSetsDeviceData<ES> >();
+  init_device_data(*ns_, *nshd_, *nsdd_);
   init_ordinals();
   Timer::stop(Timer::analyze);
   mdb_ = std::make_shared<MetaDataBuilder>();
@@ -2387,8 +2880,11 @@ void QLT<ES>::init (const Parallel::Ptr& p, const Int& ncells,
 
 template <typename ES>
 void QLT<ES>::init_ordinals () {
-  for (const auto& n : ns_->levels[0].nodes)
-    gci2lci_[n->id] = n->offset;
+  gci2lci_ = std::make_shared<Gci2LciMap>();
+  for (const auto& idx : ns_->levels[0].nodes) {
+    const auto n = ns_->node_h(idx);
+    (*gci2lci_)[n->id] = n->offset;
+  }
 }
 
 template <typename ES>
@@ -2413,8 +2909,10 @@ Int QLT<ES>::nlclcells () const { return ns_->levels[0].nodes.size(); }
 template <typename ES>
 void QLT<ES>::get_owned_glblcells (std::vector<Long>& gcis) const {
   gcis.resize(ns_->levels[0].nodes.size());
-  for (const auto& n : ns_->levels[0].nodes)
+  for (const auto& idx : ns_->levels[0].nodes) {
+    const auto n = ns_->node_h(idx);
     gcis[n->offset] = n->id;
+  }
 }
 
 // For global cell index cellidx, i.e., the globally unique ordinal associated
@@ -2422,21 +2920,21 @@ void QLT<ES>::get_owned_glblcells (std::vector<Long>& gcis) const {
 // it. This is not an efficient operation.
 template <typename ES>
 Int QLT<ES>::gci2lci (const Int& gci) const {
-  const auto it = gci2lci_.find(gci);
-  if (it == gci2lci_.end()) {
+  const auto it = gci2lci_->find(gci);
+  if (it == gci2lci_->end()) {
     pr(puf(gci));
     std::vector<Long> gcis;
     get_owned_glblcells(gcis);
     mprarr(gcis);
   }
-  cedr_throw_if(it == gci2lci_.end(), "gci " << gci << " not in gci2lci map.");
+  cedr_throw_if(it == gci2lci_->end(), "gci " << gci << " not in gci2lci map.");
   return it->second;
 }
 
 template <typename ES>
 void QLT<ES>::declare_tracer (int problem_type, const Int& rhomidx) {
   cedr_throw_if( ! mdb_, "end_tracer_declarations was already called; "
-                "it is an error to call declare_tracer now.");
+                 "it is an error to call declare_tracer now.");
   cedr_throw_if(rhomidx > 0, "rhomidx > 0 is not supported yet.");
   // For its exception side effect, and to get canonical problem type, since
   // some possible problem types map to the same canonical one:
@@ -2463,13 +2961,311 @@ Int QLT<ES>::get_num_tracers () const {
   return md_.a_h.trcr2prob.size();
 }
 
-template <typename ES>
-void QLT<ES>::run () {
-  cedr_throw_if(true, "Should not get here.");
+template <typename ES> void QLT<ES>
+::l2r_recv (const impl::NodeSets::Level& lvl, const Int& l2rndps) const {
+  for (size_t i = 0; i < lvl.kids.size(); ++i) {
+    const auto& mmd = lvl.kids[i];
+    mpi::irecv(*p_, bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
+               mmd.rank, impl::NodeSets::mpitag, &lvl.kids_req[i]);
+  }
+  Timer::start(Timer::waitall);
+  mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
+  Timer::stop(Timer::waitall);
+}
+
+template <typename ES> void QLT<ES>
+::l2r_combine_kid_data (const Int& lvlidx, const Int& l2rndps) const {
+  if (cedr::impl::OnGpu<ES>::value) {
+    const auto d = *nsdd_;
+    const auto l2r_data = bd_.l2r_data;
+    const auto a = md_.a_d;
+    const Int ntracer = a.trcr2prob.size();
+    const Int nfield = ntracer + 1;
+    const Int lvl_os = nshd_->lvlptr(lvlidx);
+    const Int N = nfield*(nshd_->lvlptr(lvlidx+1) - lvl_os);
+    const auto combine_kid_data = KOKKOS_LAMBDA (const Int& k) {
+      const Int il = lvl_os + k / nfield;
+      const Int fi = k % nfield;
+      const auto node_idx = d.lvl(il);
+      const auto& n = d.node(node_idx);
+      if ( ! n.nkids) return;
+      cedr_kernel_assert(n.nkids == 2);
+      if (fi == 0) {
+        // Total density.
+        l2r_data(n.offset*l2rndps) =
+          (l2r_data(d.node(n.kids[0]).offset*l2rndps) +
+           l2r_data(d.node(n.kids[1]).offset*l2rndps));
+      } else {
+        // Tracers. Order by bulk index for efficiency of memory access.
+        const Int bi = fi - 1; // bulk index
+        const Int ti = a.bidx2trcr(bi); // tracer (user) index
+        const Int problem_type = a.trcr2prob(ti);
+        const bool nonnegative = problem_type & ProblemType::nonnegative;
+        const bool shapepreserve = problem_type & ProblemType::shapepreserve;
+        const bool conserve = problem_type & ProblemType::conserve;
+        const Int bdi = a.trcr2bl2r(ti);
+        Real* const me = &l2r_data(n.offset*l2rndps + bdi);
+        const auto& kid0 = d.node(n.kids[0]);
+        const auto& kid1 = d.node(n.kids[1]);
+        const Real* const k0 = &l2r_data(kid0.offset*l2rndps + bdi);
+        const Real* const k1 = &l2r_data(kid1.offset*l2rndps + bdi);
+        if (nonnegative) {
+          me[0] = k0[0] + k1[0];
+          if (conserve) me[1] = k0[1] + k1[1];
+        } else {
+          me[0] = shapepreserve ? k0[0] + k1[0] : cedr::impl::min(k0[0], k1[0]);
+          me[1] = k0[1] + k1[1];
+          me[2] = shapepreserve ? k0[2] + k1[2] : cedr::impl::max(k0[2], k1[2]);
+          if (conserve) me[3] = k0[3] + k1[3] ;
+        }
+      }
+    };
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, N), combine_kid_data);
+    Kokkos::fence();
+  } else {
+    const auto& lvl = ns_->levels[lvlidx];
+    const Int n_lvl_nodes = lvl.nodes.size();
+#ifdef KOKKOS_ENABLE_OPENMP
+#   pragma omp parallel for
+#endif
+    for (Int ni = 0; ni < n_lvl_nodes; ++ni) {
+      const auto lvlidx = lvl.nodes[ni];
+      const auto n = ns_->node_h(lvlidx);
+      if ( ! n->nkids) continue;
+      cedr_assert(n->nkids == 2);
+      // Total density.
+      bd_.l2r_data(n->offset*l2rndps) =
+        (bd_.l2r_data(ns_->node_h(n->kids[0])->offset*l2rndps) +
+         bd_.l2r_data(ns_->node_h(n->kids[1])->offset*l2rndps));
+      // Tracers.
+      for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
+        const Int problem_type = md_.get_problem_type(pti);
+        const bool nonnegative = problem_type & ProblemType::nonnegative;
+        const bool shapepreserve = problem_type & ProblemType::shapepreserve;
+        const bool conserve = problem_type & ProblemType::conserve;
+        const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+        for (Int bi = bis; bi < bie; ++bi) {
+          const Int bdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
+          Real* const me = &bd_.l2r_data(n->offset*l2rndps + bdi);
+          const auto kid0 = ns_->node_h(n->kids[0]);
+          const auto kid1 = ns_->node_h(n->kids[1]);
+          const Real* const k0 = &bd_.l2r_data(kid0->offset*l2rndps + bdi);
+          const Real* const k1 = &bd_.l2r_data(kid1->offset*l2rndps + bdi);
+          if (nonnegative) {
+            me[0] = k0[0] + k1[0];
+            if (conserve) me[1] = k0[1] + k1[1];
+          } else {
+            me[0] = shapepreserve ? k0[0] + k1[0] : cedr::impl::min(k0[0], k1[0]);
+            me[1] = k0[1] + k1[1];
+            me[2] = shapepreserve ? k0[2] + k1[2] : cedr::impl::max(k0[2], k1[2]);
+            if (conserve) me[3] = k0[3] + k1[3] ;
+          }
+        }
+      }
+    }
+  }
+}
+
+template <typename ES> void QLT<ES>
+::l2r_send_to_parents (const impl::NodeSets::Level& lvl, const Int& l2rndps) const {
+  for (size_t i = 0; i < lvl.me.size(); ++i) {
+    const auto& mmd = lvl.me[i];
+    mpi::isend(*p_, bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
+               mmd.rank, impl::NodeSets::mpitag);
+  }  
+}
+
+template <typename ES> void QLT<ES>
+::root_compute (const Int& l2rndps, const Int& r2lndps) const {
+  if (ns_->levels.empty() || ns_->levels.back().nodes.size() != 1 ||
+      ns_->node_h(ns_->levels.back().nodes[0])->parent >= 0)
+    return;
+  const auto d = *nsdd_;
+  const auto l2r_data = bd_.l2r_data;
+  const auto r2l_data = bd_.r2l_data;
+  const auto a = md_.a_d;
+  const Int nlev = nshd_->lvlptr.size() - 1;
+  const Int node_idx = nshd_->lvl(nshd_->lvlptr(nlev-1));
+  const Int ntracer = a.trcr2prob.size();
+  const auto compute = KOKKOS_LAMBDA (const Int& bi) {
+    const auto& n = d.node(node_idx);
+    const Int ti = a.bidx2trcr(bi);
+    const Int problem_type = a.trcr2prob(ti);
+    const Int l2rbdi = a.trcr2bl2r(a.bidx2trcr(bi));
+    const Int r2lbdi = a.trcr2br2l(a.bidx2trcr(bi));
+    // If QLT is enforcing global mass conservation, set root's r2l Qm value to
+    // the l2r Qm_prev's sum; otherwise, copy the l2r Qm value to the r2l one.
+    const Int os = (problem_type & ProblemType::conserve ?
+                    md_.get_problem_type_l2r_bulk_size(problem_type) - 1 :
+                    (problem_type & ProblemType::nonnegative ? 0 : 1));
+    r2l_data(n.offset*r2lndps + r2lbdi) = l2r_data(n.offset*l2rndps + l2rbdi + os);
+    if ((problem_type & ProblemType::consistent) &&
+        ! (problem_type & ProblemType::shapepreserve)) {
+      // Consistent but not shape preserving, so we're solving a dynamic range
+      // preservation problem. We now know the global q_{min,max}. Start
+      // propagating it leafward.
+      r2l_data(n.offset*r2lndps + r2lbdi + 1) = l2r_data(n.offset*l2rndps + l2rbdi + 0);
+      r2l_data(n.offset*r2lndps + r2lbdi + 2) = l2r_data(n.offset*l2rndps + l2rbdi + 2);
+    }
+  };
+  Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, ntracer), compute);
+  Kokkos::fence();
+}
+
+template <typename ES> void QLT<ES>
+::r2l_recv (const impl::NodeSets::Level& lvl, const Int& r2lndps) const {
+  for (size_t i = 0; i < lvl.me.size(); ++i) {
+    const auto& mmd = lvl.me[i];
+    mpi::irecv(*p_, bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
+               mmd.rank, impl::NodeSets::mpitag, &lvl.me_recv_req[i]);
+  }
+  Timer::start(Timer::waitall);
+  mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
+  Timer::stop(Timer::waitall);
+}
+
+template <typename Data> KOKKOS_INLINE_FUNCTION
+void r2l_solve_qp_set_q (
+  const Data& l2r_data, const Data& r2l_data,
+  const Int& os, const Int& l2rndps, const Int& r2lndps,
+  const Int& l2rbdi, const Int& r2lbdi, const Real& q_min, const Real& q_max)
+{
+  l2r_data(os*l2rndps + l2rbdi + 0) = q_min;
+  l2r_data(os*l2rndps + l2rbdi + 2) = q_max;
+  r2l_data(os*r2lndps + r2lbdi + 1) = q_min;
+  r2l_data(os*r2lndps + r2lbdi + 2) = q_max; 
+}
+
+template <typename Data> KOKKOS_INLINE_FUNCTION
+void r2l_solve_qp_solve_node_problem (
+  const Data& l2r_data, const Data& r2l_data, const Int& problem_type,
+  const impl::NodeSets::Node& n,
+  const impl::NodeSets::Node& k0, const impl::NodeSets::Node& k1,
+  const Int& l2rndps, const Int& r2lndps,
+  const Int& l2rbdi, const Int& r2lbdi)
+{
+  impl::solve_node_problem(
+    problem_type,
+     l2r_data( n.offset*l2rndps),
+    &l2r_data( n.offset*l2rndps + l2rbdi),
+     r2l_data( n.offset*r2lndps + r2lbdi),
+     l2r_data(k0.offset*l2rndps),
+    &l2r_data(k0.offset*l2rndps + l2rbdi),
+     r2l_data(k0.offset*r2lndps + r2lbdi),
+     l2r_data(k1.offset*l2rndps),
+    &l2r_data(k1.offset*l2rndps + l2rbdi),
+     r2l_data(k1.offset*r2lndps + r2lbdi));
+}
+
+template <typename ES> void QLT<ES>
+::r2l_solve_qp (const Int& lvlidx, const Int& l2rndps, const Int& r2lndps) const {
+  Timer::start(Timer::snp);
+  if (cedr::impl::OnGpu<ES>::value) {
+    const auto d = *nsdd_;
+    const auto l2r_data = bd_.l2r_data;
+    const auto r2l_data = bd_.r2l_data;
+    const auto a = md_.a_d;
+    const Int ntracer = a.trcr2prob.size();
+    const Int lvl_os = nshd_->lvlptr(lvlidx);
+    const Int N = ntracer*(nshd_->lvlptr(lvlidx+1) - lvl_os);
+    const auto solve_qp = KOKKOS_LAMBDA (const Int& k) {
+      const Int il = lvl_os + k / ntracer;
+      const Int bi = k % ntracer;
+      const auto node_idx = d.lvl(il);
+      const auto& n = d.node(node_idx);
+      if ( ! n.nkids) return;
+      const Int ti = a.bidx2trcr(bi);
+      const Int problem_type = a.trcr2prob(ti);
+      const Int l2rbdi = a.trcr2bl2r(a.bidx2trcr(bi));
+      const Int r2lbdi = a.trcr2br2l(a.bidx2trcr(bi));
+      cedr_kernel_assert(n.nkids == 2);
+      if ((problem_type & ProblemType::consistent) &&
+          ! (problem_type & ProblemType::shapepreserve)) {
+        // Pass q_{min,max} info along. l2r data are updated for use in
+        // solve_node_problem. r2l data are updated for use in isend.
+        const Real q_min = r2l_data(n.offset*r2lndps + r2lbdi + 1);
+        const Real q_max = r2l_data(n.offset*r2lndps + r2lbdi + 2);
+        l2r_data(n.offset*l2rndps + l2rbdi + 0) = q_min;
+        l2r_data(n.offset*l2rndps + l2rbdi + 2) = q_max;
+        for (Int k = 0; k < 2; ++k)
+          r2l_solve_qp_set_q(l2r_data, r2l_data, d.node(n.kids[k]).offset,
+                             l2rndps, r2lndps, l2rbdi, r2lbdi, q_min, q_max);
+      }
+      r2l_solve_qp_solve_node_problem(
+        l2r_data, r2l_data, problem_type, n, d.node(n.kids[0]), d.node(n.kids[1]),
+        l2rndps, r2lndps, l2rbdi, r2lbdi);
+    };
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, N), solve_qp);
+    Kokkos::fence();
+  } else {
+    const auto& lvl = ns_->levels[lvlidx];
+    const Int n_lvl_nodes = lvl.nodes.size();
+#ifdef KOKKOS_ENABLE_OPENMP
+#   pragma omp parallel for
+#endif
+    for (Int ni = 0; ni < n_lvl_nodes; ++ni) {
+      const auto lvlidx = lvl.nodes[ni];
+      const auto n = ns_->node_h(lvlidx);
+      if ( ! n->nkids) continue;
+      for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
+        const Int problem_type = md_.get_problem_type(pti);
+        const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+        for (Int bi = bis; bi < bie; ++bi) {
+          const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
+          const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
+          cedr_assert(n->nkids == 2);
+          if ((problem_type & ProblemType::consistent) &&
+              ! (problem_type & ProblemType::shapepreserve)) {
+            const Real q_min = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1);
+            const Real q_max = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2);
+            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0) = q_min;
+            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2) = q_max;
+            for (Int k = 0; k < 2; ++k)
+              r2l_solve_qp_set_q(bd_.l2r_data, bd_.r2l_data,
+                                 ns_->node_h(n->kids[k])->offset,
+                                 l2rndps, r2lndps, l2rbdi, r2lbdi, q_min, q_max);
+          }
+          r2l_solve_qp_solve_node_problem(
+            bd_.l2r_data, bd_.r2l_data, problem_type, *n, *ns_->node_h(n->kids[0]),
+            *ns_->node_h(n->kids[1]), l2rndps, r2lndps, l2rbdi, r2lbdi);
+        }
+      }
+    }
+  }
+  Timer::stop(Timer::snp);
+}
+
+template <typename ES> void QLT<ES>
+::r2l_send_to_kids (const impl::NodeSets::Level& lvl, const Int& r2lndps) const {
+  for (size_t i = 0; i < lvl.kids.size(); ++i) {
+    const auto& mmd = lvl.kids[i];
+    mpi::isend(*p_, bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
+               mmd.rank, impl::NodeSets::mpitag);
+  }
 }
 
 template <typename ES>
-constexpr Int QLT<ES>::MetaData::problem_type_[];
+void QLT<ES>::run () {
+  Timer::start(Timer::qltrunl2r);
+  // Number of data per slot.
+  const Int l2rndps = md_.a_h.prob2bl2r[md_.nprobtypes];
+  const Int r2lndps = md_.a_h.prob2br2l[md_.nprobtypes];
+  for (size_t il = 0; il < ns_->levels.size(); ++il) {
+    auto& lvl = ns_->levels[il];
+    if (lvl.kids.size()) l2r_recv(lvl, l2rndps);
+    l2r_combine_kid_data(il, l2rndps);    
+    if (lvl.me.size()) l2r_send_to_parents(lvl, l2rndps);
+  }
+  Timer::stop(Timer::qltrunl2r); Timer::start(Timer::qltrunr2l);
+  root_compute(l2rndps, r2lndps);
+  for (size_t il = ns_->levels.size(); il > 0; --il) {
+    auto& lvl = ns_->levels[il-1];
+    if (lvl.me.size()) r2l_recv(lvl, r2lndps);
+    r2l_solve_qp(il-1, l2rndps, r2lndps);
+    if (lvl.kids.size()) r2l_send_to_kids(lvl, r2lndps);
+  }
+  Timer::stop(Timer::qltrunr2l);
+}
 
 namespace test {
 using namespace impl;
@@ -2525,9 +3321,13 @@ private:
       qlt_.declare_tracer(t.problem_type, 0);
     qlt_.end_tracer_declarations();
     cedr_assert(qlt_.get_num_tracers() == static_cast<Int>(tracers_.size()));
-    for (size_t i = 0; i < tracers_.size(); ++i)
-      cedr_assert(qlt_.get_problem_type(i) == (tracers_[i].problem_type |
-                                               ProblemType::consistent));
+    for (size_t i = 0; i < tracers_.size(); ++i) {
+      const auto pt = qlt_.get_problem_type(i);
+      cedr_assert((pt == ((tracers_[i].problem_type | ProblemType::consistent) &
+                          ~ProblemType::nonnegative)) ||
+                  (pt == ((tracers_[i].problem_type | ProblemType::nonnegative) &
+                          ~ProblemType::consistent)));
+    }
   }
   
   void run_impl (const Int trial) override {
@@ -2550,7 +3350,7 @@ private:
 Int test_qlt (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
               const Int& ncells, const Int nrepeat,
               const bool write, const bool verbose) {
-  return TestQLT(p, tree, ncells, verbose).run(nrepeat, write);
+  return TestQLT(p, tree, ncells, verbose).run<TestQLT::QLTT>(nrepeat, write);
 }
 } // namespace test
 
@@ -2762,20 +3562,39 @@ Int run_unit_and_randomized_tests (const Parallel::Ptr& p, const Input& in) {
 } // namespace qlt
 } // namespace cedr
 
-#ifdef KOKKOS_HAVE_SERIAL
+#ifdef KOKKOS_ENABLE_SERIAL
 template class cedr::qlt::QLT<Kokkos::Serial>;
 #endif
-#ifdef KOKKOS_HAVE_OPENMP
+#ifdef KOKKOS_ENABLE_OPENMP
 template class cedr::qlt::QLT<Kokkos::OpenMP>;
 #endif
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
 template class cedr::qlt::QLT<Kokkos::Cuda>;
 #endif
 
 //>> cedr_caas.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_caas.hpp"
 //#include "cedr_util.hpp"
 //#include "cedr_test_randomized.hpp"
+
+namespace Kokkos {
+struct Real2 {
+  cedr::Real v[2];
+  KOKKOS_INLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
+  KOKKOS_INLINE_FUNCTION Real2& operator+= (const Real2& o) {
+    v[0] += o.v[0];
+    v[1] += o.v[1];
+    return *this;
+  }
+};
+
+template<> struct reduction_identity<Real2> {
+  KOKKOS_INLINE_FUNCTION static Real2 sum() { return Real2(); }
+};
+} // namespace Kokkos
 
 namespace cedr {
 namespace caas {
@@ -2793,7 +3612,7 @@ CAAS<ES>::CAAS (const mpi::Parallel::Ptr& p, const Int nlclcells,
 template <typename ES>
 void CAAS<ES>::declare_tracer(int problem_type, const Int& rhomidx) {
   cedr_throw_if( ! (problem_type & ProblemType::shapepreserve),
-                "CAAS is a WIP; ! shapepreserve is not supported yet.");
+                "CAAS does not support ! shapepreserve yet.");
   cedr_throw_if(rhomidx > 0, "rhomidx > 0 is not supported yet.");
   tracer_decls_->push_back(Decl(problem_type, rhomidx));
   if (problem_type & ProblemType::conserve)
@@ -2806,11 +3625,13 @@ void CAAS<ES>::end_tracer_declarations () {
   cedr_throw_if(tracer_decls_->size() == 0, "#tracers is 0.");
   cedr_throw_if(nrhomidxs_ == 0, "#rhomidxs is 0.");
   probs_ = IntList("CAAS probs", static_cast<Int>(tracer_decls_->size()));
-  t2r_ = IntList("CAAS t2r", static_cast<Int>(tracer_decls_->size()));
+  probs_h_ = Kokkos::create_mirror_view(probs_);
+  //t2r_ = IntList("CAAS t2r", static_cast<Int>(tracer_decls_->size()));
   for (Int i = 0; i < probs_.extent_int(0); ++i) {
-    probs_(i) = (*tracer_decls_)[i].probtype;
-    t2r_(i) = (*tracer_decls_)[i].rhomidx;
+    probs_h_(i) = (*tracer_decls_)[i].probtype;
+    //t2r_(i) = (*tracer_decls_)[i].rhomidx;
   }
+  Kokkos::deep_copy(probs_, probs_h_);
   tracer_decls_ = nullptr;
   // (rho, Qm, Qm_min, Qm_max, [Qm_prev])
   const Int e = need_conserve_ ? 1 : 0;
@@ -2824,7 +3645,7 @@ void CAAS<ES>::end_tracer_declarations () {
 template <typename ES>
 int CAAS<ES>::get_problem_type (const Int& tracer_idx) const {
   cedr_assert(tracer_idx >= 0 && tracer_idx < probs_.extent_int(0));
-  return probs_[tracer_idx];
+  return probs_h_[tracer_idx];
 }
 
 template <typename ES>
@@ -2832,51 +3653,79 @@ Int CAAS<ES>::get_num_tracers () const {
   return probs_.extent_int(0);
 }
 
+template <typename RealList, typename IntList>
+KOKKOS_INLINE_FUNCTION static void
+calc_Qm_scalars (const RealList& d, const IntList& probs,
+                 const Int& nt, const Int& nlclcells,
+                 const Int& k, const Int& os, const Int& i,
+                 Real& Qm_clip, Real& Qm_term) {
+  const Real Qm = d(os+i);
+  Qm_term = (probs(k) & ProblemType::conserve ?
+             d(os + nlclcells*3*nt + i) /* Qm_prev */ :
+             Qm);
+  const Real Qm_min = d(os + nlclcells*  nt + i);
+  const Real Qm_max = d(os + nlclcells*2*nt + i);
+  Qm_clip = cedr::impl::min(Qm_max, cedr::impl::max(Qm_min, Qm));
+}
+
 template <typename ES>
 void CAAS<ES>::reduce_locally () {
   const bool user_reduces = user_reducer_ != nullptr;
-  const Int nt = probs_.size();
-  Int k = 0;
-  Int os = nlclcells_;
-  // Qm_clip
-  for ( ; k < nt; ++k) {
-    Real Qm_sum = 0, Qm_clip_sum = 0;
-    for (Int i = 0; i < nlclcells_; ++i) {
-      const Real Qm = d_(os+i);
-      const Real Qm_term = (probs_(k) & ProblemType::conserve ?
-                            d_(os + nlclcells_*3*nt + i) /* Qm_prev */ :
-                            Qm);
-      const Real Qm_min = d_(os + nlclcells_*  nt + i);
-      const Real Qm_max = d_(os + nlclcells_*2*nt + i);
-      const Real Qm_clip = cedr::impl::min(Qm_max, cedr::impl::max(Qm_min, Qm));
-      d_(os+i) = Qm_clip;
-      if (user_reduces) {
-        send_(nlclcells_*      k  + i) = Qm_clip;
-        send_(nlclcells_*(nt + k) + i) = Qm_term;
-      } else {
-        Qm_clip_sum += Qm_clip;
-        Qm_sum += Qm_term;
-      }
-    }
-    if ( ! user_reduces) {
-      send_(     k) = Qm_clip_sum;
-      send_(nt + k) = Qm_sum;
-    }
-    os += nlclcells_;
-  }
-  k += nt;
-  // Qm_min, Qm_max
-  for ( ; k < 4*nt; ++k) {
-    if (user_reduces) {
-      for (Int i = 0; i < nlclcells_; ++i)
-        send_(nlclcells_*k + i) = d_(os+i);
-    } else {
+  ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
+
+  const auto probs = probs_;
+  const auto send = send_;
+  const auto d = d_;
+  if (user_reduces) {
+    const auto calc_Qm_clip = KOKKOS_LAMBDA (const Int& j) {
+      const auto k = j / nlclcells;
+      const auto i = j % nlclcells;
+      const auto os = (k+1)*nlclcells;
+      Real Qm_clip, Qm_term;
+      calc_Qm_scalars(d, probs, nt, nlclcells, k, os, i, Qm_clip, Qm_term);
+      d(os+i) = Qm_clip;
+      send(nlclcells*      k  + i) = Qm_clip;
+      send(nlclcells*(nt + k) + i) = Qm_term;
+    };
+    Kokkos::parallel_for(nt*nlclcells, calc_Qm_clip);
+    const auto set_Qm_minmax = KOKKOS_LAMBDA (const Int& j) {
+      const auto k = 2*nt + j / nlclcells;
+      const auto i = j % nlclcells;
+      const auto os = (k-nt+1)*nlclcells;
+      send(nlclcells*k + i) = d(os+i);
+    };
+    Kokkos::parallel_for(2*nt*nlclcells, set_Qm_minmax);
+  } else {
+    using ESU = cedr::impl::ExeSpaceUtils<ES>;
+    const auto calc_Qm_clip = KOKKOS_LAMBDA (const typename ESU::Member& t) {
+      const auto k = t.league_rank();
+      const auto os = (k+1)*nlclcells;
+      const auto reduce = [&] (const Int& i, Kokkos::Real2& accum) {
+        Real Qm_clip, Qm_term;
+        calc_Qm_scalars(d, probs, nt, nlclcells, k, os, i, Qm_clip, Qm_term);
+        d(os+i) = Qm_clip;
+        accum.v[0] += Qm_clip;
+        accum.v[1] += Qm_term;
+      };
+      Kokkos::Real2 accum;
+      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(t, nlclcells),
+                              reduce, Kokkos::Sum<Kokkos::Real2>(accum));
+      send(     k) = accum.v[0];
+      send(nt + k) = accum.v[1];
+    };
+    Kokkos::parallel_for(ESU::get_default_team_policy(nt, nlclcells),
+                         calc_Qm_clip);
+    const auto set_Qm_minmax = KOKKOS_LAMBDA (const typename ESU::Member& t) {
+      const auto k = 2*nt + t.league_rank();
+      const auto os = (k-nt+1)*nlclcells;
       Real accum = 0;
-      for (Int i = 0; i < nlclcells_; ++i)
-        accum += d_(os+i);
-      send_(k) = accum;
-    }
-    os += nlclcells_;
+      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(t, nlclcells),
+                              [&] (const Int& i, Real& accum) { accum += d(os+i); },
+                              Kokkos::Sum<Real>(accum));
+      send(k) = accum;
+    };
+    Kokkos::parallel_for(ESU::get_default_team_policy(2*nt, nlclcells),
+                         set_Qm_minmax);
   }
 }
 
@@ -2890,43 +3739,53 @@ void CAAS<ES>::reduce_globally () {
 
 template <typename ES>
 void CAAS<ES>::finish_locally () {
-  const Int nt = probs_.size();
-  Int os = nlclcells_;
-  for (Int k = 0; k < nt; ++k) {
-    const Real Qm_clip_sum = recv_(     k);
-    const Real Qm_sum      = recv_(nt + k);
-    const Real m = Qm_sum - Qm_clip_sum;
+  using ESU = cedr::impl::ExeSpaceUtils<ES>;
+  ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
+  const auto recv = recv_;
+  const auto d = d_;
+  const auto adjust_Qm = KOKKOS_LAMBDA (const typename ESU::Member& t) {
+    const auto k = t.league_rank();
+    const auto os = (k+1)*nlclcells;
+    const auto Qm_clip_sum = recv(     k);
+    const auto Qm_sum      = recv(nt + k);
+    const auto m = Qm_sum - Qm_clip_sum;
     if (m < 0) {
-      const Real Qm_min_sum = recv_(2*nt + k);
-      Real fac = Qm_clip_sum - Qm_min_sum;
+      const auto Qm_min_sum = recv(2*nt + k);
+      auto fac = Qm_clip_sum - Qm_min_sum;
       if (fac > 0) {
         fac = m/fac;
-        for (Int i = 0; i < nlclcells_; ++i) {
-          const Real Qm_min = d_(os + nlclcells_ * nt + i);
-          Real& Qm = d_(os+i);
+        const auto adjust = [&] (const Int& i) {
+          const auto Qm_min = d(os + nlclcells * nt + i);
+          auto& Qm = d(os+i);
           Qm += fac*(Qm - Qm_min);
-        }
+          Qm = impl::max(Qm_min, Qm);
+        };
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(t, nlclcells), adjust);
       }
     } else if (m > 0) {
-      const Real Qm_max_sum = recv_(3*nt + k);
-      Real fac = Qm_max_sum - Qm_clip_sum;
+      const auto Qm_max_sum = recv(3*nt + k);
+      auto fac = Qm_max_sum - Qm_clip_sum;
       if (fac > 0) {
         fac = m/fac;
-        for (Int i = 0; i < nlclcells_; ++i) {
-          const Real Qm_max = d_(os + nlclcells_*2*nt + i);
-          Real& Qm = d_(os+i);
+        const auto adjust = [&] (const Int& i) {
+          const auto Qm_max = d(os + nlclcells*2*nt + i);
+          auto& Qm = d(os+i);
           Qm += fac*(Qm_max - Qm);
-        }
+          Qm = impl::min(Qm_max, Qm);
+        };
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(t, nlclcells), adjust);
       }
     }
-    os += nlclcells_;
-  }
+  };
+  Kokkos::parallel_for(ESU::get_default_team_policy(nt, nlclcells),
+                       adjust_Qm);
 }
 
 template <typename ES>
 void CAAS<ES>::run () {
   reduce_locally();
-  if (user_reducer_)
+  const bool user_reduces = user_reducer_ != nullptr;
+  if (user_reduces)
     (*user_reducer_)(*p_, send_.data(), recv_.data(),
                      nlclcells_, recv_.size(), MPI_SUM);
   else
@@ -2941,14 +3800,20 @@ struct TestCAAS : public cedr::test::TestRandomized {
   struct TestAllReducer : public CAAST::UserAllReducer {
     int operator() (const mpi::Parallel& p, Real* sendbuf, Real* rcvbuf,
                     int nlcl, int count, MPI_Op op) const override {
+      Kokkos::View<Real*> s(sendbuf, nlcl*count), r(rcvbuf, count);
+      const auto s_h = Kokkos::create_mirror_view(s);
+      Kokkos::deep_copy(s_h, s);
+      const auto r_h = Kokkos::create_mirror_view(r);
       for (int i = 1; i < nlcl; ++i)
-        sendbuf[0] += sendbuf[i];
+        s_h(0) += s_h(i);
       for (int k = 1; k < count; ++k) {
-        sendbuf[k] = sendbuf[nlcl*k];
+        s_h(k) = s_h(nlcl*k);
         for (int i = 1; i < nlcl; ++i)
-          sendbuf[k] += sendbuf[nlcl*k + i];
+          s_h(k) += s_h(nlcl*k + i);
       }
-      return mpi::all_reduce(p, sendbuf, rcvbuf, count, op);
+      const int err = mpi::all_reduce(p, s_h.data(), r_h.data(), count, op);
+      Kokkos::deep_copy(r, r_h);
+      return err;
     }
   };
 
@@ -3018,8 +3883,8 @@ Int unittest (const mpi::Parallel::Ptr& p) {
   for (Int nlclcells : {1, 2, 4, 11}) {
     Long ncells = np*nlclcells;
     if (ncells > np) ncells -= np/2;
-    nerr += TestCAAS(p, ncells, false, false).run(1, false);
-    nerr += TestCAAS(p, ncells, true, false).run(1, false);
+    nerr += TestCAAS(p, ncells, false, false).run<TestCAAS::CAAST>(1, false);
+    nerr += TestCAAS(p, ncells, true, false).run<TestCAAS::CAAST>(1, false);
   }
   return nerr;
 }
@@ -3027,7 +3892,20 @@ Int unittest (const mpi::Parallel::Ptr& p) {
 } // namespace caas
 } // namespace cedr
 
+#ifdef KOKKOS_ENABLE_SERIAL
+template class cedr::caas::CAAS<Kokkos::Serial>;
+#endif
+#ifdef KOKKOS_ENABLE_OPENMP
+template class cedr::caas::CAAS<Kokkos::OpenMP>;
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+template class cedr::caas::CAAS<Kokkos::Cuda>;
+#endif
+
 //>> cedr_test_randomized.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_test_randomized.hpp"
 
 namespace cedr {
@@ -3039,6 +3917,7 @@ std::string TestRandomized::Tracer::str () const {
   if (problem_type & PT::conserve) ss << " c";
   if (problem_type & PT::shapepreserve) ss << " s";
   if (problem_type & PT::consistent) ss << " t";
+  if (problem_type & PT::nonnegative) ss << " nn";
   ss << " pt " << perturbation_type << " ssh " << safe_should_hold
      << " lsh " << local_should_hold << ")";
   return ss.str();
@@ -3053,21 +3932,24 @@ void TestRandomized::init_tracers_vector () {
   typedef Tracer::PT PT;
   static const Int pts[] = {
     PT::conserve | PT::shapepreserve | PT::consistent,
-    PT::shapepreserve, // Test a noncanonical problem type.
+    PT::shapepreserve,
     PT::conserve | PT::consistent,
-    PT::consistent
+    PT::consistent,
+    PT::nonnegative,
+    PT::nonnegative | PT::conserve
   };
   Int tracer_idx = 0;
   for (Int perturb = 0; perturb < 6; ++perturb)
-    for (Int ti = 0; ti < 4; ++ti) {
+    for (size_t ti = 0; ti < sizeof(pts)/sizeof(*pts); ++ti) {
       Tracer t;
       t.problem_type = pts[ti];
       const bool shapepreserve = t.problem_type & PT::shapepreserve;
+      const bool nonnegative = t.problem_type & PT::nonnegative;
       t.idx = tracer_idx++;
       t.perturbation_type = perturb;
       t.safe_should_hold = true;
       t.no_change_should_hold = perturb == 0;
-      t.local_should_hold = perturb < 4 && shapepreserve;
+      t.local_should_hold = perturb < 4 && (shapepreserve || nonnegative);
       t.write = perturb == 2 && ti == 2;
       tracers_.push_back(t);
     }
@@ -3086,19 +3968,30 @@ void TestRandomized::generate_Q (const Tracer& t, Values& v) {
   Real* rhom = v.rhom(), * Qm_min = v.Qm_min(t.idx), * Qm = v.Qm(t.idx),
     * Qm_max = v.Qm_max(t.idx), * Qm_prev = v.Qm_prev(t.idx);
   const Int n = v.ncells();
+  const bool nonneg_only = t.problem_type & ProblemType::nonnegative;
   for (Int i = 0; i < n; ++i) {
-    const Real
-      q_min = 0.1 + 0.8*urand(),
-      q_max = std::min<Real>(1, q_min + (0.9 - q_min)*urand()),
-      q = q_min + (q_max - q_min)*urand();
-    // Check correctness up to FP.
-    cedr_assert(q_min >= 0 &&
-                q_max <= 1 + 10*std::numeric_limits<Real>::epsilon() &&
-                q_min <= q && q <= q_max);
-    Qm_min[i] = q_min*rhom[i];
-    Qm_max[i] = q_max*rhom[i];
-    // Protect against FP error.
-    Qm[i] = std::max<Real>(Qm_min[i], std::min(Qm_max[i], q*rhom[i]));
+    if (nonneg_only) {
+      // Make sure the generated Qm is globally positive.
+      Qm[i] = (t.no_change_should_hold ?
+               urand() :
+               ((i % 2 == 0) ? 0.75 : -0.75) + urand());
+      // Qm_min,max are unused in QLT, but need them to be set here for
+      // bookkeeping in check().
+      Qm_min[i] = 0;
+      Qm_max[i] = 10;
+    } else {
+      // The typical use case has 0 <= q_min <= q, but test with general sign.
+      const Real
+        q_min = -0.75 + urand(),
+        q_max = q_min + urand(),
+        q = q_min + (q_max - q_min)*urand();
+      // Check correctness up to FP.
+      cedr_assert(q_min <= q && q <= q_max);
+      Qm_min[i] = q_min*rhom[i];
+      Qm_max[i] = q_max*rhom[i];
+      // Protect against FP error.
+      Qm[i] = std::max<Real>(Qm_min[i], std::min(Qm_max[i], q*rhom[i]));
+    }
     // Set previous Qm to the current unperturbed value.
     Qm_prev[i] = Qm[i];
   }
@@ -3305,7 +4198,7 @@ void TestRandomized::write_post (const Tracer& t, Values& v) {
 Int TestRandomized
 ::check (const std::string& cdr_name, const mpi::Parallel& p,
          const std::vector<Tracer>& ts, const Values& v) {
-  static const bool details = false;
+  static const bool details = true;
   static const Real ulp3 = 3*std::numeric_limits<Real>::epsilon();
   Int nerr = 0;
   std::vector<Real> lcl_mass(2*ts.size()), q_min_lcl(ts.size()), q_max_lcl(ts.size());
@@ -3315,14 +4208,17 @@ Int TestRandomized
 
     cedr_assert(t.safe_should_hold);
     const bool safe_only = ! t.local_should_hold;
+    const bool nonneg_only = t.problem_type & ProblemType::nonnegative;
     const Int n = v.ncells();
     const Real* rhom = v.rhom(), * Qm_min = v.Qm_min(t.idx), * Qm = v.Qm(t.idx),
       * Qm_max = v.Qm_max(t.idx), * Qm_prev = v.Qm_prev(t.idx);
 
-    q_min_lcl[ti] = 1;
-    q_max_lcl[ti] = 0;
+    q_min_lcl[ti] =  1e3;
+    q_max_lcl[ti] = -1e3;
     for (Int i = 0; i < n; ++i) {
-      const bool lv = (Qm[i] < Qm_min[i] || Qm[i] > Qm_max[i]);
+      const bool lv = (nonneg_only ?
+                       Qm[i] < 0 :
+                       Qm[i] < Qm_min[i] || Qm[i] > Qm_max[i]);
       if (lv) local_violated[ti] = 1;
       if ( ! safe_only && lv) {
         // If this fails at ~ machine eps, check r2l_nl_adjust_bounds code in
@@ -3357,14 +4253,19 @@ Int TestRandomized
     // local problem).
     const auto& t = ts[ti];
     const bool safe_only = ! t.local_should_hold;
+    const bool nonneg_only = t.problem_type & ProblemType::nonnegative;
     if (safe_only) {
       const Int n = v.ncells();
       const Real* rhom = v.rhom(), * Qm_min = v.Qm_min(t.idx), * Qm = v.Qm(t.idx),
         * Qm_max = v.Qm_max(t.idx);
-      const Real q_min = q_min_gbl[ti], q_max = q_max_gbl[ti];
+      const Real q_min = nonneg_only ? 0 : q_min_gbl[ti], q_max = q_max_gbl[ti];
       for (Int i = 0; i < n; ++i) {
-        if (Qm[i] < q_min*rhom[i]*(1 - ulp3) ||
-            Qm[i] > q_max*rhom[i]*(1 + ulp3)) {
+        const Real delta = (q_max - q_min)*ulp3;
+        const bool lv = (nonneg_only ?
+                         Qm[i] < -ulp3 :
+                         (Qm[i] < q_min*rhom[i] - delta ||
+                          Qm[i] > q_max*rhom[i] + delta));
+        if (lv) {
           if (details)
             pr("check q (safety) " << t.str() << ": " << q_min*rhom[i] << " "
                << Qm_min[i] << " " << Qm[i] << " " << Qm_max[i] << " "
@@ -3374,7 +4275,7 @@ Int TestRandomized
           t_ok[ti] = false;
           ++nerr;
         }
-      }        
+      }
     }
   }
 
@@ -3403,6 +4304,7 @@ Int TestRandomized
         std::cout << "FAIL " << cdr_name << ": " << ts[ti].str();
         if (mass_failed) std::cout << " mass re " << rd;
         std::cout << "\n";
+        //pr(puf(desired_mass) pu(actual_mass));
       }
     }
   }
@@ -3422,53 +4324,13 @@ void TestRandomized::init () {
   init_tracers();
 }
 
-Int TestRandomized::run (const Int nrepeat, const bool write) {
-  const Int nt = tracers_.size(), nlclcells = gcis_.size();
-
-  Values v(nt, nlclcells);
-  generate_rho(v);
-  for (const auto& t : tracers_) {
-    generate_Q(t, v);
-    perturb_Q(t, v);
-  }
-
-  if (write)
-    for (const auto& t : tracers_)
-      write_pre(t, v);
-
-  CDR& cdr = get_cdr();
-  {
-    Real* rhom = v.rhom();
-    for (Int i = 0; i < nlclcells; ++i)
-      cdr.set_rhom(i, 0, rhom[i]);
-  }
-  for (Int trial = 0; trial <= nrepeat; ++trial) {
-    for (Int ti = 0; ti < nt; ++ti) {
-      Real* Qm_min = v.Qm_min(ti), * Qm = v.Qm(ti), * Qm_max = v.Qm_max(ti),
-        * Qm_prev = v.Qm_prev(ti);
-      for (Int i = 0; i < nlclcells; ++i)
-        cdr.set_Qm(i, ti, Qm[i], Qm_min[i], Qm_max[i], Qm_prev[i]);
-    }
-
-    run_impl(trial);
-  }
-
-  for (Int ti = 0; ti < nt; ++ti) {
-    Real* Qm = v.Qm(ti);
-    for (Int i = 0; i < nlclcells; ++i)
-      Qm[i] = cdr.get_Qm(i, ti);
-  }
-
-  if (write)
-    for (const auto& t : tracers_)
-      write_post(t, v);
-  return check(cdr_name_, *p_, tracers_, v);
-}
-
 } // namespace test
 } // namespace cedr
 
 //>> cedr_test_1d_transport.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_test.hpp"
 //#include "cedr_qlt.hpp"
 //#include "cedr_caas.hpp"
@@ -3737,17 +4599,25 @@ Int run (const mpi::Parallel::Ptr& parallel, const Input& in) {
   auto tree = qlt::tree::make_tree_over_1d_mesh(parallel, in.ncells,
                                                 false /* imbalanced */);
   typedef qlt::QLT<Kokkos::DefaultHostExecutionSpace> QLTT;
-  QLTT qlt(parallel, in.ncells, tree);
+  QLTT qltnn(parallel, in.ncells, tree), qlt(parallel, in.ncells, tree);
 
   typedef caas::CAAS<Kokkos::DefaultHostExecutionSpace> CAAST;
   CAAST caas(parallel, in.ncells);
 
-  CDR* cdrs[] = {&qlt, &caas};
+  CDR* cdrs[] = {&qltnn, &qlt, &caas};
   const int ncdrs = sizeof(cdrs)/sizeof(*cdrs);
 
+  bool first = true;
   for (CDR* cdr : cdrs) {
-    cdr->declare_tracer(cedr::ProblemType::conserve |
-                        cedr::ProblemType::shapepreserve, 0);
+    if (first) {
+      QLTT* qlt = dynamic_cast<QLTT*>(cdr);
+      cedr_assert(qlt);
+      qlt->declare_tracer(cedr::ProblemType::conserve |
+                          cedr::ProblemType::nonnegative, 0);
+      first = false;
+    } else
+      cdr->declare_tracer(cedr::ProblemType::conserve |
+                          cedr::ProblemType::shapepreserve, 0);
     cdr->end_tracer_declarations();
     for (Int i = 0; i < in.ncells; ++i)
       cdr->set_rhom(i, 0, p.area(i));
@@ -3770,7 +4640,7 @@ Int run (const mpi::Parallel::Ptr& parallel, const Input& in) {
   const Int nsteps = Int(3.17*in.ncells);
   const Int ncycles = 1;
   
-  const char* names[] = {"yqlt", "ycaas"};
+  const char* names[] = {"yqltnn", "yqlt", "ycaas"};
   for (int ic = 0; ic < ncdrs; ++ic) {
     std::copy(y0.begin(), y0.end(), yf.begin());
     for (Int i = 0; i < ncycles; ++i)
@@ -3791,6 +4661,9 @@ Int run (const mpi::Parallel::Ptr& parallel, const Input& in) {
 } // namespace cedr
 
 //>> cedr_test.cpp
+// COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
+// the BSD license; see LICENSE in the top-level directory.
+
 //#include "cedr_qlt.hpp"
 //#include "cedr_caas.hpp"
 //#include "cedr_mpi.hpp"
@@ -3928,7 +4801,6 @@ struct QLT : public cedr::qlt::QLT<ES> {
               mpi::irecv(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps, mmd.rank,
                          mpitag, &lvl.kids_req[i]);
             }
-            //todo Replace with simultaneous waitany and isend.
             mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
           }
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
@@ -3937,23 +4809,25 @@ struct QLT : public cedr::qlt::QLT<ES> {
         }
 
         // Combine kids' data.
-        //todo Kernelize, interacting with waitany todo above.
         if (lvl.nodes.size()) {
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
 #         pragma omp for
 #endif
           for (size_t ni = 0; ni < lvl.nodes.size(); ++ni) {
-            auto& n = lvl.nodes[ni];
+            const auto lvlidx = lvl.nodes[ni];
+            const auto n = ns_->node_h(lvlidx);
             if ( ! n->nkids) continue;
             cedr_kernel_assert(n->nkids == 2);
             // Total density.
-            bd_.l2r_data(n->offset*l2rndps) = (bd_.l2r_data(n->kids[0]->offset*l2rndps) +
-                                               bd_.l2r_data(n->kids[1]->offset*l2rndps));
+            bd_.l2r_data(n->offset*l2rndps) =
+              (bd_.l2r_data(ns_->node_h(n->kids[0])->offset*l2rndps) +
+               bd_.l2r_data(ns_->node_h(n->kids[1])->offset*l2rndps));
             // Tracers.
             for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
               const Int problem_type = md_.get_problem_type(pti);
-              const bool sum_only = problem_type & ProblemType::shapepreserve;
-              const Int bsz = md_.get_problem_type_l2r_bulk_size(problem_type);
+              const bool nonnegative = problem_type & ProblemType::nonnegative;
+              const bool shapepreserve = problem_type & ProblemType::shapepreserve;
+              const bool conserve = problem_type & ProblemType::conserve;
               const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
 #if defined THREAD_QLT_RUN && defined COLUMN_OPENMP
 #             pragma omp parallel for
@@ -3961,13 +4835,19 @@ struct QLT : public cedr::qlt::QLT<ES> {
               for (Int bi = bis; bi < bie; ++bi) {
                 const Int bdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
                 Real* const me = &bd_.l2r_data(n->offset*l2rndps + bdi);
-                const Real* const k0 = &bd_.l2r_data(n->kids[0]->offset*l2rndps + bdi);
-                const Real* const k1 = &bd_.l2r_data(n->kids[1]->offset*l2rndps + bdi);
-                me[0] = sum_only ? k0[0] + k1[0] : cedr::impl::min(k0[0], k1[0]);
-                me[1] =            k0[1] + k1[1] ;
-                me[2] = sum_only ? k0[2] + k1[2] : cedr::impl::max(k0[2], k1[2]);
-                if (bsz == 4)
-                  me[3] =          k0[3] + k1[3] ;
+                const auto kid0 = ns_->node_h(n->kids[0]);
+                const auto kid1 = ns_->node_h(n->kids[1]);
+                const Real* const k0 = &bd_.l2r_data(kid0->offset*l2rndps + bdi);
+                const Real* const k1 = &bd_.l2r_data(kid1->offset*l2rndps + bdi);
+                if (nonnegative) {
+                  me[0] = k0[0] + k1[0];
+                  if (conserve) me[1] = k0[1] + k1[1];
+                } else {
+                  me[0] = shapepreserve ? k0[0] + k1[0] : cedr::impl::min(k0[0], k1[0]);
+                  me[1] = k0[1] + k1[1];
+                  me[2] = shapepreserve ? k0[2] + k1[2] : cedr::impl::max(k0[2], k1[2]);
+                  if (conserve) me[3] = k0[3] + k1[3] ;
+                }
               }
             }
           }
@@ -3992,9 +4872,9 @@ struct QLT : public cedr::qlt::QLT<ES> {
       }
 
       // Root.
-      if ( ! ns_->levels.empty() && ns_->levels.back().nodes.size() == 1 &&
-           ! ns_->levels.back().nodes[0]->parent) {
-        const auto& n = ns_->levels.back().nodes[0];
+      if ( ! (ns_->levels.empty() || ns_->levels.back().nodes.size() != 1 ||
+              ns_->node_h(ns_->levels.back().nodes[0])->parent >= 0)) {
+        const auto n = ns_->node_h(ns_->levels.back().nodes[0]);
         for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
           const Int problem_type = md_.get_problem_type(pti);
           const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
@@ -4010,12 +4890,16 @@ struct QLT : public cedr::qlt::QLT<ES> {
             // If QLT is enforcing global mass conservation, set the root's r2l Qm
             // value to the l2r Qm_prev's sum; otherwise, copy the l2r Qm value to
             // the r2l one.
-            const Int os = problem_type & ProblemType::conserve ? 3 : 1;
+            const Int os = (problem_type & ProblemType::conserve ?
+                            md_.get_problem_type_l2r_bulk_size(problem_type) - 1 :
+                            (problem_type & ProblemType::nonnegative ? 0 : 1));
             bd_.r2l_data(n->offset*r2lndps + r2lbdi) =
               bd_.l2r_data(n->offset*l2rndps + l2rbdi + os);
-            if ( ! (problem_type & ProblemType::shapepreserve)) {
-              // We now know the global q_{min,max}. Start propagating it
-              // leafward.
+            if ((problem_type & ProblemType::consistent) &&
+                ! (problem_type & ProblemType::shapepreserve)) {
+              // Consistent but not shape preserving, so we're solving a dynamic range
+              // preservation problem. We now know the global q_{min,max}. Start
+              // propagating it leafward.
               bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1) =
                 bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0);
               bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2) =
@@ -4039,7 +4923,6 @@ struct QLT : public cedr::qlt::QLT<ES> {
               mpi::irecv(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps, mmd.rank,
                          mpitag, &lvl.me_recv_req[i]);
             }
-            //todo Replace with simultaneous waitany and isend.
             mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
           }
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
@@ -4048,12 +4931,12 @@ struct QLT : public cedr::qlt::QLT<ES> {
         }
 
         // Solve QP for kids' values.
-        //todo Kernelize, interacting with waitany todo above.
 #if defined THREAD_QLT_RUN && defined HORIZ_OPENMP
 #       pragma omp for
 #endif
         for (size_t ni = 0; ni < lvl.nodes.size(); ++ni) {
-          auto& n = lvl.nodes[ni];
+          const auto lvlidx = lvl.nodes[ni];
+          const auto n = ns_->node_h(lvlidx);
           if ( ! n->nkids) continue;
           for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
             const Int problem_type = md_.get_problem_type(pti);
@@ -4065,7 +4948,8 @@ struct QLT : public cedr::qlt::QLT<ES> {
               const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
               const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
               cedr_assert(n->nkids == 2);
-              if ( ! (problem_type & ProblemType::shapepreserve)) {
+              if ((problem_type & ProblemType::consistent) &&
+                  ! (problem_type & ProblemType::shapepreserve)) {
                 // Pass q_{min,max} info along. l2r data are updated for use in
                 // solve_node_problem. r2l data are updated for use in isend.
                 const Real q_min = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1);
@@ -4073,15 +4957,16 @@ struct QLT : public cedr::qlt::QLT<ES> {
                 bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0) = q_min;
                 bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2) = q_max;
                 for (Int k = 0; k < 2; ++k) {
-                  bd_.l2r_data(n->kids[k]->offset*l2rndps + l2rbdi + 0) = q_min;
-                  bd_.l2r_data(n->kids[k]->offset*l2rndps + l2rbdi + 2) = q_max;
-                  bd_.r2l_data(n->kids[k]->offset*r2lndps + r2lbdi + 1) = q_min;
-                  bd_.r2l_data(n->kids[k]->offset*r2lndps + r2lbdi + 2) = q_max;
+                  const auto os = ns_->node_h(n->kids[k])->offset;
+                  bd_.l2r_data(os*l2rndps + l2rbdi + 0) = q_min;
+                  bd_.l2r_data(os*l2rndps + l2rbdi + 2) = q_max;
+                  bd_.r2l_data(os*r2lndps + r2lbdi + 1) = q_min;
+                  bd_.r2l_data(os*r2lndps + r2lbdi + 2) = q_max;
                 }
               }
-              const auto& k0 = n->kids[0];
-              const auto& k1 = n->kids[1];
-              this->solve_node_problem(
+              const auto k0 = ns_->node_h(n->kids[0]);
+              const auto k1 = ns_->node_h(n->kids[1]);
+              cedr::qlt::impl::solve_node_problem(
                 problem_type,
                  bd_.l2r_data( n->offset*l2rndps),
                 &bd_.l2r_data( n->offset*l2rndps + l2rbdi),
@@ -4115,9 +5000,12 @@ struct QLT : public cedr::qlt::QLT<ES> {
   }
 };
 
-template <typename ES>
-struct CAAS : public cedr::caas::CAAS<ES> {
-  typedef cedr::caas::CAAS<ES> Super;
+// We explicitly use Kokkos::Serial here so we can run the Kokkos kernels in the
+// super class w/o triggering an expecution-space initialization error in
+// Kokkos. This complication results from the interaction of Homme's
+// HORIZ_OPENMP threading with Kokkos kernels.
+struct CAAS : public cedr::caas::CAAS<Kokkos::Serial> {
+  typedef cedr::caas::CAAS<Kokkos::Serial> Super;
 
   CAAS (const cedr::mpi::Parallel::Ptr& p, const cedr::Int nlclcells,
         const typename Super::UserAllReducer::Ptr& uar)
@@ -4138,16 +5026,16 @@ struct CAAS : public cedr::caas::CAAS<ES> {
 } // namespace homme
 
 #ifdef QLT_MAIN
-/*
-  mpicxx -O3 -DQLT_MAIN -DQLT_TIME -Wall -pedantic -fopenmp -std=c++11 -I/home/ambradl/lib/kokkos/cpu/include cedr.cpp -L/home/ambradl/lib/kokkos/cpu/lib -lkokkos -ldl; if [ $? == 0 ]; then OMP_PROC_BIND=false OMP_NUM_THREADS=2 mpirun -np 14 ./a.out -t -pt --ncells 10000; fi
- */
 int main (int argc, char** argv) {
-  int nerr = 0;
+  int nerr = 0, retval = 0;
   MPI_Init(&argc, &argv);
   auto p = cedr::mpi::make_parallel(MPI_COMM_WORLD);
   srand(p->rank());
   Kokkos::initialize(argc, argv);
-  try {
+#if 0
+  try
+#endif
+  {
     cedr::InputParser inp(argc, argv, p);
     if (p->amroot()) inp.print(std::cout);
     if (inp.qin.unittest) {
@@ -4160,18 +5048,23 @@ int main (int argc, char** argv) {
       nerr += cedr::test::transport1d::run(p, inp.tin);
     {
       int gnerr;
-      cedr::mpi::reduce(*p, &nerr, &gnerr, 1, MPI_SUM, p->root());
+      cedr::mpi::all_reduce(*p, &nerr, &gnerr, 1, MPI_SUM);
+      retval = gnerr != 0 ? -1 : 0;
       if (p->amroot())
         std::cout << (gnerr != 0 ? "FAIL" : "PASS") << "\n";
     }
-  } catch (const std::exception& e) {
+  }
+#if 0
+  catch (const std::exception& e) {
     if (p->amroot())
       std::cerr << e.what();
+    retval = -1;
   }
-  Kokkos::finalize_all();
+#endif
+  Kokkos::finalize();
   if (nerr) prc(nerr);
   MPI_Finalize();
-  return 0;
+  return retval;
 }
 #endif
 
@@ -4260,7 +5153,7 @@ void compose_repro_sum(const Real* send, Real* recv,
                        Int nlocal, Int nfld, Int fcomm);
 
 struct ReproSumReducer :
-    public cedr::caas::CAAS<Kokkos::DefaultExecutionSpace>::UserAllReducer {
+    public compose::CAAS::UserAllReducer {
   ReproSumReducer (Int fcomm) : fcomm_(fcomm) {}
 
   int operator() (const cedr::mpi::Parallel& p, Real* sendbuf, Real* rcvbuf,
@@ -4277,7 +5170,7 @@ private:
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
   typedef compose::QLT<Kokkos::DefaultExecutionSpace> QLTT;
-  typedef compose::CAAS<Kokkos::DefaultExecutionSpace> CAAST;
+  typedef compose::CAAS CAAST;
 
   struct Alg {
     enum Enum { qlt, qlt_super_level, caas, caas_super_level };
