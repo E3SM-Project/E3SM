@@ -199,7 +199,7 @@ class TestCustomAssertions(CustomAssertionsTestStatus):
                                                   num_expected=0,
                                                   num_unexpected=1)
 
-    def test_assertStatusOfPhase_xfailUnexpected_passes(self):
+    def test_assertStatusOfPhase_xfailUnexpected_fails(self):
         """assert_status_of_phase should fail when xfail='unexpected' but the line does NOT
         contain the UNEXPECTED comment"""
         test_name = 'my.test.name'

@@ -13,6 +13,17 @@ class ExpectedFails(object):
         """Initialize an empty ExpectedFails object"""
         self._fails = {}
 
+    def __eq__(self, rhs):
+        expect(isinstance(rhs, ExpectedFails), "Wrong type")
+        return self._fails == rhs._fails # pylint: disable=protected-access
+
+    def __ne__(self, rhs):
+        result = self.__eq__(rhs)
+        return not result
+
+    def __repr__(self):
+        return repr(self._fails)
+
     def add_failure(self, phase, expected_status):
         """Add an expected failure to the list"""
         expect(phase not in self._fails, "Phase {} already present in list".format(phase))

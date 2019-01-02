@@ -183,5 +183,58 @@ class TestCsStatus(CustomAssertionsTestStatus):
         count_regex2 = r'{} +non-passes: +1'.format(re.escape(phase_of_interest2))
         six.assertRegex(self, self._output.getvalue(), count_regex2)
 
+    def test_expected_fails(self):
+        """With the expected_fails_file flag, expected failures should be flagged as such"""
+        test_name1 = 'my.test.name1'
+        test_name2 = 'my.test.name2'
+        test_dir1 = test_name1 + '.testid'
+        test_dir2 = test_name2 + '.testid'
+        test_dir_path1 = self.create_test_dir(test_dir1)
+        test_dir_path2 = self.create_test_dir(test_dir2)
+        self.create_test_status_core_passes(test_dir_path1, test_name1)
+        self.create_test_status_core_passes(test_dir_path2, test_name2)
+        test1_fail_phase = self.set_last_core_phase_to_fail(test_dir_path1, test_name1)
+        test2_fail_phase = self.set_last_core_phase_to_fail(test_dir_path2, test_name2)
+
+        # One phase is labeled as an expected failure for test1, nothing for test2:
+        expected_fails_contents = """<?xml version= "1.0"?>
+<expectedFails version="1.0">
+  <test name="{test_name1}">
+    <phase name="{test1_fail_phase}">
+      <status>{fail_status}</status>
+    </phase>
+  </test>
+</expectedFails>
+""".format(test_name1=test_name1,
+           test1_fail_phase=test1_fail_phase,
+           fail_status=test_status.TEST_FAIL_STATUS)
+        expected_fails_filepath = os.path.join(self._testroot, 'ExpectedFails.xml')
+        with open(expected_fails_filepath, 'w') as expected_fails_file:
+            expected_fails_file.write(expected_fails_contents)
+
+        cs_status([os.path.join(test_dir_path1, 'TestStatus'),
+                   os.path.join(test_dir_path2, 'TestStatus')],
+                  expected_fails_filepath=expected_fails_filepath,
+                  out=self._output)
+
+        # Both test1 and test2 should have a failure for one phase, but this should be
+        # marked as expected only for test1.
+        self.assert_core_phases(self._output.getvalue(), test_name1, fails=[test1_fail_phase])
+        self.assert_status_of_phase(self._output.getvalue(),
+                                    test_status.TEST_FAIL_STATUS,
+                                    test1_fail_phase,
+                                    test_name1,
+                                    xfail='expected')
+        self.assert_core_phases(self._output.getvalue(), test_name2, fails=[test2_fail_phase])
+        self.assert_status_of_phase(self._output.getvalue(),
+                                    test_status.TEST_FAIL_STATUS,
+                                    test2_fail_phase,
+                                    test_name2,
+                                    xfail='no')
+        # Make sure that no other phases are mistakenly labeled as expected failures:
+        self.assert_num_expected_unexpected_fails(self._output.getvalue(),
+                                                  num_expected=1,
+                                                  num_unexpected=0)
+
 if __name__ == '__main__':
     unittest.main()
