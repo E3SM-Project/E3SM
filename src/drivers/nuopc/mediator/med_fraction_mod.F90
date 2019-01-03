@@ -138,7 +138,7 @@ module med_fraction_mod
   real(R8),parameter :: eps_fracsum = 1.0e-02      ! allowed error in sum of fracs
   real(R8),parameter :: eps_fracval = 1.0e-02      ! allowed error in any frac +- 0,1
   real(R8),parameter :: eps_fraclim = 1.0e-03      ! truncation limit in fractions_a(lfrac)
-  logical           ,parameter :: atm_frac_correct = .false. ! turn on frac correction on atm grid
+  logical           ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
   !--- standard plus atm fraction consistency ---
   !  real(R8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
@@ -195,11 +195,13 @@ module med_fraction_mod
     real(R8), pointer          :: ifrac(:)
     real(R8), pointer          :: afrac(:)
     real(R8), pointer          :: frac(:)
+    real(R8), pointer          :: gfrac(:)
     real(R8), pointer          :: Sl_lfrin(:)
     real(R8), pointer          :: lfrin(:)
     real(R8), pointer          :: rfrac(:)
     real(R8), pointer          :: wfrac(:)
     real(R8), pointer          :: Si_imask(:)
+    real(R8), pointer          :: So_omask(:)
     integer                    :: i,j,n,n1
     logical, save              :: first_call = .true.
     integer                    :: maptype
@@ -699,6 +701,8 @@ module med_fraction_mod
     real(r8), pointer          :: lfrac(:)
     real(r8), pointer          :: ifrac(:)
     real(r8), pointer          :: ofrac(:)
+    real(r8), pointer          :: Si_ifrac(:)
+    real(r8), pointer          :: Si_imask(:)
     integer                    :: i,j,n,n1
     integer                    :: dbrc
     character(len=*),parameter :: subname='(med_fraction_set)'
@@ -726,28 +730,25 @@ module med_fraction_mod
 
     if (is_local%wrap%comp_present(compice)) then
 
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice), 'Si_ifrac', dataPtr1, rc=rc)
+       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ifrac', ifrac, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ifrac', dataPtr1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ofrac', dataPtr4, rc=rc)
+       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ofrac', ofrac, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! Note Si_imask is the ice domain real fraction which is a constant over time
        ! and  Si_ifrac is the time evolving ice fraction on the ice grid
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice) , 'Si_ifrac', dataPtr3, rc=rc)
+       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice) , 'Si_ifrac', Si_ifrac, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice) , 'Si_imask' , dataPtr2, rc=rc)
+       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice) , 'Si_imask' , Si_imask, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! for FBfrac(compice): set ifrac = Si_ifrac * Si_imask
-       dataPtr1(:) = dataptr3(:) * dataPtr2(:)
+       ifrac(:) = Si_ifrac(:) * Si_imask(:)
 
        ! for FBfrac(compice): set ofrac = Si_imask - ifrac
-       dataPtr4(:) = dataPtr2(:) - dataPtr1(:)
+       ofrac(:) = Si_imask(:) - ifrac(:)
 
        ! Set ocean grid fractions
        if (is_local%wrap%comp_present(compocn)) then

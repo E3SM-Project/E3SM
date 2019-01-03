@@ -165,6 +165,13 @@ contains
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
                  document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         else if (.not. compute_aoflux) then
+            call med_merge_auto(trim(compname(compatm)), &
+                 is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
+                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
+                 FBMed1=is_local%wrap%FBMed_aoflux_a, &
+                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return            
          else
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &

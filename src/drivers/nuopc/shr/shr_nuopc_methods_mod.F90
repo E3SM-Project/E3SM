@@ -2412,7 +2412,11 @@ module shr_nuopc_methods_mod
     shr_nuopc_methods_FB_FldChk = .false.
 
     call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), isPresent=isPresent, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) then
+       call ESMF_LogWrite(trim(subname)//" Error checking field: "//trim(fldname), & 
+            ESMF_LOGMSG_ERROR, rc=dbrc)
+       return
+    endif
     if (isPresent) then
        shr_nuopc_methods_FB_FldChk = .true.
     endif
