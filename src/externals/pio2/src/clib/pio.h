@@ -119,7 +119,7 @@ typedef struct var_desc_t
     /** ID of each outstanding pnetcdf request for this variable. */
     int *request;
 
-    /** Number of requests bending with pnetcdf. */
+    /** Number of requests pending with pnetcdf. */
     int nreqs;
 
     /* Holds the fill value of this var. */
@@ -267,6 +267,12 @@ typedef struct io_desc_t
      * 1-based mappings to the global array for that task. */
     PIO_Offset *map;
 
+    /** If the map passed in is not monotonically increasing
+     *	then map is sorted and remap is an array of original
+     * indices of map. */
+
+    int *remap;
+
     /** Number of tasks involved in the communication between comp and
      * io tasks. */
     int nrecvs;
@@ -278,7 +284,8 @@ typedef struct io_desc_t
      * dimensions. */
     int ndims;
 
-    /** An array of size ndims with the length of each dimension. */
+    /** An array of size ndims with the global length of each dimension. */
+
     int *dimlen;
 
     /** The actual number of IO tasks participating. */
@@ -293,6 +300,9 @@ typedef struct io_desc_t
     /** Does this decomp leave holes in the field (true) or write
      * everywhere (false) */
     bool needsfill;
+
+    /** If the map is not monotonically increasing we will need to sort it. */
+    bool needssort;
 
     /** The maximum number of bytes of this iodesc before flushing. */
     int maxbytes;
@@ -1140,68 +1150,6 @@ extern "C" {
                                 const PIO_Offset *count, const PIO_Offset *stride,
                                 const unsigned long long *op);
 
-    /* Varm functions are deprecated and should be used with extreme
-     * caution or not at all. Varm functions are not supported in
-     * async mode. */
-    int PIOc_put_varm(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                      const PIO_Offset *stride, const PIO_Offset *imap, const void *buf,
-                      PIO_Offset bufcount, MPI_Datatype buftype);
-    int PIOc_get_varm_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, signed char *buf);
-    int PIOc_put_varm_uchar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap,
-                            const unsigned char *op);
-    int PIOc_put_varm_short(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, const short *op);
-    int PIOc_get_varm_short(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, short *buf);
-    int PIOc_get_varm_ulonglong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                                const PIO_Offset *stride, const PIO_Offset *imap, unsigned long long *buf);
-    int PIOc_get_varm_ushort(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, unsigned short *buf);
-    int PIOc_get_varm_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                               const PIO_Offset *stride, const PIO_Offset *imap, long long *buf);
-    int PIOc_put_varm_text(int ncid, int varid, const PIO_Offset *start,
-                           const PIO_Offset *count, const PIO_Offset *stride,
-                           const PIO_Offset *imap, const char *op);
-    int PIOc_put_varm_ushort(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, const unsigned short *op);
-    int PIOc_put_varm_ulonglong(int ncid, int varid, const PIO_Offset *start,
-                                const PIO_Offset *count, const PIO_Offset *stride,
-                                const PIO_Offset *imap, const unsigned long long *op);
-    int PIOc_put_varm_int(int ncid, int varid, const PIO_Offset *start,
-                          const PIO_Offset *count, const PIO_Offset *stride,
-                          const PIO_Offset *imap, const int *op);
-    int PIOc_put_varm_float(int ncid, int varid, const PIO_Offset *start,
-                            const PIO_Offset *count, const PIO_Offset *stride,
-                            const PIO_Offset *imap, const float *op);
-    int PIOc_put_varm_long(int ncid, int varid, const PIO_Offset *start,
-                           const PIO_Offset *count, const PIO_Offset *stride,
-                           const PIO_Offset *imap, const long *op);
-    int PIOc_put_varm_uint(int ncid, int varid, const PIO_Offset *start,
-                           const PIO_Offset *count, const PIO_Offset *stride,
-                           const PIO_Offset *imap, const unsigned int *op);
-    int PIOc_put_varm_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, const double *op);
-    int PIOc_put_varm_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, const signed char *op);
-    int PIOc_put_varm_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                               const PIO_Offset *stride, const PIO_Offset *imap, const long long *op);
-    int PIOc_get_varm_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, double *buf);
-    int PIOc_get_varm_text(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                           const PIO_Offset *stride, const PIO_Offset *imap, char *buf);
-    int PIOc_get_varm_int(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                          const PIO_Offset *stride, const PIO_Offset *imap, int *buf);
-    int PIOc_get_varm_uint(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                           const PIO_Offset *stride, const PIO_Offset *imap, unsigned int *buf);
-    int PIOc_get_varm(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                      const PIO_Offset *stride, const PIO_Offset *imap, void *buf,
-                      PIO_Offset bufcount, MPI_Datatype buftype);
-    int PIOc_get_varm_float(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, float *buf);
-    int PIOc_get_varm_long(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                           const PIO_Offset *stride, const PIO_Offset *imap, long *buf);
 #if defined(__cplusplus)
 }
 #endif

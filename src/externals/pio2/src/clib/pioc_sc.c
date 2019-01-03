@@ -9,7 +9,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 
-/** The default target blocksize for each io task when the box
+/** The default target blocksize in bytes for each io task when the box
  * rearranger is used. */
 #define DEFAULT_BLOCKSIZE 1024
 
@@ -22,7 +22,7 @@ int blocksize = DEFAULT_BLOCKSIZE;
  *
  * @param a
  * @param b
- * @returns greates common divisor.
+ * @returns greatest common divisor.
  * @author Jim Edwards
  */
 int gcd(int a, int b )
@@ -275,9 +275,8 @@ int CalcStartandCount(int pio_type, int ndims, const int *gdims, int num_io_proc
     /* We are trying to find start and count indices for each iotask
      * such that each task has approximately blocksize data to write
      * (read). The number of iotasks participating in the operation is
-     * blocksize/global_size. */
+     * global_size/blocksize. */
     minbytes = blocksize - 256;
-    maxbytes = blocksize + 256;
 
     /* Determine the size of the data type. */
     if ((ret = find_mpi_type(pio_type, NULL, &basesize)))
@@ -294,6 +293,8 @@ int CalcStartandCount(int pio_type, int ndims, const int *gdims, int num_io_proc
     /* Find the number of ioprocs that are needed so that we have
      * blocksize data on each iotask*/
     use_io_procs = max(1, min((int)((float)pgdims / (float)minblocksize + 0.5), num_io_procs));
+
+    maxbytes = max(blocksize, pgdims * basesize / use_io_procs) + 256;
 
     /* Initialize to 0. */
     converged = 0;
