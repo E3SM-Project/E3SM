@@ -176,6 +176,10 @@ module seaice_column
 
   type(ciceTracerObjectType), private :: ciceTracerObject
 
+  real(kind=RKIND), dimension(:,:), allocatable :: &
+     tracerArrayCategoryCell
+!$omp threadprivate(tracerArrayCategoryCell)
+
   ! warnings string kind
   integer, parameter :: strKINDWarnings = char_len_long
 
@@ -1762,8 +1766,7 @@ contains
          oceanBioConcentrationsUsed
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         categoryThicknessLimitsCell, &
-         tracerArrayCategoryCell
+         categoryThicknessLimitsCell
 
     logical :: &
          abortFlag, &
@@ -1856,7 +1859,6 @@ contains
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
        allocate(categoryThicknessLimitsCell(nCategories+1, nCellsSolve) )
-       allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -1866,7 +1868,7 @@ contains
        abortMessage = ""
 
        !$omp parallel do default(shared) private(iCategory,newlyFormedIceLogical,iBioTracers,iBioData,&
-       !$omp&   oceanBioConcentrationsUsed,tracerArrayCategoryCell,abortMessage) reduction(.or.:abortFlag)
+       !$omp&   oceanBioConcentrationsUsed,abortMessage) reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -1964,7 +1966,6 @@ contains
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioConcentrationsUsed)
        deallocate(categoryThicknessLimitsCell)
-       deallocate(tracerArrayCategoryCell)
 
        block => block % next
     end do
@@ -2254,9 +2255,6 @@ contains
     integer, dimension(:), allocatable :: &
          index_shortwaveAerosol
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         tracerArrayCategoryCell
-
     real(kind=RKIND) :: &
          dayOfYear, &
          lonCellColumn
@@ -2390,7 +2388,6 @@ contains
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
        allocate(index_shortwaveAerosol(maxAerosolType))
-       allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
 
        if (.not. config_use_column_biogeochemistry) then
           index_shortwaveAerosol(1:maxAerosolType) = 1
@@ -2403,7 +2400,7 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
-       !$omp parallel do default(shared) private(iCategory,iAerosol,aerosolsArray,lonCellColumn,tracerArrayCategoryCell)
+       !$omp parallel do default(shared) private(iCategory,iAerosol,aerosolsArray,lonCellColumn)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -2521,7 +2518,6 @@ contains
        ! aerosols array
        deallocate(aerosolsArray)
        deallocate(index_shortwaveAerosol)
-       deallocate(tracerArrayCategoryCell)
 
        block => block % next
     end do
@@ -2634,9 +2630,6 @@ contains
     logical, dimension(:), allocatable :: &
          newlyFormedIceLogical
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         tracerArrayCategoryCell
-
     logical :: &
          abortFlag, &
          setGetPhysicsTracers, &
@@ -2715,7 +2708,6 @@ contains
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
-       allocate(tracerArrayCategoryCell(ciceTracerObject%nTracers, nCategories) )
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -2807,7 +2799,6 @@ contains
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
-       deallocate(tracerArrayCategoryCell)
 
        block => block % next
     end do
@@ -4662,6 +4653,9 @@ contains
        call init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
     endif
+    !$omp parallel
+    allocate(tracerArrayCategoryCell(tracerObject % nTracers, nCategories))
+    !$omp end parallel
 
   end subroutine init_column_tracer_object
 
