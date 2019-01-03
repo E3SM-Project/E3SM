@@ -9,7 +9,11 @@ module element_state
 
   implicit none
   private
+#ifdef ARKODE
+  integer, public, parameter :: timelevels = 50
+#else
   integer, public, parameter :: timelevels = 3
+#endif
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
   integer, public               :: max_itercnt_perstep
