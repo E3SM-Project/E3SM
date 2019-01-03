@@ -582,8 +582,15 @@ subroutine pcond (lchnk   ,ncol    , &
 
                   ! Q=C-E=-C1*Al + C2*Aq - C3* At + C4*Er
   
-                  cme(i,k) = -cmec1(i)*lctend(i,k) + cmec2(i)*qtend(i,k)  &
-                             -cmec3(i)*ttend(i,k) + cmec4(i)*evapprec(i,k)
+                  if( ql_incld_opt >= 1 ) then
+
+                   cme(i,k) = -cmec1(i)*max(0._r8,lctend(i,k)) + cmec2(i)*qtend(i,k)  &
+                              -cmec3(i)*ttend(i,k) + cmec4(i)*evapprec(i,k)
+                  else
+                   cme(i,k) = -cmec1(i)*lctend(i,k) + cmec2(i)*qtend(i,k)  &
+                              -cmec3(i)*ttend(i,k) + cmec4(i)*evapprec(i,k)
+                  end if 
+
                endif
 
            ! 3. when rh < rhu00, evaporate existing cloud water
