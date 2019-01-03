@@ -103,20 +103,20 @@ contains
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
-      hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
+!      hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
 !         hsurf_t = top_pp%elevation(t)                  ! topounit sfc elevation
-      hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
-      tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
-      thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
-      qbot_g  = x2l(index_x2l_Sa_shum,i)              ! atm sfc spec humid
-      pbot_g  = x2l(index_x2l_Sa_pbot,i)              ! atm sfc pressure
-      zbot_g  = x2l(index_x2l_Sa_z,i)                 ! atm ref height
+!      hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
+!      tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
+!      thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
+!      qbot_g  = x2l(index_x2l_Sa_shum,i)              ! atm sfc spec humid
+!      pbot_g  = x2l(index_x2l_Sa_pbot,i)              ! atm sfc pressure
+!      zbot_g  = x2l(index_x2l_Sa_z,i)                 ! atm ref height
 
-         zbot_t  = zbot_g
-         tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
+!         zbot_t  = zbot_g
+!         tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
  
-         Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
-         pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
+!         Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
+!         pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
 
          ! Derivation of potential temperature calculation:
          ! 
@@ -135,20 +135,20 @@ contains
          !         = tbot_c * (exp(zbot_c/Hbot))^(rair/cpair)
          !         = tbot_c * exp((zbot_c/Hbot) * (rair/cpair))
 
-         thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
+!         thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
 
-         call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
-         call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
+!         call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
+!         call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
 
-         qbot_t = qbot_g*(qs_t/qs_g)
-         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
-         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
+!         qbot_t = qbot_g*(qs_t/qs_g)
+!         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
+!         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
 
-       top_as%tbot(t) = tbot_t
-       top_as%thbot(t) = thbot_t
+!       top_as%tbot(t) = tbot_t
+!       top_as%thbot(t) = thbot_t
 !	 top_as%vp_atm(t) = es_t
-       top_as%qbot(t) = qbot_t
-       top_as%pbot(t) = pbot_t
+!       top_as%qbot(t) = qbot_t
+!       top_as%pbot(t) = pbot_t
 
      end do
 
