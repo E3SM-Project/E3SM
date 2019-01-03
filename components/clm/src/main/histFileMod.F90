@@ -3194,10 +3194,10 @@ contains
           call htape_timeconst(t, mode='write')
 
           ! Write 3D time constant history variables only to first primary tape
-          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then
+          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then 
              call htape_timeconst3D(t, &
                   bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
-             do_3Dtconst = .false.
+             do_3Dtconst = .false. 
           end if
 
           if (masterproc) then

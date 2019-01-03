@@ -129,7 +129,8 @@ module WaterfluxType
      real(r8), pointer :: mflx_drain_col           (:,:) ! drainage from groundwater table (kg H2O /s)
      real(r8), pointer :: mflx_recharge_col        (:)   ! recharge from soil column to unconfined aquifer (kg H2O /s)
      real(r8), pointer :: qflx_lat_aqu_layer       (:,:) ! lateral flow for each layer
-     real(r8), pointer :: qflx_lat_aqu             (:)   ! total lateral flow
+     real(r8), pointer :: qflx_lat_aqu             (:)   ! total lateral 
+     real(r8), pointer :: qflx_tide                (:)   ! tidal flux between consecutive timesteps TAO
      real(r8), pointer :: qflx_surf_input          (:)   ! surface runoff input to hollow (mmH2O /s)
 
      ! Objects that help convert once-per-year dynamic land cover changes into fluxes
@@ -300,6 +301,7 @@ contains
     allocate(this%mflx_recharge_col      (begc:endc))                ; this%mflx_recharge_col        (:)   = nan
     allocate(this%qflx_surf_input        (begc:endc))                ; this%qflx_surf_input          (:)   = nan
     allocate(this%qflx_lat_aqu           (begc:endc))                ; this%qflx_lat_aqu             (:)   = nan
+    allocate(this%qflx_tide              (begc:endc))                ; this%qflx_tide                (:)   = nan !TAO
     allocate(this%qflx_lat_aqu_layer     (begc:endc,1:nlevgrnd))     ; this%qflx_lat_aqu_layer     (:,:)   = nan
 
     this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
@@ -517,7 +519,10 @@ contains
        call hist_addfld1d (fname='QFLX_SURF_INPUT', units='mm H2O/s', &
             avgflag='A', long_name='Runoff from hummock to hollow', &
             ptr_col=this%qflx_surf_input, c2l_scale_type='urbanf')
-
+       this%qflx_tide(begc:endc) = spval !TAO
+       call hist_addfld1d (fname='QFLX_TIDE', units='mm H2O/s', & !TAO
+            avgflag='A', long_name='tidal flux between time steps (incoming and outgoing)', & !TAO
+            ptr_col=this%qflx_tide, c2l_scale_type='urbanf') !TAO
 
 
     this%qflx_h2osfc_surf_col(begc:endc) = spval
