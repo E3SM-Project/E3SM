@@ -1226,6 +1226,7 @@ contains
                ! if soil water potential lower than critical value, accumulate
                ! as stress in offset soil water index
 
+               !if (psi <= soilpsi_off) then
                if (psi <= soilpsi_off .or. h2osfc(c) >= 120) then ! h20sfc in mm 29/8/2018 TAO
                   offset_swi(p) = offset_swi(p) + fracday
 
@@ -1233,6 +1234,7 @@ contains
                   ! if this is not the middle of a previously initiated onset period,
                   ! then set flag to start the offset period and reset index variables
 
+                  !if (offset_swi(p) >= crit_offset_swi .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8 !crit_offset_swi 29/8/2018 TAO
                   if (offset_swi(p) >= 10 .and. onset_flag(p) == 0._r8) offset_flag(p) = 1._r8 !crit_offset_swi 29/8/2018 TAO
 
                   ! if soil water potential higher than critical value, reduce the

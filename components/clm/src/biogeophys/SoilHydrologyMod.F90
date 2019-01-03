@@ -177,8 +177,8 @@ contains
             fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
          end if
 #if (defined HUM_HOL)
-         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% 
-         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)!TAO
+         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.8 TAO
+         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8)!TAO 0.3 t 0.7, 0.15 to 0.35
 #endif
 
          ! use perched water table to determine fsat (if present)
@@ -189,16 +189,16 @@ contains
                fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
             end if
 #if (defined HUM_HOL)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
 #endif
          else
             if ( frost_table(c) > zwt_perched(c)) then 
                fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt_perched(c))       !*( frost_table(c) - zwt_perched(c))/4.0
             endif
 #if (defined HUM_HOL)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/1.0_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
 #endif   
          endif
          if (origflag == 1) then
@@ -376,6 +376,7 @@ contains
           qflx_gross_evap_soil =>    col_wf%qflx_gross_evap_soil , & ! Output: [real(r8) (:)] gross evaporation (mm H2O/s)
           qflx_surf_input      =>    col_wf%qflx_surf_input      , & ! Output: [real(r8) (:,:) ] surface runoff input to hollow (mmH2O/s)
           qflx_lat_aqu         =>    col_wf%qflx_lat_aqu         , & ! Output: [real(r8) (:,:) ] total lateral flow
+          qflx_tide            =>    col_wf%qflx_tide            , & ! Output: [real(r8) (:,:) ]
           qflx_lat_aqu_layer   =>    col_wf%qflx_lat_aqu_layer   , & ! Output: [real(r8) (:,:) ] lateral flow for each layer
 
           smpmin               =>    soilstate_vars%smpmin_col               , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
@@ -467,7 +468,7 @@ contains
 
              if (c .eq. 1) then
              call get_curr_time(days, seconds)
-               qflx_surf_input(1) = 0.005_r8 !0._r8 !hummock TAO
+               qflx_surf_input(1) = 0._r8 !hummock TAO KEEP AT ZERO!!!
                qflx_surf_input(2) = qflx_surf(1)*(hum_frac/hol_frac)     !hollow  TAO
              end if
              qflx_in_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c) - qflx_surf(c) + qflx_surf_input(c))
@@ -542,14 +543,16 @@ contains
 
              ! limit runoff to value of storage above S(pc)
 #if (defined HUM_HOL)
+             qflx_tide(c) = 0._r8
              if (h2osfc(c) .gt. 0._r8 .and. c==1) then
                 !qflx_h2osfc_surf(c) = min(qflx_h2osfc_surfrate*h2osfc(c)**2.0,h2osfc(c) / dtime) TAO 29/8/2018
                 qflx_h2osfc_surf(c) = min(1.0e-7_r8*h2osfc(c)**2.0,h2osfc(c) / dtime) 
              else if (c .eq. 2) then
                 call get_curr_time (days, seconds)
                 qflx_h2osfc_surf(c) = 0._r8
-                h2osfc(c) = 500_r8 * (sin((0.00003_r8*3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds/2.920463_r8) / 0.91518_r8) + 800_r8) ! changed from 0. to sine function TAO 27/8/2018
-             
+                qflx_tide(c) = ((500_r8 * (sin((0.00003_r8*3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds*3.1415_r8*0.00000001_r8) / 0.91518_r8) + 800_r8)) - h2osfc(c)) / dtime !TAO
+                h2osfc(c) = 500_r8 * (sin((0.00003_r8*3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds*3.1415_r8*0.00000001_r8) / 0.91518_r8) + 800_r8) ! (seconds/2.920463_r8) changed from 0. to sine function TAO 27/8/2018
+               
 #else
              if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
                 ! spatially variable k_wet
@@ -617,9 +620,6 @@ contains
 
              if (c.eq.1) then
                zwt_hu = zwt(1)
-               if (h2osfc(1) > 0_r8) then !TAO
-                  zwt_hu = 0 !TAO
-               else !TAO
                zwt_hu = zwt_hu - h2osfc(1)/1000._r8
                endif
                !Replace zwt_ho with externally forced water height here
@@ -635,15 +635,16 @@ contains
                !harmonic mean 
                zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13 TAO 10/7/2018
                !DMR 12/4/2015
-               call get_curr_time(days, seconds)
-               if (maxval(icefrac(:,:)) .ge. 0.01_r8) then
+               !call get_curr_time(days, seconds)
+               call get_curr_date(yr, mon, day, tod)
+               if (maxval(icefrac(:,:)) .ge. 0.01_r8 .or. yr.le.4) then !TAO edited
                  !turn off lateral transport if any ice is present
                  qflx_lat_aqu(:) = 0._r8
                else
-                 qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !0.0_r8 is the offset value between the 2 columns
-                     0.0_r8) / 1._r8 * sqrt(hol_frac/hum_frac)
-                 qflx_lat_aqu(2) = -2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- &
-                     0.0_r8) / 1._r8 * sqrt(hum_frac/hol_frac)
+                 qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !0.0_r8 is the offset value between the 2 columns changed to 1.5
+                     1.0_r8) / 50._r8 * sqrt(hol_frac/hum_frac)
+                 qflx_lat_aqu(2) = -2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !changed distance from 1._r8 )in meters to 50
+                     1.0_r8) / 50._r8 * sqrt(hum_frac/hol_frac)
                endif
              endif
 #endif
@@ -795,6 +796,7 @@ contains
           icefrac            =>    soilhydrology_vars%icefrac_col      , &  !Output: [real(r8) (:,:) ]      
           qflx_surf_input    =>    col_wf%qflx_surf_input    , & ! Output: [real(r8) (:,:) ] surface runoff input to hollow (mmH2O/s)
           qflx_lat_aqu       =>    col_wf%qflx_lat_aqu       , & ! Output: [real(r8) (:,:) ] total lateral flow
+          qflx_tide          =>    col_wf%qflx_tide          , & ! Output: [real(r8) (:,:) ]
           qflx_lat_aqu_layer =>    col_wf%qflx_lat_aqu_layer , & ! Output: [real(r8) (:,:) ] lateral flow for each layer
 #endif
           qflx_rsub_sat      =>    col_wf%qflx_rsub_sat        & ! Output: [real(r8) (:)   ]  soil saturation excess [mm h2o/s]
@@ -1497,7 +1499,7 @@ contains
                 dzsum  = dzsum + dzmm(c,j)
                 icefracsum = icefracsum + icefrac(c,j) * dzmm(c,j)
              end do
-             ! add ice impedance factor to baseflow
+             ! add ice impedance factor to baseflow REMOVED BY TAO - ICE NOT AN IMPEDENCE IN SALTWATER SYSTEMS
              if(origflag == 1) then 
                 if (use_vichydro) then
                    call endrun(msg="VICHYDRO is not available for origflag=1"//errmsg(__FILE__, __LINE__))
@@ -1505,7 +1507,10 @@ contains
                    fracice_rsub(c) = max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
                         - exp(-3._r8))/(1.0_r8-exp(-3._r8))
                    imped=(1._r8 - fracice_rsub(c))
+                   rsub_top_max = 5.5e-3_r8
+#if (defined HUM_HOL)                   
                    rsub_top_max = min(5.5e-3_r8, rsub_top_globalmax)
+#endif
                 end if
              else
                 if (use_vichydro) then
@@ -1521,20 +1526,20 @@ contains
 #if (defined HUM_HOL_SPRUCE)
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
-            if (zwt(c) < 0.7_r8) then
+            if (zwt(c) < 1.0_r8) then !TAO changed 0.7 to 1.5 for elevation offset 
               rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c)) - &
-                imped * rsub_top_max * exp(-fff(c)*0.7_r8)
+                imped * rsub_top_max * exp(-fff(c)*1.0_r8) !TAO changed 0.7 to 1.5 for elevation offset 
             else
               rsub_top(c)    = 0_r8
             endif
           else           !hollow
             if (zwt(c) < 0.4_r8) then
               if (zwt(c) .lt. 0.017) then
-                  rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+0.3_r8-h2osfc(c)/1000_r8)) - &
-                  imped * rsub_top_max * exp(-fff(c)*0.7_r8)
+                  rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+1.0_r8-h2osfc(c)/1000_r8)) - & !TAO
+                  imped * rsub_top_max * exp(-fff(c)*1.0_r8) !TAO changed 0.7 to 1.5 for elevation offset 
               else
-                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+0.3_r8)) - &
-                  imped * rsub_top_max * exp(-fff(c)*0.7_r8)
+                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+1.0_r8)) - & !TAO
+                  imped * rsub_top_max * exp(-fff(c)*1.0_r8) !TAO changed 0.7 to 1.5 for elevation offset 
               end if
             else
               rsub_top(c)    = 0_r8
@@ -2168,8 +2173,8 @@ contains
                    call endrun(msg="VICHYDRO is not available for origflag=1"//errmsg(__FILE__, __LINE__))
                 else
                    fracice_rsub(c) = max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
-                        - exp(-3._r8))/(1.0_r8-exp(-3._r8))
-                   imped=(1._r8 - fracice_rsub(c))
+                        - exp(-3._r8))/(1.0_r8-exp(-3._r8)) 
+                   imped=(10._r8 - fracice_rsub(c))
                    rsub_top_max = 5.5e-3_r8
                 end if
              else

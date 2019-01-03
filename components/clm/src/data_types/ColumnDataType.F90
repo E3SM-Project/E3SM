@@ -464,6 +464,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
     real(r8), pointer :: qflx_lateral         (:)   => null() ! lateral subsurface flux (mm H2O /s)
     real(r8), pointer :: qflx_lat_aqu_layer   (:,:) => null() ! lateral flow for each layer
+    real(r8), pointer :: qflx_tide            (:)   => null() ! tidal flux between consecutive timesteps TAO
     real(r8), pointer :: qflx_lat_aqu         (:)   => null() ! total lateral flow
     real(r8), pointer :: qflx_surf_input      (:)   => null() ! surface runoff input to hollow (mmH2O /s)
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
@@ -5154,6 +5155,7 @@ contains
     allocate(this%qflx_lateral           (begc:endc))             ; this%qflx_lateral         (:)   = 0._r8
     allocate(this%qflx_surf_input        (begc:endc))             ; this%qflx_surf_input      (:)   = nan
     allocate(this%qflx_lat_aqu           (begc:endc))             ; this%qflx_lat_aqu         (:)   = nan
+    allocate(this%qflx_tide              (begc:endc))             ; this%qflx_tide            (:)   = nan !TAO
     allocate(this%qflx_lat_aqu_layer     (begc:endc,1:nlevgrnd))  ; this%qflx_lat_aqu_layer   (:,:) = nan
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = nan
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = nan
