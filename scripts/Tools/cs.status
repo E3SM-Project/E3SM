@@ -46,7 +46,7 @@ def parse_command_line(args, description):
 
     performance_fails_equivalent = ' '.join(["--count-fails {}".format(phase)
                                              for phase in _PERFORMANCE_PHASES])
-    parser.add_argument("--count-performance-fails", action="store_true",
+    parser.add_argument("-p", "--count-performance-fails", action="store_true",
                         help="For phases that involve performance comparisons with baseline:\n"
                         "Do not give line-by-line output; instead, just report the total number\n"
                         "of tests that have not PASSed this phase.\n"
