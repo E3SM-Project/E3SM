@@ -60,6 +60,7 @@
 <effgw_oro>          0.25    </effgw_oro>
 <seasalt_emis_scale> 0.85   </seasalt_emis_scale>
 <clubb_gamma_coef>   0.32   </clubb_gamma_coef>
+<clubb_gamma_coefb>   0.32   </clubb_gamma_coefb>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>
 <effgw_beres>        0.4    </effgw_beres>
