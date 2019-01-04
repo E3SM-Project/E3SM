@@ -160,16 +160,16 @@ class GenericXML(object):
 
     def set(self, node, attrib_name, value):
         if self.get(node, attrib_name) != value:
-            expect(not self.read_only, "locked")
+            expect(not self.read_only, "read_only: cannot set attrib[{}]={} for node {} in file {}".format(attrib_name, value, self.name(node), self.filename))
             if attrib_name == "id":
-                expect(not self.locked, "locked")
+                expect(not self.locked, "locked: cannot set attrib[{}]={} for node {} in file {}".format(attrib_name, value, self.name(node), self.filename))
             self.needsrewrite = True
             return node.xml_element.set(attrib_name, value)
 
     def pop(self, node, attrib_name):
-        expect(not self.read_only, "locked")
+        expect(not self.read_only, "read_only: cannot pop attrib[{}] for node {} in file {}".format(attrib_name, self.name(node), self.filename))
         if attrib_name == "id":
-            expect(not self.locked, "locked")
+            expect(not self.locked, "locked: cannot pop attrib[{}] for node {} in file {}".format(attrib_name, self.name(node), self.filename))
         self.needsrewrite = True
         return node.xml_element.attrib.pop(attrib_name)
 
@@ -178,13 +178,13 @@ class GenericXML(object):
         return None if node.xml_element.attrib is None else dict(node.xml_element.attrib)
 
     def set_name(self, node, name):
-        expect(not self.read_only, "locked")
+        expect(not self.read_only, "read_only: set node name {} in file {}".format(name, self.filename))
         if node.xml_element.tag != name:
             self.needsrewrite = True
             node.xml_element.tag = name
 
     def set_text(self, node, text):
-        expect(not self.read_only, "locked")
+        expect(not self.read_only, "read_only: set node text {} for node {} in file {}".format(text, self.name(node), self.filename))
         if node.xml_element.text != text:
             node.xml_element.text = text
             self.needsrewrite = True
@@ -199,7 +199,7 @@ class GenericXML(object):
         """
         Add element node to self at root
         """
-        expect(not self.locked and not self.read_only, "locked")
+        expect(not self.locked and not self.read_only, "{}: cannot add child {} in file {}".format("read_only" if self.read_only else "locked", self.name(node), self.filename))
         self.needsrewrite = True
         root = root if root is not None else self.root
         if position is not None:
@@ -211,13 +211,13 @@ class GenericXML(object):
         return deepcopy(node)
 
     def remove_child(self, node, root=None):
-        expect(not self.locked and not self.read_only, "locked")
+        expect(not self.locked and not self.read_only, "{}: cannot remove child {} in file {}".format("read_only" if self.read_only else "locked", self.name(node), self.filename))
         self.needsrewrite = True
         root = root if root is not None else self.root
         root.xml_element.remove(node.xml_element)
 
     def make_child(self, name, attributes=None, root=None, text=None):
-        expect(not self.locked and not self.read_only, "locked")
+        expect(not self.locked and not self.read_only, "{}: cannot make child {} in file {}".format("read_only" if self.read_only else "locked", name, self.filename))
         root = root if root is not None else self.root
         self.needsrewrite = True
         if attributes is None:
@@ -267,12 +267,12 @@ class GenericXML(object):
 
     def get_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
-        expect(len(children) == 1, err_msg if err_msg else "Expected one child")
+        expect(len(children) == 1, err_msg if err_msg else "Expected one child with name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
         return children[0]
 
     def get_optional_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
-        expect(len(children) <= 1, err_msg if err_msg else "Multiple matches")
+        expect(len(children) <= 1, err_msg if err_msg else "Multiple matches for name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
         return children[0] if children else None
 
     def get_element_text(self, element_name, attributes=None, root=None):
