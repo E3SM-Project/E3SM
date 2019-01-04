@@ -116,7 +116,6 @@ sed s/hypervis_subcycle=.\*/"hypervis_subcycle=$hypervis_subcycle"/   |\
 sed s/hypervis_subcycle_q.\*/"hypervis_subcycle_q=$hypervis_subcycle"/   |\
 sed s/runtype.\*/"runtype = 0"/   |\
 sed s/output_frequency.\*/"output_frequency = 1"/   |\
-sed s:infilenames.\*:"infilenames='h0-tavg.nc'": |\
 sed s:output_varnames1.\*:"output_varnames1=$outnames": \
 > $wdir/input.nl
 

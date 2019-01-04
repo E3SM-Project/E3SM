@@ -42,7 +42,6 @@ vfile_int     = "../vcoord/aspL20_int.isotherm.ascii"
 &analysis_nl
  output_timeunits=1
  output_frequency=0
- infilenames='h1-tavg.nc'
  output_varnames1='area'
  output_type='netcdf'
 ! num_io_procs = 1
