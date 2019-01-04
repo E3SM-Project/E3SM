@@ -14,21 +14,16 @@
 #define SSP3333C_ARK 10
 #define RK2_ARK 11
 #define KGU35_ARK 12
-#define IMKG232a_ARK 13
-#define IMKG232b_ARK 14
-#define IMKG242a_ARK 15
-#define IMKG242b_ARK 16
-#define IMKG243a_ARK 17
-#define IMKG243b_ARK 18
-#define IMKG252a_ARK 19
-#define IMKG252b_ARK 20
-#define IMKG253a_ARK 21
-#define IMKG253b_ARK 22
-#define IMKG254a_ARK 23
-#define IMKG254b_ARK 24
-#define IMKG254c_ARK 25
-#define IMKG343a_ARK 26
-#define IMKG343b_ARK 27
+#define IMKG232_ARK 13
+#define IMKG242_ARK 14
+#define IMKG243_ARK 15
+#define IMKG252_ARK 16
+#define IMKG253_ARK 17
+#define IMKG254_ARK 18
+#define IMKG342_ARK 19
+#define IMKG343_ARK 20
+#define IMKG353_ARK 21
+#define IMKG354_ARK 22
 
 
 
@@ -62,33 +57,28 @@ module arkode_mod
 
   ! data type for passing ARKode Butcher table names
   type :: table_list
-    integer :: ARK324     = ARK324_ARK
-    integer :: ARK436     = ARK436_ARK
-    integer :: ARK453     = ARK453_ARK
-    integer :: ARS222     = ARS222_ARK
-    integer :: ARS232     = ARS232_ARK
-    integer :: ARS233     = ARS233_ARK
-    integer :: ARS343     = ARS343_ARK
-    integer :: ARS443     = ARS443_ARK
-    integer :: SSP3333B   = SSP3333B_ARK
-    integer :: SSP3333C   = SSP3333C_ARK
-    integer :: RK2        = RK2_ARK
-    integer :: KGU35      = KGU35_ARK
-    integer :: IMKG232a = IMKG232a_ARK
-    integer :: IMKG232b = IMKG232b_ARK
-    integer :: IMKG242a = IMKG242a_ARK
-    integer :: IMKG242b = IMKG242b_ARK
-    integer :: IMKG243a = IMKG243a_ARK
-    integer :: IMKG243b = IMKG243b_ARK
-    integer :: IMKG252a = IMKG252a_ARK
-    integer :: IMKG252b = IMKG252b_ARK
-    integer :: IMKG253a = IMKG253a_ARK
-    integer :: IMKG253b = IMKG253b_ARK
-    integer :: IMKG254a = IMKG254a_ARK
-    integer :: IMKG254b = IMKG254b_ARK
-    integer :: IMKG254c = IMKG254c_ARK
-    integer :: IMKG343a = IMKG343a_ARK
-    integer :: IMKG343b = IMKG343b_ARK
+    integer :: ARK324   = ARK324_ARK
+    integer :: ARK436   = ARK436_ARK
+    integer :: ARK453   = ARK453_ARK
+    integer :: ARS222   = ARS222_ARK
+    integer :: ARS232   = ARS232_ARK
+    integer :: ARS233   = ARS233_ARK
+    integer :: ARS343   = ARS343_ARK
+    integer :: ARS443   = ARS443_ARK
+    integer :: SSP3333B = SSP3333B_ARK
+    integer :: SSP3333C = SSP3333C_ARK
+    integer :: RK2      = RK2_ARK
+    integer :: KGU35    = KGU35_ARK
+    integer :: IMKG232  = IMKG232_ARK
+    integer :: IMKG242  = IMKG242_ARK
+    integer :: IMKG243  = IMKG243_ARK
+    integer :: IMKG252  = IMKG252_ARK
+    integer :: IMKG253  = IMKG253_ARK
+    integer :: IMKG254  = IMKG254_ARK
+    integer :: IMKG342  = IMKG342_ARK
+    integer :: IMKG343  = IMKG343_ARK
+    integer :: IMKG353  = IMKG353_ARK
+    integer :: IMKG354  = IMKG353_ARK
   end type table_list
 
   ! data type for passing ARKode parameters
@@ -1026,22 +1016,7 @@ contains
         ap%ce(1:3) = ap%ci(1:3)
         ap%be(1:3) = ap%bi(1:3)
 
-      case (IMKG232a_ARK)
-        ap%imex = 2 ! imex
-        ap%s = 4 ! 4 stage
-        ap%q = 2 ! 2nd order
-        ap%p = 0 ! no embedded order
-        ap%be2 = 0.d0 ! no embedded explicit method
-        ! IMEX-KG vectors
-        delta = 0.5d0*(2.d0-sqrt(2.d0))
-        a(1:3) = (/ 0.5d0, 0.5d0, 1.d0 /)
-        ahat(1:3) = (/ 0.d0, 0.5d0*(sqrt(2.d0)-1.d0), 1.d0 /)
-        dhat(1:2) = (/ delta, delta /)
-        b(1:2) = 0.d0
-        ! set IMEX-KG Butcher table
-        call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
-
-      case (IMKG232b_ARK)
+      case (IMKG232_ARK)
         ap%imex = 2 ! imex
         ap%s = 4 ! 4 stage
         ap%q = 2 ! 2nd order
@@ -1056,22 +1031,7 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG242a_ARK)
-        ap%imex = 2 ! imex
-        ap%s = 5 ! 5 stage
-        ap%q = 2 ! 2nd order
-        ap%p = 0 ! no embedded order
-        ap%be2 = 0.d0 ! no embedded explicit method
-        ! IMEX-KG vectors
-        delta = 0.5d0*(2.d0-sqrt(2.d0))
-        a(1:4) = (/ 0.25d0, 1.d0/3.d0, 0.5d0, 1.d0 /)
-        ahat(1:4) = (/ 0.d0, 0.d0, 0.5d0*(sqrt(2.d0)-1.d0), 1.d0 /)
-        dhat(1:3) = (/ 0.d0, delta, delta /)
-        b(1:3) = 0.d0
-        ! set IMEX-KG Butcher table
-        call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
-
-      case (IMKG242b_ARK)
+      case (IMKG242_ARK)
         ap%imex = 2 ! imex
         ap%s = 5 ! 5 stage
         ap%q = 2 ! 2nd order
@@ -1086,22 +1046,7 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG243a_ARK)
-        ap%imex = 2 ! imex
-        ap%s = 5 ! 5 stage
-        ap%q = 2 ! 2nd order
-        ap%p = 0 ! no embedded order
-        ap%be2 = 0.d0 ! no embedded explicit method
-        ! IMEX-KG vectors
-        delta = 0.5d0-sqrt(3.d0)/6.d0
-        a(1:4) = (/ 0.25d0, 1.d0/3.d0, 0.5d0, 1.d0 /)
-        ahat(1:4) = (/ 0.d0, 1.d0/6.d0, sqrt(3.d0)/6.d0, 1.d0 /)
-        dhat(1:3) = (/ delta, delta, delta /)
-        b(1:3) = 0.d0
-        ! set IMEX-KG Butcher table
-        call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
-
-      case (IMKG243b_ARK)
+      case (IMKG243_ARK)
         ap%imex = 2 ! imex
         ap%s = 5 ! 5 stage
         ap%q = 2 ! 2nd order
@@ -1116,22 +1061,7 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG252a_ARK)
-        ap%imex = 2 ! imex
-        ap%s = 6 ! 6 stage
-        ap%q = 2 ! 2nd order
-        ap%p = 0 ! no embedded order
-        ap%be2 = 0.d0 ! no embedded explicit method
-        ! IMEX-KG vectors
-        delta = 0.5d0*(2.d0-sqrt(2.0))
-        a(1:5) = (/ 0.25d0, 1.d0/6.d0, 3.d0/8.d0, 0.5d0, 1.d0 /)
-        ahat(1:5) = (/ 0.d0, 0.d0, 0.d0, 0.5d0*(sqrt(2.d0)-1.d0), 1.d0 /)
-        dhat(1:4) = (/ 0.d0, 0.d0, delta, delta /)
-        b(1:4) = 0.d0
-        ! set IMEX-KG Butcher table
-        call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
-
-      case (IMKG252b_ARK)
+      case (IMKG252_ARK)
         ap%imex = 2 ! imex
         ap%s = 6 ! 6 stage
         ap%q = 2 ! 2nd order
@@ -1146,23 +1076,7 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG253a_ARK)
-        ap%imex = 2 ! imex
-        ap%s = 6 ! 6 stage
-        ap%q = 2 ! 2nd order
-        ap%p = 0 ! no embedded order
-        ap%be2 = 0.d0 ! no embedded explicit method
-        ! IMEX-KG vectors
-        delta = 0.5d0-sqrt(3.d0)/6.d0
-        gamma = 0.25d0*sqrt(3.d0)*(1.d0-sqrt(3.d0)/3.d0)*((sqrt(3.d0)/3.d0+1.d0)**2-2.d0)
-        a(1:5) = (/ 0.25d0, 1.d0/6.d0, 3.d0/8.d0, 0.5d0, 1.d0 /)
-        ahat(1:5) = (/ 0.d0, 0.d0, gamma, sqrt(3.d0)/6.d0, 1.d0 /)
-        dhat(1:4) = (/ 0.d0, delta, delta, delta /)
-        b(1:4) = 0.d0
-        ! set IMEX-KG Butcher table
-        call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
-
-      case (IMKG253b_ARK)
+      case (IMKG253_ARK)
         ap%imex = 2 ! imex
         ap%s = 6 ! 6 stage
         ap%q = 2 ! 2nd order
@@ -1178,21 +1092,7 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG254a_ARK)
-        ap%imex = 2 ! imex
-        ap%s = 6 ! 6 stage
-        ap%q = 2 ! 2nd order
-        ap%p = 0 ! no embedded order
-        ap%be2 = 0.d0 ! no embedded explicit method
-        ! IMEX-KG vectors
-        a(1:5) = (/ 0.25d0, 1.d0/6.d0, 3.d0/8.d0, 0.5d0, 1.d0 /)
-        ahat(1:5) = (/ 0.d0, 1.d0/60.d0, 5.d0/12.d0, -1.d0, 1.d0 /)
-        dhat(1:4) = (/ 1.d0/6.d0, 0.5d0, 0.5d0, 1.5d0 /)
-        b(1:4) = 0.d0
-        ! set IMEX-KG Butcher table
-        call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
-
-      case (IMKG254b_ARK)
+      case (IMKG254_ARK)
         ap%imex = 2 ! imex
         ap%s = 6 ! 6 stage
         ap%q = 2 ! 2nd order
@@ -1206,22 +1106,23 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG254c_ARK)
+      case (IMKG342_ARK)
         ap%imex = 2 ! imex
-        ap%s = 6 ! 6 stage
-        ap%q = 2 ! 2nd order
+        ap%s = 5 ! 5 stage
+        ap%q = 3 ! 3rd order
         ap%p = 0 ! no embedded order
         ap%be2 = 0.d0 ! no embedded explicit method
         ! IMEX-KG vectors
-        delta = 1.d0/6.d0
-        a(1:5) = (/ 0.25d0, 1.d0/6.d0, 3.d0/8.d0, 0.5d0, 1.d0 /)
-        ahat(1:5) = (/ 0.d0, 1.d0/20.d0, 5.d0/36.d0, -1.d0/3.d0, 1.d0 /)
-        dhat(1:4) = (/ delta, delta, delta, delta /)
-        b(1:4) = 0.d0
+        delta = 0.5d0*(1.d0+sqrt(3.d0)/3.d0)
+        a(1:4) = (/ 0.25d0, 2.d0/3.d0, 1.d0/3.d0, 0.75d0 /)
+        ahat(1:4) = (/ 0.d0, (1.d0-sqrt(3.d0))/6.d0, -(1.d0+sqrt(3.d0))/6.d0, 0.75d0 /)
+        dhat(1:3) = (/ 0.d0, delta, delta /)
+        b(1:3) = (/ 0.d0, 1.d0/3.d0, 0.25d0 /)
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG343a_ARK)
+
+      case (IMKG343_ARK)
         ap%imex = 2 ! imex
         ap%s = 5 ! 5 stage
         ap%q = 3 ! 3rd order
@@ -1235,22 +1136,21 @@ contains
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
 
-      case (IMKG343b_ARK)
+      case (IMKG353_ARK)
         ap%imex = 2 ! imex
-        ap%s = 5 ! 5 stage
+        ap%s = 6 ! 6 stage
         ap%q = 3 ! 3rd order
         ap%p = 0 ! no embedded order
         ap%be2 = 0.d0 ! no embedded explicit method
         ! IMEX-KG vectors
-        a(1:4) = (/ 0.25d0, 2.d0/3.d0, 1.d0/3.d0, 0.75d0 /)
-        ahat(1:4) = (/ 0.4358665215084589d0, &
-                     0.23080014515820763d0, &
-                    -0.10253318817512572d0, &
-                    0.75d0 /)
-        dhat(1:3) = 0.4358665215084589d0
-        b(1:3) = (/ 0.d0, 1.d0/3.d0, 0.25d0 /)
+        a(1:5) = (/ -0.017391304347826087d0, -.92d0, 5.d0/3.d0, 1.d0/3.d0, 3.d0/4.d0 /)
+        ahat(1:2) = (/ 0.3075640504095504d0, -1.2990164859879263d0 /)
+        ahat(3:5) = (/ 1.2516666666666665d0, -0.8166666666666668d0, 3d0/4d0/)
+        dhat(1:4) = (/ -0.2981612530370581d0, .415d0, .415d0, 1.15d0 /)
+        b(1:4) = (/ 1.d0, -1.d0, 1.d0/3.d0, 0.25d0 /)
         ! set IMEX-KG Butcher table
         call set_IMKG_Butcher_tables(arkode_parameters, ap%s, a, ahat, dhat, b)
+
 
       case default
         call abortmp('Unknown ARKode Butcher table name')
@@ -1264,8 +1164,8 @@ contains
     ! Description: sets Butcher tables in IMEX-KG format:
     !   Ae:   0 |    0             Ai:     0 |       0
     !        c1 |   a1    0            chat1 |   ahat1 dhat1
-    !        c2 |   b2   a2  0         chat2 |   bhat1 ahat2 dhat2
-    !        c3 |   b3    0 a3 0       chat3 |   bhat2     0 ahat3 dhat3
+    !        c2 |   b1   a2  0         chat2 |   bhat1 ahat2 dhat2
+    !        c3 |   b2    0 a3 0       chat3 |   bhat2     0 ahat3 dhat3
     !           |                            |
     !        cq | bq-1 0 ... 0 aq 0    chatq | bhatq-1     0    ...    0 ahatq 0
     !        ----------------------    -----------------------------------------
