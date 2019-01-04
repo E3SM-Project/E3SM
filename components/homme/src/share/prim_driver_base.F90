@@ -653,7 +653,7 @@ contains
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-    use control_mod,          only: pertlim,smooth_phis_numcycle
+    use control_mod,          only: smooth_phis_numcycle
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize

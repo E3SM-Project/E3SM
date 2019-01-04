@@ -19,7 +19,6 @@ module dp_coupling
        block_to_chunk_recv_pters, chunk_to_block_send_pters, transpose_chunk_to_block, chunk_to_block_recv_pters
   use ppgrid,         only: begchunk, endchunk, pcols, pver, pverp
   use element_mod,    only: element_t
-  use control_mod,    only: smooth_phis_numcycle
   use cam_logfile,    only : iulog
   use spmd_dyn,       only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
   use spmd_utils,   only: mpicom, iam
