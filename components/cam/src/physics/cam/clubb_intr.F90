@@ -515,7 +515,8 @@ end subroutine clubb_init_cnst
          stats_rad_zt, &
          stats_rad_zm, &
          w_tol_sqd, &
-         rt_tol
+         rt_tol, &
+         l_do_expldiff_rtm_thlm 
     use stats_variables,           only: l_output_rad_files
                                       
     use units,                     only: getunit, freeunit
@@ -566,6 +567,7 @@ end subroutine clubb_init_cnst
 
 
     !----- Begin Code -----
+    l_do_expldiff_rtm_thlm = do_expldiff
 
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents CLUBB will transport.  Note that  
