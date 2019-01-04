@@ -29,6 +29,7 @@ contains
     use ESMF                  , only : ESMF_FieldBundle
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LogMsg_Info
+    use ESMF                  , only : ESMF_LogSetError, ESMF_RC_OBJ_NOT_CREATED
     use med_constants_mod     , only : CL, CX, CS
     use shr_string_mod        , only : shr_string_listGetNum
     use shr_string_mod        , only : shr_string_listGetName
@@ -147,6 +148,18 @@ contains
                       if (compsrc == compmed) then
 
                          if (present(FBMed1) .and. present(FBMed2)) then
+                            if (.not. ESMF_FieldBundleIsCreated(FBMed1)) then
+                               call ESMF_LogSetError(ESMF_RC_OBJ_NOT_CREATED,  &
+                                    msg="Field bundle FBMed1 not created.", &
+                                    line=__LINE__, file=u_FILE_u, rcToReturn=rc)
+                               return
+                            endif
+                            if (.not. ESMF_FieldBundleIsCreated(FBMed2)) then
+                               call ESMF_LogSetError(ESMF_RC_OBJ_NOT_CREATED,  &
+                                    msg="Field bundle FBMed2 not created.", &
+                                    line=__LINE__, file=u_FILE_u, rcToReturn=rc)
+                               return
+                            endif
                             if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
                                call med_merge(trim(merge_type), &
                                     FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
@@ -162,6 +175,12 @@ contains
                                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                             end if
                          elseif (present(FBMed1)) then
+                            if (.not. ESMF_FieldBundleIsCreated(FBMed1)) then
+                               call ESMF_LogSetError(ESMF_RC_OBJ_NOT_CREATED,  &
+                                    msg="Field bundle FBMed1 not created.", &
+                                    line=__LINE__, file=u_FILE_u, rcToReturn=rc)
+                               return
+                            endif
                             if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
                                call med_merge(trim(merge_type), &
                                     FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)

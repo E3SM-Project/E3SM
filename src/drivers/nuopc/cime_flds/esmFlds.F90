@@ -1260,7 +1260,7 @@ contains
        call shr_nuopc_fldList_AddFld(fldListFr(compice)%flds, 'Faii_lwup', fldindex=n1)
        call shr_nuopc_fldList_AddMap(fldListFr(compice)%flds(n1), compice, compatm, mapconsf, 'one', ice2atm_fmapname)
        call shr_nuopc_fldList_AddFld(fldListTo(compatm)%flds, 'Faii_lwup', &
-            merge_from1=compice, merge_field1='Faii_sen', merge_type1='merge', merge_fracname1='ifrac')
+            merge_from1=compice, merge_field1='Faii_lwup', merge_type1='merge', merge_fracname1='ifrac')
     end if
 
     ! ---------------------------------------------------------------------

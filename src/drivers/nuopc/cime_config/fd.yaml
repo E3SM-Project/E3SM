@@ -1305,6 +1305,16 @@
        description: atmosphere export
 
 
+### FV3 work - NEMS S2S benchmark (not including fractional branch)
+
+     - standard_name: mean_up_lw_flx
+       alias: Faxx_lwup
+       canonical_units: W m-2
+       description: atmosphere import - merged ocn/ice flux
+
+
+
+
 
 ############
 

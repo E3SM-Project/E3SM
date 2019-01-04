@@ -212,6 +212,7 @@
             MED med_connectors_post_ice2med
             MED med_fraction_set
             MED med_phases_prep_ocn_map
+	    MED med_phases_aofluxes_run
 	    MED med_phases_prep_ocn_merge
 	    MED med_phases_prep_ocn_accum_fast
             MED med_phases_history_write
@@ -1045,7 +1046,7 @@
     </desc>
     <values>
       <value>.true.</value>
-      <value COMP_ATM="fv3gfs">.false.</value>
+      <value COMP_ATM="fv3gfs">.true.</value>
     </values>
   </entry>
 
