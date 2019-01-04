@@ -13,7 +13,7 @@ module held_suarez_mod
   use hybrid_mod,             only: hybrid_t
   use hybvcoord_mod,          only: hvcoord_t
   use kinds,                  only: real_kind, iulog
-  use physical_constants,     only: p0, kappa,g, dd_pi
+  use physical_constants,     only: p0, kappa,g, dd_pi, Rgas
   use physics_mod,            only: prim_condense
   use time_mod,               only: secpday
   use common_io_mod,          only: infilenames
@@ -274,9 +274,8 @@ contains
 
 
        ! initialize surface pressure to be consistent with topo
-       ! use 11.3pa per meter 
-       elem(ie)%state%ps_v(:,:,n0) = elem(ie)%state%ps_v(:,:,n0) - &
-            11.3*elem(ie)%state%phis(:,:)/g
+       elem(ie)%state%ps_v(:,:,n0) = elem(ie)%state%ps_v(:,:,n0)*&
+            exp(-elem(ie)%state%phis(:,:) / (Rgas*Tinit))
        elem(ie)%state%ps_v(:,:,nm1)=elem(ie)%state%ps_v(:,:,n0)
        elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,n0)
 

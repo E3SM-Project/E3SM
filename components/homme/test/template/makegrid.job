@@ -1,4 +1,4 @@
-#!/bin/tcsh -f 
+#!/bin/tcsh 
 #SBATCH -N 1
 #SBATCH --account=FY127788
 #SBATCH --time=0:10:00
@@ -87,7 +87,8 @@ if ( $NPTS == 4 ) then
 endif
 if ( $ne != 0 )  then
    # can compute CSLAM/physics grid
-   set outnames = "$outnames,'phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+   #set outnames = "$outnames,'phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+   set outnames = "$outnames,'cv_lat','cv_lon'"
 endif
 echo $outnames
 
@@ -144,7 +145,8 @@ if ( $NPTS == 4 ) then
    ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
    rm -f {$meshname}_tmp.nc
 else
-   ncks -O -v lat,lon,area movies/$output {$meshname}_tmp.nc
+   #ncks -O -v lat,lon,area movies/$output {$meshname}_tmp.nc
+   ncks -O -v lat,lon,area,cv_lat,cv_lon movies/$output {$meshname}_tmp.nc
    ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
    rm -f {$meshname}_tmp.nc
 endif
