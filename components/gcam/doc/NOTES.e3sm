@@ -1,3 +1,374 @@
+1/5/2019
+
+* Making some progress - have a working iac_comp_mct.F90 file, although
+  some subfunctions and modules will need to be written.  Built almost
+  entirely by copying rof_comp_mct and lnd_comp_mct - I've kept all the
+  generic looking parts, but I still dont' completely grok all the
+  intricacies of MCT yet, so I might be including some stupid or foolish
+  stuff. 
+
+* In particular, my understanding of "domain" calculations are how you
+  divvy things up amongst your processors.  GCAM currently is a single proc
+  component, but I've kept all that domain infrastructure in case (a) my
+  understanding is wrong and domain does something else; (b) we go to
+  multiprocessor versions of GCAM someday; and (c) so that the calling
+  structure is the same for iac - set up gsmap, setup domain, that kind of
+  thing.  I think it's likely that all the gsgrid stuff is required by MCT,
+  and there very well may need the dom_z indicator in how MCT calls iac.
+
+* Okay, here's some stuff I need to write, either as part of the IAC
+  coupler code or elsewehre:
+
+1 Modules:
+@ iac_mod module, element iac (re: RunoffMod)
+@ gcam_var module, with lat lon, log, startup, instance, active logicals
+  (re: RtmVar)
+
+2 functions, either in above or other modules:
+@ gcam_cpl_indeces_set() (re: rtm_cpl_indeces_mod)
+@ gcam_mpi_init() (re: RtmSpmd_mod)
+@ gcam_var_set() (probably gcam_var module)
+@ gcam_init()
+@ iac_run_mod() - modification of existing function
+
+
+
+12/28/2018
+
+* Modules and functions I need to review, and see where they are in clm and
+  whether we need them in iac_comp_mct.F90, iac_run_mct():
+
+* clm_instMod, clm2atm_vars, etc.
+  clm_driver, clm_drv
+  clm_time_manager
+  clm_varctl
+  clm_varorb
+
+* seq_cdata_setptrs() gets the cdata from the coupler.  So, how do the
+  cdata_z (e.g.) structures get initialized in the first place?  There's a
+  legacy seq_cdata_init() function in seq_cdata_mod, but it is apparently
+  only used for the data models.  Does the (e.g.) lnd_init_mct() thing set
+  up cdata?
+
+* Okay, the component_types, which are named just ike components directly
+  (e.g. 'iac', 'lnd') appear to be the overall structures that contain all
+  the information.  The accessor to get the "cdata" things is
+  component_get_cdata_cC(), which just looks for comp%cdata_cc.  So, for
+  example, we need to fill in iac%cdata_cc to find the cdata_z we use in
+  the iac_run_mct() and iac_init_mct() etc.  Geez, this goes way back up
+  the chain.
+
+  Look at component_mod.F90 in ~/PIC/ACME/cime/src/drivers/mct/main.
+
+  Well, it seems like there's an overall array of components, and the
+  cdata_cc stuff just contains communication ids, domain and gsmap
+  information.  I'm not sure where that stuff gets generated, though....
+  See line 138 of component_mod.F90.
+
+! Sheesh, down the rabbit hole, and it's still slipping away, even after
+  all this time.  I guess I'll leave initialization to later, and we'll
+  puzzle it back together as we need it.
+
+? My big question is what information cdata_z will have?  Is it just
+  mapping and communication, or is field info and what not?  AVects?  Is it
+  the same as the cdata structures we see in iESM, or similar, or
+  completely different?
+
+12/17/2018 2018-12-17 12:58:47
+
+* Notes from iac2gcam_mod.F90
+
+* subroutine iac2gcam_run_mod() - function to run gcam
+
+12/17/2018
+
+* Quick update on all the unit tests over the weekend:
+
+* ACME.master and ES3M *do* fail some unit tests, and they *seem* to be the
+  same ones, so there is something going on with Constance wrt to those
+  particular tests.  I need to verify they are failing the same tests, if
+  they both run them, and then exclude them from the cases I examine for my
+  ACME build.
+
+  A quick examination of .../create_test.out tells you some of this - I
+  probably do need to do a quick dump of the TestStats using the cs.*
+  scripts to get a solid picture of which tests are telling me something
+  interesting about my ACME build.
+
+* Quick review: ACME is my build, ACME.master is the master for my branch
+  (hopefully, assuming my git-fu is okay), and E3SM (in ~/test) is the most
+  recent grab and build of the main E3SM repository, as of last week.
+
+12/14/2018
+
+* Upon spending all night reflecting on this, I've decided a couple things:
+
+1 I don't need to generate baselines normally, they should be correct from
+  the machine file (probably made as part of deriving the machine file in
+  the first place).
+
+2 I will run baselines for ACME.master, since it has "(no branch)" and thus
+  can't figuring out which baselines to use.  I'm going to put those in
+  /pic/scratch/d3a230/acme_baseline.
+
+3 I might then use those same baselines for my ACME branch runs, when I get
+  that far, just to compare directly with ACME.master.
+
+* Additional notes:
+
+* I think "baseline" are not actual runs but something to do with comparing
+  namelist files; if it fails the baseline it means you modified the
+  namelisting somehow.  That's why we see these NLCOMP fails when trying to
+  generate baselines into the /pic/project/climate area, where I don't have
+  permissions. 
+
+* I need to clean up /pic/scratch/d3a230, so I can find things again.  I'm
+  moving everything into "old" directories, and will work with
+  /pic/scratch/d2a230/acme, .../acme.master, and .../e3sm subdirectories.
+
+* Huh!  If you give baseline information but not a -g, you have to use -c
+  to get them to compare.  Which means, probably, that baselines are all
+  optional.  What a waste of time, then.  I'ma run with -c and the same
+  acme.master baselines with acme, just in case, but from now on just don't
+  use -c, -b, -g, or anything related to baselines, and see if everything
+  workds. 
+
+! So, first up:
+
+@ ACME.master: git submodule update --init
+@ Run the tests for acme.master, which should work.
+
+  ./create_test -p iesm --test-root /pic/scratch/d3a230/acme.master -g \
+     --baseline-root /pic/scratch/d3a230/acme.master/acme_baseline \
+     --baseline-name acme_master \
+     acme_developer >& ~/ACME.master/create_test.out &
+
+@ Run my acme branch again, using same baselines:
+
+  ./create_test -p iesm --test-root /pic/scratch/d3a230/acme -c \
+     --baseline-root /pic/scratch/d3a230/acme.master/acme_baseline \
+     --baseline-name acme_master \
+     acme_developer >& ~/ACME/create_test.out &
+
+@ Run the e3sm tests, without any baselining
+
+  ./create_test -p iesm --test-root /pic/scratch/d3a230/e3sm \
+     e3sm_developer >& ~/test/E3SM/create_test.out &
+
+? Well, when I got back from lunch my connection to the PIC had dumped out,
+  and now I can't tell if all these jobs that are pending on the Model
+  build are actually doing anything or not, or if the compile got
+  interrupted or something.  What a mess - this is what I get for starting
+  several of these jobs at once, I can't ps -ef and tell what is going
+  on...
+
+* Anyway, jeez, the builds take forever to simply compile - my guess is we
+  don't do any kind of parallel build, so I guess it just has to go through
+  a lot of work to get there.
+
+! Anyway, the most important thing is that acme.master is FAILING on some
+  runs!  I see Seg Faults and stuff!  If that's true, it means that my
+  code, built after that, may *also* be failing just for the same reason.
+  I'm also seeing build fails on mpas - my conjecture here is that the
+  submodule stuff is messed up somehow?  That grabbing the most recent
+  version of mpas makes the builds not work right.
+
+* Anyway, everything is up in the air - I don't want to start new builds on
+  top of this, so for now I'm going to wait until this evening and check in
+  on how everything is progressing.  Assuming the E3SM code (which is very
+  new) passes all it's unit tests, then we'll check and see if any more
+  progress has been done on the others - if not, we'll have to resubmit
+  them, this time one at a time, and hope they can run over the weekend.
+
+* Right now, create_test.out has mod dates:
+
+  Constance[ACME]% ls -al create_test.out
+  -rw-r--r-- 1 d3a230 users 34398 Dec 14 12:25 create_test.out
+  Constance[ACME]% ls -al ~/ACME.master/create_test.out
+  -rw-r--r-- 1 d3a230 users 43782 Dec 14 12:34 /people/d3a230/ACME.master/create_test.out
+
+----------------------------
+  Constance[ACME]% tail create_test.out
+  Finished SHAREDLIB_BUILD for test SMS_D_Ln5.ne4_ne4.FC5.constance_intel in 3984.677218 seconds (PASS)
+  Starting MODEL_BUILD for test SMS_D_Ln5.ne4_ne4.FC5AV1C-L.constance_intel with 4 procs
+  Finished MODEL_BUILD for test ERS.f19_g16_rx1.A.constance_intel in 1730.722585 seconds (PASS)
+  Starting RUN for test ERS.f19_g16_rx1.A.constance_intel with 1 proc on interactive node and 24 procs on compute nodes
+  Finished MODEL_BUILD for test SMS.ne30_f19_g16_rx1.A.constance_intel in 1732.463999 seconds (PASS)
+  Starting RUN for test SMS.ne30_f19_g16_rx1.A.constance_intel with 1 proc on interactive node and 24 procs on compute nodes
+  Finished RUN for test ERS.f19_g16_rx1.A.constance_intel in 111.358953 seconds (PEND). [COMPLETED 1 of 38]
+  Starting MODEL_BUILD for test SMS_D_Ln5.ne4_ne4.FC5.constance_intel with 4 procs
+  Finished RUN for test SMS.ne30_f19_g16_rx1.A.constance_intel in 107.099653 seconds (PEND). [COMPLETED 2 of 38]
+  Starting MODEL_BUILD for test ERS.f19_g16.I1850CLM45.constance_intel.clm-betr with 4 procs
+===========================
+  Constance[ACME.master]% tail create_test.out
+  Starting MODEL_BUILD for test SMS_D_Ln5.ne4_ne4.FC5.constance_intel with 4 procs
+  Finished MODEL_BUILD for test SMS.ne30_f19_g16_rx1.A.constance_intel in 1775.574343 seconds (PASS)
+  Starting RUN for test SMS.ne30_f19_g16_rx1.A.constance_intel with 1 proc on interactive node and 24 procs on compute nodes
+  Finished RUN for test SMS.ne30_f19_g16_rx1.A.constance_intel in 109.920069 seconds (PEND). [COMPLETED 7 of 38]
+  Starting MODEL_BUILD for test SMS_Ln9.ne4_ne4.FC5AV1C-L.constance_intel.cam-outfrq9s with 4 procs
+  Finished MODEL_BUILD for test ERS_IOP4c.f19_g16_rx1.A.constance_intel in 1768.789043 seconds (PASS)
+  Starting RUN for test ERS_IOP4c.f19_g16_rx1.A.constance_intel with 1 proc on interactive node and 24 procs on compute nodes
+  Finished RUN for test ERS_IOP4c.f19_g16_rx1.A.constance_intel in 116.711359 seconds (PEND). [COMPLETED 8 of 38]
+  Starting MODEL_BUILD for test ERS_Ln9.ne4_ne4.FC5AV1C-L.constance_intel with 4 procs
+  Finished MODEL_BUILD for test ERS.f19_g16.I1850CLM45.constance_intel.clm-betr in 4068.002696 seconds (PASS)
+---------------------------
+
+  ...so compare against that to see if any more progress on this has been
+  done.
+
+* The reason why I'm worried about it is that my ps -fu d3a230 seems to
+  only bring up e3sm activity, but it's hard to tell for sure.  So, wait
+  for e3sm to finish running and then review.
+
+* ...okay, a couple hours later, and I'm only seeing updates to the E3SM
+  run.  So that means the ACME and ACME.master runs did stall out, for
+  whatever reason.  Thus, we need to rerun them, and it takes *many* hours
+  to run one of these things, so maybe do one per day or something over the
+  weekend.  I'd like to set up a script to do this, but I am likely to use
+  the wrong options or whatever, so I'd better check in and do it by hand.
+  I may even have to come in to work to do this, since I'm not sure why it
+  hung before and what might happen if (e.g.) my home connection went down
+  or something.
+
+12/13/2018
+
+* So, I'm trying to revert back to my master branch, in order to run the
+  unit tests from that.  So I cloned into ~/ACME.master, because I didn't
+  want to mung anything up, and did a "git checkout master", which,
+  apparently, didn't do anything.
+
+  Thinking that it's possible that's because my clone points back to ~/ACME
+  as my master, I then played around a bit and tried this:
+
+  git checkout remotes/origin/master
+
+  ...which seems to have at least grabbed a version of the code without my
+  iac changes.  So now the question is - was this the (old) version of the
+  master I originally cloned, or is this possibly the latest version of the
+  code?  
+
+  It says I'm currently on "(no branch)", a "headless branch", whatever
+  that means.  Since I don't want to actually do any development over here,
+  that's fine, but I really wish I understood all this arcane git-fu going
+  on. 
+
+* For now, I'm going to work under the assumption that it's the master
+  code that I'm working with.  Grepping around in cime/scripts/* for
+  "acme_developer" hits, while "e3sm_developer" does not.  That doesn't
+  prove anything, but I'm encouraged by the "acme"s floating around and
+  lack of "e3sm"s.
+
+* So, I'm going to try running:
+
+  cd ~/ACME.master/scripts
+  ./create_test -p iesm -g acme_developer >& ~/ACME.master/create_test.out &
+
+  ... and see what happens.
+
+* Ah, crap, it can't determine the baseline because my branch doesn't make
+  sense.  But because I don't know anything about what baselines are or how
+  they should be used, using the -b option like create_test says is
+  problematic.  
+
+  Okay, run without baseline generation, and hope that somewhere in the
+  machine config it points to the right baselines.  So far, it appears to
+  be doing something when you run without -g, so that's good news.
+
+* So, the runs that need fates are failing on setupt, because
+  /people/d3a230/ACME.master/components/clm/src/external_models/fates/main
+  doesn't exist - the fates subdir exists, but nothing else is there.  This
+  is consistent with what I found before - somehow fates (along with mpas,
+  I think) are checked out as part of setup or building?  Maybe as part of
+  baselining? 
+
+? Maybe I should do a git checkout master from ~/ACME, and hope that works?
+  Then it will have the branch correct and we can run the baselines from
+  that?  I'm reluctant to mess with ~/ACME like that, but I'm running out
+  of things I know how to do.
+
+* git log tells you the commit messages, so I'm hoping to roll back to a
+  reasonable branch name with a "git checkout <commit>".
+
+  ...nope, that gets me back to (no branch) again.  Damn.  Maybe a git
+  clone of the repository, then roll back to this commit?  Sheesh, this is
+  a nightmare.
+
+* Okay, try this:
+
+  mkdir ~/test
+  cd ~/test
+  git clone git@github.com:E3SM-Project/E3SM.git
+  cd E3SM
+  git submodule update --init
+
+  ...that should be the current build of e3sm.  From there, do the git log,
+  find the ACME stuff from way back when, and do that.  
+
+  The submodule stuff is for MPAS and fates and sbetr and whatever, so
+  hopefully that will cause those kind of errors to stop happening?
+
+  Anyway, maybe I should run the tests on this, before trying to checkout
+  an old commit?  I'm trying to avoid the (no branch) stuff, because taht
+  mungs the baselines.
+
+* Okay, a list of things I need to consider:
+
+1 fates,mpas,submodules
+2 baseline generation?
+3 (no branch), impact on running/generating baseline, using baseline?
+4 git merge my branch with latest E3SM?
+
+* I'm going to run the create_test -g command from E3SM, using a testroot
+  of /pic/scratch/d3a230/e3sm:
+
+  mkdir -p /pic/scratch/d3a230/e3sm
+  cd ~/test/E3SM/cime/scripts
+  ./create_test -p iesm --test-root /pic/scratch/d3a230/e3sm -g
+  e3sm_developer 
+
+* Failed with NLComp, which appears to be because
+  /pic/projects/climate/acme_baselines doesn't exist.  Maybe I need to give
+  a baseline directory to generate into?  I'm sure that's it, actually -
+  generate baselines using the -b directory, and use that for future tests!
+
+  Right!  So use --baseline-root /pic/scratch/d3a230/es3m/baseline!
+
+* Same thing with my tests using my branch and other stuff.
+
+  Okay, once these runs finish, I'm going to do that:
+
+  mkdir  /pic/scratch/d3a230/es3m/baseline
+  ./create_test -p iesm --test-root /pic/scratch/d3a230/e3sm -g \
+     --baseline-root /pic/scratch/d3a230/es3m/baseline \     
+     e3sm_developer
+
+* Do the same thing with my ACME.master:
+
+  cd ~/ACME.master
+  git submodules update --init
+
+  (hopefully, this won't be out of phase with my old old code...)
+
+  mkdir -p /pic/scratch/d3a230/acme.master/baseline
+  cd cime/test
+  ./create_test -p iesm --test-root /pic/scratch/d3a230/acme.master -g \
+     --baseline-root /pic/scratch/d3a230/acme.master/baseline \     
+     acme_developer
+  
+
+=======================
+
+* Anyway, next up is trying to launch the interactive shell via srun, and
+  seeing if that works.  Assuming it doesn't, then these are the things I
+  need to check to get debugging working:
+
+0 interactive shell (srun)
+0 read testing documentation on atlassian again and again  
+1 read totalview documentation for how to run
+2 check version of ifort
+3 check compiler logs and see if everything is compiled with -g 
+4 Get a clean install of the latest version of E3SM, and run the tests.
+
 12/11/18
 
 * I'm having trouble committing my changes to git.  I wanted to just commit
