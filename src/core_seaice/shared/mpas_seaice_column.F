@@ -2203,8 +2203,8 @@ contains
          albedoIRDirectCategory, &
          albedoIRDiffuseCategory, &
          snowFractionCategory, &
-         iceAsymmtryParameterDirect, &
-         iceAsymmtryParameterDiffuse, &
+         iceAsymmetryParameterDirect, &
+         iceAsymmetryParameterDiffuse, &
          iceSingleScatterAlbedoDirect, &
          iceSingleScatterAlbedoDiffuse, &
          iceMassExtinctionCrossSectionDirect, &
@@ -2372,8 +2372,8 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
 
        ! snicar 5-band snow IOPs
-       call MPAS_pool_get_array(snicar, "iceAsymmtryParameterDirect", iceAsymmtryParameterDirect)
-       call MPAS_pool_get_array(snicar, "iceAsymmtryParameterDiffuse", iceAsymmtryParameterDiffuse)
+       call MPAS_pool_get_array(snicar, "iceAsymmetryParameterDirect", iceAsymmetryParameterDirect)
+       call MPAS_pool_get_array(snicar, "iceAsymmetryParameterDiffuse", iceAsymmetryParameterDiffuse)
        call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
        call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
        call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
@@ -2499,8 +2499,8 @@ contains
                pondLidMeltFluxFraction(:,iCell), &
                .false., &
                lInitialization, &
-               iceAsymmtryParameterDirect(:,:), &
-               iceAsymmtryParameterDiffuse(:,:), &
+               iceAsymmetryParameterDirect(:,:), &
+               iceAsymmetryParameterDiffuse(:,:), &
                iceSingleScatterAlbedoDirect(:,:), &
                iceSingleScatterAlbedoDiffuse(:,:), &
                iceMassExtinctionCrossSectionDirect(:,:), &
