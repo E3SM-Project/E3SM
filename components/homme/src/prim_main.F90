@@ -18,7 +18,7 @@ program prim_main
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
   use domain_mod,       only: domain1d_t, decompose
   use element_mod,      only: element_t
-  use common_io_mod,    only: output_dir
+  use common_io_mod,    only: output_dir, infilenames
   use common_movie_mod, only: nextoutputstep
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
@@ -33,9 +33,10 @@ program prim_main
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
-  use interpolate_driver_mod, only : interpolate_driver
+  use interpolate_driver_mod, only : interpolate_driver, pio_read_phis
 #else
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
+  use interpolate_driver_mod, only : pio_read_phis
 #endif
 
   implicit none
@@ -137,6 +138,9 @@ program prim_main
      call haltmp('interpolation complete')
   end if
 #endif
+  ! this should really be called from test_mod.F90, but it has be be called outside
+  ! the threaded region
+  if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)
@@ -156,7 +160,7 @@ program prim_main
   !$OMP END PARALLEL
 #endif
 
-  
+
   ! Here we get sure the directory specified
   ! in the input namelist file in the 
   ! variable 'output_dir' does exist.
