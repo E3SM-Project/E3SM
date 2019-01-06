@@ -36,7 +36,6 @@ vfile_int     = "vcoord/cami-26.ascii"
  output_prefix     = "template2-"
  output_timeunits=1
  output_frequency = 1
- infilenames='h0-tavg.nc'
  output_varnames1='area','corners','hypervis','cv_lat','cv_lon'
  output_type='netcdf'
 ! num_io_procs = 1
