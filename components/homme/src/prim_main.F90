@@ -23,6 +23,9 @@ program prim_main
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
+#if (defined MODEL_THETA_L && defined ARKODE)
+  use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
+#endif
 
 #ifdef VERTICAL_INTERPOLATION
   use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
@@ -256,6 +259,11 @@ program prim_main
   call prim_movie_finish
 #endif
 
+#if (defined MODEL_THETA_L && defined ARKODE)
+  if (calc_nonlinear_stats) then
+    call finalize_nonlinear_stats(par%comm, par%rank, par%root, par%nprocs)
+  endif
+#endif
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
@@ -264,11 +272,3 @@ program prim_main
   call t_finalizef()
   call haltmp("exiting program...")
 end program prim_main
-
-
-
-
-
-
-
-
