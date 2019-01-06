@@ -620,6 +620,23 @@ contains
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='omega')
              end if
+
+
+             if(nf_selectedvar('dp3d', output_varnames)) then
+                st=1
+                do ie=1,nelemd
+                   do k=1,nlev
+                      ke(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,n0) !reutilize ke
+                   enddo
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call UniquePoints(elem(ie)%idxp,nlev,ke, var3d(st:en,:))
+                   st=en+1
+                end do
+                call nf_put_var(ncdf(ios),var3d,start, count, name='dp3d')
+             end if
+
+
              if (par%masterproc) print *,'writing time...'
              call nf_put_var(ncdf(ios),real(dayspersec*time_at(tl%nstep),kind=real_kind),&
                   start(3:3),count(3:3),name='time')
