@@ -144,7 +144,7 @@ contains
 !         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
 !         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
 
-!       top_as%tbot(t) = tbot_t
+       top_as%tbot(t) = tbot_t
 !       top_as%thbot(t) = thbot_t
 !	 top_as%vp_atm(t) = es_t
 !       top_as%qbot(t) = qbot_t
