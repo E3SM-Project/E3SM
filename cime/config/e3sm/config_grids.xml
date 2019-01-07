@@ -1456,14 +1456,15 @@
     </domain>
 
     <domain name="TL319">
-      <nx>640</nx> <ny>320</ny>
+      <nx>640</nx>
+      <ny>320</ny>
       <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oEC60to30v3.181203.nc</file>
-      <file grid="ocnice"  mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oEC60to30v3.181203.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oEC60to30v3.181203.nc</file>
       <file grid="atm|lnd" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oARRM60to10.180905.nc</file>
-      <file grid="ocnice"  mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oARRM60to10.180905.nc</file>
+      <file grid="ice|ocn" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oARRM60to10.180905.nc</file>
       <file grid="atm|lnd" mask="oARRM60to6">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oARRM60to6.180905.nc</file>
-      <file grid="ocnice"  mask="oARRM60to6">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oARRM60to6.180905.nc</file>
-      <desc>TL319 grid for JRA55</desc>
+      <file grid="ice|ocn" mask="oARRM60to6">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oARRM60to6.180905.nc</file>
+      <desc>TL319 is JRA lat/lon grid:</desc>
     </domain>
 
     <domain name="ne4np4">
