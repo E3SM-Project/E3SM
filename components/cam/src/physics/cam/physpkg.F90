@@ -1010,12 +1010,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !-----------------------------------------------------------------------
        !
 
-#if (defined BFB_CAM_SCAM_IOP )
-       do c=begchunk, endchunk
-          call outfld('Tg',cam_in(c)%ts,pcols   ,c     )
-       end do
-#endif
-
        call t_barrierf('sync_bc_physics', mpicom)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
