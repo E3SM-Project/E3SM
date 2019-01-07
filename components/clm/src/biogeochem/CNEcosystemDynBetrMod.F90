@@ -74,7 +74,7 @@ module CNEcosystemDynBetrMod
     use GrowthRespMod                , only : GrowthResp
     use CarbonStateUpdate1Mod        , only : CarbonStateUpdate1,CarbonStateUpdate0
     use CNNStateUpdate1BeTRMod        , only : NStateUpdate1
-    use CNGapMortalityBeTRMod         , only : CNGapMortality
+    use CNGapMortalityMod         , only : CNGapMortality
     use CarbonStateUpdate2Mod        , only : CarbonStateUpdate2, CarbonStateUpdate2h
     use CNNStateUpdate2BeTRMod        , only : NStateUpdate2, NStateUpdate2h
     use FireMod                 , only : FireArea, FireFluxes
