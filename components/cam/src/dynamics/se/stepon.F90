@@ -79,7 +79,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   use dimensions_mod, only: nlev, nelemd, npsq
   use cam_history,    only: addfld, add_default, horiz_only
   use cam_history,    only: register_vector_field
-  use control_mod,    only: smooth_phis_numcycle
   use gravity_waves_sources, only: gws_init
   use phys_control,   only: use_gw_front
 
@@ -116,12 +115,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   call register_vector_field('FU', 'FV')
   call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Vorticity',                   gridname='GLL')
   call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence',                  gridname='GLL')
-
-  if (smooth_phis_numcycle>0) then
-     call addfld ('PHIS_SM',  horiz_only, 'I', 'm2/s2', 'Surface geopotential (smoothed)',                gridname='GLL')
-     call addfld ('SGH_SM',   horiz_only, 'I', 'm',     'Standard deviation of orography (smoothed)',     gridname='GLL')
-     call addfld ('SGH30_SM', horiz_only, 'I', 'm',     'Standard deviation of 30s orography (smoothed)', gridname='GLL')
-  endif
 
   call addfld ('CONVU   ', (/ 'ilev' /),'A', 'm/s2    ','Zonal component IE->KE conversion term',      gridname='physgrid')
   call addfld ('CONVV   ', (/ 'ilev' /),'A', 'm/s2    ','Meridional component IE->KE conversion term', gridname='physgrid')
@@ -221,10 +214,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use dyn_comp,       only: TimeLevel
    
    use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
-   use control_mod,     only: ftype, qsplit, smooth_phis_numcycle
+   use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
-   use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
 
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
@@ -475,39 +467,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       enddo
    endif
 #endif
-   if (smooth_phis_numcycle>0) then
-      if (hist_fld_active('PHIS_SM')) then
-         do ie=1,nelemd
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,1,1) = phisdyn(i,j,ie)
-               end do
-            end do
-            if (.not. single_column) call outfld('PHIS_SM',ftmp(:,1,1),npsq,ie)
-         enddo
-      endif
-      if (hist_fld_active('SGH_SM')) then
-         do ie=1,nelemd
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,1,1) = sghdyn(i,j,ie)
-               end do
-            end do
-            if (.not. single_column) call outfld('SGH_SM',ftmp(:,1,1),npsq,ie)
-         enddo
-      endif
-      if (hist_fld_active('SGH30_SM')) then
-         do ie=1,nelemd
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,1,1) = sgh30dyn(i,j,ie)
-               end do
-            end do
-            if (.not. single_column) call outfld('SGH30_SM',ftmp(:,1,1),npsq,ie)
-         enddo
-      endif
-   end if
-   
    if (hist_fld_active('FU') .or. hist_fld_active('FV') .and. .not. single_column) then
       do ie=1,nelemd
          do k=1,nlev
