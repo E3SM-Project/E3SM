@@ -703,6 +703,9 @@ endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
 endif
+ifeq ($(MPILIB),mpi-serial)
+	CMAKE_OPTS += -D PIO_USE_MPISERIAL=TRUE -D MPISERIAL_PATH=$(INSTALL_SHAREDPATH)
+endif
 
 # This captures the many cism-specific options to cmake
 CMAKE_OPTS += $(USER_CMAKE_OPTS)
