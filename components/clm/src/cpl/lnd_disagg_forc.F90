@@ -103,17 +103,17 @@ contains
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
-!      hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
+      hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
 !         hsurf_t = top_pp%elevation(t)                  ! topounit sfc elevation
-!      hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
-!      tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
-!      thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
-!      qbot_g  = x2l(index_x2l_Sa_shum,i)              ! atm sfc spec humid
-!      pbot_g  = x2l(index_x2l_Sa_pbot,i)              ! atm sfc pressure
-!      zbot_g  = x2l(index_x2l_Sa_z,i)                 ! atm ref height
+      hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
+      tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
+      thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
+      qbot_g  = x2l(index_x2l_Sa_shum,i)              ! atm sfc spec humid
+      pbot_g  = x2l(index_x2l_Sa_pbot,i)              ! atm sfc pressure
+      zbot_g  = x2l(index_x2l_Sa_z,i)                 ! atm ref height
 
-!         zbot_t  = zbot_g
-!         tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
+         zbot_t  = zbot_g
+         tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
  
 !         Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
 !         pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
