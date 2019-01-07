@@ -345,9 +345,7 @@ contains
 
        call data_iceberg_forcing(&
             streamManager, &
-            domain, &
-            simulationClock, &
-            firstTimeStep)
+            domain)
 
     endif
 
@@ -1700,21 +1698,16 @@ contains
 
   subroutine data_iceberg_forcing(&
        streamManager, &
-       domain, &
-       simulationClock, &
-       firstTimeStep)
+       domain)
 
     type (MPAS_streamManager_type), intent(inout) :: streamManager
 
     type (domain_type) :: domain
 
-    type (MPAS_clock_type) :: simulationClock
-
-    logical, intent(in) :: firstTimeStep
-
     type (MPAS_time_type) :: currentForcingTime
 
-    character(len=strKIND) :: currentForcingTimeStr
+    ! for debugging
+    ! character(len=strKIND) :: currentForcingTimeStr
 
     logical, pointer :: &
          config_do_restart
@@ -1723,7 +1716,6 @@ contains
          config_dt
 
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
-    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     ! get the current time
     call MPAS_forcing_get_forcing_time(&
@@ -1731,8 +1723,9 @@ contains
        "seaice_data_iceberg_forcing_monthly", &
        currentForcingTime)
 
-    call MPAS_get_time(currentForcingTime, dateTimeString=currentForcingTimeStr)
-    call MPAS_log_write('Get Data icebergs at: '//trim(currentForcingTimeStr))
+    ! for debugging
+    ! call MPAS_get_time(currentForcingTime, dateTimeString=currentForcingTimeStr)
+    ! call MPAS_log_write('Get Data icebergs at: '//trim(currentForcingTimeStr))
 
     ! use the forcing layer to get
     call MPAS_forcing_get_forcing(&
