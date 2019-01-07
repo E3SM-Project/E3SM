@@ -1704,9 +1704,8 @@ contains
 
     type (domain_type) :: domain
 
-    type (MPAS_time_type) :: currentForcingTime
-
     ! for debugging
+    ! type (MPAS_time_type) :: currentForcingTime
     ! character(len=strKIND) :: currentForcingTimeStr
 
     logical, pointer :: &
@@ -1717,13 +1716,13 @@ contains
 
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
-    ! get the current time
-    call MPAS_forcing_get_forcing_time(&
-       seaiceForcingGroups, &
-       "seaice_data_iceberg_forcing_monthly", &
-       currentForcingTime)
-
     ! for debugging
+    ! ! get the current time
+    ! call MPAS_forcing_get_forcing_time(&
+    !    seaiceForcingGroups, &
+    !    "seaice_data_iceberg_forcing_monthly", &
+    !    currentForcingTime)
+
     ! call MPAS_get_time(currentForcingTime, dateTimeString=currentForcingTimeStr)
     ! call MPAS_log_write('Get Data icebergs at: '//trim(currentForcingTimeStr))
 
