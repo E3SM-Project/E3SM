@@ -269,6 +269,7 @@ contains
     !
     use BetrstatusType     , only : betr_status_type
     use betr_constants     , only : betr_errmsg_len
+    use clm_varctl         , only : iulog
     implicit none
     ! !ARGUMENTS:
     class(lom_type), intent(in) :: this
@@ -295,9 +296,11 @@ contains
        yt = ystate(j) + (p_dt(j)+d_dt(j))*dtime
        if(yt<tiny_val)then
           tmp = dtime*d_dt(j)
-          pscal(j) = -(p_dt(j)*dtime+ystate(j))/tmp*p_par
+          pscal(j) = -(p_dt(j)*dtime+max(ystate(j),0._r8))/tmp*p_par
+          if(abs(pscal(j))<1.e-14)pscal(j)=0._r8
           lneg=.true.
           if(pscal(j)<0._r8)then
+             write(iulog,*)'pscal',pscal(j),p_dt(j),ystate(j),d_dt(j)
              errinfo=-1
              return
           endif

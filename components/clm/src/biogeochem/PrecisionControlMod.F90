@@ -65,6 +65,9 @@ contains
     real(r8):: ccrit    ! critical carbon state value for truncation
     real(r8):: ncrit    ! critical nitrogen state value for truncation
     real(r8):: pcrit    ! critical phosphorus state value for truncation
+    real(r8):: ccrit_veg
+    real(r8):: ncrit_veg
+    real(r8):: pcrit_veg
     real(r8):: cc_eca
     real(r8):: cn_eca
     real(r8):: cp_eca
@@ -190,14 +193,13 @@ contains
          )
 
       ! set the critical carbon state value for truncation (gC/m2)
-      ccrit = 1.e-8_r8
+      ccrit_veg = 1.e-14_r8
 
       ! set the critical nitrogen state value for truncation (gN/m2)
-      ncrit = 1.e-8_r8
+      ncrit_veg = 1.e-14_r8
 
       ! set the critical phosphorus state value for truncation (gN/m2)
-      pcrit = 1.e-8_r8
-
+      pcrit_veg = 1.e-14_r8
       ! patch loop
       if (.not.use_fates) then
          do fp = 1,num_soilp
@@ -215,7 +217,7 @@ contains
             ! the C component, but truncate C, C13, and N components
 
             ! leaf C and N
-            if (abs(cs%leafc_patch(p)) < ccrit) then
+            if (abs(cs%leafc_patch(p)) < ccrit_veg) then
                pc = pc + cs%leafc_patch(p)
                cs%leafc_patch(p) = 0._r8
                pn = pn + ns%leafn_patch(p)
@@ -234,7 +236,7 @@ contains
             end if
 
             ! leaf storage C and N
-            if (abs(cs%leafc_storage_patch(p)) < ccrit) then
+            if (abs(cs%leafc_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%leafc_storage_patch(p)
                cs%leafc_storage_patch(p) = 0._r8
                pn = pn + ns%leafn_storage_patch(p)
@@ -253,7 +255,7 @@ contains
             end if
 
             ! leaf transfer C and N
-            if (abs(cs%leafc_xfer_patch(p)) < ccrit) then
+            if (abs(cs%leafc_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%leafc_xfer_patch(p)
                cs%leafc_xfer_patch(p) = 0._r8
                pn = pn + ns%leafn_xfer_patch(p)
@@ -272,7 +274,7 @@ contains
             end if
 
             ! froot C and N
-            if (abs(cs%frootc_patch(p)) < ccrit) then
+            if (abs(cs%frootc_patch(p)) < ccrit_veg) then
                pc = pc + cs%frootc_patch(p)
                cs%frootc_patch(p) = 0._r8
                pn = pn + ns%frootn_patch(p)
@@ -291,7 +293,7 @@ contains
             end if
 
             ! froot storage C and N
-            if (abs(cs%frootc_storage_patch(p)) < ccrit) then
+            if (abs(cs%frootc_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%frootc_storage_patch(p)
                cs%frootc_storage_patch(p) = 0._r8
                pn = pn + ns%frootn_storage_patch(p)
@@ -310,7 +312,7 @@ contains
             end if
 
             ! froot transfer C and N
-            if (abs(cs%frootc_xfer_patch(p)) < ccrit) then
+            if (abs(cs%frootc_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%frootc_xfer_patch(p)
                cs%frootc_xfer_patch(p) = 0._r8
                pn = pn + ns%frootn_xfer_patch(p)
@@ -330,7 +332,7 @@ contains
 
             if ( crop_prog .and. veg_pp%itype(p) >= nc3crop )then
                ! grain C and N
-               if (abs(cs%grainc_patch(p)) < ccrit) then
+               if (abs(cs%grainc_patch(p)) < ccrit_veg) then
                   pc = pc + cs%grainc_patch(p)
                   cs%grainc_patch(p) = 0._r8
                   pn = pn + ns%grainn_patch(p)
@@ -340,7 +342,7 @@ contains
                end if
 
                ! grain storage C and N
-               if (abs(cs%grainc_storage_patch(p)) < ccrit) then
+               if (abs(cs%grainc_storage_patch(p)) < ccrit_veg) then
                   pc = pc + cs%grainc_storage_patch(p)
                   cs%grainc_storage_patch(p) = 0._r8
                   pn = pn + ns%grainn_storage_patch(p)
@@ -350,7 +352,7 @@ contains
                end if
 
                ! grain transfer C and N
-               if (abs(cs%grainc_xfer_patch(p)) < ccrit) then
+               if (abs(cs%grainc_xfer_patch(p)) < ccrit_veg) then
                   pc = pc + cs%grainc_xfer_patch(p)
                   cs%grainc_xfer_patch(p) = 0._r8
                   pn = pn + ns%grainn_xfer_patch(p)
@@ -361,7 +363,7 @@ contains
             end if
 
             ! livestem C and N
-            if (abs(cs%livestemc_patch(p)) < ccrit) then
+            if (abs(cs%livestemc_patch(p)) < ccrit_veg) then
                pc = pc + cs%livestemc_patch(p)
                cs%livestemc_patch(p) = 0._r8
                pn = pn + ns%livestemn_patch(p)
@@ -380,7 +382,7 @@ contains
             end if
 
             ! livestem storage C and N
-            if (abs(cs%livestemc_storage_patch(p)) < ccrit) then
+            if (abs(cs%livestemc_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%livestemc_storage_patch(p)
                cs%livestemc_storage_patch(p) = 0._r8
                pn = pn + ns%livestemn_storage_patch(p)
@@ -399,7 +401,7 @@ contains
             end if
 
             ! livestem transfer C and N
-            if (abs(cs%livestemc_xfer_patch(p)) < ccrit) then
+            if (abs(cs%livestemc_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%livestemc_xfer_patch(p)
                cs%livestemc_xfer_patch(p) = 0._r8
                pn = pn + ns%livestemn_xfer_patch(p)
@@ -418,7 +420,7 @@ contains
             end if
 
             ! deadstem C and N
-            if (abs(cs%deadstemc_patch(p)) < ccrit) then
+            if (abs(cs%deadstemc_patch(p)) < ccrit_veg) then
                pc = pc + cs%deadstemc_patch(p)
                cs%deadstemc_patch(p) = 0._r8
                pn = pn + ns%deadstemn_patch(p)
@@ -437,7 +439,7 @@ contains
             end if
 
             ! deadstem storage C and N
-            if (abs(cs%deadstemc_storage_patch(p)) < ccrit) then
+            if (abs(cs%deadstemc_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%deadstemc_storage_patch(p)
                cs%deadstemc_storage_patch(p) = 0._r8
                pn = pn + ns%deadstemn_storage_patch(p)
@@ -456,7 +458,7 @@ contains
             end if
 
             ! deadstem transfer C and N
-            if (abs(cs%deadstemc_xfer_patch(p)) < ccrit) then
+            if (abs(cs%deadstemc_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%deadstemc_xfer_patch(p)
                cs%deadstemc_xfer_patch(p) = 0._r8
                pn = pn + ns%deadstemn_xfer_patch(p)
@@ -475,7 +477,7 @@ contains
             end if
 
             ! livecroot C and N
-            if (abs(cs%livecrootc_patch(p)) < ccrit) then
+            if (abs(cs%livecrootc_patch(p)) < ccrit_veg) then
                pc = pc + cs%livecrootc_patch(p)
                cs%livecrootc_patch(p) = 0._r8
                pn = pn + ns%livecrootn_patch(p)
@@ -494,7 +496,7 @@ contains
             end if
 
             ! livecroot storage C and N
-            if (abs(cs%livecrootc_storage_patch(p)) < ccrit) then
+            if (abs(cs%livecrootc_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%livecrootc_storage_patch(p)
                cs%livecrootc_storage_patch(p) = 0._r8
                pn = pn + ns%livecrootn_storage_patch(p)
@@ -513,7 +515,7 @@ contains
             end if
 
             ! livecroot transfer C and N
-            if (abs(cs%livecrootc_xfer_patch(p)) < ccrit) then
+            if (abs(cs%livecrootc_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%livecrootc_xfer_patch(p)
                cs%livecrootc_xfer_patch(p) = 0._r8
                pn = pn + ns%livecrootn_xfer_patch(p)
@@ -532,7 +534,7 @@ contains
             end if
 
             ! deadcroot C and N
-            if (abs(cs%deadcrootc_patch(p)) < ccrit) then
+            if (abs(cs%deadcrootc_patch(p)) < ccrit_veg) then
                pc = pc + cs%deadcrootc_patch(p)
                cs%deadcrootc_patch(p) = 0._r8
                pn = pn + ns%deadcrootn_patch(p)
@@ -551,7 +553,7 @@ contains
             end if
 
             ! deadcroot storage C and N
-            if (abs(cs%deadcrootc_storage_patch(p)) < ccrit) then
+            if (abs(cs%deadcrootc_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%deadcrootc_storage_patch(p)
                cs%deadcrootc_storage_patch(p) = 0._r8
                pn = pn + ns%deadcrootn_storage_patch(p)
@@ -570,7 +572,7 @@ contains
             end if
 
             ! deadcroot transfer C and N
-            if (abs(cs%deadcrootc_xfer_patch(p)) < ccrit) then
+            if (abs(cs%deadcrootc_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%deadcrootc_xfer_patch(p)
                cs%deadcrootc_xfer_patch(p) = 0._r8
                pn = pn + ns%deadcrootn_xfer_patch(p)
@@ -589,7 +591,7 @@ contains
             end if
 
             ! gresp_storage (C only)
-            if (abs(cs%gresp_storage_patch(p)) < ccrit) then
+            if (abs(cs%gresp_storage_patch(p)) < ccrit_veg) then
                pc = pc + cs%gresp_storage_patch(p)
                cs%gresp_storage_patch(p) = 0._r8
                if ( use_c13 ) then
@@ -603,7 +605,7 @@ contains
             end if
 
             ! gresp_xfer(c only)
-            if (abs(cs%gresp_xfer_patch(p)) < ccrit) then
+            if (abs(cs%gresp_xfer_patch(p)) < ccrit_veg) then
                pc = pc + cs%gresp_xfer_patch(p)
                cs%gresp_xfer_patch(p) = 0._r8
                if ( use_c13 ) then
@@ -617,7 +619,7 @@ contains
             end if
 
             ! cpool (C only)
-            if (abs(cs%cpool_patch(p)) < ccrit) then
+            if (abs(cs%cpool_patch(p)) < ccrit_veg) then
                pc = pc + cs%cpool_patch(p)
                cs%cpool_patch(p) = 0._r8
                if ( use_c13 ) then
@@ -632,32 +634,32 @@ contains
 
             if ( crop_prog .and. veg_pp%itype(p) >= nc3crop )then
                ! xsmrpool (C only)
-               if (abs(cs%xsmrpool_patch(p)) < ccrit) then
+               if (abs(cs%xsmrpool_patch(p)) < ccrit_veg) then
                   pc = pc + cs%xsmrpool_patch(p)
                   cs%xsmrpool_patch(p) = 0._r8
                end if
             end if
 
             ! retransn (N only)
-            if (abs(ns%retransn_patch(p)) < ncrit) then
+            if (abs(ns%retransn_patch(p)) < ncrit_veg) then
                pn = pn + ns%retransn_patch(p)
                ns%retransn_patch(p) = 0._r8
             end if
 
             ! retransp (P only)
-            if (abs(ps%retransp_patch(p)) < pcrit) then
+            if (abs(ps%retransp_patch(p)) < pcrit_veg) then
                pp = pp + ps%retransp_patch(p)
                ps%retransp_patch(p) = 0._r8
             end if
 
             ! npool (N only)
-            if (abs(ns%npool_patch(p)) < ncrit) then
+            if (abs(ns%npool_patch(p)) < ncrit_veg) then
                pn = pn + ns%npool_patch(p)
                ns%npool_patch(p) = 0._r8
             end if
 
             ! ppool (P only)
-            if (abs(ps%ppool_patch(p)) < pcrit) then
+            if (abs(ps%ppool_patch(p)) < pcrit_veg) then
                pp = pp + ps%ppool_patch(p)
                ps%ppool_patch(p) = 0._r8
             end if
@@ -676,6 +678,14 @@ contains
          end do ! end of pft loop
       end if ! end of if(not.use_fates)
 
+     ! set the critical carbon state value for truncation (gC/m2)
+      ccrit = 1.e-8_r8
+
+      ! set the critical nitrogen state value for truncation (gN/m2)
+      ncrit = 1.e-8_r8
+
+      ! set the critical phosphorus state value for truncation (gN/m2)
+      pcrit = 1.e-8_r8
       if (.not. is_active_betr_bgc) then
 
          ! column loop

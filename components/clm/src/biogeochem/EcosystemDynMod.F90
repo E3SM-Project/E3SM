@@ -68,6 +68,7 @@ contains
     use PhenologyMod , only : PhenologyInit
     use FireMod      , only : FireInit
     use C14DecayMod  , only : C14_init_BombSpike
+    use PhenologyFLuxLimitMod, only : InitPhenoFluxLimiter
     !
     ! !ARGUMENTS:
     implicit none
@@ -81,7 +82,7 @@ contains
     if ( use_c14 ) then
        call C14_init_BombSpike()
     end if
-
+    call InitPhenoFluxLimiter()
   end subroutine EcosystemDynInit
 
 

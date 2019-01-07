@@ -13,10 +13,12 @@ module PhenologyFLuxLimitMod
   use VegetationPropertiesType    , only : veg_vp
   use clm_time_manager            , only : get_step_size
   use pftvarcon                   , only : npcropmin
+  use clm_varctl                  , only : iulog
+  use abortutils                  , only : endrun
 implicit none
   private
 #define mov(a,b) a=b
-#define imov(a,b) b=a
+#define imov(a,b) b=max(a,0._r8)
 #define ascal(a,b) a=a*b
   integer :: s_cpool
   integer :: s_leafc
@@ -146,7 +148,7 @@ implicit none
   integer :: f_grainn_xfer_to_grainn
   integer :: f_grainn_to_food
   integer :: f_retransn_to_npool
-  integer :: f_supplement_to_sminn_surf
+  integer :: f_supplement_to_plantn
   integer :: n_carbon_fluxes
   integer :: n_nutrient_fluxes
   integer :: n_carbon_states
@@ -304,7 +306,7 @@ contains
   f_grainn_xfer_to_grainn         = ic_next(id)
   f_grainn_to_food                = ic_next(id)
   f_retransn_to_npool             = ic_next(id)
-  f_supplement_to_sminn_surf      = ic_next(id)
+  f_supplement_to_plantn          = ic_next(id)
   n_nutrient_fluxes = id
   end subroutine init_phenofluxl_counters
   !-------------------------------------------------------------------------------
@@ -434,10 +436,10 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
 
-  call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_sminn_surf)
+  call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_plantn)
 
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_supplement_to_sminn_surf       , s_npool, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_supplement_to_plantn           , s_npool, nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_leafn                 , s_leafn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafn_xfer_to_leafn            , s_leafn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafn_storage_to_xfer          , s_leafn_xfer, nelms)
@@ -472,7 +474,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_livestemn_to_retransn          , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_retransn         , s_retransn, nelms)
 
-  call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, f_supplement_to_sminn_surf)
+  call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, f_supplement_to_plantn)
   end subroutine InitPhenoFluxLimiter
 !---------------------------------------------------------------------------
   subroutine phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
@@ -893,7 +895,7 @@ contains
     mov(rfluxes(f_frootn_to_litter)              , nf%frootn_to_litter_patch(p))
 
     mov(rfluxes(f_retransn_to_npool)             , nf%retransn_to_npool_patch(p))
-    mov(rfluxes(f_supplement_to_sminn_surf)      , nf%supplement_to_sminn_surf_patch(p))
+    mov(rfluxes(f_supplement_to_plantn)          , nf%supplement_to_plantn(p))
 
     call flux_correction(spm_nutrient_d%szrow, spm_nutrient_d%szcol, spm_nutrient_p, &
       spm_nutrient_d, dt, ystates, rfluxes)
@@ -949,7 +951,7 @@ contains
     mov(rfluxes(f_frootn_to_litter)              , nf%frootn_to_litter_patch(p))
 
     mov(rfluxes(f_retransn_to_npool)             , nf%retransn_to_npool_patch(p))
-    mov(rfluxes(f_supplement_to_sminn_surf)      , nf%supplement_to_sminn_surf_patch(p))
+    mov(rfluxes(f_supplement_to_plantn)          , nf%supplement_to_plantn(p))
 
   enddo
   end associate
@@ -1076,7 +1078,7 @@ contains
     mov(rfluxes(f_leafn_to_retransn)             , pf%leafp_to_retransp_patch(p))
     mov(rfluxes(f_frootn_to_litter)              , pf%frootp_to_litter_patch(p))
     mov(rfluxes(f_retransn_to_npool)             , pf%retransp_to_ppool_patch(p))
-    mov(rfluxes(f_supplement_to_sminn_surf)      , pf%supplement_to_sminp_surf_patch(p))
+    mov(rfluxes(f_supplement_to_plantn)          , pf%supplement_to_plantp(p))
     !assemble stoichiometry matrix
 
     !obtain the limiting factor
@@ -1132,7 +1134,7 @@ contains
     imov(rfluxes(f_leafn_to_retransn)             , pf%leafp_to_retransp_patch(p))
     imov(rfluxes(f_frootn_to_litter)              , pf%frootp_to_litter_patch(p))
     imov(rfluxes(f_retransn_to_npool)             , pf%retransp_to_ppool_patch(p))
-    imov(rfluxes(f_supplement_to_sminn_surf)      , pf%supplement_to_sminp_surf_patch(p))
+    imov(rfluxes(f_supplement_to_plantn)          , pf%supplement_to_plantp(p))
 
   enddo
   end associate
