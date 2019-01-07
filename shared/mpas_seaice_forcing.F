@@ -1640,7 +1640,6 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
-    ! type (MPAS_clock_type) :: simulationClock
     type (MPAS_Time_Type) :: currTime
     character(len=strKIND) :: timeStamp
     integer :: ierr
@@ -1651,7 +1650,6 @@ contains
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
-!    currTime = mpas_get_clock_time(simulationClock, MPAS_NOW, ierr)
     currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
     timeStamp = '0000'//trim(timeStamp(5:))
@@ -1710,7 +1708,7 @@ contains
 
     type (domain_type) :: domain
 
-    type (MPAS_clock_type) :: simulationClock ! dc is this being used?
+    type (MPAS_clock_type) :: simulationClock
 
     logical, intent(in) :: firstTimeStep
 
@@ -1729,8 +1727,8 @@ contains
 
     ! get the current time
     call MPAS_forcing_get_forcing_time(&
-        seaiceForcingGroups, &
-        "seaice_data_iceberg_forcing_monthly", &
+       seaiceForcingGroups, &
+       "seaice_data_iceberg_forcing_monthly", &
        currentForcingTime)
 
     call MPAS_get_time(currentForcingTime, dateTimeString=currentForcingTimeStr)
