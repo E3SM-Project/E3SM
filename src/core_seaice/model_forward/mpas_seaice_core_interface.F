@@ -582,6 +582,7 @@ module seaice_core_interface
 
      logical, pointer :: &
           config_use_forcing, &
+          config_use_data_icebergs, &
           config_testing_system_test, &
           config_use_snicar
 
@@ -597,11 +598,12 @@ module seaice_core_interface
      ! pkgForcing
 
      call MPAS_pool_get_config(configPool, "config_use_forcing", config_use_forcing)
+     call MPAS_pool_get_config(configPool, "config_use_data_icebergs", config_use_data_icebergs)
 
      call MPAS_pool_get_package(packagePool, "pkgForcingActive", pkgForcingActive)
 
      ! see if we are using the forcing system
-     if (config_use_forcing) then
+     if (config_use_forcing .or. config_use_data_icebergs) then
 
         pkgForcingActive = .true.
 
