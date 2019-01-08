@@ -1,8 +1,8 @@
 # E3SM Diagnostics Package
 
-[![Install](https://anaconda.org/e3sm/acme_diags/badges/installer/conda.svg)](https://anaconda.org/e3sm/acme_diags)
-[![Downloads](https://anaconda.org/e3sm/acme_diags/badges/downloads.svg)](https://anaconda.org/e3sm/acme_diags)
-[![Version](https://anaconda.org/e3sm/acme_diags/badges/version.svg)](https://anaconda.org/e3sm/acme_diags)
+[![Install](https://anaconda.org/e3sm/e3sm_diags/badges/installer/conda.svg)](https://anaconda.org/e3sm/e3sm_diags)
+[![Downloads](https://anaconda.org/e3sm/e3sm_diags/badges/downloads.svg)](https://anaconda.org/e3sm/e3sm_diags)
+[![Version](https://anaconda.org/e3sm/e3sm_diags/badges/version.svg)](https://anaconda.org/e3sm/e3sm_diags)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1009157.svg)](https://doi.org/10.5281/zenodo.1009157)
 
 
@@ -12,22 +12,22 @@
 3. [Current State](#current-state)
 
 ## Documentation <a name="doc"></a>
-* [Documentation Website](https://e3sm-project.github.io/acme_diags)
+* [Documentation Website](https://e3sm-project.github.io/e3sm_diags)
 * Examples:
-  * [Quick Start Guide for NERSC Edison](https://e3sm-project.github.io/acme_diags/docs/html/quickguides/quick-guide-edison-shifter.html)
-  * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/acme_diags/docs/html/quickguides/quick-guide-aims4.html)
-  * [Quick Start Guide for OLCF Rhea](https://e3sm-project.github.io/acme_diags/docs/html/quickguides/quick-guide-rhea.html)
-  * [Model vs Model Comparison](https://github.com/E3SM-Project/acme_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
-  * [Observation vs Observation Comparison](https://github.com/E3SM-Project/acme_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
-  * [Model vs Observation](https://github.com/E3SM-Project/acme_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
+  * [Quick Start Guide for NERSC Edison](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-edison-shifter.html)
+  * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-aims4.html)
+  * [Quick Start Guide for OLCF Rhea](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-rhea.html)
+  * [Model vs Model Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
+  * [Observation vs Observation Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
+  * [Model vs Observation](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
 
 ## Overview<a name="overview"></a>
 This diagnostics package is constructed for supporting the diagnostics task of DOE's [Energy Exascale Earth System Model (E3SM) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
 
 * fully integrates the functionality of NCAR's AMWG diagnostics package.
 * utilizes most updated observational datasets, including remote sensing, reanalysis and in-situ datasets. 
-* interfaces with diagnostics developed from different ACME focus groups: atmosphere group, coupled simulation group, land group.
-* interacts effectively with the PCMDI's metrics package and the ARM diagnostics package through a unifying framework: [Community Diagnostics Package (CDP)](https://github.com/UV-CDAT/cdp).
+* interfaces with diagnostics developed from different E3SM focus groups: atmosphere group, coupled simulation group, land group.
+* interacts effectively with the PCMDI's metrics package and the ARM diagnostics package through a unifying framework: [Community Diagnostics Package (CDP)](https://github.com/CDAT/cdp).
 * is flexible for user specified diagnostics and being configured for use by other climate models.
 
 ## Current State <a name="current-state"></a>
