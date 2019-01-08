@@ -1,4 +1,4 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+  ! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
@@ -56,6 +56,7 @@ module ocn_init_mode
    use ocn_init_sea_mount
    use ocn_init_isomip
    use ocn_init_isomip_plus
+   use ocn_init_hurricane
    use ocn_init_tidal_boundary
 
    implicit none
@@ -283,6 +284,7 @@ module ocn_init_mode
       call ocn_init_setup_sea_mount(domain, ierr)
       call ocn_init_setup_isomip(domain, ierr)
       call ocn_init_setup_isomip_plus(domain, ierr)
+      call ocn_init_setup_hurricane(domain, ierr)
       call ocn_init_setup_tidal_boundary(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
@@ -388,6 +390,8 @@ module ocn_init_mode
       call ocn_init_validate_isomip(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_isomip_plus(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_hurricane(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_tidal_boundary(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
