@@ -137,17 +137,17 @@ contains
 
          thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
 
-!         call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
-!         call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
+         call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
+         call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
 
-!         qbot_t = qbot_g*(qs_t/qs_g)
-!         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
-!         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
+         qbot_t = qbot_g*(qs_t/qs_g)
+         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
+         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
 
        top_as%tbot(t) = tbot_t
-       top_as%thbot(t) = thbot_t
+!       top_as%thbot(t) = thbot_t
 !	 top_as%vp_atm(t) = es_t
-!       top_as%qbot(t) = qbot_t
+       top_as%qbot(t) = qbot_t
 !       top_as%pbot(t) = pbot_t
 
      end do
