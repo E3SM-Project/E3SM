@@ -1762,9 +1762,6 @@ contains
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioConcentrationsUsed
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         categoryThicknessLimitsCell
-
     logical :: &
          abortFlag, &
          setGetPhysicsTracers, &
@@ -1855,7 +1852,6 @@ contains
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
-       allocate(categoryThicknessLimitsCell(nCategories+1, nCellsSolve) )
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -1872,7 +1868,6 @@ contains
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
           enddo ! iCategory
-          categoryThicknessLimitsCell(:,iCell) = categoryThicknessLimits(:)
 
           ! read the required ocean concentration fields into the allocated array
           do iBioTracers = 1, ciceTracerObject % nBioTracers
@@ -1892,7 +1887,7 @@ contains
                ciceTracerObject % nBioTracersLayer, & !nltrcr, intent(in)
                nIcelayers, &
                nSnowLayers, &
-               categoryThicknessLimitsCell(:,iCell), & !hin_max, intent(inout), dimension(0:ncat)
+               categoryThicknessLimits(:), & !hin_max, intent(inout), dimension(0:ncat)
                nBioLayers, &
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
@@ -1952,9 +1947,6 @@ contains
 
        enddo ! iCell
 
-       ! copyout thickness from last loop iteration
-       categoryThicknessLimits(:) = categoryThicknessLimitsCell(:,nCellsSolve)
-
        ! error checking
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
@@ -1962,7 +1954,6 @@ contains
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioConcentrationsUsed)
-       deallocate(categoryThicknessLimitsCell)
 
        block => block % next
     end do
