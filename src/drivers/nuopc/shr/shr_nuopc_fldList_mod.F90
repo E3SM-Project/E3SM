@@ -372,7 +372,7 @@ contains
     character(len=*)                   , intent(in)    :: mapfile
 
     ! local variables
-    logical :: id, n
+    integer :: id, n
     character(len=*),parameter  :: subname='(shr_nuopc_fldList_AddMap)'
     ! ----------------------------------------------
 
@@ -401,7 +401,7 @@ contains
     if (flds(id)%mapindex(destcomp) == mapfcopy) then
        flds(id)%mapfile(destcomp) = 'unset'
        flds(id)%mapnorm(destcomp) = 'unset'
-    else if (trim(fld%mapfile(destcomp)) == 'idmap') then
+    else if (trim(flds%mapfile(destcomp)) == 'idmap') then
        flds(id)%mapindex(destcomp) = mapfcopy
        flds(id)%mapnorm(destcomp) = 'unset'
     end if
@@ -505,67 +505,65 @@ contains
     do n = 1, nflds
        shortname = fldList%flds(n)%shortname
 
-       if (fldList%flds(n)%active) then
-          ! call ESMF_LogWrite(subname//' fld = '//trim(shortname), ESMF_LOGMSG_INFO, rc=dbrc)
+       ! call ESMF_LogWrite(subname//' fld = '//trim(shortname), ESMF_LOGMSG_INFO, rc=dbrc)
+       
+       if (NUOPC_IsConnected(state, fieldName=shortname)) then
 
-          if (NUOPC_IsConnected(state, fieldName=shortname)) then
+          call ESMF_StateGet(state, field=field, itemName=trim(shortname), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
-             call ESMF_StateGet(state, field=field, itemName=trim(shortname), rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          call NUOPC_GetAttribute(field, name="TransferActionGeomObject", value=transferAction, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
-             call NUOPC_GetAttribute(field, name="TransferActionGeomObject", value=transferAction, rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          if (trim(transferAction) == "accept") then  ! accept
 
-             if (trim(transferAction) == "accept") then  ! accept
+             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected, grid/mesh TBD", &
+                  ESMF_LOGMSG_INFO, rc=dbrc)
 
-                call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected, grid/mesh TBD", &
+          else   ! provide
+
+             if (shortname == trim(flds_scalar_name)) then
+                call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected on root pe", &
                      ESMF_LOGMSG_INFO, rc=dbrc)
-
-             else   ! provide
-
-                if (shortname == trim(flds_scalar_name)) then
-                   call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected on root pe", &
-                        ESMF_LOGMSG_INFO, rc=dbrc)
-                   call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
-                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-                elseif (present(grid)) then
-                   call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using grid", &
-                        ESMF_LOGMSG_INFO, rc=dbrc)
-                   ! Create the field
-                   field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=shortname,rc=rc)
-                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-                elseif (present(mesh)) then
-                   call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using mesh", &
-                        ESMF_LOGMSG_INFO, rc=dbrc)
-                   ! Create the field
-                   field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-                   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-                else
-                   call ESMF_LogWrite(trim(subname)//trim(tag)//": ERROR grid or mesh expected", &
-                        ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-                   rc = ESMF_FAILURE
-                   return
-                endif
-
-                ! NOW call NUOPC_Realize
-                call NUOPC_Realize(state, field=field, rc=rc)
+                call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-                ! call ESMF_FieldPrint(field=field, rc=rc)
-                ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
+             elseif (present(grid)) then
+                call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using grid", &
+                     ESMF_LOGMSG_INFO, rc=dbrc)
+                ! Create the field
+                field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=shortname,rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+             elseif (present(mesh)) then
+                call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(shortname)//" is connected using mesh", &
+                     ESMF_LOGMSG_INFO, rc=dbrc)
+                ! Create the field
+                field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=shortname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+             else
+                call ESMF_LogWrite(trim(subname)//trim(tag)//": ERROR grid or mesh expected", &
+                     ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                rc = ESMF_FAILURE
+                return
              endif
 
-          else
-
-             call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(shortname) // " is not connected.", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
-             call ESMF_StateRemove(state, (/shortname/), rc=rc)
+             ! NOW call NUOPC_Realize
+             call NUOPC_Realize(state, field=field, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
-          end if
+             ! call ESMF_FieldPrint(field=field, rc=rc)
+             ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+          endif
+
+       else
+
+          call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(shortname) // " is not connected.", &
+               ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_StateRemove(state, (/shortname/), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
        end if
+
     end do
 
     call ESMF_LogWrite(subname//' done ', ESMF_LOGMSG_INFO, rc=dbrc)
@@ -625,8 +623,9 @@ contains
     character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_general)'
     ! ----------------------------------------------
 
-    stdname   = fldList%fld(fldindex)%stdname
-    shortname = fldList%fld(fldindex)%shortname
+    stdname   = fldList%flds(fldindex)%stdname
+    shortname = fldList%flds(fldindex)%shortname
+
   end subroutine shr_nuopc_fldList_GetFldInfo_general
 
   !================================================================================

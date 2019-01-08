@@ -524,7 +524,6 @@ contains
 
     ! local variables
     character(len=CS)   :: stdname, shortname
-    logical             :: activefld
     integer             :: n, n1, n2, ncomp, nflds
     character(len=CS)   :: transferOffer
     type(InternalState) :: is_local
@@ -601,37 +600,31 @@ contains
        if (ncomp /= compmed) then
           nflds = shr_nuopc_fldList_GetNumFlds(fldListFr(ncomp))
           do n = 1,nflds
-             call shr_nuopc_fldList_GetFldInfo(fldListFr(ncomp), n, activefld, stdname, shortname)
-             if (activefld) then
-                if (trim(shortname) == flds_scalar_name) then
-                   transferOffer = 'will provide'
-                else
-                   transferOffer = 'cannot provide'
-                end if
-                call NUOPC_Advertise(is_local%wrap%NStateImp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
-                     TransferOfferGeomObject=transferOffer)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                call ESMF_LogWrite(subname//':Fr_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (trim(shortname) == flds_scalar_name) then
+                transferOffer = 'will provide'
+             else
+                transferOffer = 'cannot provide'
              end if
+             call NUOPC_Advertise(is_local%wrap%NStateImp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
+                  TransferOfferGeomObject=transferOffer)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_LogWrite(subname//':Fr_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
-
+          
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
-             call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, activefld, stdname, shortname)
-             if (activefld) then
-                if (trim(shortname) == flds_scalar_name) then
-                   transferOffer = 'will provide'
-                else
-                   transferOffer = 'cannot provide'
-                end if
-                call NUOPC_Advertise(is_local%wrap%NStateExp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
-                     TransferOfferGeomObject=transferOffer)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (trim(shortname) == flds_scalar_name) then
+                transferOffer = 'will provide'
+             else
+                transferOffer = 'cannot provide'
              end if
-          end do
+             call NUOPC_Advertise(is_local%wrap%NStateExp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
+                  TransferOfferGeomObject=transferOffer)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
        end if
     end do ! end of ncomps loop
 
