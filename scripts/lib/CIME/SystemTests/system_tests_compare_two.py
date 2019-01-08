@@ -363,7 +363,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                     rundir = self._get_case2_rundir())
                 self._write_info_to_case2_output_root()
                 self._setup_cases()
-            except:
+            except BaseException:
                 # If a problem occurred in setting up the test cases, it's
                 # important to remove the case2 directory: If it's kept around,
                 # that would signal that test setup was done successfully, and

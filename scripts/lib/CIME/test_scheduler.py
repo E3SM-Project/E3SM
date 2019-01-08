@@ -20,6 +20,7 @@ from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_test import EnvTest
+from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.tests import Tests
@@ -444,9 +445,6 @@ class TestScheduler(object):
                 self._log_output(test, error)
                 return False, error
 
-            comp_root_dir_cpl = files.get_value( "COMP_ROOT_DIR_CPL", resolved=False)
-            files.set_value("COMP_ROOT_DIR_CPL", comp_root_dir_cpl)
-
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
@@ -693,7 +691,7 @@ class TestScheduler(object):
     ###########################################################################
         try:
             return run(test)
-        except (SystemExit, Exception) as e:
+        except Exception as e:
             exc_tb = sys.exc_info()[2]
             errput = "Test '{}' failed in phase '{}' with exception '{}'\n".format(test, phase, str(e))
             errput += ''.join(traceback.format_tb(exc_tb))
@@ -705,7 +703,7 @@ class TestScheduler(object):
     ###########################################################################
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
-            total_pes = int(run_cmd_no_fail("./xmlquery TOTALPES --value", from_dir=test_dir))
+            total_pes = EnvMachPes(test_dir, read_only=True).get_value("TOTALPES")
             return total_pes
 
         elif (phase == SHAREDLIB_BUILD_PHASE):

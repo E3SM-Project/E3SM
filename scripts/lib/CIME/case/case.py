@@ -195,17 +195,17 @@ class Case(object):
 
     def read_xml(self):
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None, read_only=self._force_read_only))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
-        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(self._caseroot))
-        self._env_generic_files.append(EnvArchive(self._caseroot))
+        self._env_generic_files.append(EnvMachSpecific(self._caseroot, read_only=self._force_read_only))
+        self._env_generic_files.append(EnvArchive(self._caseroot, read_only=self._force_read_only))
         self._files = self._env_entryid_files + self._env_generic_files
 
     def get_case_root(self):
@@ -472,9 +472,7 @@ class Case(object):
         progcomps = {}
         spec = {}
         primary_component = None
-
         for comp in self._component_classes:
-
             if comp == "CPL":
                 continue
             spec[comp] = self.get_value("COMP_{}".format(comp))
@@ -802,7 +800,7 @@ class Case(object):
 
         self.clean_up_lookups(allow_undefined=True)
 
-        self.get_compset_var_settings()
+        self.get_compset_var_settings(files)
 
         self.clean_up_lookups(allow_undefined=True)
 
@@ -970,8 +968,10 @@ class Case(object):
         if input_dir is not None:
             self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
-    def get_compset_var_settings(self):
-        compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
+    def get_compset_var_settings(self, files):
+        infile=files.get_value("COMPSETS_SPEC_FILE",
+                              attribute={"component":self._primary_component})
+        compset_obj = Compsets(infile=infile, files=files)
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
         for name, value in matches:
             if len(value) > 0:
@@ -1058,7 +1058,6 @@ class Case(object):
                 os.symlink(exefile, destfile)
             except Exception as e:
                 logger.warning("FAILED to set up exefiles: {}".format(str(e)))
-
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -1182,6 +1181,10 @@ directory, NOT in this subdirectory."""
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
+
+        # User mods may have modified underlying XML files
+        if all_user_mods:
+            self.read_xml()
 
     def _get_comp_user_mods(self, component):
         """
@@ -1457,7 +1460,7 @@ directory, NOT in this subdirectory."""
 
             # Lock env_case.xml
             lock_file("env_case.xml", self._caseroot)
-        except:
+        except Exception:
             if os.path.exists(self._caseroot):
                 if not logger.isEnabledFor(logging.DEBUG) and not test:
                     logger.warning("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))

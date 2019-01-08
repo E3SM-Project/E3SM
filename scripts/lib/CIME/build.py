@@ -240,7 +240,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         logger.info("Building {} with output to file {}".format(lib,file_build))
 
         run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
-                       [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
+                       [full_lib_path, os.path.join(exeroot, sharedpath), case], logfile=file_build)
 
         analyze_build_log(lib, file_build, compiler)
         logs.append(file_build)
@@ -560,7 +560,6 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
             case.flush()
 
         lock_file("env_build.xml")
-
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):

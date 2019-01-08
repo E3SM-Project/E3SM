@@ -236,7 +236,7 @@ def case_setup(self, clean=False, test_mode=False, reset=False):
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
                 run_and_log_case_status(functor, phase, caseroot=caseroot)
-            except:
+            except BaseException: # Want to catch KeyboardInterrupt too
                 ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
                 raise
             else:

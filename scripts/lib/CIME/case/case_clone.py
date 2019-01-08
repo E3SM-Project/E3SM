@@ -10,7 +10,6 @@ from CIME.simple_compare            import compare_files
 
 logger = logging.getLogger(__name__)
 
-
 def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
                       cime_output_root=None, exeroot=None, rundir=None,
                       user_mods_dir=None):
@@ -59,11 +58,8 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
                "by this user.  Use the --cime-output-root flag to provide a writable "
                "scratch directory".format(cime_output_root))
     else:
-        try:
+        if not os.path.isdir(cime_output_root):
             os.makedirs(cime_output_root)
-        except:
-            if not os.path.isdir(cime_output_root):
-                raise
 
     # determine if will use clone executable or not
     if keepexe:
