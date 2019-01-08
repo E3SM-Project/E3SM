@@ -15,7 +15,7 @@ def inject_preserve_floodplain(mesh_file, floodplain_elevation):
     if 'cellSeedMask' not in nc_vars:
         nc_mesh.createVariable('cellSeedMask', 'i', ('nCells'))
     nc_mesh.variables['cellSeedMask'][:] = \
-        nc_mesh.variables['bathymetry'][:] < floodplain_elevation
+        nc_mesh.variables['bottomDepthObserved'][:] < floodplain_elevation
 
     nc_mesh.close()
 

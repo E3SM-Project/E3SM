@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<config case="init">
+	<add_link source="../../build_mesh/culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source="../../build_mesh/culled_mesh/culled_graph.info" dest="graph.info"/>
+	<add_link source_path="initial_condition_database" source="sandy_wnd10m.nc" dest="wnd10m.nc"/>
+	<add_link source_path="initial_condition_database" source="sandy_prmsl.nc" dest="prmsl.nc"/>
+	<add_link source_path="script_configuration_dir" source="interpolate_time_varying_forcing.py" dest="interpolate_time_varying_forcing.py"/>
+	<add_link source_path="script_configuration_dir" source="create_pointstats_file.py" dest="create_pointstats_file.py"/>
+	<add_link source_path="script_test_dir" source="NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
+	<add_link source_path="script_test_dir" source="USGS_stations.txt" dest="USGS_stations.txt"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<option name="config_init_configuration">'hurricane'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_write_cull_cell_mask">.false.</option>
+		<option name="config_realistic_coriolis_parameter">.true.</option>
+		<option name="config_vertical_grid">'60layerPHC'</option>
+		<option name="config_hurricane_vert_levels">60</option>
+		<option name="config_hurricane_min_depth">30.0</option>
+		<option name="config_hurricane_max_depth">2000.0</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<stream name="input_init">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="bathymetry">
+			<attribute name="filename_template">mesh.nc</attribute>
+	                <attribute name="type">input</attribute>
+	                <attribute name="input_interval">initial_only</attribute>
+			<add_contents>
+				<member name="bottomDepthObserved" type="var"/>
+			</add_contents>                
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="refZMid" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="bottomDepthObserved" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="vertCoordMovementWeights" type="var"/>
+				<member name="ssh" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+<!--
+		<step executable="./metis">
+		        <argument flag="graph.info">6</argument>
+		</step>
+-->
+		<step executable="python">
+			<argument flag="interpolate_time_varying_forcing.py"></argument>
+		</step>
+		<step executable="python">
+			<argument flag="create_pointstats_file.py"></argument>
+			<argument flag="--mesh_file">mesh.nc</argument>
+			<argument flag="--station_files">USGS_stations.txt</argument>
+			<argument flag="--station_files">NOAA-COOPS_stations.txt</argument>
+		</step>
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+
+</config>

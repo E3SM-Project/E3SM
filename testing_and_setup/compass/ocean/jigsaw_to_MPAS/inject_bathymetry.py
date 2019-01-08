@@ -33,11 +33,11 @@ def inject_bathymetry(mesh_file):
 
     # Create new NetCDF variables in mesh file, if necessary
     nc_vars = nc_mesh.variables.keys()
-    if 'bathymetry' not in nc_vars:
-        nc_mesh.createVariable('bathymetry', 'f8', ('nCells'))
+    if 'bottomDepthObserved' not in nc_vars:
+        nc_mesh.createVariable('bottomDepthObserved', 'f8', ('nCells'))
 
     # Write to mesh file
-    nc_mesh.variables['bathymetry'][:] = bathymetry
+    nc_mesh.variables['bottomDepthObserved'][:] = bathymetry
     nc_mesh.close()
 
 
