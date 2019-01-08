@@ -83,10 +83,10 @@
          snowpatch = 0.005_dbl_kind     ! parameter for fractional snow area (m)
 !tcx note cice snowpatch = 0.02
 
-      integer (kind=int_kind), parameter :: & 
+      integer (kind=int_kind), parameter, public :: &
          nspint = 3             ,& ! number of solar spectral intervals
-         nspint_5bd = 5            ! number of solar spectral intervals with config_use_snicar           
-      
+         nspint_5bd = 5            ! number of solar spectral intervals with config_use_snicar
+
       ! weights for albedos 
       ! 4 Jan 2007 BPB  Following are appropriate for complete cloud
       ! in a summer polar atmosphere with 1.5m bare sea ice surface:
