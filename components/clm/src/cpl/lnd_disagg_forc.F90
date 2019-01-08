@@ -115,8 +115,8 @@ contains
          zbot_t  = zbot_g
          tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
  
-!         Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
-!         pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
+         Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
+         pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
 
          ! Derivation of potential temperature calculation:
          ! 
@@ -135,7 +135,7 @@ contains
          !         = tbot_c * (exp(zbot_c/Hbot))^(rair/cpair)
          !         = tbot_c * exp((zbot_c/Hbot) * (rair/cpair))
 
-!         thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
+         thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
 
 !         call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
 !         call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
@@ -145,7 +145,7 @@ contains
 !         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
 
        top_as%tbot(t) = tbot_t
-!       top_as%thbot(t) = thbot_t
+       top_as%thbot(t) = thbot_t
 !	 top_as%vp_atm(t) = es_t
 !       top_as%qbot(t) = qbot_t
 !       top_as%pbot(t) = pbot_t
