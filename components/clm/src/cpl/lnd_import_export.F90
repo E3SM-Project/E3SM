@@ -529,13 +529,13 @@ contains
         atm2lnd_vars%forc_t_not_downscaled_grc(g)  = min(((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
                                                       atm2lnd_vars%add_offsets(1))*wt1(1) + (atm2lnd_vars%atm_input(1,g,1,tindex(1,2))* &
                                                       atm2lnd_vars%scale_factors(1)+atm2lnd_vars%add_offsets(1))*wt2(1)) * &
-                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon) + 1.7_r8, 324.7_r8)             
+                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon), 323.0_r8)             
         atm2lnd_vars%forc_th_not_downscaled_grc(g) = min(((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
                                                       atm2lnd_vars%add_offsets(1))*wt1(1) + (atm2lnd_vars%atm_input(1,g,1,tindex(1,2))* &
                                                       atm2lnd_vars%scale_factors(1)+atm2lnd_vars%add_offsets(1))*wt2(1)) * &
-                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon) + 1.7_r8, 324.7_r8) 
+                                                      atm2lnd_vars%var_mult(1,g,mon) + atm2lnd_vars%var_offset(1,g,mon), 323.0_r8) 
                                                       !added 5.1 to both long line and 323.0_r8, changed to 1.7 and 324.7
-        tbot = atm2lnd_vars%forc_t_not_downscaled_grc(g) + 1.7_r8 !+5.1 added by TAO to mimic temperature rise, changed to 1.7 and 324.7
+        tbot = atm2lnd_vars%forc_t_not_downscaled_grc(g) !+5.1 added by TAO to mimic temperature rise, changed to 1.7 and 324.7
 
         !Air pressure
         atm2lnd_vars%forc_pbot_not_downscaled_grc(g) = max(((atm2lnd_vars%atm_input(2,g,1,tindex(2,1))*atm2lnd_vars%scale_factors(2)+ &
@@ -1135,7 +1135,7 @@ contains
         end if
 
         !get weights/indices for interpolation (assume values represent annual averages)
-        nindex(1) = min(max(yr,1850),2050)-1764 !changed to 2050 from 2006 TAO 6/8/2018 changed back for test suite on 11/15/2018
+        nindex(1) = min(max(yr,1850),2006)-1764 !changed to 2050 from 2006 TAO 6/8/2018 changed back for test suite on 11/15/2018
         if (thiscalday .le. 182.5) then 
           nindex(2) = nindex(1)-1  
         else
