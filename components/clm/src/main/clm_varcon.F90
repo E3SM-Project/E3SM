@@ -62,7 +62,11 @@ module clm_varcon
   real(r8) :: tkair  = 0.023_r8                             ! thermal conductivity of air   [W/m/K]
   real(r8) :: tkice  = 2.290_r8                             ! thermal conductivity of ice   [W/m/K]
   real(r8) :: tkwat  = 0.57_r8                              ! thermal conductivity of water [W/m/K]
-  real(r8), parameter :: tfrz   = 271 !SHR_CONST_TKFRZ      ! freezing temperature [K] TAO test to see if it will keep ZWT from freezing
+#if (defined HUM_HOL)
+  real(r8), parameter :: tfrz   = 271 !SHR_CONST_TKFRZ      ! freezing temperature [K] for saltwater TAO
+#else
+  real(r8), parameter :: tfrz   = 273                       ! freezing temperature [K]
+#endif  
   real(r8), parameter :: tcrit  = 2.5_r8                    ! critical temperature to determine rain or snow
   real(r8) :: o2_molar_const = 0.209_r8                     ! constant atmospheric O2 molar ratio (mol/mol)
   real(r8) :: oneatm = 1.01325e5_r8                         ! one standard atmospheric pressure [Pa]

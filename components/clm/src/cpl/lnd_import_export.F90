@@ -1250,7 +1250,7 @@ contains
         end if
 
         !get weights/indices for interpolation (assume values represent annual averages)
-        nindex(1) = min(max(yr,1850),2100)-1764
+        nindex(1) = min(max(yr,1850),2006)-1764 !changed to 2050 from 2006 TAO 6/8/2018 changed back for test suite on 11/15/2018
         if (thiscalday .le. 182.5) then 
           nindex(2) = nindex(1)-1  
         else
