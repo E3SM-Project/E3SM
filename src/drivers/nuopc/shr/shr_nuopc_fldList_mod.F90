@@ -1,6 +1,7 @@
 module shr_nuopc_fldList_mod
 
-  use shr_kind_mod   , only : CX => shr_kind_CX, CS=>shr_kind_CS, CL=>shr_kind_cl
+  use shr_kind_mod , only : CX => shr_kind_CX, CS=>shr_kind_CS, CL=>shr_kind_cl
+  use shr_sys_mod  , only : shr_sys_abort
 
   implicit none
   private
@@ -47,11 +48,12 @@ module shr_nuopc_fldList_mod
   type shr_nuopc_fldList_entry_type
      character(CS) :: stdname
      character(CS) :: shortname
-     logical       :: active = .true.
+
      ! Mapping fldsFr data - for mediator import fields
      integer       :: mapindex(ncomps_max) = mapunset
      character(CS) :: mapnorm(ncomps_max) = 'unset'
      character(CX) :: mapfile(ncomps_max) = 'unset'
+
      ! Merging fldsTo data - for mediator export fields
      character(CX) :: merge_fields(ncomps_max)    = 'unset'
      character(CS) :: merge_types(ncomps_max)     = 'unset'
@@ -100,7 +102,7 @@ contains
     integer :: n
     logical :: found,FDfound
     integer :: rc
-    character(len=*),parameter :: subname = '(fldList_AddMetadata) '
+    character(len=*),parameter :: subname = '(shr_nuopc_fldList_AddMetadata) '
     !-------------------------------------------------------------------------------
 
     FDfound = .true.
@@ -147,10 +149,10 @@ contains
     use shr_string_mod , only : shr_string_lastindex
 
     ! input/output variables
-    character(len=*), intent(in)  :: shortname
-    character(len=*),optional, intent(out) :: longname
-    character(len=*),optional, intent(out) :: stdname
-    character(len=*),optional, intent(out) :: units
+    character(len=*),           intent(in)  :: shortname
+    character(len=*), optional, intent(out) :: longname
+    character(len=*), optional, intent(out) :: stdname
+    character(len=*), optional, intent(out) :: units
 
     ! local variables
     integer                    :: i,n
@@ -158,6 +160,7 @@ contains
     character(len=*),parameter :: unknown = 'unknown'
     logical                    :: found
     character(len=*),parameter :: subname = '(shr_nuopc_fldList_GetMetadata) '
+    ! ----------------------------------------------
 
     !--- define field metadata (name, long_name, standard_name, units) ---
 
@@ -211,11 +214,7 @@ contains
 
   !================================================================================
 
-  subroutine shr_nuopc_fldList_AddFld(flds, stdname, shortname, fldindex, &
-       merge_from1, merge_field1, merge_type1, merge_fracname1, &
-       merge_from2, merge_field2, merge_type2, merge_fracname2, &
-       merge_from3, merge_field3, merge_type3, merge_fracname3, &
-       merge_from4, merge_field4, merge_type4, merge_fracname4)
+  subroutine shr_nuopc_fldList_AddFld(flds, stdname, shortname)
 
     ! ----------------------------------------------
     ! Add an entry to to the flds array
@@ -232,28 +231,11 @@ contains
     type(shr_nuopc_fldList_entry_type) , pointer                :: flds(:)
     character(len=*)                   , intent(in)             :: stdname
     character(len=*)                   , intent(in)  , optional :: shortname
-    integer                            , intent(out) , optional :: fldindex
-    integer                            , intent(in)  , optional :: merge_from1
-    character(len=*)                   , intent(in)  , optional :: merge_field1
-    character(len=*)                   , intent(in)  , optional :: merge_type1
-    character(len=*)                   , intent(in)  , optional :: merge_fracname1
-    integer                            , intent(in)  , optional :: merge_from2
-    character(len=*)                   , intent(in)  , optional :: merge_field2
-    character(len=*)                   , intent(in)  , optional :: merge_type2
-    character(len=*)                   , intent(in)  , optional :: merge_fracname2
-    integer                            , intent(in)  , optional :: merge_from3
-    character(len=*)                   , intent(in)  , optional :: merge_field3
-    character(len=*)                   , intent(in)  , optional :: merge_type3
-    character(len=*)                   , intent(in)  , optional :: merge_fracname3
-    integer                            , intent(in)  , optional :: merge_from4
-    character(len=*)                   , intent(in)  , optional :: merge_field4
-    character(len=*)                   , intent(in)  , optional :: merge_type4
-    character(len=*)                   , intent(in)  , optional :: merge_fracname4
 
     ! local variables
     integer :: n,oldsize,id
     type(shr_nuopc_fldList_entry_type), pointer :: newflds(:)
-    character(len=*), parameter :: subname='(fldList_AddFld)'
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_AddFld)'
     ! ----------------------------------------------
 
     if (associated(flds)) then
@@ -270,7 +252,6 @@ contains
     do n = 1,oldsize
        newflds(n)%stdname            = flds(n)%stdname
        newflds(n)%shortname          = flds(n)%shortname
-       newflds(n)%active             = flds(n)%active
        newflds(n)%mapindex(:)        = flds(n)%mapindex(:)
        newflds(n)%mapnorm(:)         = flds(n)%mapnorm(:)
        newflds(n)%mapfile(:)         = flds(n)%mapfile(:)
@@ -295,59 +276,116 @@ contains
     else
        flds(id)%shortname = trim(stdname)
     end if
-    if (present(fldindex)) then
-       fldindex = id
-    end if
-    if (present(merge_from1) .and. present(merge_field1) .and. present(merge_type1)) then
-       n = merge_from1
-       flds(id)%merge_fields(n) = merge_field1
-       flds(id)%merge_types(n) = merge_type1
-       if (present(merge_fracname1)) then
-          flds(id)%merge_fracnames(n) = merge_fracname1
-       end if
-    end if
-    if (present(merge_from2) .and. present(merge_field2) .and. present(merge_type2)) then
-       n = merge_from2
-       flds(id)%merge_fields(n) = merge_field2
-       flds(id)%merge_types(n) = merge_type2
-       if (present(merge_fracname2)) then
-          flds(id)%merge_fracnames(n) = merge_fracname2
-       end if
-    end if
-    if (present(merge_from3) .and. present(merge_field3) .and. present(merge_type3)) then
-       n = merge_from3
-       flds(id)%merge_fields(n) = merge_field3
-       flds(id)%merge_types(n) = merge_type3
-       if (present(merge_fracname3)) then
-          flds(id)%merge_fracnames(n) = merge_fracname3
-       end if
-    end if
-    if (present(merge_from4) .and. present(merge_field4) .and. present(merge_type4)) then
-       n = merge_from4
-       flds(id)%merge_fields(n) = merge_field4
-       flds(id)%merge_types(n) = merge_type4
-       if (present(merge_fracname4)) then
-          flds(id)%merge_fracnames(n) = merge_fracname4
-       end if
-    end if
   end subroutine shr_nuopc_fldList_AddFld
 
   !================================================================================
 
-  subroutine shr_nuopc_fldList_AddMap(fld, srccomp, destcomp, mapindex, mapnorm, mapfile)
+  subroutine shr_nuopc_fldList_MrgFld(flds, fldname, &
+       mrg_from1, mrg_field1, mrg_type1, mrg_fracname1, &
+       mrg_from2, mrg_field2, mrg_type2, mrg_fracname2, &
+       mrg_from3, mrg_field3, mrg_type3, mrg_fracname3, &
+       mrg_from4, mrg_field4, mrg_type4, mrg_fracname4)
+
+    ! ----------------------------------------------
+    ! Determine mrg entry or entries in flds aray
+    ! ----------------------------------------------
+
+    type(shr_nuopc_fldList_entry_type) , pointer                :: flds(:)
+    character(len=*)                   , intent(in)             :: fldname
+    integer                            , intent(in)  , optional :: mrg_from1
+    character(len=*)                   , intent(in)  , optional :: mrg_field1
+    character(len=*)                   , intent(in)  , optional :: mrg_type1
+    character(len=*)                   , intent(in)  , optional :: mrg_fracname1
+    integer                            , intent(in)  , optional :: mrg_from2
+    character(len=*)                   , intent(in)  , optional :: mrg_field2
+    character(len=*)                   , intent(in)  , optional :: mrg_type2
+    character(len=*)                   , intent(in)  , optional :: mrg_fracname2
+    integer                            , intent(in)  , optional :: mrg_from3
+    character(len=*)                   , intent(in)  , optional :: mrg_field3
+    character(len=*)                   , intent(in)  , optional :: mrg_type3
+    character(len=*)                   , intent(in)  , optional :: mrg_fracname3
+    integer                            , intent(in)  , optional :: mrg_from4
+    character(len=*)                   , intent(in)  , optional :: mrg_field4
+    character(len=*)                   , intent(in)  , optional :: mrg_type4
+    character(len=*)                   , intent(in)  , optional :: mrg_fracname4
+
+    ! local variables
+    integer :: n,id
+    character(len=*), parameter :: subname='(shr_nuopc_fldList_MrgFld)'
+    ! ----------------------------------------------
+
+    id = 0
+    do n= 1,size(flds)
+       if (trim(fldname) == trim(flds(n)%stdname)) then
+          id = n
+          exit
+       end if
+    end do
+    if (id == 0) then
+       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // 'not found in input flds')
+    end if
+
+    if (present(mrg_from1) .and. present(mrg_field1) .and. present(mrg_type1)) then
+       n = mrg_from1
+       flds(id)%merge_fields(n) = mrg_field1
+       flds(id)%merge_types(n) = mrg_type1
+       if (present(mrg_fracname1)) then
+          flds(id)%merge_fracnames(n) = mrg_fracname1
+       end if
+    end if
+    if (present(mrg_from2) .and. present(mrg_field2) .and. present(mrg_type2)) then
+       n = mrg_from2
+       flds(id)%merge_fields(n) = mrg_field2
+       flds(id)%merge_types(n) = mrg_type2
+       if (present(mrg_fracname2)) then
+          flds(id)%merge_fracnames(n) = mrg_fracname2
+       end if
+    end if
+    if (present(mrg_from3) .and. present(mrg_field3) .and. present(mrg_type3)) then
+       n = mrg_from3
+       flds(id)%merge_fields(n) = mrg_field3
+       flds(id)%merge_types(n) = mrg_type3
+       if (present(mrg_fracname3)) then
+          flds(id)%merge_fracnames(n) = mrg_fracname3
+       end if
+    end if
+    if (present(mrg_from4) .and. present(mrg_field4) .and. present(mrg_type4)) then
+       n = mrg_from4
+       flds(id)%merge_fields(n) = mrg_field4
+       flds(id)%merge_types(n) = mrg_type4
+       if (present(mrg_fracname4)) then
+          flds(id)%merge_fracnames(n) = mrg_fracname4
+       end if
+    end if
+  end subroutine shr_nuopc_fldList_MrgFld
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_AddMap(flds, fldname, destcomp, maptype, mapnorm, mapfile)
 
     ! intput/output variables
-    type(shr_nuopc_fldList_entry_type) , intent(inout) :: fld
-    integer                            , intent(in)    :: srccomp
+    type(shr_nuopc_fldList_entry_type) , intent(inout) :: flds(:)
+    character(len=*)                   , intent(in)    :: fldname
     integer                            , intent(in)    :: destcomp
-    integer                            , intent(in)    :: mapindex
+    integer                            , intent(in)    :: maptype
     character(len=*)                   , intent(in)    :: mapnorm
     character(len=*)                   , intent(in)    :: mapfile
 
     ! local variables
-    logical :: mapset
-    character(len=*),parameter  :: subname='(fldList_AddMap)'
+    logical :: id, n
+    character(len=*),parameter  :: subname='(shr_nuopc_fldList_AddMap)'
     ! ----------------------------------------------
+
+    id = 0
+    do n = 1,size(flds)
+       if (trim(fldname) == trim(flds(n)%stdname)) then
+          id = n
+          exit
+       end if
+    end do
+    if (id == 0) then
+       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // 'not found in input flds')
+    end if
 
     ! Note - default values are already set for the fld entries - so only non-default
     ! values need to be set below
@@ -355,18 +393,19 @@ contains
     ! If mapfile is idmap - create a redistribution route nhandle
     ! If mapfile is unset then create the mapping route handle at run time
 
-    fld%mapindex(destcomp) = mapindex
-    fld%mapfile(destcomp)  = trim(mapfile)
-    fld%mapnorm(destcomp)  = trim(mapnorm)
+    flds(id)%mapindex(destcomp) = maptype
+    flds(id)%mapnorm(destcomp)  = trim(mapnorm)
+    flds(id)%mapfile(destcomp)  = trim(mapfile)
 
     ! overwrite values if appropriate
-    if (fld%mapindex(destcomp) == mapfcopy) then
-       fld%mapfile(destcomp) = 'unset'
-       fld%mapnorm(destcomp) = 'unset'
+    if (flds(id)%mapindex(destcomp) == mapfcopy) then
+       flds(id)%mapfile(destcomp) = 'unset'
+       flds(id)%mapnorm(destcomp) = 'unset'
     else if (trim(fld%mapfile(destcomp)) == 'idmap') then
-       fld%mapindex(destcomp) = mapfcopy
-       fld%mapnorm(destcomp) = 'unset'
+       flds(id)%mapindex(destcomp) = mapfcopy
+       flds(id)%mapnorm(destcomp) = 'unset'
     end if
+
   end subroutine shr_nuopc_fldList_AddMap
 
   !================================================================================
@@ -374,15 +413,16 @@ contains
   subroutine shr_nuopc_fldList_Realize(state, fldList, flds_scalar_name, flds_scalar_num, &
        grid, mesh, tag, rc)
 
-    use NUOPC, only : NUOPC_GetStateMemberLists, NUOPC_IsConnected, NUOPC_Realize
-    use NUOPC, only : NUOPC_GetAttribute
-    use ESMF, only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
-    use ESMF, only : ESMF_MAXSTR, ESMF_Field, ESMF_State, ESMF_Grid, ESMF_Mesh
-    use ESMF, only : ESMF_StateGet, ESMF_LogFoundError
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LOGERR_PASSTHRU
-    use ESMF, only : ESMF_LOGMSG_INFO, ESMF_StateRemove, ESMF_SUCCESS
-    use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
+    use NUOPC             , only : NUOPC_GetStateMemberLists, NUOPC_IsConnected, NUOPC_Realize
+    use NUOPC             , only : NUOPC_GetAttribute
+    use ESMF              , only : ESMF_MeshLoc_Element, ESMF_FieldCreate, ESMF_TYPEKIND_R8
+    use ESMF              , only : ESMF_MAXSTR, ESMF_Field, ESMF_State, ESMF_Grid, ESMF_Mesh
+    use ESMF              , only : ESMF_StateGet, ESMF_LogFoundError
+    use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LOGERR_PASSTHRU
+    use ESMF              , only : ESMF_LOGMSG_INFO, ESMF_StateRemove, ESMF_SUCCESS
+    use med_constants_mod , only : dbug_flag=>med_constants_dbug_flag
     
+    ! input/output variables
     type(ESMF_State)            , intent(inout)            :: state
     type(shr_nuopc_fldlist_type), intent(in)               :: fldList
     character(len=*)            , intent(in)               :: flds_scalar_name
@@ -572,13 +612,12 @@ contains
 
   !================================================================================
 
-  subroutine shr_nuopc_fldList_GetFldInfo_general(fldList, fldindex, active, stdname, shortname)
+  subroutine shr_nuopc_fldList_GetFldInfo_general(fldList, fldindex, stdname, shortname)
     ! ----------------------------------------------
     ! Get field info
     ! ----------------------------------------------
     type(shr_nuopc_fldList_type) , intent(in)  :: fldList
     integer                      , intent(in)  :: fldindex
-    logical                      , intent(out) :: active
     character(len=*)             , intent(out) :: stdname
     character(len=*)             , intent(out) :: shortname
 
@@ -586,10 +625,11 @@ contains
     character(len=*), parameter :: subname='(shr_nuopc_fldList_GetFldInfo_general)'
     ! ----------------------------------------------
 
-    active    = fldList%flds(fldindex)%active
-    stdname   = fldList%flds(fldindex)%stdname
-    shortname = fldList%flds(fldindex)%shortname
+    stdname   = fldList%fld(fldindex)%stdname
+    shortname = fldList%fld(fldindex)%shortname
   end subroutine shr_nuopc_fldList_GetFldInfo_general
+
+  !================================================================================
 
   subroutine shr_nuopc_fldList_GetFldInfo_stdname(fldList, fldindex, stdname)
     ! ----------------------------------------------
@@ -605,6 +645,8 @@ contains
 
     stdname   = fldList%flds(fldindex)%stdname
   end subroutine shr_nuopc_fldList_GetFldInfo_stdname
+
+  !================================================================================
 
   subroutine shr_nuopc_fldList_GetFldInfo_merging(fldList, fldindex, compsrc, merge_field, merge_type, merge_fracname)
     ! ----------------------------------------------
@@ -646,7 +688,7 @@ contains
 
   subroutine shr_nuopc_fldList_GetFldNames(flds, fldnames, rc)
 
-    use ESMF, only : ESMF_LOGMSG_INFO, ESMF_FAILURE, ESMF_SUCCESS, ESMF_LogWrite 
+    use ESMF, only : ESMF_LOGMSG_INFO, ESMF_FAILURE, ESMF_SUCCESS, ESMF_LogWrite
 
     ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer     :: flds(:)
@@ -656,7 +698,7 @@ contains
     !local variables
     integer :: n
     ! ----------------------------------------------
-    
+
     rc = ESMF_SUCCESS
 
     if (associated(flds) .and. associated(fldnames)) then

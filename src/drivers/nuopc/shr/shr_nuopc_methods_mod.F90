@@ -2409,6 +2409,13 @@ module shr_nuopc_methods_mod
     endif
     rc = ESMF_SUCCESS
 
+    ! If field bundle is not created then set return to .false.
+    if (.not. ESMF_FieldBundleIsCreated(FB)) then
+       shr_nuopc_methods_FB_FldChk = .false.
+       return
+    end if
+
+    ! If field bundle is created determine if fldname is present in field bundle
     shr_nuopc_methods_FB_FldChk = .false.
 
     call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), isPresent=isPresent, rc=rc)
