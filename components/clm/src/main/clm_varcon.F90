@@ -65,7 +65,7 @@ module clm_varcon
 #if (defined HUM_HOL)
   real(r8), parameter :: tfrz   = 271 !SHR_CONST_TKFRZ      ! freezing temperature [K] for saltwater TAO
 #else
-  real(r8), parameter :: tfrz   = 273                       ! freezing temperature [K]
+  real(r8), parameter :: tfrz   = SHR_CONST_TKFRZ                       ! freezing temperature [K]
 #endif  
   real(r8), parameter :: tcrit  = 2.5_r8                    ! critical temperature to determine rain or snow
   real(r8) :: o2_molar_const = 0.209_r8                     ! constant atmospheric O2 molar ratio (mol/mol)
