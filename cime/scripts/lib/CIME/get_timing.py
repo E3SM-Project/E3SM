@@ -186,16 +186,20 @@ class _TimingParser:
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
 
-        safe_copy(binfilename, finfilename)
+        if (os.path.isfile(binfilename) and os.path.isfile(finfilename)):
+            safe_copy(binfilename, finfilename)
 
-        os.chdir(self.caseroot)
-        try:
-            fin = open(finfilename, "r")
-            self.finlines = fin.readlines()
-            fin.close()
-        except Exception as e:
-            logger.critical("Unable to open file {}".format(finfilename))
-            raise e
+            os.chdir(self.caseroot)
+            try:
+                fin = open(finfilename, "r")
+                self.finlines = fin.readlines()
+                fin.close()
+            except Exception as e:
+                logger.critical("Unable to open file {}".format(finfilename))
+                raise e
+        else:
+            logger.warning("timer level too shallow (<2) - not enough information for writing timing stats!")
+            return
 
         tlen = 1.0
         if ncpl_base_period == "decade":
@@ -210,7 +214,10 @@ class _TimingParser:
             logger.warning("Unknown NCPL_BASE_PERIOD={}".format(ncpl_base_period))
 
         nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
-        nsteps = ncount / nprocs
+        if(nprocs>0):
+            nsteps = ncount / nprocs
+        else:
+            logger.warning("timer level too shallow (<2) - not enough information for writing timing stats!")
 
         adays = nsteps*tlen/ncpl
         odays = nsteps*tlen/ncpl

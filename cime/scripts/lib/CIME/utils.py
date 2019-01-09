@@ -1465,8 +1465,10 @@ def gzip_existing_file(filepath):
     True
     >>> os.remove(gzfile)
     """
-    expect(os.path.exists(filepath), "{} does not exists".format(filepath))
-
+    if(not os.path.exists(filepath)):
+    	#expect(os.path.exists(filepath), "{} does not exists".format(filepath))
+        return
+        
     st = os.stat(filepath)
     orig_atime, orig_mtime = st[statlib.ST_ATIME], st[statlib.ST_MTIME]
 
