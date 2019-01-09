@@ -1257,6 +1257,9 @@ end subroutine clubb_init_cnst
    real(r8),parameter :: gust_faco = 0.9_r8
    real(r8),parameter :: gust_facc = 1.5_r8
 
+! ZM gustiness equation below from Redelsperger et al. (2000)
+! numbers are coefficients of the empirical equation
+
    ugust(gprec,gust_fac) = gust_fac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
   
 #endif
@@ -2515,7 +2518,7 @@ end subroutine clubb_init_cnst
         gust_fac(i)   = gust_faco
       endif
       vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
-      vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i))
+      vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000) 
       vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) / vmag(i))
       vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
       vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) / vmag(i))
