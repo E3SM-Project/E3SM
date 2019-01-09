@@ -245,7 +245,7 @@ class Case(object):
         # Important, and subtle: Writability should NOT be copied because
         # this allows the copy to be modified without needing a "with" statement
         # which opens the door to tricky errors such as unflushed writes.
-        newcase._read_only_mode = True
+        newcase._read_only_mode = True # pylint: disable=protected-access
 
         return newcase
 
