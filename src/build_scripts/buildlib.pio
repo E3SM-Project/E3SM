@@ -138,7 +138,6 @@ def buildlib(bldroot, installpath, case):
     # nothing means use the general default
     valid_values += ",nothing"
 
-
     for comp in case.get_values("COMP_CLASSES"):
         comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
         case.set_valid_values(comp_pio_typename,valid_values)
@@ -146,7 +145,7 @@ def buildlib(bldroot, installpath, case):
         if current_value not in valid_values:
             logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
             case.set_value(comp_pio_typename,"netcdf")
-    case.flush()
+#    case.flush()
             
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)

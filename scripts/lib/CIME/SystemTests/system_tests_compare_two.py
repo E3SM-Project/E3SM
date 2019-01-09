@@ -199,7 +199,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # The following is needed when _case_two_setup has a case_setup call
             # despite sharing the build (e.g., to change NTHRDS)
             self._case2.set_value("BUILD_COMPLETE",True)
-            self._case2.flush()
+        self._case2.flush()
 
     def run_phase(self, success_change=False):  # pylint: disable=arguments-differ
         """
