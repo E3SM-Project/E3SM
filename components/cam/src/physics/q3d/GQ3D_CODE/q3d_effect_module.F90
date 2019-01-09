@@ -1,11 +1,12 @@
 MODULE q3d_effect_module
 ! Contains the programs for calculating CRM effects that will be provided to the GCM
+! Note: The vertical size of (TH3D_BG, TH_E1, TH_E2, FTH3D_DIA) is "nk2_ext", not "nk2".  
 
       USE shr_kind_mod,   only: r8 => shr_kind_r8
       USE vvm_data_types, only: channel_t
       
-      USE parmsld, only: nVGCM_seg,netsz,ntracer,nk1,nk2,nk3
-      USE constld, only: dz,physics,fnt,rho,rhoz
+      USE parmsld, only: nVGCM_seg,netsz,ntracer,nk1,nk2,nk3,nk1_ext,nk2_ext
+      USE constld, only: dz,physics,fnt,rho,rhoz,pibar
       USE utils,   only: con2rll,cov2rll
       
 IMPLICIT NONE
@@ -18,8 +19,36 @@ PUBLIC :: ini_tendency,    & ! initialize tendencies at each CRM timestep
           cal_eddy_trans,  & ! calculate mean eddy transport effects
           cal_tendency,    & ! calculate mean diabatic tendencies
           cal_sfc_eft,     & ! calculate mean sfc fluxes
-          cal_feedback       ! calculate total feedback (E1)
+          cal_feedback,    & ! calculate total feedback (E1)
+          cal_out_vgcm       ! calculate output (mean value) at vGCM grid
 CONTAINS
+
+! Local Subroutines:
+!--------------------------------------------------------------------------------
+! Subroutine ini_tendency   : Initialize diabatic tendencies at each CRM time step 
+! Subroutine ini_crm_eft    : Initialize CRM effects before CRM time-marching
+! Subroutine ini_sfc_eft    : Initialize CRM sfc fluxes before CRM time-marching
+! Subroutine eddy_prepare   : Prepare eddy fields at each CRM time step
+!      Subroutine get_eddy
+! Subroutine cal_eddy_trans : Calculate vertical eddy flux & flux convergence
+!      Subroutine csect_avg_q
+!      Subroutine csect_avg_u
+!      Subroutine csect_avg_v
+!      Subroutine vert_conv
+! Subroutine cal_tendency   : Calculate mean diabatic effects
+
+! Subroutine cal_sfc_eft    : Calculate mean sfc fluxes
+!
+! Subroutine cal_feedback : Calculate the total feedback (E1)
+!                           = eddy effects (E1) + diabatic effects (E2)
+! 
+! Subroutine cal_out_vgcm : Calculate the average values over a vGCM cell-size for writing
+!
+!      Subroutine csect_avg_3d     : Make averages over channel-segment (3D t-point data)
+!      Subroutine csect_avg_3d_upo : Make averages over channel-segment (3D u-point data)
+!      Subroutine csect_avg_3d_vpo : Make averages over channel-segment (3D v-point data)
+!      Subroutine csect_avg_2d     : Make averages over channel-segment (2D t-point data)
+!================================================================================
 
 !================================================================================
    SUBROUTINE INI_TENDENCY (channel)
@@ -30,8 +59,6 @@ CONTAINS
 !          FQC3D_DIA, FQI3D_DIA, FQR3D_DIA, FQS3D_DIA, FQG3D_DIA (channel)
 !------------------------------------------------------------------------      
       type(channel_t), intent(inout) :: channel   ! Channel data      
-
-!JUNG #ifndef CAM
       
       INTEGER num_seg
 
@@ -72,9 +99,6 @@ CONTAINS
       channel%seg(num_seg)%FZYTB  = 0.0_r8
       channel%seg(num_seg)%FZTOPB = 0.0_r8
       
-      ! Radiative effects 
-      channel%seg(num_seg)%FTHRAD = 0.0_r8    
-      
       ! Buoyancy effects
       channel%seg(num_seg)%FZXBU = 0.0_r8
       channel%seg(num_seg)%FZYBU = 0.0_r8
@@ -82,7 +106,6 @@ CONTAINS
 !=======================================================================   
       ENDDO   ! num_seg 
 !=======================================================================
-!JUNG #endif
 
       END SUBROUTINE ini_tendency
       
@@ -96,64 +119,54 @@ CONTAINS
 
       type(channel_t), intent(inout) :: channel   ! Channel data
       
-      INTEGER num_seg,num_gcm,nt,k
+      INTEGER num_seg
 
-!JUNG #ifndef CAM
 !===============================   
       DO num_seg = 1, 4
 !=============================== 
-      DO num_gcm = 1,nVGCM_seg   ! # of vGCM points in a segment
       
-      DO k = 1,nk2
-       channel%seg(num_seg)%TH_E1(k,num_gcm) = 0.0_r8
-       channel%seg(num_seg)%QV_E1(k,num_gcm) = 0.0_r8
+       channel%seg(num_seg)%TH_E1 = 0.0_r8
+       channel%seg(num_seg)%TH_E2 = 0.0_r8
+     
+       channel%seg(num_seg)%QV_E1 = 0.0_r8
+       channel%seg(num_seg)%QV_E2 = 0.0_r8
 
-       DO nt = 1,ntracer
-        channel%seg(num_seg)%QT_E1(k,num_gcm,nt) = 0.0_r8
-       ENDDO
+        channel%seg(num_seg)%QT_E1 = 0.0_r8
+        channel%seg(num_seg)%QT_E2 = 0.0_r8
 
-       channel%seg(num_seg)%U_E1(k,num_gcm)  = 0.0_r8
-       channel%seg(num_seg)%V_E1(k,num_gcm)  = 0.0_r8
-      ENDDO
+       channel%seg(num_seg)%U_E1  = 0.0_r8
+       channel%seg(num_seg)%U_E2  = 0.0_r8
+       
+       channel%seg(num_seg)%V_E1  = 0.0_r8
+       channel%seg(num_seg)%V_E2  = 0.0_r8     
       
       IF (physics) THEN 
-       DO k = 1,nk2
-        channel%seg(num_seg)%QC_E1(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QI_E1(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QR_E1(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QS_E1(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QG_E1(k,num_gcm) = 0.0_r8
-       ENDDO     
-      ENDIF      
-
-      DO k = 1,nk2
-       channel%seg(num_seg)%TH_E2(k,num_gcm) = 0.0_r8
-       channel%seg(num_seg)%QV_E2(k,num_gcm) = 0.0_r8
-
-       DO nt = 1,ntracer
-        channel%seg(num_seg)%QT_E2(k,num_gcm,nt) = 0.0_r8
-       ENDDO
-
-       channel%seg(num_seg)%U_E2(k,num_gcm)  = 0.0_r8
-       channel%seg(num_seg)%V_E2(k,num_gcm)  = 0.0_r8
-      ENDDO
-
-      IF (physics) THEN 
-       DO k = 1,nk2
-        channel%seg(num_seg)%QC_E2(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QI_E2(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QR_E2(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QS_E2(k,num_gcm) = 0.0_r8
-        channel%seg(num_seg)%QG_E2(k,num_gcm) = 0.0_r8
-       ENDDO     
-      ENDIF 
+       
+        channel%seg(num_seg)%QC_E1 = 0.0_r8
+        channel%seg(num_seg)%QC_E2 = 0.0_r8
+        
+        channel%seg(num_seg)%QI_E1 = 0.0_r8
+        channel%seg(num_seg)%QI_E2 = 0.0_r8
+        
+        channel%seg(num_seg)%QR_E1 = 0.0_r8
+        channel%seg(num_seg)%QR_E2 = 0.0_r8
+        
+        channel%seg(num_seg)%QS_E1 = 0.0_r8
+        channel%seg(num_seg)%QS_E2 = 0.0_r8
+        
+        channel%seg(num_seg)%QG_E1 = 0.0_r8
+        channel%seg(num_seg)%QG_E2 = 0.0_r8
+         
+      ENDIF   
       
-      ENDDO   ! num_gcm
+      ! Radiative effects 
+      ! This is here, because radiation will not be called at every CRM time step.
+      ! Radiation will be called at least once during a CRM cycle (beginning of the loop).   
+      channel%seg(num_seg)%FTHRAD = 0.0_r8                      
       
 !===============================
       ENDDO   ! num_seg 
 !===============================         
-!JUNG #endif
 
    END SUBROUTINE ini_crm_eft
 
@@ -168,45 +181,47 @@ CONTAINS
 !  JUNG_PLAN: add more variables if necessary.
 !-------------------------------------------------------------------------
       type(channel_t), intent(inout) :: channel   ! Channel data
-      
-!JUNG #ifndef CAM
 
-      ! Local
-      integer num_seg,num_gcm
+      integer num_seg
 
       IF (physics) THEN
 
 !===============================   
       DO num_seg = 1, 4
 !=============================== 
-      DO num_gcm = 1,nVGCM_seg   ! # of vGCM points in a segment 
-       channel%seg(num_seg)%SPREC_E0(num_gcm) = 0.0_r8
+       channel%seg(num_seg)%SPREC_E0 = 0.0_r8
 
-       channel%seg(num_seg)%WTH_E0(num_gcm) = 0.0_r8
-       channel%seg(num_seg)%WQV_E0(num_gcm) = 0.0_r8
-       channel%seg(num_seg)%UW_E0(num_gcm)  = 0.0_r8
-       channel%seg(num_seg)%WV_E0(num_gcm)  = 0.0_r8
-      ENDDO 
+       channel%seg(num_seg)%WTH_E0 = 0.0_r8
+       channel%seg(num_seg)%WQV_E0 = 0.0_r8
+       channel%seg(num_seg)%UW_E0  = 0.0_r8
+       channel%seg(num_seg)%WV_E0  = 0.0_r8
 !===============================   
       ENDDO
 !=============================== 
 
-      ENDIF  ! PHYSICS
-
-!JUNG #endif
+      ENDIF  
 
    END SUBROUTINE ini_sfc_eft
 
 !================================================================================
-   SUBROUTINE CAL_FEEDBACK (channel)
+   SUBROUTINE CAL_FEEDBACK (channel)    
 !================================================================================
 !  Calculate the total feedback (E1)
 !      = eddy effects (E1) + diabatic effects (E2)
-!  For momentum tendency, mapping is applied to obtain the feedback in RLL coordinates.   
+!  For momentum tendency, mapping is applied to obtain the feedback in RLL coordinates. 
+!
+!  Eddy transport effects   : TH, QV, QC, QI, QR, QS, QG, QT, U, and V
+!
+!  Diabatic effects: 
+!     Microphysics          : TH, QV, QC, QI, QR, QS, QG (nk2)
+!     Saturation Adjustment : TH, QV, QC, QI (nk2) 
+!     Radiation             : TH (nk2_ext)
+!     Turbulence            : TH, QV, QC, QI (nk2) & QT (optional, nk2) & U, V (nk2)
+!     SFC Flux              : TH, QV, U, and V
+!     Gravity Wave Damping  : TH, QV, QC, QI (optional, nk2)  U, V (optional, nk2) 
+!     (applied to CRM prediction, but optionally included to the feedback)                         
 !--------------------------------------------------------------------------------
       type(channel_t), intent(inout) :: channel   ! Channel data
-
-!JUNG #ifndef CAM
 
       ! Local
       REAL(KIND=r8) VMAP(2)
@@ -219,12 +234,17 @@ CONTAINS
 !=============================== 
       
       DO num_gcm = 1,nVGCM_seg 
-       DO K = 2,nk2
+      
+       DO K = 2,nk2_ext
         channel%seg(num_seg)%TH_E1(K,num_gcm)= channel%seg(num_seg)%TH_E1(K,num_gcm) &  
                                               +channel%seg(num_seg)%TH_E2(K,num_gcm)
+       ENDDO 
+
+       DO K = 2,nk2
         channel%seg(num_seg)%QV_E1(K,num_gcm)= channel%seg(num_seg)%QV_E1(K,num_gcm) &
                                               +channel%seg(num_seg)%QV_E2(K,num_gcm)
-       ENDDO
+       ENDDO  
+            
       ENDDO 
 
       IF (physics) THEN
@@ -334,7 +354,7 @@ CONTAINS
 !---------------------------- 
        
       ENDDO   ! num_gcm-loop        
-       
+
 !===============================
       ENDDO   ! num_seg 
 !=============================== 
@@ -352,7 +372,6 @@ END SUBROUTINE cal_feedback
       integer mi1,mim,mip,mj1,mjm,mjp
       integer num_seg,nt
 
-!JUNG #ifdef FIXTHIS
 !=======================================================================   
       DO num_seg = 1, 4
 !=======================================================================
@@ -364,9 +383,9 @@ END SUBROUTINE cal_feedback
       mjm = channel%seg(num_seg)%mjm
       mjp = channel%seg(num_seg)%mjp
 
-      CALL GET_EDDY (mi1,mim,mip,mj1,mjm,mjp,1,            &
-                     channel%seg(num_seg)%TH3D(:,:,1:nk2), &
-                     channel%seg(num_seg)%TH3D_BG,         &
+      CALL GET_EDDY (mi1,mim,mip,mj1,mjm,mjp,1,                &
+                     channel%seg(num_seg)%TH3D(:,:,1:nk2),     &
+                     channel%seg(num_seg)%TH3D_BG(:,:,1:nk2),  &
                      channel%seg(num_seg)%TH3D_ED)
                                                    
       CALL GET_EDDY (mi1,mim,mip,mj1,mjm,mjp,1,            &
@@ -442,15 +461,13 @@ END SUBROUTINE cal_feedback
     
     DO K = 1, nk2
      DO J = nbeg, mj1
-      DO I = nbeg, mi1
+      DO I = nbeg, mi1 
        A_ED(I,J,K) = A(I,J,K) - A_BG(I,J,K)
       ENDDO
      ENDDO
     ENDDO   
     
     END SUBROUTINE get_eddy
-
-!JUNG #endif
 
    END SUBROUTINE eddy_prepare
   
@@ -459,6 +476,7 @@ END SUBROUTINE cal_feedback
 !================================================================================
 !  Calculate the vertical eddy flux & finally the vertical flux convergence
 !  Average the fluxes over space (channel) and time (a GCM timestep)
+!  (Eddy transport effects are calculated only in the active domain ~ nk2) 
 !------------------------------------------------------------------------
 !  IN:  TH3D_ED, QV3D_ED, QT3D_ED, U3DX_ED, U3DY_ED, W3D_ED, 
 !       QC3D_ED, QI3D_ED, QR3D_ED, QS3D_ED, QG3D_ED (channel)
@@ -477,12 +495,12 @@ END SUBROUTINE cal_feedback
       
       type(channel_t), intent(inout) :: channel   ! Channel data
 
-!JUNG #ifndef CAM
-
       integer mi1,mj1
       integer k,nt,num_seg,num_gcm
 
       REAL (KIND=r8), DIMENSION(nk2,nVGCM_seg) :: AVG,AOUT
+      LOGICAL :: EDDYE_PRECIP = .TRUE. 
+      LOGICAL :: WATER_TEND = .TRUE.
       
 !===============================   
       DO num_seg = 1, 4
@@ -493,33 +511,35 @@ END SUBROUTINE cal_feedback
 !----------------------------------------------------------------------
 !     1. Calculate vertical eddy fluxes averaged over a vGCM cell-size   
 !---------------------------------------------------------------------- 
-     
+       
       ! EDDY FLUX: w'(TH)'
       CALL CSECT_AVG_Q (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
                         channel%seg(num_seg)%TH3D_ED,  &
                         channel%seg(num_seg)%W3D_ED,AVG)
-       
+      
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk1                
          channel%seg(num_seg)%TH_E1(K,num_gcm) = &
                channel%seg(num_seg)%TH_E1(K,num_gcm) + AVG(K,num_gcm)
        ENDDO
       ENDDO  
-      
+       
       ! EDDY FLUX: w'(QV)'
       CALL CSECT_AVG_Q (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
                         channel%seg(num_seg)%QV3D_ED,  &
-                        channel%seg(num_seg)%W3D_ED,AVG)
+                        channel%seg(num_seg)%W3D_ED,AVG)                 
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk1                
          channel%seg(num_seg)%QV_E1(K,num_gcm) = &
                channel%seg(num_seg)%QV_E1(K,num_gcm) + AVG(K,num_gcm)
        ENDDO
-      ENDDO        
+      ENDDO              
              
       IF (physics) THEN 
 
+      IF (WATER_TEND) THEN
+      
       ! EDDY FLUX: w'(QC)'
       CALL CSECT_AVG_Q (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
                         channel%seg(num_seg)%QC3D_ED,  &
@@ -543,7 +563,9 @@ END SUBROUTINE cal_feedback
                channel%seg(num_seg)%QI_E1(K,num_gcm) + AVG(K,num_gcm)
        ENDDO
       ENDDO        
-      
+
+      IF (EDDYE_PRECIP) THEN
+      !-----------------------------------------------      
       ! EDDY FLUX: w'(QR)'
       CALL CSECT_AVG_Q (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
                         channel%seg(num_seg)%QR3D_ED,  &
@@ -578,7 +600,68 @@ END SUBROUTINE cal_feedback
          channel%seg(num_seg)%QG_E1(K,num_gcm) = &
                channel%seg(num_seg)%QG_E1(K,num_gcm) + AVG(K,num_gcm)
        ENDDO
+      ENDDO  
+      !-----------------------------------------------
+      ENDIF  ! eddye_precip   
+      
+      ELSE   ! WATER_TEND
+
+      ! (QC)
+      CALL CSECT_AVG_QVAL (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
+                           channel%seg(num_seg)%QC3D,AVG)
+       
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2                
+         channel%seg(num_seg)%QC_E1(K,num_gcm) = &
+               channel%seg(num_seg)%QC_E1(K,num_gcm) + AVG(K,num_gcm)
+       ENDDO
       ENDDO        
+      
+      ! (QI)
+      CALL CSECT_AVG_QVAL (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
+                           channel%seg(num_seg)%QI3D,AVG)
+       
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2               
+         channel%seg(num_seg)%QI_E1(K,num_gcm) = &
+               channel%seg(num_seg)%QI_E1(K,num_gcm) + AVG(K,num_gcm)
+       ENDDO
+      ENDDO        
+   
+      ! (QR)
+      CALL CSECT_AVG_QVAL (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
+                           channel%seg(num_seg)%QR3D,AVG)
+       
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2                
+         channel%seg(num_seg)%QR_E1(K,num_gcm) = &
+               channel%seg(num_seg)%QR_E1(K,num_gcm) + AVG(K,num_gcm)
+       ENDDO
+      ENDDO        
+      
+      ! (QS)
+      CALL CSECT_AVG_QVAL (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
+                           channel%seg(num_seg)%QS3D,AVG)
+       
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2                
+         channel%seg(num_seg)%QS_E1(K,num_gcm) = &
+               channel%seg(num_seg)%QS_E1(K,num_gcm) + AVG(K,num_gcm)
+       ENDDO
+      ENDDO        
+      
+      ! (QG)
+      CALL CSECT_AVG_QVAL (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
+                           channel%seg(num_seg)%QG3D,AVG)
+       
+      DO num_gcm = 1,nVGCM_seg
+       DO K = 2,nk2                
+         channel%seg(num_seg)%QG_E1(K,num_gcm) = &
+               channel%seg(num_seg)%QG_E1(K,num_gcm) + AVG(K,num_gcm)
+       ENDDO
+      ENDDO  
+            
+      ENDIF  ! WATER_TEND  
                               
       ENDIF  ! PHYSICS
       
@@ -602,19 +685,19 @@ END SUBROUTINE cal_feedback
       CALL CSECT_AVG_U (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
                         channel%seg(num_seg)%U3DX_ED,  &
                         channel%seg(num_seg)%W3D_ED,AVG)
-       
+               
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk1                
          channel%seg(num_seg)%U_E1(K,num_gcm) = &
                channel%seg(num_seg)%U_E1(K,num_gcm) + AVG(K,num_gcm)
        ENDDO
-      ENDDO        
+      ENDDO     
       
       ! EDDY FLUX: w'(v)'
       CALL CSECT_AVG_V (channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
                         channel%seg(num_seg)%U3DY_ED,  &
                         channel%seg(num_seg)%W3D_ED,AVG)
-       
+      
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk1                
          channel%seg(num_seg)%V_E1(K,num_gcm) = &
@@ -638,25 +721,56 @@ END SUBROUTINE cal_feedback
              channel%seg(num_seg)%QV_E1(K,num_gcm)/FLOAT(INUM)
        ENDDO
       ENDDO 
-
+      
       IF (physics) THEN 
+      
+      IF (WATER_TEND) THEN
       
       DO num_gcm = 1,nVGCM_seg 
        DO K = 2,nk1
         channel%seg(num_seg)%QC_E1(K,num_gcm)= &
              channel%seg(num_seg)%QC_E1(K,num_gcm)/FLOAT(INUM)
         channel%seg(num_seg)%QI_E1(K,num_gcm)= &
-             channel%seg(num_seg)%QI_E1(K,num_gcm)/FLOAT(INUM)
+             channel%seg(num_seg)%QI_E1(K,num_gcm)/FLOAT(INUM)                                                 
+       ENDDO
+      ENDDO 
+
+      IF (EDDYE_PRECIP) THEN
+      !----------------------------------------------- 
+      DO num_gcm = 1,nVGCM_seg 
+       DO K = 2,nk1
         channel%seg(num_seg)%QR_E1(K,num_gcm)= &
              channel%seg(num_seg)%QR_E1(K,num_gcm)/FLOAT(INUM)
         channel%seg(num_seg)%QS_E1(K,num_gcm)= &
              channel%seg(num_seg)%QS_E1(K,num_gcm)/FLOAT(INUM)
         channel%seg(num_seg)%QG_E1(K,num_gcm)= &
-             channel%seg(num_seg)%QV_E1(K,num_gcm)/FLOAT(INUM)                                                    
+             channel%seg(num_seg)%QG_E1(K,num_gcm)/FLOAT(INUM)                                                    
        ENDDO
-      ENDDO 
-      
+      ENDDO       
+      !----------------------------------------------- 
       ENDIF
+      
+      ELSE   ! WATER_TEND
+
+      DO num_gcm = 1,nVGCM_seg 
+       DO K = 2,nk2
+        channel%seg(num_seg)%QC_E1(K,num_gcm)= &
+             channel%seg(num_seg)%QC_E1(K,num_gcm)/FLOAT(INUM)
+        channel%seg(num_seg)%QI_E1(K,num_gcm)= &
+             channel%seg(num_seg)%QI_E1(K,num_gcm)/FLOAT(INUM)                                                 
+       
+        channel%seg(num_seg)%QR_E1(K,num_gcm)= &
+             channel%seg(num_seg)%QR_E1(K,num_gcm)/FLOAT(INUM)
+        channel%seg(num_seg)%QS_E1(K,num_gcm)= &
+             channel%seg(num_seg)%QS_E1(K,num_gcm)/FLOAT(INUM)
+        channel%seg(num_seg)%QG_E1(K,num_gcm)= &
+             channel%seg(num_seg)%QG_E1(K,num_gcm)/FLOAT(INUM)                                                    
+       ENDDO
+      ENDDO       
+      
+      ENDIF  ! WATER_TEND 
+      
+      ENDIF  ! physics
       
       DO NT=1,ntracer
        DO num_gcm = 1,nVGCM_seg
@@ -676,14 +790,14 @@ END SUBROUTINE cal_feedback
              channel%seg(num_seg)%V_E1(K,num_gcm)/FLOAT(INUM)
        ENDDO
       ENDDO 
-      
+
 !-----------------------------------------------------------------
 !     3. Calculate the mean vertical flux convergence
 !-----------------------------------------------------------------
 
       ! TH
-      CALL VERT_CONV(channel%seg(num_seg)%TH_E1,AOUT)
-                     
+      CALL VERT_CONV(channel%seg(num_seg)%TH_E1(1:nk2,:),AOUT)
+                      
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2                
          channel%seg(num_seg)%TH_E1(K,num_gcm) = AOUT(K,num_gcm)
@@ -692,7 +806,7 @@ END SUBROUTINE cal_feedback
 
       ! QV
       CALL VERT_CONV(channel%seg(num_seg)%QV_E1,AOUT)
-                     
+                      
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2                
          channel%seg(num_seg)%QV_E1(K,num_gcm) = AOUT(K,num_gcm)
@@ -701,6 +815,9 @@ END SUBROUTINE cal_feedback
 
       IF (physics) THEN 
 
+      IF (WATER_TEND) THEN
+      ! calculate the eddy flux convergences    
+       
       ! QC
       CALL VERT_CONV(channel%seg(num_seg)%QC_E1,AOUT)
                      
@@ -719,6 +836,8 @@ END SUBROUTINE cal_feedback
        ENDDO
       ENDDO  
 
+      IF (EDDYE_PRECIP) THEN
+      !----------------------------------------------- 
       ! QR
       CALL VERT_CONV(channel%seg(num_seg)%QR_E1,AOUT)
                      
@@ -745,8 +864,12 @@ END SUBROUTINE cal_feedback
          channel%seg(num_seg)%QG_E1(K,num_gcm) = AOUT(K,num_gcm)
        ENDDO
       ENDDO  
+      !----------------------------------------------- 
+      ENDIF 
       
-      ENDIF
+      ENDIF  ! WATER_TEND      
+      
+      ENDIF  ! physics
 
       ! QT      
       DO nt = 1, ntracer
@@ -763,7 +886,7 @@ END SUBROUTINE cal_feedback
 
       ! U
       CALL VERT_CONV(channel%seg(num_seg)%U_E1,AOUT)
-                     
+                           
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2                
          channel%seg(num_seg)%U_E1(K,num_gcm) = AOUT(K,num_gcm)
@@ -772,7 +895,7 @@ END SUBROUTINE cal_feedback
       
       ! V
       CALL VERT_CONV(channel%seg(num_seg)%V_E1,AOUT)
-                     
+                      
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2                
          channel%seg(num_seg)%V_E1(K,num_gcm) = AOUT(K,num_gcm)
@@ -789,6 +912,56 @@ END SUBROUTINE cal_feedback
 
       CONTAINS
 
+       SUBROUTINE CSECT_AVG_QVAL(lsta,lend,mi1,mj1,A,AVG)
+!      input  (A)   : eddy field (q) transported by w_prime
+!             (W)   : w_prime
+!      output (AVG) : vertical flux average over a vGCM-cell at w-level (k=2~nk1)  
+
+       IMPLICIT NONE 
+                    
+       integer, INTENT(IN) :: lsta(nVGCM_seg)   ! starting CRM point of a vGCM cell
+       integer, INTENT(IN) :: lend(nVGCM_seg)   ! ending CRM point of a vGCM cell 
+       integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
+       integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
+       
+       real (kind=r8), INTENT(IN)  :: A(0:mi1,0:mj1,nk2)
+       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
+       
+       ! Local
+       integer n_gcm,k,npo,chl,chn
+       real (kind=r8) :: VAL(netsz)
+       
+       chn = 1
+!---------------------------------       
+       if (mi1.gt.mj1) then  ! x-array
+!---------------------------------       
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 2,nk2
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chl,chn,K)
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
+        ENDDO
+       ENDDO      
+!---------------------------------       
+       else                 ! y-array
+!---------------------------------   
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 2,nk2
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chn,chl,K)
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
+        ENDDO
+       ENDDO  
+!---------------------------------       
+       endif
+!---------------------------------                
+       
+       END SUBROUTINE csect_avg_qval
+       
        SUBROUTINE CSECT_AVG_Q(lsta,lend,mi1,mj1,A,W,AVG)
 !      input  (A)   : eddy field (q) transported by w_prime
 !             (W)   : w_prime
@@ -806,19 +979,20 @@ END SUBROUTINE cal_feedback
        real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
-       integer n_gcm,k,chp
-       real (kind=r8) :: SUM
+       integer n_gcm,k,npo,chl,chn
+       real (kind=r8) :: VAL(netsz)
        
+       chn = 1
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + 0.5_r8*(A(CHP,1,K)+A(CHP,1,K+1))*W(CHP,1,K)
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.5_r8*(A(chl,chn,K)+A(chl,chn,K+1))*W(chl,chn,K)
          ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
         ENDDO
        ENDDO      
 !---------------------------------       
@@ -826,11 +1000,11 @@ END SUBROUTINE cal_feedback
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + 0.5_r8*(A(1,CHP,K)+A(1,CHP,K+1))*W(1,CHP,K)
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.5_r8*(A(chn,chl,K)+A(chn,chl,K+1))*W(chn,chl,K)
          ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
         ENDDO
        ENDDO  
 !---------------------------------       
@@ -856,20 +1030,21 @@ END SUBROUTINE cal_feedback
        real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
-       integer n_gcm,k,chp
-       real (kind=r8) :: SUM
+       integer n_gcm,k,npo,chl,chn
+       real (kind=r8) :: VAL(netsz)
        
+       chn = 1
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + 0.25_r8*(A(CHP,1,K)+A(CHP,1,K+1) &
-                              +A(CHP-1,1,K)+A(CHP-1,1,K+1))*W(CHP,1,K) 
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.25_r8*(A(chl,chn,K)+A(chl,chn,K+1) &
+                             +A(chl-1,chn,K)+A(chl-1,chn,K+1))*W(chl,chn,K) 
          ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
         ENDDO
        ENDDO                       
 !---------------------------------       
@@ -877,12 +1052,12 @@ END SUBROUTINE cal_feedback
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + 0.25_r8*(A(1,CHP,K)+A(1,CHP,K+1) &
-                              +A(0,CHP,K)+A(0,CHP,K+1))*W(1,CHP,K)   
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.25_r8*(A(chn,chl,K)+A(chn,chl,K+1) &
+                             +A(chn-1,chl,K)+A(chn-1,chl,K+1))*W(chn,chl,K)   
          ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
         ENDDO
        ENDDO  
 !---------------------------------       
@@ -908,20 +1083,21 @@ END SUBROUTINE cal_feedback
        real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
        
        ! Local
-       integer n_gcm,k,chp
-       real (kind=r8) :: SUM
+       integer n_gcm,k,npo,chl,chn
+       real (kind=r8) :: VAL(netsz)
        
+       chn = 1
 !---------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !---------------------------------       
        DO n_gcm = 1,nVGCM_seg 
-        DO k = 2,nk1
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + 0.25_r8*(A(CHP,1,K)+A(CHP,1,K+1) &
-                              +A(CHP,0,K)+A(CHP,0,K+1))*W(CHP,1,K)
+        DO k = 2,nk1 
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.25_r8*(A(chl,chn,K)+A(chl,chn,K+1) &
+                             +A(chl,chn-1,K)+A(chl,chn-1,K+1))*W(chl,chn,K)
          ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
         ENDDO
        ENDDO                 
 !---------------------------------       
@@ -929,12 +1105,12 @@ END SUBROUTINE cal_feedback
 !---------------------------------   
        DO n_gcm = 1,nVGCM_seg 
         DO k = 2,nk1
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + 0.25_r8*(A(1,CHP,K)+A(1,CHP,K+1) &
-                              +A(1,CHP-1,K)+A(1,CHP-1,K+1))*W(1,CHP,K)  
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.25_r8*(A(chn,chl,K)+A(chn,chl,K+1) &
+                             +A(chn,chl-1,K)+A(chn,chl-1,K+1))*W(chn,chl,K)  
          ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
         ENDDO
        ENDDO  
 !---------------------------------       
@@ -965,8 +1141,6 @@ END SUBROUTINE cal_feedback
        ENDDO  
              
        END SUBROUTINE vert_conv                     
-                 
-!JUNG #endif
 
    END SUBROUTINE cal_eddy_trans
 
@@ -975,6 +1149,8 @@ END SUBROUTINE cal_feedback
 !================================================================================
 !  calculate the mean diabatic effects due to physical processes
 !  averaging over space (a vGCM cell size) and time (a vGCM timestep)
+!  (Tendency for theta is calculated in the whole domain ~ nk2_ext) 
+!  (Tendency for others are calculated only in the active domain ~ nk2) 
 !------------------------------------------------------------------------
 !  IN:  FTH3D_DIA, FQV3D_DIA, FQT3D_DIA, FU_DIA, FV_DIA, 
 !       FQC3D_DIA, FQI3D_DIA, FQR3D_DIA, FQS3D_DIA, FQG3D_DIA (channel)        
@@ -993,11 +1169,12 @@ END SUBROUTINE cal_feedback
       
       type(channel_t), intent(inout) :: channel   ! Channel data      
 
-!JUNG #ifndef CAM
       integer mi1,mj1
       integer k,nt,num_seg,num_gcm
 
-      REAL (KIND=r8) :: AVG(nk2,nVGCM_seg)
+      REAL (KIND=r8) :: AVG(nk1,nVGCM_seg),AVG_ext(nk1_ext,nVGCM_seg)
+      
+      LOGICAL :: WATER_TEND = .TRUE.
 
 !===============================   
       DO num_seg = 1, 4
@@ -1006,120 +1183,124 @@ END SUBROUTINE cal_feedback
       mj1 = channel%seg(num_seg)%mj1     ! y-size of channel segment (temp setting)
       
       ! Diabatic effect: TH
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FTH3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1_ext, &
+                        channel%seg(num_seg)%FTH3D_DIA(:,:,2:nk2_ext),AVG_ext)
        
       DO num_gcm = 1,nVGCM_seg
-       DO K = 2,nk2               
+       DO K = 2,nk2_ext               
          channel%seg(num_seg)%TH_E2(K,num_gcm) = &
-               channel%seg(num_seg)%TH_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%TH_E2(K,num_gcm) + AVG_ext(K-1,num_gcm)
        ENDDO
       ENDDO 
       
       ! Diabatic effect: QV
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQV3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQV3D_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QV_E2(K,num_gcm) = &
-               channel%seg(num_seg)%QV_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QV_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
      
       IF (physics) THEN
+      
+      IF (WATER_TEND) THEN
 
       ! Diabatic effect: QC
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQC3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQC3D_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QC_E2(K,num_gcm) = &
-               channel%seg(num_seg)%QC_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QC_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
 
       ! Diabatic effect: QI
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQI3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQI3D_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QI_E2(K,num_gcm) = &
-               channel%seg(num_seg)%QI_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QI_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
 
       ! Diabatic effect: QR
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQR3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQR3D_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QR_E2(K,num_gcm) = &
-               channel%seg(num_seg)%QR_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QR_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
 
       ! Diabatic effect: QS
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQS3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQS3D_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QS_E2(K,num_gcm) = &
-               channel%seg(num_seg)%QS_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QS_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
 
       ! Diabatic effect: QG
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQG3D_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQG3D_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QG_E2(K,num_gcm) = &
-               channel%seg(num_seg)%QG_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QG_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
-      ENDDO        
+      ENDDO  
       
-      ENDIF       
+      ENDIF  ! water_tend    
+      
+      ENDIF  ! physics       
 
       DO nt=1,ntracer
       
       ! Diabatic effect: QT
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FQT3D_DIA(:,:,:,nt),AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FQT3D_DIA(:,:,2:nk2,nt),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%QT_E2(K,num_gcm,nt) = &
-               channel%seg(num_seg)%QT_E2(K,num_gcm,nt) + AVG(K,num_gcm)
+               channel%seg(num_seg)%QT_E2(K,num_gcm,nt) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO  
       
       ENDDO
 
       ! Diabatic effect: U (U3DX)
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FU_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FU_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%U_E2(K,num_gcm) = &
-               channel%seg(num_seg)%U_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%U_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
 
       ! Diabatic effect: V (U3DY)
-      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1, &
-                        channel%seg(num_seg)%FV_DIA,AVG)
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%FV_DIA(:,:,2:nk2),AVG)
        
       DO num_gcm = 1,nVGCM_seg
        DO K = 2,nk2               
          channel%seg(num_seg)%V_E2(K,num_gcm) = &
-               channel%seg(num_seg)%V_E2(K,num_gcm) + AVG(K,num_gcm)
+               channel%seg(num_seg)%V_E2(K,num_gcm) + AVG(K-1,num_gcm)
        ENDDO
       ENDDO        
 
@@ -1128,15 +1309,19 @@ END SUBROUTINE cal_feedback
 !      Make time averages over a timestep of GCM
 !******************************************************
       DO num_gcm = 1,nVGCM_seg 
-       DO K = 2,nk2
+       DO K = 2,nk2_ext
         channel%seg(num_seg)%TH_E2(K,num_gcm)= &  
              channel%seg(num_seg)%TH_E2(K,num_gcm)/FLOAT(INUM)
+       ENDDO
+       DO K = 2,nk2
         channel%seg(num_seg)%QV_E2(K,num_gcm)= &
              channel%seg(num_seg)%QV_E2(K,num_gcm)/FLOAT(INUM)
-       ENDDO
+       ENDDO       
       ENDDO 
 
       IF (physics) THEN 
+      
+      IF (WATER_TEND) THEN
       
       DO num_gcm = 1,nVGCM_seg 
        DO K = 2,nk2
@@ -1149,11 +1334,25 @@ END SUBROUTINE cal_feedback
         channel%seg(num_seg)%QS_E2(K,num_gcm)= &
              channel%seg(num_seg)%QS_E2(K,num_gcm)/FLOAT(INUM)
         channel%seg(num_seg)%QG_E2(K,num_gcm)= &
-             channel%seg(num_seg)%QV_E2(K,num_gcm)/FLOAT(INUM)                                                    
+             channel%seg(num_seg)%QG_E2(K,num_gcm)/FLOAT(INUM)                                                    
        ENDDO
-      ENDDO 
+      ENDDO
       
-      ENDIF
+      ELSE  ! WATER_TEND
+
+      DO num_gcm = 1,nVGCM_seg 
+       DO K = 2,nk2
+        channel%seg(num_seg)%QC_E2(K,num_gcm)= 0.0_r8
+        channel%seg(num_seg)%QI_E2(K,num_gcm)= 0.0_r8
+        channel%seg(num_seg)%QR_E2(K,num_gcm)= 0.0_r8
+        channel%seg(num_seg)%QS_E2(K,num_gcm)= 0.0_r8
+        channel%seg(num_seg)%QG_E2(K,num_gcm)= 0.0_r8                                                  
+       ENDDO
+      ENDDO
+             
+      ENDIF ! WATER_TEND
+      
+      ENDIF ! physics
       
       DO NT=1,ntracer
        DO num_gcm = 1,nVGCM_seg
@@ -1181,57 +1380,6 @@ END SUBROUTINE cal_feedback
       ENDDO   ! num_seg 
 !=======================================================================
       
-      CONTAINS
-      
-       SUBROUTINE CSECT_AVG_3D(lsta,lend,mi1,mj1,A,AVG)
-!      input  (A)   : 3D target variable        
-!      output (AVG) : Average over a vGCM-cell at q, u, v - layers (k=2~nk2)  
-
-       IMPLICIT NONE 
-                    
-       integer, INTENT(IN) :: lsta(nVGCM_seg)   ! starting CRM point of a vGCM cell
-       integer, INTENT(IN) :: lend(nVGCM_seg)   ! ending CRM point of a vGCM cell 
-       integer, INTENT(IN) :: mi1               ! x-size of a channel-segment
-       integer, INTENT(IN) :: mj1               ! y-size of a channel-segment
-       
-       real (kind=r8), INTENT(IN)  :: A(mi1,mj1,nk2)
-       real (kind=r8), INTENT(OUT) :: AVG(nk2,nVGCM_seg)
-       
-       ! Local
-       integer n_gcm,k,chp
-       real (kind=r8) :: SUM
-       
-!---------------------------------       
-       if (mi1.gt.mj1) then  ! x-array
-!---------------------------------       
-       DO n_gcm = 1,nVGCM_seg 
-        DO k = 2,nk2
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + A(CHP,1,K)
-         ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
-        ENDDO
-       ENDDO      
-!---------------------------------       
-       else                  ! y-array
-!---------------------------------   
-       DO n_gcm = 1,nVGCM_seg 
-        DO k = 2,nk2
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + A(1,CHP,K)
-         ENDDO       
-         AVG(k,n_gcm) = SUM/FLOAT(netsz)
-        ENDDO
-       ENDDO  
-!---------------------------------       
-       endif
-!---------------------------------                
-       
-       END SUBROUTINE csect_avg_3d 
-!JUNG #endif
-
    END SUBROUTINE cal_tendency
 
 !================================================================================
@@ -1254,8 +1402,6 @@ END SUBROUTINE cal_feedback
       LOGICAL, INTENT(IN) :: MAKE_AVG  ! if true, make an average
 
       type(channel_t), intent(inout) :: channel   ! Channel data
-      
-!JUNG #ifndef CAM
       
       ! Local
       INTEGER mi1,mj1,num_seg,num_gcm,chn,lcen1,lcen2
@@ -1413,8 +1559,322 @@ END SUBROUTINE cal_feedback
 
       ENDIF  ! PHYSICS
 
-      CONTAINS
+   END SUBROUTINE cal_sfc_eft
+
+   SUBROUTINE CAL_OUT_vGCM (channel)
+!================================================================================
+!  calculate the segment (a vGCM cell size)-average values for writing.
+!------------------------------------------------------------------------
+!  IN:  TH3D, QV3D, QT3D, U3DX, U3DY, W3D 
+!       QC3D, QI3D, QR3D, QS3D, QG3D (channel)        
+!
+!  OUT: TH3D_sa, QV3D_sa, QT3D_sa, U3DX_sa (RLL), U3DY_sa (RLL), W3D_sa 
+!       QC3D_sa, QI3D_sa, QR3D_sa, QS3D_sa, QG3D_sa, QT3D_sa  
+!
+!  channel width is fixed as 1 (i.e., # of prognostic grid =1).
+!------------------------------------------------------------------------
+      type(channel_t), intent(inout) :: channel   ! channel data      
+
+      ! Local
+      REAL (KIND=r8) :: VMAP(2)
+      REAL (KIND=r8) :: U3DX(nk2,nVGCM_seg),U3DY(nk2,nVGCM_seg)
+      integer num_seg,num_gcm,mi1,mj1,k,nt,lcen1,lcen2,chn
+
+      chn = 1
       
+!===============================   
+      DO num_seg = 1, 4
+!=============================== 
+      mi1 = channel%seg(num_seg)%mi1     ! x-size of channel segment (temp setting)
+      mj1 = channel%seg(num_seg)%mj1     ! y-size of channel segment (temp setting)
+      
+      ! TH3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%TH3D(1:mi1,1:mj1,2:nk2),                    &   
+                        channel%seg(num_seg)%TH3D_sa(2:nk2,:))
+        
+      ! QV3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QV3D(1:mi1,1:mj1,2:nk2),                    &
+                        channel%seg(num_seg)%QV3D_sa(2:nk2,:))      
+     
+      IF (physics) THEN
+
+      ! QC3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QC3D(1:mi1,1:mj1,2:nk2),                    &
+                        channel%seg(num_seg)%QC3D_sa(2:nk2,:))      
+      ! QI3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QI3D(1:mi1,1:mj1,2:nk2),                    & 
+                        channel%seg(num_seg)%QI3D_sa(2:nk2,:))      
+
+      ! QR3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QR3D(1:mi1,1:mj1,2:nk2),                    &
+                        channel%seg(num_seg)%QR3D_sa(2:nk2,:))      
+      ! QS3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QS3D(1:mi1,1:mj1,2:nk2),                    &
+                        channel%seg(num_seg)%QS3D_sa(2:nk2,:))      
+
+      ! QG3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QG3D(1:mi1,1:mj1,2:nk2),                    & 
+                        channel%seg(num_seg)%QG3D_sa(2:nk2,:))            
+      ENDIF       
+
+      ! QT3D
+      DO nt=1,ntracer
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                        channel%seg(num_seg)%QT3D(1:mi1,1:mj1,2:nk2,nt),                 &
+                        channel%seg(num_seg)%QT3D_sa(2:nk2,:,nt))      
+      ENDDO
+
+      ! U3DX (contravariant component)     
+      CALL CSECT_AVG_3D_UPO(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                            channel%seg(num_seg)%U3DX(0:mi1,1:mj1,2:nk2),U3DX(2:nk2,:))  
+       
+      ! U3DY (contravariant component)
+      CALL CSECT_AVG_3D_VPO(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1, &
+                            channel%seg(num_seg)%U3DY(1:mi1,0:mj1,2:nk2),U3DY(2:nk2,:))  
+       
+      ! W3D
+      CALL CSECT_AVG_3D(channel%seg(num_seg)%lsta,channel%seg(num_seg)%lend,mi1,mj1,nk1-1, &
+                        channel%seg(num_seg)%W3D(1:mi1,1:mj1,2:nk1),                       & 
+                        channel%seg(num_seg)%W3D_sa(2:nk1,:))  
+                        
+!-------------------------------------------------------------
+! Apply mapping to obtain velocities in RLL coordinates
+!-------------------------------------------------------------
+      
+      DO num_gcm = 1,nVGCM_seg
+      
+       lcen1 =  INT(channel%seg(num_seg)%lcen(num_gcm)+0.2_r8)
+       lcen2 = NINT(channel%seg(num_seg)%lcen(num_gcm)+0.2_r8)
+
+!---------------------------- x-channel seg.
+      IF (mi1.GT.mj1) THEN
+!---------------------------- 
+       IF (lcen2 .GT. lcen1) THEN 
+         DO K = 2,nk2    
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_U(1,lcen1,chn),    &
+                          channel%seg(num_seg)%AM_U(2,lcen1,chn),    &
+                          channel%seg(num_seg)%AM_U(3,lcen1,chn),    &
+                          channel%seg(num_seg)%AM_U(4,lcen1,chn),    &
+                          U3DX(K,num_gcm),U3DY(K,num_gcm))
+                        
+           channel%seg(num_seg)%U3DX_sa(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%U3DY_sa(K,num_gcm)= VMAP(2)                                         
+         ENDDO
+       ELSE
+         DO K = 2,nk2     
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_T(1,lcen1,chn), &
+                          channel%seg(num_seg)%AM_T(2,lcen1,chn), &
+                          channel%seg(num_seg)%AM_T(3,lcen1,chn), &
+                          channel%seg(num_seg)%AM_T(4,lcen1,chn), &
+                          U3DX(K,num_gcm),U3DY(K,num_gcm))
+                        
+           channel%seg(num_seg)%U3DX_sa(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%U3DY_sa(K,num_gcm)= VMAP(2)        
+         ENDDO                
+       ENDIF
+!---------------------------- y-channel seg.
+      ELSE
+!---------------------------- 
+       IF (lcen2 .GT. lcen1) THEN 
+         DO K = 2,nk2    
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_V(1,chn,lcen1), &
+                          channel%seg(num_seg)%AM_V(2,chn,lcen1), &
+                          channel%seg(num_seg)%AM_V(3,chn,lcen1), &
+                          channel%seg(num_seg)%AM_V(4,chn,lcen1), &
+                          U3DX(K,num_gcm),U3DY(K,num_gcm))
+                        
+           channel%seg(num_seg)%U3DX_sa(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%U3DY_sa(K,num_gcm)= VMAP(2)                                         
+         ENDDO        
+       ELSE
+         DO K = 2,nk2    
+           VMAP = CON2RLL(channel%seg(num_seg)%AM_T(1,chn,lcen1), &
+                          channel%seg(num_seg)%AM_T(2,chn,lcen1), &
+                          channel%seg(num_seg)%AM_T(3,chn,lcen1), &
+                          channel%seg(num_seg)%AM_T(4,chn,lcen1), &
+                          U3DX(K,num_gcm),U3DY(K,num_gcm))
+                        
+           channel%seg(num_seg)%U3DX_sa(K,num_gcm)= VMAP(1) 
+           channel%seg(num_seg)%U3DY_sa(K,num_gcm)= VMAP(2)                                         
+         ENDDO                                
+       ENDIF
+!---------------------------- 
+      ENDIF
+!---------------------------- 
+
+      channel%seg(num_seg)%W3D_sa(1,:) = 0.0_r8
+      channel%seg(num_seg)%W3D_sa(nk2,:) = 0.0_r8
+      
+      ENDDO   ! num_gcm-loop   
+                                      
+!=======================================================================   
+      ENDDO   ! num_seg 
+!=======================================================================
+      
+!      write(40) PIBAR,channel%seg(1)%TH3D_sa,channel%seg(2)%TH3D_sa, &
+!                channel%seg(3)%TH3D_sa,channel%seg(4)%TH3D_sa  
+      
+   END SUBROUTINE cal_out_vgcm
+      
+       SUBROUTINE CSECT_AVG_3D(lsta,lend,mi1,mj1,kdim,A,AVG)
+!      input  (A)   : 3D target variable        
+!      output (AVG) : Average over a vGCM-cell at q, u, v - layers (k=2~nk2)  
+
+       IMPLICIT NONE 
+                                
+       INTEGER, INTENT(IN) :: lsta(nVGCM_seg)   ! starting CRM point of a vGCM cell
+       INTEGER, INTENT(IN) :: lend(nVGCM_seg)   ! ending CRM point of a vGCM cell 
+       INTEGER, INTENT(IN) :: mi1               ! x-size of a channel-segment
+       INTEGER, INTENT(IN) :: mj1               ! y-size of a channel-segment
+       INTEGER, INTENT(IN) :: kdim              ! vertical array size  
+       
+       REAL (kind=r8), INTENT(IN)  :: A(mi1,mj1,kdim)
+       REAL (kind=r8), INTENT(OUT) :: AVG(kdim,nVGCM_seg)
+       
+       ! Local
+       INTEGER n_gcm,k,npo,chl,chn
+       REAL (kind=r8) :: VAL(netsz)
+       
+       chn = 1
+!---------------------------------       
+       if (mi1.gt.mj1) then  ! x-array
+!---------------------------------       
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 1,kdim
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chl,chn,K)
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
+        ENDDO
+       ENDDO      
+!---------------------------------       
+       else                  ! y-array
+!---------------------------------   
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 1,kdim
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chn,chl,K)
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz)
+        ENDDO
+       ENDDO  
+!---------------------------------       
+       endif
+!---------------------------------                
+       
+       END SUBROUTINE csect_avg_3d 
+       
+       SUBROUTINE CSECT_AVG_3D_UPO(lsta,lend,mi1,mj1,kdim,A,AVG)
+!      input  (A)   : 3D target variable at u-grid point        
+!      output (AVG) : Average over a vGCM-cell at q, u, v - layers (k=2~nk2)  
+
+       IMPLICIT NONE 
+                                
+       INTEGER, INTENT(IN) :: lsta(nVGCM_seg)   ! starting CRM point of a vGCM cell
+       INTEGER, INTENT(IN) :: lend(nVGCM_seg)   ! ending CRM point of a vGCM cell 
+       INTEGER, INTENT(IN) :: mi1               ! x-size of a channel-segment
+       INTEGER, INTENT(IN) :: mj1               ! y-size of a channel-segment
+       INTEGER, INTENT(IN) :: kdim              ! vertical array size  
+       
+       REAL (kind=r8), INTENT(IN)  :: A(0:mi1,mj1,kdim)
+       REAL (kind=r8), INTENT(OUT) :: AVG(kdim,nVGCM_seg)
+       
+       ! Local
+       INTEGER n_gcm,k,npo,chl,chn
+       REAL (kind=r8) :: VAL(0:netsz)
+       
+       chn = 1
+!---------------------------------       
+       if (mi1.gt.mj1) then  ! x-array
+!---------------------------------       
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 1,kdim
+         DO npo = 0, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chl,chn,K)
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz+1)
+        ENDDO
+       ENDDO      
+!---------------------------------       
+       else                  ! y-array
+!---------------------------------   
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 1,kdim
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.5_r8*(A(chn,chl,K)+A(chn-1,chl,K))
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL(1:netsz))/FLOAT(netsz)
+        ENDDO
+       ENDDO  
+!---------------------------------       
+       endif
+!---------------------------------                
+       
+       END SUBROUTINE csect_avg_3d_upo 
+       
+       SUBROUTINE CSECT_AVG_3D_VPO(lsta,lend,mi1,mj1,kdim,A,AVG)
+!      input  (A)   : 3D target variable        
+!      output (AVG) : Average over a vGCM-cell at q, u, v - layers (k=2~nk2)  
+
+       IMPLICIT NONE 
+                                
+       INTEGER, INTENT(IN) :: lsta(nVGCM_seg)   ! starting CRM point of a vGCM cell
+       INTEGER, INTENT(IN) :: lend(nVGCM_seg)   ! ending CRM point of a vGCM cell 
+       INTEGER, INTENT(IN) :: mi1               ! x-size of a channel-segment
+       INTEGER, INTENT(IN) :: mj1               ! y-size of a channel-segment
+       INTEGER, INTENT(IN) :: kdim              ! vertical array size  
+       
+       REAL (kind=r8), INTENT(IN)  :: A(mi1,0:mj1,kdim)
+       REAL (kind=r8), INTENT(OUT) :: AVG(kdim,nVGCM_seg)
+       
+       ! Local
+       INTEGER n_gcm,k,npo,chl,chn
+       REAL (kind=r8) :: VAL(0:netsz)
+       
+       chn = 1
+!---------------------------------       
+       if (mi1.gt.mj1) then  ! x-array
+!---------------------------------       
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 1,kdim
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = 0.5_r8*(A(chl,chn,K)+A(chl,chn-1,K))
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL(1:netsz))/FLOAT(netsz)
+        ENDDO
+       ENDDO      
+!---------------------------------       
+       else                  ! y-array
+!---------------------------------   
+       DO n_gcm = 1,nVGCM_seg 
+        DO k = 1,kdim
+
+         DO npo = 0, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chn,chl,K)
+         ENDDO       
+         AVG(k,n_gcm) = SUM(VAL)/FLOAT(netsz+1)
+
+        ENDDO
+       ENDDO  
+!---------------------------------       
+       endif
+!---------------------------------                
+       
+       END SUBROUTINE csect_avg_3d_vpo               
+             
        SUBROUTINE CSECT_AVG_2D(lsta,lend,mi1,mj1,A,AVG)
 !      input  (A)   : 2D target variable        
 !      output (AVG) : Average over a vGCM-cell  
@@ -1430,36 +1890,33 @@ END SUBROUTINE cal_feedback
        real (kind=r8), INTENT(OUT) :: AVG(nVGCM_seg)
        
        ! Local
-       integer n_gcm,chp
-       real (kind=r8) :: SUM
+       integer n_gcm,npo,chl,chn
+       real (kind=r8) :: VAL(netsz)
        
+       chn = 1
 !--------------------------------------       
        if (mi1.gt.mj1) then  ! x-array
 !--------------------------------------       
        DO n_gcm = 1,nVGCM_seg 
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + A(CHP,1)
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chl,chn)
          ENDDO       
-         AVG(n_gcm) = SUM/FLOAT(netsz)
+         AVG(n_gcm) = SUM(VAL)/FLOAT(netsz)
        ENDDO     
 !--------------------------------------       
        else                  ! y-array
 !--------------------------------------   
        DO n_gcm = 1,nVGCM_seg 
-         SUM = 0.0_r8 
-         DO CHP = lsta(n_gcm),lend(n_gcm)
-          SUM = SUM + A(1,CHP)
+         DO npo = 1, netsz
+          chl = lsta(n_gcm) - 1 + npo
+          VAL(npo) = A(chn,chl)
          ENDDO       
-         AVG(n_gcm) = SUM/FLOAT(netsz)
+         AVG(n_gcm) = SUM(VAL)/FLOAT(netsz)
        ENDDO  
 !--------------------------------------         
        endif
 !--------------------------------------               
        END SUBROUTINE csect_avg_2d 
-       
-!JUNG #endif
-
-   END SUBROUTINE cal_sfc_eft
 
 END MODULE q3d_effect_module
