@@ -916,7 +916,7 @@
 <clubb_tk2                                        > 238.15D0  </clubb_tk2>
 <clubb_wpxp_L_thresh                              > 60.0D0   </clubb_wpxp_L_thresh>
 <relvar_fix                                       > .false.  </relvar_fix>      
-
+<clubb_eamv2                                      > .false. </clubb_eamv2>
 
 
 <!-- CLUBB_history -->
@@ -1314,6 +1314,7 @@
 <zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
 <zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
+<zmconv_tp_fac                                                        >0.D0 </zmconv_tp_fac>
 
 <!-- Cloud sedimentation -->
 

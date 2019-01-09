@@ -363,6 +363,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     character*11 :: subname='phys_inidat' ! subroutine name
     integer :: tpert_idx, qpert_idx, pblh_idx
+    integer :: vmag_gust_idx
 
     logical :: found=.false., found2=.false.
     integer :: ierr
@@ -429,6 +430,15 @@ subroutine phys_inidat( cam_out, pbuf2d )
     end if
     tpert_idx = pbuf_get_index( 'tpert')
     call pbuf_set_field(pbuf2d, tpert_idx, tptr)
+
+    call infld('vmag_gust', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+         tptr(:,:), found, gridname='physgrid')
+    if(.not. found) then
+       tptr(:,:) = 0._r8
+       if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
+    end if
+    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
+    call pbuf_set_field(pbuf2d, vmag_gust_idx, 1._r8)
 
     fieldname='QPERT'  
     qpert_idx = pbuf_get_index( 'qpert',ierr)
