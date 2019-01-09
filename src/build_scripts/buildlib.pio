@@ -145,7 +145,6 @@ def buildlib(bldroot, installpath, case):
         if current_value not in valid_values:
             logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
             case.set_value(comp_pio_typename,"netcdf")
-#    case.flush()
             
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
