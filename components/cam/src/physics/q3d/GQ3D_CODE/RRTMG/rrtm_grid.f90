@@ -4,23 +4,23 @@
 !	  of those parameters used in RRTMG (MKS is standard)
 !-----------------------------------------------------------------
 	  USE parkind, only: kind_rb, kind_rm, kind_im
-      USE parmsld, only: nk1,nk2,channel_l,channel_w
+      USE parmsld, only: nk1_ext,nk2_ext,channel_w
+      use parmsld, only: nx=>channel_l ! number of points along the channel
 
  	  IMPLICIT NONE
       SAVE
 
 	  INTEGER (KIND=kind_im), PARAMETER :: &
-          nx  = channel_l, &         ! number of points along the channel
-          ny  = channel_w, &         ! number of points across the channel
-          nz  = nk2, &               ! number of model interfaces
-          nzm = nk1                  ! number of model layers
-      
+          ny  = channel_w, &             ! number of points across the channel
+          nz  = nk2_ext, &               ! number of model interfaces
+          nzm = nk1_ext                  ! number of model layers
+
 	  REAL (KIND=kind_rm) :: &
 	      day,  &   ! current model Julian day (day = 0.00 for 00Z 1 Jan)
 	      day0, &   ! Julian day at start of model run
 	      dz,   &   ! vertical grid spacing
 	      adz       ! vertical grid spacing factor (vertical grid spacing = dz * adz(k))
-	      
+
 	  INTEGER (KIND=kind_im) :: &
 	      nstep,    & ! current number of time steps completed
 	      icycle,   & ! model substep number
@@ -39,6 +39,8 @@
           initialized = .FALSE.,     & ! true = radiation has been initialized
           masterproc = .TRUE.          ! true = MPI rank equals 0
 
+! JUNG: All writings associated with "masterproc" are commented out.          
+
       REAL (KIND=kind_rm), PARAMETER :: &
           solar_constant = 1367.0_kind_rm, &  ! Solar constant
           zenith_angle = 60.0_kind_rm         ! Solar zenith angle (degrees)
@@ -51,4 +53,3 @@
 !=======================================================================
  	  END MODULE rrtm_grid
 !=======================================================================
-
