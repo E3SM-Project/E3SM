@@ -10,7 +10,7 @@ from CIME.simple_compare            import compare_files
 
 logger = logging.getLogger(__name__)
 
-def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
+def create_clone(self, newcaseroot, keepexe=False, mach_dir=None, project=None,
                       cime_output_root=None, exeroot=None, rundir=None,
                       user_mods_dir=None):
     """
@@ -23,7 +23,7 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
     if cime_output_root is None:
         cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
 
-    newcaseroot = os.path.abspath(newcase)
+    newcaseroot = os.path.abspath(newcaseroot)
     expect(not os.path.isdir(newcaseroot),
            "New caseroot directory {} already exists".format(newcaseroot))
     newcasename = os.path.basename(newcaseroot)
