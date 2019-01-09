@@ -377,6 +377,7 @@ int PIOc_write_darray_multi(int ncid, const int *varids, int ioid, int nvars,
 
     if(iodesc->needssort && tmparray != NULL)
 	free(tmparray);
+
     /* Flush data to disk for pnetcdf. */
     if (ios->ioproc && file->iotype == PIO_IOTYPE_PNETCDF)
         if ((ierr = flush_output_buffer(file, flushtodisk, 0)))
@@ -461,7 +462,7 @@ pio_inq_var_fill_expected(int ncid, int varid, int pio_type, PIO_Offset type_siz
         case PIO_DOUBLE:
             memcpy(fillvalue, &double_fill_value, type_size);
             break;
-#ifdef _NETCDF4
+#if defined(_NETCDF4) || defined(_PNETCDF)
         case PIO_UBYTE:
             memcpy(fillvalue, &ubyte_fill_value, type_size);
             break;
@@ -477,10 +478,12 @@ pio_inq_var_fill_expected(int ncid, int varid, int pio_type, PIO_Offset type_siz
         case PIO_UINT64:
             memcpy(fillvalue, &uint64_fill_value, type_size);
             break;
+#ifdef _NETCDF4
         case PIO_STRING:
             memcpy(fillvalue, string_fill_value, type_size);
             break;
 #endif /* _NETCDF4 */
+#endif/* _NETCDF4 || _PNETCDF */
         default:
             return PIO_EBADTYPE;
         }
@@ -811,6 +814,7 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
     if (wmb->frame)
         wmb->frame[wmb->num_arrays] = vdesc->record;
     wmb->num_arrays++;
+
     LOG((2, "wmb->num_arrays = %d iodesc->maxbytes / vdesc->mpi_type_size = %d "
          "iodesc->ndof = %d iodesc->llen = %d", wmb->num_arrays,
          iodesc->maxbytes / vdesc->mpi_type_size, iodesc->ndof, iodesc->llen));
@@ -845,7 +849,6 @@ int PIOc_read_darray(int ncid, int varid, int ioid, PIO_Offset arraylen,
     size_t rlen = 0;       /* the length of data in iobuf. */
     int ierr;              /* Return code. */
     void *tmparray;        /* unsorted copy of array buf if required */
-
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
         return pio_err(NULL, NULL, PIO_EBADID, __FILE__, __LINE__);
