@@ -233,6 +233,8 @@ contains
 
     if (trim(aoflux_grid) == 'ocn') then
 
+       ! TODO: ONLY need to regrid fields that are needed for the atm/ocn flux calculation
+
        ! Regrid atm import field bundle from atm to ocn grid as input for ocn/atm flux calculation
        call med_map_FB_Regrid_Norm( &
             fldListFr(compatm)%flds, compatm, compocn, &

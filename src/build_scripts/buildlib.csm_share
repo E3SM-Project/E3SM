@@ -61,7 +61,6 @@ def buildlib(bldroot, installpath, caseroot):
             filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
         elif driver == "nuopc":
             filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","shr"))
-            filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","cime_flds"))
         else:
             expect(False, "driver value of {} not supported".format(driver))
 
