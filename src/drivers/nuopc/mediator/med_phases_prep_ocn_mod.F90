@@ -1,8 +1,9 @@
 module med_phases_prep_ocn_mod
 
-  use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
-  use med_internalstate_mod, only : mastertask
+  use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+  use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
+  use med_internalstate_mod , only : mastertask
+
   !-----------------------------------------------------------------------------
   ! Carry out fast accumulation for the ocean
   !-----------------------------------------------------------------------------
@@ -24,8 +25,12 @@ contains
 
   subroutine med_phases_prep_ocn_map(gcomp, rc)
 
+    !---------------------------------------
+    ! Map all fields in from relevant source components to the ocean grid
+    !---------------------------------------
+
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO,ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet
     use med_internalstate_mod , only : InternalState
@@ -105,10 +110,12 @@ contains
 
     use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_FAILURE,  ESMF_LOGMSG_ERROR
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_fieldmerge_1D
     use med_constants_mod     , only : R8
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto
@@ -130,23 +137,26 @@ contains
     real(R8), pointer   :: ifracr(:), ofracr(:)
     real(R8), pointer   :: avsdr(:), avsdf(:)
     real(R8), pointer   :: anidr(:), anidf(:)
-    real(R8), pointer   :: swvdf(:), swndf(:)
-    real(R8), pointer   :: swvdr(:), swndr(:)
+    real(R8), pointer   :: Faxa_swvdf(:), Faxa_swndf(:)
+    real(R8), pointer   :: Faxa_swvdr(:), Faxa_swndr(:)
     real(R8), pointer   :: Foxx_swnet(:)
-    real(R8), pointer   :: Foxx_swnet_vdr(:)
-    real(R8), pointer   :: Foxx_swnet_vdf(:)
-    real(R8), pointer   :: Foxx_swnet_idr(:)
-    real(R8), pointer   :: Foxx_swnet_idf(:)
+    real(R8), pointer   :: Foxx_swnet_vdr(:), Foxx_swnet_vdf(:)
+    real(R8), pointer   :: Foxx_swnet_idr(:), Foxx_swnet_idf(:)
+    real(R8), pointer   :: Fioi_swpen_vdr(:), Fioi_swpen_vdf(:)
+    real(R8), pointer   :: Fioi_swpen_idr(:), Fioi_swpen_idf(:)
     real(R8), pointer   :: Fioi_swpen(:)
-    real(R8), pointer   :: Fioi_swpen_vdr(:)
-    real(R8), pointer   :: Fioi_swpen_vdf(:)
-    real(R8), pointer   :: Fioi_swpen_idr(:)
-    real(R8), pointer   :: Fioi_swpen_idf(:)
     real(R8), pointer   :: Foxx_latent(:)
     real(R8), pointer   :: Foxx_evap(:)
     real(R8), pointer   :: Foxx_lwnet(:)
     real(R8), pointer   :: Faox_lwup(:)
     real(R8), pointer   :: Faxa_lwdn(:)
+    real(R8)            :: ifrac_scaled, ofrac_scaled
+    real(R8)            :: ifracr_scaled, ofracr_scaled
+    real(R8)            :: frac_sum
+    real(R8)            :: albvis_dir, albvis_dif
+    real(R8)            :: albnir_dir, albnir_dif
+    real(R8)            :: fswabsv, fswabsi
+    ! NEMS-orig
     real(R8), pointer   :: atmwgt(:)
     real(R8), pointer   :: icewgt(:)
     real(R8), pointer   :: customwgt(:)
@@ -154,12 +164,7 @@ contains
     real(R8), pointer   :: icewgt1(:)
     real(R8), pointer   :: wgtp01(:)
     real(R8), pointer   :: wgtm01(:)
-    real(R8)            :: ifrac_scaled, ofrac_scaled
-    real(R8)            :: ifracr_scaled, ofracr_scaled
-    real(R8)            :: frac_sum
-    real(R8)            :: albvis_dir, albvis_dif
-    real(R8)            :: albnir_dir, albnir_dif
-    real(R8)            :: fswabsv, fswabsi
+    ! CESM
     real(R8)            :: flux_epbalfact
     logical             :: compute_ocnalb_in_med
     logical             :: compute_aoflux_in_med
@@ -283,15 +288,15 @@ contains
        ! netsw_for_ocn = downsw_from_atm * (1-ocn_albedo) * (1-ice_fraction) + pensw_from_ice * (ice_fraction)
 
        ! Input from atm
-       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', swvdr, rc=rc)
+       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', Faxa_swvdr, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', swndr, rc=rc)
+       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', Faxa_swndr, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', swvdf, rc=rc)
+       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', Faxa_swvdf, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', swndf, rc=rc)
+       call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', Faxa_swndf, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       lsize = size(swvdr)
+       lsize = size(Faxa_swvdr)
 
        ! Input from mediator, ice-covered ocean and open ocean fractions
        call FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
@@ -342,7 +347,7 @@ contains
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
-          lsize = size(swvdr)
+          lsize = size(Faxa_swvdr)
           allocate(Foxx_swnet(lsize))
        end if
 
@@ -361,7 +366,7 @@ contains
        end if
 
        do n = 1,lsize
-          ! Determine ocean albedos 
+          ! Determine ocean albedos
           if (compute_ocnalb_in_med) then
              albvis_dir = avsdr(n)
              albvis_dif = avsdf(n)
@@ -405,10 +410,10 @@ contains
              if (export_swnet_by_bands) then
                 if (import_swpen_by_bands) then
                    ! use each individual band for swpen coming from the sea-ice
-                   Foxx_swnet_vdr(n) = swvdr(n)*(1.0_R8-albvis_dir)*ofracr_scaled + Fioi_swpen_vdr(n)*ifrac_scaled
-                   Foxx_swnet_vdf(n) = swvdf(n)*(1.0_R8-albvis_dif)*ofracr_scaled + Fioi_swpen_vdf(n)*ifrac_scaled
-                   Foxx_swnet_idr(n) = swndr(n)*(1.0_R8-albnir_dir)*ofracr_scaled + Fioi_swpen_idr(n)*ifrac_scaled
-                   Foxx_swnet_idf(n) = swndf(n)*(1.0_R8-albnir_dif)*ofracr_scaled + Fioi_swpen_idf(n)*ifrac_scaled
+                   Foxx_swnet_vdr(n) = Faxa_swvdr(n)*(1.0_R8-albvis_dir)*ofracr_scaled + Fioi_swpen_vdr(n)*ifrac_scaled
+                   Foxx_swnet_vdf(n) = Faxa_swvdf(n)*(1.0_R8-albvis_dif)*ofracr_scaled + Fioi_swpen_vdf(n)*ifrac_scaled
+                   Foxx_swnet_idr(n) = Faxa_swndr(n)*(1.0_R8-albnir_dir)*ofracr_scaled + Fioi_swpen_idr(n)*ifrac_scaled
+                   Foxx_swnet_idf(n) = Faxa_swndf(n)*(1.0_R8-albnir_dif)*ofracr_scaled + Fioi_swpen_idf(n)*ifrac_scaled
                 else
                    ! scale total Foxx_swnet to get contributions from each band
                    c1 = 0.285
@@ -441,17 +446,17 @@ contains
           wgtp01(n)  = 0.0_R8
           wgtm01(n)  = 0.0_R8
           if (ifrac(n) <= 0._R8) then
-             atmwgt1(n) =  0.0_ESMF_KIND_R8
-             icewgt1(n) =  0.0_ESMF_KIND_R8
-             wgtp01(n)  =  1.0_ESMF_KIND_R8
-             wgtm01(n)  = -1.0_ESMF_KIND_R8
+             atmwgt1(n) =  0.0_R8
+             icewgt1(n) =  0.0_R8
+             wgtp01(n)  =  1.0_R8
+             wgtm01(n)  = -1.0_R8
           end if
-          
+
           ! check wgts do add to 1 as expected
           if (abs(atmwgt(n)  + icewgt(n) - 1.0_R8) > 1.0e-12 .or. &
               abs(atmwgt1(n) + icewgt1(n) + wgtp01(n) - 1.0_R8) > 1.0e-12 .or. &
               abs(atmwgt1(n) + icewgt1(n) - wgtm01(n) - 1.0_R8) > 1.0e-12) then
-             
+
              call ESMF_LogWrite(trim(subname)//": ERROR atm + ice fracs inconsistent", &
                   ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
              rc = ESMF_FAILURE
@@ -462,34 +467,40 @@ contains
        !-------------
        ! determine evaporation to send to ocean if not computed in mediator
        !-------------
-
        ! Note - don't need to scale the calculated evap by ofrac - since the merged latent heat
        ! to the ocean has already had this scaling done
 
        if ( fldchk(is_local%wrap%FBMed_aoflux_o        , 'Faox_evap', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm,compocn), 'Faxa_lat' , rc=rc) .and. &
             fldchk(is_local%wrap%FBExp(compocn)        , 'Foxx_evap', rc=rc)) then
+
           ! NEMS-orig
           customwgt(:) = wgtm01(:) / const_lhvap
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_evap,' &
-               FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_evap ' , wgtA=atmwgt1, &
-               FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lat' ,   wgtB=customwgt)
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_evap', &
+               FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_evap', wgtA=atmwgt1, &
+               FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lat' , wgtB=customwgt, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        else if ( fldchk(is_local%wrap%FBImp(compatm,compocn), 'Faxa_lat' , rc=rc) .and. &
                  fldchk(is_local%wrap%FBExp(compocn)        , 'Foxx_evap', rc=rc)) then
+
           ! NEMS-frac
           ! TODO (mvertens, 2018-12-16): is this the right sign? Minus here is based on nems mediator
           customwgt(:) = - 1._r8 / const_lhvap
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_evap,' &
-               FinA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faxa_lat',  wgtA=customwgt)
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_evap', &
+               FBinA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faxa_lat',  wgtA=customwgt, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        else if ( fldchk(is_local%wrap%FBMed_aoflux_o, 'Faox_lat' , rc=rc) .and. &
                  fldchk(is_local%wrap%FBExp(compocn), 'Foxx_evap', rc=rc)) then
+
           ! CESM
           ! TODO (mvertens, 2018-12-16): is this the right sign? Minus here is based on nems mediator
           customwgt(:) = - 1._r8 / const_lhvap
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_evap,' &
-               FinA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faox_lat',  wgtA=customwgt)
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_evap', &
+               FBinA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faox_lat',  wgtA=customwgt, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        end if
 
        !-------------
@@ -500,37 +511,36 @@ contains
             fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_sen'  , rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_melth', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_sen'  , rc=rc)) then
-           
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_sen,' &
+
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_sen',    &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_sen '  , wgtA=atmwgt1, &
                FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_melth' , wgtB=icewgt1, &
-               FBinC=is_local%wrap%FBImp(compice,compocn), fnameC='Faxa_sen' ,   wgtc=wgtm01)
+               FBinC=is_local%wrap%FBImp(compice,compocn), fnameC='Faxa_sen' ,   wgtc=wgtm01, rc=rc)
        end if
-               
+
        !-------------
        ! determine zonal and meridional stresses to ocean - NEMS orig
        !-------------
-
        if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_taux', rc=rc) .and. &
             fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_taux', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_taux', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_taux', rc=rc)) then
-           
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_taux,' &
+
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_taux',  &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_taux ', wgtA=atmwgt1, &
                FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_taux' , wgtB=icewgt1, &
-               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_taux' , wgtc=wgtm01)
+               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_taux' , wgtc=wgtm01, rc=rc)
        end if
-  
+
        if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_tauy', rc=rc) .and. &
             fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_tauy', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_tauy', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_tauy', rc=rc)) then
-           
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_tauy,' &
+
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_tauy',  &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_tauy ', wgtA=atmwgt1, &
                FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_tauy' , wgtB=icewgt1, &
-               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_tauy' , wgtc=wgtm01)
+               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_tauy' , wgtc=wgtm01, rc=rc)
        end if
 
        !-------------
@@ -541,10 +551,10 @@ contains
             fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_lwup' , rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_lwdn' , rc=rc)) then
 
-          call shr_nuopc_methods_FB_fieldmerge(is_local%wrap%FBExp(compocn), 'Foxx_lwnet,' &
+          call shr_nuopc_methods_FB_fieldmerge_1D(is_local%wrap%FBExp(compocn), 'Foxx_lwnet', &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_lwup ', wgtA=atmwgt1, &
-               FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lwdn' , wgtc=atmwgt1, &
-               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_lwup' , wgtc=wgtp01)
+               FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lwdn' , wgtB=atmwgt1, &
+               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_lwup' , wgtc=wgtp01, rc=rc)
        end if
 
        !---------------------------------------

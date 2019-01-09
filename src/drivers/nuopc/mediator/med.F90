@@ -509,10 +509,10 @@ contains
     use med_constants_mod     , only : CS
     use med_internalstate_mod , only : InternalState
     use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use esmFlds               , only : esmFlds_Init
     use esmFlds               , only : ncomps, compmed, compatm, compocn
     use esmFlds               , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds               , only : fldListFr, fldListTo
+    use esmFldsExchange_mod   , only : esmFldsExchange
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
 
@@ -589,7 +589,7 @@ contains
     ! Initialize mediator flds (should be identical to the list in esmDict_Init)
     !------------------
 
-    call esmFlds_Init(gcomp, rc)
+    call esmFldsExchange(gcomp, phase='advertise', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -624,7 +624,7 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
+          end do
        end if
     end do ! end of ncomps loop
 
@@ -1373,6 +1373,7 @@ contains
     use esmFlds                 , only : ncomps, compname, ncomps, compmed, compatm, compocn
     use esmFlds                 , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds                 , only : fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
+    use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init
@@ -1637,7 +1638,14 @@ contains
       if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
-      !--- Initialize route handles and required normalization field bunds
+      ! Determine mapping and merging info for field exchanges in mediator
+      !---------------------------------------
+
+      call esmFldsExchange(gcomp, phase='initialize', rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+      !---------------------------------------
+      ! Initialize route handles and required normalization field bunds
       !---------------------------------------
 
       call med_map_RouteHandles_init(gcomp, logunit, rc)

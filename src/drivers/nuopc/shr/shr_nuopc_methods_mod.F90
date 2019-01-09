@@ -33,12 +33,6 @@ module shr_nuopc_methods_mod
     shr_nuopc_methods_FieldPtr_compare2
   end interface
 
-  ! tcraig, interfaces cannot be differentiated, revisit later
-  !  interface shr_nuopc_methods_FB_FieldMerge ; module procedure &
-  !    shr_nuopc_methods_FB_FieldMerge_1D, &
-  !    shr_nuopc_methods_FB_FieldMerge_2D
-  !  end interface
-
   interface shr_nuopc_methods_UpdateTimestamp; module procedure &
     shr_nuopc_methods_State_UpdateTimestamp, &
     shr_nuopc_methods_Field_UpdateTimestamp
@@ -1356,11 +1350,12 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_FieldMerge_1D(FBout, fnameout, &
-                                    FBinA, fnameA, wgtA, &
-                                    FBinB, fnameB, wgtB, &
-                                    FBinC, fnameC, wgtC, &
-                                    FBinD, fnameD, wgtD, &
-                                    FBinE, fnameE, wgtE, rc)
+                                                FBinA, fnameA, wgtA, &
+                                                FBinB, fnameB, wgtB, &
+                                                FBinC, fnameC, wgtC, &
+                                                FBinD, fnameD, wgtD, &
+                                                FBinE, fnameE, wgtE, rc)
+
     ! ----------------------------------------------
     ! Supports up to a five way merge
     ! ----------------------------------------------
@@ -1368,24 +1363,25 @@ module shr_nuopc_methods_mod
     use med_constants_mod , only : czero => med_constants_czero
     use ESMF              , only : ESMF_FieldBundle
 
-    type(ESMF_FieldBundle), intent(inout)                 :: FBout
-    character(len=*)      , intent(in)                    :: fnameout
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinA
-    character(len=*)      , intent(in), optional          :: fnameA
-    real(R8)    , intent(in), optional, pointer :: wgtA(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinB
-    character(len=*)      , intent(in), optional          :: fnameB
-    real(R8)    , intent(in), optional, pointer :: wgtB(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinC
-    character(len=*)      , intent(in), optional          :: fnameC
-    real(R8)    , intent(in), optional, pointer :: wgtC(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinD
-    character(len=*)      , intent(in), optional          :: fnameD
-    real(R8)    , intent(in), optional, pointer :: wgtD(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinE
-    character(len=*)      , intent(in), optional          :: fnameE
-    real(R8)    , intent(in), optional, pointer :: wgtE(:)
-    integer               , intent(out)                   :: rc
+    ! input/output variabes
+    type(ESMF_FieldBundle) , intent(inout)                 :: FBout
+    character(len=*)       , intent(in)                    :: fnameout
+    type(ESMF_FieldBundle) , intent(in), optional          :: FBinA
+    character(len=*)       , intent(in), optional          :: fnameA
+    real(R8)               , intent(in), optional, pointer :: wgtA(:)
+    type(ESMF_FieldBundle) , intent(in), optional          :: FBinB
+    character(len=*)       , intent(in), optional          :: fnameB
+    real(R8)               , intent(in), optional, pointer :: wgtB(:)
+    type(ESMF_FieldBundle) , intent(in), optional          :: FBinC
+    character(len=*)       , intent(in), optional          :: fnameC
+    real(R8)               , intent(in), optional, pointer :: wgtC(:)
+    type(ESMF_FieldBundle) , intent(in), optional          :: FBinD
+    character(len=*)       , intent(in), optional          :: fnameD
+    real(R8)               , intent(in), optional, pointer :: wgtD(:)
+    type(ESMF_FieldBundle) , intent(in), optional          :: FBinE
+    character(len=*)       , intent(in), optional          :: fnameE
+    real(R8)               , intent(in), optional, pointer :: wgtE(:)
+    integer                , intent(out)                   :: rc
 
     ! local variables
     real(R8), pointer :: dataOut(:)
@@ -1402,6 +1398,19 @@ module shr_nuopc_methods_mod
     endif
     rc=ESMF_SUCCESS
 
+    ! check each field has a fieldname passed in
+    if ((present(FBinA) .and. .not.present(fnameA)) .or. &
+        (present(FBinB) .and. .not.present(fnameB)) .or. &
+        (present(FBinC) .and. .not.present(fnameC)) .or. &
+        (present(FBinD) .and. .not.present(fnameD)) .or. &
+        (present(FBinE) .and. .not.present(fnameE))) then
+
+       call ESMF_LogWrite(trim(subname)//": ERROR fname not present with FBin", &
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+      rc = ESMF_FAILURE
+      return
+    endif
+
     if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
        call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//trim(fnameout), &
             ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
@@ -1415,18 +1424,6 @@ module shr_nuopc_methods_mod
     allocate(wgt(lb1:ub1))
 
     dataOut = czero
-
-    ! check each field has a fieldname passed in
-    if ((present(FBinA) .and. .not.present(fnameA)) .or. &
-        (present(FBinB) .and. .not.present(fnameB)) .or. &
-        (present(FBinC) .and. .not.present(fnameC)) .or. &
-        (present(FBinD) .and. .not.present(fnameD)) .or. &
-        (present(FBinE) .and. .not.present(fnameE))) then
-       call ESMF_LogWrite(trim(subname)//": ERROR fname not present with FBin", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      rc = ESMF_FAILURE
-      return
-    endif
 
     ! check that each field passed in actually exists, if not DO NOT do any merge
     FBinfound = .true.
@@ -2394,8 +2391,14 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_FB_FldChk(FB, fldname, rc)
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    ! ----------------------------------------------
+    ! Determine if field with fldname is in input field bundle
+    ! ----------------------------------------------
 
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use ESMF, only : ESMF_FieldBundleIsCreated
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)  :: FB
     character(len=*)      , intent(in)  :: fldname
     integer               , intent(out) :: rc
@@ -2403,6 +2406,7 @@ module shr_nuopc_methods_mod
     ! local variables
     integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_FldChk)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)

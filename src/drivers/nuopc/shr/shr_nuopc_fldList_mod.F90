@@ -10,6 +10,7 @@ module shr_nuopc_fldList_mod
 
   public :: shr_nuopc_fldList_AddFld
   public :: shr_nuopc_fldList_AddMap
+  public :: shr_nuopc_fldList_AddMrg
   public :: shr_nuopc_fldList_AddMetadata
   public :: shr_nuopc_fldList_GetMetadata
   public :: shr_nuopc_fldList_GetFldNames
@@ -280,11 +281,11 @@ contains
 
   !================================================================================
 
-  subroutine shr_nuopc_fldList_MrgFld(flds, fldname, &
-       mrg_from1, mrg_field1, mrg_type1, mrg_fracname1, &
-       mrg_from2, mrg_field2, mrg_type2, mrg_fracname2, &
-       mrg_from3, mrg_field3, mrg_type3, mrg_fracname3, &
-       mrg_from4, mrg_field4, mrg_type4, mrg_fracname4)
+  subroutine shr_nuopc_fldList_AddMrg(flds, fldname, &
+       mrg_from1, mrg_fld1, mrg_type1, mrg_fracname1, &
+       mrg_from2, mrg_fld2, mrg_type2, mrg_fracname2, &
+       mrg_from3, mrg_fld3, mrg_type3, mrg_fracname3, &
+       mrg_from4, mrg_fld4, mrg_type4, mrg_fracname4)
 
     ! ----------------------------------------------
     ! Determine mrg entry or entries in flds aray
@@ -293,19 +294,19 @@ contains
     type(shr_nuopc_fldList_entry_type) , pointer                :: flds(:)
     character(len=*)                   , intent(in)             :: fldname
     integer                            , intent(in)  , optional :: mrg_from1
-    character(len=*)                   , intent(in)  , optional :: mrg_field1
+    character(len=*)                   , intent(in)  , optional :: mrg_fld1
     character(len=*)                   , intent(in)  , optional :: mrg_type1
     character(len=*)                   , intent(in)  , optional :: mrg_fracname1
     integer                            , intent(in)  , optional :: mrg_from2
-    character(len=*)                   , intent(in)  , optional :: mrg_field2
+    character(len=*)                   , intent(in)  , optional :: mrg_fld2
     character(len=*)                   , intent(in)  , optional :: mrg_type2
     character(len=*)                   , intent(in)  , optional :: mrg_fracname2
     integer                            , intent(in)  , optional :: mrg_from3
-    character(len=*)                   , intent(in)  , optional :: mrg_field3
+    character(len=*)                   , intent(in)  , optional :: mrg_fld3
     character(len=*)                   , intent(in)  , optional :: mrg_type3
     character(len=*)                   , intent(in)  , optional :: mrg_fracname3
     integer                            , intent(in)  , optional :: mrg_from4
-    character(len=*)                   , intent(in)  , optional :: mrg_field4
+    character(len=*)                   , intent(in)  , optional :: mrg_fld4
     character(len=*)                   , intent(in)  , optional :: mrg_type4
     character(len=*)                   , intent(in)  , optional :: mrg_fracname4
 
@@ -325,39 +326,40 @@ contains
        call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // 'not found in input flds')
     end if
 
-    if (present(mrg_from1) .and. present(mrg_field1) .and. present(mrg_type1)) then
+    if (present(mrg_from1) .and. present(mrg_fld1) .and. present(mrg_type1)) then
        n = mrg_from1
-       flds(id)%merge_fields(n) = mrg_field1
+       flds(id)%merge_fields(n) = mrg_fld1
        flds(id)%merge_types(n) = mrg_type1
        if (present(mrg_fracname1)) then
           flds(id)%merge_fracnames(n) = mrg_fracname1
        end if
     end if
-    if (present(mrg_from2) .and. present(mrg_field2) .and. present(mrg_type2)) then
+    if (present(mrg_from2) .and. present(mrg_fld2) .and. present(mrg_type2)) then
        n = mrg_from2
-       flds(id)%merge_fields(n) = mrg_field2
+       flds(id)%merge_fields(n) = mrg_fld2
        flds(id)%merge_types(n) = mrg_type2
        if (present(mrg_fracname2)) then
           flds(id)%merge_fracnames(n) = mrg_fracname2
        end if
     end if
-    if (present(mrg_from3) .and. present(mrg_field3) .and. present(mrg_type3)) then
+    if (present(mrg_from3) .and. present(mrg_fld3) .and. present(mrg_type3)) then
        n = mrg_from3
-       flds(id)%merge_fields(n) = mrg_field3
+       flds(id)%merge_fields(n) = mrg_fld3
        flds(id)%merge_types(n) = mrg_type3
        if (present(mrg_fracname3)) then
           flds(id)%merge_fracnames(n) = mrg_fracname3
        end if
     end if
-    if (present(mrg_from4) .and. present(mrg_field4) .and. present(mrg_type4)) then
+    if (present(mrg_from4) .and. present(mrg_fld4) .and. present(mrg_type4)) then
        n = mrg_from4
-       flds(id)%merge_fields(n) = mrg_field4
+       flds(id)%merge_fields(n) = mrg_fld4
        flds(id)%merge_types(n) = mrg_type4
        if (present(mrg_fracname4)) then
           flds(id)%merge_fracnames(n) = mrg_fracname4
        end if
     end if
-  end subroutine shr_nuopc_fldList_MrgFld
+  
+  end subroutine shr_nuopc_fldList_AddMrg
 
   !================================================================================
 
@@ -401,7 +403,7 @@ contains
     if (flds(id)%mapindex(destcomp) == mapfcopy) then
        flds(id)%mapfile(destcomp) = 'unset'
        flds(id)%mapnorm(destcomp) = 'unset'
-    else if (trim(flds%mapfile(destcomp)) == 'idmap') then
+    else if (trim(flds(id)%mapfile(destcomp)) == 'idmap') then
        flds(id)%mapindex(destcomp) = mapfcopy
        flds(id)%mapnorm(destcomp) = 'unset'
     end if
@@ -506,7 +508,6 @@ contains
        shortname = fldList%flds(n)%shortname
 
        ! call ESMF_LogWrite(subname//' fld = '//trim(shortname), ESMF_LOGMSG_INFO, rc=dbrc)
-       
        if (NUOPC_IsConnected(state, fieldName=shortname)) then
 
           call ESMF_StateGet(state, field=field, itemName=trim(shortname), rc=rc)
