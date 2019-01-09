@@ -131,7 +131,6 @@ CONTAINS
     integer(IN)   :: currentTOD    ! model sec into model date
     logical       :: write_restart=.false.
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
-    character(CL)                    :: case_name     ! case name
 
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
