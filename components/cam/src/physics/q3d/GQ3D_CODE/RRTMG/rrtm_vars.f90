@@ -1,6 +1,6 @@
 	  MODULE rrtm_vars
 !-----------------------------------------------------------------
-!  This module specifies input and output variables for the 
+!  This module specifies input and output variables for the
 !  RRTMG radiation code.
 !-----------------------------------------------------------------
 	  USE parkind,   only: kind_rb, kind_im
@@ -11,39 +11,40 @@
 
 ! RRTMG input variables -------------------------------------------------------
 
-      REAL (KIND=kind_rb), DIMENSION(nx,ny,nzm) :: &
+      REAL (KIND=kind_rb), allocatable, DIMENSION(:,:,:) :: &
           tabs, &    ! layer temperature (K)
           qv, &      ! layer vapor mixing ratio (g/g)
           qcl, &     ! layer cloud water mixing ratio (g/g)
           qci        ! layer cloud ice mixing ratio (g/g)
           
-      REAL (KIND=kind_rb), DIMENSION(nx,ny) :: &
+      REAL (KIND=kind_rb), allocatable, DIMENSION(:,:,:) :: &       ! JUNG_LocalP
+          pres_loc,  &   ! model layer local pressure (hPa)
+          presi_loc      ! model interface local pressure (hPa)
+
+      REAL (KIND=kind_rb), allocatable, DIMENSION(:,:) :: &
           sstxy    ! sea surface temperature (K)
 
-      REAL (KIND=kind_rb), DIMENSION(nzm) :: &
-          pres    ! model layer pressure (hPa)
-          
-      REAL (KIND=kind_rb), DIMENSION(nz) :: &
-          presi   ! model interface pressure (hPa)
-      
+      REAL (KIND=kind_rb), DIMENSION(nzm) :: pres    ! model layer pressure (hPa)
+      REAL (KIND=kind_rb), DIMENSION(nz)  :: presi   ! model interface pressure (hPa)
+
 ! RRTMG output variables ------------------------------------------------------
 
-! Domain-averaged diagnostic fields      
+! Domain-averaged diagnostic fields
       REAL (KIND=kind_rb), DIMENSION(nz) :: &
           radlwup, &    ! LW up flux (average of lwUp)
           radlwdn, &    ! LW down flux (average of lwDown)
           radswup, &    ! SW up flux (average of swUp)
           radswdn       ! SW down flux (average of swDown)
-      
-! Domain-averaged diagnostic fields      
+
+! Domain-averaged diagnostic fields
       REAL (KIND=kind_rb), DIMENSION(nzm) :: &
           radqrlw, &    ! LW heating rate (K/day, average of lwHeatingRate)
           radqrsw, &    ! SW heating rate (K/day, average of swHeatingRate)
           radqrclw, &   ! LW clear sky heating rate (K/day)
           radqrcsw      ! SW clear sky heating rate (K/day)
-      
-! 2D diagnostics      
-      REAL (KIND=kind_rb), DIMENSION(nx, ny) :: &
+
+! 2D diagnostics
+      REAL (KIND=kind_rb), allocatable, DIMENSION(:,:) :: &
           lwns_xy, &                ! net surface LW flux (W/m2)
           lwnt_xy, &                ! net TOA LW flux (W/m2)
           swns_xy, &                ! net surface SW flux (W/m2)
@@ -67,7 +68,7 @@
           swUpToa, &                ! SW upward flux at TOA (W/m2)
           swUpToaClearSky           ! SW upward flux at TOA, clear sky (W/m2)
 !          insolation_TOA            ! TOA insolation (W/m2)
-          
+
 ! 1D diagnostics
       REAL (KIND=kind_rb) :: &
           s_flns, &     ! accumulated sum of lwns_xy
@@ -88,7 +89,7 @@
 
 !      REAL, (KIND=kind_rb), DIMENSION(nx, ny) :: &
 !          lwnsxy, &   ! Net longwave flux (up + down) at surface (W/m2)
-!          swnsxy      ! Net shortwave flux (up + down) at surface (W/m2)  
+!          swnsxy      ! Net shortwave flux (up + down) at surface (W/m2)
 
 !      REAL (KIND=kind_rb), DIMENSION(nx, nzm) :: &
 !          lwHeatingRate, &          ! Longwave heating rate (K/day)
@@ -106,7 +107,47 @@
 !          lwUpClearSky, &    ! Longwave upward flux, clear sky (W/m2)
 !          lwDownClearSky     ! Longwave downward flux, clear sky (W/m2)
 
+      public :: allocate_rrtm_vars
+
+CONTAINS
+
+  subroutine allocate_rrtm_vars()
+  
+    allocate(tabs(nx,ny,nzm))
+    allocate(qv(nx,ny,nzm))
+    allocate(qcl(nx,ny,nzm))
+    allocate(qci(nx,ny,nzm))
+    
+    allocate(pres_loc(nx,ny,nzm))   ! LocalP
+    allocate(presi_loc(nx,ny,nz))   ! LocalP
+    
+    allocate(sstxy(nx,ny))
+    
+    allocate(lwns_xy(nx,ny))
+    allocate(lwnt_xy(nx,ny))
+    allocate(swns_xy(nx,ny))
+    allocate(swnt_xy(nx,ny))
+    allocate(solin_xy(nx,ny))
+    allocate(lwnsc_xy(nx,ny))
+    allocate(lwntc_xy(nx,ny))
+    allocate(swnsc_xy(nx,ny))
+    allocate(swntc_xy(nx,ny))
+    
+    allocate(lwDownSurfaceClearSky(nx,ny))
+    allocate(lwUpSurface(nx,ny))
+    allocate(lwUpSurfaceClearSky(nx,ny))
+    allocate(lwUpToa(nx,ny))
+    allocate(lwUpToaClearSky(nx,ny))
+    
+    allocate(swDownSurfaceClearSky(nx,ny))
+    allocate(swUpSurface(nx,ny))
+    allocate(swUpSurfaceClearSky(nx,ny))
+    allocate(swDownToa(nx,ny))
+    allocate(swUpToa(nx,ny))
+    allocate(swUpToaClearSky(nx,ny))
+    
+  end subroutine allocate_rrtm_vars
+
 !=======================================================================
  	  END MODULE rrtm_vars
 !=======================================================================
-
