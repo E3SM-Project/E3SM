@@ -263,25 +263,7 @@ def get_recommended_test_time(test_full_name):
     return best_time
 
 ###############################################################################
-def sort_by_time(test_one, test_two):
+def key_test_time(test_full_name):
 ###############################################################################
-    """
-    >>> tests = get_full_test_names(["cime_tiny"], "melvin", "gnu")
-    >>> tests.extend(get_full_test_names(["cime_developer"], "melvin", "gnu"))
-    >>> tests.append("A.f19_f19.A.melvin_gnu")
-    >>> tests.sort(cmp=sort_by_time)
-    >>> tests
-    ['DAE.f19_f19.A.melvin_gnu', 'ERI.f09_g16.X.melvin_gnu', 'ERIO.f09_g16.X.melvin_gnu', 'ERP.f45_g37_rx1.A.melvin_gnu', 'ERR.f45_g37_rx1.A.melvin_gnu', 'ERS.ne30_g16_rx1.A.melvin_gnu', 'IRT_N2.f19_g16_rx1.A.melvin_gnu', 'NCK_Ld3.f45_g37_rx1.A.melvin_gnu', 'PET_P32.f19_f19.A.melvin_gnu', 'PRE.f19_f19.ADESP.melvin_gnu', 'PRE.f19_f19.ADESP_TEST.melvin_gnu', 'SEQ_Ln9.f19_g16_rx1.A.melvin_gnu', 'SMS.T42_T42.S.melvin_gnu', 'SMS_D_Ln9.f19_g16_rx1.A.melvin_gnu', 'ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'A.f19_f19.A.melvin_gnu']
-    """
-    rec1, rec2 = get_recommended_test_time(test_one), get_recommended_test_time(test_two)
-    if rec1 == rec2:
-        return (test_one > test_two) - (test_two < test_one)
-    else:
-        if rec2 is None:
-            return -1
-        elif rec1 is None:
-            return 1
-        else:
-            a = convert_to_seconds(rec2)
-            b = convert_to_seconds(rec1)
-            return (a < b) - (b < a)
+    result = get_recommended_test_time(test_full_name)
+    return 99999999 if result is None else convert_to_seconds(result)
