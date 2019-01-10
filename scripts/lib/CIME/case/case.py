@@ -681,7 +681,7 @@ class Case(object):
         expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
             new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
-            self.update_env(new_mach_pes_obj, "mach_pes")
+            self.update_env(new_mach_pes_obj, "mach_pes", blow_away=True)
             return new_mach_pes_obj.get_value("TOTALPES")
 
         pesobj = Pes(self._pesfile)
@@ -1410,12 +1410,14 @@ directory, NOT in this subdirectory."""
         expect(new_env_file is not None, "No match found for file type {}".format(ftype))
         self._files = [new_env_file]
 
-    def update_env(self, new_object, env_file):
+    def update_env(self, new_object, env_file, blow_away=False):
         """
         Replace a case env object file
         """
         old_object = self.get_env(env_file)
-        expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file.filename))
+        if not blow_away:
+            expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file))
+
         new_object.filename = old_object.filename
         if old_object in self._env_entryid_files:
             self._env_entryid_files.remove(old_object)
