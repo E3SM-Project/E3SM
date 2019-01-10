@@ -1415,7 +1415,7 @@ directory, NOT in this subdirectory."""
         Replace a case env object file
         """
         old_object = self.get_env(env_file)
-        expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file))
+        expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file.filename))
         new_object.filename = old_object.filename
         if old_object in self._env_entryid_files:
             self._env_entryid_files.remove(old_object)

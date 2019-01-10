@@ -271,6 +271,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
+    case.flush() # python sharedlib subs may have made XML modifications
     return logs
 
 ###############################################################################
