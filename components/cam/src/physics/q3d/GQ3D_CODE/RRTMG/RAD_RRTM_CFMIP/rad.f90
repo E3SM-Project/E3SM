@@ -57,11 +57,16 @@ module rad
 
   real, dimension(:), allocatable :: &
        tg_slice, & ! surface temperature, K
-       pres_input, &
-       presi_input, &
+!JUNG_localp       pres_input, &
+!JUNG_localp       presi_input, &
        latitude_slice, &
        longitude_slice
 
+  !JUNG_localp
+  real, dimension(:,:), allocatable :: &
+       pres_input, &
+       presi_input
+       
 ! Profiles of trace gases
   real, dimension(:), allocatable :: &
        o3_slice, &
