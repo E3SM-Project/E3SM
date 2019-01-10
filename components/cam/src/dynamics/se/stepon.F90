@@ -28,6 +28,7 @@ module stepon
    use scamMod,        only: use_iop, doiopupdate, single_column, &
                              setiopupdate, readiopdata
    use element_mod,    only: element_t
+   use shr_const_mod,       only: SHR_CONST_PI
 
    implicit none
    private
@@ -160,6 +161,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
+  use se_single_column_mod, only: scm_setfield, scm_setinitial
   implicit none
 !
 ! !OUTPUT PARAMETERS:
@@ -171,8 +173,11 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (physics_buffer_desc), pointer :: pbuf2d(:,:)
+   type (element_t), pointer :: elem(:)
 
 !-----------------------------------------------------------------------
+
+   elem => dyn_out%elem
 
    ! NOTE: dtime_out computed here must match formula below
    dtime_out = get_step_size()
@@ -188,11 +193,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    ! Move data into phys_state structure.
    !----------------------------------------------------------
    
-   call t_barrierf('sync_d_p_coupling', mpicom)
-   call t_startf('d_p_coupling')
-   call d_p_coupling (phys_state, phys_tend,  pbuf2d, dyn_out )
-   call t_stopf('d_p_coupling')
-   
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP 
   if (use_iop .and. .not. is_last_step()) then
@@ -202,7 +202,13 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   if (single_column) then
     iop_update_surface = .true. 
     if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
-  endif   
+    call scm_setfield(elem)       
+  endif 
+  
+   call t_barrierf('sync_d_p_coupling', mpicom)
+   call t_startf('d_p_coupling')
+   call d_p_coupling (phys_state, phys_tend,  pbuf2d, dyn_out )
+   call t_stopf('d_p_coupling') 
    
 end subroutine stepon_run1
 
@@ -494,16 +500,39 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use dyn_comp,    only: dyn_run
    use time_mod,    only: tstep
    use hycoef,      only: hyam, hybm
+   use dimensions_mod, only: nlev, nelemd, np, npsq
    use se_single_column_mod, only: scm_setfield, scm_setinitial
+   use dyn_comp, only: TimeLevel
+   use cam_history,     only: outfld   
+   use cam_logfile, only: iulog
    real(r8), intent(in) :: dtime   ! Time-step
+   real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
+   real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
+   real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
+               out_v(npsq,nlev), out_psv(npsq)  
+   real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
+   real(r8), parameter :: fac = 1000._r8	
+   real(r8) :: term1, term2        
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
-   integer :: rc
+   integer :: rc, i, j, k, p, ie, tl_f
    
    elem => dyn_out%elem
+   
+#if (defined BFB_CAM_SCAM_IOP)   
+
+   tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
+   
+   ! Save ftmp stuff to get state before dynamics is called
+   do ie=1,nelemd
+     ftmp_temp(:,:,:,ie) = dyn_in%elem(ie)%state%T(:,:,:,tl_f)
+     ftmp_q(:,:,:,:,ie) = dyn_in%elem(ie)%state%Q(:,:,:,:)
+   enddo
+
+#endif   
    
    if (single_column) then
      
@@ -522,6 +551,47 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    call t_startf ('dyn_run')
    call dyn_run(dyn_out,rc)	
    call t_stopf  ('dyn_run')
+   
+   ! Update to get tendency 
+#if (defined BFB_CAM_SCAM_IOP) 
+
+   tl_f = TimeLevel%n0
+   
+   do ie=1,nelemd
+     do k=1,nlev
+       do j=1,np
+         do i=1,np
+	 
+	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
+           out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
+	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
+	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
+	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
+	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
+
+	   do p=1,pcnst		
+	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
+	        ftmp_q(i,j,k,p,ie))/dtime
+	   enddo
+	   
+	 enddo
+       enddo
+     enddo
+     
+     call outfld('divT3d',forcing_temp,npsq,ie)
+     call outfld('Ps',out_psv,npsq,ie)
+     call outfld('t',out_temp,npsq,ie)
+     call outfld('q',out_q,npsq,ie)
+     call outfld('u',out_u,npsq,ie)
+     call outfld('v',out_v,npsq,ie)
+     do p=1,pcnst
+       call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
+     enddo
+     
+   enddo
+
+#endif   
 
 end subroutine stepon_run3
 
