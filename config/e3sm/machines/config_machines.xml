@@ -343,7 +343,7 @@
     <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>intel,gnu,gnu7</COMPILERS>
+    <COMPILERS>intel,gnu,intel19</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
     <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
@@ -427,15 +427,13 @@
         <command name="load">intel/18.0.1.163</command>
       </modules>
 
-      <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
-        <command name="rm">gcc</command>
-        <command name="load">gcc/7.3.0</command>
-        <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/18.03.1</command>
+      <modules compiler="intel19">
+        <command name="load">PrgEnv-intel/6.0.4</command>
+        <command name="rm">intel</command>
+        <command name="load">intel/19.0.0.117</command>
       </modules>
 
-      <modules compiler="gnu7">
+      <modules compiler="gnu">
         <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
         <command name="rm">gcc</command>
         <command name="load">gcc/7.3.0</command>
@@ -464,6 +462,7 @@
         <command name="load">cray-hdf5-parallel/1.10.1.1</command>
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
+
       <modules>
         <command name="rm">git</command>
         <command name="load">git</command>
@@ -501,6 +500,9 @@
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
+      <env name="MPICH_MEMORY_REPORT">1</env>
+    </environment_variables>
+    <environment_variables compiler="intel19">
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
   </machine>
