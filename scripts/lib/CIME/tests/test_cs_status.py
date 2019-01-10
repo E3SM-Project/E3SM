@@ -198,7 +198,7 @@ class TestCsStatus(CustomAssertionsTestStatus):
 
         # One phase is labeled as an expected failure for test1, nothing for test2:
         expected_fails_contents = """<?xml version= "1.0"?>
-<expectedFails version="1.0">
+<expectedFails version="1.1">
   <test name="{test_name1}">
     <phase name="{test1_fail_phase}">
       <status>{fail_status}</status>

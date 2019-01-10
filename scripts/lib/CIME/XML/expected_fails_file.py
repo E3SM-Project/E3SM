@@ -1,11 +1,12 @@
-"""
-Interface to an expected failure xml file
+"""Interface to an expected failure xml file
 
 Here is an example:
 
 <?xml version= "1.0"?>
-<expectedFails version="1.0">
+
+<expectedFails version="1.1">
   <test name="ERP_D_Ld10_P36x2.f10_f10_musgs.IHistClm50BgcCrop.cheyenne_intel.clm-ciso_decStart">
+    <category>aux_clm</category>
     <phase name="RUN">
       <status>FAIL</status>
       <issue>#404</issue>
@@ -17,6 +18,7 @@ Here is an example:
     </phase>
   </test>
   <test name="PFS_Ld20.f09_g17.I2000Clm50BgcCrop.cheyenne_intel">
+    <category>aux_clm</category>
     <phase name="GENERATE">
       <status>FAIL</status>
       <issue>ESMCI/cime#2917</issue>
@@ -27,23 +29,32 @@ Here is an example:
     </phase>
   </test>
 </expectedFails>
+
+However, many of the above elements are optional, for human consumption only (i.e., not
+parsed here). The only required elements are given by this example:
+
+<?xml version= "1.0"?>
+
+<expectedFails version="1.1">
+  <test name="...">
+    <phase name="...">
+      <status>...</status>
+    </phase>
+  </test>
+</expectedFails>
 """
 
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
-from CIME.XML.files import Files
 from CIME.expected_fails import ExpectedFails
 
 logger = logging.getLogger(__name__)
 
 class ExpectedFailsFile(GenericXML):
 
-    def __init__(self, infile, files=None):
-        if files is None:
-            files = Files()
-        # FIXME(wjs, 2019-01-02) Get schema, replacing the following line
-        schema = None
+    def __init__(self, infile):
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "expected_fails_file.xsd")
         GenericXML.__init__(self, infile, schema=schema)
 
     def get_expected_fails(self):

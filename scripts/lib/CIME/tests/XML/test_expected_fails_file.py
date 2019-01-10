@@ -4,7 +4,9 @@ import unittest
 import os
 import shutil
 import tempfile
+import six
 from CIME.XML.expected_fails_file import ExpectedFailsFile
+from CIME.utils import CIMEError
 from CIME.expected_fails import ExpectedFails
 
 class TestExpectedFailsFile(unittest.TestCase):
@@ -19,7 +21,7 @@ class TestExpectedFailsFile(unittest.TestCase):
     def test_basic(self):
         """Basic test of the parsing of an expected fails file"""
         contents = """<?xml version= "1.0"?>
-<expectedFails version="1.0">
+<expectedFails version="1.1">
   <test name="my.test.1">
     <phase name="RUN">
       <status>FAIL</status>
@@ -66,7 +68,7 @@ class TestExpectedFailsFile(unittest.TestCase):
         correctly in case the file is written this way.
         """
         contents = """<?xml version= "1.0"?>
-<expectedFails version="1.0">
+<expectedFails version="1.1">
   <test name="my.test.1">
     <phase name="RUN">
       <status>FAIL</status>
@@ -93,6 +95,27 @@ class TestExpectedFailsFile(unittest.TestCase):
         expected = {'my.test.1': expected_test1}
 
         self.assertEqual(xfails, expected)
+
+    def test_invalid_file(self):
+        """Given an invalid file, an exception should be raised in schema validation"""
+
+        # This file is missing a <status> element in the <phase> block.
+        #
+        # It's important to have the expectedFails version number be greater than 1,
+        # because schema validation isn't done in cime for files with a version of 1.
+        contents = """<?xml version= "1.0"?>
+<expectedFails version="1.1">
+  <test name="my.test.1">
+    <phase name="RUN">
+    </phase>
+  </test>
+</expectedFails>
+"""
+        with open(self._xml_filepath, 'w') as xml_file:
+            xml_file.write(contents)
+
+        with six.assertRaisesRegex(self, CIMEError, "Schemas validity error"):
+            expected_fails_file = ExpectedFailsFile(self._xml_filepath)
 
 if __name__ == '__main__':
     unittest.main()
