@@ -676,7 +676,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread:overload-allowed</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="false">
@@ -708,8 +708,8 @@
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/1.8.7</command>
-        <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+        <command name="load">acme-openmpi/2.1.5/acme</command>
+        <command name="load">acme-netcdf/4.4.1/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -2031,24 +2031,21 @@
         prefered location). -->
       <DESC>Ubuntu linux system</DESC>
       <NODENAME_REGEX>ubuntu</NODENAME_REGEX>
-      <TESTS>acme_developer</TESTS>
       <OS>LINUX</OS>
       <COMPILERS>gnu</COMPILERS>
       <MPILIBS>mpich</MPILIBS>
       <CIME_OUTPUT_ROOT>/home/$USER/E3SM_output</CIME_OUTPUT_ROOT>
-      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
       <DIN_LOC_ROOT>/home/$USER/inputdata</DIN_LOC_ROOT>
       <DIN_LOC_ROOT_CLMFORC>/home/$USER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-      <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
       <BASELINE_ROOT>/home/$USER/ACME_baselines/$COMPILER</BASELINE_ROOT>
       <CCSM_CPRNC>/lustre/or-hydra/cades-ccsi/proj-shared/tools/cprnc.orcondo</CCSM_CPRNC>
-      <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
       <GMAKE_J>4</GMAKE_J>
+      <TESTS>e3sm_developer</TESTS>
+      <BATCH_SYSTEM>none</BATCH_SYSTEM>
+      <SUPPORTED_BY>ricciutodm -at- ornl.gov</SUPPORTED_BY>
       <MAX_TASKS_PER_NODE>2</MAX_TASKS_PER_NODE>
       <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
-      <BATCH_SYSTEM>none</BATCH_SYSTEM>
       <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
       <mpirun mpilib="mpich" compiler="gnu">
         <executable>mpirun</executable>
@@ -2060,6 +2057,8 @@
         <executable> </executable>
       </mpirun>
       <module_system type="none"/>
+      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
       <environment_variables>
        <!-- hack for PFLOTRAN coupling (this is a temporary solution, and user must manually edit it after case.setup)-->
        <env name="CLM_PFLOTRAN_COUPLED">FALSE</env>
