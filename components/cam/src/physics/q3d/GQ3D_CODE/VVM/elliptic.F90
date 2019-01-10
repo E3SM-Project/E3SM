@@ -5,12 +5,12 @@ USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk1,nk2,nhalo,nhalo_cal
-USE constld, only: wrxmu,niterw,niterxy,dx,dy,dz, &
+USE constld, only: niterw,niterxy,niterxy_init,dx,dy,dz,wrxmu, &
                    rho,rhoz,fnt,fnz,nomap,dxsq,dysq,dxdy
 
 ! Subroutines being called
 USE bound_channel_module, only: bound_channel
-USE bound_extra, only: bound_normal
+USE bound_extra, only: bound_normal,bound_sync
 USE halo_q,      only: halo_correc_q 
 USE halo_z,      only: halo_correc_z
 
@@ -48,7 +48,7 @@ CONTAINS
       
       INTEGER :: I,J,K,ITER,KLOW,KLOWU,KLOWV
       INTEGER :: num_seg,mi1,mj1,mim_c,mip_c,mjm_c,mjp_c
-
+       
 !     Pre-process of iteration
 !-------------------------------   
       DO num_seg = 1, 4
@@ -105,16 +105,16 @@ CONTAINS
            +channel%seg(num_seg)%GG_V(2,I+1,J-1)*channel%seg(num_seg)%Z3DX0(I+1,J-1,K)          &
            -channel%seg(num_seg)%GG_V(2,I-1,J)*channel%seg(num_seg)%Z3DX0(I-1,J,K)              &
            -channel%seg(num_seg)%GG_V(2,I-1,J-1)*channel%seg(num_seg)%Z3DX0(I-1,J-1,K))         &
-          /(4.0_r8*DX)                                                                     &
+          /(4.0_r8*DX)                                                                          &
           +(channel%seg(num_seg)%GG_U(2,I,J+1)*channel%seg(num_seg)%Z3DY0(I,J+1,K)              &
            +channel%seg(num_seg)%GG_U(2,I-1,J+1)*channel%seg(num_seg)%Z3DY0(I-1,J+1,K)          &
            -channel%seg(num_seg)%GG_U(2,I,J-1)*channel%seg(num_seg)%Z3DY0(I,J-1,K)              &
            -channel%seg(num_seg)%GG_U(2,I-1,J-1)*channel%seg(num_seg)%Z3DY0(I-1,J-1,K))         &
-          /(4.0_r8*DY) 
+          /(4.0_r8*DY)         
         ENDDO
        ENDDO
       ENDDO 
-
+      
 !     linear extrapolation of initial guess
       DO K = 2, NK1
        DO J = mjm_c, mjp_c
@@ -148,7 +148,7 @@ CONTAINS
 !******************************************
       DO ITER = 1, NITERW
 !******************************************
-
+      
 !-------------------------------  
       DO num_seg = 1, 4
 !------------------------------- 
@@ -159,7 +159,7 @@ CONTAINS
       mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment    
       mjm_c  = channel%seg(num_seg)%mjm_c   
       mjp_c  = channel%seg(num_seg)%mjp_c         
-          
+            
       DO K = 2, NK1
        DO J =  mjm_c,mjp_c
         DO I = mim_c,mip_c
@@ -180,7 +180,7 @@ CONTAINS
         
         ! Z3DY0: temporary value of w3d, term1: forcing
         DO K = KLOW, NK1
-         RHSV(K) = WRXMU*channel%seg(num_seg)%Z3DY0(I,J,K) + channel%seg(num_seg)%TERM1(I,J,K) &
+         RHSV(K) = WRXMU*channel%seg(num_seg)%Z3DY0(I,J,K) + channel%seg(num_seg)%TERM1(I,J,K)  &
        + (channel%seg(num_seg)%RGG_U(1,I,J)*channel%seg(num_seg)%Z3DY0(I+1,J,K)           &
          +channel%seg(num_seg)%RGG_U(1,I-1,J)*channel%seg(num_seg)%Z3DY0(I-1,J,K))/DXSQ   &
        + (channel%seg(num_seg)%RGG_V(3,I,J)*channel%seg(num_seg)%Z3DY0(I,J+1,K)           &
@@ -203,13 +203,13 @@ CONTAINS
            *(channel%seg(num_seg)%Z3DY0(I,J-1,K)-channel%seg(num_seg)%Z3DY0(I-1,J-1,K)))  &
          /(4.0_r8*DXDY)   
         ENDDO 
-                
-        CALL GAUSS_LD(KLOW,NK2,AGAU,BGAU,CGAU,RHSV,ROUT)
         
+        CALL GAUSS_LD(KLOW,NK2,AGAU,BGAU,CGAU,RHSV,ROUT)
+         
         DO K = 2, NK1
-         channel%seg(num_seg)%W3D(I,J,K) = ROUT(K)/RHOZ(K)
+         channel%seg(num_seg)%W3D(I,J,K) = ROUT(K)/RHOZ(K)         
         ENDDO
-              
+        
        ENDDO    !  i-loop
       ENDDO    !  j-loop  
 
@@ -247,7 +247,7 @@ CONTAINS
 !                     u=(ones in diag, modif cn in supdiag)
 !     loop 30: u.pm = g = zm \ l, stored it on pm
 !     loop 40: pm = g \ u, stored it on pm
-
+      
       integer, intent(in) :: kp2,kmin
       real (kind=r8), intent(in) :: zm(kp2),an(kp2),bn(kp2),cn(kp2)
       real (kind=r8), intent(out):: pm(kp2)
@@ -262,7 +262,6 @@ CONTAINS
       enddo
 
       pm_temp(kmin) = zm(kmin) / bn(kmin)
-
       do k = kmin+1, kp2-1
       pm_temp(k) = ( zm(k) - an(k) * pm_temp(k-1) ) / bn_new(k)
       enddo
@@ -279,10 +278,10 @@ CONTAINS
 
       end subroutine relax_3d
 
-!=======================================================================
-      SUBROUTINE RELAX_2D (NTYPE,channel,NITER2D)
+      SUBROUTINE RELAX_2D (NTYPE,channel,NITER2D, ittv)
 !=======================================================================   
-!     Solve 2D elliptic equations by iteration method
+!     Solve 2D elliptic equations by iteration method at k = 2 (lowest layer)
+!     When NITER2D (=0) is present, bypass the procedure solving eqs. 
 !
 !     Temporary use of channel%seg(num_seg)%Z3DX0, channel%seg(num_seg)%Z3DY0, 
 !     and channel%seg(num_seg)%TERM1  
@@ -294,7 +293,8 @@ CONTAINS
       
       INTEGER, INTENT(IN), OPTIONAL  :: NITER2D   ! number of iteration for 2D elliptic equation, 
                                                   ! which is different from the basic setting 
-                                                  ! "niterxy" (test purpose)   
+                                                  ! "niterxy" (test purpose) 
+      INTEGER, INTENT(IN), OPTIONAL :: ittv                                               
      
       ! Local variables
       LOGICAL :: USE_MU = .TRUE.
@@ -302,19 +302,15 @@ CONTAINS
       
       INTEGER :: I,J,ITER,NITER
       INTEGER :: num_seg,mi1,mj1,mim,mip,mjm,mjp,mim_c,mip_c,mjm_c,mjp_c
-      
-      IF (PRESENT(NITER2D)) THEN
-         NITER = NITER2D
-      ELSE
-         NITER = NITERXY
-      ENDIF
 
+      IF (.NOT.PRESENT(NITER2D)) THEN
+      
       IF (USE_MU) THEN
         COEF0 = WRXMU
       ELSE
         COEF0 = 0.0_r8
       ENDIF   
-
+            
 !===============================================================================         
       SELECT CASE (NTYPE)
 !=============================================      
@@ -323,11 +319,12 @@ CONTAINS
       CASE(1)
 !     PSI calculation (zeta-point)     
 !============================================= 
-
+      
 !     Pre-process of iteration
 !-------------------------------
       DO num_seg = 1, 4
 !------------------------------- 
+
       mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
       mim = channel%seg(num_seg)%mim    
       mip = channel%seg(num_seg)%mip  
@@ -337,42 +334,74 @@ CONTAINS
       mjp = channel%seg(num_seg)%mjp           
 
       ! Calculate the forcing term
+      ! Z3DZ_BG(I,J,2): "2" is not the layer index, but a fixed index used for this 2D-elliptic eq.  
       DO J = 1, mj1
        DO I = 1, mi1
         channel%seg(num_seg)%TERM1(I,J,1) = channel%seg(num_seg)%RG_Z(I,J) &
-                *(channel%seg(num_seg)%Z3DZ(I,J,NK2)-channel%seg(num_seg)%Z3DZ_BG(I,J,1))
+                *(channel%seg(num_seg)%Z3DZ(I,J,2)-channel%seg(num_seg)%Z3DZ_BG(I,J,2))
        ENDDO
       ENDDO     
 
       ! linear extrapolation of initial guess (temporary use of z3dx0) 
+      IF (channel%isFirst_psi) THEN
+      
+      NITER = NITERXY_INIT
+      
+      DO J = mjm, mjp
+       DO I = mim, mip
+         channel%seg(num_seg)%Z3DX0(I,J,1) = channel%seg(num_seg)%PSI(I,J) 
+       ENDDO
+      ENDDO
+      
+      ELSE   ! channel%isFirst_psi   
+      
+      NITER = NITERXY
+      
       DO J = mjm, mjp
        DO I = mim, mip
          channel%seg(num_seg)%Z3DX0(I,J,1) = 2.0_r8*channel%seg(num_seg)%PSI(I,J) &
                                            - channel%seg(num_seg)%PSINM1(I,J)
        ENDDO
-      enddo
+      ENDDO
 
       DO J = mjm, mjp
        DO I = mim, mip
          channel%seg(num_seg)%PSINM1(I,J) = channel%seg(num_seg)%PSI(I,J) 
        ENDDO
-      enddo 
+      ENDDO 
+      
+      ENDIF   ! channel%isFirst_psi    
       
       DO J = mjm, mjp
        DO I = mim, mip
          channel%seg(num_seg)%PSI(I,J) = channel%seg(num_seg)%Z3DX0(I,J,1)
        ENDDO
-      enddo            
+      ENDDO            
 !-------------------------------   
       ENDDO  ! num_seg
 !------------------------------- 
 
+! JUNG_DEBUG
+      if (present(ittv)) then
+      if (channel%num_chn == 1) then
+        write(90,*) 
+                write(90,'(a6,6x,3E20.8)') 'ITER=0',   &
+                    channel%seg(3)%PSI(1,1),   &
+                    channel%seg(3)%PSI(187,1), &
+                    channel%seg(3)%PSI(375,1)  
+        write(90,*)                       
+      endif
+      endif
+! JUNG_DEBUG
+
 !******************************************
       DO ITER = 1,NITER
 !******************************************
+      
 !-------------------------------   
       DO num_seg = 1, 4
 !------------------------------- 
+      
       mi1   = channel%seg(num_seg)%mi1  ! x-size of channel segment
       mim_c = channel%seg(num_seg)%mim_c    
       mip_c = channel%seg(num_seg)%mip_c  
@@ -388,12 +417,37 @@ CONTAINS
       ENDDO
 
       ! Z3DY0(I,J,1): temporary psi value, TERM1(I,J,1): forcing
+      
+      !----------------------------
+      if (mi1 .gt. mj1) then
+      !----------------------------x-array
       DO J = 1, mj1
        DO I = 1, mi1
          channel%seg(num_seg)%PSI(I,J) = COEF0*channel%seg(num_seg)%Z3DY0(I,J,1)         &
                                        - channel%seg(num_seg)%TERM1(I,J,1)               &
          + (channel%seg(num_seg)%RGG_V(1,I+1,J)*channel%seg(num_seg)%Z3DY0(I+1,J,1)      &
            +channel%seg(num_seg)%RGG_V(1,I,J)*channel%seg(num_seg)%Z3DY0(I-1,J,1))/DXSQ  &
+         
+         + (channel%seg(num_seg)%RGG_V(2,I+1,J+1)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1) &
+                                                  -channel%seg(num_seg)%Z3DY0(I,J+1,1))  &
+           +channel%seg(num_seg)%RGG_V(2,I,J+1)*(channel%seg(num_seg)%Z3DY0(I,J+1,1)     &
+                                                -channel%seg(num_seg)%Z3DY0(I-1,J+1,1))  &
+           -channel%seg(num_seg)%RGG_V(2,I+1,J-1)*(channel%seg(num_seg)%Z3DY0(I+1,J-1,1) &
+                                                  -channel%seg(num_seg)%Z3DY0(I,J-1,1))  &
+           -channel%seg(num_seg)%RGG_V(2,I,J-1)*(channel%seg(num_seg)%Z3DY0(I,J-1,1)     &
+                                                -channel%seg(num_seg)%Z3DY0(I-1,J-1,1))) &
+           /(4.0_r8*DXDY)      
+       ENDDO         
+      ENDDO
+      
+      !----------------------------
+      else
+      !----------------------------y-array
+
+      DO J = 1, mj1
+       DO I = 1, mi1
+         channel%seg(num_seg)%PSI(I,J) = COEF0*channel%seg(num_seg)%Z3DY0(I,J,1)         &
+                                       - channel%seg(num_seg)%TERM1(I,J,1)               &
          + (channel%seg(num_seg)%RGG_U(3,I,J+1)*channel%seg(num_seg)%Z3DY0(I,J+1,1)      &
            +channel%seg(num_seg)%RGG_U(3,I,J)*channel%seg(num_seg)%Z3DY0(I,J-1,1))/DYSQ  &
          + (channel%seg(num_seg)%RGG_U(2,I+1,J+1)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1) &
@@ -403,18 +457,14 @@ CONTAINS
            -channel%seg(num_seg)%RGG_U(2,I-1,J+1)*(channel%seg(num_seg)%Z3DY0(I-1,J+1,1) &
                                                   -channel%seg(num_seg)%Z3DY0(I-1,J,1))  &
            -channel%seg(num_seg)%RGG_U(2,I-1,J)*(channel%seg(num_seg)%Z3DY0(I-1,J,1)     &
-                                                -channel%seg(num_seg)%Z3DY0(I-1,J-1,1))  & 
-           +channel%seg(num_seg)%RGG_V(2,I+1,J+1)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1) &
-                                                  -channel%seg(num_seg)%Z3DY0(I,J+1,1))  &
-           +channel%seg(num_seg)%RGG_V(2,I,J+1)*(channel%seg(num_seg)%Z3DY0(I,J+1,1)     &
-                                                -channel%seg(num_seg)%Z3DY0(I-1,J+1,1))  &
-           -channel%seg(num_seg)%RGG_V(2,I+1,J-1)*(channel%seg(num_seg)%Z3DY0(I+1,J-1,1) &
-                                                  -channel%seg(num_seg)%Z3DY0(I,J-1,1))  &
-           -channel%seg(num_seg)%RGG_V(2,I,J-1)*(channel%seg(num_seg)%Z3DY0(I,J-1,1)     &
                                                 -channel%seg(num_seg)%Z3DY0(I-1,J-1,1))) &
-           /(4.0_r8*DXDY) 
+           /(4.0_r8*DXDY)      
        ENDDO         
       ENDDO
+
+      !----------------------------
+      endif
+      !----------------------------  
       
      DO J = 1, mj1
        DO I = 1, mi1
@@ -422,29 +472,69 @@ CONTAINS
                                        /(COEF0+channel%seg(num_seg)%RX2D_C1(I,J))
        ENDDO         
       ENDDO
+      
 !-------------------------------   
       ENDDO  ! num_seg 
 !------------------------------- 
-      
-      CALL BOUND_NORMAL  (nhalo,channel,PSI=.TRUE.)                      
-      if (iter.lt.niter) then
-        CALL BOUND_CHANNEL (nhalo_cal,channel,PSI=.TRUE.)
-        if (.not.nomap) CALL HALO_CORREC_Z (nhalo_cal,channel,PSI=.TRUE.)
-      else
-        
+
+! JUNG_DEBUG
+      if (present(ittv)) then
+      if (channel%num_chn == 1 .and. iter .lt. 10) then
+        write(90,'(a5,i5,2x,3E20.8)') 'ITER=',ITER,  &
+                    channel%seg(3)%PSI(1,1),   &
+                    channel%seg(3)%PSI(187,1), &
+                    channel%seg(3)%PSI(375,1)  
+      endif
+      if (channel%num_chn == 1 .and. iter .gt. niter-10) then
+        write(90,'(a5,i5,2x,3E20.8)') 'ITER=',ITER,  &
+                    channel%seg(3)%PSI(1,1),   &
+                    channel%seg(3)%PSI(187,1), &
+                    channel%seg(3)%PSI(375,1)  
+      endif
+      endif    
+! JUNG_DEBUG
+           
+      CALL BOUND_NORMAL  (nhalo,channel,PSI=.TRUE.) 
+      CALL BOUND_SYNC (channel,PSI=.TRUE.)
+                           
+      IF (ITER.LT.NITER) THEN
+        CALL BOUND_CHANNEL (nhalo_cal+1,channel,PSI=.TRUE.)
+        if (.not.nomap) CALL HALO_CORREC_Z (nhalo_cal+1,channel,PSI=.TRUE.)
+      ELSE  
         CALL BOUND_CHANNEL (nhalo,channel,PSI=.TRUE.)
         if (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,PSI=.TRUE.) 
-      endif 
+      ENDIF             
       
 !******************************************
       ENDDO    ! iteration-loop   
 !****************************************** 
+
+      IF (channel%isFirst_psi) THEN
+       
+      DO num_seg = 1, 4
+      
+      mim = channel%seg(num_seg)%mim    
+      mip = channel%seg(num_seg)%mip  
+    
+      mjm = channel%seg(num_seg)%mjm   
+      mjp = channel%seg(num_seg)%mjp     
+                  
+      DO J = mjm, mjp
+       DO I = mim, mip
+         channel%seg(num_seg)%PSINM1(I,J) = channel%seg(num_seg)%PSI(I,J) 
+       ENDDO
+      enddo 
+      
+      enddo
+      
+      channel%isFirst_psi = .FALSE.
+      ENDIF
          
 !=============================================           
       CASE(2)
 !     CHI calculation (q-point) 
-!=============================================
-
+!============================================= 
+      
 !     Pre-process of iteration
 !-------------------------------   
       DO num_seg = 1, 4
@@ -460,26 +550,42 @@ CONTAINS
       ! Calculate the forcing term 
       DO J = 1, mj1
        DO I = 1, mi1
-        channel%seg(num_seg)%TERM1(I,J,1) = channel%seg(num_seg)%RG_T(I,J)*FNT(NK2)*RHOZ(NK1) &
-                                           *(channel%seg(num_seg)%W3D(I,J,NK1) &
-                                            -channel%seg(num_seg)%W3D_BG(I,J,NK1))/(RHO(NK2)*DZ)
+        channel%seg(num_seg)%TERM1(I,J,1) = channel%seg(num_seg)%RG_T(I,J)*FNT(2)*RHOZ(2) &
+                                           *(channel%seg(num_seg)%W3D(I,J,2) &
+                                            -channel%seg(num_seg)%W3D_BG(I,J,2))/(RHO(2)*DZ)
        ENDDO
       ENDDO   
       
       ! linear extrapolation of initial guess           
+      IF (channel%isFirst_chi) THEN
+
+      NITER = NITERXY_INIT
+      
+      DO J = mjm, mjp
+       DO I = mim, mip
+         channel%seg(num_seg)%Z3DX0(I,J,1) = channel%seg(num_seg)%CHI(I,J) 
+       ENDDO
+      ENDDO
+      
+      ELSE   ! channel%isFirst_chi   
+
+      NITER = NITERXY
+      
       DO J = mjm, mjp
        DO I = mim, mip
          channel%seg(num_seg)%Z3DX0(I,J,1) = 2.0_r8*channel%seg(num_seg)%CHI(I,J) &
                                            - channel%seg(num_seg)%CHINM1(I,J)
        ENDDO
-      enddo
+      ENDDO      
       
       DO J = mjm, mjp
        DO I = mim, mip
          channel%seg(num_seg)%CHINM1(I,J) = channel%seg(num_seg)%CHI(I,J) 
        ENDDO
-      enddo 
+      ENDDO 
       
+      ENDIF   ! channel%isFirst_chi
+            
       DO J = mjm, mjp
        DO I = mim, mip
          channel%seg(num_seg)%CHI(I,J) = channel%seg(num_seg)%Z3DX0(I,J,1)
@@ -489,6 +595,19 @@ CONTAINS
       ENDDO  ! num_seg
 !------------------------------- 
 
+! JUNG_DEBUG
+      if (present(ittv)) then
+      if (channel%num_chn == 1) then
+        write(91,*)  
+        write(91,'(a6,6x,3E20.8)') 'ITER=0', &
+                    channel%seg(3)%CHI(1,1),   &
+                    channel%seg(3)%CHI(187,1), &
+                    channel%seg(3)%CHI(375,1)   
+        write(91,*)                       
+      endif
+      endif
+! JUNG_DEBUG      
+      
 !******************************************
       DO ITER = 1,NITER
 !******************************************
@@ -510,23 +629,18 @@ CONTAINS
       ENDDO
       
       ! Z3DY0(I,J,1): temporary chi value, TERM1(I,J,1): forcing 
+      
+      !----------------------------
+      if (mi1 .gt. mj1) then
+      !----------------------------
+      
       DO J = 1, mj1
        DO I = 1, mi1
          channel%seg(num_seg)%CHI(I,J) = COEF0*channel%seg(num_seg)%Z3DY0(I,J,1)           &
-                                       - channel%seg(num_seg)%TERM1(I,J,1)                 &
+                                       + channel%seg(num_seg)%TERM1(I,J,1)                 &
          + (channel%seg(num_seg)%RGG_U(1,I,J)*channel%seg(num_seg)%Z3DY0(I+1,J,1)          &
            +channel%seg(num_seg)%RGG_U(1,I-1,J)*channel%seg(num_seg)%Z3DY0(I-1,J,1))/DXSQ  &
-         + (channel%seg(num_seg)%RGG_V(3,I,J)*channel%seg(num_seg)%Z3DY0(I,J+1,1)          &
-           +channel%seg(num_seg)%RGG_V(3,I,J-1)*channel%seg(num_seg)%Z3DY0(I,J-1,1))/DYSQ  &
-         + (channel%seg(num_seg)%RGG_V(2,I+1,J)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1)     &
-                                          -channel%seg(num_seg)%Z3DY0(I+1,J,1))            &
-           +channel%seg(num_seg)%RGG_V(2,I+1,J-1)*(channel%seg(num_seg)%Z3DY0(I+1,J,1)     &
-                                          -channel%seg(num_seg)%Z3DY0(I+1,J-1,1))          &
-           -channel%seg(num_seg)%RGG_V(2,I-1,J)*(channel%seg(num_seg)%Z3DY0(I-1,J+1,1)     &
-                                          -channel%seg(num_seg)%Z3DY0(I-1,J,1))            &
-           -channel%seg(num_seg)%RGG_V(2,I-1,J-1)*(channel%seg(num_seg)%Z3DY0(I-1,J,1)     &
-                                          -channel%seg(num_seg)%Z3DY0(I-1,J-1,1))          & 
-           +channel%seg(num_seg)%RGG_U(2,I,J+1)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1)     &
+         + (channel%seg(num_seg)%RGG_U(2,I,J+1)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1)     &
                                           -channel%seg(num_seg)%Z3DY0(I,J+1,1))            &
            +channel%seg(num_seg)%RGG_U(2,I-1,J+1)*(channel%seg(num_seg)%Z3DY0(I,J+1,1)     &
                                           -channel%seg(num_seg)%Z3DY0(I-1,J+1,1))          &
@@ -537,17 +651,61 @@ CONTAINS
            /(4.0_r8*DXDY) 
        ENDDO         
       ENDDO
+
+      !----------------------------
+      else
+      !----------------------------
+
+      DO J = 1, mj1
+       DO I = 1, mi1
+         channel%seg(num_seg)%CHI(I,J) = COEF0*channel%seg(num_seg)%Z3DY0(I,J,1)           &
+                                       + channel%seg(num_seg)%TERM1(I,J,1)                 &
+         + (channel%seg(num_seg)%RGG_V(3,I,J)*channel%seg(num_seg)%Z3DY0(I,J+1,1)          &
+           +channel%seg(num_seg)%RGG_V(3,I,J-1)*channel%seg(num_seg)%Z3DY0(I,J-1,1))/DYSQ  &
+         + (channel%seg(num_seg)%RGG_V(2,I+1,J)*(channel%seg(num_seg)%Z3DY0(I+1,J+1,1)     &
+                                          -channel%seg(num_seg)%Z3DY0(I+1,J,1))            &
+           +channel%seg(num_seg)%RGG_V(2,I+1,J-1)*(channel%seg(num_seg)%Z3DY0(I+1,J,1)     &
+                                          -channel%seg(num_seg)%Z3DY0(I+1,J-1,1))          &
+           -channel%seg(num_seg)%RGG_V(2,I-1,J)*(channel%seg(num_seg)%Z3DY0(I-1,J+1,1)     &
+                                          -channel%seg(num_seg)%Z3DY0(I-1,J,1))            &
+           -channel%seg(num_seg)%RGG_V(2,I-1,J-1)*(channel%seg(num_seg)%Z3DY0(I-1,J,1)     &
+                                          -channel%seg(num_seg)%Z3DY0(I-1,J-1,1)))         &
+           /(4.0_r8*DXDY) 
+       ENDDO         
+      ENDDO      
       
+      !----------------------------
+      endif
+      !----------------------------
+                  
       DO J = 1,mj1
        DO I = 1,mi1
          channel%seg(num_seg)%CHI(I,J) = channel%seg(num_seg)%CHI(I,J) &
                                        /(COEF0+channel%seg(num_seg)%RX2D_C2(I,J))
        ENDDO         
       ENDDO  
-       
+
 !-------------------------------   
       ENDDO  ! num_seg 
 !-------------------------------
+
+! JUNG_DEBUG
+      if (present(ittv)) then
+      if (channel%num_chn == 1 .and. iter .lt. 10) then
+        write(91,'(a5,i5,2x,3E20.8)') 'ITER=',ITER,  &
+                    channel%seg(3)%CHI(1,1),   &
+                    channel%seg(3)%CHI(187,1), &
+                    channel%seg(3)%CHI(375,1)  
+      endif
+
+      if (channel%num_chn == 1 .and. iter .gt. NITER-10) then
+        write(91,'(a5,i5,2x,3E20.8)') 'ITER=',ITER,  &
+                    channel%seg(3)%CHI(1,1),   &
+                    channel%seg(3)%CHI(187,1), &
+                    channel%seg(3)%CHI(375,1)  
+      endif
+      endif  
+! JUNG_DEBUG          
       
       CALL BOUND_NORMAL  (nhalo,channel,CHI=.TRUE.)
       if (iter.lt.niter) then
@@ -562,10 +720,31 @@ CONTAINS
       ENDDO    ! iteration-loop   
 !******************************************                  
 
+      IF (channel%isFirst_chi) THEN
+
+      DO num_seg = 1, 4
+      
+      mim = channel%seg(num_seg)%mim    
+      mip = channel%seg(num_seg)%mip      
+      mjm = channel%seg(num_seg)%mjm   
+      mjp = channel%seg(num_seg)%mjp     
+            
+      DO J = mjm, mjp
+       DO I = mim, mip
+         channel%seg(num_seg)%CHINM1(I,J) = channel%seg(num_seg)%CHI(I,J) 
+       ENDDO
+      ENDDO
+      
+      ENDDO
+       
+      channel%isFirst_chi = .FALSE.
+      ENDIF
+      
 !=============================================
       END SELECT
 !===============================================================================      
+      ENDIF  ! if (.NOT.PRESENT(NITER2D)) then
                     
-      end subroutine relax_2d
+      end subroutine relax_2d      
       
 end module elliptic

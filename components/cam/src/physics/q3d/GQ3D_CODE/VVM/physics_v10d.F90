@@ -1,27 +1,29 @@
-! This program uses its own variables and parameters. 
-! Only inputs from the main code are the arguments of the subroutines and 
+! This program uses its own variables and parameters.
+! Only inputs from the main code are the arguments of the subroutines and
 ! the parameters mi1, mj1, and nk2.
-! 
+!
+!  Add "LocalP" option: using local pressure to calculate Temp. (and local density) 
+!
 !  Contains:
 !
-!  SUBROUTINE INITIALIZE_PHYSICS            
-!  SUBROUTINE SATURATION 
-!  SUBROUTINE CONDENSATION 
-!  SUBROUTINE SUBLIMATION 
-!  Subroutine MICROPHYSICS 
-!  SUBROUTINE IMICRO 
-!  SUBROUTINE CAL_ACR3 
-!  SUBROUTINE CAL_IDW 
-!  Subroutine BERGERON 
+!  SUBROUTINE INITIALIZE_PHYSICS
+!  SUBROUTINE SATURATION
+!  SUBROUTINE CONDENSATION
+!  SUBROUTINE SUBLIMATION
+!  Subroutine MICROPHYSICS
+!  SUBROUTINE IMICRO
+!  SUBROUTINE CAL_ACR3
+!  SUBROUTINE CAL_IDW
+!  Subroutine BERGERON
 !
-!  FUNCTION GGESW  
-!  FUNCTION GGESI       
-!  FUNCTION ESATW 
+!  FUNCTION GGESW
+!  FUNCTION GGESI
+!  FUNCTION ESATW
 !  FUNCTION ESATI
 !  FUNCTION DESWDT
-!  FUNCTION DESIDT 
+!  FUNCTION DESIDT
 !-----------------------------------------------------------------------------
-  
+
 !=============================================================================
   SUBROUTINE INITIALIZE_MICROPHYSICS
 !=============================================================================
@@ -47,7 +49,7 @@
 !      ESWT(151),ESIT(151)         out (saturation pressure table)
 !      DESWT(151),DESIT(151)       out (saturation pressure derivative table)
 !      TT                          out (=TICE-101. lower bound  used in saturation table)
-!      TTD                         out (=TICE-100.5 lower bound used in 
+!      TTD                         out (=TICE-100.5 lower bound used in
 !                                                           saturation derivation table)
 !      HLTS,HLTC,HLTF              out (latent heating constants)
 !      CH2O                        out (constant)
@@ -73,20 +75,21 @@
 !
 !   CALLS:
 !      FUNCTION GGESW(T)
-!      FUNCTION GGESI(T)              
+!      FUNCTION GGESI(T)
 !---------------------------------------------------------------------------------------------------
 
 USE shr_kind_mod, only: r8 => shr_kind_r8
 
-USE constld, only: dt,pi,gas_const,cp_val=>cp,grav_val=>grav,hlf,hlm
- 
+USE constld, only: dt,pi=>piv,gas_const,wvg_const,cp_val=>cp,grav_val=>grav, &
+                   hlf,hlm,hls,epsilo,t_melt,cp_h2o,cp_ice,rho_h2o
+
 Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
                                csacw,cwacs,ciacr,craci,csaci,cgacw,cgaci,cracw, &
                                cssub,cgsub,crevp,cgfr,csmlt,cgmlt,cgwet,craut, &
                                qi0,qs0,ql0,es0,ces0,c1brg,c2brg, &
                                rmi50,rmi40,cplc,cpls,cplf, &
                                tdif,esw00,esi00,eswt,esit,&
-                               deswt,desit,tt,ttd, & 
+                               deswt,desit,tt,ttd, &
                                pie,grav,vdifu,tcond,rvapr,rdrya,visk, &
                                hlts,hltc,hltf,ch2o,cice,tice,cp,eps,ttfrz, &
                                vconr,vcons,vcong, &
@@ -97,75 +100,78 @@ Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
    REAL (KIND=r8) ::   &
           ACT(8),ACC(3),RNZR,RNZS,RNZG,RHOR,RHOS,RHOG,ALIN,CLIN, &
           GAM263,GAM275,GAM290,GAM325,GAM350,GAM380,GAM425,      &
-          GAM450,GAM480,GAM625,GAM680      
+          GAM450,GAM480,GAM625,GAM680
    REAL (KIND=r8) :: PISQ,SCM3,AA22,CD,GCON,GGESW, GGESI
-   
+
    integer :: i, k  ! do loop indices
    integer :: itc
-      
-      RNZR = 8.0D6   
-      RNZS = 3.0D6   
-      RNZG = 4.0D6
-      RHOR = 1.0D3   
-      RHOS = 0.1D3   
-      RHOG = 0.4D3
+
+      RNZR = 8.0e6_r8     ! intercept parameter of the raindrop size distribution
+      RNZS = 3.0e6_r8     ! intercept parameter of the snowflake size distribution
+      RNZG = 4.0e6_r8     ! intercept parameter of the hailstone size distribution
+
+      RHOR = rho_h2o      ! density of liquid water   (kg/m^3)
+      RHOS = 0.1e3_r8     ! density of snow    (kg/m^3)
+      RHOG = 0.4e3_r8     ! density of graupel (kg/m^3)
 
       ALIN = 841.99667_r8
       CLIN = 4.836071224_r8
 
-      ACC(1) = 5.0_r8 
-      ACC(2) = 2.0_r8 
+      ACC(1) = 5.0_r8
+      ACC(2) = 2.0_r8
       ACC(3) = 0.5_r8
-      
-      GAM263 = 1.456943_r8   
-      GAM275 = 1.608355_r8    
-      GAM290 = 1.827363_r8    
+
+      CRAUT(1) = 1.2e-1_r8
+      CRAUT(2) = 1.064e-2_r8
+
+      GAM263 = 1.456943_r8
+      GAM275 = 1.608355_r8
+      GAM290 = 1.827363_r8
       GAM325 = 2.54925_r8
-      GAM350 = 3.323363_r8   
-      GAM380 = 4.694155_r8    
-      GAM425 = 8.285063_r8    
+      GAM350 = 3.323363_r8
+      GAM380 = 4.694155_r8
+      GAM425 = 8.285063_r8
       GAM450 = 11.631769_r8
-      GAM480 = 17.837789_r8  
-      GAM625 = 184.860962_r8 
+      GAM480 = 17.837789_r8
+      GAM625 = 184.860962_r8
       GAM680 = 496.604067_r8
-            
-      PIE   = pi  
-      GRAV  = grav_val   
-      VDIFU = 2.11D-5   
-      TCOND = 2.36D-2     
-      RVAPR = 4.615D2     
-      RDRYA = gas_const  
-      VISK  = 1.259D-5  
-      HLTS  = 2.8336D6
-      HLTS  = 2.8336D6    
-      HLTC  = hlf   
-      HLTF  = hlm  
-      CH2O  = 4.1855D3
-      CICE  = 2.093D3     
-      TICE  = 273.16_r8 
-      EPS   = 0.62197_r8   
-      TTFRZ = 233.1_r8
 
-      RMI50 = 3.84D-6  
-      RMI40 = 2.46D-7 
-      RI50  = 1.0D-4
-      QS0   = 1.0D-3  
-      QI0   = 0.6D-3
+      TCOND = 2.36e-2_r8               ! thermal conductivity of air
+      RMI50 = 3.84e-6_r8
+      RMI40 = 2.46e-7_r8
+      RI50  = 1.0e-4_r8
+      QS0   = 1.0e-3_r8
+      QI0   = 0.6e-3_r8
+      QL0   = 0.5e-3_r8
 
-      QL0      = 0.5D-3
-      CRAUT(1) = 1.2D-1  
-      CRAUT(2) = 1.064D-2
+      VDIFU = 2.11e-5_r8               ! diffusivity of water vapor in air (cm^2/s)
+      VISK  = 1.259e-5_r8              ! kinematic viscosity of air (cm^2/s)
+      SCM3 = (VISK/VDIFU)**(1.0/3.0)   ! Schmidt number
+
+      TTFRZ = 233.1_r8                 ! T = -40.05 C
+
+      PIE   = pi                       ! 3.14159265358979323846_r8
+      GRAV  = grav_val                 ! 9.80616_r8
+      HLTS  = hls                      ! 2.8336e6_r8
+      HLTC  = hlf                      ! 2.500e6_r8
+      HLTF  = hlm                      ! 3.336e5_r8
+      RDRYA = gas_const                ! 287.042_r8
+      RVAPR = wvg_const                ! 461.5_r8
+      EPS   = epsilo                   ! 0.62197_r8
+      CP    = cp_val                   ! 1.00464e3_r8
+      CH2O  = cp_h2o                   ! 4.188e3_r8
+      CICE  = cp_ice                   ! 2.11727e3_r8
+      TICE  = t_melt                   ! 273.15_r8
 
       TDT = DT
-      DTL = DT  
+      DTL = DT
+      
       RHOSFC = SFCRHO
-
-      CP   = cp_val
-      CPLC = HLTC/CP  
-      CPLS = HLTS/CP  
+      
+      CPLC = HLTC/CP
+      CPLS = HLTS/CP
       CPLF = HLTF/CP
       PISQ = PIE*PIE
-      SCM3 = (VISK/VDIFU)**(1.0/3.0)
 
 !-------------------------------------------------------------------
 !     ACR3:  FOUR LEAD CONSTANTS REQUIRED, THREE FOR EACH SUMMATION
@@ -176,7 +182,7 @@ Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
 !------------------------------------------------
 !     ACT:  1-2:RACS(S-R); 3-4:SACR(R-S);
 !           5-6:GACR(R-G); 7-8:GACS(S-G)
-        ACT(1)=PIE*RNZS*RHOS;  ACT(2)=PIE*RNZR*RHOR; ACT(6)=PIE*RNZG*RHOG      
+        ACT(1)=PIE*RNZS*RHOS;  ACT(2)=PIE*RNZR*RHOR; ACT(6)=PIE*RNZG*RHOG
         ACT(3)=ACT(2);  ACT(4)=ACT(1);  ACT(5)=ACT(2);  ACT(7)=ACT(1)
         ACT(8)=ACT(6)
 
@@ -190,7 +196,7 @@ Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
         aa22 = 40.74_r8 * 40.74_r8
         CD = 4.0_r8 * GRAV * RHOG / 3.0_r8 / RHOSFC / aa22
         GCON  = SQRT(4.0_r8*GRAV*RHOG/3.0_r8/CD)
-      
+
         VCONR = ALIN*GAM480/(6.0_r8*ACT(2)**0.20)
         VCONS = CLIN*GAM425/(6.0_r8*ACT(1)**0.0625)
         VCONG = GAM450*GCON/(6.0_r8*ACT(6)**0.125)
@@ -262,11 +268,11 @@ Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
 !       DERIVATIVES ARE CENTERED AT EACH HALF DEG. (C)
       TT  = TICE-101.0_r8
       TTD = TICE-100.5_r8
-      
+
       ESWT(1) = GGESW(TICE-100.0_r8)
       ESIT(1) = GGESI(TICE-100.0_r8)
-      
-    ITC = -99      
+
+    ITC = -99
   do I=2,151
     ESWT(I)    = GGESW(TICE+FLOAT(ITC));  DESWT(I-1) = ESWT(I)-ESWT(I-1)
     ITC        = ITC+1
@@ -278,7 +284,7 @@ Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
     ESIT(I)    = GGESI(TICE+FLOAT(ITC));  DESIT(I-1) = ESIT(I)-ESIT(I-1)
     ITC = ITC+1
   enddo
-  
+
     DESIT(101) = DESWT(101)
   do I=102,151
     ESIT(I)  = ESWT(I);  DESIT(I) = DESWT(I)
@@ -288,11 +294,60 @@ Use mphysics_parameters, only: ri50,cracs,csacr,cgacr,cgacs,acco, &
 !     SATURATION ADJUSTMENT:  RANGE OF MIXED ICE-WATER SATURATION
 !     AND SATURATION VAPOR PRESSURE OVER WATER AND ICE AT T = -40 C.
         TDIF  = TICE-TTFRZ;  ESW00 = GGESW(TICE-TDIF);  ESI00 = GGESI(TICE-TDIF)
-      
+
 RETURN
-END Subroutine initialize_microphysics 
-          
-!=============================================================================                       
+END Subroutine initialize_microphysics
+
+!=============================================================================
+  SUBROUTINE INITIALIZE_MICROPHYSICS_LOC (SFC_RHO)
+!=============================================================================
+! Initialize the local Parameters (Used if LocalP=.T.)
+
+   USE shr_kind_mod, only: r8 => shr_kind_r8
+   Use mphysics_parameters, only: cgacw,cgaci,cgsub,cgmlt,cgwet, &
+                                  pie,grav,vdifu,visk,vcong,rhosfc
+
+   IMPLICIT NONE
+
+   REAL (kind=r8), INTENT(IN) :: SFC_RHO   
+   REAL (KIND=r8) :: ACT_6,RNZG,RHOG,GAM275,GAM350,GAM450
+   REAL (KIND=r8) :: SCM3,AA22,CD,GCON
+
+      RHOSFC = SFC_RHO
+      
+      RNZG = 4.0e6_r8     ! intercept parameter of the hailstone size distribution
+      RHOG = 0.4e3_r8     ! density of graupel (kg/m^3)
+
+      GAM275 = 1.608355_r8
+      GAM350 = 3.323363_r8
+      GAM450 = 11.631769_r8
+    
+      SCM3 = (VISK/VDIFU)**(1.0/3.0)   ! Schmidt number
+      ACT_6 = PIE*RNZG*RHOG
+
+!----- TERMINAL VELOCITY CONSTANTS ----------------
+        aa22 = 40.74_r8 * 40.74_r8
+        CD = 4.0_r8 * GRAV * RHOG / 3.0_r8 / RHOSFC / aa22
+        GCON  = SQRT(4.0_r8*GRAV*RHOG/3.0_r8/CD)
+
+        VCONG = GAM450*GCON/(6.0_r8*ACT_6**0.125)
+!------------------------------------------------
+        CGACW = PIE*RNZG*GAM350*GCON/(4.0_r8*ACT_6**0.875)
+        CGACI = CGACW*0.1_r8
+!-------------------------------------------------------------------
+!     SUBL AND REVP:  FIVE CONSTANTS FOR THREE SEPARATE PROCESSES
+       CGSUB(3) = 0.31_r8*SCM3*GAM275*SQRT(GCON/VISK)/ACT_6**0.6875
+        
+!----- GMLT:  FIVE CONSTANTS ------------------------------
+       CGMLT(4) = CGSUB(3)
+
+!----- GWET:  Two constants +plus -------------------------
+       CGWET(4) = CGMLT(4)
+
+RETURN
+END Subroutine initialize_microphysics_loc
+
+!=============================================================================
   SUBROUTINE SATURATION (IPOINT,JPOINT,KPOINT,T,P,QVK,QLK,QIK,QFK)
 !=============================================================================
 !------------------------------------------------------------------
@@ -310,8 +365,8 @@ END Subroutine initialize_microphysics
 !   INTERNAL:
 !      IERR, JERR, KERR, PRESS, TO, QVO, QLO, QIO, ISTOP, NOCONV, NLOOP
 !      DTMP, DTFR, ESI, QSI, QS, ESW, QSW, DTMLT, QSIW, N, CRIT
-!      GAMFAC, SS, GAMMAW, GAMMAI, TEM, EX1, TQIK, DQI, SST, QV1, QL1 
-!      QI1, SS1, T1, QSIW1, SS2, T2, QV3, DQ, DQL, DQ, DQV, DQLK, QL3 
+!      GAMFAC, SS, GAMMAW, GAMMAI, TEM, EX1, TQIK, DQI, SST, QV1, QL1
+!      QI1, SS1, T1, QSIW1, SS2, T2, QV3, DQ, DQL, DQ, DQV, DQLK, QL3
 !      QI3, T3, QSIT, QSWT, QSIW3, SS3, QV2, QL2, QI2, T2, TQLK, QVKSV
 !      TSV, QSIW2
 !
@@ -331,27 +386,27 @@ Use mphysics_parameters, only: cplc,cpls,cplf,tdif,ttfrz, &
 
 IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: IPOINT, JPOINT, KPOINT 
+    INTEGER, INTENT(IN) :: IPOINT, JPOINT, KPOINT
     REAL(kind=r8), INTENT(IN) :: P  ! pressure in mb
     REAL(kind=r8), INTENT(INOUT) :: &
-       T,    & ! temperature to be modified 
-       QVK,  & ! qv to be modified 
+       T,    & ! temperature to be modified
+       QVK,  & ! qv to be modified
        QLK,  & ! qc to be modified
        QIK,  & ! qi to be modified
        QFK     ! amount of freezing of cloud water into cloud ice
-      
+
     REAL(kind=r8) TO,QVO,QLO,QIO
     REAL(kind=r8) DTMP,DTFR,ESI,ESATI,QSI,QS, &
-           ESW,ESATW,QSW,DTMLT,QSIW,CRIT,GAMFAC              
+           ESW,ESATW,QSW,DTMLT,QSIW,CRIT,GAMFAC
     REAL(kind=r8) SS,GAMMAW,DESWAT,GAMMAI,DESIDT,TEM,EX1,TQIK, &
            QVKSV,TSV,DQI,SST,QV1,QL1,QI1,SS1,       &
            T1,QSIW1,DQL,QV2,QL2,QI2,T2,QSIT
     REAL(kind=r8) DESWDT,QSWT,QSIW2,SS2,QV3,DQ,QL3,QI3,T3,  &
            QSIW3,SS3,DQLK, DQV,TQLK, PRESS
-    INTEGER :: i,j,k  
+    INTEGER :: i,j,k
     INTEGER :: ierr, jerr, kerr,  &  ! location indices
                istop, n, noconv, nloop
-      
+
 !     -------------------------------------------------------------
 !     ----                                                     ----
 !     ----    PRELIMINARY ADJUSTMENT CONSISTS OF FREEZING      ----
@@ -372,7 +427,7 @@ IMPLICIT NONE
 
       TO = T;  QVO = QVK;  QLO = QLK;  QIO = QIK
       ISTOP = 0;  NOCONV = 0;  NLOOP  = 0
-      
+
       IF (QVK .LT. 1.0D-20) QVK=0.0_r8
       IF (QLK .LT. 1.0D-20) QLK=0.0_r8
       IF (QIK .LT. 1.0D-20) QIK=0.0_r8
@@ -405,7 +460,7 @@ IMPLICIT NONE
 !     WRITE(6,*) 'FREEZE ALL LIQ   DTMP,DTFR ',DTMP,DTFR
 
    30 IF ( QIK .EQ. 0.0_r8 ) GOTO 40
- 
+
 !--- NO SLW --> QS = QSI ---------------------------
       ESI = ESATI (T)
       QSI = EPS*ESI/(P-ESI)
@@ -418,7 +473,7 @@ IMPLICIT NONE
       ESI = ESATI (T)
       QSW = EPS*ESW/(P-ESW)
       QSI = EPS*ESI/(P-ESI)
-      QS  = ( QSW * MAX( T-TTFRZ ,0.0_r8 ) + QSI * MIN( TICE-T ,TDIF ) ) / TDIF      
+      QS  = ( QSW * MAX( T-TTFRZ ,0.0_r8 ) + QSI * MIN( TICE-T ,TDIF ) ) / TDIF
 !     WRITE(6,*) ' NO LIQ WATER AND NO ICE'
       GOTO 200
 
@@ -478,7 +533,7 @@ IMPLICIT NONE
 
   200 CONTINUE
 !     WRITE(6,201)  QVK,QLK,QIK,QS,T
-!  201 FORMAT('0',20X,'200'/10X,'QVK',13X,'QLK',13X,'QIK',13X,'QS',13X,'T',/5X,4E16.8,F12.7) 
+!  201 FORMAT('0',20X,'200'/10X,'QVK',13X,'QLK',13X,'QIK',13X,'QS',13X,'T',/5X,4E16.8,F12.7)
 
 !-- OBTAIN THE AMOUNT OF FREEZING OF CLOUD WATER INTO CLOUD ICE -------
       QFK= QIK - QIO
@@ -512,9 +567,9 @@ IMPLICIT NONE
 
 !-- ADJUST TO SATURATION (CONDENSATION) -----------
       IF(QVK/QSW-1.0_r8 .LE. 1.D-6)  GO TO 1000
-      
+
       Call Condensation (T,P,QVK,QSW,ESW,QLK,ISTOP)
-                   
+
       GO TO 280
 
 !-- MIXED WATER AND ICE SATURATION ----------------
@@ -588,7 +643,7 @@ IMPLICIT NONE
 
 !---- ADJUST TO SATURATION (SUBLIMATION) ------------
       IF(QVK/QSI-1.0_r8 .LE. 1.0D-6)  GO TO 1000
-      
+
       Call Sublimation (T,P,QVK,QSI,ESI,QIK,ISTOP)
 
       GO TO 1000
@@ -606,8 +661,8 @@ IMPLICIT NONE
       TQIK = 0.0_r8
       QVKSV = QVK
       TSV   = T
-      
-      Call Sublimation (T,P,QVK,QSI,ESI,TQIK,ISTOP)      
+
+      Call Sublimation (T,P,QVK,QSI,ESI,TQIK,ISTOP)
 
 !     WRITE(6,*) 'TEMP AFTER VAP-->ICE ',T
 
@@ -749,7 +804,7 @@ IMPLICIT NONE
 
 !---- NON-CONVERGENT CASE.  SITUATION IS AS FOLLOWS ------------------------
 !       SOME SLW AND SIW HAVE BEEN PRODUCED BUT PRESENCE OF SLW
-!       RAISES SATURATION VAPOR PRESSURE ABOVE INITIAL (TAG = 1) VALUE. 
+!       RAISES SATURATION VAPOR PRESSURE ABOVE INITIAL (TAG = 1) VALUE.
 !       THEREFORE, EVAPORATE ALL SLW AND ITERATE TO SATURATION (I.E. GO TO #210)
   565 QVK = QV3
       QLK = QL3
@@ -765,7 +820,7 @@ IMPLICIT NONE
   570 IF(T .LE. TICE)  GO TO 1000
 
 !-- LATENT HEAT RELEASE PRODUCED INCONSISTENCY IN INITIAL ----------------
-!       ASSUMPTION OF T <= TICE.  THEREFORE MELT ENOUGH ICE TO SET T = TICE       
+!       ASSUMPTION OF T <= TICE.  THEREFORE MELT ENOUGH ICE TO SET T = TICE
       DQLK = (T-TICE)/CPLF
 !     WRITE(6,*) 'T>0  ICE AND WATER  SATD'
 !     WRITE(6,*) 'DQLK,QIK',DQLK,QIK
@@ -838,9 +893,9 @@ IMPLICIT NONE
   700 IF(QVK/QS-1.0_r8 .LE. 1.D-6)  GO TO 1000
 !     WRITE(6,*)' T>=0  LIQ ONLY  SUPERSAT'
       TQLK = 0.0_r8
-      
+
       Call Condensation (T,P,QVK,QSW,ESW,TQLK,ISTOP)
-                   
+
       QLK = QLK+TQLK
 
  1000 CONTINUE
@@ -860,7 +915,7 @@ IMPLICIT NONE
 
 !=============================================================================
    SUBROUTINE CONDENSATION (T,P,QVK,QSW,ESW,QLK,ISTOP)
-!=============================================================================                         
+!=============================================================================
 !  INPUT:
 !     T           in (initial temperature to be modified in subroutine)
 !     QVK         in (initial qv to be modified in subroutine)
@@ -903,39 +958,39 @@ IMPLICIT NONE
        QLK,  &  ! qc to be modified
        ESW,  &  ! water vapor pressure
        QSW      ! initial q*
-       
+
     INTEGER, INTENT(OUT) :: ISTOP
-   
+
 ! local variables
 
     REAL (KIND=r8) :: GAMFAC,SS,GAMMAW,EX
     REAL (KIND=r8) :: ESATW,DESWDT
-    real (kind=r8), Parameter :: CRIT=1.E-6_r8 
+    real (kind=r8), Parameter :: CRIT=1.E-6_r8
     INTEGER :: n
-      
+
     GAMFAC = EPS * CPLC * P
-    
+
       GAMMAW = GAMFAC * DESWDT(T) / (P-ESW)**2
       EX     = (QVK - QSW) / (1.0_r8 + GAMMAW)
       T      = T + CPLC * EX
       ESW    = ESATW(T) ;    QSW = EPS * ESW / (P-ESW)
       QVK    = QVK - EX ;    QLK = QLK + EX
-      
-  do n=1,9 
-           
+
+  do n=1,9
+
       GAMMAW = GAMFAC * DESWDT(T) / (P-ESW)**2
       EX     = (QVK - QSW) / (1.0_r8 + GAMMAW)
-      
+
     IF (DABS(EX/QLK) .LT. CRIT)  RETURN
 
-      T   = T + CPLC * EX   
+      T   = T + CPLC * EX
       ESW = ESATW(T) ;   QSW = EPS * ESW / (P-ESW)
       QVK = QVK - EX ;   QLK = QLK + EX
 
   enddo
 
       ISTOP = 1111
- 
+
 RETURN
 END SUBROUTINE Condensation
 
@@ -976,7 +1031,7 @@ USE shr_kind_mod, only: r8 => shr_kind_r8
 use mphysics_parameters, only: esit,desit,tt,ttd,cpls,eps
 
 IMPLICIT NONE
-      
+
     REAL (KIND=r8), INTENT(IN) :: P  ! pressure, mb
     REAL (KIND=r8), INTENT(INOUT) :: &
        T,     &  ! temperature to be modified
@@ -984,16 +1039,16 @@ IMPLICIT NONE
        QSI,   &  ! q*
        ESI,   &  ! water vapor pressure over ice
        QIK       ! qi to be modified
-       
+
     INTEGER, INTENT(OUT) :: ISTOP
 
 ! local variables
     real(KIND=r8) :: GAMFAC,SS,GAMMAI,EX
     real(KIND=r8) :: ESATI,DESIDT
 
-    REAL (kind=r8), Parameter :: CRIT=0.5E-7_r8 
+    REAL (kind=r8), Parameter :: CRIT=0.5E-7_r8
     INTEGER :: n
-    
+
     GAMFAC = EPS * CPLS * P
 
       GAMMAI = GAMFAC * DESIDT(T) / (P-ESI)**2
@@ -1001,31 +1056,31 @@ IMPLICIT NONE
       T   = T + CPLS * EX
       ESI = ESATI (T) ;  QSI = EPS * ESI / (P-ESI)
       QVK = QVK - EX  ;  QIK = QIK + EX
-      
+
   do n=1,9
-  
+
       GAMMAI = GAMFAC * DESIDT(T) / (P-ESI)**2
       EX     = (QVK - QSI) / (1.0_r8 + GAMMAI)
-      
+
     IF(DABS(EX/QIK) .LT. CRIT)  RETURN
-      
+
       T   = T + CPLS * EX
       ESI = ESATI (T) ;  QSI = EPS * ESI / (P-ESI)
       QVK = QVK - EX  ;  QIK = QIK + EX
-      
+
   enddo
 
       ISTOP = 2222
- 
+
 RETURN
 END SUBROUTINE Sublimation
 
 !=============================================================================
     Subroutine MICROPHYSICS
-!=============================================================================                  
-!  INPUT:        
-!     theta,qv,qc,qi,qr,qs,qg                             
-!     pl0,pil0,rho_int,rhol,dzl,hx_sub                           
+!=============================================================================
+!  INPUT:
+!     theta,qv,qc,qi,qr,qs,qg
+!     pl0,pil0,rho_int,rhol,dzl,hx_sub
 !
 !     INTERNAL:
 !        T                   temperature entering to Imicro
@@ -1035,17 +1090,17 @@ END SUBROUTINE Sublimation
 !        QMIX(4) = qs    |
 !        QMIX(5) = qg    |
 !        QMIX(6) = qr    |
-!        TSS(1)       ->  tendency_microphysics_qv     |  
+!        TSS(1)       ->  tendency_microphysics_qv     |
 !        TSS(2)       ->  tendency_microphysics_qc     |
 !        TSS(3)       ->  tendency_microphysics_qi     |
-!        TSS(4)       ->  tendency_microphysics_qs      > microphysics tendencies 
+!        TSS(4)       ->  tendency_microphysics_qs      > microphysics tendencies
 !        TSS(5)       ->  tendency_microphysics_qg     |     returned from Imicro
 !        TSS(6)       ->  tendency_microphysics_qr     |
 !        TSS(7)/pil0  ->  tendency_microphysics_theta  |
 !        PSS(26)      ->  conversion rates between the species returned from Imicro
 !        VTERMS,VTERMG,VTERMR -> terminal velocities returned from Imicro
 !        VTR, VTS, VTG           terminal velocities and fluxes
-!        LMICRO                  logical 
+!        LMICRO                  logical
 !        THRESH
 !        PRESS_mb
 !        TLHR         ->  Latent heating rate from all processes except condensational
@@ -1055,13 +1110,14 @@ END SUBROUTINE Sublimation
 !        tendency_microphysics_qc,tendency_microphysics_qi
 !        tendency_microphysics_qr,tendency_microphysics_qs
 !        tendency_microphysics_qg
-!        tendency_rain,tendency_snow, tendency_graupel  (Adams-Bashforth tendencies of 
+!        tendency_rain,tendency_snow, tendency_graupel  (Adams-Bashforth tendencies of
 !                                                        precipitation                 )
 !        Surface_rain, Surface_snow, Surface_graupel
 !        VTR_int,VTS_int,VTG_int
 !        latent_heating_rate
 !------------------------------------------------------------------------------------------
 USE shr_kind_mod,        only: r8 => shr_kind_r8
+USE constld,             only: localp
 USE mphysics_parameters, only: im,km
 USE mphysics_variables,  only: rho_int,rhol,dzl,pl0,pil0,   &
                                theta,qv,qc,qi,qr,qs,qg,     &
@@ -1076,39 +1132,60 @@ USE mphysics_variables,  only: rho_int,rhol,dzl,pl0,pil0,   &
                                vtr_int,vts_int,vtg_int,     &
                                surface_rain,surface_snow,surface_graupel, &
                                latent_heating_rate,hx_sub
-                                                                                                                                 
-IMPLICIT NONE
 
+USE mphysics_variables, only: rho_int_loc,rhol_loc,pl0_loc,pil0_loc       ! JUNG_LocalP
+
+IMPLICIT NONE
+      
       ! LOCAL
       REAL (kind=r8) :: T, THRESH, PRESS_mb, VTERMS, VTERMG,  &
-                              VTERMR, QMIX(6), TSS(7), PSS(26) 
-      REAL (kind=r8) :: VTR(km), VTS(km), VTG(km)
+                              VTERMR, QMIX(6), TSS(7), PSS(26)
+      REAL (kind=r8) :: VTR(km), VTS(km), VTG(km)   
       REAL (kind=r8) :: TLHR
-            
-      LOGICAL lmicro
-      INTEGER :: I, K, KLOW  
       
+      REAL (kind=r8) :: rho_int_v(0:km),rhol_v(km),pl0_v(km),pil0_v(km)   ! JUNG_LocalP
+
+      LOGICAL lmicro
+      INTEGER :: I, K, KLOW
+
       LMICRO = .True.
       THRESH = 1.0D-6
 
 !--------------------------------------
-      DO I = 1, IM  
-!--------------------------------------      
+      DO I = 1, IM
+!--------------------------------------
+      
       klow = hx_sub(i)
-  
-      DO K = klow, km
+      
+      IF (LocalP) THEN
+       pl0_v(:)     = pl0_loc(I,:)
+       pil0_v(:)    = pil0_loc(I,:) 
+       rhol_v(:)    = rhol_loc(I,:)
+       rho_int_v(:) = rho_int_loc(I,:)
+       
+      ! Initialize Local Parameters for Microphysics
+      CALL initialize_microphysics_loc (rho_int_v(0))
 
-      T       = pil0(K) * theta(I,K)
+      ELSE
+       pl0_v(:)     = pl0(:)
+       pil0_v(:)    = pil0(:) 
+       rhol_v(:)    = rhol(:)
+       rho_int_v(:) = rho_int(:)
+      ENDIF
+
+      DO K = klow, km
+      T       = pil0_v(K) * theta(I,K)
       QMIX(1) = QV(I,K);  QMIX(2) = QC(I,K);  QMIX(3) = QI(I,K)
       QMIX(4) = QS(I,K);  QMIX(5) = QG(I,K);  QMIX(6) = QR(I,K)
 
       LMICRO  =  QMIX(2) .GT. THRESH .OR. QMIX(3) .GT. THRESH .OR.   &
                  QMIX(4) .GT. THRESH .OR. QMIX(5) .GT. THRESH .OR.   &
-                 QMIX(6) .GT. THRESH           
-                       
+                 QMIX(6) .GT. THRESH
+
       IF ( LMICRO ) THEN
-        PRESS_mb = pl0(K) * 0.01_r8
-        Call Imicro (TSS,PSS,VTERMS,VTERMG,VTERMR,T,PRESS_mb,QMIX,rhol(k),TLHR)
+        PRESS_mb = pl0_v(K) * 0.01_r8
+        
+        Call Imicro (TSS,PSS,VTERMS,VTERMG,VTERMR,T,PRESS_mb,QMIX,rhol_v(k),TLHR)
 
         tendency_microphysics_QV(I,K)    = TSS(1)
         tendency_microphysics_QC(I,K)    = TSS(2)
@@ -1116,70 +1193,70 @@ IMPLICIT NONE
         tendency_microphysics_QS(I,K)    = TSS(4)
         tendency_microphysics_QG(I,K)    = TSS(5)
         tendency_microphysics_QR(I,K)    = TSS(6)
-        tendency_microphysics_theta(I,K) = TSS(7) / pil0(K)
+        tendency_microphysics_theta(I,K) = TSS(7) / pil0_v(K)
 
         VTS(K) = VTERMS
         VTG(K) = VTERMG
         VTR(K) = VTERMR
-        
+
         latent_heating_rate(i,k) = TLHR
       ELSE
         VTS(K) = 0.0_r8
         VTG(K) = 0.0_r8
-        VTR(K) = 0.0_r8  
+        VTR(K) = 0.0_r8
       ENDIF
-      
-      ENDDO  ! k-loop
 
-      ! Rain, snow, graupel and sedimentation fluxes 
+      ENDDO  ! k-loop
+      
+      ! Rain, snow, graupel and sedimentation fluxes
       VTS_int(i,km) = 0.0_r8
       VTG_int(i,km) = 0.0_r8
       VTR_int(i,km) = 0.0_r8
-      
-      VTS_int(i,klow-1) = rhol(klow) * VTS(klow) * QS(I,klow)
-      VTG_int(i,klow-1) = rhol(klow) * VTG(klow) * QG(I,klow)
-      VTR_int(i,klow-1) = rhol(klow) * VTR(klow) * QR(I,klow)
-      
+
+      VTS_int(i,klow-1) = rhol_v(klow) * VTS(klow) * QS(I,klow)
+      VTG_int(i,klow-1) = rhol_v(klow) * VTG(klow) * QG(I,klow)
+      VTR_int(i,klow-1) = rhol_v(klow) * VTR(klow) * QR(I,klow)
+
       do K = km-1,klow,-1
-        VTS_int(i,K) = rho_int(k) * 0.5_r8 * (VTS(K+1)+VTS(K)) * QS(I,K+1)
-        VTG_int(i,K) = rho_int(k) * 0.5_r8 * (VTG(K+1)+VTG(K)) * QG(I,K+1)
-        VTR_int(i,K) = rho_int(k) * 0.5_r8 * (VTR(K+1)+VTR(K)) * QR(I,K+1)
+        VTS_int(i,K) = rho_int_v(k) * 0.5_r8 * (VTS(K+1)+VTS(K)) * QS(I,K+1)
+        VTG_int(i,K) = rho_int_v(k) * 0.5_r8 * (VTG(K+1)+VTG(K)) * QG(I,K+1)
+        VTR_int(i,K) = rho_int_v(k) * 0.5_r8 * (VTR(K+1)+VTR(K)) * QR(I,K+1)
       enddo
 
       do K = klow,km
         tendency_rain(I,K)    = tendency_rain(I,K)                                    &
-                                      +(VTR_int(i,K)-VTR_int(i,K-1))/(rhol(k)*dzl(K))              
+                                      +(VTR_int(i,K)-VTR_int(i,K-1))/(rhol_v(k)*dzl(K))
         tendency_snow(I,K)    = tendency_snow(I,K)                                    &
-                                      +(VTS_int(i,K)-VTS_int(i,K-1))/(rhol(k)*dzl(K))              
+                                      +(VTS_int(i,K)-VTS_int(i,K-1))/(rhol_v(k)*dzl(K))
         tendency_graupel(I,K) = tendency_graupel(I,K)                                 &
-                                      +(VTG_int(i,K)-VTG_int(i,K-1))/(rhol(k)*dzl(K))        
+                                      +(VTG_int(i,K)-VTG_int(i,K-1))/(rhol_v(k)*dzl(K))
       enddo
       do K = 1,klow-1
-        tendency_rain(I,K)    = 0.0_r8          
-        tendency_snow(I,K)    = 0.0_r8    
-        tendency_graupel(I,K) = 0.0_r8    
+        tendency_rain(I,K)    = 0.0_r8
+        tendency_snow(I,K)    = 0.0_r8
+        tendency_graupel(I,K) = 0.0_r8
       enddo
-      
-      ! Surface rain 
+
+      ! Surface rain
       Surface_rain(I)    = VTR_int(I,klow-1)
       Surface_snow(I)    = VTS_int(I,klow-1)
       Surface_graupel(I) = VTG_int(I,klow-1)
 
-!--------------------------------------      
+!--------------------------------------
       ENDDO   ! i-loop
-!--------------------------------------      
+!--------------------------------------
 
 RETURN
 END Subroutine microphysics
 
 !=============================================================================
     SUBROUTINE IMICRO (TSS,PSS,VTS,VTG,VTR,T,PRESR,QMIX,RHO,TLHR)
-!=============================================================================        
+!=============================================================================
 !---------------------------------------------------------------------------
 ! MODIFICATIONS BELOW ARE MADE TO THE ORIGINAL CODE (Q. Fu & S. Krueger)
 !---------------------------------------------------------------------------
 !	Updates (Jun. 8, 1993, cfu comments):
-!	  1. RMINUC = QI * RHO / NC;  this  will give the depositional
+!	  1. RMINUC = QI * RHO / NC;  this  will give the depositionalTSS
 !            growth of cloud ice at expense of cloud water  properly (
 !            PIDW).
 !         2. Replacing R50 by R100; then DT1 is the growth time needed
@@ -1191,7 +1268,7 @@ END Subroutine microphysics
 !            and QS0 = 1.0e-3 (threshold for snow aggregation ) (PSAUT
 !            and PGAUT) (private communication with S. Chin).
 !         6. GAM625 = 184.860962 (PWACS)
-!         7. Esi and Egs ( T < T0 ) are set to be  0.1 following  RH84 
+!         7. Esi and Egs ( T < T0 ) are set to be  0.1 following  RH84
 !            ( PSACI and PGACS ).
 !---------------------------------------------------------------------------
 !       Updates (Jun. 9, 1993, crh comments):
@@ -1222,9 +1299,9 @@ END Subroutine microphysics
 !       QMIX(5) = qg    |
 !       QMIX(6) = qr    |
 !       RHO                    in (density)
-!       CSACW, CWACS,CIACR,CRACS              |      
+!       CSACW, CWACS,CIACR,CRACS              |
 !       CSACR,CGACR,CGACS,ACCO(3,4)            >        in (constant from initial_physics)
-!       CRACI,CSACI,CGACW,CGACI,CGSUB,CREVP   |   
+!       CRACI,CSACI,CGACW,CGACI,CGSUB,CREVP   |
 !       CGFR,CSMLT,CGMLT,CGWET,CRAUT          |
 !       QI0, QS0, QL0, ES0, CES0, C1BRG                 in
 !       C2BRG, RMI50, RMI40, ESWT(151)                  in
@@ -1236,7 +1313,7 @@ END Subroutine microphysics
 !   INTERNAL:
 !       THRSH(6)          internal  (constant, threshold of mixing ratio of species)
 !       QLOGIC(6)         internal (logical, defining existence of species exceeding a threshold)
-!       QVK,QLK,QIK,QSK                                   
+!       QVK,QLK,QIK,QSK
 !       QGK,QRK,QVR,QLR
 !       QIR,QSR,QGR,QRR
 !       VAPR,LIQ,ICE,SNO
@@ -1249,8 +1326,8 @@ END Subroutine microphysics
 !       SGMAX=SMAX(5),SRMAX=SMAX(6)
 !
 !       C3RACS(1)=ACCO(1,1),C3RACS(2)=ACCO(2,1),C3RACS(3) = ACCO(3,1)
-!       C3SACR(1)=ACCO(1,2),C3SACR(2)=ACCO(2,2),C3SACR(3) = ACCO(3,2)      
-!       C3GACR(1)=ACCO(1,3),C3GACR(2)=ACCO(2,3),C3GACR(3) = ACCO(3,3)      
+!       C3SACR(1)=ACCO(1,2),C3SACR(2)=ACCO(2,2),C3SACR(3) = ACCO(3,2)
+!       C3GACR(1)=ACCO(1,3),C3GACR(2)=ACCO(2,3),C3GACR(3) = ACCO(3,3)
 !       C3GACS(1)=ACCO(1,4),C3GACS(2)=ACCO(2,4),C3GACS(3) = ACCO(3,4)
 !       ARC1,ARC2,ARC3,QEXRHO
 !       QL0RHO,RAUT,RHOFAC
@@ -1263,7 +1340,7 @@ END Subroutine microphysics
 !   OUTPUTS:
 !     Primary outputs are tendencies and terminal velocity of rain, snow and graupel
 !
-!       TSS(1)    = TSSV    : tendency_microphysics_qv 
+!       TSS(1)    = TSSV    : tendency_microphysics_qv
 !       TSS(2)    = TSSL    : tendency_microphysics_qc
 !       TSS(3)    = TSSI    : tendency_microphysics_qi
 !       TSS(4)    = TSSS    : tendency_microphysics_qs
@@ -1297,12 +1374,12 @@ END Subroutine microphysics
       USE mphysics_parameters, RHOS=>RHOSFC
 
       IMPLICIT NONE
-      
+
       REAL (KIND=r8), INTENT(IN) ::     &
          T,          &
          PRESR,      &
          QMIX(6),    &
-         RHO 
+         RHO
       REAL (KIND=r8), INTENT(OUT) ::     &
          VTS,        &
          VTG,        &
@@ -1314,20 +1391,20 @@ END Subroutine microphysics
 ! local variables
       REAL (KIND=r8) :: RHOFAC, QL0RHO, TC, TSQ, EXPT1, EXPT2, ESW, ESATW
       REAL (KIND=r8) :: QSW, DQS, DQS0
-      REAL (KIND=r8) :: SVMAX,SLMAX,SIMAX,SSMAX,SGMAX,SRMAX 
+      REAL (KIND=r8) :: SVMAX,SLMAX,SIMAX,SSMAX,SGMAX,SRMAX
       REAL (KIND=r8) :: TSSV,TSSL,TSSI,TSSS,TSSG,TSSR,TTMP
       REAL (KIND=r8) :: QVK,QLK,QIK,QSK,QGK,QRK,QVR,QLR,QIR,QSR,QGR,QRR
 
       REAL (KIND=r8) :: C3RACS(3),C3SACR(3),C3GACR(3),C3GACS(3),QRHO(6),SMAX(6)
       REAL (KIND=r8) :: PRAUT,PRACW,PRACS,PSACW,PWACS,PGACW,PGMLT,PSMLT,PREVP,                       &
              PIACR,PSACR,PGACR,PGFR,PGACS,PGAUT,PGACI,PGWORD,PRACI,PSAUT,                 &
-             PSACI,PSSUB,PGSUB,PSFW,PSFI,PIDW,PGWET                                       
+             PSACI,PSSUB,PGSUB,PSFW,PSFI,PIDW,PGWET
       REAL (KIND=r8) :: ACR1,ACR2,QEXRHO,RAUT,ACR3,CTGACS,SW,REVP,SMLT,GMLT,TEM,                     &
              QIKT,C,AUT,GFR,ESI,ESATI,QSI,SI,SSUB,GSUB,PGDRY,GWET,IDW,X,Y
-                          
+
       LOGICAL QLOGIC(6),VAPR,LIQ,ICE,SNO,GRAUP,RAIN
       INTEGER :: k   ! do loop index
-             
+
       REAL (KIND=r8), DIMENSION(6) :: thrsh
 
 !     LOCAL VARIABLES: TEMPERATURE, DENSITY, TEMP. DEPENDENT EFFICIENCIES
@@ -1337,10 +1414,10 @@ END Subroutine microphysics
 
       QVK = QMIX(1); QLK = QMIX(2); QIK = QMIX(3); QSK = QMIX(4)
       QGK = QMIX(5); QRK = QMIX(6)
-      
+
       C3RACS(1) = ACCO(1,1);  C3RACS(2) = ACCO(2,1);  C3RACS(3) = ACCO(3,1)
-      C3SACR(1) = ACCO(1,2);  C3SACR(2) = ACCO(2,2);  C3SACR(3) = ACCO(3,2)      
-      C3GACR(1) = ACCO(1,3);  C3GACR(2) = ACCO(2,3);  C3GACR(3) = ACCO(3,3)      
+      C3SACR(1) = ACCO(1,2);  C3SACR(2) = ACCO(2,2);  C3SACR(3) = ACCO(3,2)
+      C3GACR(1) = ACCO(1,3);  C3GACR(2) = ACCO(2,3);  C3GACR(3) = ACCO(3,3)
       C3GACS(1) = ACCO(1,4);  C3GACS(2) = ACCO(2,4);  C3GACS(3) = ACCO(3,4)
 
       RHOFAC = SQRT(RHOS/RHO)
@@ -1359,7 +1436,7 @@ END Subroutine microphysics
 !----- ZERO SOURCE AND SINK TERMS--------------------------
 
       PSS = 0.0_r8
-    
+
       PRAUT = PSS(1);  PRACW  = PSS(2);  PRACS = PSS(3);  PSACW = PSS(4);  PWACS = PSS(5)
       PGACW = PSS(6);  PGMLT  = PSS(7);  PSMLT = PSS(8);  PREVP = PSS(9);  PIACR = PSS(10)
       PSACR = PSS(11); PGACR  = PSS(12); PGFR  = PSS(13); PGACS = PSS(14); PGAUT = PSS(15)
@@ -1367,10 +1444,10 @@ END Subroutine microphysics
       PSSUB = PSS(21); PGSUB  = PSS(22); PSFW  = PSS(23); PSFI  = PSS(24); PIDW  = PSS(25)
       PGWET = PSS(26)
 
-!----- ZERO OUTPUT TENDENCIES -----------------------------  
+!----- ZERO OUTPUT TENDENCIES -----------------------------
 
        TSS = 0.0_r8
-      
+
        TSSV  = TSS(1);    TSSL  = TSS(2);    TSSI  = TSS(3)
        TSSS  = TSS(4);    TSSG  = TSS(5);    TSSR  = TSS(6);   TTMP = TSS(7)
 
@@ -1392,13 +1469,13 @@ do K=1,6
 enddo
 
 !-------------------------------------------------------------------------------------
-      
+
       VAPR  = QLOGIC(1); LIQ   = QLOGIC(2); ICE   = QLOGIC(3)
       SNO   = QLOGIC(4); GRAUP = QLOGIC(5); RAIN  = QLOGIC(6)
-      
+
       SVMAX = SMAX(1);   SLMAX = SMAX(2);   SIMAX = SMAX(3)
       SSMAX = SMAX(4);   SGMAX = SMAX(5);   SRMAX = SMAX(6)
-      
+
       QVR   = QRHO(1);   QLR   = QRHO(2);   QIR   = QRHO(3)
       QSR   = QRHO(4);   QGR   = QRHO(5);   QRR   = QRHO(6)
 
@@ -1426,25 +1503,25 @@ enddo
 
 !     PGACW: Accretion of cloud water by graupel.
 
-      ACR2  = CGACW * QLK * QGR**0.875 / DSQRT(RHO)      
+      ACR2  = CGACW * QLK * QGR**0.875 / DSQRT(RHO)
       PGACW = min(ACR2,SLMAX)
 
   110 IF(.NOT. SNO)  GOTO 120
 
 !     PSACW: Accretion of cloud water by snow.  Produces snow if T<TICE and rain if T>=TICE.
-!            Enhanced snow melting if T>=TICE. 
+!            Enhanced snow melting if T>=TICE.
         ACR1  = CSACW * QLK * QSR**0.8125 * RHOFAC
         PSACW = min(ACR1,SLMAX)
 
   120 IF(QLK .LE. QL0)  GOTO 130
 
 !     PRAUT: Autoconversion of cloud water to form rain.
-!     SEE ORVILLE AND KOPP (1977)      
+!     SEE ORVILLE AND KOPP (1977)
         QEXRHO = QLR - QL0RHO
         RAUT   = QEXRHO**3 / ((CRAUT(1)*QEXRHO+CRAUT(2))*RHO)
-      
+
         PRAUT  = min(RAUT,SLMAX)
- 
+
   130 IF(.NOT. RAIN)  GOTO 200
 
 !     PRACW: Accretion of cloud water by rain.
@@ -1475,12 +1552,12 @@ enddo
   290 IF(QRK .EQ. 0.0_r8 .OR. ICE .OR. DQS .GE. 0.0_r8)  GO TO 300
 
 !     PREVP: Evaporation of rain.
-        SW = QVK/QSW      
+        SW = QVK/QSW
         REVP = CREVP(1)*TSQ*QSW*(1.0_r8-SW)*(CREVP(2)*DSQRT(QRR)+CREVP(3)*QRR**0.725) &
              /(CREVP(4)*TSQ+CREVP(5)*QSW*RHO)
         PREVP = min(REVP,SRMAX)
 
-  300 IF (TC .LT. 0.0)  GOTO 400
+  300 IF (TC .LT. 0.0_r8)  GOTO 400
 
 
 !     -----------------------------------
@@ -1508,7 +1585,7 @@ enddo
 
   305 IF(.NOT. LIQ .OR. .NOT. SNO)  GO TO 310
 
-!     PWACS: 
+!     PWACS:
         PWACS = 0.0_r8
 
   310 IF(.NOT. GRAUP .OR. .NOT. RAIN)  GO TO 320
@@ -1533,7 +1610,7 @@ enddo
 
 !     PGACS: Accretion of snow by graupel.
         PGACS = min(10.0_r8*PGACS,SSMAX)
-      
+
 !     --------------------------------------
 !     ----     ADD SOURCES AND SINKS    ----
 !     ----             T>=0             ----
@@ -1547,10 +1624,10 @@ enddo
         TSSG = PGACS-PGMLT
         TSSR = PRAUT+PRACW+PRACS+PSACW+PWACS+PGACW+PSMLT+PGMLT-PREVP
         TTMP = (-HLTF*(PRACS+PWACS+PGMLT+PSMLT)-HLTC*PREVP)/CP
-     
+        
       TSS(1) = TSSV;  TSS(2) = TSSL;  TSS(3) = TSSI
       TSS(4) = TSSS;  TSS(5) = TSSG;  TSS(6) = TSSR; TSS(7) = TTMP
-      
+
      TEM = 0.0_r8
    do K=1,6
      TEM = TEM + TSS(K)
@@ -1580,7 +1657,7 @@ enddo
 !     BERGERON PROCESSES -- PSFW (Transfer of cloud water to form snow) and
 !                           PSFI (Transfer of cloud ice to form snow)
       Call BERGERON (PSFW,PSFI,TC,QLK,QIK,QLR)
-    
+
       PSFW = min(PSFW,SLMAX)
       PSFI = min(PSFI,SIMAX)
 
@@ -1632,7 +1709,7 @@ enddo
       QSI = EPS*ESI/(PRESR-ESI)
       SI = QVK/QSI
 
-      IF(QSK .EQ. 0.0)  GO TO 480
+      IF(QSK .EQ. 0.0_r8)  GO TO 480
 
 !     PSSUB: CAN BE EITHER POSITIVE OR NEGATIVE (Sublimation of snow.)
         SSUB  = CSSUB(1)*TSQ*QSI*(SI-1.0_r8) * (CSSUB(2)*SQRT(QSR)    &
@@ -1657,9 +1734,9 @@ enddo
 
 !     PGDRY (OR PGWET): Dry and wet growth of graupel.
   500   PGDRY = PGACW + PGACI + PGACR + PGACS
-  
+
       IF(.NOT.LIQ .AND. .NOT.RAIN)  GO TO 510
-                   
+
         x    = min(PGACI*10.0_r8,SIMAX)
         y    = min(10.0_r8*PGACS,SSMAX)
         GWET = (CGWET(2)*DQS0-CGWET(1)*TC/RHO)*HLTF/(HLTF+CH2O*TC)   &
@@ -1706,17 +1783,17 @@ enddo
         TSSR = PRAUT+PRACW-(PSACR+PGACR+PREVP+PGFR)
         TTMP = (HLTF*(PSACW+PGACW+PSACR+PGACR+PGFR+PSFW+PIDW)             &
                -HLTC*PREVP+HLTS*(PSSUB+PGSUB))/CP
-     
+
       TSS(1) = TSSV; TSS(2) = TSSL; TSS(3) = TSSI
       TSS(4) = TSSS; TSS(5) = TSSG; TSS(6) = TSSR; TSS(7) = TTMP
-      
+            
       TEM = 0.0_r8
 do K=1,6
   TEM = TEM + TSS(K)
 enddo
 
  1000 CONTINUE
- 
+
       PSS(1)  = PRAUT; PSS(2)  = PRACW;  PSS(3)  = PRACS; PSS(4)  = PSACW; PSS(5)  = PWACS
       PSS(6)  = PGACW; PSS(7)  = PGMLT;  PSS(8)  = PSMLT; PSS(9)  = PREVP; PSS(10) = PIACR
       PSS(11) = PSACR; PSS(12) = PGACR;  PSS(13) = PGFR;  PSS(14) = PGACS; PSS(15) = PGAUT
@@ -1725,7 +1802,7 @@ enddo
       PSS(26) = PGWET
 
 !   LATENT HEATING RATE FROM ALL PROCESSES EXCEPT CONDENSATIONAL
-!   AND SUBLIMATIONAL SATURATION ADJUSTMENT.  THE CONTRIBUTIONS 
+!   AND SUBLIMATIONAL SATURATION ADJUSTMENT.  THE CONTRIBUTIONS
 !   FROM THOSE PROCESSES ARE FOUND IN Q_CHK_3D.
       TLHR = - PSS(9)*(2.25D6/1004.0_r8) &
              + (PSS(25)+PSS(4)+PSS(6)+PSS(11)+PSS(12)+PSS(13)+PSS(23) &
@@ -1750,13 +1827,13 @@ END SUBROUTINE imicro
       QRHO2,     &
       C,         &
       RHO
-      
+
    REAL (KIND=r8), INTENT(OUT) :: ACR3
-      
+
 !  local variables
    INTEGER :: K
    REAL (KIND=r8) :: A
-   
+
 !  SOURCE TERMS:  PRACS,PSACR,PGACR,PGACS
 
       A=0.0_r8
@@ -1764,9 +1841,9 @@ END SUBROUTINE imicro
       A = A + CAC(K) * (QRHO1**((7-K)*0.25) * QRHO2**(K*0.25))
     enddo
       ACR3 = C * DABS(V1-V2) * A / RHO
-  
+
 END SUBROUTINE cal_acr3
-    
+
 !=============================================================================
     SUBROUTINE CAL_IDW (IDW,TC,QIK,RHO)
 !=============================================================================
@@ -1779,12 +1856,12 @@ END SUBROUTINE cal_acr3
        QIK,   &
        RHO
     REAL (KIND=r8), INTENT(OUT) :: &
-       IDW     
-       
+       IDW
+
 ! local variables
-      
+
     REAL (KIND=r8) ::    &
-       TC1,A1,A2,FNC,FMI,A1T(0:31),A2T(0:31) 
+       TC1,A1,A2,FNC,FMI,A1T(0:31),A2T(0:31)
 
     DATA A1T/ 0.0_r8, &
               0.7939D-12, 0.7841D-11, 0.3369D-10, 0.4336D-10, 0.5285D-10,     &
@@ -1806,8 +1883,8 @@ END SUBROUTINE cal_acr3
 
     TC1 = MAX(TC,-30.0_r8)
 
-    A1  = (A1T(-INT(TC1))-A1T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0)+A1T(-INT(TC1)+1)      
-    A2  = (A2T(-INT(TC1))-A2T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0)+A2T(-INT(TC1)+1)      
+    A1  = (A1T(-INT(TC1))-A1T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0)+A1T(-INT(TC1)+1)
+    A2  = (A2T(-INT(TC1))-A2T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0)+A2T(-INT(TC1)+1)
 
     fnc = 0.01_r8 * exp ( - 0.6_r8 * TC )
     fmi = rho * qik / fnc * 1000.0_r8
@@ -1815,7 +1892,7 @@ END SUBROUTINE cal_acr3
 
 RETURN
 END SUBROUTINE cal_idw
-      
+
 !=============================================================================
     Subroutine BERGERON (PSFW,PSFI,TC,QL,QI,QLRHO)
 !=============================================================================
@@ -1859,11 +1936,11 @@ END SUBROUTINE cal_idw
     if ( tc1 .gt. -1.0_r8 ) then
       a1 = a1t(1) ;   a2 = a2t(1)
     else
-      A1  = (A1T(-INT(TC1))-A1T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0_r8)+A1T(-INT(TC1)+1)     
-      A2  = (A2T(-INT(TC1))-A2T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0_r8)+A2T(-INT(TC1)+1)      
+      A1  = (A1T(-INT(TC1))-A1T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0_r8)+A1T(-INT(TC1)+1)
+      A2  = (A2T(-INT(TC1))-A2T(-INT(TC1)+1))*(TC1-INT(TC1)+1.0_r8)+A2T(-INT(TC1)+1)
     endif
 
-    A21 = 1.0_r8 - A2 
+    A21 = 1.0_r8 - A2
     DT1 = (RMI50**A21 - RMI40**A21) / (A1*A21)
 
 !---- NOTE:  Units are MKS
@@ -1876,8 +1953,8 @@ END Subroutine bergeron
 !=============================================================================
    FUNCTION GGESW(T)  RESULT(ggesw_result)
 !=============================================================================
-!----- Saturation vapor pressure over water in mb 
-! (Goff and Gratch, 1946; and Smithsonian Tables, 1984)         
+!----- Saturation vapor pressure over water in mb
+! (Goff and Gratch, 1946; and Smithsonian Tables, 1984)
 !----- T  is temperature in deg K
 
     USE shr_kind_mod, only: r8 => shr_kind_r8
@@ -1885,10 +1962,10 @@ END Subroutine bergeron
     IMPLICIT NONE
 
     REAL (KIND=r8), INTENT(IN) :: T
-    
+
     REAL (KIND=r8) :: ggesw_result
     REAL (KIND=r8) :: TS,F5,E1,E2,F1,F2,F3,F4,F
-      
+
       TS = 373.16_r8
       F5 = 3.0057149_r8
       E1 = 11.344_r8*(1.0_r8 - T/TS)
@@ -1898,15 +1975,15 @@ END Subroutine bergeron
       F3 =-1.3816D-7*(10.0_r8**E1 - 1.0_r8)
       F4 = 8.1328D-3*(10.0_r8**E2 - 1.0_r8)
       F  = F1 + F2 + F3 + F4 + F5
-      ggesw_result = 10.0_r8**F      
+      ggesw_result = 10.0_r8**F
 
 END Function ggesw
 
 !=============================================================================
-   FUNCTION GGESI(T) RESULT(ggesi_result)      
+   FUNCTION GGESI(T) RESULT(ggesi_result)
 !=============================================================================
 !----- Saturation vapor pressure over water in mb
-! (Goff and Gratch, 1946; and Smithsonian Tables, 1984)         
+! (Goff and Gratch, 1946; and Smithsonian Tables, 1984)
 !----- T  is temperature in deg K
 
    USE shr_kind_mod, only: r8 => shr_kind_r8
@@ -1914,17 +1991,17 @@ END Function ggesw
    IMPLICIT NONE
 
    REAL (KIND=r8), INTENT(IN) :: T
-   
+
    REAL (KIND=r8) :: GGESI_RESULT
    REAL (KIND=r8) :: C1,C2,C3,C4,A,B
-      
+
       C1 = -9.09718_r8
       C2 = -3.56654_r8
       C3 = 0.876793_r8
       C4 = 0.78583503_r8
       A = 273.16_r8/T
       B = C1*(A-1.0_r8)+C2*LOG10(A)+C3*(1.0_r8-1.0_r8/A)+C4
-      GGESI_result = 10.0_r8**B      
+      GGESI_result = 10.0_r8**B
 
 END Function ggesi
 
@@ -1954,7 +2031,7 @@ END Function esatw
 !=============================================================================
    FUNCTION ESATI (T) RESULT(esati_result)
 !=============================================================================
-!---- TT=172.16  and 173 <= T <= 323 --------  
+!---- TT=172.16  and 173 <= T <= 323 --------
 
    USE shr_kind_mod, only: r8 => shr_kind_r8
    Use mphysics_parameters, only: esit,desit,tt
@@ -1962,7 +2039,7 @@ END Function esatw
    IMPLICIT NONE
 
    REAL (KIND=r8), INTENT(IN) :: T
- 
+
    REAL (KIND=r8) :: ESATI_RESULT
    REAL(KIND=r8) :: TTT
    INTEGER :: I
@@ -1978,7 +2055,7 @@ END FUNCTION esati
 !=============================================================================
    FUNCTION DESWDT (T) RESULT(deswdt_result)
 !=============================================================================
-!---- TTD = 172.66  and 173 <= T <= 323 --------  
+!---- TTD = 172.66  and 173 <= T <= 323 --------
 
    USE shr_kind_mod, only: r8 => shr_kind_r8
    Use mphysics_parameters, only: ttd, deswt
@@ -1986,7 +2063,7 @@ END FUNCTION esati
    IMPLICIT NONE
 
    REAL (KIND=r8), INTENT(IN) :: T
-   
+
    REAL (KIND=r8) :: DESWDT_RESULT
    REAL(KIND=r8) :: TTT
    INTEGER :: I
@@ -2010,8 +2087,8 @@ END FUNCTION deswdt
    IMPLICIT NONE
 
    REAL (KIND=r8), INTENT(IN) :: T
-   
-   REAL (KIND=r8) :: DESIDT_RESULT     
+
+   REAL (KIND=r8) :: DESIDT_RESULT
    REAL(KIND=r8) :: TTT
    INTEGER :: I
 

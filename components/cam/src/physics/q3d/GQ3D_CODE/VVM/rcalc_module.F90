@@ -30,7 +30,7 @@ CONTAINS
 !  Call Advection and Physics (Microphysics & Radiation)
 
       INTEGER, INTENT(IN) :: &
-         ITT,       & ! time step count (used for radiation and surface flux calculation)
+         ITT,       & ! time step count (used for radiation)
          N1,        & ! AB forcing time index for previous timestep
          N2           ! AB forcing time index for current timestep
          
@@ -38,10 +38,10 @@ CONTAINS
       
       ! Local
       REAL (KIND=r8), PARAMETER :: TP_HEIGHT = 12000.0_r8
-      
+            
       integer mi1,mim,mim_a,mim_c,mip,mip_c,mj1,mjm,mjm_a,mjm_c,mjp,mjp_c    
       integer L,num_seg,nt 
-                              
+                                  
 !     temporary use of channel%seg(num_seg)%TERM1 and channel%seg(num_seg)%Z3DX0
       
       L = N2
@@ -49,6 +49,7 @@ CONTAINS
 !===============================   
       DO num_seg = 1, 4
 !=============================== 
+      
       mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment
       
       mim    = channel%seg(num_seg)%mim    
@@ -94,8 +95,11 @@ CONTAINS
                      channel%seg(num_seg)%RG_U,           &
                      channel%seg(num_seg)%RG_V,           &
                      channel%seg(num_seg)%KLOWQ_IJ,       &
-                     .FALSE.,TPHGT=TP_HEIGHT,             &
+                     .FALSE.,                             &
                      TERM_ADD=channel%seg(num_seg)%Z3DX0(1:mi1,1:mj1,:))
+                     
+!!                   .FALSE.,TPHGT=TP_HEIGHT,             &   ! JUNG (2nd-order above TP_height)
+
 
       ! QV3D                                    
       CALL ADVEC_3D (mi1,mim,mim_a,mim_c,mip,mip_c,       &
@@ -208,6 +212,7 @@ CONTAINS
 !=============================== 
 
 !     Physics calculations
+      
       IF (PHYSICS)  CALL PHYSICS_INTERFACE(N2, ITT, channel)
 
 !     Update thermodynamic variables

@@ -4,6 +4,8 @@
 !     This is the interface subroutine between the Vector Vorticity Model (VVM)
 !     and the Lorenz grid Microphysics (also, call RADIATION_RRTMG).
 !  
+!     Add "LocalP" option: using local pressure to calculate Temp. (and density) 
+!
 !     channel_width = 1 is assumed: chn = 1
 !     If channel_width is wider than 1, then additional do-loop should be added.
 !
@@ -22,7 +24,7 @@
       USE vvm_data_types, only: channel_t   
       
       USE parmsld, only: channel_seg_l,nk1,nk2
-      USE constld, only: radcode,microcode
+      USE constld, only: radcode,microcode,gas_const,zt,localp
       
       USE mphysics_variables, only: theta,qv,qc,qi,qr,qs,qg,     &
                                     tendency_microphysics_theta, &
@@ -35,7 +37,9 @@
                                     tendency_rain,tendency_snow,tendency_graupel, &
                                     surface_rain, &
                                     latent_heating_rate,hx_sub
-      
+                                    
+      USE mphysics_variables, only: dzl,rho_int_loc,rhol_loc,pl0_loc,pil0_loc   ! JUNG_LocalP
+                                 
       IMPLICIT NONE
 
       ! Input arguments 
@@ -46,6 +50,7 @@
       
      ! Local variables 
       INTEGER :: L,mi1,mj1,num_seg,chp,chn,chl,K
+      
 !-----------------------------------------------------------------------------      
       L   = N2
       CHN = 1      ! Assume: channel_width = 1 
@@ -107,6 +112,18 @@
           QS(chl,K)    = channel%seg(num_seg)%QS3D(chp,chn,K+1)
           QG(chl,K)    = channel%seg(num_seg)%QG3D(chp,chn,K+1)
          ENDDO
+         
+         IF (LocalP) THEN
+         DO K = 1, nk1 
+          PL0_loc(chl,K)  = channel%seg(num_seg)%Pmid_bg(chp,chn,K+1) 
+          PIL0_loc(chl,K) = channel%seg(num_seg)%PImid_bg(chp,chn,K+1) 
+          RHOL_loc(chl,K) = channel%seg(num_seg)%RHO_bg(chp,chn,K+1)
+         ENDDO
+         DO K = 0, nk1 
+          RHO_INT_loc(chl,K) = channel%seg(num_seg)%RHOint_bg(chp,chn,K+1)
+         ENDDO
+         ENDIF                 
+         
         ENDDO   
 !      ---------------------                     
        ELSE
@@ -124,6 +141,19 @@
           QS(chl,K)    = channel%seg(num_seg)%QS3D(chn,chp,K+1)
           QG(chl,K)    = channel%seg(num_seg)%QG3D(chn,chp,K+1)
          ENDDO
+
+         IF (LocalP) THEN
+         DO K = 1, nk1 
+          PL0_loc(chl,K)  = channel%seg(num_seg)%Pmid_bg(chn,chp,K+1) 
+          PIL0_loc(chl,K) = channel%seg(num_seg)%PImid_bg(chn,chp,K+1) 
+          RHOL_loc(chl,K) = channel%seg(num_seg)%RHO_bg(chn,chp,K+1) 
+         ENDDO
+
+         DO K = 0, nk1 
+          RHO_INT_loc(chl,K) = channel%seg(num_seg)%RHOint_bg(chn,chp,K+1)
+         ENDDO
+         ENDIF        
+                  
         ENDDO 
        
 !      ---------------------       
@@ -183,6 +213,16 @@
             channel%seg(num_seg)%FQG3D(chp,chn,K,L) + TENDENCY_GRAUPEL(chl,k-1)
         ENDDO 
 
+        ! JUNG: new addition        
+        DO K = 2, nk2
+         channel%seg(num_seg)%FQR3D_DIA(chp,chn,K) = &
+            channel%seg(num_seg)%FQR3D_DIA(chp,chn,K) + TENDENCY_RAIN(chl,k-1)
+         channel%seg(num_seg)%FQS3D_DIA(chp,chn,K) = &
+            channel%seg(num_seg)%FQS3D_DIA(chp,chn,K) + TENDENCY_SNOW(chl,k-1)
+         channel%seg(num_seg)%FQG3D_DIA(chp,chn,K) = &
+            channel%seg(num_seg)%FQG3D_DIA(chp,chn,K) + TENDENCY_GRAUPEL(chl,k-1)
+        ENDDO         
+        
        ENDDO  ! chp_loop
               
 !      ---------------------                     
@@ -222,6 +262,16 @@
             channel%seg(num_seg)%FQS3D(chn,chp,K,L) + TENDENCY_SNOW(chl,k-1)
          channel%seg(num_seg)%FQG3D(chn,chp,K,L) = &
             channel%seg(num_seg)%FQG3D(chn,chp,K,L) + TENDENCY_GRAUPEL(chl,k-1)
+        ENDDO 
+
+        ! JUNG: new addition
+        DO K = 2, nk2
+         channel%seg(num_seg)%FQR3D_DIA(chn,chp,K) = &
+            channel%seg(num_seg)%FQR3D_DIA(chn,chp,K) + TENDENCY_RAIN(chl,k-1)
+         channel%seg(num_seg)%FQS3D_DIA(chn,chp,K) = &
+            channel%seg(num_seg)%FQS3D_DIA(chn,chp,K) + TENDENCY_SNOW(chl,k-1)
+         channel%seg(num_seg)%FQG3D_DIA(chn,chp,K) = &
+            channel%seg(num_seg)%FQG3D_DIA(chn,chp,K) + TENDENCY_GRAUPEL(chl,k-1)
         ENDDO 
 
        ENDDO  ! chp_loop

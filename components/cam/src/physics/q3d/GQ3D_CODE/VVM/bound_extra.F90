@@ -268,12 +268,12 @@ CONTAINS
           ! x-array        
           CALL HALO_NS (mi1,mim,mip,mj1,mjm,mjp,num_halo,NK1-1,    &
                         channel%seg(num_seg)%W3D(:,:,2:NK1),       &
-                        channel%seg(num_seg)%W3D_bg(:,:,2:NK1))
+                        channel%seg(num_seg)%W3D_bg(:,:,2:NK1))  
         ELSE
           ! y-array
           CALL HALO_EW (mi1,mim,mip,mj1,mjm,mjp,num_halo,NK1-1,    &
                         channel%seg(num_seg)%W3D(:,:,2:NK1),       &
-                        channel%seg(num_seg)%W3D_bg(:,:,2:NK1))
+                        channel%seg(num_seg)%W3D_bg(:,:,2:NK1))  
         ENDIF                      
         endif                        
       ENDIF
@@ -751,7 +751,7 @@ CONTAINS
            ENDDO
           ENDDO
          ENDDO  
-            
+                        
       end subroutine halo_ew
       
 !=========================================================================================      

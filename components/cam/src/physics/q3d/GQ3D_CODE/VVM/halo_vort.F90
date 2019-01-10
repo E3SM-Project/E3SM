@@ -330,8 +330,8 @@ CONTAINS
       DO K = 2, NK1
        DO I = mim, mip
         DO J = 1, mj1
-         channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX0(I,J,K-1)
-         channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY0(I,J,K-1)
+         channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX0(I,J,K)
+         channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY0(I,J,K)
         ENDDO
        ENDDO
       ENDDO

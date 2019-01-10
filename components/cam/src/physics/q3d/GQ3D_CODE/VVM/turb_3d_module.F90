@@ -1,6 +1,6 @@
 MODULE turb_3d_module
 ! Calculate turbulence effect
-! (SFLUX_2D and SFLUX_3D are removed. Need to know the sfc fluxes.)
+! Add LocalP option: use local density for physics
 
 USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
@@ -8,7 +8,7 @@ USE parmsld,        only: ntracer,nk1,nk2,nk3
 
 USE constld, only: nsflux,dt,dx,dy,dz,grav,vk,zt,fnz,fnt,rhoz,rho, &
                    pibar,pibarz,pbarz,zz, &
-                   nosfx,dxsq,dysq,dzsq,dxdy,physics 
+                   nosfx,dxsq,dysq,dzsq,dxdy,physics,localp 
                    
 USE utils, only: rll2cov,rll2con,con2rll                             
 
@@ -27,7 +27,16 @@ CONTAINS
 !
 !     FUNCTION TURB_H      : horizontal diffusion
 !     FUNCTION TURB_V      : vertical diffusion
-!---------------------------------------------------------------------
+!
+! JUNG: Pay attention to the way of shear calculation in Richardson number.
+!
+! SUBROUTINE SAM_SURFACE   : Calculate surface momentum fluxes 
+!        SUBROUTINE OCEFLX
+!        SUBROUTINE LANDFLX
+!        FUNCTION sam_qsatw
+!        FUNCTION sam_esatw
+!==========================================================================    
+
 
 !=======================================================================
    SUBROUTINE TURB_3D (ITT, channel)
@@ -39,23 +48,17 @@ CONTAINS
       type(channel_t), intent(inout) :: channel   ! channel data
       
 !     Local variables
-      REAL (KIND=r8) :: CRITMN,CRITMX,DELD,POWE,RAMD0S,RINUM
+      REAL (KIND=r8) :: CRITMN,CRITMX,DELD,RAMD0S,RINUM
       REAL (KIND=r8), DIMENSION(nk2) :: DDX,DDY,TERM
       
       INTEGER :: I,J,K,ITYPE,KLOW,num_seg
       INTEGER :: mi1,mim,mim_c,mim_ce,mip,mip_c,mj1,mjm,mjm_c,mjm_ce,mjp,mjp_c    
+
+      DELD=(DX*DY*DZ)**(1.0/3.0)
+      RAMD0S=(0.23_r8*DELD)**2
       
-      REAL (kind=r8), PARAMETER :: RNU = 100._r8
-      REAL (kind=r8), PARAMETER :: RKD = 0.21_r8
-      REAL (kind=r8), PARAMETER :: RKB = 0.7_r8
-
-      POWE=1.0_r8/3.0_r8
-      DELD=(DX*DY*DZ)**POWE
-
       CRITMN=10.0_r8
       CRITMX=0.8_r8*DELD*DELD/DT
-
-      RAMD0S=(0.23_r8*DELD)**2
 
 !**************************************************************************** 
       DO num_seg = 1, 4
@@ -102,6 +105,10 @@ CONTAINS
        ENDDO
        ENDDO
 
+      ENDDO  ! K-loop
+      
+      DO K = 2, NK2
+
        DO J = mjm_ce,mjp_c
        DO I = mim_ce,mip_c
         channel%seg(num_seg)%DEFXY(I,J,K) = &
@@ -116,16 +123,17 @@ CONTAINS
        DO I = mim_c,mip_c
         channel%seg(num_seg)%DEFXX(I,J,K) = &
           (channel%seg(num_seg)%U3DX_CO(I,J,K)-channel%seg(num_seg)%U3DX_CO(I-1,J,K)) &
-                  /(channel%seg(num_seg)%RG_T(I,J)*DX)
+                  /(SQRT(channel%seg(num_seg)%GG_T(3,I,J))*DX)
         channel%seg(num_seg)%DEFYY(I,J,K) = &
           (channel%seg(num_seg)%U3DY_CO(I,J,K)-channel%seg(num_seg)%U3DY_CO(I,J-1,K)) &
-                  /(channel%seg(num_seg)%RG_T(I,J)*DY)
+                  /(SQRT(channel%seg(num_seg)%GG_T(1,I,J))*DY)
+                  
         channel%seg(num_seg)%DEFZZ(I,J,K) = &
           (FNT(K)*(channel%seg(num_seg)%W3D(I,J,K)-channel%seg(num_seg)%W3D(I,J,K-1))/DZ)
        ENDDO
        ENDDO
 
-      ENDDO  ! K-loop
+      ENDDO  ! K-loop      
 
       DO J=mjm_c,mjp_c
       DO I=mim_c,mip_c
@@ -207,6 +215,20 @@ CONTAINS
         channel%seg(num_seg)%RKM(I,J,K) = min(channel%seg(num_seg)%RKM(I,J,K),CRITMX)
         channel%seg(num_seg)%RKH(I,J,K) = min(channel%seg(num_seg)%RKH(I,J,K),CRITMX)
       ENDDO
+      
+      IF (LocalP) THEN
+       DO K=KLOW,NK2
+        channel%seg(num_seg)%RKM(I,J,K) = channel%seg(num_seg)%RKM(I,J,K) &
+                                         *channel%seg(num_seg)%RHO_bg(I,J,K)
+        channel%seg(num_seg)%RKH(I,J,K) = channel%seg(num_seg)%RKH(I,J,K) &
+                                         *channel%seg(num_seg)%RHO_bg(I,J,K)
+       ENDDO            
+      ELSE
+       DO K=KLOW,NK2
+        channel%seg(num_seg)%RKM(I,J,K) = channel%seg(num_seg)%RKM(I,J,K)*RHO(K)
+        channel%seg(num_seg)%RKH(I,J,K) = channel%seg(num_seg)%RKH(I,J,K)*RHO(K)
+       ENDDO      
+      ENDIF
 
       ENDDO  ! I-loop
       ENDDO  ! J-loop
@@ -234,7 +256,7 @@ CONTAINS
 !******************************* 
 
       IF(.NOT.NOSFX) THEN 
-       IF (itt==1 .OR. MOD(ITT,nsflux) .EQ. 1) CALL SAM_SURFACE(channel)
+       IF (MOD((ITT-1),nsflux) .EQ. 0) CALL SAM_SURFACE(channel)
       ENDIF 
 
    END SUBROUTINE turb_3d
@@ -261,6 +283,7 @@ CONTAINS
       REAL (KIND=r8) :: FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0
       
       REAL (KIND=r8) :: TEMP1,TEMP2
+      REAL (KIND=r8) :: RHO_lay(nk2),RHO_int(nk2),FLUX_LO(nk2) 
       
 !*************************************************************************   
       DO num_seg = 1, 4
@@ -270,8 +293,10 @@ CONTAINS
       mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
       mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
 
+!=============================
       DO J = 1, mj1
       DO I = 1, mi1
+!=============================      
 
       COEFX_K = channel%seg(num_seg)%COEFX_K(I,J)
       COEFY_K = channel%seg(num_seg)%COEFY_K(I,J)
@@ -286,6 +311,23 @@ CONTAINS
       COEFA_Z = channel%seg(num_seg)%COEFA_Z(I,J)
       
       KLOWQ = channel%seg(num_seg)%KLOWQ_IJ(I,J)
+      
+      IF (LocalP) THEN
+        DO K = 2,nk2
+         RHO_lay(K) = channel%seg(num_seg)%RHO_bg(I,J,K)     
+        ENDDO 
+        DO K = 1,nk2
+         RHO_int(K) = channel%seg(num_seg)%RHOint_bg(I,J,K)    
+        ENDDO          
+      ELSE
+        DO K = 2,nk2
+         RHO_lay(K) = RHO(K)     
+        ENDDO 
+        DO K = 1,nk2
+         RHO_int(K) = RHOZ(K)     
+        ENDDO    
+      ENDIF   
+            
 !-----------------------------------------------------------
 !                         Z3DX (& V)
 !-----------------------------------------------------------
@@ -475,19 +517,18 @@ CONTAINS
         FXM_Y0 = channel%seg(num_seg)%RGG_Z(2,I-1,J)*(KVAL_P-KVAL_M)
        ENDIF
                            
-       channel%seg(num_seg)%FV_DIA(I,J,K) = channel%seg(num_seg)%FV_DIA(I,J,K) &
-                  + TURB_H(COEFX_K,COEFY_K,COEFA_K,FXP,FXM,FYP,FYM,     &
-                           FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,   &
-                           FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0,   &
-                           channel%seg(num_seg)%U3DY(I-1,J-1,K),        &
-                           channel%seg(num_seg)%U3DY(I,J-1,K),          &
-                           channel%seg(num_seg)%U3DY(I+1,J-1,K),        &
-                           channel%seg(num_seg)%U3DY(I-1,J  ,K),        & 
-                           channel%seg(num_seg)%U3DY(I,J  ,K),          &
-                           channel%seg(num_seg)%U3DY(I+1,J  ,K),        &
-                           channel%seg(num_seg)%U3DY(I-1,J+1,K),        &
-                           channel%seg(num_seg)%U3DY(I,J+1,K),          &
-                           channel%seg(num_seg)%U3DY(I+1,J+1,K))                                                           
+       FLUX_LO(K) =  TURB_H(COEFX_K,COEFY_K,COEFA_K,FXP,FXM,FYP,FYM,     &
+                            FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,   &
+                            FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0,   &
+                            channel%seg(num_seg)%U3DY(I-1,J-1,K),        &
+                            channel%seg(num_seg)%U3DY(I,J-1,K),          &
+                            channel%seg(num_seg)%U3DY(I+1,J-1,K),        &
+                            channel%seg(num_seg)%U3DY(I-1,J  ,K),        & 
+                            channel%seg(num_seg)%U3DY(I,J  ,K),          &
+                            channel%seg(num_seg)%U3DY(I+1,J  ,K),        &
+                            channel%seg(num_seg)%U3DY(I-1,J+1,K),        &
+                            channel%seg(num_seg)%U3DY(I,J+1,K),          &
+                            channel%seg(num_seg)%U3DY(I+1,J+1,K))                                                                               
 
       ENDDO  ! K-LOOP (Low level: mountainous region)
 
@@ -554,6 +595,9 @@ CONTAINS
                           channel%seg(num_seg)%Z3DX(I,J+1,K),          &
                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))                               
 
+      ENDDO  ! K-LOOP (high level: mountain-free region)
+      
+      DO K = KLOWQ_MAX, NK2  
 ! Diabatic_effect: turbulence (in terms of momentum)
 ! For v -------------------------------------------------------------------          
         KVAL_P = (channel%seg(num_seg)%RKM(I,J,K)           & 
@@ -591,19 +635,18 @@ CONTAINS
           FXP_Y0 = channel%seg(num_seg)%RGG_Z(2,I,J)*(KVAL_P-KVAL_M)
           FXM_Y0 = channel%seg(num_seg)%RGG_Z(2,I-1,J)*(KVAL_P-KVAL_M)
 
-      channel%seg(num_seg)%FV_DIA(I,J,K) = channel%seg(num_seg)%FV_DIA(I,J,K) &
-                 + TURB_H(COEFX_K,COEFY_K,COEFA_K,FXP,FXM,FYP,FYM,     &
-                          FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,   &
-                          FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0,   &
-                          channel%seg(num_seg)%U3DY(I-1,J-1,K),        &
-                          channel%seg(num_seg)%U3DY(I,J-1,K),          &
-                          channel%seg(num_seg)%U3DY(I+1,J-1,K),        &
-                          channel%seg(num_seg)%U3DY(I-1,J,K),          &
-                          channel%seg(num_seg)%U3DY(I,J,K),            &
-                          channel%seg(num_seg)%U3DY(I+1,J,K),          &
-                          channel%seg(num_seg)%U3DY(I-1,J+1,K),        &
-                          channel%seg(num_seg)%U3DY(I,J+1,K),          &
-                          channel%seg(num_seg)%U3DY(I+1,J+1,K))                       
+       FLUX_LO(K) = TURB_H(COEFX_K,COEFY_K,COEFA_K,FXP,FXM,FYP,FYM,     &
+                           FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,   &
+                           FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0,   &
+                           channel%seg(num_seg)%U3DY(I-1,J-1,K),        &
+                           channel%seg(num_seg)%U3DY(I,J-1,K),          &
+                           channel%seg(num_seg)%U3DY(I+1,J-1,K),        &
+                           channel%seg(num_seg)%U3DY(I-1,J,K),          &
+                           channel%seg(num_seg)%U3DY(I,J,K),            &
+                           channel%seg(num_seg)%U3DY(I+1,J,K),          &
+                           channel%seg(num_seg)%U3DY(I-1,J+1,K),        &
+                           channel%seg(num_seg)%U3DY(I,J+1,K),          &
+                           channel%seg(num_seg)%U3DY(I+1,J+1,K))                                           
         
       ENDDO  ! K-LOOP (high level: mountain-free region)
       
@@ -614,16 +657,16 @@ CONTAINS
 
 ! For ksi --------------------------------      
        IF (K.EQ.KLOWV) THEN
-          FXP = 0.5_r8*FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
-               +channel%seg(num_seg)%RKM(I,J+1,K+1))*FNZ(K)/(DZSQ*RHOZ(K))
+          FXP = 0.5_r8*FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
+               +channel%seg(num_seg)%RKM(I,J+1,K+1))*FNZ(K)/DZSQ
                
           FXM = 0.0_r8
        ELSE
-          FXP = 0.5_r8*FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
-               +channel%seg(num_seg)%RKM(I,J+1,K+1))*FNZ(K)/(DZSQ*RHOZ(K))
+          FXP = 0.5_r8*FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
+               +channel%seg(num_seg)%RKM(I,J+1,K+1))*FNZ(K)/DZSQ
                
-          FXM = 0.5_r8*FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)          &
-               +channel%seg(num_seg)%RKM(I,J+1,K))*FNZ(K)/(DZSQ*RHOZ(K))
+          FXM = 0.5_r8*FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
+               +channel%seg(num_seg)%RKM(I,J+1,K))*FNZ(K)/DZSQ
        ENDIF
 
        channel%seg(num_seg)%FZXTB(I,J,K) = channel%seg(num_seg)%FZXTB(I,J,K)          &
@@ -631,60 +674,77 @@ CONTAINS
                                                   channel%seg(num_seg)%Z3DX(I,J,K-1), &
                                                   channel%seg(num_seg)%Z3DX(I,J,K),   &
                                                   channel%seg(num_seg)%Z3DX(I,J,K+1))
+      ENDDO  ! k-loop
 
+      DO K = KLOWV, NK2      
 ! Diabatic_effect: turbulence (in terms of momentum)                                                  
 ! For v --------------------------------      
        IF (K.EQ.KLOWV) THEN
-          FXP = 0.25_r8*(FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
+          FXP = 0.25_r8*(FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)             &
                                            +channel%seg(num_seg)%RKM(I,J+1,K+1)) &
-                          +FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
                                          +channel%seg(num_seg)%RKM(I,J+1,K)))    &                   
-                     *FNT(K)/(DZSQ*RHO(K))
+                       *FNT(K)/DZSQ
                
           FXM = 0.0_r8
-       ELSE
-          FXP = 0.25_r8*(FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
-                                           +channel%seg(num_seg)%RKM(I,J+1,K+1)) &
-                          +FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
-                                         +channel%seg(num_seg)%RKM(I,J+1,K)))    &                   
-                     *FNT(K)/(DZSQ*RHO(K))
+       ELSE IF (K.EQ.NK2) THEN 
+          FXP = 0.0_r8
                
-          FXM = 0.25_r8*(FNT(K-1)*RHO(K-1)*(channel%seg(num_seg)%RKM(I,J,K-1)    &
+          FXM = 0.25_r8*(FNT(K-1)*(channel%seg(num_seg)%RKM(I,J,K-1)             &
                                            +channel%seg(num_seg)%RKM(I,J+1,K-1)) &
-                          +FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
                                          +channel%seg(num_seg)%RKM(I,J+1,K)))    &                   
-                     *FNT(K)/(DZSQ*RHO(K))
+                       *FNT(K)/DZSQ       
+       ELSE
+          FXP = 0.25_r8*(FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)             &
+                                           +channel%seg(num_seg)%RKM(I,J+1,K+1)) &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
+                                         +channel%seg(num_seg)%RKM(I,J+1,K)))    &                   
+                       *FNT(K)/DZSQ
+               
+          FXM = 0.25_r8*(FNT(K-1)*(channel%seg(num_seg)%RKM(I,J,K-1)             &
+                                           +channel%seg(num_seg)%RKM(I,J+1,K-1)) &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
+                                         +channel%seg(num_seg)%RKM(I,J+1,K)))    &                   
+                       *FNT(K)/DZSQ
        ENDIF
 
-       channel%seg(num_seg)%FV_DIA(I,J,K) = channel%seg(num_seg)%FV_DIA(I,J,K)         &
-                                          + TURB_V(FXP,FXM,                            &
-                                                   channel%seg(num_seg)%U3DY(I,J,K-1), &
-                                                   channel%seg(num_seg)%U3DY(I,J,K),   &
-                                                   channel%seg(num_seg)%U3DY(I,J,K+1))                                                                                                    
+       FLUX_LO(K) = FLUX_LO(K) + TURB_V(FXP,FXM,                            &
+                                        channel%seg(num_seg)%U3DY(I,J,K-1), &
+                                        channel%seg(num_seg)%U3DY(I,J,K),   &
+                                        channel%seg(num_seg)%U3DY(I,J,K+1))                                                                                                    
       ENDDO  ! k-loop
 
       ! WV (covariant components) vs. WV_CON (contravariant components)   
       IF (KLOWQ_P .EQ. KLOWQ) THEN
-        TEMP1 = channel%seg(num_seg)%WV(I,J)/channel%seg(num_seg)%RG_T(I,J)  &
-              + channel%seg(num_seg)%WV(I,J+1)/channel%seg(num_seg)%RG_T(I,J+1)
+        TEMP1 = channel%seg(num_seg)%WV(I,J)+channel%seg(num_seg)%WV(I,J+1)
         TEMP2 = channel%seg(num_seg)%WV_CON(I,J)+channel%seg(num_seg)%WV_CON(I,J+1)      
       ELSE IF (KLOWQ_P .GT. KLOWQ) THEN
-        TEMP1 = channel%seg(num_seg)%WV(I,J+1)/channel%seg(num_seg)%RG_T(I,J+1)
+        TEMP1 = channel%seg(num_seg)%WV(I,J+1)
         TEMP2 = channel%seg(num_seg)%WV_CON(I,J+1)
       ELSE
-        TEMP1 = channel%seg(num_seg)%WV(I,J)/channel%seg(num_seg)%RG_T(I,J) 
+        TEMP1 = channel%seg(num_seg)%WV(I,J)
         TEMP2 = channel%seg(num_seg)%WV_CON(I,J)
       ENDIF
       
 !     Add the effect of surface fluxes to ksi-equation
-      
       channel%seg(num_seg)%FZXTB(I,J,KLOWV)= channel%seg(num_seg)%FZXTB(I,J,KLOWV) &
-            + FNZ(KLOWV)*FNT(KLOWV)*0.5_r8*TEMP1/(RHO(KLOWV)*DZSQ)  
+                               + RHO_int(KLOWV)*FNZ(KLOWV)*FNT(KLOWV)*0.5_r8*TEMP1 &
+                               /(DZSQ*channel%seg(num_seg)%RG_V(I,J)*RHO_lay(KLOWV)) 
 
 !     Add the effect of surface fluxes to v-moment 
-      channel%seg(num_seg)%FV_DIA(I,J,KLOWV)= channel%seg(num_seg)%FV_DIA(I,J,KLOWV) &
-            + FNT(KLOWV)*0.5_r8*TEMP2/(RHO(KLOWV)*DZ)                     
-    
+      FLUX_LO(KLOWV) = FLUX_LO(KLOWV) + FNT(KLOWV)*0.5_r8*TEMP2/DZ                     
+
+      DO K = KLOWV, NK1
+        channel%seg(num_seg)%FZXTB(I,J,K)  = channel%seg(num_seg)%FZXTB(I,J,K) &
+                                           / RHO_int(K)                         
+      ENDDO  
+
+      DO K = KLOWV, NK2
+        channel%seg(num_seg)%FV_DIA(I,J,K) = channel%seg(num_seg)%FV_DIA(I,J,K) &
+                                           + FLUX_LO(K)/RHO_lay(K)                                 
+      ENDDO 
+      
 !-----------------------------------------------------------
 !                            Z3DY (& U)
 !-----------------------------------------------------------
@@ -869,8 +929,7 @@ CONTAINS
         FXM_Y0 = channel%seg(num_seg)%RGG_T(2,I,J)*(KVAL_P-KVAL_M)
        ENDIF
 
-       channel%seg(num_seg)%FU_DIA(I,J,K) = channel%seg(num_seg)%FU_DIA(I,J,K) &
-                  + TURB_H(COEFX_E,COEFY_E,COEFA_E,FXP,FXM,FYP,FYM,     &
+       FLUX_LO(K) = TURB_H(COEFX_E,COEFY_E,COEFA_E,FXP,FXM,FYP,FYM,     &
                            FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,   &
                            FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0,   &
                            channel%seg(num_seg)%U3DX(I-1,J-1,K),        &
@@ -886,7 +945,7 @@ CONTAINS
       ENDDO  ! K-LOOP (Low level: mountainous region)
 
       DO K = KLOWQ_MAX, NK1
-!     Not influenced by topography
+!     mountain-free region
 
 ! For eta -------------------------------------------------------------------
 
@@ -949,7 +1008,10 @@ CONTAINS
                            channel%seg(num_seg)%Z3DY(I-1,J+1,K),       &
                            channel%seg(num_seg)%Z3DY(I,J+1,K),         &
                            channel%seg(num_seg)%Z3DY(I+1,J+1,K))       
-
+      
+      ENDDO  ! K-LOOP
+      
+      DO K = KLOWQ_MAX, NK2
 ! Diabatic_effect: turbulence (in terms of momentum)
 ! For u -------------------------------------------------------------------
 
@@ -988,8 +1050,7 @@ CONTAINS
         FXP_Y0 = channel%seg(num_seg)%RGG_T(2,I+1,J)*(KVAL_P-KVAL_M)
         FXM_Y0 = channel%seg(num_seg)%RGG_T(2,I,J)*(KVAL_P-KVAL_M)                                   
 
-       channel%seg(num_seg)%FU_DIA(I,J,K) = channel%seg(num_seg)%FU_DIA(I,J,K) &
-                  + TURB_H(COEFX_E,COEFY_E,COEFA_E,FXP,FXM,FYP,FYM,    &
+       FLUX_LO(K) = TURB_H(COEFX_E,COEFY_E,COEFA_E,FXP,FXM,FYP,FYM,    &
                            FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,  &
                            FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0,  &
                            channel%seg(num_seg)%U3DX(I-1,J-1,K),       &
@@ -1001,7 +1062,7 @@ CONTAINS
                            channel%seg(num_seg)%U3DX(I-1,J+1,K),       &
                            channel%seg(num_seg)%U3DX(I,J+1,K),         &
                            channel%seg(num_seg)%U3DX(I+1,J+1,K))       
-      ENDDO  ! K-LOOP (high level: mountain-free region)
+      ENDDO  ! k-loop
 
 !------------------------
 ! VERTICAL DIFFUSION
@@ -1010,15 +1071,15 @@ CONTAINS
 
 ! For eta ------------------------------------
        IF (K.EQ.KLOWU) THEN
-          FXP = 0.5_r8*FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
-               +channel%seg(num_seg)%RKM(I+1,J,K+1))*FNZ(K)/(DZSQ*RHOZ(K))
+          FXP = 0.5_r8*FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
+               +channel%seg(num_seg)%RKM(I+1,J,K+1))*FNZ(K)/DZSQ
           FXM = 0.0_r8
        ELSE
-          FXP = 0.5_r8*FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
-               +channel%seg(num_seg)%RKM(I+1,J,K+1))*FNZ(K)/(DZSQ*RHOZ(K))
+          FXP = 0.5_r8*FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
+               +channel%seg(num_seg)%RKM(I+1,J,K+1))*FNZ(K)/DZSQ
                
-          FXM = 0.5_r8*FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)          &
-               +channel%seg(num_seg)%RKM(I+1,J,K))*FNZ(K)/(DZSQ*RHOZ(K))
+          FXM = 0.5_r8*FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
+               +channel%seg(num_seg)%RKM(I+1,J,K))*FNZ(K)/DZSQ
        ENDIF
 
        channel%seg(num_seg)%FZYTB(I,J,K) = channel%seg(num_seg)%FZYTB(I,J,K)          &
@@ -1026,59 +1087,75 @@ CONTAINS
                                                   channel%seg(num_seg)%Z3DY(I,J,K-1), & 
                                                   channel%seg(num_seg)%Z3DY(I,J,K),   &
                                                   channel%seg(num_seg)%Z3DY(I,J,K+1))
-
+      ENDDO  ! k-loop
+                                                  
+      DO K = KLOWU, NK2
 ! Diabatic_effect: turbulence (in terms of momentum)
 ! For u ------------------------------------
        IF (K.EQ.KLOWU) THEN
-          FXP = 0.25_r8*(FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
+          FXP = 0.25_r8*(FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)             &
                                            +channel%seg(num_seg)%RKM(I+1,J,K+1)) &
-                          +FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
                                          +channel%seg(num_seg)%RKM(I+1,J,K)))    &
-                     *FNT(K)/(DZSQ*RHO(K))
+                       *FNT(K)/DZSQ
           FXM = 0.0_r8
-       ELSE
-          FXP = 0.25_r8*(FNT(K+1)*RHO(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)    &
-                                           +channel%seg(num_seg)%RKM(I+1,J,K+1)) &
-                          +FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
-                                         +channel%seg(num_seg)%RKM(I+1,J,K)))    &
-                     *FNT(K)/(DZSQ*RHO(K))
+       ELSE IF (K.EQ.NK2) THEN
+          FXP = 0.0_r8
                
-          FXM = 0.25_r8*(FNT(K-1)*RHO(K-1)*(channel%seg(num_seg)%RKM(I,J,K-1)    &
+          FXM = 0.25_r8*(FNT(K-1)*(channel%seg(num_seg)%RKM(I,J,K-1)             &
                                            +channel%seg(num_seg)%RKM(I+1,J,K-1)) &
-                          +FNT(K)*RHO(K)*(channel%seg(num_seg)%RKM(I,J,K)        &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
                                          +channel%seg(num_seg)%RKM(I+1,J,K)))    &
-                     *FNT(K)/(DZSQ*RHO(K))
+                       *FNT(K)/DZSQ       
+       ELSE
+          FXP = 0.25_r8*(FNT(K+1)*(channel%seg(num_seg)%RKM(I,J,K+1)             &
+                                           +channel%seg(num_seg)%RKM(I+1,J,K+1)) &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
+                                         +channel%seg(num_seg)%RKM(I+1,J,K)))    &
+                       *FNT(K)/DZSQ
+               
+          FXM = 0.25_r8*(FNT(K-1)*(channel%seg(num_seg)%RKM(I,J,K-1)             &
+                                           +channel%seg(num_seg)%RKM(I+1,J,K-1)) &
+                          +FNT(K)*(channel%seg(num_seg)%RKM(I,J,K)               &
+                                         +channel%seg(num_seg)%RKM(I+1,J,K)))    &
+                       *FNT(K)/DZSQ
        ENDIF
 
-       channel%seg(num_seg)%FU_DIA(I,J,K) = channel%seg(num_seg)%FU_DIA(I,J,K)         &
-                                          + TURB_V(FXP,FXM,                            &
-                                                   channel%seg(num_seg)%U3DX(I,J,K-1), & 
-                                                   channel%seg(num_seg)%U3DX(I,J,K),   &
-                                                   channel%seg(num_seg)%U3DX(I,J,K+1))                                                  
+       FLUX_LO(K) = FLUX_LO(K) + TURB_V(FXP,FXM,                            &
+                                        channel%seg(num_seg)%U3DX(I,J,K-1), & 
+                                        channel%seg(num_seg)%U3DX(I,J,K),   &
+                                        channel%seg(num_seg)%U3DX(I,J,K+1))                                                  
       ENDDO  ! k-loop
 
 
      ! UW (covariant components)  vs.  UW_CON(contravariant components)  
       IF (KLOWQ_P .EQ. KLOWQ) THEN
-        TEMP1 = channel%seg(num_seg)%UW(I,J)/channel%seg(num_seg)%RG_T(I,J)     &
-             + channel%seg(num_seg)%UW(I+1,J)/channel%seg(num_seg)%RG_T(I+1,J)
+        TEMP1 = channel%seg(num_seg)%UW(I,J)+channel%seg(num_seg)%UW(I+1,J)
         TEMP2 = channel%seg(num_seg)%UW_CON(I,J)+channel%seg(num_seg)%UW_CON(I+1,J)     
       ELSE IF (KLOWQ_P .GT. KLOWQ) THEN
-        TEMP1 = channel%seg(num_seg)%UW(I+1,J)/channel%seg(num_seg)%RG_T(I+1,J)
+        TEMP1 = channel%seg(num_seg)%UW(I+1,J)
         TEMP2 = channel%seg(num_seg)%UW_CON(I+1,J)
       ELSE
-        TEMP1 = channel%seg(num_seg)%UW(I,J)/channel%seg(num_seg)%RG_T(I,J)  
+        TEMP1 = channel%seg(num_seg)%UW(I,J) 
         TEMP2 = channel%seg(num_seg)%UW_CON(I,J)                      
       ENDIF
            
 !     Add the effect of surface fluxes to eta-equation           
       channel%seg(num_seg)%FZYTB(I,J,KLOWU)= channel%seg(num_seg)%FZYTB(I,J,KLOWU) &
-            -FNZ(KLOWU)*FNT(KLOWU)*0.5_r8*TEMP1/(RHO(KLOWU)*DZSQ)   
+                               - RHO_int(KLOWU)*FNZ(KLOWU)*FNT(KLOWU)*0.5_r8*TEMP1 &
+                               /(DZSQ*channel%seg(num_seg)%RG_U(I,J)*RHO_lay(KLOWU))  
 
 !     Add the effect of surface fluxes to u-moment
-      channel%seg(num_seg)%FU_DIA(I,J,KLOWV)= channel%seg(num_seg)%FU_DIA(I,J,KLOWV) &
-            + FNT(KLOWV)*0.5_r8*TEMP2/(RHO(KLOWV)*DZ)                                                                                 
-                
+      FLUX_LO(KLOWU) = FLUX_LO(KLOWU) + FNT(KLOWU)*0.5_r8*TEMP2/DZ                                                                                 
+
+      DO K = KLOWU, NK1
+        channel%seg(num_seg)%FZYTB(I,J,K)  = channel%seg(num_seg)%FZYTB(I,J,K) &
+                                           / RHO_int(K)                        
+      ENDDO    
+      DO K = KLOWU, NK2
+        channel%seg(num_seg)%FU_DIA(I,J,K) = channel%seg(num_seg)%FU_DIA(I,J,K) &  
+                                           + FLUX_LO(K)/RHO_lay(K)                                
+      ENDDO                       
 !-----------------------------------------------------------
 !                           Z3DZ (TOP LAYER)
 !-----------------------------------------------------------
@@ -1143,16 +1220,21 @@ CONTAINS
             +channel%seg(num_seg)%RKM(I+1,J,NK1)    &
             +channel%seg(num_seg)%RKM(I,J+1,NK1)    &
             +channel%seg(num_seg)%RKM(I+1,J+1,NK1)) &
-           *FNZ(NK1)*RHOZ(NK1)*FNT(NK2)/(8.0_r8*DZSQ*RHO(NK2))
+           *FNZ(NK1)*FNT(NK2)/(8.0_r8*DZSQ)
 
       channel%seg(num_seg)%FZTOPB(I,J) = channel%seg(num_seg)%FZTOPB(I,J)           &
                                        + TURB_V(FXP,FXM,                            &
                                                 channel%seg(num_seg)%Z3DZ(I,J,NK1), &
                                                 channel%seg(num_seg)%Z3DZ(I,J,NK2), &
                                                 channel%seg(num_seg)%Z3DZ(I,J,NK3))
+      
+      channel%seg(num_seg)%FZTOPB(I,J) = channel%seg(num_seg)%FZTOPB(I,J) &
+                                       / RHO_lay(NK2)                                          
 
+!=============================
       ENDDO   ! I-loop
       ENDDO   ! J-loop
+!=============================      
 
 !******************************  
       ENDDO   ! num_seg 
@@ -1167,6 +1249,9 @@ CONTAINS
  
       type(channel_t), intent(inout) :: channel   ! channel data
       
+      ! Local
+      LOGICAL :: CAL_QT = .FALSE.    ! Calculate the turbulent effect of QT?
+      
       INTEGER :: I,J,K,nt,klow,klowq_max,mi1,mj1,num_seg
 
       REAL (KIND=r8) :: COEFX,COEFY,COEFA
@@ -1175,6 +1260,8 @@ CONTAINS
       REAL (KIND=r8) :: FXP,FXM,FYP,FYM
       REAL (KIND=r8) :: FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0
       REAL (KIND=r8) :: FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0
+      
+      REAL (KIND=r8) :: RHO_lay(nk2)
 
 !*************************************************************************   
       DO num_seg = 1, 4
@@ -1189,8 +1276,17 @@ CONTAINS
       
       COEFX = channel%seg(num_seg)%COEFX(I,J)
       COEFY = channel%seg(num_seg)%COEFY(I,J)
-      COEFA = channel%seg(num_seg)%COEFA(I,J)      
+      COEFA = channel%seg(num_seg)%COEFA(I,J) 
       
+      IF (LocalP) THEN
+        DO K = 2,nk2
+         RHO_lay(K) = channel%seg(num_seg)%RHO_bg(I,J,K)     
+        ENDDO     
+      ELSE
+        DO K = 2,nk2
+         RHO_lay(K) = RHO(K)     
+        ENDDO 
+      ENDIF   
 !-------------------------
 ! HORIZONTAL DIFFUSION
 !-------------------------
@@ -1327,6 +1423,7 @@ CONTAINS
       ENDIF  ! PHYSICS
 !------------------------
 
+      IF (CAL_QT) THEN
       DO nt = 1, ntracer
       channel%seg(num_seg)%QTAD3(I,J,K,nt) = &
                      TURB_H(COEFX,COEFY,COEFA,FXP,FXM,FYP,FYM,           &
@@ -1342,6 +1439,7 @@ CONTAINS
                             channel%seg(num_seg)%QT3D(I,J+1,K,nt),       &
                             channel%seg(num_seg)%QT3D(I+1,J+1,K,nt))
       ENDDO
+      ENDIF   ! CAL_QT
 
       ENDDO   ! K-LOOP (Low level: mountainous region)
 
@@ -1442,6 +1540,7 @@ CONTAINS
       ENDIF  ! PHYSICS
 !------------------------
 
+      IF (CAL_QT) THEN
       DO nt = 1, ntracer
       channel%seg(num_seg)%QTAD3(I,J,K,nt) &
                    = TURB_H(COEFX,COEFY,COEFA,FXP,FXM,FYP,FYM,            &
@@ -1457,6 +1556,7 @@ CONTAINS
                             channel%seg(num_seg)%QT3D(I,J+1,K,nt),        &
                             channel%seg(num_seg)%QT3D(I+1,J+1,K,nt))
       ENDDO
+      ENDIF  ! CAL_QT
 
       ENDDO  ! K-LOOP (high level: mountain-free region)                         
 
@@ -1473,19 +1573,19 @@ CONTAINS
       DO K = KLOW, NK2
 
        IF (K.EQ.KLOW) THEN
-          FXP = 0.5_r8*FNT(K)*FNZ(K)*RHOZ(K)*(channel%seg(num_seg)%RKH(I,J,K+1)   &
-               +channel%seg(num_seg)%RKH(I,J,K))/(RHO(K)*DZSQ)
+          FXP = 0.5_r8*FNT(K)*FNZ(K)*(channel%seg(num_seg)%RKH(I,J,K+1)   &
+               +channel%seg(num_seg)%RKH(I,J,K))/DZSQ
           FXM = 0.0_r8
        ELSE IF (K.EQ.NK2) THEN
           FXP = 0.0_r8
-          FXM = 0.5_r8*FNT(K)*FNZ(K-1)*RHOZ(K-1)*(channel%seg(num_seg)%RKH(I,J,K) &
-               +channel%seg(num_seg)%RKH(I,J,K-1))/(RHO(K)*DZSQ)
+          FXM = 0.5_r8*FNT(K)*FNZ(K-1)*(channel%seg(num_seg)%RKH(I,J,K) &
+               +channel%seg(num_seg)%RKH(I,J,K-1))/DZSQ
        ELSE
-          FXP = 0.5_r8*FNT(K)*FNZ(K)*RHOZ(K)*(channel%seg(num_seg)%RKH(I,J,K+1)   &
-               +channel%seg(num_seg)%RKH(I,J,K))/(RHO(K)*DZSQ)
+          FXP = 0.5_r8*FNT(K)*FNZ(K)*(channel%seg(num_seg)%RKH(I,J,K+1)   &
+               +channel%seg(num_seg)%RKH(I,J,K))/DZSQ
                
-          FXM = 0.5_r8*FNT(K)*FNZ(K-1)*RHOZ(K-1)*(channel%seg(num_seg)%RKH(I,J,K) &
-               +channel%seg(num_seg)%RKH(I,J,K-1))/(RHO(K)*DZSQ)
+          FXM = 0.5_r8*FNT(K)*FNZ(K-1)*(channel%seg(num_seg)%RKH(I,J,K) &
+               +channel%seg(num_seg)%RKH(I,J,K-1))/DZSQ
        ENDIF
 
        channel%seg(num_seg)%THAD3(I,J,K) = channel%seg(num_seg)%THAD3(I,J,K)          &
@@ -1498,7 +1598,13 @@ CONTAINS
                                          + TURB_V(FXP,FXM,                            &
                                                   channel%seg(num_seg)%QV3D(I,J,K-1), &
                                                   channel%seg(num_seg)%QV3D(I,J,K),   &
-                                                  channel%seg(num_seg)%QV3D(I,J,K+1))                        
+                                                  channel%seg(num_seg)%QV3D(I,J,K+1))    
+                                                  
+       channel%seg(num_seg)%THAD3(I,J,K) = channel%seg(num_seg)%THAD3(I,J,K) &
+                                         / RHO_lay(K)
+       channel%seg(num_seg)%QVAD3(I,J,K) = channel%seg(num_seg)%QVAD3(I,J,K) &
+                                         / RHO_lay(K)                                         
+                                                                                               
 !------------------------
       IF (PHYSICS) THEN
 !------------------------
@@ -1512,27 +1618,36 @@ CONTAINS
                                          + TURB_V(FXP,FXM,                            &
                                                   channel%seg(num_seg)%QI3D(I,J,K-1), &
                                                   channel%seg(num_seg)%QI3D(I,J,K),   &
-                                                  channel%seg(num_seg)%QI3D(I,J,K+1))  
+                                                  channel%seg(num_seg)%QI3D(I,J,K+1)) 
+       
+       channel%seg(num_seg)%QCAD3(I,J,K) = channel%seg(num_seg)%QCAD3(I,J,K) &
+                                         / RHO_lay(K)
+       channel%seg(num_seg)%QIAD3(I,J,K) = channel%seg(num_seg)%QIAD3(I,J,K) &
+                                         / RHO_lay(K)                                          
 !------------------------
       ENDIF  ! PHYSICS
 !------------------------
 
+       IF (CAL_QT) THEN
        DO nt = 1, ntracer
        channel%seg(num_seg)%QTAD3(I,J,K,nt) = channel%seg(num_seg)%QTAD3(I,J,K,nt)    &
                                             + TURB_V(FXP,FXM,                         &
                                               channel%seg(num_seg)%QT3D(I,J,K-1,nt),  &
                                               channel%seg(num_seg)%QT3D(I,J,K,nt),    &
                                               channel%seg(num_seg)%QT3D(I,J,K+1,nt))
+       channel%seg(num_seg)%QTAD3(I,J,K,nt) = channel%seg(num_seg)%QTAD3(I,J,K,nt) &
+                                            / RHO_lay(K)                                      
        ENDDO
-
+       ENDIF  ! CAL_QT
+       
       ENDDO  ! K-LOOP
 
 !     Add the surface fluxes
 
       channel%seg(num_seg)%THAD3(I,J,KLOW) = channel%seg(num_seg)%THAD3(I,J,KLOW)  &
-                + FNT(KLOW)*channel%seg(num_seg)%WTH(I,J)/(RHO(KLOW)*DZ)  
+                + FNT(KLOW)*channel%seg(num_seg)%WTH(I,J)/(RHO_lay(KLOW)*DZ)  
       channel%seg(num_seg)%QVAD3(I,J,KLOW) = channel%seg(num_seg)%QVAD3(I,J,KLOW)  &
-                + FNT(KLOW)*channel%seg(num_seg)%WQV(I,J)/(RHO(KLOW)*DZ)     
+                + FNT(KLOW)*channel%seg(num_seg)%WQV(I,J)/(RHO_lay(KLOW)*DZ)     
 
       ENDDO   ! I-Loop
       ENDDO   ! J-Loop
@@ -1593,11 +1708,14 @@ CONTAINS
 
       END FUNCTION turb_v
 
-!--------------------------------------------------------------------------
+!========================================================================== 
    SUBROUTINE SAM_SURFACE (channel)
+!==========================================================================    
 !  1. Calculate surface momentum fluxes in RLL coordinates.   
 !  2. Convert the output to covariant components (UW and WV).
 !  3. Convert the output to contravariant components (UW_CON and WV_CON)
+!
+!  Add LocalP option:
 !-------------------------------------------------------------------------- 
 !  NOTE: Surface flux calculation from SAM.
 !  (LANDFLX) A limit on fluxes to avoid too large fluxes over large surface roughness 
@@ -1605,11 +1723,11 @@ CONTAINS
 !  (OCEFLX)  zbot should be > 10m; "grav" is used. 
 !
 !  Temporary use of channel%seg(num_seg)%TERM1 
-!  channel%seg(num_seg)%TERM1(I,J,1): sensible heat flux <WT> (Km/s)
-!  channel%seg(num_seg)%TERM1(I,J,2): latent heat flux   <WQ> (m/s)
-!  channel%seg(num_seg)%TERM1(I,J,3): momentum flux at t-point <WV> (m/s)
-!  channel%seg(num_seg)%TERM1(I,J,5): U_H in RLL coordinates (t-point)
-!  channel%seg(num_seg)%TERM1(I,J,6): V_H in RLL coordinates (t-point)
+!  SFX(I,J): sensible heat flux <WT> (Km/s)
+!  LFX(I,J): latent heat flux   <WQ> (m/s)
+!  MFX(I,J): momentum flux at t-point <WV> (m/s)
+!  U_H_rll(I,J): U_H in RLL coordinates (t-point)
+!  V_H_rll(I,J): V_H in RLL coordinates (t-point)
 !-------------------------------------------------------------------------- 
    type(channel_t), intent(inout) :: channel   ! channel data
    
@@ -1637,6 +1755,10 @@ CONTAINS
           
    REAL(KIND=r8) :: VMAP(2),VMAP_COV(2),VMAP_CON(2)                                                 
 
+   REAL(KIND=r8), DIMENSION(:,:), allocatable :: SFX,LFX,MFX,U_H_rll,V_H_rll
+   REAL(KIND=r8), DIMENSION(:,:), allocatable :: PIBAR_KLOW,RHO_KLOW,PIBARZ_KLOW_1, &
+                                                 PBARZ_KLOW_1,RHOZ_KLOW_1    ! JUNG_LocalP
+
 !**************************************************************************** 
    DO num_seg = 1, 4
 !**************************************************************************** 
@@ -1645,13 +1767,43 @@ CONTAINS
    
    mip_c = channel%seg(num_seg)%mip_c 
    mjp_c = channel%seg(num_seg)%mjp_c 
+
+   allocate(SFX(mip_c,mjp_c))
+   allocate(LFX(mip_c,mjp_c))
+   allocate(MFX(mip_c,mjp_c))
+   allocate(U_H_rll(mip_c,mjp_c))
+   allocate(V_H_rll(mip_c,mjp_c))
    
+   allocate(PIBAR_KLOW(mip_c,mjp_c))
+   allocate(RHO_KLOW(mip_c,mjp_c))
+   allocate(PIBARZ_KLOW_1(mip_c,mjp_c))
+   allocate(PBARZ_KLOW_1(mip_c,mjp_c))
+   allocate(RHOZ_KLOW_1(mip_c,mjp_c))
+ 
+   DO J = 1, mjp_c
+    DO I = 1, mip_c
+     KLOW = channel%seg(num_seg)%KLOWQ_IJ(I,J)
+     IF (LocalP) THEN
+       PIBAR_KLOW(I,J)    = channel%seg(num_seg)%PImid_bg(I,J,KLOW)
+       PIBARZ_KLOW_1(I,J) = channel%seg(num_seg)%PIint_bg(I,J,KLOW-1) 
+       PBARZ_KLOW_1(I,J)  = channel%seg(num_seg)%Pint_bg(I,J,KLOW-1) 
+       RHO_KLOW(I,J)      = channel%seg(num_seg)%RHO_bg(I,J,KLOW) 
+       RHOZ_KLOW_1(I,J)   = RHO_KLOW(I,J)
+     ELSE
+       PIBAR_KLOW(I,J)    = PIBAR(KLOW)
+       PIBARZ_KLOW_1(I,J) = PIBARZ(KLOW-1) 
+       PBARZ_KLOW_1(I,J)  = PBARZ(KLOW-1)
+       RHO_KLOW(I,J)      = RHO(KLOW)
+       RHOZ_KLOW_1(I,J)   = RHO_KLOW(I,J)
+     ENDIF
+    ENDDO
+   ENDDO  
+         
    DO J = 1, mjp_c
     DO I = 1, mip_c
      KLOW = channel%seg(num_seg)%KLOWQ_IJ(I,J)
      
      HGT  = ZT(KLOW) - ZZ(KLOW-1)
-     
      T_H  = channel%seg(num_seg)%TH3D(I,J,KLOW)
      Q_H  = channel%seg(num_seg)%QV3D(I,J,KLOW)
      
@@ -1665,63 +1817,52 @@ CONTAINS
                     channel%seg(num_seg)%AM_T(3,I,J),channel%seg(num_seg)%AM_T(4,I,J), &
                     U_H,V_H)      
                   
-     channel%seg(num_seg)%TERM1(I,J,5) = VMAP(1)                        
-     channel%seg(num_seg)%TERM1(I,J,6) = VMAP(2)
+     U_H_rll(I,J) = VMAP(1)                      
+     V_H_rll(I,J) = VMAP(2)  
      
-     TA_H = channel%seg(num_seg)%TH3D(I,J,KLOW)*PIBAR(KLOW)
+     TA_H = channel%seg(num_seg)%TH3D(I,J,KLOW)*PIBAR_KLOW(I,J)
      
-     T_S   = channel%seg(num_seg)%TG(I,J)/PIBARZ(KLOW-1)
+     T_S   = channel%seg(num_seg)%TG(I,J)/PIBARZ_KLOW_1(I,J)
      TA_S  = channel%seg(num_seg)%TG(I,J)
-     Pmb_S = PBARZ(KLOW-1)*0.01_r8
+     Pmb_S = PBARZ_KLOW_1(I,J)*0.01_r8
      
      GWET  = channel%seg(num_seg)%GWET(I,J)
 
      IF(channel%seg(num_seg)%LOCEAN(I,J)) THEN
 
        Q_S = GWET*SALT_FACTOR*SAM_QSATW(TA_S,Pmb_S)
-
-       CALL OCEFLX(RHO(KLOW),VMAP(1),VMAP(2),TA_H,Q_H,T_H,HGT,T_S,Q_S, &
-                   channel%seg(num_seg)%TERM1(I,J,1), &
-                   channel%seg(num_seg)%TERM1(I,J,2), &
-                   channel%seg(num_seg)%TERM1(I,J,3))
+       CALL OCEFLX(RHO_KLOW(I,J),VMAP(1),VMAP(2),TA_H,Q_H,T_H,HGT,T_S,Q_S, &
+                   SFX(I,J),LFX(I,J),MFX(I,J))
           
      ELSE
      
        Z0  = channel%seg(num_seg)%ZROUGH(I,J)
        Q_S = GWET*SAM_QSATW(TA_S,Pmb_S)
- 
        CALL LANDFLX(T_H,T_S,Q_H,Q_S,VMAP(1),VMAP(2),HGT,Z0,    &
-                    channel%seg(num_seg)%TERM1(I,J,1), &
-                    channel%seg(num_seg)%TERM1(I,J,2), &
-                    channel%seg(num_seg)%TERM1(I,J,3))
+                    SFX(I,J),LFX(I,J),MFX(I,J))
 
      ENDIF  
+     
+    ENDDO  ! i-loop
+   ENDDO   ! j-loop 
 
-    ENDDO
-   ENDDO
-   
    DO J = 1, mj1
     DO I = 1, mi1
-       channel%seg(num_seg)%WTH(I,J) = channel%seg(num_seg)%TERM1(I,J,1) &
-                                      *RHOZ(KLOW-1)/PIBARZ(KLOW-1)
-       channel%seg(num_seg)%WQV(I,J) = channel%seg(num_seg)%TERM1(I,J,2) &
-                                      *RHOZ(KLOW-1)
+       channel%seg(num_seg)%WTH(I,J) = SFX(I,J)*RHOZ_KLOW_1(I,J)/PIBARZ_KLOW_1(I,J)
+       channel%seg(num_seg)%WQV(I,J) = LFX(I,J)*RHOZ_KLOW_1(I,J)
     ENDDO
    ENDDO   
+
+!#ifdef JUNG_TEST
 
    ! UW and WV are defined at t-points (Values in RLL coordinates)
    DO J = 1, mjp_c
     DO I = 1, mip_c
-       channel%seg(num_seg)%UW(I,J) = channel%seg(num_seg)%TERM1(I,J,5) &
-                                     *channel%seg(num_seg)%TERM1(I,J,3) &
-                                     *RHOZ(KLOW-1)
-       channel%seg(num_seg)%WV(I,J) = channel%seg(num_seg)%TERM1(I,J,6) &
-                                     *channel%seg(num_seg)%TERM1(I,J,3) &
-                                     *RHOZ(KLOW-1)
+       channel%seg(num_seg)%UW(I,J) = U_H_rll(I,J)*MFX(I,J)*RHOZ_KLOW_1(I,J)  
+       channel%seg(num_seg)%WV(I,J) = V_H_rll(I,J)*MFX(I,J)*RHOZ_KLOW_1(I,J)  
     ENDDO
    ENDDO 
 
-    
    DO J = 1, mjp_c
     DO I = 1, mip_c
        ! RLL to Covariant components  
@@ -1739,8 +1880,35 @@ CONTAINS
        channel%seg(num_seg)%UW_CON(I,J) = VMAP_CON(1)
        channel%seg(num_seg)%WV_CON(I,J) = VMAP_CON(2) 
     ENDDO
-   ENDDO     
+   ENDDO   
 
+!#else
+#ifdef JUNG_TEST
+
+   DO J = 1, mjp_c
+    DO I = 1, mip_c
+       channel%seg(num_seg)%UW(I,J) = 0.0_r8
+       channel%seg(num_seg)%WV(I,J) = 0.0_r8 
+       
+       channel%seg(num_seg)%UW_CON(I,J) = 0.0_r8
+       channel%seg(num_seg)%WV_CON(I,J) = 0.0_r8 
+    ENDDO
+   ENDDO   
+
+#endif     
+
+   deallocate(SFX)
+   deallocate(LFX)
+   deallocate(MFX)
+   deallocate(U_H_rll)
+   deallocate(V_H_rll)
+   
+   deallocate(PIBAR_KLOW)
+   deallocate(RHO_KLOW)
+   deallocate(PIBARZ_KLOW_1)
+   deallocate(PBARZ_KLOW_1)
+   deallocate(RHOZ_KLOW_1)
+      
 !*******************************
       ENDDO   ! num_seg 
 !******************************* 
