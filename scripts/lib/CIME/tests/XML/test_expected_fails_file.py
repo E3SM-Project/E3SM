@@ -115,7 +115,7 @@ class TestExpectedFailsFile(unittest.TestCase):
             xml_file.write(contents)
 
         with six.assertRaisesRegex(self, CIMEError, "Schemas validity error"):
-            expected_fails_file = ExpectedFailsFile(self._xml_filepath)
+            _ = ExpectedFailsFile(self._xml_filepath)
 
 if __name__ == '__main__':
     unittest.main()
