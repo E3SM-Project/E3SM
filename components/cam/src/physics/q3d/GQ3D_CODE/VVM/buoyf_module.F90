@@ -78,7 +78,7 @@ CONTAINS
         ENDDO
         DO K = klowv, nk1
          channel%seg(num_seg)%FZXBU(I,J,K) = &
-         channel%seg(num_seg)%FZXBU(I,J,K)*GRAV/(2.*DY*channel%seg(num_seg)%RG_V(I,J))
+         channel%seg(num_seg)%FZXBU(I,J,K)*GRAV/(2.0_r8*DY*channel%seg(num_seg)%RG_V(I,J))
         ENDDO
 
         DO K = klowu, nk1

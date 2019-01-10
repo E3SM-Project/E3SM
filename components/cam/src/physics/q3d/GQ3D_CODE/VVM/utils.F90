@@ -15,6 +15,8 @@ MODULE utils
      fintrp,    &  ! 1-D interpolation
      ran2,      &  ! random number generator
      cubicint,  &  ! 1-D cubic spline interpolation
+     spline,    &  ! Used for cubic spline interpolation 
+     splint,    &  ! Used for cubic spline interpolation 
      find_face, &  ! find the cube face number 
      latval,    &  ! find the latitude [rad]
      lonval,    &  ! find the longitude [rad]
@@ -28,6 +30,10 @@ MODULE utils
      amtx12,    &  ! find the transformation matrix A12
      amtx21,    &  ! find the transformation matrix A21
      amtx22,    &  ! find the transformation matrix A22 
+     vamtx11,   &  ! calculation of inverse matrix AI11 
+     vamtx12,   &  ! calculation of inverse matrix AI12 
+     vamtx21,   &  ! calculation of inverse matrix AI21
+     vamtx22,   &  ! calculation of inverse matrix AI22               
      imatrix,   &  ! calculation of inverse matrix 
      cangle,    &  ! calculation of central angle   
      con2rll,   &  ! convert a contravariant vector to a RLL vector
@@ -223,7 +229,7 @@ MODULE utils
       
       ! Local variables
       REAL (KIND=r8) :: YP1,YPN    ! First derivative of the interpolating function 
-                                         ! at points 1 and n, respectively.
+                                   ! at points 1 and n, respectively.
       
       REAL (KIND=r8),DIMENSION(NSIZE) :: Y2
       REAL (KIND=r8) :: X_INT,Y_INT
@@ -239,10 +245,12 @@ MODULE utils
        CALL SPLINT(XVAL,YVAL,Y2,NSIZE,X_INT,Y_INT)
        YNEW(I) =  Y_INT
       ENDDO
+       
+      END SUBROUTINE cubicint 
 
-      CONTAINS
-
+!======================================================================== 
       SUBROUTINE SPLINE(X,Y,N,YP1,YPN,Y2)
+!========================================================================       
 !     This routine returns an array Y2 (= second derivatives)      
 !     yp1 or ypn=0: second derivative is zero (natural cubic spline) 
 
@@ -286,7 +294,9 @@ MODULE utils
       
       END SUBROUTINE spline
 
+!======================================================================== 
       SUBROUTINE SPLINT(XA,YA,Y2A,N,X,Y)
+!========================================================================       
 !     Returns a cubic-spline interpolated value Y at X-point 
 
       INTEGER,INTENT(IN) :: N
@@ -317,9 +327,7 @@ MODULE utils
         +((A**3-A)*Y2A(KLO)+(B**3-B)*Y2A(KHI))*(H**2)/6.0_r8
       
       END SUBROUTINE splint 
-             
-      END SUBROUTINE cubicint 
-
+      
 !======================================================================== 
       FUNCTION FIND_FACE ( A, B ) RESULT(FIND_FACE_result)
 !========================================================================
@@ -442,14 +450,18 @@ MODULE utils
       REAL (KIND=r8), INTENT(IN) ::  LONV,LATV,PIVAL
       REAL (KIND=r8) :: ALPHAV_result
       
-      REAL (KIND=r8) :: TAN_LAT,SIN_LON
+      REAL (KIND=r8) :: LONV_USE,TAN_LAT,SIN_LON
 
       TAN_LAT  = DTAN(LATV)
       SIN_LON  = DSIN(LONV)
-         
+      
       SELECT CASE (N)
-        CASE(1:4)
-          ALPHAV_result = LONV - 0.5_r8*(N-1)*PIVAL 
+        CASE(1)
+          LONV_USE = LONV
+          if (LONV_USE .gt. 0.5_r8*PIVAL) LONV_USE = LONV_USE - 2.0_r8*PIVAL  
+          ALPHAV_result = LONV_USE 
+        CASE(2:4)
+          ALPHAV_result = LONV - 0.5_r8*(N-1)*PIVAL   
         CASE(5)
           ALPHAV_result = DATAN(SIN_LON/TAN_LAT)
         CASE(6)
@@ -732,6 +744,9 @@ MODULE utils
 !     CALCULATION OF INVERSE MATRIX for (2x2) matrix
 !     INPUT : (2x2) matrix A
 !     OUTPUT: (2x2) inverse matrix of A
+!
+!     Note: This function fails at lon. = 90 (Faces 5 & 6 alpha > 0 & beta=0)
+!           Not used.
 !======================================================================== 
       
       REAL (KIND=r8), DIMENSION(2,2), INTENT(IN) :: MAT
@@ -783,6 +798,126 @@ MODULE utils
         
       END FUNCTION imatrix  
 
+!======================================================================== 
+      FUNCTION VAMTX11 ( N, A, B ) RESULT(VAMTX11_result)
+!========================================================================       
+!     N (Face number), A (alpha value), B (beta value), RLON (Longitude)
+ 
+      INTEGER, INTENT(IN) :: N
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: VAMTX11_result
+      
+      REAL (KIND=r8) :: COS_A,TAN_A,TAN_B
+      REAL (KIND=r8) :: GAMMA,RLON
+
+      COS_A = DCOS(A)
+      TAN_A = DTAN(A)
+      TAN_B = DTAN(B)
+      GAMMA = SQRT(1.0_r8+ TAN_A**2 + TAN_B**2)
+         
+      SELECT CASE (N)
+        CASE(1:4)
+          VAMTX11_result =  GAMMA*COS_A  
+        CASE(5)
+          RLON = DATAN2(TAN_A,-TAN_B)
+          VAMTX11_result =  GAMMA*(COS_A**2)*DCOS(RLON)
+        CASE(6)
+          RLON = DATAN2(TAN_A,TAN_B)
+          VAMTX11_result = GAMMA*(COS_A**2)*DCOS(RLON)
+      END SELECT   
+       
+      END FUNCTION vamtx11
+!========================================================================       
+      FUNCTION VAMTX12 ( N, A, B ) RESULT(VAMTX12_result)
+!========================================================================       
+!     N (Face number), A (alpha value), B (beta value), RLON (Longitude)
+ 
+      INTEGER, INTENT(IN) :: N
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: VAMTX12_result
+      
+      REAL (KIND=r8) :: COS_A,TAN_A,TAN_B
+      REAL (KIND=r8) :: GAMMA2,RLON
+
+      COS_A  = DCOS(A)
+      TAN_A  = DTAN(A)
+      TAN_B  = DTAN(B)
+      GAMMA2 = 1.0_r8+ TAN_A**2 + TAN_B**2
+         
+      SELECT CASE (N)
+        CASE(1:4)
+          VAMTX12_result = 0.0_r8  
+        CASE(5)
+          RLON = DATAN2(TAN_A,-TAN_B)
+          VAMTX12_result = -GAMMA2*(COS_A**2)*DSIN(RLON)
+        CASE(6)
+          RLON = DATAN2(TAN_A,TAN_B)
+          VAMTX12_result =  GAMMA2*(COS_A**2)*DSIN(RLON)
+      END SELECT   
+       
+      END FUNCTION vamtx12
+!======================================================================== 
+      FUNCTION VAMTX21 ( N, A, B ) RESULT(VAMTX21_result)
+!========================================================================       
+!     N (Face number), A (alpha value), B (beta value), RLON (Longitude)
+ 
+      INTEGER, INTENT(IN) :: N
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: VAMTX21_result
+      
+      REAL (KIND=r8) :: SIN_A,COS_B,SIN_B,TAN_A,TAN_B
+      REAL (KIND=r8) :: GAMMA,RLON
+
+      SIN_A = DSIN(A)
+      COS_B = DCOS(B)
+      SIN_B = DSIN(B)
+      TAN_A = DTAN(A)
+      TAN_B = DTAN(B)
+      GAMMA = SQRT(1.0_r8+ TAN_A**2 + TAN_B**2)
+         
+      SELECT CASE (N)
+        CASE(1:4)
+          VAMTX21_result = GAMMA*SIN_A*COS_B*SIN_B
+        CASE(5)
+          RLON = DATAN2(TAN_A,-TAN_B)
+          VAMTX21_result = GAMMA*(COS_B**2)*DSIN(RLON)
+        CASE(6)
+          RLON = DATAN2(TAN_A,TAN_B) 
+          VAMTX21_result = -GAMMA*(COS_B**2)*DSIN(RLON)
+      END SELECT   
+       
+      END FUNCTION vamtx21
+!========================================================================       
+      FUNCTION VAMTX22 ( N, A, B ) RESULT(VAMTX22_result)
+!========================================================================       
+!     N (Face number), A (alpha value), B (beta value), RLON (Longitude)
+ 
+      INTEGER, INTENT(IN) :: N
+      REAL (KIND=r8), INTENT(IN) ::  A,B
+      REAL (KIND=r8) :: VAMTX22_result
+      
+      REAL (KIND=r8) :: COS_A,COS_B,TAN_A,TAN_B
+      REAL (KIND=r8) :: GAMMA2,RLON
+
+      COS_A  = DCOS(A)
+      COS_B  = DCOS(B)
+      TAN_A  = DTAN(A)
+      TAN_B  = DTAN(B)
+      GAMMA2 = 1.0_r8+ TAN_A**2 + TAN_B**2
+         
+      SELECT CASE (N)
+        CASE(1:4)
+          VAMTX22_result = GAMMA2*COS_A*(COS_B**2) 
+        CASE(5)
+          RLON = DATAN2(TAN_A,-TAN_B)
+          VAMTX22_result = GAMMA2*(COS_B**2)*DCOS(RLON)      
+        CASE(6)
+          RLON = DATAN2(TAN_A,TAN_B)
+          VAMTX22_result = GAMMA2*(COS_B**2)*DCOS(RLON)
+      END SELECT   
+       
+      END FUNCTION vamtx22
+      
 !========================================================================       
       FUNCTION CANGLE ( PI,LAT1,LON1,LAT2,LON2 ) RESULT(CANGLE_result)
 !========================================================================      

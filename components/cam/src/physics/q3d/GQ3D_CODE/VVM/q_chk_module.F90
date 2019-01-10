@@ -1,12 +1,15 @@
 MODULE q_chk_module
 ! 1. Filling holes of qc, qi, qr, qs, qg (vertical borrowing only)
 ! 2. Call saturation adjustment
+!
+! Add "LocalP" option: using local pressure to calculate Temp. 
 
 USE shr_kind_mod,   only: r8 => shr_kind_r8
 USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk2,nk3,nhalo,nhalo_adv
-USE constld, only: dt,rho,fnt,pbar,pibar,nomap
+USE constld, only: dt,rho,fnt,pbar,pibar,nomap,localp, &
+                   rad2deg  ! DEBUG
 
 ! Subroutines being called
 USE bound_channel_module, only: bound_channel
@@ -33,10 +36,11 @@ CONTAINS
 
       ! Local variables
       REAL (KIND=r8) :: PBAR8(nk2),PIBAR8(nk2),INVFNT, &
-                              TSTAR,QVSTAR,QCSTAR,QISTAR,QFREEZE
+                        TSTAR,QVSTAR,QCSTAR,QISTAR,QFREEZE
       REAL (KIND=r8), DIMENSION(nk2) :: TEMP_TH,TEMP_QV,TEMP_QC,TEMP_QI
       
-      LOGICAL :: FILL_CHK = .FALSE.
+      LOGICAL :: FILL_CHK = .FALSE.   ! DEBUG
+      
       INTEGER, DIMENSION(4) :: QCNC1,QINC1,QRNC1,QSNC1,QGNC1   ! check purpose
       INTEGER, DIMENSION(4) :: QCNC2,QINC2,QRNC2,QSNC2,QGNC2   ! check purpose
       INTEGER :: QCcount1,QIcount1,QRcount1,QScount1,QGcount1  ! check purpose
@@ -44,12 +48,16 @@ CONTAINS
       
       INTEGER :: I,J,K,KLOW
       INTEGER :: num_seg,mi1,mj1,mim,mip,mjm,mjp
-
+      
+      CHARACTER (LEN=50) :: title,qctxt,qitxt,qrtxt,qstxt,qgtxt
+                                 
       ! Used for saturation adjustment
-      DO K = 2, NK2
-       PBAR8(K)  = PBAR(K) * 0.01_r8
-       PIBAR8(K) = PIBAR(K)
-      ENDDO
+      IF(.NOT.LocalP) THEN
+       DO K = 2, NK2
+        PBAR8(K)  = PBAR(K) * 0.01_r8
+        PIBAR8(K) = PIBAR(K)
+       ENDDO
+      ENDIF
             
 !*******************************************************************   
       DO num_seg = 1, 4
@@ -101,21 +109,46 @@ CONTAINS
         ENDDO
        ENDDO
       ENDDO
+      
+      IF (FILL_CHK) THEN
+        write(unit=title,fmt='(a8,i2)') 'num_seg=',num_seg
+        
+        write(unit=qctxt,fmt='(a13,2i5)') 'qc: N1 & N2 =',qcnc1(num_seg),qcnc2(num_seg)
+        write(unit=qitxt,fmt='(a13,2i5)') 'qi: N1 & N2 =',qinc1(num_seg),qinc2(num_seg)
+        write(unit=qrtxt,fmt='(a13,2i5)') 'qr: N1 & N2 =',qrnc1(num_seg),qrnc2(num_seg)
+        write(unit=qstxt,fmt='(a13,2i5)') 'qs: N1 & N2 =',qsnc1(num_seg),qsnc2(num_seg)
+        write(unit=qgtxt,fmt='(a13,2i5)') 'qg: N1 & N2 =',qgnc1(num_seg),qgnc2(num_seg)  
+        
+        CALL CHK_WRITE (title,channel)  
+        CALL CHK_WRITE (qctxt,channel)
+        CALL CHK_WRITE (qitxt,channel)
+        CALL CHK_WRITE (qrtxt,channel)
+        CALL CHK_WRITE (qstxt,channel)
+        CALL CHK_WRITE (qgtxt,channel)    
+      ENDIF      
 
 !---------------------------------------
 !     Saturation adjustment
 !---------------------------------------
+      
       DO J = 1, mj1
       DO I = 1, mi1
       KLOW = channel%seg(num_seg)%KLOWQ_IJ(I,J)
       
+      IF (LocalP) THEN
+       DO K = 2, NK2
+        PBAR8(K)  = channel%seg(num_seg)%Pmid_bg(I,J,K) * 0.01_r8
+        PIBAR8(K) = channel%seg(num_seg)%PImid_bg(I,J,K)
+       ENDDO
+      ENDIF
+
       DO K = KLOW, nk2
         TEMP_TH(K) = channel%seg(num_seg)%TH3D(I,J,K)
         TEMP_QV(K) = channel%seg(num_seg)%QV3D(I,J,K)
         TEMP_QC(K) = channel%seg(num_seg)%QC3D(I,J,K)
         TEMP_QI(K) = channel%seg(num_seg)%QI3D(I,J,K)
       ENDDO
-       
+               
       DO K = KLOW, nk2
         TSTAR  = TEMP_TH(K) * PIBAR8(K)
         QVSTAR = TEMP_QV(K)
@@ -151,28 +184,10 @@ CONTAINS
 
       ENDDO  ! i-loop
       ENDDO  ! j-loop
+      
 !**************************   
       ENDDO  ! num_seg 
 !**************************  
-
-      IF (FILL_CHK) THEN
-        QCcount1 = SUM(QCNC1)
-        QIcount1 = SUM(QINC1)
-        QRcount1 = SUM(QRNC1)
-        QScount1 = SUM(QSNC1)
-        QGcount1 = SUM(QGNC1)
-        
-        QCcount2 = SUM(QCNC2)
-        QIcount2 = SUM(QINC2)
-        QRcount2 = SUM(QRNC2)
-        QScount2 = SUM(QSNC2)
-        QGcount2 = SUM(QGNC2)
-        WRITE(6,*) 'FILL_CHK  QC: N1 & N2 =',QCcount1,QCcount2
-        WRITE(6,*) 'FILL_CHK  QI: N1 & N2 =',QIcount1,QIcount2
-        WRITE(6,*) 'FILL_CHK  QR: N1 & N2 =',QRcount1,QRcount2
-        WRITE(6,*) 'FILL_CHK  QS: N1 & N2 =',QScount1,QScount2
-        WRITE(6,*) 'FILL_CHK  QG: N1 & N2 =',QGcount1,QGcount2
-      ENDIF
       
       CALL BOUND_NORMAL  (nhalo,channel,TH3D=.TRUE.,QV3D=.TRUE., &
                           QC3D=.TRUE.,QI3D=.TRUE.,QR3D=.TRUE.,QS3D=.TRUE.,QG3D=.TRUE.)
@@ -185,7 +200,7 @@ CONTAINS
 
       CALL BOUND_VERT (channel,TH3D=.TRUE.,QV3D=.TRUE., &
                        QC3D=.TRUE.,QI3D=.TRUE.,QR3D=.TRUE.,QS3D=.TRUE.,QG3D=.TRUE.)
-
+       
    END SUBROUTINE q_chk_3d
 
 !=======================================================================
@@ -270,5 +285,246 @@ CONTAINS
       ENDDO
  
    END SUBROUTINE fill_vert
+   
+!=======================================================================      
+      SUBROUTINE CHK_WRITE (title,channel, &
+                            TH3D,QV3D,QC3D,QI3D,QR3D,QS3D,QG3D)
+!=======================================================================
+!     NUM_HALO can be different among the variables,
+!     but, the horizontal array size of the variables is fixed, (mim:mip,mjm:mjp)
+     
+      CHARACTER (LEN=*), INTENT(IN)  :: title
+      type(channel_t), INTENT(INOUT) :: channel   ! Channel data
+      
+      LOGICAL, INTENT(IN), OPTIONAL :: TH3D,QV3D,QC3D,QI3D,QR3D,QS3D,QG3D
+              
+      ! Local        
+      INTEGER :: num_seg,mi1,mj1,ifortw 
+      INTEGER :: ilo1,ilo2,ilo3,klo
+      
+      ifortw = channel%num_chn
+      if (ifortw == 5) ifortw=55
+      if (ifortw == 6) ifortw=65
 
+      write(ifortw,*) TRIM(title)
+       
+!**********************************************************************   
+      DO num_seg = 1, 4
+!**********************************************************************
+      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
+      
+      klo  = 2
+      ilo1 = 1 
+      ilo2 = 187
+      ilo3 = 375
+
+!---------------------------------
+! TH3D
+!---------------------------------
+      IF (PRESENT(TH3D)) THEN
+        if (TH3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'TH', &
+                             channel%seg(num_seg)%TH3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%TH3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%TH3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'TH', &
+                             channel%seg(num_seg)%TH3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%TH3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%TH3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF
+!---------------------------------
+! QV3D
+!---------------------------------
+      IF (PRESENT(QV3D)) THEN
+        if (QV3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QV', &
+                             channel%seg(num_seg)%QV3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%QV3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%QV3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QV', &
+                             channel%seg(num_seg)%QV3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%QV3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%QV3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF
+      
+!---------------------------------
+! QC3D
+!---------------------------------
+      IF (PRESENT(QC3D)) THEN
+        if (QC3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QC', &
+                             channel%seg(num_seg)%QC3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%QC3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%QC3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QC', &
+                             channel%seg(num_seg)%QC3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%QC3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%QC3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF
+      
+!---------------------------------
+! QI3D
+!---------------------------------
+      IF (PRESENT(QI3D)) THEN
+        if (QI3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QI', &
+                             channel%seg(num_seg)%QI3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%QI3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%QI3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QI', &
+                             channel%seg(num_seg)%QI3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%QI3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%QI3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF
+      
+!---------------------------------
+! QR3D
+!---------------------------------
+      IF (PRESENT(QR3D)) THEN
+        if (QR3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QR', &
+                             channel%seg(num_seg)%QR3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%QR3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%QR3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QR', &
+                             channel%seg(num_seg)%QR3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%QR3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%QR3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF
+      
+!---------------------------------
+! QS3D
+!---------------------------------
+      IF (PRESENT(QS3D)) THEN
+        if (QS3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QS', &
+                             channel%seg(num_seg)%QS3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%QS3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%QS3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QS', &
+                             channel%seg(num_seg)%QS3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%QS3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%QS3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF
+      
+!---------------------------------
+! QG3D
+!---------------------------------
+      IF (PRESENT(QG3D)) THEN
+        if (QG3D) then
+        IF (mi1.GT.mj1) THEN
+          ! x-array        
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QG', &
+                             channel%seg(num_seg)%QG3D(ilo1,1,klo), &
+                             channel%seg(num_seg)%QG3D(ilo2,1,klo), &
+                             channel%seg(num_seg)%QG3D(ilo3,1,klo)
+        ELSE
+          ! y-array
+          write(ifortw,'(i2,2x,a2,2x,3E15.3)') num_seg,'QG', &
+                             channel%seg(num_seg)%QG3D(1,ilo1,klo), &
+                             channel%seg(num_seg)%QG3D(1,ilo2,klo), &
+                             channel%seg(num_seg)%QG3D(1,ilo3,klo)
+          
+        ENDIF                      
+        endif                        
+      ENDIF                              
+      
+
+
+!**********************************************************************   
+      ENDDO   
+!**********************************************************************
+
+      END SUBROUTINE chk_write    
+      
+!=======================================================================      
+      SUBROUTINE CHK_title (title,chn)
+!=======================================================================
+      CHARACTER (LEN=*), INTENT(IN)  :: title
+      INTEGER, INTENT(IN) :: chn
+              
+      ! Local        
+      INTEGER :: ifortw 
+      
+      ifortw = chn
+      if (ifortw == 5) ifortw=55
+      if (ifortw == 6) ifortw=65
+      
+      write(ifortw,*) TRIM(title),',I,J,K,num_seg,lon_deg,lat_deg,var'
+        
+      END SUBROUTINE chk_title         
+      
+!=======================================================================      
+      SUBROUTINE CHK_VALUE (chn,ival,jval,kval,nval,lon,lat,var,var1,var2)
+!=======================================================================
+      INTEGER, INTENT(IN) :: chn,ival,jval,kval,nval
+      REAL (KIND=r8), INTENT(IN) :: lon,lat,var
+      REAL (KIND=r8), OPTIONAL, INTENT(IN) :: var1,var2
+              
+      ! Local        
+      INTEGER :: ifortw 
+      REAL (KIND=r8) :: lon_deg,lat_deg
+      
+      ifortw = chn
+      if (ifortw == 5) ifortw=55
+      if (ifortw == 6) ifortw=65
+      
+      lon_deg = lon*rad2deg
+      lat_deg = lat*rad2deg
+
+      IF (present(var1)) THEN
+        if (present(var2)) then
+        write(ifortw,'(4i5,2f8.1,2x,3E15.5)') ival,jval,kval,nval,lon_deg,lat_deg,var,var1,var2
+        else
+        write(ifortw,'(4i5,2f8.1,2x,2E15.5)') ival,jval,kval,nval,lon_deg,lat_deg,var,var1
+        endif
+      ELSE 
+        write(ifortw,'(4i5,2f8.1,2x,E15.5)') ival,jval,kval,nval,lon_deg,lat_deg,var
+      ENDIF
+        
+      END SUBROUTINE chk_value                  
+   
 END MODULE q_chk_module

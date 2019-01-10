@@ -18,9 +18,9 @@ PUBLIC :: add_rperturb
 CONTAINS
 
 ! Local Subroutines:
-!-----------------------------------------------------------------------
-! SUBROUTINE add_rperturb  : Add random perturbation to theta
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------------------
+! SUBROUTINE add_rperturb  : Add random perturbation to theta in the initialization
+!------------------------------------------------------------------------------------
 
 !=======================================================================
    SUBROUTINE ADD_RPERTURB (A,Z1,Z2,channel)
@@ -45,12 +45,12 @@ CONTAINS
       chn = 1    ! Assume the channel width is 1 (i.e., mi1 or mj1 = 1).
 
       ! Set the lateral boundary for applying the perturbation.
-      ADD1 = -10.0_r8/RAD2DEG
-      ADD2 =  10.0_r8/RAD2DEG
+      ADD1 = -35.0_r8/RAD2DEG
+      ADD2 =  35.0_r8/RAD2DEG
 
 ! Get vertical indices
-      K1 = INDEXR(Z1,NK3,ZT,LF) + 1
-      K2 = INDEXR(Z2,NK3,ZT,LF)
+      K1 = INDEXR(Z1,NK2,ZT(1:nk2),LF) + 1
+      K2 = INDEXR(Z2,NK2,ZT(1:nk2),LF)
 
 !******************************  
       DO num_seg = 1, 4
@@ -152,13 +152,15 @@ CONTAINS
        ENDDO
       ENDDO
 
+      channel%seg(num_seg)%TH3D(:,:,:) = 0.0_r8 
+      
+      ! Assign the perturbation to TH3D 
       DO K = K1, K2
        DO J = 1, MJ1
         DO I = 1, MI1
          IF (channel%seg(num_seg)%RLAT_T(I,J).GE.ADD1 &
              .AND. channel%seg(num_seg)%RLAT_T(I,J).LE.ADD2) THEN
-          channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%TH3D(I,J,K) &
-                                           + channel%seg(num_seg)%term1(I,J,K)
+          channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%term1(I,J,K)
          ENDIF
         ENDDO
        ENDDO

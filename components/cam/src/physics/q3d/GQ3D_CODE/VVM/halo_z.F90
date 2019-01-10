@@ -34,6 +34,7 @@ CONTAINS
       SUBROUTINE HALO_CORREC_Z (num_halo,channel,Z3DZ,PSI)
 !=======================================================================         
 !     Correcting the data on z-point, which are from other cube faces.
+!     attention: num_halo must be >=2 in order to use an extrapolation in halo_x and halo_y.
 
       INTEGER,INTENT(IN) :: num_halo  ! # of halo points to be corrected
       type(channel_t), INTENT(INOUT) :: channel   ! channel data
@@ -175,6 +176,9 @@ CONTAINS
          DO J=mjm,mjp
            A(1-NPO,J) = 0.5_r8*(1.5_r8*TVAR(1-NPO,J)-0.5_r8*TVAR(1-NPO-1,J) &
                                +1.5_r8*TVAR(1,J)-0.5_r8*TVAR(2,J))
+                               
+!          To avoid an extrapolation: 
+!           A(1-NPO,J) = 0.5_r8*(TVAR(1-NPO,J)+TVAR(1,J))
          ENDDO            
          DO NPO=2,num_halo
           DO J=mjm,mjp 
@@ -227,9 +231,6 @@ CONTAINS
            A(I,mj1+NPO) = TVAR(I+1,mj1+NPO)
           ENDDO
            A(mip,mj1+NPO) = 1.5_r8*TVAR(mip,mj1+NPO)-0.5_r8*TVAR(mip-1,mj1+NPO)
-          DO I=mim,mip
-           A(I,mj1+NPO) = TVAR(I,mj1+NPO)
-          ENDDO 
          ENDDO 
             
 !        data shift on the alpha-direction (correct halos at Edge_M)                       
@@ -249,6 +250,9 @@ CONTAINS
          DO I=mim,mip
            A(I,1-NPO) = 0.5_r8*(1.5_r8*TVAR(I,1-NPO)-0.5_r8*TVAR(I,1-NPO-1) &
                                +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2))
+
+!          To avoid an extrapolation:
+!           A(I,1-NPO) = 0.5_r8*(TVAR(I,1-NPO)+TVAR(I,1))
          ENDDO            
          DO NPO=2,num_halo
           DO I=mim,mip 
@@ -271,6 +275,9 @@ CONTAINS
          DO I=mim,mip
            A(I,1-NPO) = 0.5_r8*(1.5_r8*TVAR(I,1-NPO)-0.5_r8*TVAR(I,1-NPO-1) &
                                +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2))
+                               
+!          To avoid an extrapolation:
+!           A(I,1-NPO) = 0.5_r8*(TVAR(I,1-NPO)+TVAR(I,1))
          ENDDO            
          DO NPO=2,num_halo
           DO I=mim,mip 
@@ -306,7 +313,10 @@ CONTAINS
          NPO=1
          DO I=mim,mip
            A(I,1-NPO) = 0.5_r8*(1.5_r8*TVAR(I,1-NPO)-0.5_r8*TVAR(I,1-NPO-1) &
-                               +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2))          
+                               +1.5_r8*TVAR(I,1)-0.5_r8*TVAR(I,2)) 
+                                     
+!          To avoid an extrapolation in the direction crossing the edge:
+!           A(I,1-NPO) = 0.5_r8*(TVAR(I,1-NPO)+TVAR(I,1))          
          ENDDO            
          DO NPO=2,num_halo
           DO I=mim,mip 

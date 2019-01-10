@@ -5,7 +5,7 @@ MODULE damping
       USE vvm_data_types, only: channel_t 
       
       USE parmsld, only: nk1,nk2
-      USE constld, only: crad,klow_gwd,dt,zz,zt,thbar,qvbar,physics
+      USE constld, only: crad,klow_gwd,dt,zz,zt,thbar,physics
 
 IMPLICIT NONE
 PRIVATE
@@ -24,10 +24,15 @@ CONTAINS
    SUBROUTINE DAMPING_VORT (channel)
 !=======================================================================   
 !  Gravity Wave Damping (Rayleigh-type) on vorticity components 
+!  (damping toward zero motion.)
 
       type(channel_t), INTENT(INOUT) :: channel   ! Channel data
 
 !     Local variables 
+      LOGICAL :: ADD_EFFECT = .FALSE.    ! Not including GWD effect to the diabatic effect for GCM.
+                                         ! Top of CRM active domain is lower than the actual top.
+                                         ! GCM will have its own damping. 
+                                         
       INTEGER :: I, J, K, mi1, mj1, num_seg
       REAL (KIND=r8) :: CGR
 
@@ -44,10 +49,12 @@ CONTAINS
         CGR = CRAD*(ZZ(K)-ZT(klow_gwd))/(ZT(NK2)-ZT(klow_gwd))       
         DO J = 1, mj1
          DO I = 1, mi1
-           channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX(I,J,K) &
-                                            - DT*CGR*channel%seg(num_seg)%Z3DX(I,J,K)
-           channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY(I,J,K) &
-                                            - DT*CGR*channel%seg(num_seg)%Z3DY(I,J,K)
+           channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX(I,J,K)         &
+                                            - DT*CGR*(channel%seg(num_seg)%Z3DX(I,J,K) &
+                                                     -channel%seg(num_seg)%Z3DX_bg(I,J,K))
+           channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY(I,J,K)         &
+                                            - DT*CGR*(channel%seg(num_seg)%Z3DY(I,J,K) &
+                                                     -channel%seg(num_seg)%Z3DY_bg(I,J,K))
          ENDDO
         ENDDO
       ENDDO
@@ -55,23 +62,31 @@ CONTAINS
 !     vertical vorticity change due to Gravity Wave Damping (at the uppermost layer)
       DO J = 1, mj1
        DO I = 1, mi1
-        channel%seg(num_seg)%Z3DZ(I,J,NK2) = channel%seg(num_seg)%Z3DZ(I,J,NK2) &
-                                           - DT*CRAD*channel%seg(num_seg)%Z3DZ(I,J,NK2)
+        channel%seg(num_seg)%Z3DZ(I,J,NK2) = channel%seg(num_seg)%Z3DZ(I,J,NK2)          &
+                                           - DT*CRAD*(channel%seg(num_seg)%Z3DZ(I,J,NK2) &
+                                                     -channel%seg(num_seg)%Z3DZ_bg(I,J,1)) 
+                                                  
        ENDDO
       ENDDO
 
+      IF (ADD_EFFECT) THEN  
+      
 !     Horizontal Momentum tendency due to Gravity Wave Damping  
       DO K = klow_gwd, nk2
         CGR = CRAD*(ZT(K)-ZT(klow_gwd))/(ZT(NK2)-ZT(klow_gwd))
         DO J = 1, mj1
           DO I = 1, mi1
-           channel%seg(num_seg)%FU_DIA(I,J,K) = channel%seg(num_seg)%FU_DIA(I,J,K) &
-                                              - CGR*channel%seg(num_seg)%U3DX(I,J,K)
-           channel%seg(num_seg)%FV_DIA(I,J,K) = channel%seg(num_seg)%FV_DIA(I,J,K) &
-                                              - CGR*channel%seg(num_seg)%U3DY(I,J,K)
+           channel%seg(num_seg)%FU_DIA(I,J,K) = channel%seg(num_seg)%FU_DIA(I,J,K)    &
+                                              - CGR*(channel%seg(num_seg)%U3DX(I,J,K) &
+                                                    -channel%seg(num_seg)%U3DX_bg(I,J,K))  
+           channel%seg(num_seg)%FV_DIA(I,J,K) = channel%seg(num_seg)%FV_DIA(I,J,K)    &
+                                              - CGR*(channel%seg(num_seg)%U3DY(I,J,K) &
+                                                    -channel%seg(num_seg)%U3DY_bg(I,J,K))
           ENDDO
         ENDDO
       ENDDO
+      
+      ENDIF
 
 !*************************   
       ENDDO  ! num_seg 
@@ -83,10 +98,15 @@ CONTAINS
    SUBROUTINE DAMPING_THERM (channel)
 !=======================================================================   
 !  (Rayleigh-type) Gravity Wave Damping on (th, qv, qc, qi)
+!  (damping toward bg-field for th and qv, and zero for qc and qi)
 !-----------------------------------------------------------------------  
       type(channel_t), INTENT(INOUT) :: channel   ! Channel data
       
-!     Local variables   
+!     Local variables 
+      LOGICAL :: ADD_EFFECT = .FALSE.    ! Not including GWD effect to the diabatic effect for GCM.
+                                         ! Top of CRM active domain is lower than the actual top.
+                                         ! GCM will have its own damping. 
+        
       INTEGER :: num_seg,mi1,mj1,I,J,K
       REAL (KIND=r8) :: CGR,TEMP_TH,TEMP_QV,TEMP_QC,TEMP_QI
 
@@ -102,20 +122,26 @@ CONTAINS
          
          DO J = 1, mj1
           DO I = 1, mi1
-           TEMP_TH = - CGR*(channel%seg(num_seg)%TH3D(I,J,K)-THBAR(K))
-           TEMP_QV = - CGR*(channel%seg(num_seg)%QV3D(I,J,K)-QVBAR(K))
+           TEMP_TH = - CGR*(channel%seg(num_seg)%TH3D(I,J,K) &
+                            -channel%seg(num_seg)%TH3D_bg(I,J,K))
+                           
+           TEMP_QV = - CGR*(channel%seg(num_seg)%QV3D(I,J,K) &
+                            -channel%seg(num_seg)%QV3D_bg(I,J,K))
 
 !          Update the fields
            channel%seg(num_seg)%TH3D(I,J,K) = channel%seg(num_seg)%TH3D(I,J,K) &
                                             + DT*TEMP_TH
            channel%seg(num_seg)%QV3D(I,J,K) = channel%seg(num_seg)%QV3D(I,J,K) &
                                             + DT*TEMP_QV
-                                            
+           
+           IF (ADD_EFFECT) THEN                          
 !          Update the diabatic tendency: damping effects                                            
            channel%seg(num_seg)%FTH3D_DIA(I,J,K) = channel%seg(num_seg)%FTH3D_DIA(I,J,K) &
                                                  + TEMP_TH
            channel%seg(num_seg)%FQV3D_DIA(I,J,K) = channel%seg(num_seg)%FQV3D_DIA(I,J,K) &
-                                                 + TEMP_QV                                              
+                                                 + TEMP_QV  
+           ENDIF
+                                                                                             
           ENDDO
          ENDDO 
           
@@ -130,12 +156,15 @@ CONTAINS
                                             + DT*TEMP_QC
            channel%seg(num_seg)%QI3D(I,J,K) = channel%seg(num_seg)%QI3D(I,J,K) &
                                             + DT*TEMP_QI
-                                            
+           
+           IF (ADD_EFFECT) THEN                                 
 !          Update the diabatic tendency: damping effects                                                
            channel%seg(num_seg)%FQC3D_DIA(I,J,K) = channel%seg(num_seg)%FQC3D_DIA(I,J,K) &
                                                  + TEMP_QC
            channel%seg(num_seg)%FQI3D_DIA(I,J,K) = channel%seg(num_seg)%FQI3D_DIA(I,J,K) &
-                                                 + TEMP_QI                                           
+                                                 + TEMP_QI 
+           ENDIF
+                                                                                           
           ENDDO
          ENDDO
          ENDIF     

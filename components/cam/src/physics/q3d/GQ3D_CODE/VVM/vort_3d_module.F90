@@ -6,7 +6,7 @@ USE vvm_data_types, only: channel_t
 
 USE parmsld, only: nk1,nk2,nk3,nhalo,nVGCM_seg,netsz
 USE constld, only: a,b,dx,dy,dz,dt,aladv,rho,rhoz,fnt,fnz,fn1,fn2, &
-                   dxsq,dysq,dxdy,crad,nomap,turbulence
+                   dxsq,dysq,dxdy,crad,nomap,turbulence,rxtau_d
 
 ! Subroutines being called
 USE bound_channel_module, only: bound_channel  ! HALO DATA COMMUNICATION
@@ -38,10 +38,10 @@ CONTAINS
 ! SUBROUTINE ABM_3D_TURB   : update z3dx and z3dy from turbulence
 ! SUBROUTINE RELAXATION    : relax z3dx, z3dy, z3dz toward background (Q3D algorithm)
 !            SUBROUTINE BOUND_G1_V, SUBROUTINE BOUND_G2_V, SUBROUTINE BOUND_G3_V
-!            SUBROUTINE BOUND_G1_S, SUBROUTINE BOUND_G2_S, SUBROUTINE BOUND_G3_S               
+!            SUBROUTINE BOUND_G1_S, SUBROUTINE BOUND_G2_S, SUBROUTINE BOUND_G3_S
 ! SUBROUTINE HDIFFUSION_SMAGORINSKY : nonlinear numerical diffusion (will not be used)
 ! SUBROUTINE LDIFFUSION2            : linear numerical diffusion
-! FUNCTION   TURB_H        : called from LDIFFUSION2 & HDIFFUSION_SMAGORINSKY   
+! FUNCTION   TURB_H        : called from LDIFFUSION2 & HDIFFUSION_SMAGORINSKY
 !----------------------------------------------------------------------------
 
 !=======================================================================
@@ -49,9 +49,9 @@ CONTAINS
 !=======================================================================
 !  ALL CALCULATIONS ASSOCIATED WITH VORTICITY.
 
-      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)       
-      type(channel_t), intent(inout) :: channel   ! channel data 
-            
+      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)
+      type(channel_t), intent(inout) :: channel   ! channel data
+
       ! Local variables
       INTEGER :: I, J, K, num_seg, mi1, mj1, mim, mip, mjm, mjp
 
@@ -59,15 +59,15 @@ CONTAINS
 !     CALCULATING THE VORTICITY TENDENCY
 !-------------------------------------------
 
-!************************************  
+!************************************
       DO num_seg = 1, 4
 !************************************
-      mim = channel%seg(num_seg)%mim     
-      mip = channel%seg(num_seg)%mip  
-    
-      mjm = channel%seg(num_seg)%mjm    
-      mjp = channel%seg(num_seg)%mjp 
-      
+      mim = channel%seg(num_seg)%mim
+      mip = channel%seg(num_seg)%mip
+
+      mjm = channel%seg(num_seg)%mjm
+      mjp = channel%seg(num_seg)%mjp
+
       do k = 1, nk2
         do j = mjm, mjp
           do i = mim, mip
@@ -76,7 +76,7 @@ CONTAINS
           enddo
         enddo
       enddo
-      do k = 1, nk3
+      do k = 1, nk2
         do j = mjm, mjp
           do i = mim, mip
             channel%seg(num_seg)%Z3DZ(I,J,K) = &
@@ -84,24 +84,24 @@ CONTAINS
           enddo
         enddo
       enddo
-!******************   
-      ENDDO  
-!******************     
+!******************
+      ENDDO
+!******************
 
       CALL RKSI_3D ( N1, N2, channel )
       CALL RETA_3D ( N1, N2, channel )
 
       CALL ZETA_3D ( N1, N2, channel )
 
-!************************************  
+!************************************
       DO num_seg = 1, 4
 !************************************
-      mim = channel%seg(num_seg)%mim     
-      mip = channel%seg(num_seg)%mip  
-    
-      mjm = channel%seg(num_seg)%mjm    
-      mjp = channel%seg(num_seg)%mjp 
-      
+      mim = channel%seg(num_seg)%mim
+      mip = channel%seg(num_seg)%mip
+
+      mjm = channel%seg(num_seg)%mjm
+      mjp = channel%seg(num_seg)%mjp
+
       do k = 1, nk2
         do j = mjm, mjp
           do i = mim, mip
@@ -110,7 +110,7 @@ CONTAINS
           enddo
         enddo
       enddo
-      do k = 1, nk3
+      do k = 1, nk2
         do j = mjm, mjp
           do i = mim, mip
             channel%seg(num_seg)%Z3DZ(I,J,K) = &
@@ -118,9 +118,9 @@ CONTAINS
           enddo
         enddo
       enddo
-!******************   
-      ENDDO  
-!****************** 
+!******************
+      ENDDO
+!******************
 
 !--------------------------------------------------------
 !     UPDATE: Z3DX & Z3DY
@@ -131,22 +131,22 @@ CONTAINS
 !     HALO UPDATE
 !-------------------
       CALL BOUND_NORMAL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
-
+                          
       IF (.NOT.nomap) CALL VORT_COMM_PRE (channel)
       CALL BOUND_CHANNEL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
       IF (.NOT.nomap) CALL VORT_COMM_POST (channel)
-
+                                   
       CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
 
 !--------------------------------------------------------
 !     UPDATE: Z3DZ at k = nk2
 !--------------------------------------------------------
-!************************************  
+!************************************
       DO num_seg = 1, 4
 !************************************
-      mi1 = channel%seg(num_seg)%mi1     
-      mj1 = channel%seg(num_seg)%mj1    
-        
+      mi1 = channel%seg(num_seg)%mi1
+      mj1 = channel%seg(num_seg)%mj1
+
       DO J = 1, mj1
       DO I = 1, mi1
        channel%seg(num_seg)%Z3DZ(I,J,NK2) = channel%seg(num_seg)%Z3DZ(I,J,NK2)   &
@@ -154,16 +154,17 @@ CONTAINS
                                           + B*channel%seg(num_seg)%FZTOP(I,J,N1)
       ENDDO
       ENDDO
-!******************   
-      ENDDO  
-!******************       
+      
+!******************
+      ENDDO
+!******************
 
 !----------------------------------
 !     HALO UPDATE: Z3DZ at k = NK2
 !     Good for halo = nhalo (>=2)
 !----------------------------------
       CALL BOUND_NORMAL  (nhalo,channel,Z3DZ=.TRUE.)
-      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)   
+      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)
       CALL BOUND_CHANNEL (nhalo,channel,Z3DZ=.TRUE.)
       IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)
 
@@ -177,30 +178,30 @@ CONTAINS
 
 !=======================================================================
    SUBROUTINE VORT_3D_COREC (channel)
-!======================================================================= 
-!  Update vorticity components (turbulence, upper layer damping, 
+!=======================================================================
+!  Update vorticity components (turbulence, upper layer damping,
 !  relaxation (coupling), and numerical diffusion (if necessary)
-   
+
       type(channel_t), INTENT(INOUT) :: channel   ! channel data
-      
+
       ! Local variables
       LOGICAL :: NDIFFU = .FALSE.
       LOGICAL :: LDIFFU = .TRUE.
 
       INTEGER :: I,J,K,num_seg,mi1,mj1
-      
+
 !=================================================================================
       IF (TURBULENCE) THEN
 !=================================================================================
 !     UPDATE: Z3DX & Z3DY
       CALL ABM_3D_TURB ( channel )
 
-!**************************  
+!**************************
       DO num_seg = 1, 4
 !**************************
-      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment    
-      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
-      
+      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment
+
 !     UPDATE: Z3DZ at k=NK2
       DO J = 1, mj1
        DO I = 1, mi1
@@ -208,11 +209,11 @@ CONTAINS
                                            + DT*channel%seg(num_seg)%FZTOPB(I,J)
        ENDDO
       ENDDO
-!************************  
-      ENDDO  ! num_seg 
+!************************
+      ENDDO  ! num_seg
 !************************
 !========================
-      ENDIF  
+      ENDIF
 !========================
 
 !=================================================================================
@@ -233,15 +234,15 @@ CONTAINS
       CALL BOUND_CHANNEL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
       IF (.NOT.nomap) CALL VORT_COMM_POST (channel)
 
-      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)      
+      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
 
 !     -------------------
 !     Z3DZ at k=NK2
 !     -------------------
       CALL BOUND_NORMAL  (nhalo,channel,Z3DZ=.TRUE.)
-      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)   
+      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)
       CALL BOUND_CHANNEL (nhalo,channel,Z3DZ=.TRUE.)
-      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)      
+      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)
 
 !     -------------------
 !     Z3DZ at k < NK2
@@ -262,20 +263,20 @@ CONTAINS
       CALL BOUND_CHANNEL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
       IF (.NOT.nomap) CALL VORT_COMM_POST (channel)
 
-      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)  
+      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
 
 !     -------------------
 !     Z3DZ at k=NK2
 !     -------------------
       CALL BOUND_NORMAL  (nhalo,channel,Z3DZ=.TRUE.)
-      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)   
+      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)
       CALL BOUND_CHANNEL (nhalo,channel,Z3DZ=.TRUE.)
-      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)    
-      
+      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)
+
 !     -------------------
 !     Z3DZ at k < NK2
 !     -------------------
-      CALL ZETA_DIAG (channel) 
+      CALL ZETA_DIAG (channel)
 
 !==============
       ENDIF
@@ -284,7 +285,7 @@ CONTAINS
 !=================================================================================
       IF (NDIFFU) THEN  ! Smagorinsky type diffusion
 !=================================================================================
-      CALL HDIFFUSION_SMAGORINSKY (channel) 
+      CALL HDIFFUSION_SMAGORINSKY (channel)
 
 !     -------------------
 !     Z3DX & Z3DY
@@ -295,20 +296,20 @@ CONTAINS
       CALL BOUND_CHANNEL (nhalo,channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
       IF (.NOT.nomap) CALL VORT_COMM_POST (channel)
 
-      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)  
+      CALL BOUND_VERT (channel,Z3DX=.TRUE.,Z3DY=.TRUE.)
 
 !     -------------------
 !     Z3DZ at k=NK2
 !     -------------------
       CALL BOUND_NORMAL  (nhalo,channel,Z3DZ=.TRUE.)
-      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)   
+      CALL BOUND_SYNC (channel,Z3DZ=.TRUE.)
       CALL BOUND_CHANNEL (nhalo,channel,Z3DZ=.TRUE.)
-      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.) 
+      IF (.not.nomap) CALL HALO_CORREC_Z (nhalo,channel,Z3DZ=.TRUE.)
 
 !     -------------------
 !     Z3DZ at k < NK2
 !     -------------------
-      CALL ZETA_DIAG (channel) 
+      CALL ZETA_DIAG (channel)
 
 !==============
       ENDIF
@@ -324,15 +325,15 @@ CONTAINS
 !     FN1(K)=RHO(K+1)*FNZ(K)/FNT(K+1)
 !     FN2(K)=RHO(K)*FNZ(K)/FNT(K)
 !-----------------------------------------------------------------------
-      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)       
-      type(channel_t), intent(inout) :: channel   ! channel data 
+      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)
+      type(channel_t), intent(inout) :: channel   ! channel data
 
       ! Local variables
       LOGICAL :: MODFLUX
       REAL (KIND=r8), DIMENSION(NK2) :: WWND,QVER,TERM1,TERM2,TERM3
       REAL (KIND=r8), DIMENSION(NK1) :: FINALZ
-      
-      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: WND  
+
+      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: WND
       REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: FINAL
 
       INTEGER :: I,J,K,L,klowv
@@ -342,32 +343,32 @@ CONTAINS
 
       L = N2
 
-!*******************************************************************   
+!*******************************************************************
       DO num_seg = 1, 4
-!*******************************************************************  
+!*******************************************************************
       klowq_max = channel%seg(num_seg)%klowq_max_glob
-      
+
       mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment
-      mim    = channel%seg(num_seg)%mim  
+      mim    = channel%seg(num_seg)%mim
       mip    = channel%seg(num_seg)%mip
-      mim_a  = channel%seg(num_seg)%mim_a 
-      mip_a  = channel%seg(num_seg)%mip_a   
-      mim_c  = channel%seg(num_seg)%mim_c 
-      mip_c  = channel%seg(num_seg)%mip_c 
-      mim_ce = channel%seg(num_seg)%mim_ce 
-       
-      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment 
-      mjm    = channel%seg(num_seg)%mjm   
-      mjp    = channel%seg(num_seg)%mjp 
-      mjm_a  = channel%seg(num_seg)%mjm_a 
-      mjp_a  = channel%seg(num_seg)%mjp_a  
-      mjm_c  = channel%seg(num_seg)%mjm_c       
-      mjp_c  = channel%seg(num_seg)%mjp_c 
-      mjm_ce = channel%seg(num_seg)%mjm_ce         
-        
+      mim_a  = channel%seg(num_seg)%mim_a
+      mip_a  = channel%seg(num_seg)%mip_a
+      mim_c  = channel%seg(num_seg)%mim_c
+      mip_c  = channel%seg(num_seg)%mip_c
+      mim_ce = channel%seg(num_seg)%mim_ce
+
+      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment
+      mjm    = channel%seg(num_seg)%mjm
+      mjp    = channel%seg(num_seg)%mjp
+      mjm_a  = channel%seg(num_seg)%mjm_a
+      mjp_a  = channel%seg(num_seg)%mjp_a
+      mjm_c  = channel%seg(num_seg)%mjm_c
+      mjp_c  = channel%seg(num_seg)%mjp_c
+      mjm_ce = channel%seg(num_seg)%mjm_ce
+
       ALLOCATE(FINAL(mi1,mj1))
       ALLOCATE(WND(mim_a:mip_c,mjm_a:mjp_c))
-      
+
 !-----------------------
 !     ZONAL ADVECTION
 !-----------------------
@@ -400,7 +401,7 @@ CONTAINS
       ENDDO
       ENDDO
 
-      ENDDO  
+      ENDDO
 
       MODFLUX = .FALSE.
       ! k-loop for free atmosphere
@@ -431,7 +432,7 @@ CONTAINS
       ENDDO
       ENDDO
 
-      ENDDO  
+      ENDDO
 
 !--------------------------
 !     MERIDIONAL ADVECTION
@@ -464,10 +465,10 @@ CONTAINS
       ENDDO
       ENDDO
 
-      ENDDO  
+      ENDDO
 
       MODFLUX = .FALSE.
-      ! k-loop for free atmosphere 
+      ! k-loop for free atmosphere
       DO K = klowq_max, NK1
 
       DO J = mjm_a, mjp_c
@@ -522,7 +523,7 @@ CONTAINS
         QVER(K) = channel%seg(num_seg)%Z3DX(I,J,K)
       ENDDO
 
-      CALL VADVEC_V (WWND,QVER,FNZ,nk1,nk2,nk3,klowv-1,DZ,FINALZ)
+      CALL VADVEC_V (WWND,QVER,FNZ(1:nk1),nk1,nk2,klowv-1,DZ,FINALZ)
 
       DO K = klowv, nk1
         channel%seg(num_seg)%FZX(I,J,K,L) = channel%seg(num_seg)%FZX(I,J,K,L) &
@@ -543,7 +544,6 @@ CONTAINS
 
 !-------------------------------------
 !     STRETCHING TERM
-!     (3.25) in Jung & Arakawa (2005)
 !-------------------------------------
       DO K = klowv, nk1
       TERM1(K) = (FN1(K)*(channel%seg(num_seg)%U3DX(I,J+1,K+1)     &
@@ -557,7 +557,7 @@ CONTAINS
                  +FN2(K)*(channel%seg(num_seg)%U3DX(I,J,K)         &
                          -channel%seg(num_seg)%U3DX(I-1,J,K)))     &
                  *(channel%seg(num_seg)%Z3DX(I,J,K)                &
-                         +channel%seg(num_seg)%Z3DX(I,J-1,K))                   
+                         +channel%seg(num_seg)%Z3DX(I,J-1,K))
       ENDDO
       DO K = klowv, nk1
        TERM1(K) = TERM1(K)/(8.0_r8*DX)
@@ -579,7 +579,7 @@ CONTAINS
                 *(FN2(K)*(channel%seg(num_seg)%U3DX(I-1,J+1,K)              &
                          -channel%seg(num_seg)%U3DX(I-1,J,K))               &
                  +FN1(K)*(channel%seg(num_seg)%U3DX(I-1,J+1,K+1)            &
-                         -channel%seg(num_seg)%U3DX(I-1,J,K+1)))  
+                         -channel%seg(num_seg)%U3DX(I-1,J,K+1)))
       ENDDO
       DO K = klowv, nk1
        TERM2(K) = TERM2(K)/(8.0_r8*DY)
@@ -618,31 +618,31 @@ CONTAINS
 
       DEALLOCATE(FINAL)
       DEALLOCATE(WND)
-!*******************************   
-      ENDDO  ! num_seg 
-!*******************************  
-         
+!*******************************
+      ENDDO  ! num_seg
+!*******************************
+
    END SUBROUTINE rksi_3d
 
 !=======================================================================
    SUBROUTINE RETA_3D ( N1, N2, channel )
 !=======================================================================
-!  Predict eta (z3dy)      
+!  Predict eta (z3dy)
 !     mass-weight factors: fn1 & fn2
 !     FN1(K)=RHO(K+1)*FNZ(K)/FNT(K+1)
 !     FN2(K)=RHO(K)*FNZ(K)/FNT(K)
 !-----------------------------------------------------------------------
-      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)       
-      type(channel_t), intent(inout) :: channel   ! channel data 
-      
+      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)
+      type(channel_t), intent(inout) :: channel   ! channel data
+
 ! Local variables
       LOGICAL :: MODFLUX
       REAL (KIND=r8), DIMENSION(NK2) :: WWND,QVER,TERM1,TERM2,TERM3
       REAL (KIND=r8), DIMENSION(NK1) :: FINALZ
-      
-      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: WND  
+
+      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: WND
       REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: FINAL
-      
+
       INTEGER :: I,J,K,L,klowu
       INTEGER :: num_seg,klowq_max
       INTEGER :: mi1,mim,mip,mim_a,mip_a,mim_c,mip_c,mim_ce
@@ -650,32 +650,32 @@ CONTAINS
 
       L = N2
 
-!*******************************************************************   
+!*******************************************************************
       DO num_seg = 1, 4
-!*******************************************************************  
+!*******************************************************************
       klowq_max = channel%seg(num_seg)%klowq_max_glob
-      
+
       mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment
-      mim    = channel%seg(num_seg)%mim  
+      mim    = channel%seg(num_seg)%mim
       mip    = channel%seg(num_seg)%mip
-      mim_a  = channel%seg(num_seg)%mim_a 
-      mip_a  = channel%seg(num_seg)%mip_a   
-      mim_c  = channel%seg(num_seg)%mim_c 
-      mip_c  = channel%seg(num_seg)%mip_c 
-      mim_ce = channel%seg(num_seg)%mim_ce 
-       
-      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment 
-      mjm    = channel%seg(num_seg)%mjm   
-      mjp    = channel%seg(num_seg)%mjp 
-      mjm_a  = channel%seg(num_seg)%mjm_a 
-      mjp_a  = channel%seg(num_seg)%mjp_a  
-      mjm_c  = channel%seg(num_seg)%mjm_c       
-      mjp_c  = channel%seg(num_seg)%mjp_c 
-      mjm_ce = channel%seg(num_seg)%mjm_ce         
-        
+      mim_a  = channel%seg(num_seg)%mim_a
+      mip_a  = channel%seg(num_seg)%mip_a
+      mim_c  = channel%seg(num_seg)%mim_c
+      mip_c  = channel%seg(num_seg)%mip_c
+      mim_ce = channel%seg(num_seg)%mim_ce
+
+      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment
+      mjm    = channel%seg(num_seg)%mjm
+      mjp    = channel%seg(num_seg)%mjp
+      mjm_a  = channel%seg(num_seg)%mjm_a
+      mjp_a  = channel%seg(num_seg)%mjp_a
+      mjm_c  = channel%seg(num_seg)%mjm_c
+      mjp_c  = channel%seg(num_seg)%mjp_c
+      mjm_ce = channel%seg(num_seg)%mjm_ce
+
       ALLOCATE(FINAL(mi1,mj1))
       ALLOCATE(WND(mim_a:mip_c,mjm_a:mjp_c))
-      
+
 !-----------------------
 !     ZONAL ADVECTION
 !-----------------------
@@ -706,7 +706,7 @@ CONTAINS
       ENDDO
       ENDDO
 
-      ENDDO  
+      ENDDO
 
       MODFLUX = .FALSE.
       ! k-loop for free atmosphere
@@ -770,10 +770,10 @@ CONTAINS
       ENDDO
       ENDDO
 
-      ENDDO  
+      ENDDO
 
       MODFLUX = .FALSE.
-      ! k-loop for free atmosphere 
+      ! k-loop for free atmosphere
       DO K= klowq_max, nk1
 
       DO J = mjm_a, mjp_c
@@ -802,7 +802,7 @@ CONTAINS
       ENDDO
       ENDDO
 
-      ENDDO 
+      ENDDO
 
       DO K= 2, nk1
        DO J = 1, mj1
@@ -824,13 +824,13 @@ CONTAINS
         WWND(K) = 0.25_r8*(RHOZ(K)*(channel%seg(num_seg)%W3D(I+1,J,K)     &
                                    +channel%seg(num_seg)%W3D(I,J,K))      &
                           +RHOZ(K+1)*(channel%seg(num_seg)%W3D(I+1,J,K+1) &
-                                     +channel%seg(num_seg)%W3D(I,J,K+1)))              
+                                     +channel%seg(num_seg)%W3D(I,J,K+1)))
       ENDDO
       DO K = klowu-1, nk2
         QVER(K) = channel%seg(num_seg)%Z3DY(I,J,K)
       ENDDO
 
-      CALL VADVEC_V (WWND,QVER,FNZ,NK1,NK2,NK3,KLOWU-1,DZ,FINALZ)
+      CALL VADVEC_V (WWND,QVER,FNZ(1:nk1),nk1,nk2,KLOWU-1,DZ,FINALZ)
 
       DO K = klowu, nk1
         channel%seg(num_seg)%FZY(I,J,K,L) = channel%seg(num_seg)%FZY(I,J,K,L) &
@@ -886,7 +886,7 @@ CONTAINS
                  *(FN2(K)*(channel%seg(num_seg)%U3DY(I+1,J-1,K)            &
                           -channel%seg(num_seg)%U3DY(I,J-1,K))             &
                   +FN1(K)*(channel%seg(num_seg)%U3DY(I+1,J-1,K+1)          &
-                          -channel%seg(num_seg)%U3DY(I,J-1,K+1)))  
+                          -channel%seg(num_seg)%U3DY(I,J-1,K+1)))
       ENDDO
       DO K = KLOWU,NK1
        TERM2(K) = TERM2(K)/(8.0_r8*DX)
@@ -925,10 +925,10 @@ CONTAINS
 
       DEALLOCATE(FINAL)
       DEALLOCATE(WND)
-      
-!*******************************   
-      ENDDO  ! num_seg 
-!*******************************  
+
+!*******************************
+      ENDDO  ! num_seg
+!*******************************
 
    END SUBROUTINE reta_3d
 
@@ -936,42 +936,42 @@ CONTAINS
    SUBROUTINE ZETA_3D (N1, N2, channel)
 !=======================================================================
 !  Predict zeta (z3dz)
-      
-      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)       
-      type(channel_t), intent(inout) :: channel   ! channel data 
-      
+
+      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)
+      type(channel_t), intent(inout) :: channel   ! channel data
+
       ! Local variables
       REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: FLX
-      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: UPi,UMi     
+      REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: UPi,UMi
       REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: UPSRi,UMSRi
       REAL (KIND=r8), DIMENSION(:,:), ALLOCATABLE :: TEMP
 
       REAL (KIND=r8) :: UPi_V,UPSRi_V,UPSR2i_V
       REAL (KIND=r8) :: FACTOR1,FACTOR2,TERM1,TERM2,TERM3
-      
+
       INTEGER :: I,J,K,L
       INTEGER :: num_seg,mi1,mim_a,mip_c,mj1,mjm_a,mjp_c
 
       L = N2
 
-!*******************************************************************   
+!*******************************************************************
       DO num_seg = 1, 4
-!*******************************************************************  
-      mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment  
-      mim_a  = channel%seg(num_seg)%mim_a    
-      mip_c  = channel%seg(num_seg)%mip_c 
-      
-      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment   
-      mjm_a  = channel%seg(num_seg)%mjm_a        
-      mjp_c  = channel%seg(num_seg)%mjp_c      
-      
+!*******************************************************************
+      mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment
+      mim_a  = channel%seg(num_seg)%mim_a
+      mip_c  = channel%seg(num_seg)%mip_c
+
+      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment
+      mjm_a  = channel%seg(num_seg)%mjm_a
+      mjp_c  = channel%seg(num_seg)%mjp_c
+
       ALLOCATE(FLX(0:mi1,0:mj1))
       ALLOCATE(UPi(mim_a:mip_c,mjm_a:mjp_c))
       ALLOCATE(UMi(mim_a:mip_c,mjm_a:mjp_c))
       ALLOCATE(UPSRi(mim_a:mip_c,mjm_a:mjp_c))
       ALLOCATE(UMSRi(mim_a:mip_c,mjm_a:mjp_c))
       ALLOCATE(TEMP(mim_a:mip_c,mjm_a:mjp_c))
-      
+
 !===================
 !     ADVECTION
 !===================
@@ -984,19 +984,24 @@ CONTAINS
                                      +channel%seg(num_seg)%U3DX(I+1,J+1,NK2) &
                                      +channel%seg(num_seg)%U3DX(I+1,J,NK2))  &
                                     *channel%seg(num_seg)%RG_V(I+1,J)
-       ENDDO 
+       ENDDO
       ENDDO
+
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------  
+!     x-channel: same scheme (following the channel) 
 
       DO J = 1, mj1
        DO i = mim_a, mip_c
         UPi(I,j) = 0.5_r8*(TEMP(I,J)+ABS(TEMP(I,J)))
         UMi(I,j) = 0.5_r8*(TEMP(I,J)-ABS(TEMP(I,J)))
        ENDDO
-      ENDDO      
+      ENDDO
 
       DO J = 1, mj1
        DO i = mim_a, mip_c
-        UPSRi(I,j) = SQRT(UPi(I,j)) 
+        UPSRi(I,j) = SQRT(UPi(I,j))
         UMSRi(I,j) = SQRT(ABS(UMi(I,j)))
        ENDDO
       ENDDO
@@ -1015,6 +1020,21 @@ CONTAINS
                                 -channel%seg(num_seg)%Z3DZ(I+2,J,NK2)))/6.0_r8
        ENDDO
       ENDDO
+!--------------------------------------
+      ELSE
+!--------------------------------------
+!     y-channel: 2nd-order (across the channel)
+  
+      DO J = 1, mj1
+       DO i = 0, mi1
+        FLX(I,j) = 0.5_r8*TEMP(I,j)*(channel%seg(num_seg)%Z3DZ(I+1,J,NK2)     &
+                                    +channel%seg(num_seg)%Z3DZ(I,J,NK2))      
+       ENDDO
+      ENDDO
+      
+!--------------------------------------
+      ENDIF
+!--------------------------------------        
 
       DO J = 1, mj1
        DO i = 1, mi1
@@ -1034,6 +1054,23 @@ CONTAINS
                                     *channel%seg(num_seg)%RG_U(I,J+1)
        ENDDO
       ENDDO
+
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------  
+!     x-channel: 2nd-order (across the channel)
+
+      DO j = 0, mj1
+       DO I = 1, mi1
+        FLX(i,J) = 0.5_r8*TEMP(i,J)*(channel%seg(num_seg)%Z3DZ(I,J+1,NK2)   &
+                                    +channel%seg(num_seg)%Z3DZ(I,J,NK2))    
+       ENDDO
+      ENDDO
+
+!--------------------------------------
+      ELSE
+!--------------------------------------  
+!     y-channel: same scheme (following the channel) 
 
       DO j = mjm_a, mjp_c
        DO I = 1, mi1
@@ -1064,6 +1101,10 @@ CONTAINS
        ENDDO
       ENDDO
 
+!--------------------------------------
+      ENDIF
+!--------------------------------------  
+
       DO j = 1, mj1
        DO I = 1, mi1
         channel%seg(num_seg)%FZTOP(I,J,L) = channel%seg(num_seg)%FZTOP(I,J,L) &
@@ -1087,7 +1128,7 @@ CONTAINS
         UPi_V    = 0.5_r8*(TERM1+ABS(TERM1))
         UPSRi_V  = SQRT(UPi_V)
         UPSR2i_V = SQRT(0.5_r8*(TERM2+ABS(TERM2)))
-      
+
         IF(TERM1.GE.0.0_r8) THEN
          FLX(i,J) = 0.5_r8*TERM1*(channel%seg(num_seg)%Z3DZ(I,J,NK2)     &
                                  +channel%seg(num_seg)%Z3DZ(I,J,NK1))    &
@@ -1121,9 +1162,9 @@ CONTAINS
        *(channel%seg(num_seg)%Z3DZ(I-1,J,NK2)+channel%seg(num_seg)%Z3DZ(I,J,NK2))   &
       + (channel%seg(num_seg)%W3D(I+1,J,NK1)+channel%seg(num_seg)%W3D(I+1,J+1,NK1)) &
        *(channel%seg(num_seg)%Z3DZ(I,J,NK2)+channel%seg(num_seg)%Z3DZ(I+1,J,NK2))
-        
+
         channel%seg(num_seg)%FZTOP(I,J,L) = channel%seg(num_seg)%FZTOP(I,J,L) &
-                                          - RHO(NK2)*TERM1*FNT(NK2)/(8.0_r8*DZ) 
+                                          - RHO(NK2)*TERM1*FNT(NK2)/(8.0_r8*DZ)
        ENDDO
       ENDDO
 
@@ -1147,7 +1188,7 @@ CONTAINS
                         -channel%seg(num_seg)%W3D(I,J+1,NK1)     &
                         +channel%seg(num_seg)%W3D(I+1,J,NK1)     &
                         -channel%seg(num_seg)%W3D(I,J,NK1))
-       
+
         channel%seg(num_seg)%FZTOP(I,J,L) = channel%seg(num_seg)%FZTOP(I,J,L) &
                                           + TERM2/(8.0_r8*DX)
        ENDDO
@@ -1167,7 +1208,7 @@ CONTAINS
                          -channel%seg(num_seg)%W3D(I+1,J,NK1)     &
                          +channel%seg(num_seg)%W3D(I,J+1,NK1)     &
                          -channel%seg(num_seg)%W3D(I,J,NK1))
-      
+
         channel%seg(num_seg)%FZTOP(I,J,L) = channel%seg(num_seg)%FZTOP(I,J,L) &
                                           + TERM3/(8.0_r8*DY)
        ENDDO
@@ -1180,10 +1221,10 @@ CONTAINS
       DEALLOCATE(UMSRi)
       DEALLOCATE(TEMP)
 
-!*******************************************************************   
-      ENDDO  ! num_seg 
-!*******************************************************************        
-      
+!*******************************************************************
+      ENDDO  ! num_seg
+!*******************************************************************
+
    END SUBROUTINE zeta_3d
 
 !=======================================================================
@@ -1193,18 +1234,18 @@ CONTAINS
 !  Data needed only for (mim_c:mip_c, mjm_c:mjp_c, k)
 
       type(channel_t), intent(inout) :: channel   ! channel data
-      
+
       INTEGER :: I,J,K,num_seg,mim_c,mip_c,mjm_c,mjp_c
 
-!===============================   
+!===============================
       DO num_seg = 1, 4
-!=============================== 
-      mim_c  = channel%seg(num_seg)%mim_c    
-      mip_c  = channel%seg(num_seg)%mip_c 
-        
-      mjm_c  = channel%seg(num_seg)%mjm_c        
-      mjp_c  = channel%seg(num_seg)%mjp_c  
-      
+!===============================
+      mim_c  = channel%seg(num_seg)%mim_c
+      mip_c  = channel%seg(num_seg)%mip_c
+
+      mjm_c  = channel%seg(num_seg)%mjm_c
+      mjp_c  = channel%seg(num_seg)%mjp_c
+
       DO K = nk1, 1, -1
       DO J = mjm_c, mjp_c
       DO I = mim_c, mip_c
@@ -1230,30 +1271,30 @@ CONTAINS
           *DZ/(channel%seg(num_seg)%RG_Z(I,J)*DY*FNZ(NK2))
       ENDDO
       ENDDO
-!===============================   
-      ENDDO  ! num_seg 
+!===============================
+      ENDDO  ! num_seg
 !===============================
 
    END SUBROUTINE zeta_diag
 
-!=======================================================================      
+!=======================================================================
    SUBROUTINE VADVEC_H1 (mi1,mim,mim_a,mim_c,mip,mip_c,    &
                          mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,    &
                          DM_P2,DM_P1,DM_M1,DM_M2,QVAL,     &
                          WINDV,DGRID,MODFLUX,FINAL,direction)
-!=======================================================================                         
+!=======================================================================
       INTEGER, INTENT(IN) :: mi1,mim,mim_a,mim_c,mip,mip_c
       INTEGER, INTENT(IN) :: mj1,mjm,mjm_a,mjm_c,mjp,mjp_c
       INTEGER, INTENT(IN), DIMENSION(mim_c:mi1,mjm_c:mj1) :: DM_P2,DM_P1
       INTEGER, INTENT(IN), DIMENSION(mim_c:mi1,mjm_c:mj1) :: DM_M2,DM_M1
-      REAL (KIND=r8), INTENT(IN), DIMENSION(mim:mip,mjm:mjp) :: QVAL   
+      REAL (KIND=r8), INTENT(IN), DIMENSION(mim:mip,mjm:mjp) :: QVAL
       REAL (KIND=r8), INTENT(IN), DIMENSION(mim_a:mip_c,mjm_a:mjp_c) :: WINDV
       REAL (KIND=r8), INTENT(IN) :: DGRID
       CHARACTER (LEN=*), INTENT(IN) :: direction
       LOGICAL, INTENT(IN) :: MODFLUX
-      
-      REAL (KIND=r8), INTENT(OUT), DIMENSION(mi1,mj1) :: FINAL   
-      
+
+      REAL (KIND=r8), INTENT(OUT), DIMENSION(mi1,mj1) :: FINAL
+
       ! Local variables
       REAL (KIND=r8) :: TEMPX(mim_a:mip_c,mj1),TEMPY(mi1,mjm_a:mjp_c)
       REAL (KIND=r8), DIMENSION(mim_a:mip_c,mjm_a:mjp_c) :: UP,UM,UPSR,UMSR
@@ -1283,9 +1324,15 @@ CONTAINS
       ENDDO
       ENDDO
 
-!----------------------------------
+!===========================================================
       IF (MODFLUX) THEN
-!----------------------------------
+!===========================================================
+
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------      
+!     x-channel: same scheme (following the channel) 
+
       DO J = 1, mJ1
       DO I = mim_c, mi1
 
@@ -1319,9 +1366,35 @@ CONTAINS
 
       ENDDO
       ENDDO
-!----------------------------------
+!--------------------------------------
       ELSE
-!----------------------------------
+!--------------------------------------      
+!     y-channel: 2nd-order (across the channel)
+ 
+      DO J = 1, mJ1
+      DO I = mim_c, mi1
+
+      IF (DM_P1(I,J).EQ.1.OR.DM_M1(I,J).EQ.1) THEN
+       FLX(I,j) = 0.0_r8
+      ELSE
+       FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I+1,j)+QVAL(I,j))
+      ENDIF
+
+      ENDDO
+      ENDDO
+      
+!--------------------------------------
+      ENDIF
+!--------------------------------------      
+
+!===========================================================
+      ELSE
+!===========================================================
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------      
+!     x-channel: same scheme (following the channel) 
+
       DO J = 1, mJ1
       DO I = mim_c, mi1
         FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I+1,j)+QVAL(I,j))             &
@@ -1331,9 +1404,23 @@ CONTAINS
                          +UMSR(I,j)*UMSR(I+1,j)*(QVAL(I+1,j)-QVAL(I+2,j)))/6.0_r8
       ENDDO
       ENDDO
-!----------------------------------
+!--------------------------------------
+      ELSE
+!--------------------------------------      
+!     y-channel: apply the 2nd-order (across the channel)
+
+      DO J = 1, mJ1
+      DO I = mim_c, mi1
+        FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I+1,j)+QVAL(I,j))  
+      ENDDO
+      ENDDO
+!--------------------------------------
       ENDIF
-!----------------------------------
+!--------------------------------------      
+      
+!===========================================================
+      ENDIF
+!===========================================================
 
       DO j = 1, mj1
       DO I = 1, mi1
@@ -1364,9 +1451,32 @@ CONTAINS
         UMSR(I,j) = SQRT(ABS(UM(I,j)))
       ENDDO
       ENDDO
-!----------------------------------
+!===========================================================
       IF (MODFLUX) THEN
-!----------------------------------
+!===========================================================
+
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------
+!     x-channel: 2nd-order (across the channel)
+
+      DO J = mjm_c, mJ1
+      DO I = 1, mi1
+
+      IF (DM_P1(I,J).EQ.1.OR.DM_M1(I,J).EQ.1) THEN
+       FLX(I,j) = 0.0_r8
+      ELSE
+       FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I,j+1)+QVAL(I,j))
+      ENDIF
+
+      ENDDO
+      ENDDO
+
+!--------------------------------------
+      ELSE
+!-------------------------------------- 
+!     y-channel: apply the same scheme (following the channel)
+
       DO J = mjm_c, mJ1
       DO I = 1, mi1
 
@@ -1400,9 +1510,29 @@ CONTAINS
 
       ENDDO
       ENDDO
-!----------------------------------
+
+!--------------------------------------
+      ENDIF
+!--------------------------------------       
+!===========================================================
       ELSE
-!----------------------------------
+!===========================================================
+
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------
+!     x-channel: 2nd-order (across the channel)
+
+      DO J = mjm_c, mJ1
+      DO I = 1, mi1
+        FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I,j+1)+QVAL(I,j)) 
+      ENDDO
+      ENDDO
+!--------------------------------------
+      ELSE
+!-------------------------------------- 
+!     y-channel: apply the same scheme (following the channel)
+
       DO J = mjm_c, mJ1
       DO I = 1, mi1
         FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I,j+1)+QVAL(I,j))             &
@@ -1412,9 +1542,13 @@ CONTAINS
                          +UMSR(I,j)*UMSR(I,j+1)*(QVAL(I,j+1)-QVAL(I,j+2)))/6.0_r8
       ENDDO
       ENDDO
-!----------------------------------
+!--------------------------------------
       ENDIF
-!----------------------------------
+!-------------------------------------- 
+      
+!===========================================================
+      ENDIF
+!===========================================================
 
       DO j = 1, mj1
       DO I = 1, mi1
@@ -1433,18 +1567,18 @@ CONTAINS
                          mj1,mjm,mjm_a,mjm_c,mjp,mjp_c,    &
                          DM_P1,DM_M1,QVAL, &
                          WINDV,DGRID,MODFLUX,FINAL,direction)
-!=======================================================================    
+!=======================================================================
       INTEGER, INTENT(IN) :: mi1,mim,mim_a,mim_c,mip,mip_c
-      INTEGER, INTENT(IN) :: mj1,mjm,mjm_a,mjm_c,mjp,mjp_c                     
+      INTEGER, INTENT(IN) :: mj1,mjm,mjm_a,mjm_c,mjp,mjp_c
       INTEGER, INTENT(IN), DIMENSION(mim_c:mi1,mjm_c:mj1) :: DM_P1
       INTEGER, INTENT(IN), DIMENSION(mim_c:mi1,mjm_c:mj1) :: DM_M1
-      REAL (KIND=r8), INTENT(IN), DIMENSION(mim:mip,mjm:mjp) :: QVAL 
-      REAL (KIND=r8), INTENT(IN), DIMENSION(mim_a:mip_c,mjm_a:mjp_c) :: WINDV 
+      REAL (KIND=r8), INTENT(IN), DIMENSION(mim:mip,mjm:mjp) :: QVAL
+      REAL (KIND=r8), INTENT(IN), DIMENSION(mim_a:mip_c,mjm_a:mjp_c) :: WINDV
       REAL (KIND=r8), INTENT(IN) :: DGRID
       CHARACTER (LEN=*), INTENT(IN) :: direction
       LOGICAL, INTENT(IN) :: MODFLUX
-      
-      REAL (KIND=r8), INTENT(OUT), DIMENSION(mi1,mj1) :: FINAL     
+
+      REAL (KIND=r8), INTENT(OUT), DIMENSION(mi1,mj1) :: FINAL
 
       ! Local variables
       REAL (KIND=r8) :: TEMPX(mim_a:mip_c,mj1),TEMPY(mi1,mjm_a:mjp_c)
@@ -1475,9 +1609,14 @@ CONTAINS
       ENDDO
       ENDDO
 
-!----------------------------------
+!===========================================================
       IF (MODFLUX) THEN
-!----------------------------------
+!===========================================================
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------      
+!     x-channel: same scheme (following the channel) 
+
       DO J = 1, mJ1
       DO I = mim_c, mi1
 
@@ -1505,9 +1644,27 @@ CONTAINS
 
       ENDDO
       ENDDO
-!----------------------------------
+!--------------------------------------
       ELSE
-!----------------------------------
+!--------------------------------------      
+!     y-channel, 2nd-order (across the channel)
+
+      DO J = 1, mJ1
+      DO I = mim_c, mi1
+        FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I+1,j)+QVAL(I,j))
+      ENDDO
+      ENDDO
+!--------------------------------------
+      ENDIF
+!--------------------------------------          
+      
+!===========================================================
+      ELSE
+!===========================================================
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------      
+!     x-channel: same scheme (following the channel) 
       DO J = 1, mJ1
       DO I = mim_c, mi1
         FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I+1,j)+QVAL(I,j))              &
@@ -1517,9 +1674,23 @@ CONTAINS
                          +UMSR(I,j)*UMSR(I+1,j)*(QVAL(I+1,j)-QVAL(I+2,j)))/6.0_r8
       ENDDO
       ENDDO
-!----------------------------------
+!--------------------------------------
+      ELSE
+!--------------------------------------      
+!     y-channel, 2nd-order (across the channel)
+
+      DO J = 1, mJ1
+      DO I = mim_c, mi1
+        FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I+1,j)+QVAL(I,j)) 
+      ENDDO
+      ENDDO
+!--------------------------------------
       ENDIF
-!----------------------------------
+!--------------------------------------  
+      
+!===========================================================
+      ENDIF
+!===========================================================
 
       DO j = 1, mj1
       DO I = 1, mi1
@@ -1550,9 +1721,25 @@ CONTAINS
         UMSR(I,j) = SQRT(ABS(UM(I,j)))
       ENDDO
       ENDDO
-!----------------------------------
+!===========================================================
       IF (MODFLUX) THEN
-!----------------------------------
+!===========================================================
+
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------
+!     x-channel: 2nd-order (across the channel)
+
+      DO J = mjm_c, mJ1
+      DO I = 1, mi1
+        FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I,j+1)+QVAL(I,j))
+      ENDDO
+      ENDDO
+
+!--------------------------------------
+      ELSE
+!--------------------------------------
+!     y-channel: same scheme (following the channel)
       DO J = mjm_c, mJ1
       DO I = 1, mi1
 
@@ -1580,11 +1767,32 @@ CONTAINS
 
       ENDDO
       ENDDO
-!----------------------------------
+!--------------------------------------
+      ENDIF
+!--------------------------------------
+
+!===========================================================
       ELSE
-!----------------------------------
+!===========================================================
+!--------------------------------------
+      IF (mi1 .GT. mj1) THEN
+!--------------------------------------
+!     x-channel: 2nd-order (across the channel)
+
       DO J = mjm_c, mJ1
-      DO I = 1, mi1 
+      DO I = 1, mi1
+        FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I,j+1)+QVAL(I,j))
+      ENDDO
+      ENDDO
+
+!--------------------------------------
+      ELSE
+!--------------------------------------
+
+!     y-channel: same scheme (following the channel)
+
+      DO J = mjm_c, mJ1
+      DO I = 1, mi1
         FLX(I,j) = 0.5_r8*WINDV(I,j)*(QVAL(I,j+1)+QVAL(I,j))              &
                  - ALADV*(UP(I,j)*(QVAL(I,j+1)-QVAL(I,j))                 &
                          -UPSR(I,j)*UPSR(I,j-1)*(QVAL(I,j)-QVAL(I,j-1))   &
@@ -1592,9 +1800,13 @@ CONTAINS
                          +UMSR(I,j)*UMSR(I,j+1)*(QVAL(I,j+1)-QVAL(I,j+2)))/6.0_r8
       ENDDO
       ENDDO
-!----------------------------------
+
+!--------------------------------------
       ENDIF
-!----------------------------------
+!--------------------------------------      
+!===========================================================
+      ENDIF
+!===========================================================
 
       DO j = 1, mj1
       DO I = 1, mi1
@@ -1609,11 +1821,11 @@ CONTAINS
    END SUBROUTINE vadvec_h2
 
 !=======================================================================
-   SUBROUTINE VADVEC_V(WINDV,QVAL,FNZ,KZ,KZP1,KZP2,KMIN,DZ,FINAL)
+   SUBROUTINE VADVEC_V(WINDV,QVAL,FNZ,KZ,KZP1,KMIN,DZ,FINAL)
 !=======================================================================
-      INTEGER, INTENT(IN) :: KZ,KZP1,KZP2,KMIN
+      INTEGER, INTENT(IN) :: KZ,KZP1,KMIN
       REAL (KIND=r8), INTENT(IN), DIMENSION(KZP1) :: WINDV,QVAL
-      REAL (KIND=r8), INTENT(IN), DIMENSION(KZP2) :: FNZ
+      REAL (KIND=r8), INTENT(IN), DIMENSION(KZ) :: FNZ
       REAL (KIND=r8), INTENT(IN) :: DZ
       REAL (KIND=r8), INTENT(OUT), DIMENSION(KZ) :: FINAL
 
@@ -1661,21 +1873,21 @@ CONTAINS
 
 !=======================================================================
    SUBROUTINE ABM_3D ( N1, N2, channel )
-!=======================================================================   
-!  Updating the vorticity components 
+!=======================================================================
+!  Updating the vorticity components
 
-      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)       
-      type(channel_t), intent(inout) :: channel   ! channel data 
+      INTEGER, INTENT(IN) :: N1,N2                ! previous and current time index (AB scheme)
+      type(channel_t), intent(inout) :: channel   ! channel data
 
       ! Local
       INTEGER :: I,J,K,klowu,klowv,num_seg,mi1,mj1
 
-!===============================   
+!===============================
       DO num_seg = 1, 4
-!=============================== 
+!===============================
       mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
-      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
-      
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment
+
 ! JH  Applying free-slip condition at the surface.
 
       DO J = 1, mj1
@@ -1688,8 +1900,9 @@ CONTAINS
         channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX(I,J,K)     &
                                          + DT*channel%seg(num_seg)%FZXBU(I,J,K) &
                                          + A*channel%seg(num_seg)%FZX(I,J,K,N2) &
-                                         + B*channel%seg(num_seg)%FZX(I,J,K,N1)          
-       ENDDO
+                                         + B*channel%seg(num_seg)%FZX(I,J,K,N1)
+       ENDDO                                
+
        DO K = 2, klowv-1
         channel%seg(num_seg)%Z3DX(I,J,K) = 0.0_r8
        ENDDO
@@ -1698,7 +1911,7 @@ CONTAINS
         channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY(I,J,K)     &
                                          + DT*channel%seg(num_seg)%FZYBU(I,J,K) &
                                          + A*channel%seg(num_seg)%FZY(I,J,K,N2) &
-                                         +B*channel%seg(num_seg)%FZY(I,J,K,N1)            
+                                         + B*channel%seg(num_seg)%FZY(I,J,K,N1) 
        ENDDO
        DO K = 2, klowu-1
         channel%seg(num_seg)%Z3DY(I,J,K) = 0.0_r8
@@ -1706,29 +1919,30 @@ CONTAINS
 
       ENDDO
       ENDDO
-!===============================   
-      ENDDO  ! num_seg 
+      
+!===============================
+      ENDDO  ! num_seg
 !===============================
 
    END SUBROUTINE abm_3d
 
 !=======================================================================
    SUBROUTINE ABM_3D_TURB ( channel )
-!======================================================================= 
+!=======================================================================
 !  Updating the vorticity components
-    
-      type(channel_t), intent(inout) :: channel   ! channel data 
+
+      type(channel_t), intent(inout) :: channel   ! channel data
 
       ! Local
       INTEGER :: I,J,K,klowu,klowv,num_seg,mi1,mj1
 
 
-!===============================   
+!===============================
       DO num_seg = 1, 4
-!=============================== 
+!===============================
       mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
-      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
-      
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment
+
       DO J = 1, mj1
       DO I = 1, mi1
       klowu = channel%seg(num_seg)%KLOWU_IJ(I,J)
@@ -1746,191 +1960,191 @@ CONTAINS
 
       ENDDO
       ENDDO
-!===============================   
-      ENDDO  ! num_seg 
+!===============================
+      ENDDO  ! num_seg
 !===============================
 
   END SUBROUTINE abm_3d_turb
 
 !=======================================================================
       SUBROUTINE RELAXATION (channel)
-!=======================================================================   
+!=======================================================================
 !     Relax the vGCM-cell mean of deviation toward zero
 !     (prognostic) channel width is assumed to be 1 (chn=1)
 !
 !     PLAN: In the averaging, TOPOGRAPHY effect should be included.
 !           (Any mapping problem?)
-!------------------------------------------------------------------------ 
+!------------------------------------------------------------------------
       type(channel_t), INTENT(INOUT) :: channel   ! channel data
-       
+
 !     Local variables
-      LOGICAL :: INTERPOL = .FALSE.
-      
+      LOGICAL :: INTERPOL = .TRUE.
+
       REAL (KIND=r8), DIMENSION(4,2,4) :: AM
       REAL (KIND=r8), DIMENSION(4,2,4) :: AMI
-      
+
       REAL (KIND=r8),DIMENSION(nk1-1,0:nVGCM_seg+1,4) :: MN_ZX
       REAL (KIND=r8),DIMENSION(nk1-1,0:nVGCM_seg+1,4) :: MN_ZY
       REAL (KIND=r8),DIMENSION(0:nVGCM_seg+1,4) :: MN_ZZ
-      
-      REAL (KIND=r8) :: XMN(netsz)
-      
+
+      REAL (KIND=r8) :: XMN(netsz,2)
+
       REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_ZX
       REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: TEMP_ZY
       REAL (KIND=r8), DIMENSION(:,:),   ALLOCATABLE :: TEMP_ZZ
-      
+
       INTEGER :: mi1,mj1,i,j,k
       INTEGER :: num_seg,ng,lsta,lend,lcen,lcen_m,lcen_p,chl,chn,npo
       REAL (KIND=r8) :: DIST,DIST1,DIST2
       
       chn = 1    !  Assume (prognostic) channel width is 1.
-      
-! Calculate the vGCM-cell average of deviation.     
-!**********************************************************************   
+
+! Calculate the vGCM-cell average of deviation.
+!**********************************************************************
       DO num_seg = 1, 4
 !**********************************************************************
-      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment    
-      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment  
-      
+      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment
+
       IF (INTERPOL) THEN
       AMI(:,:,num_seg) = channel%seg(num_seg)%AMI_vGCM_halo(:,:)
-      ! Inverse of the transformation matrix specially prepared 
+      ! Inverse of the transformation matrix specially prepared
       ! at the 1st halos of the vGCM in each channel segment.
       ! 1st dimension: matrix index (1) 11, (2) 12, (3) 21, (4) 22
       ! 2nd dimension: (1) minus direction (2) plus direction of halo points
       ! 3rd dimension: segment index
       ENDIF
-      
+
 !     Calculate the segment average of deviation
-!---------------------------- 
+!----------------------------
       IF (mi1.GT.mj1) THEN
 !---------------------------- x-channel seg.
         IF (INTERPOL) THEN
         lcen_m = INT(channel%seg(num_seg)%lcen(1))
         lcen_p = INT(channel%seg(num_seg)%lcen(nVGCM_seg))
-        
+
         DO npo = 1, 4
           AM(npo,1,num_seg) = channel%seg(num_seg)%AM_T(npo,lcen_m,chn)
           AM(npo,2,num_seg) = channel%seg(num_seg)%AM_T(npo,lcen_p,chn)
-        ENDDO 
+        ENDDO
         ENDIF
-        
+
       DO ng = 1, nVGCM_seg
-        
-        lsta = channel%seg(num_seg)%lsta(ng)
-        lend = channel%seg(num_seg)%lend(ng)
-        
+
         DO K = 2, nk1
-        DO chl = lsta, lend
-         XMN(chl) = channel%seg(num_seg)%Z3DX(chl,chn,K) &
-                  - channel%seg(num_seg)%Z3DX_BG(chl,chn,K) 
+        DO npo = 1, netsz
+         chl = channel%seg(num_seg)%lsta(ng) - 1 + npo
+         
+         XMN(npo,1) = channel%seg(num_seg)%Z3DX(chl,chn,K)    &
+                    - channel%seg(num_seg)%Z3DX_BG(chl,chn,K)
+         XMN(npo,2) = channel%seg(num_seg)%Z3DY(chl,chn,K)    &
+                    - channel%seg(num_seg)%Z3DY_BG(chl,chn,K)                
         ENDDO
-        MN_ZX(K-1,ng,num_seg) = SUM(XMN)/FLOAT(netsz)
+        MN_ZX(K-1,ng,num_seg) = SUM(XMN(:,1))/FLOAT(netsz)
+        MN_ZY(K-1,ng,num_seg) = SUM(XMN(:,2))/FLOAT(netsz)
+        ENDDO
 
-        DO chl = lsta, lend
-         XMN(chl) = channel%seg(num_seg)%Z3DY(chl,chn,K) &
-                  - channel%seg(num_seg)%Z3DY_BG(chl,chn,K) 
+        DO npo = 1, netsz
+         chl = channel%seg(num_seg)%lsta(ng) - 1 + npo
+         
+         XMN(npo,1) = channel%seg(num_seg)%Z3DZ(chl,chn,nk2)  &
+                    - channel%seg(num_seg)%Z3DZ_BG(chl,chn,1)
         ENDDO
-        MN_ZY(K-1,ng,num_seg) = SUM(XMN)/FLOAT(netsz)
-        ENDDO
+        MN_ZZ(ng,num_seg) = SUM(XMN(:,1))/FLOAT(netsz)
 
-        DO chl = lsta, lend
-         XMN(chl) = channel%seg(num_seg)%Z3DZ(chl,chn,nk2) &
-                  - channel%seg(num_seg)%Z3DZ_BG(chl,chn,1) 
-        ENDDO
-        MN_ZZ(ng,num_seg) = SUM(XMN)/FLOAT(netsz)
 
       ENDDO  ! ng-loop
-!---------------------------- 
+
+!----------------------------
       ELSE
 !---------------------------- y-channel seg.
-        IF (INTERPOL) THEN 
+        IF (INTERPOL) THEN
         lcen_m = INT(channel%seg(num_seg)%lcen(1))
         lcen_p = INT(channel%seg(num_seg)%lcen(nVGCM_seg))
-        
+
         DO npo = 1, 4
           AM(npo,1,num_seg) = channel%seg(num_seg)%AM_T(npo,chn,lcen_m)
           AM(npo,2,num_seg) = channel%seg(num_seg)%AM_T(npo,chn,lcen_p)
-        ENDDO 
+        ENDDO
         ENDIF
-        
+
       DO ng = 1, nVGCM_seg
-        
-        lsta = channel%seg(num_seg)%lsta(ng)
-        lend = channel%seg(num_seg)%lend(ng) 
-        
+
         DO K = 2, nk1
-        DO chl = lsta, lend
-         XMN(chl) = channel%seg(num_seg)%Z3DX(chn,chl,K) &
-                  - channel%seg(num_seg)%Z3DX_BG(chn,chl,K) 
+        DO npo = 1, netsz
+         chl = channel%seg(num_seg)%lsta(ng) - 1 + npo
+         
+         XMN(npo,1) = channel%seg(num_seg)%Z3DX(chn,chl,K)    &
+                    - channel%seg(num_seg)%Z3DX_BG(chn,chl,K)
+         XMN(npo,2) = channel%seg(num_seg)%Z3DY(chn,chl,K)    &
+                    - channel%seg(num_seg)%Z3DY_BG(chn,chl,K)                
         ENDDO
-        MN_ZX(K-1,ng,num_seg) = SUM(XMN)/FLOAT(netsz)
+        MN_ZX(K-1,ng,num_seg) = SUM(XMN(:,1))/FLOAT(netsz)
+        MN_ZY(K-1,ng,num_seg) = SUM(XMN(:,2))/FLOAT(netsz)
+        ENDDO
 
-        DO chl = lsta, lend
-         XMN(chl) = channel%seg(num_seg)%Z3DY(chn,chl,K) &
-                  - channel%seg(num_seg)%Z3DY_BG(chn,chl,K) 
+        DO npo = 1, netsz
+         chl = channel%seg(num_seg)%lsta(ng) - 1 + npo
+         
+         XMN(npo,1) = channel%seg(num_seg)%Z3DZ(chn,chl,nk2)  &
+                    - channel%seg(num_seg)%Z3DZ_BG(chn,chl,1)
         ENDDO
-        MN_ZY(K-1,ng,num_seg) = SUM(XMN)/FLOAT(netsz)
-        ENDDO
+        MN_ZZ(ng,num_seg) = SUM(XMN(:,1))/FLOAT(netsz)
 
-        DO chl = lsta, lend
-         XMN(chl) = channel%seg(num_seg)%Z3DZ(chn,chl,nk2) &
-                  - channel%seg(num_seg)%Z3DZ_BG(chn,chl,1) 
-        ENDDO
-        MN_ZZ(ng,num_seg) = SUM(XMN)/FLOAT(netsz)
 
       ENDDO  ! ng-loop
+
 !----------------------------
       ENDIF
-!----------------------------   
-      
-!****************************   
-      ENDDO  ! num_seg 
+!----------------------------
+
+!****************************
+      ENDDO  ! num_seg
 !****************************
 
       IF (INTERPOL) THEN
-      ! Filling the halos along the channel: vector mapping 
-      
+      ! Filling the halos along the channel: vector mapping
+
       SELECT CASE (channel%num_chg)
       CASE(1)
         CALL BOUND_G1_V (AM,AMI,MN_ZX,MN_ZY)
         CALL BOUND_G1_S (MN_ZZ)
-        
+
       CASE(2)
         CALL BOUND_G2_V (AM,AMI,MN_ZX,MN_ZY)
         CALL BOUND_G2_S (MN_ZZ)
-        
+
       CASE(3)
         CALL BOUND_G3_V (AM,AMI,MN_ZX,MN_ZY)
         CALL BOUND_G3_S (MN_ZZ)
       END SELECT
-      
+
       ENDIF
-      
-!**********************************************************************   
+
+!**********************************************************************
       DO num_seg = 1, 4
 !**********************************************************************
-      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment    
-      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
+      mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment
 
       ALLOCATE(TEMP_ZX(mi1,mj1,nk1-1))
       ALLOCATE(TEMP_ZY(mi1,mj1,nk1-1))
       ALLOCATE(TEMP_ZZ(mi1,mj1))
-      
-! Interpolation of vGCM values to CRM grid points      
+
+! Interpolation of vGCM values to CRM grid points
 !----------------------------
       IF (mi1.GT.mj1) THEN
 !---------------------------- x-channel seg.
       DO ng = 1, nVGCM_seg
-        
+
         lsta = channel%seg(num_seg)%lsta(ng)
         lend = channel%seg(num_seg)%lend(ng)
         lcen = channel%seg(num_seg)%lcen(ng)
-        
-        DO chl = lsta, lend 
+
+        DO chl = lsta, lend
 
         IF (INTERPOL) THEN
-         
+
          DIST1 = lcen - float(chl)
          IF (DIST1.GE.0.0_r8) THEN
            DIST2 = FLOAT(netsz) - DIST1
@@ -1940,44 +2154,44 @@ CONTAINS
            DIST2 = FLOAT(netsz) + DIST1
            DIST  = ABS(DIST1)
            NPO   = ng + 1
-         ENDIF 
-          
-         DO K = 1, nk1-1       
+         ENDIF
+
+         DO K = 1, nk1-1
           TEMP_ZX(chl,chn,K) = &
             (DIST*MN_ZX(K,NPO,num_seg)+DIST2*MN_ZX(K,ng,num_seg))/FLOAT(netsz)
           TEMP_ZY(chl,chn,K) = &
             (DIST*MN_ZY(K,NPO,num_seg)+DIST2*MN_ZY(K,ng,num_seg))/FLOAT(netsz)
-         ENDDO 
-                
+         ENDDO
+
           TEMP_ZZ(chl,chn) = &
             (DIST*MN_ZZ(NPO,num_seg)+DIST2*MN_ZZ(ng,num_seg))/FLOAT(netsz)
-            
+
         ELSE  ! INTERPOL
 
-         DO K = 1, nk1-1       
+         DO K = 1, nk1-1
           TEMP_ZX(chl,chn,K) = MN_ZX(K,ng,num_seg)
           TEMP_ZY(chl,chn,K) = MN_ZY(K,ng,num_seg)
-         ENDDO 
+         ENDDO
           TEMP_ZZ(chl,chn)   = MN_ZZ(ng,num_seg)
-                    
-        ENDIF  ! INTERPOL    
-         
-        ENDDO  ! chl-loop 
+
+        ENDIF  ! INTERPOL
+
+        ENDDO  ! chl-loop
 
       ENDDO  ! ng-loop
 !----------------------------
       ELSE
 !---------------------------- y-channel seg.
       DO ng = 1, nVGCM_seg
-        
+
         lsta = channel%seg(num_seg)%lsta(ng)
         lend = channel%seg(num_seg)%lend(ng)
         lcen = channel%seg(num_seg)%lcen(ng)
-        
-        DO chl = lsta, lend 
+
+        DO chl = lsta, lend
 
         IF (INTERPOL) THEN
-        
+
          DIST1 = lcen - float(chl)
          IF (DIST1.GE.0.0_r8) THEN
            DIST2 = FLOAT(netsz) - DIST1
@@ -1987,35 +2201,39 @@ CONTAINS
            DIST2 = FLOAT(netsz) + DIST1
            DIST  = ABS(DIST1)
            NPO   = ng + 1
-         ENDIF 
-          
-         DO K = 1, nk1       
+         ENDIF
+
+         DO K = 1, nk1-1
           TEMP_ZX(chn,chl,K) = &
             (DIST*MN_ZX(K,NPO,num_seg)+DIST2*MN_ZX(K,ng,num_seg))/FLOAT(netsz)
           TEMP_ZY(chn,chl,K) = &
             (DIST*MN_ZY(K,NPO,num_seg)+DIST2*MN_ZY(K,ng,num_seg))/FLOAT(netsz)
-         ENDDO        
+         ENDDO
           TEMP_ZZ(chn,chl) = &
             (DIST*MN_ZZ(NPO,num_seg)+DIST2*MN_ZZ(ng,num_seg))/FLOAT(netsz)
 
         ELSE  ! INTERPOL
 
-         DO K = 1, nk1       
+         DO K = 1, nk1-1
           TEMP_ZX(chn,chl,K) = MN_ZX(K,ng,num_seg)
           TEMP_ZY(chn,chl,K) = MN_ZY(K,ng,num_seg)
-         ENDDO        
+         ENDDO
           TEMP_ZZ(chn,chl) = MN_ZZ(ng,num_seg)
-                    
+
         ENDIF ! INTERPOL
-        
-        ENDDO  ! chl-loop 
+
+        ENDDO  ! chl-loop
 
       ENDDO  ! ng-loop
 !----------------------------
       ENDIF
-!---------------------------- 
+!----------------------------
 
-!     Apply the relaxation (topography is not considered)
+
+! Apply the relaxation (topography is not considered)
+      !--------------------------------
+      IF (RXTAU_d .EQ. 0.0_r8) THEN 
+      !--------------------------------
       DO K = 2, NK1
        DO J = 1, MJ1
         DO I = 1, MI1
@@ -2042,19 +2260,45 @@ CONTAINS
           ENDIF
         ENDDO
        ENDDO
+      !------------
+      ELSE
+      !------------
+      DO K = 2, NK1
+       DO J = 1, MJ1
+        DO I = 1, MI1
+
+           channel%seg(num_seg)%Z3DX(I,J,K) = channel%seg(num_seg)%Z3DX(I,J,K) &
+                    -DT*TEMP_ZX(I,J,K-1)/RXTAU_d
+          
+           channel%seg(num_seg)%Z3DY(I,J,K) = channel%seg(num_seg)%Z3DY(I,J,K) &
+                    -DT*TEMP_ZY(I,J,K-1)/RXTAU_d
+
+        ENDDO
+       ENDDO
+      ENDDO
+
+       DO J = 1, MJ1
+        DO I = 1, MI1
+           channel%seg(num_seg)%Z3DZ(I,J,NK2) = channel%seg(num_seg)%Z3DZ(I,J,NK2) &
+                    -DT*TEMP_ZZ(I,J)/RXTAU_d
+        ENDDO
+       ENDDO
+      !------------
+      ENDIF
+      !------------   
 
       DEALLOCATE(TEMP_ZX)
       DEALLOCATE(TEMP_ZY)
       DEALLOCATE(TEMP_ZZ)
 
-!**********************************************************************   
-      ENDDO  ! num_seg 
+!**********************************************************************
+      ENDDO  ! num_seg
 !**********************************************************************
 
       CONTAINS
 
       SUBROUTINE BOUND_G1_V (AM,AMI,U,V)
-!     Vector: Filling the halos along the channel (Group1) 
+!     Vector: Filling the halos along the channel (Group1)
 
       REAL (KIND=r8),DIMENSION(4,2,4), INTENT(IN) :: &
             AM    ! transformation matrix at the center of vGCM cell
@@ -2062,14 +2306,14 @@ CONTAINS
       REAL (KIND=r8),DIMENSION(4,2,4), INTENT(IN) :: &
             AMI   ! inverse of transformation matrix at the center of vGCM cell
                   ! 1st (matrix index); 2nd (-/+ halo vGCM cells); 3rd (seg. index)
-                   
+
       REAL (KIND=r8),DIMENSION(nk1-1,0:nVGCM_seg+1,4),INTENT(INOUT) :: U,V
       REAL (KIND=r8) :: U_rll,V_rll
       INTEGER :: chl_p,chl_m,K
 
         chl_p = nVGCM_seg + 1
         chl_m = 0
-        
+
         DO K = 1, nk1-1
           U_rll = (AM(1,1,2)*U(K,1,2) + AM(2,1,2)*V(K,1,2))
           V_rll = (AM(3,1,2)*U(K,1,2) + AM(4,1,2)*V(K,1,2))
@@ -2079,43 +2323,43 @@ CONTAINS
           U_rll = (AM(1,2,4)*U(K,nVGCM_seg,4) + AM(2,2,4)*V(K,nVGCM_seg,4))
           V_rll = (AM(3,2,4)*U(K,nVGCM_seg,4) + AM(4,2,4)*V(K,nVGCM_seg,4))
           U(K,chl_m,1) = (AMI(1,1,1)*U_rll + AMI(2,1,1)*V_rll)
-          V(K,chl_m,1) = (AMI(3,1,1)*U_rll + AMI(4,1,1)*V_rll)          
-          
+          V(K,chl_m,1) = (AMI(3,1,1)*U_rll + AMI(4,1,1)*V_rll)
+
           U_rll = (AM(1,1,3)*U(K,1,3) + AM(2,1,3)*V(K,1,3))
           V_rll = (AM(3,1,3)*U(K,1,3) + AM(4,1,3)*V(K,1,3))
           U(K,chl_p,2) = (AMI(1,2,2)*U_rll + AMI(2,2,2)*V_rll)
-          V(K,chl_p,2) = (AMI(3,2,2)*U_rll + AMI(4,2,2)*V_rll)           
+          V(K,chl_p,2) = (AMI(3,2,2)*U_rll + AMI(4,2,2)*V_rll)
 
           U_rll = (AM(1,2,1)*U(K,nVGCM_seg,1) + AM(2,2,1)*V(K,nVGCM_seg,1))
           V_rll = (AM(3,2,1)*U(K,nVGCM_seg,1) + AM(4,2,1)*V(K,nVGCM_seg,1))
           U(K,chl_m,2) = (AMI(1,1,2)*U_rll + AMI(2,1,2)*V_rll)
-          V(K,chl_m,2) = (AMI(3,1,2)*U_rll + AMI(4,1,2)*V_rll)               
-        
+          V(K,chl_m,2) = (AMI(3,1,2)*U_rll + AMI(4,1,2)*V_rll)
+
           U_rll = (AM(1,1,4)*U(K,1,4) + AM(2,1,4)*V(K,1,4))
           V_rll = (AM(3,1,4)*U(K,1,4) + AM(4,1,4)*V(K,1,4))
           U(K,chl_p,3) = (AMI(1,2,3)*U_rll + AMI(2,2,3)*V_rll)
-          V(K,chl_p,3) = (AMI(3,2,3)*U_rll + AMI(4,2,3)*V_rll)      
-        
+          V(K,chl_p,3) = (AMI(3,2,3)*U_rll + AMI(4,2,3)*V_rll)
+
           U_rll = (AM(1,2,2)*U(K,nVGCM_seg,2) + AM(2,2,2)*V(K,nVGCM_seg,2))
           V_rll = (AM(3,2,2)*U(K,nVGCM_seg,2) + AM(4,2,2)*V(K,nVGCM_seg,2))
           U(K,chl_m,3) = (AMI(1,1,3)*U_rll + AMI(2,1,3)*V_rll)
-          V(K,chl_m,3) = (AMI(3,1,3)*U_rll + AMI(4,1,3)*V_rll)      
-          
+          V(K,chl_m,3) = (AMI(3,1,3)*U_rll + AMI(4,1,3)*V_rll)
+
           U_rll = (AM(1,1,1)*U(K,1,1) + AM(2,1,1)*V(K,1,1))
           V_rll = (AM(3,1,1)*U(K,1,1) + AM(4,1,1)*V(K,1,1))
           U(K,chl_p,4) = (AMI(1,2,4)*U_rll + AMI(2,2,4)*V_rll)
-          V(K,chl_p,4) = (AMI(3,2,4)*U_rll + AMI(4,2,4)*V_rll)      
+          V(K,chl_p,4) = (AMI(3,2,4)*U_rll + AMI(4,2,4)*V_rll)
 
           U_rll = (AM(1,2,3)*U(K,nVGCM_seg,3) + AM(2,2,3)*V(K,nVGCM_seg,3))
           V_rll = (AM(3,2,3)*U(K,nVGCM_seg,3) + AM(4,2,3)*V(K,nVGCM_seg,3))
           U(K,chl_m,4) = (AMI(1,1,4)*U_rll + AMI(2,1,4)*V_rll)
-          V(K,chl_m,4) = (AMI(3,1,4)*U_rll + AMI(4,1,4)*V_rll)      
-        ENDDO  
-            
+          V(K,chl_m,4) = (AMI(3,1,4)*U_rll + AMI(4,1,4)*V_rll)
+        ENDDO
+
       END SUBROUTINE bound_g1_v
-      
+
       SUBROUTINE BOUND_G2_V (AM,AMI,U,V)
-!     Vector: Filling the halos along the channel (Group2) 
+!     Vector: Filling the halos along the channel (Group2)
 
       REAL (KIND=r8),DIMENSION(4,2,4), INTENT(IN) :: &
             AM    ! transformation matrix at the center of vGCM cell
@@ -2123,14 +2367,14 @@ CONTAINS
       REAL (KIND=r8),DIMENSION(4,2,4), INTENT(IN) :: &
             AMI   ! inverse of transformation matrix at the center of vGCM cell
                   ! 1st (matrix index); 2nd (-/+ halo vGCM cells); 3rd (seg. index)
-                   
+
       REAL (KIND=r8),DIMENSION(nk1-1,0:nVGCM_seg+1,4),INTENT(INOUT) :: U,V
       REAL (KIND=r8) :: U_rll,V_rll
       INTEGER :: chl_p,chl_m,K
-      
+
         chl_p = nVGCM_seg + 1
         chl_m = 0
-        
+
         DO K = 1, nk1-1
           U_rll = (AM(1,1,2)*U(K,1,2) + AM(2,1,2)*V(K,1,2))
           V_rll = (AM(3,1,2)*U(K,1,2) + AM(4,1,2)*V(K,1,2))
@@ -2145,38 +2389,38 @@ CONTAINS
           U_rll = (AM(1,1,3)*U(K,1,3) + AM(2,1,3)*V(K,1,3))
           V_rll = (AM(3,1,3)*U(K,1,3) + AM(4,1,3)*V(K,1,3))
           U(K,chl_p,2) = (AMI(1,2,2)*U_rll + AMI(2,2,2)*V_rll)
-          V(K,chl_p,2) = (AMI(3,2,2)*U_rll + AMI(4,2,2)*V_rll)                  
+          V(K,chl_p,2) = (AMI(3,2,2)*U_rll + AMI(4,2,2)*V_rll)
 
           U_rll = (AM(1,2,1)*U(K,nVGCM_seg,1) + AM(2,2,1)*V(K,nVGCM_seg,1))
           V_rll = (AM(3,2,1)*U(K,nVGCM_seg,1) + AM(4,2,1)*V(K,nVGCM_seg,1))
           U(K,chl_m,2) = (AMI(1,1,2)*U_rll + AMI(2,1,2)*V_rll)
-          V(K,chl_m,2) = (AMI(3,1,2)*U_rll + AMI(4,1,2)*V_rll) 
-          
+          V(K,chl_m,2) = (AMI(3,1,2)*U_rll + AMI(4,1,2)*V_rll)
+
           U_rll = (AM(1,2,4)*U(K,nVGCM_seg,4) + AM(2,2,4)*V(K,nVGCM_seg,4))
           V_rll = (AM(3,2,4)*U(K,nVGCM_seg,4) + AM(4,2,4)*V(K,nVGCM_seg,4))
           U(K,chl_p,3) = (AMI(1,2,3)*U_rll + AMI(2,2,3)*V_rll)
-          V(K,chl_p,3) = (AMI(3,2,3)*U_rll + AMI(4,2,3)*V_rll)                       
-        
+          V(K,chl_p,3) = (AMI(3,2,3)*U_rll + AMI(4,2,3)*V_rll)
+
           U_rll = (AM(1,2,2)*U(K,nVGCM_seg,2) + AM(2,2,2)*V(K,nVGCM_seg,2))
           V_rll = (AM(3,2,2)*U(K,nVGCM_seg,2) + AM(4,2,2)*V(K,nVGCM_seg,2))
           U(K,chl_m,3) = (AMI(1,1,3)*U_rll + AMI(2,1,3)*V_rll)
-          V(K,chl_m,3) = (AMI(3,1,3)*U_rll + AMI(4,1,3)*V_rll) 
+          V(K,chl_m,3) = (AMI(3,1,3)*U_rll + AMI(4,1,3)*V_rll)
 
           U_rll = (AM(1,2,3)*U(K,nVGCM_seg,3) + AM(2,2,3)*V(K,nVGCM_seg,3))
           V_rll = (AM(3,2,3)*U(K,nVGCM_seg,3) + AM(4,2,3)*V(K,nVGCM_seg,3))
           U(K,chl_p,4) = (AMI(1,2,4)*U_rll + AMI(2,2,4)*V_rll)
-          V(K,chl_p,4) = (AMI(3,2,4)*U_rll + AMI(4,2,4)*V_rll)                       
-        
+          V(K,chl_p,4) = (AMI(3,2,4)*U_rll + AMI(4,2,4)*V_rll)
+
           U_rll = (AM(1,1,1)*U(K,1,1) + AM(2,1,1)*V(K,1,1))
           V_rll = (AM(3,1,1)*U(K,1,1) + AM(4,1,1)*V(K,1,1))
           U(K,chl_m,4) = (AMI(1,1,4)*U_rll + AMI(2,1,4)*V_rll)
-          V(K,chl_m,4) = (AMI(3,1,4)*U_rll + AMI(4,1,4)*V_rll)     
-        ENDDO  
-            
+          V(K,chl_m,4) = (AMI(3,1,4)*U_rll + AMI(4,1,4)*V_rll)
+        ENDDO
+
       END SUBROUTINE bound_g2_v
 
       SUBROUTINE BOUND_G3_V (AM,AMI,U,V)
-!     Vector: Filling the halos along the channel (Group3)   
+!     Vector: Filling the halos along the channel (Group3)
 
       REAL (KIND=r8),DIMENSION(4,2,4), INTENT(IN) :: &
             AM    ! transformation matrix at the center of vGCM cell
@@ -2184,14 +2428,14 @@ CONTAINS
       REAL (KIND=r8),DIMENSION(4,2,4), INTENT(IN) :: &
             AMI   ! inverse of transformation matrix at the center of vGCM cell
                   ! 1st (matrix index); 2nd (-/+ halo vGCM cells); 3rd (seg. index)
-                     
+
       REAL (KIND=r8),DIMENSION(nk1-1,0:nVGCM_seg+1,4),INTENT(INOUT) :: U,V
       REAL (KIND=r8) :: U_rll,V_rll
       INTEGER :: chl_p,chl_m,K
-      
+
         chl_p = nVGCM_seg + 1
         chl_m = 0
-        
+
         DO K = 1, nk1-1
           U_rll = (AM(1,1,2)*U(K,1,2) + AM(2,1,2)*V(K,1,2))
           V_rll = (AM(3,1,2)*U(K,1,2) + AM(4,1,2)*V(K,1,2))
@@ -2232,125 +2476,125 @@ CONTAINS
           V_rll = (AM(3,1,1)*U(K,1,1) + AM(4,1,1)*V(K,1,1))
           U(K,chl_m,4) = (AMI(1,1,4)*U_rll + AMI(2,1,4)*V_rll)
           V(K,chl_m,4) = (AMI(3,1,4)*U_rll + AMI(4,1,4)*V_rll)
-        ENDDO  
-            
+        ENDDO
+
       END SUBROUTINE bound_g3_v
-            
+
       SUBROUTINE BOUND_G1_S (A)
-!     Scalar: Filling the halos along the channel (Group1)      
+!     Scalar: Filling the halos along the channel (Group1)
       REAL (KIND=r8),DIMENSION(0:nVGCM_seg+1,4),INTENT(INOUT) :: A
-      
+
       INTEGER :: chl_p,chl_m
 
         chl_p = nVGCM_seg + 1
         chl_m = 0
-        
+
         A(chl_p,1) = A(1,2)
         A(chl_m,1) = A(nVGCM_seg,4)
-          
-        A(chl_p,2) = A(1,3)  
+
+        A(chl_p,2) = A(1,3)
         A(chl_m,2) = A(nVGCM_seg,1)
-          
-        A(chl_p,3) = A(1,4)  
+
+        A(chl_p,3) = A(1,4)
         A(chl_m,3) = A(nVGCM_seg,2)
-          
-        A(chl_p,4) = A(1,1)  
-        A(chl_m,4) = A(nVGCM_seg,3)  
-            
+
+        A(chl_p,4) = A(1,1)
+        A(chl_m,4) = A(nVGCM_seg,3)
+
       END SUBROUTINE bound_g1_s
 
       SUBROUTINE BOUND_G2_S (A)
-!     Scalar: Filling the halos along the channel (Group2)      
+!     Scalar: Filling the halos along the channel (Group2)
       REAL (KIND=r8),DIMENSION(0:nVGCM_seg+1,4),INTENT(INOUT) :: A
-      
+
       INTEGER :: chl_p,chl_m
 
         chl_p = nVGCM_seg + 1
         chl_m = 0
-        
+
         A(chl_p,1) = A(1,2)
         A(chl_m,1) = A(1,4)
-          
-        A(chl_p,2) = A(1,3)  
+
+        A(chl_p,2) = A(1,3)
         A(chl_m,2) = A(nVGCM_seg,1)
-          
-        A(chl_p,3) = A(nVGCM_seg,4)  
+
+        A(chl_p,3) = A(nVGCM_seg,4)
         A(chl_m,3) = A(nVGCM_seg,2)
-          
-        A(chl_p,4) = A(nVGCM_seg,3)  
+
+        A(chl_p,4) = A(nVGCM_seg,3)
         A(chl_m,4) = A(1,1)
-            
+
       END SUBROUTINE bound_g2_s
 
       SUBROUTINE BOUND_G3_S (A)
-!     Scalar: Filling the halos along the channel (Group3)      
+!     Scalar: Filling the halos along the channel (Group3)
       REAL (KIND=r8),DIMENSION(0:nVGCM_seg+1,4),INTENT(INOUT) :: A
-      
+
       INTEGER :: chl_p,chl_m
-  
+
         chl_p = nVGCM_seg + 1
         chl_m = 0
-        
+
         A(chl_p,1) = A(1,2)
         A(chl_m,1) = A(1,4)
-          
-        A(chl_p,2) = A(nVGCM_seg,3)  
+
+        A(chl_p,2) = A(nVGCM_seg,3)
         A(chl_m,2) = A(nVGCM_seg,1)
-          
-        A(chl_p,3) = A(nVGCM_seg,2)  
+
+        A(chl_p,3) = A(nVGCM_seg,2)
         A(chl_m,3) = A(nVGCM_seg,4)
-          
-        A(chl_p,4) = A(1,3)  
-        A(chl_m,4) = A(1,1) 
-            
+
+        A(chl_p,4) = A(1,3)
+        A(chl_m,4) = A(1,1)
+
       END SUBROUTINE bound_g3_s
-            
+
       END SUBROUTINE relaxation
 
 !=======================================================================
       SUBROUTINE HDIFFUSION_SMAGORINSKY (channel)
-!=======================================================================      
+!=======================================================================
 !     Smagorinsky-type (nonlinear) numerical diffusion (horizontal)
 
       type(channel_t), intent(inout) :: channel   ! channel data
-      
+
       ! Local variables
       REAL (KIND=r8) :: FAC_NLD = 1.0_r8
       REAL (KIND=r8) :: CRITV   = 0.5_r8
-      
+
       REAL (KIND=r8), DIMENSION(nk2) :: RKV,TEMP_ZX,TEMP_ZY
       REAL (KIND=r8) :: TEMP_ZZ
-      
+
       REAL (KIND=r8) :: COEFX_K,COEFY_K,COEFA_K
       REAL (KIND=r8) :: COEFX_E,COEFY_E,COEFA_E
-      REAL (KIND=r8) :: COEFX_Z,COEFY_Z,COEFA_Z 
+      REAL (KIND=r8) :: COEFX_Z,COEFY_Z,COEFA_Z
 
       REAL (KIND=r8) :: KVAL_P,KVAL_M
       REAL (KIND=r8) :: FXP,FXM,FYP,FYM
       REAL (KIND=r8) :: FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0
       REAL (KIND=r8) :: FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0
-      
+
       REAL (KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: KVAL
 
       INTEGER :: I,J,K,KLOW,KLOWU,KLOWV
-      INTEGER :: KLOWQ_MAX,num_seg,mi1,mj1,mim_c,mip_c,mjm_c,mjp_c 
+      INTEGER :: KLOWQ_MAX,num_seg,mi1,mj1,mim_c,mip_c,mjm_c,mjp_c
 
-!**************************************************************************** 
+!****************************************************************************
       DO num_seg = 1, 4
-!**************************************************************************** 
+!****************************************************************************
       KLOWQ_MAX = channel%seg(num_seg)%KLOWQ_MAX_GLOB
-      
-      mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment  
+
+      mi1    = channel%seg(num_seg)%mi1  ! x-size of channel segment
       mim_c  = channel%seg(num_seg)%mim_c
-      mip_c  = channel%seg(num_seg)%mip_c  
-    
-      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment   
-      mjm_c  = channel%seg(num_seg)%mjm_c     
-      mjp_c  = channel%seg(num_seg)%mjp_c    
+      mip_c  = channel%seg(num_seg)%mip_c
 
-      ALLOCATE(KVAL(mim_c:mip_c,mjm_c:mjp_c,nk2)) 
+      mj1    = channel%seg(num_seg)%mj1  ! y-size of channel segment
+      mjm_c  = channel%seg(num_seg)%mjm_c
+      mjp_c  = channel%seg(num_seg)%mjp_c
 
-!     Calculate the diffusion coefficient      
+      ALLOCATE(KVAL(mim_c:mip_c,mjm_c:mjp_c,nk2))
+
+!     Calculate the diffusion coefficient
       DO J = mjm_c, mjp_c
       DO I = mim_c, mip_c
        KLOW = channel%seg(num_seg)%KLOWQ_IJ(I,J)
@@ -2365,7 +2609,7 @@ CONTAINS
        DO K = 1, KLOW-1
          RKV(K) = 0.0_r8
        ENDDO
-       
+
        DO K = 1, NK2
          KVAL(I,J,K) = FAC_NLD*channel%seg(num_seg)%RG_T(I,J)*DXSQ*SQRT(RKV(K))
        ENDDO
@@ -2374,12 +2618,12 @@ CONTAINS
          KVAL(I,J,K) = MIN(KVAL(I,J,K),channel%seg(num_seg)%RG_T(I,J)*DXSQ*CRITV/DT)
        ENDDO
 
-      ENDDO  
-      ENDDO      
+      ENDDO
+      ENDDO
 
       DO J = 1, mj1
       DO I = 1, mi1
-      
+
       COEFX_K = channel%seg(num_seg)%COEFX_K(I,J)
       COEFY_K = channel%seg(num_seg)%COEFY_K(I,J)
       COEFA_K = channel%seg(num_seg)%COEFA_K(I,J)
@@ -2391,7 +2635,7 @@ CONTAINS
       COEFX_Z = channel%seg(num_seg)%COEFX_Z(I,J)
       COEFY_Z = channel%seg(num_seg)%COEFY_Z(I,J)
       COEFA_Z = channel%seg(num_seg)%COEFA_Z(I,J)
-      
+
 !-----------------------------------------------------------
 !                                 Z3DX
 !-----------------------------------------------------------
@@ -2414,8 +2658,8 @@ CONTAINS
        ELSE
         KVAL_P = (KVAL(I,J,K)+KVAL(I+1,J,K)+KVAL(I,J+1,K)       &
                  +KVAL(I+1,J+1,K)+KVAL(I,J,K+1)+KVAL(I+1,J,K+1) &
-                 +KVAL(I,J+1,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8 
-                 
+                 +KVAL(I,J+1,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8
+
         FXP    = channel%seg(num_seg)%RGG_Z(1,I,J)*KVAL_P
         FYP_XP = channel%seg(num_seg)%RGG_T(2,I+1,J+1)*KVAL_P
         FYM_XP = channel%seg(num_seg)%RGG_T(2,I+1,J)*KVAL_P
@@ -2428,8 +2672,8 @@ CONTAINS
        ELSE
         KVAL_M = (KVAL(I-1,J,K)+KVAL(I,J,K)+KVAL(I-1,J+1,K)     &
                  +KVAL(I,J+1,K)+KVAL(I-1,J,K+1)+KVAL(I,J,K+1)   &
-                 +KVAL(I-1,J+1,K+1)+KVAL(I,J+1,K+1))/8.0_r8 
-                 
+                 +KVAL(I-1,J+1,K+1)+KVAL(I,J+1,K+1))/8.0_r8
+
         FXM    = channel%seg(num_seg)%RGG_Z(1,I-1,J)*KVAL_M
         FYP_XM = channel%seg(num_seg)%RGG_T(2,I-1,J+1)*KVAL_M
         FYM_XM = channel%seg(num_seg)%RGG_T(2,I-1,J)*KVAL_M
@@ -2483,12 +2727,12 @@ CONTAINS
                            channel%seg(num_seg)%Z3DX(I-1,J-1,K),        &
                            channel%seg(num_seg)%Z3DX(I,J-1,K),          &
                            channel%seg(num_seg)%Z3DX(I+1,J-1,K),        &
-                           channel%seg(num_seg)%Z3DX(I-1,J  ,K),        & 
+                           channel%seg(num_seg)%Z3DX(I-1,J  ,K),        &
                            channel%seg(num_seg)%Z3DX(I,J  ,K),          &
                            channel%seg(num_seg)%Z3DX(I+1,J  ,K),        &
                            channel%seg(num_seg)%Z3DX(I-1,J+1,K),        &
                            channel%seg(num_seg)%Z3DX(I,J+1,K),          &
-                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))                                                  
+                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))
 
       ENDDO  ! K-LOOP (Low level: mountainous region)
 
@@ -2497,11 +2741,11 @@ CONTAINS
 
         KVAL_P = (KVAL(I,J,K)+KVAL(I+1,J,K)+KVAL(I,J+1,K)         &
                  +KVAL(I+1,J+1,K)+KVAL(I,J,K+1)+KVAL(I+1,J,K+1)   &
-                 +KVAL(I,J+1,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8 
-                 
+                 +KVAL(I,J+1,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8
+
         KVAL_M = (KVAL(I-1,J,K)+KVAL(I,J,K)+KVAL(I-1,J+1,K)       &
                  +KVAL(I,J+1,K)+KVAL(I-1,J,K+1)+KVAL(I,J,K+1)     &
-                 +KVAL(I-1,J+1,K+1)+KVAL(I,J+1,K+1))/8.0_r8 
+                 +KVAL(I-1,J+1,K+1)+KVAL(I,J+1,K+1))/8.0_r8
 
           FXP    = channel%seg(num_seg)%RGG_Z(1,I,J)*KVAL_P
           FYP_XP = channel%seg(num_seg)%RGG_T(2,I+1,J+1)*KVAL_P
@@ -2539,7 +2783,7 @@ CONTAINS
                            channel%seg(num_seg)%Z3DX(I+1,J,K),          &
                            channel%seg(num_seg)%Z3DX(I-1,J+1,K),        &
                            channel%seg(num_seg)%Z3DX(I,J+1,K),          &
-                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))                                  
+                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))
 
       ENDDO  ! K-LOOP (high level: mountain-free region)
 
@@ -2568,7 +2812,7 @@ CONTAINS
         FYM_XP = 0.0_r8
        ELSE
         KVAL_P = 0.5_r8*(KVAL(I+1,J,K)+KVAL(I+1,J,K+1))
-                     
+
         FXP    = channel%seg(num_seg)%RGG_T(1,I+1,J)*KVAL_P
         FYP_XP = channel%seg(num_seg)%RGG_Z(2,I+1,J)*KVAL_P
         FYM_XP = channel%seg(num_seg)%RGG_Z(2,I+1,J-1)*KVAL_P
@@ -2579,7 +2823,7 @@ CONTAINS
         FYM_XM = 0.0_r8
        ELSE
         KVAL_M = 0.5_r8*(KVAL(I,J,K)+KVAL(I,J,K+1))
-                     
+
         FXM    = channel%seg(num_seg)%RGG_T(1,I,J)*KVAL_M
         FYP_XM = channel%seg(num_seg)%RGG_Z(2,I-1,J)*KVAL_M
         FYM_XM = channel%seg(num_seg)%RGG_Z(2,I-1,J-1)*KVAL_M
@@ -2601,8 +2845,8 @@ CONTAINS
        ELSE
         KVAL_P = (KVAL(I,J,K)+KVAL(I,J+1,K)+KVAL(I+1,J,K)        &
                  +KVAL(I+1,J+1,K)+KVAL(I,J,K+1)+KVAL(I,J+1,K+1)  &
-                 +KVAL(I+1,J,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8     
-                     
+                 +KVAL(I+1,J,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8
+
         FYP    = channel%seg(num_seg)%RGG_Z(3,I,J)*KVAL_P
         FXP_YP = channel%seg(num_seg)%RGG_T(2,I+1,J+1)*KVAL_P
         FXM_YP = channel%seg(num_seg)%RGG_T(2,I,J+1)*KVAL_P
@@ -2614,11 +2858,11 @@ CONTAINS
        ELSE
         KVAL_M = (KVAL(I,J-1,K)+KVAL(I,J,K)+KVAL(I+1,J-1,K)       &
                  +KVAL(I+1,J,K)+KVAL(I,J-1,K+1)+KVAL(I,J,K+1)     &
-                 +KVAL(I+1,J-1,K+1)+KVAL(I+1,J,K+1))/8.0_r8      
-                 
+                 +KVAL(I+1,J-1,K+1)+KVAL(I+1,J,K+1))/8.0_r8
+
         FYM    = channel%seg(num_seg)%RGG_Z(3,I,J-1)*KVAL_M
         FXP_YM = channel%seg(num_seg)%RGG_T(2,I+1,J-1)*KVAL_M
-        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)*KVAL_M                                        
+        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)*KVAL_M
        ENDIF
 
        IF(channel%seg(num_seg)%DM_ETA_TN(I,J,K).EQ.1 .OR. &
@@ -2641,15 +2885,15 @@ CONTAINS
                            channel%seg(num_seg)%Z3DY(I+1,J  ,K),        &
                            channel%seg(num_seg)%Z3DY(I-1,J+1,K),        &
                            channel%seg(num_seg)%Z3DY(I,J+1,K),          &
-                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))         
-                           
+                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))
+
       ENDDO  ! K-LOOP (Low level: mountainous region)
 
       DO K = KLOWQ_MAX, NK1
 !     Not influenced by topography
 
         KVAL_P = 0.5_r8*(KVAL(I+1,J,K)+KVAL(I+1,J,K+1))
-                     
+
         KVAL_M = 0.5_r8*(KVAL(I,J,K)+KVAL(I,J,K+1))
 
         FXP    = channel%seg(num_seg)%RGG_T(1,I+1,J)*KVAL_P
@@ -2665,11 +2909,11 @@ CONTAINS
 
         KVAL_P = (KVAL(I,J,K)+KVAL(I,J+1,K)+KVAL(I+1,J,K)          &
                  +KVAL(I+1,J+1,K)+KVAL(I,J,K+1)+KVAL(I,J+1,K+1)    &
-                 +KVAL(I+1,J,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8   
-                       
+                 +KVAL(I+1,J,K+1)+KVAL(I+1,J+1,K+1))/8.0_r8
+
         KVAL_M = (KVAL(I,J-1,K)+KVAL(I,J,K)+KVAL(I+1,J-1,K)        &
                  +KVAL(I+1,J,K)+KVAL(I,J-1,K+1)+KVAL(I,J,K+1)      &
-                 +KVAL(I+1,J-1,K+1)+KVAL(I+1,J,K+1))/8.0_r8  
+                 +KVAL(I+1,J-1,K+1)+KVAL(I+1,J,K+1))/8.0_r8
 
         FYP    = channel%seg(num_seg)%RGG_Z(3,I,J)*KVAL_P
         FXP_YP = channel%seg(num_seg)%RGG_T(2,I+1,J+1)*KVAL_P
@@ -2677,10 +2921,10 @@ CONTAINS
 
         FYM    = channel%seg(num_seg)%RGG_Z(3,I,J-1)*KVAL_M
         FXP_YM = channel%seg(num_seg)%RGG_T(2,I+1,J-1)*KVAL_M
-        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)*KVAL_M                                        
+        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)*KVAL_M
 
         FXP_Y0 = channel%seg(num_seg)%RGG_T(2,I+1,J)*(KVAL_P-KVAL_M)
-        FXM_Y0 = channel%seg(num_seg)%RGG_T(2,I,J)*(KVAL_P-KVAL_M)                                   
+        FXM_Y0 = channel%seg(num_seg)%RGG_T(2,I,J)*(KVAL_P-KVAL_M)
 
 
        TEMP_ZY(K) = TURB_H(COEFX_E,COEFY_E,COEFA_E,FXP,FXM,FYP,FYM,    &
@@ -2694,7 +2938,7 @@ CONTAINS
                            channel%seg(num_seg)%Z3DY(I+1,J,K),         &
                            channel%seg(num_seg)%Z3DY(I-1,J+1,K),       &
                            channel%seg(num_seg)%Z3DY(I,J+1,K),         &
-                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))         
+                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))
 
       ENDDO  ! K-LOOP (high level: mountain-free region)
 
@@ -2748,7 +2992,7 @@ CONTAINS
                          channel%seg(num_seg)%Z3DZ(I+1,J,NK2),       &
                          channel%seg(num_seg)%Z3DZ(I-1,J+1,NK2),     &
                          channel%seg(num_seg)%Z3DZ(I,J+1,NK2),       &
-                         channel%seg(num_seg)%Z3DZ(I+1,J+1,NK2))  
+                         channel%seg(num_seg)%Z3DZ(I+1,J+1,NK2))
 
         channel%seg(num_seg)%Z3DZ(I,J,NK2) = channel%seg(num_seg)%Z3DZ(I,J,NK2) &
                                            + DT*TEMP_ZZ
@@ -2756,23 +3000,23 @@ CONTAINS
       ENDDO   ! I-loop
       ENDDO   ! J-loop
 
-      DEALLOCATE(KVAL) 
-      
-!******************************  
-      ENDDO   ! num_seg 
-!****************************** 
+      DEALLOCATE(KVAL)
+
+!******************************
+      ENDDO   ! num_seg
+!******************************
 
    END SUBROUTINE hdiffusion_smagorinsky
 
-!=======================================================================   
+!=======================================================================
       SUBROUTINE LDIFFUSION2 (channel)
-!=======================================================================      
+!=======================================================================
 !     Numerical horizontal diffusion (linear 2nd-order)
 
       type(channel_t), intent(inout) :: channel   ! channel data
-      
+
       ! Local variables
-      REAL (KIND=r8) :: COEF_FAC = 400.0_r8
+      REAL (KIND=r8) :: COEF_FAC = 10.0_r8
 
       REAL (KIND=r8),DIMENSION(nk2) :: TEMP_ZX,TEMP_ZY
       REAL (KIND=r8) :: TEMP_ZZ
@@ -2785,19 +3029,19 @@ CONTAINS
       REAL (KIND=r8) :: FXP,FXM,FYP,FYM
       REAL (KIND=r8) :: FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0
       REAL (KIND=r8) :: FXP_YP,FXM_YP,FXP_YM,FXM_YM,FXP_Y0,FXM_Y0
-      
+
       INTEGER :: I,J,K,KLOWQ_MAX,KLOWU,KLOWV,num_seg,mi1,mj1
 
-      KVAL0 = DXSQ/(4.0_r8*DT)     ! 2dx-wave is removed over one timestep  
-      KVAL  = KVAL0/COEF_FAC       ! 2dx-wave is removed over COEF_FAC timesteps 
+      KVAL0 = DXSQ/(4.0_r8*DT)     ! 2dx-wave is removed over one timestep
+      KVAL  = KVAL0/COEF_FAC       ! 2dx-wave is removed over COEF_FAC timesteps
 
-!*************************************************************************   
+!*************************************************************************
       DO num_seg = 1, 4
-!************************************************************************* 
+!*************************************************************************
       KLOWQ_MAX = channel%seg(num_seg)%KLOWQ_MAX_GLOB
-      
+
       mi1 = channel%seg(num_seg)%mi1  ! x-size of channel segment
-      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment 
+      mj1 = channel%seg(num_seg)%mj1  ! y-size of channel segment
 
       DO J = 1, mj1
       DO I = 1, mi1
@@ -2850,7 +3094,7 @@ CONTAINS
 
         FYP_X0 = 0.0_r8
         FYM_X0 = 0.0_r8
-       
+
 
        IF(channel%seg(num_seg)%DM_KSI_TN(I,J,K).EQ.1) THEN
         FYP    = 0.0_r8
@@ -2881,12 +3125,12 @@ CONTAINS
                            channel%seg(num_seg)%Z3DX(I-1,J-1,K),        &
                            channel%seg(num_seg)%Z3DX(I,J-1,K),          &
                            channel%seg(num_seg)%Z3DX(I+1,J-1,K),        &
-                           channel%seg(num_seg)%Z3DX(I-1,J  ,K),        & 
+                           channel%seg(num_seg)%Z3DX(I-1,J  ,K),        &
                            channel%seg(num_seg)%Z3DX(I,J  ,K),          &
                            channel%seg(num_seg)%Z3DX(I+1,J  ,K),        &
                            channel%seg(num_seg)%Z3DX(I-1,J+1,K),        &
                            channel%seg(num_seg)%Z3DX(I,J+1,K),          &
-                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))                                       
+                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))
 
       ENDDO  ! K-LOOP (Low level: mountainous region)
 
@@ -2926,7 +3170,7 @@ CONTAINS
                            channel%seg(num_seg)%Z3DX(I+1,J,K),          &
                            channel%seg(num_seg)%Z3DX(I-1,J+1,K),        &
                            channel%seg(num_seg)%Z3DX(I,J+1,K),          &
-                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))                                     
+                           channel%seg(num_seg)%Z3DX(I+1,J+1,K))
 
       ENDDO  ! K-LOOP (high level: mountain-free region)
 
@@ -2987,7 +3231,7 @@ CONTAINS
        ELSE
         FYM    = channel%seg(num_seg)%RGG_Z(3,I,J-1)
         FXP_YM = channel%seg(num_seg)%RGG_T(2,I+1,J-1)
-        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)                                       
+        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)
        ENDIF
 
         FXP_Y0 = 0.0_r8
@@ -3004,8 +3248,8 @@ CONTAINS
                            channel%seg(num_seg)%Z3DY(I+1,J  ,K),        &
                            channel%seg(num_seg)%Z3DY(I-1,J+1,K),        &
                            channel%seg(num_seg)%Z3DY(I,J+1,K),          &
-                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))        
-                           
+                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))
+
       ENDDO  ! K-LOOP (Low level: mountainous region)
 
       DO K = KLOWQ_MAX, NK1
@@ -3020,7 +3264,7 @@ CONTAINS
         FYM_XM = channel%seg(num_seg)%RGG_Z(2,I-1,J-1)
 
         FYP_X0 = 0.0_r8
-        FYM_X0 = 0.0_r8   
+        FYM_X0 = 0.0_r8
 
         FYP    = channel%seg(num_seg)%RGG_Z(3,I,J)
         FXP_YP = channel%seg(num_seg)%RGG_T(2,I+1,J+1)
@@ -3028,10 +3272,10 @@ CONTAINS
 
         FYM    = channel%seg(num_seg)%RGG_Z(3,I,J-1)
         FXP_YM = channel%seg(num_seg)%RGG_T(2,I+1,J-1)
-        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)                                      
+        FXM_YM = channel%seg(num_seg)%RGG_T(2,I,J-1)
 
         FXP_Y0 = 0.0_r8
-        FXM_Y0 = 0.0_r8                               
+        FXM_Y0 = 0.0_r8
 
        TEMP_ZY(K) = TURB_H(COEFX_E,COEFY_E,COEFA_E,FXP,FXM,FYP,FYM,    &
                            FYP_XP,FYM_XP,FYP_XM,FYM_XM,FYP_X0,FYM_X0,  &
@@ -3044,7 +3288,7 @@ CONTAINS
                            channel%seg(num_seg)%Z3DY(I+1,J,K),         &
                            channel%seg(num_seg)%Z3DY(I-1,J+1,K),       &
                            channel%seg(num_seg)%Z3DY(I,J+1,K),         &
-                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))              
+                           channel%seg(num_seg)%Z3DY(I+1,J+1,K))
 
       ENDDO  ! K-LOOP (high level: mountain-free region)
 
@@ -3092,27 +3336,27 @@ CONTAINS
                          channel%seg(num_seg)%Z3DZ(I+1,J,NK2),       &
                          channel%seg(num_seg)%Z3DZ(I-1,J+1,NK2),     &
                          channel%seg(num_seg)%Z3DZ(I,J+1,NK2),       &
-                         channel%seg(num_seg)%Z3DZ(I+1,J+1,NK2))   
+                         channel%seg(num_seg)%Z3DZ(I+1,J+1,NK2))
 
         channel%seg(num_seg)%Z3DZ(I,J,NK2) = channel%seg(num_seg)%Z3DZ(I,J,NK2) &
                                            + DT*KVAL*TEMP_ZZ
-      
+
       ENDDO   ! I-loop
       ENDDO   ! J-loop
 
-!******************************  
-      ENDDO   ! num_seg 
-!****************************** 
+!******************************
+      ENDDO   ! num_seg
+!******************************
 
    END SUBROUTINE ldiffusion2
 
-!=======================================================================   
+!=======================================================================
       FUNCTION TURB_H(CX,CY,CA,KXP,KXM,KYP,KYM, &
                       KYP_XP,KYM_XP,KYP_XM,KYM_XM,KYP_X0,KYM_X0, &
                       KXP_YP,KXM_YP,KXP_YM,KXM_YM,KXP_Y0,KXM_Y0, &
                       A1,A2,A3,A4,A5,A6,A7,A8,A9) &
                RESULT(TURB_H_result)
-!=======================================================================                                  
+!=======================================================================
 !     Calculate the turbulent effects (horizontal)
 !     CX, CY, CA: coefficients
 !     KXP and others: C (see the document)
