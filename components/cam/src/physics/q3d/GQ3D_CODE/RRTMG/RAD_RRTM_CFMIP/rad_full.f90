@@ -71,14 +71,16 @@
 ! NOTE:  when dosolarconstat==.true, insolation = solar_constant*cos(zenith_angle)
 
   use rrtm_vars, only: &
-!       t, &       ! model thermodynamic variable
-       tabs, &    ! absolute temperature (K)
-       qv, &      ! vapor mixing ratio
-       qcl, &     ! cloud mixing ratio
-       qci, &     ! ice mixing ratio
-       sstxy, &   ! sea surface temperature
-       pres, &    ! model layer pressure (mb)
-       presi, &   ! model interface pressure (mb)
+!       t, &        ! model thermodynamic variable
+       tabs, &      ! absolute temperature (K)
+       qv, &        ! vapor mixing ratio
+       qcl, &       ! cloud mixing ratio
+       qci, &       ! ice mixing ratio
+       sstxy, &     ! sea surface temperature
+       pres, &      ! model layer pressure (mb)
+       presi, &     ! model interface pressure (mb)
+       pres_loc, &  ! model local layer pressure (mb)      !JUNG_LocalP
+       presi_loc, & ! model local interface pressure (mb)  !JUNG_LocalP
 !       rho, &     ! density profile.  In this anelastic model, rho=rho(z).
        radswup, &  ! SW upward flux statistic, summed in x and y
        radswdn, &  ! SW downward flux statistic, summed in x and y
@@ -111,9 +113,8 @@
 
 !-----------------------------------------------------------------------------
 ! VVM modules
-
-      USE trace_gases, only: &
-                       o3, co2, n2o, ch4, o2, cfc11, cfc12, cfc22, ccl4
+      USE constld,     only: localp
+      USE trace_gases, only: o3, co2, n2o, ch4, o2, cfc11, cfc12, cfc22, ccl4
       
   !===========================================================================
   !================== END CHANGES REQUIRED HERE ==============================
@@ -320,8 +321,8 @@
              longitude_slice(nx), &
              p_factor_slice(nx), &
              p_coszrs_slice(nx), &
-             pres_input(nzrad), &
-             presi_input(nzrad+1), &
+             pres_input(nx,nzrad), &          !JUNG_localp
+             presi_input(nx,nzrad+1), &       !JUNG_localp
              lwUp(nx,nzrad+2), &
              lwDown(nx,nzrad+2), &
              lwUpClearSky(nx,nzrad+2), &
@@ -346,17 +347,23 @@
         end if
       end if
 
-! set up pressure inputs to radiation -- needed for initialize_radiation
-      pres_input(1:nzm) = pres(1:nzm)
-      presi_input(1:nzm+1) = presi(1:nzm+1)
+! set up pressure inputs to radiation -- needed for initialize_radiation      
+      ! JUNG_localp
+      do i=1,nx
+        pres_input(i,1:nzm) = pres(1:nzm)                      
+        presi_input(i,1:nzm+1) = presi(1:nzm+1)               
+      enddo           
       
-      if(nzpatch.gt.0) then
-        pres_input(nzm+1:nzrad) = psnd(npatch_start:npatch_end)
-        presi_input(nzm+2:nzrad) = &
-             0.5*(psnd(npatch_start:npatch_end-1) &
-             + psnd(npatch_start+1:npatch_end))
-        presi_input(nzrad+1) = MAX(0.5*psnd(npatch_end), &
-             1.5*psnd(npatch_end) - 0.5*psnd(npatch_end-1))
+      if(nzpatch.gt.0) then 
+      ! JUNG_localp           
+      pres_input(1:nx,nzm+1:nzrad) = spread(psnd(npatch_start:npatch_end), dim=1, ncopies=nx)
+      do i=1,nx
+        presi_input(i,nzm+2:nzrad) = & ! interface pressures.
+           0.5*(psnd(npatch_start:npatch_end-1) &
+           + psnd(npatch_start+1:npatch_end))
+        presi_input(i,nzrad+1) = MAX(0.5*psnd(npatch_end), &
+                                 1.5*psnd(npatch_end) - 0.5*psnd(npatch_end-1))
+      enddo                 
       end if
 
 ! interpolates standard sounding of trace gas concentrations to grid for radiation.
@@ -382,16 +389,22 @@
 
 ! set up pressure inputs to radiation
 
-    pres_input(1:nzm) = pres(1:nzm)
-    presi_input(1:nzm+1) = presi(1:nzm+1)
+    ! JUNG_localp
+    do i=1,nx
+      pres_input(i,1:nzm) = pres(1:nzm)                      
+      presi_input(i,1:nzm+1) = presi(1:nzm+1)               
+    enddo         
 
     if(nzpatch.gt.0) then
-      pres_input(nzm+1:nzrad) = psnd(npatch_start:npatch_end) ! layer pressures
-      presi_input(nzm+2:nzrad) = & ! interface pressures.
+    ! JUNG_localp
+    pres_input(1:nx,nzm+1:nzrad) = spread(psnd(npatch_start:npatch_end), dim=1, ncopies=nx)
+    do i=1,nx
+      presi_input(i,nzm+2:nzrad) = & ! interface pressures.
            0.5*(psnd(npatch_start:npatch_end-1) &
            + psnd(npatch_start+1:npatch_end))
-      presi_input(nzrad+1) = MAX(0.5*psnd(npatch_end), &
+      presi_input(i,nzrad+1) = MAX(0.5*psnd(npatch_end), &
                                  1.5*psnd(npatch_end) - 0.5*psnd(npatch_end-1))
+    enddo                             
     end if
 
 !==============================================================================
@@ -432,6 +445,11 @@
       
       p_factor_slice(1:nx) = p_factor_xy(1:nx,j)
       p_coszrs_slice(1:nx) = p_coszrs_xy(1:nx,j)
+
+      IF (LocalP) THEN
+       pres_input(1:nx,1:nzm) = pres_loc(1:nx,j,1:nzm)         ! JUNG_localp
+       presi_input(1:nx,1:nzm+1) = presi_loc(1:nx,j,1:nzm+1)   ! JUNG_localp      
+      ENDIF
 
 ! patch sounding on top of model sounding for more complete radiation calculation.
       if(nzpatch.gt.0) then

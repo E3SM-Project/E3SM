@@ -183,10 +183,10 @@
           ggr, &              ! gravitational acceleration (~9.8 m/s2)
           cp                  ! specific heat of dry air at constant pressure at 273 K in J/kg/K
 
-      real, intent(in), dimension(nzm) :: &
+      real, intent(in), dimension(nx,nzm) ::   &   ! JUNG_localp
           pres     ! pressure (mb) at center of model levels
           
-      real, intent(in), dimension(nzm+1) :: &
+      real, intent(in), dimension(nx,nzm+1) :: &   ! JUNG_localp
           presi    ! pressure (mb) at model interfaces.
       
       real, intent(in), dimension(nx,nzm) :: &
@@ -342,12 +342,17 @@
     coszrs = -2.
 
 ! Fill out 2D arrays needed by RRTMG 
+!----------------------------------------------- JUNG_localp
+!    layerP(:, 1:nzm) = spread(pres (:), dim = 1, ncopies = nx) 
+!    layerP(:, nzm+1) = 0.5*spread(presi(nzm+1), dim = 1, ncopies = nx) ! add layer
+!    interfaceP(:, 1:nzm+1) = spread(presi(:), dim = 1, ncopies = nx) 
+!    interfaceP(:, nzm+2) = MIN(1.e-4_kind_rb,0.25*layerP(1,nzm+1)) ! near-zero pressure at top of extra layer
 
-    layerP(:, 1:nzm) = spread(pres (:), dim = 1, ncopies = nx) 
-    layerP(:, nzm+1) = 0.5*spread(presi(nzm+1), dim = 1, ncopies = nx) ! add layer
-
-    interfaceP(:, 1:nzm+1) = spread(presi(:), dim = 1, ncopies = nx) 
-    interfaceP(:, nzm+2) = MIN(1.e-4_kind_rb,0.25*layerP(1,nzm+1)) ! near-zero pressure at top of extra layer
+    layerP(:, 1:nzm) = pres (:, 1:nzm)
+    layerP(:, nzm+1) = 0.5*presi(:, nzm+1) ! add layer
+    interfaceP(:, 1:nzm+1) = presi(:, 1:nzm+1)
+    interfaceP(:, nzm+2) = MIN(1.e-4_kind_rb,0.25*layerP(:,nzm+1)) ! near-zero pressure at top of extra layer
+!-----------------------------------------------
 
 ! Convert hPa to Pa in layer mass calculation (kg/m2) 
     layerMass(:, 1:nzm+1) = &
