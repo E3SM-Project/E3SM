@@ -101,7 +101,7 @@ subroutine stepon_init(dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
-#ifdef THETA_MODEL_L
+#ifdef MODEL_THETA_L
      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (4+pcnst)*nlev)
 #else
      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
@@ -263,12 +263,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 #ifdef MODEL_THETA_L
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
        kptr=kptr+3*nlev
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
 #else
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
 #endif
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
        kptr=kptr+nlev
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
      end do
@@ -290,12 +289,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 #ifdef MODEL_THETA_L
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
        kptr=kptr+3*nlev
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
 #else
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
 #endif
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
        kptr=kptr+nlev
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
      endif
@@ -317,17 +315,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
                  ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
          enddo
-
-         if (ftype == 3) then ! ftype == 3, scale tendencies with current dp
-           do k=1,nlev
-             do j=1,np
-               do i=1,np
-                  dyn_in%elem(ie)%derived%FT(i,j,k) = dyn_in%elem(ie)%derived%FT(i,j,k)*dp(i,j,k)
-                  dyn_in%elem(ie)%derived%FM(i,j,1:2,k) = dyn_in%elem(ie)%derived%FM(i,j,1:2,k)*dp(i,j,k)
-               end do
-             end do
-           end do
-         endif !ftype 3
 
          do k=1,nlev
             do j=1,np
