@@ -235,48 +235,63 @@ contains
 
     ! local variables
     integer :: n,oldsize,id
+    logical :: found
     type(shr_nuopc_fldList_entry_type), pointer :: newflds(:)
     character(len=*), parameter :: subname='(shr_nuopc_fldList_AddFld)'
     ! ----------------------------------------------
 
     if (associated(flds)) then
        oldsize = size(flds)
+       found = .false.
+       do n= 1,oldsize
+          if (trim(stdname) == trim(flds(n)%stdname)) then
+             found = .true.
+             exit
+          end if
+       end do
     else
        oldsize = 0
+       found = .false.
     end if
     id = oldsize + 1
 
-    ! 1) allocate newfld to be size (one element larger than input flds)
-    allocate(newflds(id))
+    ! create new entry if fldname is not in original list
 
-    ! 2) copy flds into first N-1 elements of newflds
-    do n = 1,oldsize
-       newflds(n)%stdname            = flds(n)%stdname
-       newflds(n)%shortname          = flds(n)%shortname
-       newflds(n)%mapindex(:)        = flds(n)%mapindex(:)
-       newflds(n)%mapnorm(:)         = flds(n)%mapnorm(:)
-       newflds(n)%mapfile(:)         = flds(n)%mapfile(:)
-       newflds(n)%merge_fields(:)    = flds(n)%merge_fields(:)
-       newflds(n)%merge_types(:)     = flds(n)%merge_types(:)
-       newflds(n)%merge_fracnames(:) = flds(n)%merge_fracnames(:)
-    end do
+    if (.not. found) then
 
-    ! 3) deallocate / nullify flds
-    if (oldsize >  0) then
-       deallocate(flds)
-       nullify(flds)
+       ! 1) allocate newfld to be size (one element larger than input flds)
+       allocate(newflds(id))
+
+       ! 2) copy flds into first N-1 elements of newflds
+       do n = 1,oldsize
+          newflds(n)%stdname            = flds(n)%stdname
+          newflds(n)%shortname          = flds(n)%shortname
+          newflds(n)%mapindex(:)        = flds(n)%mapindex(:)
+          newflds(n)%mapnorm(:)         = flds(n)%mapnorm(:)
+          newflds(n)%mapfile(:)         = flds(n)%mapfile(:)
+          newflds(n)%merge_fields(:)    = flds(n)%merge_fields(:)
+          newflds(n)%merge_types(:)     = flds(n)%merge_types(:)
+          newflds(n)%merge_fracnames(:) = flds(n)%merge_fracnames(:)
+       end do
+
+       ! 3) deallocate / nullify flds
+       if (oldsize >  0) then
+          deallocate(flds)
+          nullify(flds)
+       end if
+
+       ! 4) point flds => new_flds
+       flds => newflds
+
+       ! 5) now update flds information for new entry
+       flds(id)%stdname   = trim(stdname)
+       if (present(shortname)) then
+          flds(id)%shortname = trim(shortname)
+       else
+          flds(id)%shortname = trim(stdname)
+       end if
     end if
 
-    ! 4) point flds => new_flds
-    flds => newflds
-
-    ! 5) now update flds information for new entry
-    flds(id)%stdname   = trim(stdname)
-    if (present(shortname)) then
-       flds(id)%shortname = trim(shortname)
-    else
-       flds(id)%shortname = trim(stdname)
-    end if
   end subroutine shr_nuopc_fldList_AddFld
 
   !================================================================================

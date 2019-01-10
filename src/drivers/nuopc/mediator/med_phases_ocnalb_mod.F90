@@ -400,7 +400,7 @@ contains
     use med_internalstate_mod , only : InternalState
     use med_constants_mod     , only : R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
-    use esmFlds               , only : fldListMed_ocnalb_o
+    use esmFlds               , only : fldListMed_ocnalb
     use esmFlds               , only : compatm, compocn
     use perf_mod              , only : t_startf, t_stopf
     ! Arguments
@@ -426,7 +426,7 @@ contains
 
     ! Map the field bundle from the ocean to the atm grid
     call med_map_FB_Regrid_Norm( &
-         fldListMed_ocnalb_o%flds, compocn, compatm, &
+         fldListMed_ocnalb%flds, compocn, compatm, &
          is_local%wrap%FBMed_ocnalb_o, &
          is_local%wrap%FBMed_ocnalb_a, &
          is_local%wrap%FBFrac(compocn), &

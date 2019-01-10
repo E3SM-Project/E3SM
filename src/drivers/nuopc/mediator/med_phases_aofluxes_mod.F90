@@ -95,7 +95,6 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
     use ESMF                  , only : ESMF_SUCCESS, ESMF_LogFoundError
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use esmFlds               , only : fldListMed_aoflux_o
     use esmFlds               , only : compatm, compocn
     use med_internalstate_mod , only : InternalState, mastertask
     use shr_nuopc_scalars_mod , only : flds_scalar_name

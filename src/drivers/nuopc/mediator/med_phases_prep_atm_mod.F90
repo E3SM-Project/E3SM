@@ -27,8 +27,7 @@ contains
       use med_constants_mod     , only : R8
       use esmFlds               , only : compatm, compocn, compice, ncomps, compname
       use esmFlds               , only : fldListFr, fldListTo
-      use esmFlds               , only : fldListMed_aoflux_a, fldListMed_aoflux_o
-      use esmFlds               , only : fldListMed_ocnalb_o
+      use esmFlds               , only : fldListMed_aoflux
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
@@ -146,7 +145,7 @@ contains
 
          if (.not. compute_aoflux .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
             call med_map_FB_Regrid_Norm(&
-                 fldListMed_aoflux_o%flds, compocn, compatm, &
+                 fldListMed_aoflux%flds, compocn, compatm, &
                  is_local%wrap%FBMed_aoflux_o, &
                  is_local%wrap%FBMed_aoflux_a, &
                  is_local%wrap%FBFrac(compocn), &
@@ -169,7 +168,8 @@ contains
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
+                 FBMed1=is_local%wrap%FBMed_ocnalb_a, &
+                 FBMed2=is_local%wrap%FBMed_aoflux_a, &
                  document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          end if

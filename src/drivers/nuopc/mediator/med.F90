@@ -600,6 +600,7 @@ contains
        if (ncomp /= compmed) then
           nflds = shr_nuopc_fldList_GetNumFlds(fldListFr(ncomp))
           do n = 1,nflds
+             call shr_nuopc_fldList_GetFldInfo(fldListFr(ncomp), n, stdname, shortname)
              if (trim(shortname) == flds_scalar_name) then
                 transferOffer = 'will provide'
              else
@@ -614,6 +615,7 @@ contains
           
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
+             call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, stdname, shortname)
              if (trim(shortname) == flds_scalar_name) then
                 transferOffer = 'will provide'
              else
@@ -1372,7 +1374,7 @@ contains
     use shr_sys_mod             , only : shr_sys_flush
     use esmFlds                 , only : ncomps, compname, ncomps, compmed, compatm, compocn
     use esmFlds                 , only : compice, complnd, comprof, compwav, compglc, compname
-    use esmFlds                 , only : fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
+    use esmFlds                 , only : fldListMed_ocnalb, fldListMed_aoflux
     use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
@@ -1638,6 +1640,56 @@ contains
       if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
+      ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
+      !---------------------------------------
+
+      if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
+          is_local%wrap%med_coupling_active(compatm,compocn)) then
+
+         ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
+         ! rather than NStateExp(n2), since the export state might only
+         ! contain control data and no grid information if if the target
+         ! component (n2) is not prognostic only receives control data back
+
+         ! NOTE: this section must be done BEFORE the call to esmFldsExchange
+         ! Create field bundles for mediator ocean albedo computation
+
+         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb)
+         if (fieldCount > 0) then
+            allocate(fldnames(fieldCount))
+            call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb%flds, fldnames, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            deallocate(fldnames)
+         end if
+            
+         ! Create field bundles for mediator ocean/atmosphere flux computation
+
+         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux)
+         if (fieldCount > 0) then
+            allocate(fldnames(fieldCount))
+            call shr_nuopc_fldList_getfldnames(fldListMed_aoflux%flds, fldnames, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            deallocate(fldnames)
+         end if
+      end if
+
+      !---------------------------------------
       ! Determine mapping and merging info for field exchanges in mediator
       !---------------------------------------
 
@@ -1653,55 +1705,6 @@ contains
 
       call med_map_MapNorm_init(gcomp, logunit, rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-      !---------------------------------------
-      ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
-      !---------------------------------------
-
-      if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
-          is_local%wrap%med_coupling_active(compatm,compocn)) then
-
-         ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
-         ! rather than NStateExp(n2), since the export state might only
-         ! contain control data and no grid information if if the target
-         ! component (n2) is not prognostic only receives control data back
-
-         ! Create field bundles for mediator ocean albedo computation
-
-         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb_o)
-         if (fieldCount > 0) then
-            allocate(fldnames(fieldCount))
-            call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb_o%flds, fldnames, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            deallocate(fldnames)
-         end if
-            
-         ! Create field bundles for mediator ocean/atmosphere flux computation
-
-         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux_o)
-         if (fieldCount > 0) then
-            allocate(fldnames(fieldCount))
-            call shr_nuopc_fldList_getfldnames(fldListMed_aoflux_a%flds, fldnames, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            deallocate(fldnames)
-         end if
-      end if
 
       !----------------------------------------------------------
       ! Create mediator specific field bundles needed in phases routines
