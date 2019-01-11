@@ -150,6 +150,10 @@ ifeq (,$(SHAREDPATH))
 endif
 
 include $(CASEROOT)/Macros.make
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
