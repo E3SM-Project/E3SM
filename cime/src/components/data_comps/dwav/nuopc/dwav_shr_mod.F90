@@ -24,7 +24,6 @@ module dwav_shr_mod
   !--------------------------------------------------------------------------
 
   ! input namelist variables
-  character(CL) , public :: decomp                ! decomp strategy
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
   logical       , public :: force_prognostic_true ! if true set prognostic true
@@ -34,34 +33,31 @@ module dwav_shr_mod
   character(CL) , public :: rest_file_strm        ! restart filename for streams
   character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  subroutine dwav_shr_read_namelists(mpicom, my_task, master_task, &
-       inst_index, inst_suffix, inst_name, &
-       logunit, shrlogunit, SDWAV, wav_present, wav_prognostic)
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CONTAINS
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  subroutine dwav_shr_read_namelists(filename, mpicom, my_task, master_task, &
+       logunit, SDWAV, wav_present, wav_prognostic)
 
     ! !DESCRIPTION: Read in dwav namelists
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
+    character(len=*)       , intent(in)    :: filename          ! input namelist filename
     integer(IN)            , intent(in)    :: mpicom            ! mpi communicator
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
-    integer                , intent(in)    :: inst_index        ! number of current instance (ie. 1)
-    character(len=16)      , intent(in)    :: inst_suffix       ! char string associated with instance
-    character(len=16)      , intent(in)    :: inst_name         ! fullname of current instance (ie. "wav_0001")
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    integer(IN)            , intent(in)    :: shrlogunit        ! original log unit and level
     type(shr_strdata_type) , intent(inout) :: SDWAV
     logical                , intent(out)   :: wav_present       ! flag
     logical                , intent(out)   :: wav_prognostic    ! flag
 
     !--- local variables ---
-    character(CL) :: fileName    ! generic file name
     integer(IN)   :: nunit       ! unit number
     integer(IN)   :: ierr        ! error code
+    character(CL) :: decomp      ! decomp strategy - not used for NUOPC - but still needed in namelist for now
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
@@ -73,24 +69,14 @@ CONTAINS
     !-------------------------------------------------------------------------------
 
     !----- define namelist -----
-    namelist / dwav_nml / &
-         decomp, restfilm, restfils, force_prognostic_true
+    namelist / dwav_nml / decomp, &
+         restfilm, restfils, force_prognostic_true
 
-    !----------------------------------------------------------------------------
-    ! Determine input filenamname
-    !----------------------------------------------------------------------------
-
-    filename = "dwav_in"//trim(inst_suffix)
-
-    !----------------------------------------------------------------------------
-    ! Read dwav_in
-    !----------------------------------------------------------------------------
-
-    filename   = "dwav_in"//trim(inst_suffix)
     decomp     = "1d"
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
     force_prognostic_true = .false.
+
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -106,6 +92,7 @@ CONTAINS
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
+
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
@@ -126,7 +113,7 @@ CONTAINS
 
     datamode = trim(SDWAV%dataMode)
 
-    if (trim(datamode) == 'NULL' .or. &
+    if ( trim(datamode) == 'NULL' .or. &
          trim(datamode) == 'COPYALL') then
        if (my_task == master_task) then
           write(logunit,F00) 'dwav datamode = ',trim(datamode)

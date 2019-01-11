@@ -230,11 +230,12 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
-    testcase = case.get_value("CASE")
+    casename = case.get_value("CASE")
+    testcase = case.get_value("TESTCASE")
     casedir = case.get_value("CASEROOT")
     all_success = True
     num_compared = 0
-    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
+    comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(casename, from_dir1, suffix1, from_dir2, suffix2)
     multiinst_driver_compare = False
     archive = case.get_env('archive')
     ref_case = case.get_value("RUN_REFCASE")
@@ -280,8 +281,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
                         logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
 
                 all_success = False
-
-    if num_compared == 0:
+    # PFS test may not have any history files to compare.
+    if num_compared == 0 and testcase != "PFS":
         all_success = False
         comments += "Did not compare any hist files! Missing baselines?\n"
 
@@ -421,21 +422,24 @@ def get_extension(model, filepath):
     """
     basename = os.path.basename(filepath)
     m = None
+    ext_regexes = []
+
+    # First add any model-specific extension regexes; these will be checked before the
+    # general regex
     if model == "mom":
-        for ext in ('frc', 'sfc.day', 'prog', 'hmz', 'hm'):
-            regex_str = r'.*' + model + r'[^_]*_?([0-9]{4})?[.](' + ext + r'.?)([.].*[^.])?[.]nc'
-            ext_regex = re.compile(regex_str)
-            m = ext_regex.match(basename)
-            if m is not None:
-                break
-    elif model == 'cice':
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h_inst.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+        # Need to check 'sfc.day' specially: the embedded '.' messes up the
+        # general-purpose regex
+        ext_regexes.append(r'sfc\.day')
 
-    if m is None:
-        ext_regex = re.compile(r'.*%s[^_]*_?([0-9]{4})?[.](h.?)([.].*[^.])?[.]nc' % model)
-        m = ext_regex.match(basename)
+    # Now add the general-purpose extension regex
+    ext_regexes.append(r'\w+')
 
+    for ext_regex in ext_regexes:
+        full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+r')[-\w\.]*\.nc\.?'
+        full_regex = re.compile(full_regex_str)
+        m = full_regex.search(basename)
+        if m is not None:
+            break
 
     expect(m is not None, "Failed to get extension for file '{}'".format(filepath))
 
@@ -518,8 +522,8 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
         logger.warning("No {}.log file found in directory {}".format(cplname,case.get_value("RUNDIR")))
     else:
         safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)))
-
-    expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
+    testname = case.get_value("TESTCASE")
+    expect(num_gen > 0 or testname == "PFS", "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:

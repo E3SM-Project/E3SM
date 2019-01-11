@@ -9,7 +9,11 @@ module element_state
 
   implicit none
   private
+#ifdef ARKODE
+  integer, public, parameter :: timelevels = 50
+#else
   integer, public, parameter :: timelevels = 3
+#endif
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
   integer, public               :: max_itercnt_perstep
@@ -69,6 +73,7 @@ module element_state
     real (kind=real_kind) :: FQ(np,np,nlev,qsize_d)                ! tracer forcing
     real (kind=real_kind) :: FM(np,np,3,nlev)                      ! momentum forcing
     real (kind=real_kind) :: FT(np,np,nlev)                        ! temperature forcing
+    real (kind=real_kind) :: FPHI(np,np,nlevp)                     ! PHI (NH) forcing
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization

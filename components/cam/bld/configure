@@ -1222,10 +1222,10 @@ if (defined $opts{'camiop'}) {
 }
 my $camiop = $cfg_ref->get('camiop') ? "ON" : "OFF";
 
-# The only dycore supported in CAMIOP mode is Eulerian
-if ($camiop eq 'ON' and $dyn_pkg ne 'eul') {
+# The only dycore supported in CAMIOP mode is Spectral Element
+if ($camiop eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: CAMIOP mode only works with Eulerian dycore.
+**  ERROR: CAMIOP mode only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }

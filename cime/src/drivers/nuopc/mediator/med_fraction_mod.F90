@@ -178,7 +178,7 @@ module med_fraction_mod
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_fldChk
     use med_map_mod           , only : med_map_Fractions_init
     use med_internalstate_mod , only : InternalState
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -201,7 +201,7 @@ module med_fraction_mod
     integer                    :: dbrc
     character(len=*),parameter :: subname='(med_fraction_init)'
     !---------------------------------------
-
+    call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -650,6 +650,7 @@ module med_fraction_mod
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_fraction_init
 
@@ -671,7 +672,7 @@ module med_fraction_mod
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-
+    use perf_mod              , only : t_startf, t_stopf
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -688,6 +689,7 @@ module med_fraction_mod
     integer                    :: dbrc
     character(len=*),parameter :: subname='(med_fraction_set)'
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -810,6 +812,7 @@ module med_fraction_mod
        enddo
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_fraction_set
 

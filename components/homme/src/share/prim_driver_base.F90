@@ -103,6 +103,9 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup ()
+
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
@@ -124,9 +127,6 @@ contains
 
     ! Initialize the time levels
     call TimeLevel_init(tl)
-
-    ! Cleanup the tmp stuff used in prim_init1_geometry
-    call prim_init1_cleanup ()
 
     if(par%masterproc) write(iulog,*) 'end of prim_init1'
   end subroutine prim_init1
@@ -653,10 +653,7 @@ contains
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-
-#ifndef CAM
-    use control_mod,          only: pertlim                     
-#endif
+    use control_mod,          only: smooth_phis_numcycle
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -920,6 +917,10 @@ contains
        enddo
     endif
 
+    ! smooth elem%phis if requested.
+    if (smooth_phis_numcycle>0) &
+          call smooth_topo_datasets(elem,hybrid,nets,nete)
+
 
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
     call print_cfl(elem,hybrid,nets,nete,dtnu)
@@ -947,7 +948,6 @@ contains
 
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
-
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
@@ -983,7 +983,7 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: applycamforcing_ps
+    use prim_advance_mod,   only: convert_thermo_forcing
 
     implicit none
 
@@ -1035,17 +1035,11 @@ contains
     call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
 #ifndef CAM
     ! compute HOMME test case forcing
-    ! by calling it here, it mimics eam forcings computations in standalone.
+    ! by calling it here, it mimics eam forcings computations in standalone
+    ! homme.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+    call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #endif
-
-    ! Apply CAM Physics forcing
-    !   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 3: Q was adjusted by physics, but apply u,T forcing here, forcings are scaled by dp
-    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 1: forcing was applied time-split in CAM coupling layer
-    !   ftype= 0: apply all forcing here
-    !   ftype=-1: do not apply forcing
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
@@ -1099,9 +1093,9 @@ contains
       call t_stopf("prim_step_rX")
       do r=2,rsplit
         call TimeLevel_update(tl,"leapfrog")
-	call t_startf("prim_step_rX")
+        call t_startf("prim_step_rX")
         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
-	call t_stopf("prim_step_rX")
+        call t_stopf("prim_step_rX")
       enddo
 
     endif
@@ -1213,7 +1207,6 @@ contains
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
-    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1297,6 +1290,153 @@ contains
     call t_stopf("prim_step_advec")
 
   end subroutine prim_step
+
+
+!----------------------------- APPLYCAMFORCING-DP3D ----------------------------
+
+!ftype logic
+!should be called with dt_dynamics timestep. 
+!if called on eulerian levels (like at the very beginning, in first of qsplit
+!calls of prim_step), make sure that dp3d is updated before, based on ps_v.
+!if called within lagrangian step, it uses lagrangian dp3d
+  subroutine applyCAMforcing_dp3d(elem,hvcoord,n0,dt_dyn,nets,nete)
+  use control_mod,        only : ftype
+  use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : applycamforcing_dynamics,applycamforcing_dynamics_dp
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_dyn
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: n0,nets,nete
+
+  call t_startf("ApplyCAMForcing")
+  if (ftype == 3) then
+    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,n0,dt_dyn,nets,nete)
+  elseif (ftype == 4) then
+    call ApplyCAMForcing_dynamics   (elem,hvcoord,n0,dt_dyn,nets,nete)
+  endif
+  call t_stopf("ApplyCAMForcing")
+  end subroutine applyCAMforcing_dp3d
+
+
+!----------------------------- APPLYCAMFORCING-PS ----------------------------
+
+!Ftype logic: This routine should be called with dt_remap, on 'eulerian' levels, 
+!only before homme remap timestep.
+! Note on ftypes:
+!   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 1: forcing was applied time-split in CAM coupling layer
+!   ftype= 0: apply all forcing here
+!   ftype=-1: do not apply forcing
+  subroutine applyCAMforcing_ps(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+  use control_mod,        only : ftype
+  use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : applycamforcing_dynamics
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt_remap
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: n0,n0qdp,nets,nete
+
+!in the next pr we will reorder calling _dyn and _tr versions
+  call t_startf("ApplyCAMForcing")
+  if (ftype==-1) then
+    !do nothing
+  elseif (ftype==0) then
+    call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+    call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+  elseif (ftype==1) then
+    !do nothing
+  elseif (ftype==2) then
+    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+#ifndef CAM
+    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+#endif
+  elseif (ftype==4) then
+#ifndef CAM
+    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+#endif
+  endif
+  call t_stopf("ApplyCAMForcing")
+  end subroutine applyCAMforcing_ps
+
+
+!----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
+
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+
+  use control_mod,        only : use_moisture
+  use hybvcoord_mod,      only : hvcoord_t
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+
+  ! local
+  integer :: i,j,k,ie,q
+  real (kind=real_kind) :: v1
+  real (kind=real_kind) :: temperature(np,np,nlev)
+  real (kind=real_kind) :: Rstar(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+
+  do ie=nets,nete
+     ! apply forcing to Qdp
+     elem(ie)%derived%FQps(:,:)=0
+
+     do q=1,qsize
+        do k=1,nlev
+           do j=1,np
+              do i=1,np
+                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                       v1=0  ! Q already negative, dont make it more so
+                    else
+                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+                    endif
+                 endif
+                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
+                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                 if (q==1) then
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
+                 endif
+              enddo
+           enddo
+        enddo
+     enddo
+
+     if (use_moisture) then
+        ! to conserve dry mass in the precese of Q1 forcing:
+        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
+             dt*elem(ie)%derived%FQps(:,:)
+     endif
+
+
+     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+     enddo
+     do q=1,qsize
+        do k=1,nlev
+           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+        enddo
+     enddo
+  enddo
+
+  end subroutine applyCAMforcing_tracers
+
+
+
   
   
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
@@ -1327,7 +1467,6 @@ contains
     use prim_advance_mod,   only: prim_advance_exp
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-    use prim_advance_mod,   only: applycamforcing_dp3d
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
 
     type(element_t),      intent(inout) :: elem(:)
@@ -1410,8 +1549,8 @@ contains
 
 
 
-    subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle,smooth_sgh_numcycle
+    subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
+    use control_mod, only : smooth_phis_numcycle
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1419,27 +1558,26 @@ contains
     implicit none
 
     integer , intent(in) :: nets,nete
-    real (kind=real_kind), intent(inout)   :: phis(np,np,nets:nete)
-    real (kind=real_kind), intent(inout)   :: sghdyn(np,np,nets:nete)
-    real (kind=real_kind), intent(inout)   :: sgh30dyn(np,np,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     ! local
     integer :: ie
     real (kind=real_kind) :: minf
+    real (kind=real_kind) :: phis(np,np,nets:nete)
 
+    do ie=nets,nete
+       phis(:,:,ie)=elem(ie)%state%phis(:,:)
+    enddo
+    
     minf=-9e9
     if (hybrid%masterthread) &
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
     call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
-    minf=0
-    if (hybrid%masterthread) &
-       write(iulog,*) "Applying hyperviscosity smoother to SGH"
-    call smooth_phis(sghdyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
-    if (hybrid%masterthread) &
-       write(iulog,*) "Applying hyperviscosity smoother to SGH30"
-    call smooth_phis(sgh30dyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
+
+    do ie=nets,nete
+       elem(ie)%state%phis(:,:)=phis(:,:,ie)
+    enddo
 
     end subroutine smooth_topo_datasets
     
@@ -1484,7 +1622,7 @@ contains
       enddo
     enddo
     
-  end subroutine         
+  end subroutine set_prescribed_scm        
     
 end module prim_driver_base
 

@@ -936,7 +936,7 @@ def get_project(machobj=None):
     logger.info("No project info available")
     return None
 
-def get_charge_account(machobj=None):
+def get_charge_account(machobj=None, project=None):
     """
     Hierarchy for choosing CHARGE_ACCOUNT:
     1. Environment variable CHARGE_ACCOUNT
@@ -948,11 +948,11 @@ def get_charge_account(machobj=None):
     >>> import CIME.XML.machines
     >>> machobj = CIME.XML.machines.Machines(machine="theta")
     >>> project = get_project(machobj)
-    >>> charge_account = get_charge_account(machobj)
+    >>> charge_account = get_charge_account(machobj, project)
     >>> project == charge_account
     True
     >>> os.environ["CHARGE_ACCOUNT"] = "ChargeAccount"
-    >>> get_charge_account(machobj)
+    >>> get_charge_account(machobj, project)
     'ChargeAccount'
     >>> del os.environ["CHARGE_ACCOUNT"]
     """
@@ -975,7 +975,7 @@ def get_charge_account(machobj=None):
             return charge_account
 
     logger.info("No charge_account info available, using value from PROJECT")
-    return get_project(machobj)
+    return project
 
 def find_files(rootdir, pattern):
     """
@@ -1788,6 +1788,8 @@ def string_in_list(_string, _list):
             return x
     return None
 
-def model_log(model, arg_logger, msg):
+def model_log(model, arg_logger, msg, debug_others=True):
     if get_model() == model:
         arg_logger.info(msg)
+    elif debug_others:
+        arg_logger.debug(msg)

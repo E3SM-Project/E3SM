@@ -67,7 +67,7 @@ class Case(object):
     are listed in the following imports
     """
     from CIME.case.case_setup import case_setup
-    from CIME.case.case_clone import create_clone
+    from CIME.case.case_clone import create_clone, _copy_user_modified_to_clone
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
@@ -195,17 +195,17 @@ class Case(object):
 
     def read_xml(self):
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None, read_only=self._force_read_only))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
-        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(self._caseroot))
-        self._env_generic_files.append(EnvArchive(self._caseroot))
+        self._env_generic_files.append(EnvMachSpecific(self._caseroot, read_only=self._force_read_only))
+        self._env_generic_files.append(EnvArchive(self._caseroot, read_only=self._force_read_only))
         self._files = self._env_entryid_files + self._env_generic_files
 
     def get_case_root(self):
@@ -782,7 +782,7 @@ class Case(object):
         #--------------------------------------------
         grids = Grids(gridfile)
 
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname, driver=driver)
 
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
@@ -885,19 +885,16 @@ class Case(object):
         self.set_value("REALUSER", os.environ["USER"])
 
         # Set project id
+        if project is None:
+            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
-            self.set_value("CHARGE_ACCOUNT", project)
-        else:
-            project = get_project(machobj)
-            if project is not None:
-                self.set_value("PROJECT", project)
-            elif machobj.get_value("PROJECT_REQUIRED"):
-                expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-            # Get charge_account id if it exists
-            charge_account = get_charge_account(machobj)
-            if charge_account is not None:
-                self.set_value("CHARGE_ACCOUNT", charge_account)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj, project)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -1185,6 +1182,10 @@ directory, NOT in this subdirectory."""
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
+
+        # User mods may have modified underlying XML files
+        if all_user_mods:
+            self.read_xml()
 
     def _get_comp_user_mods(self, component):
         """

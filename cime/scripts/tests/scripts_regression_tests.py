@@ -7,7 +7,7 @@ to confirm overall CIME correctness.
 
 import glob, os, re, shutil, signal, sys, tempfile, \
     threading, time, logging, unittest, getpass, \
-    filecmp
+    filecmp, time
 
 from xml.etree.ElementTree import ParseError
 
@@ -19,14 +19,14 @@ subprocess.call('/bin/rm -f $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 import six
 from six import assertRaisesRegex
 
-
 import collections
 
-from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
+from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy
 import get_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
 from  CIME.XML.compilers import Compilers
+from  CIME.XML.env_run import EnvRun
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
@@ -523,7 +523,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         self.assertTrue(os.path.exists(testdir))
         self.assertTrue(os.path.exists(os.path.join(testdir, "case.setup")))
 
-        with Case(testdir, read_only=True) as case:
+        with Case(testdir, read_only=False) as case:
             case._compsetname = case.get_value("COMPSET")
             case.set_comp_classes(case.get_values("COMP_CLASSES"))
             primary = case._find_primary_component()
@@ -1434,13 +1434,37 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         assert_dashboard_has_build(self, build_name)
 
 ###############################################################################
+class M_TestCimePerformance(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_cime_case_ctrl_performance(self):
+    ###########################################################################
+
+        ts = time.time()
+
+        num_repeat = 5
+        for _ in range(num_repeat):
+            self._create_test(["cime_tiny --no-build"])
+
+        elapsed = time.time() - ts
+
+        print("Perf test result: {:0.2f}".format(elapsed))
+
+###############################################################################
 class T_TestRunRestart(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
     def test_run_restart(self):
     ###########################################################################
-        self._create_test(["NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            walltime="00:15:00"
+        else:
+            walltime="00:30:00"
+
+        self._create_test(["--walltime "+walltime,"NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name)
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1453,7 +1477,13 @@ class T_TestRunRestart(TestCreateTestCommon):
     ###########################################################################
     def test_run_restart_too_many_fails(self):
     ###########################################################################
-        self._create_test(["NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name, env_changes="NODEFAIL_NUM_FAILS=5", run_errors=True)
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == "mct":
+            walltime="00:15:00"
+        else:
+            walltime="00:30:00"
+
+        self._create_test(["--walltime "+walltime,"NODEFAIL_P1.f09_g16.X"], test_id=self._baseline_name, env_changes="NODEFAIL_NUM_FAILS=5", run_errors=True)
 
         casedir = os.path.join(self._testroot,
                                "{}.{}".format(CIME.utils.get_full_test_name("NODEFAIL_P1.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -2124,6 +2154,71 @@ class K_TestCimeCase(TestCreateTestCommon):
         sys.argv = ["case.submit", "--batch-args", "'random_arguments_here.%j'",
                     "--mail-type", "fail", "--mail-user", "'random_arguments_here.%j'"]
         submit_interface._main_func(None, True)
+
+    ###########################################################################
+    def test_xml_caching(self):
+    ###########################################################################
+        self._create_test(["--no-build", "TESTRUNPASS.f19_g16_rx1.A"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        active = os.path.join(casedir, "env_run.xml")
+        backup = os.path.join(casedir, "env_run.xml.bak")
+
+        safe_copy(active, backup)
+
+        with Case(casedir, read_only=False) as case:
+            env_run = EnvRun(casedir, read_only=True)
+            self.assertEqual(case.get_value("RUN_TYPE"), "startup")
+            case.set_value("RUN_TYPE", "branch")
+            self.assertEqual(case.get_value("RUN_TYPE"), "branch")
+            self.assertEqual(env_run.get_value("RUN_TYPE"), "branch")
+
+        with Case(casedir) as case:
+            self.assertEqual(case.get_value("RUN_TYPE"), "branch")
+
+        time.sleep(0.2)
+        safe_copy(backup, active)
+
+        with Case(casedir, read_only=False) as case:
+            self.assertEqual(case.get_value("RUN_TYPE"), "startup")
+            case.set_value("RUN_TYPE", "branch")
+
+        with Case(casedir, read_only=False) as case:
+            self.assertEqual(case.get_value("RUN_TYPE"), "branch")
+            time.sleep(0.2)
+            safe_copy(backup, active)
+            case.read_xml() # Manual re-sync
+            self.assertEqual(case.get_value("RUN_TYPE"), "startup")
+            case.set_value("RUN_TYPE", "branch")
+            self.assertEqual(case.get_value("RUN_TYPE"), "branch")
+
+        with Case(casedir) as case:
+            self.assertEqual(case.get_value("RUN_TYPE"), "branch")
+            time.sleep(0.2)
+            safe_copy(backup, active)
+            env_run = EnvRun(casedir, read_only=True)
+            self.assertEqual(env_run.get_value("RUN_TYPE"), "startup")
+
+        with Case(casedir, read_only=False) as case:
+            self.assertEqual(case.get_value("RUN_TYPE"), "startup")
+            case.set_value("RUN_TYPE", "branch")
+
+        # behind the back detection
+        with self.assertRaises(SystemExit):
+            with Case(casedir, read_only=False) as case:
+                time.sleep(0.2)
+                safe_copy(backup, active)
+
+        with Case(casedir, read_only=False) as case:
+            case.set_value("RUN_TYPE", "branch")
+
+        with self.assertRaises(SystemExit):
+            with Case(casedir) as case:
+                time.sleep(0.2)
+                safe_copy(backup, active)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):

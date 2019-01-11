@@ -54,7 +54,6 @@ contains
     use phys_control,  only: phys_getopts
     use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
     use unicon_cam,          only: unicon_implements_cnst, unicon_init_cnst
-    use nctopo_util_mod, only: nctopo_util_inidat
     use cam_history_support, only: max_fieldname_len
     use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,       only: iMap
@@ -492,12 +491,6 @@ contains
         call FreeEdgeBuffer(edge)
       end if
     endif
-
-    !
-    ! This subroutine is used to create nc_topo files, if requested
-    ! 
-
-    call nctopo_util_inidat(ncid_topo,elem)
 
     deallocate(tmp)
 
