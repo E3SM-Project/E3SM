@@ -407,6 +407,7 @@ contains
        ! Initialize lists of data to be exchanged between ALM and VSFM
        ! during initialization step
        allocate(l2e_init_list(nclumps))
+       allocate(e2l_init_list(nclumps))
 
        do clump_rank = 1, nclumps
           iem = (index_em_ptm - 1)*nclumps + clump_rank
