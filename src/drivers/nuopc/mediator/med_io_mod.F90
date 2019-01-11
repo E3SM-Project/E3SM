@@ -300,6 +300,7 @@ contains
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
     use ESMF, only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
     use med_constants_mod, only : R4, R8
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use pio, only : var_desc_t, io_desc_t, pio_offset_kind
@@ -310,6 +311,8 @@ contains
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     use pio, only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
     use pio, only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
+    use pio, only : pio_syncfile, pio_writedof
+
     ! input/output variables
     character(len=*),           intent(in) :: filename  ! file
     integer,                    intent(in) :: iam       ! local pet
@@ -330,6 +333,8 @@ contains
     type(ESMF_Field)              :: field
     type(ESMF_Mesh)               :: mesh
     type(ESMF_Distgrid)           :: distgrid
+    type(ESMF_VM)                 :: VM
+    integer                       :: mpicom
     integer                       :: rcode
     integer                       :: nf,ns,ng
     integer                       :: k
@@ -354,7 +359,7 @@ contains
     integer                       :: dimCount, tileCount
     integer, pointer              :: Dof(:)
     integer                       :: lfile_ind
-    real(r8), pointer             :: fldptr1(:)
+    real(r8), pointer             :: fldptr1(:), tmpfldptr(:)
     character(CL)                 :: tmpstr
     integer                       :: dbrc
     character(*),parameter :: subName = '(med_io_write_FB) '
@@ -364,6 +369,9 @@ contains
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
     endif
     rc = ESMF_Success
+
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, rc=rc)
 
     lfillvalue = fillvalue
     if (present(fillval)) then
@@ -515,6 +523,9 @@ contains
        write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
        call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
        call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+
+!       call pio_writedof(lpre, (/lnx,lny/), int(dof,kind=PIO_OFFSET_KIND), mpicom)
+
        deallocate(dof)
 
        do k = 1,nf
@@ -522,7 +533,6 @@ contains
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(itemc)
@@ -532,10 +542,10 @@ contains
              !-------tcraig
           endif
        enddo
+       call pio_syncfile(io_file(lfile_ind))
 
        call pio_freedecomp(io_file(lfile_ind), iodesc)
-
-    end if
+    endif
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)

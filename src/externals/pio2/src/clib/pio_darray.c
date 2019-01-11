@@ -648,12 +648,7 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
     /* If the type of the var doesn't match the type of the
      * decomposition, return an error. */
     if (iodesc->piotype != vdesc->pio_type)
-    {
-#ifdef DEBUG
-	printf("iodesc piotype %d vdesc piotype %d\n",iodesc->piotype, vdesc->pio_type);
-#endif
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
-    }
     pioassert(iodesc->mpitype_size == vdesc->mpi_type_size, "wrong mpi info",
               __FILE__, __LINE__);
 

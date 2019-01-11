@@ -12,7 +12,7 @@ from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
-from CIME.utils                     import get_current_commit, safe_copy
+from CIME.utils                     import get_current_commit, safe_copy, get_cime_default_driver
 from CIME.locked_files              import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -1350,7 +1350,10 @@ directory, NOT in this subdirectory."""
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
             for test in testlist:
-                if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                if test["category"] == "prealpha" \
+                   or test["category"] == "prebeta" \
+                   or "aux_" in test["category"] \
+                   or get_cime_default_driver() in test["category"]:
                     testcnt += 1
         if testcnt > 0:
             logger.warning("\n*********************************************************************************************************************************")
