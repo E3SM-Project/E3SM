@@ -474,7 +474,8 @@ def get_pp_status(case_dict):
             with open(log_file, 'r') as fname:
                 log_content = fname.readlines()
             total_time = [line for line in log_content if 'Total Time:' in line]
-            case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
+            if total_time:
+                case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
         else:
             case_dict['xconform_status'] = 'Started'
 
@@ -846,7 +847,7 @@ def update_repo_add_file(filename, dir1, dir2):
     logger.debug('left_only: '+src+' -> '+dest)
     if not os.path.exists(dest):
         shutil.copy2(src, dest)
-        cmd = ['svn', 'add', dest]
+        cmd = ['svn', 'add', '--parents', dest]
         try:
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError as error:
