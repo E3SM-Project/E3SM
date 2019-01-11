@@ -393,14 +393,24 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             enddo !j
          enddo !k
 
-!recompute new dp, vapor. there are two temp dp vars, dp and dp_tmp?
-!this code can be improved, mode Q computation before FM, FT application
-#ifdef MODEL_THETA_L
+!there are two temp dp vars, dp and dp_tmp?
+
+!$omp parallel do private(k, j, i, ic, dp_tmp)
          do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-            dyn_in%elem(ie)%state%Q(:,:,k,1) = dyn_in%elem(ie)%state%Qdp(i,j,k,1,tl_fQdp)/dp(:,:,k) 
-         enddo
+            do ic=1,pcnst
+               do j=1,np
+                  do i=1,np
+                     ! make Q consistent now that we have updated ps_v above
+                     dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
+                          ( hybi(k+1) - hybi(k))*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
+                     dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
+                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
+                  end do
+               end do
+            end do
+         end do
+
+#ifdef MODEL_THETA_L
          call convert_thermo_forcing_elementwise(dyn_in%elem(ie),hvcoord,tl_f,dtime)
 #endif
 
@@ -425,26 +435,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                        dtime*dyn_in%elem(ie)%derived%FT(i,j,k)    
 #endif
              
-               end do
-            end do
-         end do
-
-!$omp parallel do private(k, j, i, ic, dp_tmp)
-         do k=1,nlev
-#ifdef MODEL_THETA_L
-            !vapor was already converted above
-            do ic=2,pcnst
-#else
-            do ic=1,pcnst
-#endif
-               do j=1,np
-                  do i=1,np
-                     ! make Q consistent now that we have updated ps_v above
-                     dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                          ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                     dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-                  end do
                end do
             end do
          end do
