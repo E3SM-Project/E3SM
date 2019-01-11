@@ -986,6 +986,7 @@ int rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     int niotasks;
     int mpierr; /* Return code from MPI calls. */
     int ret;
+    void *tmparray;
 
     /* Check inputs. */
     pioassert(ios && iodesc, "invalid input", __FILE__, __LINE__);
@@ -1830,6 +1831,7 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
     }
 
     /* Handle fill values if needed. */
+    LOG((4, "ios->ioproc %d iodesc->needsfill %d", ios->ioproc, iodesc->needsfill));
     if (ios->ioproc && iodesc->needsfill)
     {
         /* we need the list of offsets which are not in the union of iomap */
@@ -1844,6 +1846,7 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
         thisgridsize[0] =  totalgridsize / ios->num_iotasks;
         thisgridmax[0] = thisgridsize[0];
         int xtra = totalgridsize - thisgridsize[0] * ios->num_iotasks;
+        LOG((4, "xtra %d", xtra));
 
         for (nio = 0; nio < ios->num_iotasks; nio++)
         {
@@ -1855,7 +1858,9 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
                 if (nio >= ios->num_iotasks - xtra)
                     thisgridsize[nio]++;
                 thisgridmin[nio] = thisgridmax[nio - 1] + 1;
-                thisgridmax[nio]= thisgridmin[nio] + thisgridsize[nio] - 1;
+                thisgridmax[nio] = thisgridmin[nio] + thisgridsize[nio] - 1;
+                LOG((4, "nio %d thisgridsize[nio] %d thisgridmin[nio] %d thisgridmax[nio] %d",
+                     nio, thisgridsize[nio], thisgridmin[nio], thisgridmax[nio]));
             }
             for (int i = 0; i < iodesc->llen; i++)
             {
@@ -1866,6 +1871,7 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
                         imin = i;
                 }
             }
+            LOG((4, "cnt %d", cnt));
 
             /* Gather cnt from all tasks in the IO communicator into array gcnt. */
             if ((mpierr = MPI_Gather(&cnt, 1, MPI_INT, gcnt, 1, MPI_INT, nio, ios->io_comm)))
@@ -1893,6 +1899,7 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
 
         /* Allocate and initialize a grid to fill in missing values. ??? */
         PIO_Offset grid[thisgridsize[ios->io_rank]];
+        LOG((4, "thisgridsize[ios->io_rank] %d", thisgridsize[ios->io_rank]));
         for (i = 0; i < thisgridsize[ios->io_rank]; i++)
             grid[i] = 0;
 
@@ -1902,6 +1909,7 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
             int j = myusegrid[i] - thisgridmin[ios->io_rank];
             pioassert(j < thisgridsize[ios->io_rank], "out of bounds array index",
                       __FILE__, __LINE__);
+            LOG((4, "i %d myusegrid[i] %d j %d", i, myusegrid[i], j));
             if (j >= 0)
             {
                 grid[j] = 1;
@@ -1912,6 +1920,8 @@ int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compma
             free(myusegrid);
 
         iodesc->holegridsize = thisgridsize[ios->io_rank] - cnt;
+        LOG((3, "iodesc->holegridsize %d thisgridsize[%d] %d cnt %d", iodesc->holegridsize,
+             ios->io_rank, thisgridsize[ios->io_rank], cnt));
         if (iodesc->holegridsize > 0)
         {
             /* Allocate space for the fillgrid. */

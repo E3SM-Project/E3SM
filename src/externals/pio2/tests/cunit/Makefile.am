@@ -6,8 +6,8 @@
 AM_LDFLAGS = ${top_builddir}/src/clib/libpio.la
 AM_CPPFLAGS = -I$(top_srcdir)/src/clib
 
-# The tests that will be run.
-PIO_TESTS = test_async_mpi test_spmd test_intercomm2			\
+# Build the tests for make check.
+check_PROGRAMS = test_intercomm2 test_async_mpi test_spmd		\
 test_async_simple test_async_3proc test_async_4proc			\
 test_iosystem2_simple test_iosystem2_simple2 test_iosystem2		\
 test_iosystem3_simple test_iosystem3_simple2 test_iosystem3 test_pioc	\
@@ -16,13 +16,15 @@ test_darray_multi test_darray_multivar test_darray_multivar2		\
 test_darray_multivar3 test_darray_1d test_darray_3d			\
 test_decomp_uneven test_decomps test_rearr test_darray_async_simple	\
 test_darray_async test_darray_async_many test_darray_2sync		\
-test_async_multicomp test_async_multi2 test_async_manyproc
+test_async_multicomp test_async_multi2 test_async_manyproc		\
+test_darray_fill test_decomp_frame
+
+# Tests will run from a bash script.
+TESTS = run_tests.sh
 
 # Source code for each test.
-test_async_mpi_SOURCES = test_async_mpi.c
 test_intercomm2_SOURCES = test_intercomm2.c test_common.c pio_tests.h
 test_async_simple_SOURCES = test_async_simple.c test_common.c pio_tests.h
-test_async_3proc_SOURCES = test_async_3proc.c test_common.c pio_tests.h
 test_async_4proc_SOURCES = test_async_4proc.c test_common.c pio_tests.h
 test_iosystem2_simple_SOURCES = test_iosystem2_simple.c test_common.c pio_tests.h
 test_iosystem2_simple2_SOURCES = test_iosystem2_simple2.c test_common.c pio_tests.h
@@ -49,26 +51,15 @@ test_darray_async_SOURCES = test_darray_async.c test_common.c pio_tests.h
 test_darray_async_many_SOURCES = test_darray_async_many.c test_common.c pio_tests.h
 test_darray_2sync_SOURCES = test_darray_2sync.c test_common.c pio_tests.h
 test_spmd_SOURCES = test_spmd.c test_common.c pio_tests.h
-test_intercomm2_SOURCES = test_async_simple.c test_common.c pio_tests.h
 test_async_3proc_SOURCES = test_async_3proc.c test_common.c pio_tests.h
 test_async_multicomp_SOURCES = test_async_multicomp.c test_common.c pio_tests.h
 test_async_multi2_SOURCES = test_async_multi2.c test_common.c pio_tests.h
 test_async_manyproc_SOURCES = test_async_manyproc.c test_common.c pio_tests.h
-
-# Build the tests for the tests target.
-tests: ${PIO_TESTS}
-
-# Build the tests for make check.
-check_PROGRAMS = $(PIO_TESTS)
-
-# Tests will run from a bash script.
-TESTS = run_tests.sh
-
-# Bash script needs all tests built.
-run_tests.sh : tests
+test_darray_fill_SOURCES = test_darray_fill.c test_common.c pio_tests.h
+test_decomp_frame_SOURCES = test_decomp_frame.c test_common.c pio_tests.h
 
 # Distribute the test script.
 EXTRA_DIST = run_tests.sh
 
 # Clean up files produced during testing.
-CLEANFILES = *.nc *.log
+CLEANFILES = *.nc *.log decomp*.txt

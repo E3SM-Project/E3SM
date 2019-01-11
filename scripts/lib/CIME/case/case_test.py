@@ -58,12 +58,12 @@ def case_test(self, testname=None, reset=False, skip_pnl=False):
         # sure to leave TestStatus in the appropriate state if that
         # happens.
         test = find_system_test(testname, self)(self)
-    except:
+    except BaseException:
         caseroot = self.get_value("CASEROOT")
         with TestStatus(test_dir=caseroot) as ts:
             ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
         append_testlog(str(sys.exc_info()[1]))
-        return False
+        raise
 
     if reset:
         logger.info("Reset test to initial conditions and exit")

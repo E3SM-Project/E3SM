@@ -128,7 +128,7 @@ def _main_func(description):
                 # sure to leave TestStatus in the appropriate state if that
                 # happens.
                 test = find_system_test(testname, case)(case)
-            except:
+            except BaseException:
                 phase_to_fail = MODEL_BUILD_PHASE if model_only else SHAREDLIB_BUILD_PHASE
                 with TestStatus(test_dir=caseroot) as ts:
                     ts.set_status(phase_to_fail, TEST_FAIL_STATUS, comments="failed to initialize")

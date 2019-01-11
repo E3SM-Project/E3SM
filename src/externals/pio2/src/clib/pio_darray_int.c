@@ -13,6 +13,11 @@
 #include <pio.h>
 #include <pio_internal.h>
 
+#if USE_VARD
+#define USE_VARD_READ 1
+#define USE_VARD_WRITE 1
+#endif
+
 /* 10MB default limit. */
 extern PIO_Offset pio_buffer_size_limit;
 
@@ -67,6 +72,196 @@ int compute_buffer_init(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+#if USE_VARD
+int get_gdim0(file_desc_t *file,io_desc_t *iodesc, int varid, int fndims, MPI_Offset *gdim0)
+{
+    int ierr=PIO_NOERR;
+    *gdim0 = 0;
+    if(file->iotype == PIO_IOTYPE_PNETCDF && iodesc->ndims < fndims)
+    {
+	int numunlimdims;
+	/* We need to confirm the file has an unlimited dimension and if it doesn't we need to find
+	   the extent of the first variable dimension */
+	LOG((3,"look for numunlimdims"));
+	if ((ierr = PIOc_inq_unlimdims(file->pio_ncid, &numunlimdims, NULL)))
+	    return check_netcdf(file, ierr, __FILE__, __LINE__);
+	LOG((3,"numunlimdims = %d", numunlimdims));
+	if (numunlimdims <= 0)
+	{
+	    int dimids[fndims];
+	    if ((ierr = PIOc_inq_vardimid(file->pio_ncid, varid, dimids)))
+		return check_netcdf(file, ierr, __FILE__, __LINE__);
+	    if ((ierr = PIOc_inq_dimlen(file->pio_ncid, dimids[0], gdim0)))
+		return check_netcdf(file, ierr, __FILE__, __LINE__);
+        }
+    }
+    LOG((3,"gdim0 = %d",*gdim0));
+    return ierr;
+}
+
+static
+int get_vard_mpidatatype(io_desc_t *iodesc, MPI_Offset gdim0, PIO_Offset unlimdimoffset,
+			 int rrcnt, int ndims, int fndims,
+			 int frame, PIO_Offset **startlist, PIO_Offset **countlist,
+			 MPI_Datatype *filetype)
+{
+
+    int sa_ndims;
+    int gdims[fndims];
+    int dim_offset;
+    int mpierr;
+    MPI_Aint displacements[rrcnt];
+    int blocklengths[rrcnt];
+    MPI_Datatype subarray[rrcnt];
+
+    /* preserve the value of unlimdimoffset, as it may be changed */
+    PIO_Offset _unlimdimoffset = unlimdimoffset;
+
+    *filetype = MPI_DATATYPE_NULL;
+
+    if(rrcnt == 0)
+	return PIO_NOERR;
+
+    for ( int rc=0; rc<rrcnt; rc++)
+    {
+	displacements[rc] = 0;
+	blocklengths[rc] = 1;
+	subarray[rc] = MPI_DATATYPE_NULL;
+    }
+    if(fndims > ndims)
+    {
+	if ( gdim0 > 0)
+	{
+	    gdims[0] = gdim0;
+	    sa_ndims = fndims;
+	    dim_offset = 0;
+	    for (int i=1; i < fndims; i++)
+		gdims[i] = iodesc->dimlen[i-1];
+	}
+	else
+	{
+	    sa_ndims = ndims;
+	    dim_offset = 1;
+	    for (int i=0; i < ndims; i++)
+		gdims[i] = iodesc->dimlen[i];
+	}
+    }
+    else
+    {
+	sa_ndims = fndims;
+	dim_offset = 0;
+	for (int i=0; i < fndims; i++)
+	    gdims[i] = iodesc->dimlen[i];
+    }
+
+    int true_rrcnt=-1; /* true number of contiguous requests */
+    MPI_Aint prev_end=-1; /* end offset of rc-1 request */
+    for( int rc=0; rc<rrcnt; rc++)
+    {
+	int sacount[fndims];
+	int sastart[fndims];
+        for (int i=dim_offset; i< fndims; i++)
+        {
+            sacount[i-dim_offset] = (int) countlist[rc][i];
+            sastart[i-dim_offset] = (int) startlist[rc][i];
+        }
+        if(gdim0 > 0)
+        {
+            unlimdimoffset = gdim0;
+            sastart[0] = max(0, frame);
+            displacements[rc]=0;
+        }
+        else
+            displacements[rc] = unlimdimoffset * max(0, frame);
+
+        /* Check whether this request is actually contiguous. If contiguous,
+         * we do not need to create an MPI derived datatype.
+         */
+        int blocklen=1, isContig=1, warnContig=0;
+        MPI_Aint disp=0, shape=iodesc->mpitype_size;
+        for (int i=sa_ndims-1; i>=0; i--)
+        {
+            if (isContig) {
+                /* blocklen is the amount of this request, rc */
+                blocklen *= sacount[i];
+                /* disp is the flattened starting array index */
+                disp += sastart[i] * shape;
+                /* shape is the dimension product from sa_ndims-1 to i */
+                shape *= gdims[i];
+
+                if (warnContig == 0) {
+                    if (sacount[i] < gdims[i])
+                        /* first i detected to access partial dimension. If this
+                         * one is contiguous, the remaining sacount[i-1 ... 0]
+                         * must all == 1 */
+                        warnContig = 1; /* possible non-contiguos */
+                }
+                else if (sacount[i] != 1) {
+                    isContig = 0;
+                    break; /* loop i */
+                }
+            }
+	}
+	/* if this is a record variable, add the gap of record size */
+        disp += _unlimdimoffset * max(0, frame);
+
+#if PIO_ENABLE_LOGGING
+	for (int i=0; i< sa_ndims; i++)
+	    LOG((3, "vard: sastart[%d]=%d sacount[%d]=%d gdims[%d]=%d %ld %ld displacement = %ld un %d",
+		 i,sastart[i], i,sacount[i], i, gdims[i], startlist[rc][i], countlist[rc][i], displacements[rc], unlimdimoffset));
+#endif
+        if (isContig) { /* this request rc is contiguous, no need to create a new MPI datatype */
+            if (prev_end == disp) {
+                /* this request rc can be coalesced into the previous
+                 * displacements and blocklengths.
+                 */
+                blocklengths[true_rrcnt] += blocklen;
+                prev_end += blocklen;
+            }
+            else {
+                /* this request cannot be coalesced with the previous one */
+                true_rrcnt++;
+                subarray[true_rrcnt] = iodesc->mpitype;
+                displacements[true_rrcnt] = disp;
+                blocklengths[true_rrcnt] = blocklen;
+                prev_end = disp + blocklen;
+            }
+        }
+        else { /* request rc is not contiguous, must create a new MPI datatype */
+            true_rrcnt++;
+            if((mpierr = MPI_Type_create_subarray(sa_ndims, gdims,
+                                                  sacount, sastart,MPI_ORDER_C
+                                                  ,iodesc->mpitype, subarray + true_rrcnt)))
+                return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+            if((mpierr = MPI_Type_commit(subarray + true_rrcnt)))
+                return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+        }
+
+#if PIO_ENABLE_LOGGING
+	LOG((3,"vard: blocklengths[%d]=%d displacement[%d]=%ld unlimdimoffset=%ld",rc,blocklengths[rc], rc, displacements[rc], unlimdimoffset));
+#endif
+
+    }
+    true_rrcnt++;
+
+    /* concatenate all MPI datatypes into filetype */
+    if((mpierr = MPI_Type_create_struct(true_rrcnt, blocklengths, displacements, subarray, filetype)))
+	return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+    if((mpierr = MPI_Type_commit(filetype)))
+	return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+    for( int rc=0; rc<true_rrcnt; rc++)
+        if (subarray[rc] != MPI_DATATYPE_NULL && subarray[rc] != iodesc->mpitype &&
+            (mpierr = MPI_Type_free(subarray + rc)))
+            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+    return PIO_NOERR;
+}
+
+#endif
+
 /**
  * Fill start/count arrays for write_darray_multi_par(). This is an
  * internal funciton.
@@ -116,7 +311,8 @@ int find_start_count(int ndims, int fndims, var_desc_t *vdesc,
             }
             else if (fndims == ndims)
             {
-                /* ??? */
+                /* In some cases the unlimited dim is not treated as
+		   the pio record dim */
                 start[0] += vdesc->record;
             }
         }
@@ -165,7 +361,11 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
     var_desc_t *vdesc;    /* Pointer to var info struct. */
     int dsize;             /* Data size (for one region). */
     int ierr = PIO_NOERR;
-
+#if USE_VARD_WRITE
+    PIO_Offset gdim0;  /* global size of first dimension if no unlimited dimension and ndims<fndims */
+    bool use_vard=true;
+    gdim0 = 0;
+#endif
     /* Check inputs. */
     pioassert(file && file->iosystem && varids && varids[0] >= 0 && varids[0] <= PIO_MAX_VARS &&
               iodesc, "invalid input", __FILE__, __LINE__);
@@ -192,6 +392,15 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
     PIO_Offset llen = fill ? iodesc->holegridsize : iodesc->llen;
     void *iobuf = fill ? vdesc->fillbuf : file->iobuf;
 
+#if USE_VARD_WRITE
+    if (!ios->async || !ios->ioproc)
+    {
+	if ((ierr = get_gdim0(file, iodesc, varids[0], fndims, &gdim0)))
+	    return pio_err(NULL, file, ierr, __FILE__, __LINE__);
+
+    }
+#endif
+
     /* If this is an IO task write the data. */
     if (ios->ioproc)
     {
@@ -202,8 +411,6 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
         int ndims = iodesc->ndims;
         PIO_Offset *startlist[num_regions]; /* Array of start arrays for ncmpi_iput_varn(). */
         PIO_Offset *countlist[num_regions]; /* Array of count  arrays for ncmpi_iput_varn(). */
-
-        LOG((3, "num_regions = %d", num_regions));
 
         /* Process each region of data to be written. */
         for (int regioncnt = 0; regioncnt < num_regions; regioncnt++)
@@ -273,22 +480,151 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
                 /* Do this when we reach the last region. */
                 if (regioncnt == num_regions - 1)
                 {
+#ifdef USE_VARD_WRITE
+                    MPI_Aint   var0_offset, var_offsets[nvars];
+                    MPI_Offset vari_offset, vard_llen=0;
+                    MPI_Datatype vartypes[nvars];
+                    MPI_Datatype filetype = MPI_DATATYPE_NULL;
+                    int blocklens[nvars];
+                    int fvartype, var0_id;
+                    int numReqs=0;
+                    void *vard_bufptr;
+                    int doFlush[nvars]; /* whether to flush or not */
+
+                    /* construct doFlush[], so later when looping through nvars,
+                     * it tells whether to flush or not.
+                     */
+                    for (int nv = 0; nv < nvars; nv++) {
+                        /* Get the var info. */
+                        if ((ierr = get_var_desc(varids[nv], &file->varlist, &vdesc)))
+                            return pio_err(NULL, file, ierr, __FILE__, __LINE__);
+                        if (nv == 0) { /* first variable */
+                            fvartype = vdesc->pio_type; /* first var's var type */
+                            continue;
+                        }
+                        if (fvartype != vdesc->pio_type) {
+                            /* nv's external datatype is different from nv-1 */
+                            doFlush[nv-1] = 1;
+                            fvartype = vdesc->pio_type;
+                        }
+                        else /* same as nv-1, no flush */
+                            doFlush[nv-1] = 0;
+                    }
+                    doFlush[nvars-1] = 1; /* flush when reach the last variable */
+#endif
                     /* For each variable to be written. */
                     for (int nv = 0; nv < nvars; nv++)
                     {
+#if USE_VARD_WRITE
+                        /* PnetCDF 1.10.0 and later support type conversion in
+			 * vard APIs. However, it requires all variables
+			 * accessed by the filetype are of the same NC data
+			 * type.
+                         */
+
+			/* obtain file offset of variable nv */
+                        if ((ierr = ncmpi_inq_varoffset(file->fh, varids[nv], &vari_offset)))
+                            return pio_err(NULL, file, ierr, __FILE__, __LINE__);
+
+                        if (numReqs == 0) { /* 1st variable of same datatype */
+                            var0_offset = vari_offset;
+                            var0_id = varids[nv];
+                        }
+                        /* calculate the offset relative to the first var */
+                        var_offsets[numReqs] = vari_offset - var0_offset;
+                        blocklens[nv] = 1; /* 1 for each vartypes[nv] */
+
+                        /* If this is the first variable or the frame has changed between variables (this should be rare) */
+			if(nv==0 || (nv > 0 && frame != NULL && frame[nv] != frame[nv-1])){
+			    int thisframe;
+			    PIO_Offset unlimdimoffset;
+			    if (gdim0 == 0) /* if there is an unlimited dimension get the offset between records of a variable */
+			    {
+				if((ierr = ncmpi_inq_recsize(file->fh, &unlimdimoffset)))
+				    return pio_err(NULL, file, ierr, __FILE__, __LINE__);
+				LOG((3, "num_regions = %d unlimdimoffset %ld", num_regions, unlimdimoffset));
+			    }else
+				unlimdimoffset = gdim0;
+			    if (frame)
+				thisframe = frame[nv];
+			    else
+				thisframe = 0;
+
+			    ierr = get_vard_mpidatatype(iodesc, gdim0, unlimdimoffset,
+							rrcnt, ndims, fndims,
+							thisframe, startlist, countlist,
+							&vartypes[numReqs]);
+			}
+                        else /* reuse the previous variable's datatype */
+                            vartypes[numReqs] = vartypes[numReqs-1];
+#else
                         /* Get the var info. */
                         if ((ierr = get_var_desc(varids[nv], &file->varlist, &vdesc)))
                             return pio_err(NULL, file, ierr, __FILE__, __LINE__);
 
-                        /* If this is a record var, set the start for
-                         * the record dimension. */
                         if (vdesc->record >= 0 && ndims < fndims)
                             for (int rc = 0; rc < rrcnt; rc++)
                                 startlist[rc][0] = frame[nv];
-
+#endif
                         /* Get a pointer to the data. */
                         bufptr = (void *)((char *)iobuf + nv * iodesc->mpitype_size * llen);
 
+#if USE_VARD_WRITE
+                        if (numReqs == 0) { /* first var of the same type */
+                            vard_bufptr = bufptr; /* preserve variable ID */
+                            vard_llen = llen;     /* reset I/O request size */
+                        }
+                        numReqs++;
+
+                        if (doFlush[nv]) { /* flush the data now */
+                            int mpierr;
+                            /* concatenate vartypes[0...numReqs-1] */
+                            if (numReqs > 1) {
+                                /* check and remove NULL vartype */
+                                int i, j=0;
+                                for (i=0; i<numReqs; i++) {
+                                    if (vartypes[i] != MPI_DATATYPE_NULL) {
+                                        if (j < i) vartypes[j] = vartypes[i];
+                                        j++;
+                                    }
+                                }
+                                if (j > 0) { /* at least one vartypes[] is not NULL */
+                                    /* concatenate non-NULL vartypes */
+                                    if((mpierr = MPI_Type_create_struct(j, blocklens, var_offsets, vartypes, &filetype)))
+                                        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+                                    if((mpierr = MPI_Type_commit(&filetype)))
+                                        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+                                    /* free vartypes */
+                                    for (i=j-1; i>0; i--) {
+                                        if (vartypes[i] == vartypes[i-1]) continue;
+                                        if((mpierr = MPI_Type_free(&vartypes[i])))
+                                            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                                    }
+                                    if((mpierr = MPI_Type_free(&vartypes[0])))
+                                        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                                }
+                                else /* all vartypes[] are NULL */
+                                    filetype = MPI_DATATYPE_NULL;
+                            }
+                            else /* there is only one variable to flush */
+                                filetype = vartypes[0];
+
+                            LOG((3, "vard: call ncmpi_put_vard llen = %d %d", llen, iodesc->mpitype_size ));
+                            ierr = ncmpi_put_vard_all(file->fh, var0_id, filetype, vard_bufptr, vard_llen, iodesc->mpitype);
+                            LOG((3, "vard: return ncmpi_put_vard ierr = %d", ierr));
+                            if(filetype != MPI_DATATYPE_NULL)
+                            {
+                                if((mpierr = MPI_Type_free(&filetype)))
+				    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                            }
+                            vard_llen = 0; /* reset request size to 0 */
+                            numReqs = 0;
+                        }
+                        else /* don't flush yet, accumulate the request size */
+                            vard_llen += llen;
+#else
                         if (vdesc->nreqs % PIO_REQUEST_ALLOC_CHUNK == 0)
                         {
                             if (!(vdesc->request = realloc(vdesc->request, sizeof(int) *
@@ -310,7 +646,8 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
                             vdesc->request[vdesc->nreqs] = PIO_REQ_NULL;
 
                         vdesc->nreqs++;
-                    }
+#endif
+		    }
 
                     /* Free resources. */
                     for (int i = 0; i < rrcnt; i++)
@@ -624,6 +961,7 @@ int recv_and_write_data(file_desc_t *file, const int *varids, const int *frame,
                     }
 
                     /* Call the netCDF functions to write the data. */
+
                     if ((ierr = nc_put_vara(file->fh, varids[nv], start, count, bufptr)))
                         return check_netcdf2(ios, NULL, ierr, __FILE__, __LINE__);
 
@@ -764,6 +1102,10 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
     int ndims;             /* Number of dims in decomposition. */
     int fndims;            /* Number of dims for this var in file. */
     int ierr;              /* Return code from netCDF functions. */
+#ifdef USE_VARD_READ
+    MPI_Offset gdim0;
+    gdim0 = 0;
+#endif
 
     /* Check inputs. */
     pioassert(file && file->iosystem && iodesc && vid <= PIO_MAX_VARS, "invalid input",
@@ -787,8 +1129,12 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
     /* Get the number of dims for this var in the file. */
     if ((ierr = PIOc_inq_varndims(file->pio_ncid, vid, &fndims)))
         return pio_err(ios, file, ierr, __FILE__, __LINE__);
+#if USE_VARD_READ
+    if(!ios->async || !ios->ioproc)
+	ierr = get_gdim0(file, iodesc, vid, fndims, &gdim0);
+#endif
 
-    /* IO procs will actially read the data. */
+    /* IO procs will read the data. */
     if (ios->ioproc)
     {
         io_region *region;
@@ -805,10 +1151,14 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
            the mpitype. */
         region = iodesc->firstregion;
 
-        /* ??? */
+        /* There are different numbers of dims in the decomposition
+         * and the file. */
         if (fndims > ndims)
         {
-            ndims++;
+            /* If the user did not call setframe, use a default frame
+             * of 0. This is required for backward compatibility. */
+            if (vdesc->record < 0)
+                vdesc->record = 0;
         }
 
         /* For each regions, read the data. */
@@ -833,7 +1183,8 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                 else
                     bufptr=(void *)((char *)iobuf + iodesc->mpitype_size * region->loffset);
 
-                LOG((2, "%d %d %d", iodesc->llen - region->loffset, iodesc->llen, region->loffset));
+                LOG((2, "iodesc->llen - region->loffset %d, iodesc->llen %d, region->loffset  %d vdesc->record %d",
+                     iodesc->llen - region->loffset, iodesc->llen, region->loffset, vdesc->record));
 
                 /* Get the start/count arrays. */
                 if (vdesc->record >= 0 && fndims > 1)
@@ -841,7 +1192,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                     /* This is a record var. The unlimited dimension
                      * (0) is handled specially. */
                     start[0] = vdesc->record;
-                    for (int i = 1; i < ndims; i++)
+                    for (int i = 1; i < fndims; i++)
                     {
                         start[i] = region->start[i-1];
                         count[i] = region->count[i-1];
@@ -854,7 +1205,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                 else
                 {
                     /* Non-time dependent array */
-                    for (int i = 0; i < ndims; i++)
+                    for (int i = 0; i < fndims; i++)
                     {
                         start[i] = region->start[i];
                         count[i] = region->count[i];
@@ -862,6 +1213,10 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                 }
             }
 
+#ifdef LOGGING
+            for (int i = 1; i < ndims; i++)
+                LOG((3, "start[%d] %d count[%d] %d", i, start[i], i, count[i]));
+#endif /* LOGGING */
             /* Do the read. */
             switch (file->iotype)
             {
@@ -934,10 +1289,30 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                 /* Is this is the last region to process? */
                 if (regioncnt == iodesc->maxregions - 1)
                 {
+#if USE_VARD_READ
+		    MPI_Datatype filetype;
+		    PIO_Offset unlimdimoffset;
+		    int mpierr;
+		    if (gdim0 == 0) /* if there is an unlimited dimension get the offset between records of a variable */
+		    {
+			if((ierr = ncmpi_inq_recsize(file->fh, &unlimdimoffset)))
+			    return pio_err(NULL, file, ierr, __FILE__, __LINE__);
+		    }
+		    else
+			unlimdimoffset = gdim0;
+
+		    ierr = get_vard_mpidatatype(iodesc, gdim0, unlimdimoffset,
+						rrlen, ndims, fndims,
+						vdesc->record, startlist, countlist, &filetype);
+		    ierr = ncmpi_get_vard_all(file->fh, vid, filetype, iobuf, iodesc->llen, iodesc->mpitype);
+		    if(filetype != MPI_DATATYPE_NULL && (mpierr = MPI_Type_free(&filetype)))
+			return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+
+#else
                     /* Read a list of subarrays. */
                     ierr = ncmpi_get_varn_all(file->fh, vid, rrlen, startlist,
                                               countlist, iobuf, iodesc->llen, iodesc->mpitype);
-
+#endif
                     /* Release the start and count arrays. */
                     for (int i = 0; i < rrlen; i++)
                     {
@@ -1023,6 +1398,11 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
     if ((ierr = PIOc_inq_varndims(file->pio_ncid, vid, &fndims)))
         return pio_err(ios, file, ierr, __FILE__, __LINE__);
 
+    /* If setframe was not called, use a default value of 0. This is
+     * required for backward compatibility. */
+    if (fndims == ndims + 1 && vdesc->record < 0)
+        vdesc->record = 0;
+
     /* Confirm that we are being called with the correct ndims. */
     pioassert((fndims == ndims && vdesc->record < 0) ||
               (fndims == ndims + 1 && vdesc->record >= 0),
@@ -1042,6 +1422,12 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
            the iodessc->mpitype so we need to multiply by the size of
            the mpitype. */
         region = iodesc->firstregion;
+
+        /* If setframe was not set before this call, assume a value of
+         * 0. This is required for backward compatibility. */
+        if (fndims > ndims)
+            if (vdesc->record < 0)
+                vdesc->record = 0;
 
         /* Put together start/count arrays for all regions. */
         for (int regioncnt = 0; regioncnt < iodesc->maxregions; regioncnt++)
@@ -1286,7 +1672,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 
     /* Check inputs. */
     pioassert(file, "invalid input", __FILE__, __LINE__);
-
+    LOG((1, "flush_output_buffer"));
     /* Find out the buffer usage. */
     if ((ierr = ncmpi_inq_buffer_usage(file->fh, &usage)))
 	/* allow the buffer to be undefined */
@@ -1295,7 +1681,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 
     /* If we are not forcing a flush, spread the usage to all IO
      * tasks. */
-    if (!force && file->iosystem->io_comm != MPI_COMM_NULL)
+    if (!force && file->iosystem->ioproc)
     {
         usage += addsize;
         if ((mpierr = MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_OFFSET,  MPI_MAX,
@@ -1307,9 +1693,10 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     if (usage > maxusage)
         maxusage = usage;
 
+    LOG((2, "flush_output_buffer usage=%ld force=%d",usage, force));
     /* If the user forces it, or the buffer has exceeded the size
      * limit, then flush to disk. */
-    if (force || usage >= pio_buffer_size_limit)
+    if (force || (usage >= pio_buffer_size_limit))
     {
         int rcnt;
         int  maxreq;
@@ -1345,6 +1732,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 #endif
             for (reqcnt = 0; reqcnt < vdesc->nreqs; reqcnt++)
                 request[rcnt++] = max(vdesc->request[reqcnt], NC_REQ_NULL);
+            LOG((3,"flush_output_buffer rcnt=%d",rcnt));
 
             if (vdesc->request != NULL)
                 free(vdesc->request);
@@ -1518,3 +1906,242 @@ int flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk)
     return PIO_NOERR;
 }
 
+int pio_sorted_copy(const void *array, void *sortedarray, io_desc_t *iodesc, int nvars,int direction)
+{
+    int maplen = iodesc->maplen;
+
+    if (direction == 0){
+	switch (iodesc->piotype)
+	{
+	case PIO_BYTE:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((signed char *)sortedarray)[m+maplen*v] = ((signed char *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_CHAR:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((char *)sortedarray)[m+maplen*v] = ((char *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_SHORT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((short *)sortedarray)[m+maplen*v] = ((short *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+
+	    break;
+	case PIO_INT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((int *)sortedarray)[m+maplen*v] = ((int *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_FLOAT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((float *)sortedarray)[m+maplen*v] = ((float *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_DOUBLE:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((double *)sortedarray)[m+maplen*v] = ((double *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_UBYTE:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned char *)sortedarray)[m+maplen*v] = ((unsigned char *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_USHORT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned short *)sortedarray)[m+maplen*v] = ((unsigned short *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_UINT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned int *)sortedarray)[m+maplen*v] = ((unsigned int *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_INT64:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((long long *)sortedarray)[m+maplen*v] = ((long long *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_UINT64:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned long long *)sortedarray)[m+maplen*v] = ((unsigned long long *)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_STRING:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((char **)sortedarray)[m+maplen*v] = ((char **)array)[iodesc->remap[m]+maplen*v];
+		}
+	    }
+	    break;
+	default:
+	    return pio_err(NULL, NULL, PIO_EBADTYPE, __FILE__, __LINE__);
+	}
+    }
+    else
+    {
+	switch (iodesc->piotype)
+	{
+	case PIO_BYTE:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((signed char *)sortedarray)[iodesc->remap[m]+maplen*v] = ((signed char *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_CHAR:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((char *)sortedarray)[iodesc->remap[m]+maplen*v] = ((char *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_SHORT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((short *)sortedarray)[iodesc->remap[m]+maplen*v] = ((short *)array)[m+maplen*v];
+		}
+	    }
+
+	    break;
+	case PIO_INT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((int *)sortedarray)[iodesc->remap[m]+maplen*v] = ((int *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_FLOAT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((float *)sortedarray)[iodesc->remap[m]+maplen*v] = ((float *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_DOUBLE:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((double *)sortedarray)[iodesc->remap[m]+maplen*v] = ((double *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_UBYTE:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned char *)sortedarray)[iodesc->remap[m]+maplen*v] = ((unsigned char *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_USHORT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned short *)sortedarray)[iodesc->remap[m]+maplen*v] = ((unsigned short *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_UINT:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned int *)sortedarray)[iodesc->remap[m]+maplen*v] = ((unsigned int *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_INT64:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((long long *)sortedarray)[iodesc->remap[m]+maplen*v] = ((long long *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_UINT64:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((unsigned long long *)sortedarray)[iodesc->remap[m]+maplen*v] = ((unsigned long long *)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	case PIO_STRING:
+	    for (int v=0; v < nvars; v++)
+	    {
+		for (int m=0; m < maplen; m++)
+		{
+		    ((char **)sortedarray)[iodesc->remap[m]+maplen*v] = ((char **)array)[m+maplen*v];
+		}
+	    }
+	    break;
+	default:
+	    return pio_err(NULL, NULL, PIO_EBADTYPE, __FILE__, __LINE__);
+	}
+    }
+    return PIO_NOERR;
+}
