@@ -238,7 +238,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
-   integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp
+   integer :: kptr, ie, ic, i, j, k, velcomp, tl_f, tl_fQdp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: dtime
@@ -409,9 +409,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                do i=1,np
 
                   ! force V, T, both timelevels
-                  dyn_in%elem(ie)%state%v(i,j,:,k,tl_f)= &
-                       dyn_in%elem(ie)%state%v(i,j,:,k,tl_f) +  &
-                       dtime*dyn_in%elem(ie)%derived%FM(i,j,:,k)
+                  do velcomp=1,2
+                    dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f)= &
+                       dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f) +  &
+                       dtime*dyn_in%elem(ie)%derived%FM(i,j,velcomp,k)
+                  enddo
 
 #ifdef MODEL_THETA_L
                   dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
@@ -430,6 +432,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 !$omp parallel do private(k, j, i, ic, dp_tmp)
          do k=1,nlev
 #ifdef MODEL_THETA_L
+            !vapor was already converted above
             do ic=2,pcnst
 #else
             do ic=1,pcnst

@@ -984,9 +984,6 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-#ifdef MODEL_THETA_L
-    use prim_advance_mod,   only: convert_thermo_forcing
-#endif
 
     implicit none
 
@@ -1343,6 +1340,9 @@ contains
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
   use prim_advance_mod,   only : applycamforcing_dynamics
+#ifdef MODEL_THETA_L
+  use prim_advance_mod,   only: convert_thermo_forcing
+#endif
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_remap
@@ -1355,7 +1355,9 @@ contains
     !do nothing
   elseif (ftype==0) then
     call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
-    call convert_theta_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+#ifdef MODEL_THETA_L
+    call convert_thermo_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+#endif
     call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
   elseif (ftype==1) then
     !do nothing for standalone
@@ -1364,14 +1366,17 @@ contains
 #ifndef CAM
     call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
 #endif
-    call convert_theta_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+#ifdef MODEL_THETA_L
+    call convert_thermo_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
 #endif
+    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
   elseif (ftype==4) then
 #ifndef CAM
     call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
 #endif
-    call convert_theta_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+#ifdef MODEL_THETA_L
+    call convert_thermo_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+#endif
     !dynamics forcings are applied later
   endif
 

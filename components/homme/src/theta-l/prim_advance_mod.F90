@@ -382,7 +382,7 @@ contains
   integer                               :: ie
 
   do ie=nets,nete
-     call convert_thermo_forcing_elementwise(elem(ie),hvcoord,n0,dt,nets,nete)
+     call convert_thermo_forcing_elementwise(elem(ie),hvcoord,n0,dt)
   enddo
 
   end subroutine convert_thermo_forcing
@@ -390,14 +390,13 @@ contains
 
 !----------------------------- CONVERT-THERMO-FORCING-ELEMENTWISE ----------------------------
 
-  subroutine convert_thermo_forcing(one_elem,hvcoord,n0,dt,nets,nete)
+  subroutine convert_thermo_forcing_elementwise(one_elem,hvcoord,n0,dt)
 
   implicit none
 
   type (element_t),       intent(inout) :: one_elem
   real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nets,nete
   integer,                intent(in)    :: n0
   integer                               :: k
   real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
@@ -414,7 +413,7 @@ contains
 
   tn1(:,:,:) = tn1(:,:,:) + dt*one_elem%derived%FT(:,:,:)
 
-  call get_R_star(rstarn1,one_elem%state%Q(:,:,k,1))
+  call get_R_star(rstarn1,one_elem%state%Q(:,:,:,1))
 
   call get_theta_from_T(hvcoord,rstarn1,tn1,dp,one_elem%state%phinh_i(:,:,:,n0),vthn1)
 
