@@ -216,10 +216,12 @@ contains
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
                   pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger, &
                   pio_comp_settings(i)%pio_netcdf_ioformat)
+             print *,__FILE__,__LINE__,trim(nlfilename), pio_comp_settings(i)%pio_stride
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
                   base=pio_comp_settings(i)%pio_root)
+             print *,__FILE__,__LINE__,trim(nlfilename), pio_comp_settings(i)%pio_stride, comp_comm_iam(i)
              ret = pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
                     pio_rearr_opt_fcd,&
                     pio_rearr_opt_c2i_enable_hs, pio_rearr_opt_c2i_enable_isend,&
@@ -229,17 +231,11 @@ contains
              if(ret /= PIO_NOERR) then
                 write(shr_log_unit,*) "ERROR: Setting rearranger options failed"
              end if
-             if(comp_comm_iam(i)==0) then
-                write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-                write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-                write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-                write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-             end if
           end if
        end do
     end if
     do i=1,total_comps
-       if(comp_comm_iam(i)==0) then
+       if(comp_iamin(i)) then
           write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
           write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
           write(shr_log_unit,*) io_compname(i),' : pio_rearranger = ',pio_comp_settings(i)%pio_rearranger
@@ -247,7 +243,6 @@ contains
           write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
        end if
     enddo
-
 
   end subroutine shr_pio_init2
 
