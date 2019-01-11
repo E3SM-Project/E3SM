@@ -194,6 +194,9 @@ class Case(object):
         return False
 
     def read_xml(self):
+        for env_file in self._files:
+            expect(not env_file.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file.filename))
+
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvCase(self._caseroot, components=None, read_only=self._force_read_only))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
@@ -238,6 +241,12 @@ class Case(object):
         newcase.set_value("CASEROOT",newcaseroot)
         newcase.set_value("CONTINUE_RUN","FALSE")
         newcase.set_value("RESUBMIT",0)
+
+        # Important, and subtle: Writability should NOT be copied because
+        # this allows the copy to be modified without needing a "with" statement
+        # which opens the door to tricky errors such as unflushed writes.
+        newcase._read_only_mode = True # pylint: disable=protected-access
+
         return newcase
 
     def flush(self, flushall=False):
@@ -369,6 +378,9 @@ class Case(object):
         is returned unless return_file is True, in which case (resolved_value, filename)
         is returned where filename is the name of the modified file.
         """
+        expect(not self._read_only_mode, "Cannot modify case, read_only. "
+               "Case must be opened with read_only=False and can only be modified within a context manager")
+
         if item == "CASEROOT":
             self._caseroot = value
         result = None
@@ -390,6 +402,9 @@ class Case(object):
         """
         Update or create a valid_values entry for item and populate it
         """
+        expect(not self._read_only_mode, "Cannot modify case, read_only. "
+               "Case must be opened with read_only=False and can only be modified within a context manager")
+
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_valid_values(item, valid_values)
@@ -666,7 +681,7 @@ class Case(object):
         expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
             new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
-            self.update_env(new_mach_pes_obj, "mach_pes")
+            self.update_env(new_mach_pes_obj, "mach_pes", blow_away=True)
             return new_mach_pes_obj.get_value("TOTALPES")
 
         pesobj = Pes(self._pesfile)
@@ -1361,7 +1376,7 @@ directory, NOT in this subdirectory."""
         logger.warning("setting case file to {}".format(xmlfile))
         components = self.get_value("COMP_CLASSES")
         new_env_file = None
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             if os.path.basename(env_file.filename) == ftype:
                 if ftype == "env_run.xml":
                     new_env_file = EnvRun(infile=xmlfile, components=components)
@@ -1375,33 +1390,34 @@ directory, NOT in this subdirectory."""
                     new_env_file = EnvBatch(infile=xmlfile)
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
+                elif ftype == "env_archive.xml":
+                    new_env_file = EnvArchive(infile=xmlfile)
+                elif ftype == "env_mach_specific.xml":
+                    new_env_file = EnvMachSpecific(infile=xmlfile)
+                else:
+                    expect(False, "No match found for file type {}".format(ftype))
+
             if new_env_file is not None:
                 self._env_entryid_files = []
                 self._env_generic_files = []
-                self._env_entryid_files.append(new_env_file)
+                if ftype in ["env_archive.xml", "env_mach_specific.xml"]:
+                    self._env_generic_files = [new_env_file]
+                else:
+                    self._env_entryid_files = [new_env_file]
+
                 break
-        if new_env_file is None:
-            for env_file in self._env_generic_files:
-                if os.path.basename(env_file.filename) == ftype:
-                    if ftype == "env_archive.xml":
-                        new_env_file = EnvArchive(infile=xmlfile)
-                    elif ftype == "env_mach_specific.xml":
-                        new_env_file = EnvMachSpecific(infile=xmlfile)
-                    else:
-                        expect(False, "No match found for file type {}".format(ftype))
-                if new_env_file is not None:
-                    self._env_entryid_files = []
-                    self._env_generic_files = []
-                    self._env_generic_files.append(new_env_file)
-                    break
 
-        self._files = self._env_entryid_files + self._env_generic_files
+        expect(new_env_file is not None, "No match found for file type {}".format(ftype))
+        self._files = [new_env_file]
 
-    def update_env(self, new_object, env_file):
+    def update_env(self, new_object, env_file, blow_away=False):
         """
         Replace a case env object file
         """
         old_object = self.get_env(env_file)
+        if not blow_away:
+            expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file))
+
         new_object.filename = old_object.filename
         if old_object in self._env_entryid_files:
             self._env_entryid_files.remove(old_object)
