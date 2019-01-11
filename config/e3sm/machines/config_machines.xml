@@ -2588,7 +2588,7 @@
     <DESC>Lawrencium LR6 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
     <NODENAME_REGEX>n000*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
     <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
@@ -2640,8 +2640,22 @@
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial">
         <command name="load">openmpi</command>
-        <command name="load">netcdf/4.4.1.1-intel-s</command>
+        <command name="load">netcdf/4.4.1.1-intel-p</command>
       </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/6.3.0</command>
+        <command name="load">lapack/3.8.0-gcc</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial">
+        <command name="load">netcdf/5.4.1.1-gcc-s</command>
+        <command name="unload">openmpi/2.0.2-gcc</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">openmpi/3.0.1-gcc</command>
+        <command name="load">netcdf/4.4.1.1-gcc-p</command>
+        <command name="unload">openmpi/2.0.2-gcc</command>
+      </modules>
+
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
