@@ -6,7 +6,6 @@ Here is an example:
 
 <expectedFails version="1.1">
   <test name="ERP_D_Ld10_P36x2.f10_f10_musgs.IHistClm50BgcCrop.cheyenne_intel.clm-ciso_decStart">
-    <category>aux_clm</category>
     <phase name="RUN">
       <status>FAIL</status>
       <issue>#404</issue>
@@ -18,7 +17,6 @@ Here is an example:
     </phase>
   </test>
   <test name="PFS_Ld20.f09_g17.I2000Clm50BgcCrop.cheyenne_intel">
-    <category>aux_clm</category>
     <phase name="GENERATE">
       <status>FAIL</status>
       <issue>ESMCI/cime#2917</issue>
