@@ -10,28 +10,34 @@ program esmApp
   use ESMF, only             : ESMF_GridCompDestroy, ESMF_LOGMSG_INFO, ESMF_GridComp, ESMF_GridCompRun
   use ESMF, only             : ESMF_GridCompFinalize, ESMF_GridCompCreate, ESMF_GridCompInitialize
   use ESMF, only             : ESMF_LOGKIND_MULTI_ON_ERROR
+  use mpi, only              : MPI_COMM_WORLD, MPI_COMM_NULL, MPI_Init, MPI_FINALIZE
   use NUOPC, only            : NUOPC_FieldDictionarySetup
   use ensemble_driver,  only : SetServices
-
+  use shr_pio_mod,      only : shr_pio_init1, shr_pio_init2
   implicit none
-
+  integer                    :: COMP_COMM
   integer                    :: rc, urc
   type(ESMF_GridComp)        :: ensemble_driver_comp
 
+  call MPI_init(rc)
+  COMP_COMM = MPI_COMM_WORLD
+  ! This call must be after initializing mpi but before initializing esmf, so that io tasks can be
+  ! spun up if pio_async is true
+  call shr_pio_init1(8, "drv_in", COMP_COMM)
+  if(COMP_COMM .eq. MPI_COMM_NULL) then
+!     call shr_pio_init2(
+     call mpi_finalize(ierror=rc)
+  endif
   !-----------------------------------------------------------------------------
   ! Initialize ESMF
   !-----------------------------------------------------------------------------
 #ifdef DEBUG
-  !call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI, logappendflag=.false., &
-  !  defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
+  call ESMF_Initialize(mpiCommunicator=COMP_COMM, logkindflag=ESMF_LOGKIND_MULTI, logappendflag=.false., &
+       defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
 #else
-  !call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI_ON_ERROR, logappendflag=.false., &
-  !  defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
+  call ESMF_Initialize(mpiCommunicator=COMP_COMM, logkindflag=ESMF_LOGKIND_MULTI_ON_ERROR, logappendflag=.false., &
+       defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
 #endif
-  !DEBUG
-  call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI, logappendflag=.false., &
-    defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
-  !DEBUG
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, &
        file=__FILE__)) &
