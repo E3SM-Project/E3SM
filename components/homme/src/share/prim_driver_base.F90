@@ -1041,9 +1041,6 @@ contains
     ! by calling it here, it mimics eam forcings computations in standalone
     ! homme.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-#ifdef MODEL_THETA_L
-    call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-#endif
 #endif
 
     ! Apply CAM Physics forcing
@@ -1353,22 +1350,31 @@ contains
   integer,                intent(in)    :: n0,n0qdp,nets,nete
 
   call t_startf("ApplyCAMForcing")
-  if (ftype==0) then
-    call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+
+  if (ftype==-1) then
+    !do nothing
+  elseif (ftype==0) then
     call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    call convert_theta_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+    call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+  elseif (ftype==1) then
+    !do nothing for standalone
+    !if this is CAM run, convert_theta_forcing was called in stepon
   elseif (ftype==2) then
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
-  endif
 #ifndef CAM
-  ! for standalone homme, we need tracer tendencies injected similarly to CAM
-  ! for ftypes of interest, 2,3,4.
-  ! standalone homme does not support ftype=1 (because in standalone version,
-  ! it is identical to ftype=0).
-  ! leaving option ftype=-1 for standalone homme when no forcing is applied ever
-  if ((ftype /= 0 ).and.(ftype > 0)) then
     call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
-  endif
 #endif
+    call convert_theta_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+#endif
+  elseif (ftype==4) then
+#ifndef CAM
+    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+#endif
+    call convert_theta_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
+    !dynamics forcings are applied later
+  endif
+
   call t_stopf("ApplyCAMForcing")
   end subroutine applyCAMforcing_ps
 

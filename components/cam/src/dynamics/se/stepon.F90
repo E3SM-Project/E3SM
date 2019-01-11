@@ -231,7 +231,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use cam_history,     only: outfld, hist_fld_active
    use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
 #ifdef MODEL_THETA_L
-   use prim_advance_mod,only: convert_thermo_forcing_eam
+   use prim_advance_mod,only: convert_thermo_forcing_elementwise
 #endif
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
@@ -355,22 +355,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
           end do
          end do
 
-#ifdef MODEL_THETA_L
-      call convert_thermo_forcing_eam(dyn_in%elem(ie),hvcoord,tl_f,dtime)
-#endif
-
       endif ! if ftype == 2 or == 3 or == 4
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef MODEL_THETA_L
-!better to place these checks in namelist, but where is it for cam?
-      if ( (ftype == 1) .or. ( ftype <= 0) ) then
-         call endrun( 'stepon_run2: ftype = 0, ftype < 0 not supported for cam target theta-l')
-      endif
-#else
       if (ftype==1) then
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
@@ -398,24 +388,52 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                         dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
                              dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
                      endif
-                  enddo
+                  enddo !ic
+               enddo !i
+            enddo !j
+         enddo !k
+
+!recompute new dp, vapor. there are two temp dp vars, dp and dp_tmp?
+!this code can be improved, mode Q computation before FM, FT application
+#ifdef MODEL_THETA_L
+         do k=1,nlev
+            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
+                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
+            dyn_in%elem(ie)%state%Q(:,:,k,1) = dyn_in%elem(ie)%state%Qdp(i,j,k,1,tl_fQdp)/dp(:,:,k) 
+         enddo
+         call convert_thermo_forcing_elementwise(dyn_in%elem(ie),hvcoord,tl_f,dtime)
+#endif
+
+         do k=1,nlev
+            do j=1,np
+               do i=1,np
 
                   ! force V, T, both timelevels
                   dyn_in%elem(ie)%state%v(i,j,:,k,tl_f)= &
                        dyn_in%elem(ie)%state%v(i,j,:,k,tl_f) +  &
                        dtime*dyn_in%elem(ie)%derived%FM(i,j,:,k)
-                  
+
+#ifdef MODEL_THETA_L
+                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
+                       dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f) + &
+                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k)
+#else                  
                   dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
                        dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
-                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k)
-                  
+                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k)    
+#endif
+             
                end do
             end do
          end do
 
 !$omp parallel do private(k, j, i, ic, dp_tmp)
          do k=1,nlev
+#ifdef MODEL_THETA_L
+            do ic=2,pcnst
+#else
             do ic=1,pcnst
+#endif
                do j=1,np
                   do i=1,np
                      ! make Q consistent now that we have updated ps_v above
@@ -458,8 +476,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             end do
          end do
       endif ! ftype < 0
-
-#endif !disabling ftype =1, ftype<0 for theta-l
 
    end do
    call t_stopf('stepon_bndry_exch')
