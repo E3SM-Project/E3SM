@@ -326,7 +326,7 @@ contains
     character(len=*)                   , intent(in)  , optional :: mrg_fracname4
 
     ! local variables
-    integer :: n,id
+    integer :: n, id
     character(len=*), parameter :: subname='(shr_nuopc_fldList_MrgFld)'
     ! ----------------------------------------------
 
@@ -338,7 +338,10 @@ contains
        end if
     end do
     if (id == 0) then
-       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // 'not found in input flds')
+       do n = 1,size(flds)
+          write(6,*) trim(subname)//' input flds entry is ',trim(flds(n)%stdname)
+       end do
+       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // ' not found in input flds')
     end if
 
     if (present(mrg_from1) .and. present(mrg_fld1) .and. present(mrg_type1)) then
@@ -373,7 +376,7 @@ contains
           flds(id)%merge_fracnames(n) = mrg_fracname4
        end if
     end if
-  
+
   end subroutine shr_nuopc_fldList_AddMrg
 
   !================================================================================
@@ -401,7 +404,10 @@ contains
        end if
     end do
     if (id == 0) then
-       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // 'not found in input flds')
+       do n = 1,size(flds)
+          write(6,*) trim(subname)//' input flds entry is ',trim(flds(n)%stdname)
+       end do
+       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // ' not found in input flds')
     end if
 
     ! Note - default values are already set for the fld entries - so only non-default
@@ -438,7 +444,7 @@ contains
     use ESMF              , only : ESMF_LogWrite, ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LOGERR_PASSTHRU
     use ESMF              , only : ESMF_LOGMSG_INFO, ESMF_StateRemove, ESMF_SUCCESS
     use med_constants_mod , only : dbug_flag=>med_constants_dbug_flag
-    
+
     ! input/output variables
     type(ESMF_State)            , intent(inout)            :: state
     type(shr_nuopc_fldlist_type), intent(in)               :: fldList
