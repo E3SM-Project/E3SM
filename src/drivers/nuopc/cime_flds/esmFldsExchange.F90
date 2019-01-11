@@ -669,7 +669,6 @@ contains
     else
        if ( fldchk(is_local%wrap%FBExp(compocn)        , 'Faxa_lwdn', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm,compatm), 'Faxa_lwdn', rc=rc)) then
-          write(6,*)'DEBUG: i am here'
           call addmap(fldListFr(compatm)%flds, 'Faxa_lwdn', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmrg(fldListTo(compocn)%flds, 'Faxa_lwdn', mrg_from1=compatm, mrg_fld1='Faxa_lwdn', &
                mrg_type1='copy_with_weights', mrg_fracname1='ofrac')
@@ -2133,7 +2132,7 @@ contains
           call addmap(fldListFr(compatm)%flds, 'Faxa_swnet', compice, mapconsf, 'one'  , atm2ice_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swnet', compocn, mapconsf, 'one'  , atm2ocn_fmap)
        end if
-       if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Faii_swnet', rc=rc)) then
+       if (fldchk(is_local%wrap%FBImp(compice,compice), 'Faii_swnet', rc=rc)) then
           call addmap(fldListFr(compice)%flds, 'Faii_swnet', compocn, mapfcopy, 'unset', 'unset')
        end if
     end if
@@ -2146,19 +2145,19 @@ contains
        call addfld(fldListFr(compice)%flds, 'Fioi_swpen_idr')
        call addfld(fldListFr(compice)%flds, 'Fioi_swpen_idf')
     else
-       if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Fioi_swpen', rc=rc)) then
+       if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen', rc=rc)) then
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen'    ,    compocn, mapfcopy, 'unset', 'unset')
        end if
-       if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Fioi_swpen_vdr', rc=rc)) then
+       if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdr', rc=rc)) then
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdr', compocn, mapfcopy, 'unset', 'unset')
        end if
-       if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Fioi_swpen_vdf', rc=rc)) then
+       if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdf', rc=rc)) then
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdf', compocn, mapfcopy, 'unset', 'unset')
        end if
-       if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Fioi_swpen_idr', rc=rc)) then
+       if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_idr', rc=rc)) then
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idr', compocn, mapfcopy, 'unset', 'unset')
        end if
-       if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Fioi_swpen_idf', rc=rc)) then
+       if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_idf', rc=rc)) then
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idf', compocn, mapfcopy, 'unset', 'unset')
        end if
     end if

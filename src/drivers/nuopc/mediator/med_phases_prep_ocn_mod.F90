@@ -445,7 +445,6 @@ contains
        else
           nems_orig = .false.
        end if
-       write(6,*)'DEBUG: nems_orig = ',nems_orig
 
        !-------------
        ! determine evaporation to send to ocean if not computed in mediator and not NEMS-orig
