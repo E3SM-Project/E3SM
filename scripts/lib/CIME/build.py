@@ -10,7 +10,7 @@ from CIME.locked_files          import lock_file, unlock_file
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+def _build_model(build_threaded, exeroot, incroot, complist,
                  lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
 ###############################################################################
     logs = []
@@ -30,14 +30,10 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             continue
 
         # special case for clm
-        # clm 4_0 is not a shared (as in sharedlibs, shared by all tests) library and must be built here
-        # clm 4_5 and newer is a shared library (but not in E3SM) and should be built in build_libraries
-        if get_model() != "e3sm":
-            if comp == "clm":
-                if "clm4_0" in clm_config_opts:
-                    logger.info("         - Building clm4_0 Library ")
-                else:
-                    continue
+        # clm 4_5 and newer is a shared (as in sharedlibs, shared by all tests) library
+        # (but not in E3SM) and should be built in build_libraries
+        if get_model() != "e3sm" and comp == "clm":
+            continue
         else:
             logger.info("         - Building {} Library ".format(model))
 
@@ -253,9 +249,8 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     # clm not a shared lib for E3SM
     if get_model() != "e3sm" and (buildlist is None or "lnd" in buildlist):
         comp_lnd = case.get_value("COMP_LND")
-        clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
-        if comp_lnd == "clm" and "clm4_0" not in clm_config_opts:
-            logging.info("         - Building clm4_5/clm5_0 Library ")
+        if comp_lnd == "clm":
+            logging.info("         - Building clm library ")
             esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
             bldroot = os.path.join(sharedlibroot, sharedpath, comp_interface, esmfdir, "clm","obj" )
             libroot = os.path.join(exeroot, sharedpath, comp_interface, esmfdir, "lib")
@@ -276,6 +271,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
+    case.flush() # python sharedlib subs may have made XML modifications
     return logs
 
 ###############################################################################
@@ -331,7 +327,6 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         gmake           = case.get_value("GMAKE")
         caseroot        = os.path.abspath(case.get_value("CASEROOT"))
         casetools       = case.get_value("CASETOOLS")
-        clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
 
         os.environ["DEBUG"]           = stringify_bool(debug)
         os.environ["USE_ESMF_LIB"]    = stringify_bool(use_esmf_lib)
@@ -339,7 +334,6 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         os.environ["CASEROOT"]        = caseroot
         os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
         os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
-        os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
 
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
         if cleanlist is not None:
@@ -433,7 +427,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mali_use_albany     = case.get_value("MALI_USE_ALBANY")
     use_moab            = case.get_value("USE_MOAB")
-    clm_config_opts     = case.get_value("CLM_CONFIG_OPTS")
     cam_config_opts     = case.get_value("CAM_CONFIG_OPTS")
     pio_config_opts     = case.get_value("PIO_CONFIG_OPTS")
     ninst_value         = case.get_value("NINST_VALUE")
@@ -456,7 +449,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     os.environ["MPILIB"]               = mpilib
     os.environ["DEBUG"]                = stringify_bool(debug)
     os.environ["OS"]                   = os_
-    os.environ["CLM_CONFIG_OPTS"]      = clm_config_opts     if clm_config_opts     is not None else ""
     os.environ["CAM_CONFIG_OPTS"]      = cam_config_opts     if cam_config_opts     is not None else ""
     os.environ["PIO_CONFIG_OPTS"]      = pio_config_opts     if pio_config_opts     is not None else ""
     os.environ["OCN_SUBMODEL"]         = ocn_submodel        if ocn_submodel        is not None else ""
@@ -521,7 +513,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-        logs.extend(_build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+        logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
                                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
 
         if not buildlist:

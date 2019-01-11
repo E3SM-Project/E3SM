@@ -129,7 +129,7 @@ CONTAINS
     character(CL) :: calendar ! model calendar
     integer(IN)   :: currentYMD    ! model date
     integer(IN)   :: currentTOD    ! model sec into model date
-    logical       :: write_restart
+    logical       :: write_restart=.false.
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
     !--- formats ---
@@ -389,7 +389,7 @@ CONTAINS
     logical                , intent(in)    :: write_restart ! restart alarm is on
     integer(IN)            , intent(in)    :: target_ymd    ! model date
     integer(IN)            , intent(in)    :: target_tod    ! model sec into model date
-    character(len=*)       , intent(in), optional :: case_name ! case name
+    character(len=*)  , intent(in),optional :: case_name ! case name
 
     !--- local ---
     integer(IN)   :: yy,mm,dd,tod          ! year month day time-of-day
@@ -645,10 +645,10 @@ CONTAINS
        call t_startf('docn_restart')
        call shr_cal_datetod2string(date_str, target_ymd, target_tod)
        write(rest_file,"(6a)") &
-            trim(case_name), '.docn',trim(inst_suffix),'.r.', &
+            trim(local_case_name), '.docn',trim(inst_suffix),'.r.', &
             trim(date_str),'.nc'
        write(rest_file_strm,"(6a)") &
-            trim(case_name), '.docn',trim(inst_suffix),'.rs1.', &
+            trim(local_case_name), '.docn',trim(inst_suffix),'.rs1.', &
             trim(date_str),'.bin'
        if (my_task == master_task) then
           nu = shr_file_getUnit()
@@ -664,7 +664,7 @@ CONTAINS
                trim(rest_file), mpicom, gsmap, clobber=.true., rf1=somtp,rf1n='somtp')
        endif
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
-       call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
+       call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(local_case_name), 'SDOCN strdata')
        call shr_sys_flush(logunit)
        call t_stopf('docn_restart')
     endif

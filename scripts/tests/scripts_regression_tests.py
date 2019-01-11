@@ -293,6 +293,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         with Case(testdir, read_only=False) as case:
             ntasks = case.get_value("NTASKS_ATM")
             case.set_value("NTASKS_ATM", ntasks+1)
+
         # this should fail with a locked file issue
         run_cmd_assert_result(self, "./case.build",
                               from_dir=testdir, expected_stat=1)
@@ -301,10 +302,22 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
         with Case(testdir, read_only=False) as case:
             case.set_value("CHARGE_ACCOUNT", "fred")
+
         # this should not fail with a locked file issue
-        run_cmd_assert_result(self, "./case.build",from_dir=testdir, expected_stat=0)
+        run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
         run_cmd_assert_result(self, "./case.st_archive --test-all", from_dir=testdir)
+
+        # Trying to set values outside of context manager should fail
+        case = Case(testdir, read_only=False)
+        with self.assertRaises(CIMEError):
+            case.set_value("NTASKS_ATM", 42)
+
+        # Trying to read_xml with pending changes should fail
+        with self.assertRaises(CIMEError):
+            with Case(testdir, read_only=False) as case:
+                case.set_value("CHARGE_ACCOUNT", "fouc")
+                case.read_xml()
 
         cls._do_teardown.append(testdir)
 
@@ -404,6 +417,20 @@ class J_TestCreateNewcase(unittest.TestCase):
                               (SCRIPT_DIR, prevtestdir, testdir, cls._testroot),from_dir=SCRIPT_DIR)
 
         cls._do_teardown.append(testdir)
+
+    def test_dd_create_clone_not_writable(self):
+        cls = self.__class__
+
+        testdir = os.path.join(cls._testroot, 'test_create_clone_not_writable')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        prevtestdir = cls._testdirs[0]
+        cls._testdirs.append(testdir)
+
+        with Case(prevtestdir, read_only=False) as case1:
+            case2 = case1.create_clone(testdir)
+            with self.assertRaises(CIMEError):
+                case2.set_value("CHARGE_ACCOUNT", "fouc")
 
     def test_e_xmlquery(self):
         # Set script and script path
