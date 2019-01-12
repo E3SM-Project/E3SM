@@ -305,9 +305,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       dyn_ps0=ps0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
+      ! ftype=2,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if ( (ftype==2) .or. (ftype==3) .or. (ftype==4) ) then
+      if ( (ftype==2) .or. (ftype==4) ) then
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
@@ -355,7 +355,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
           end do
          end do
 
-      endif ! if ftype == 2 or == 3 or == 4
+      endif ! if ftype == 2 or == 4
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment

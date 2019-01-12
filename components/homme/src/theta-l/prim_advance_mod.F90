@@ -402,8 +402,10 @@ contains
   real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
   real(kind=real_kind)                  :: rstarn1(np,np,nlev), tn1(np,np,nlev)
 
-  ! before tests interfaces are converted to used derived%T as well
-  call get_temperature(one_elem,tn1,hvcoord,n0)
+!!!!!! tests interfaces need to init derived%T at the very beginnign, 
+
+! cause before the 1st tstep derived%T is not defined. we cannot use get_temperature here
+! since applycam_tracers overwrites Q and ps_v (easiest is to define derivedT).
 
   do k=1,nlev
      dp(:,:,k)=&
@@ -411,7 +413,7 @@ contains
          ( hvcoord%hybi(k+1) - hvcoord%hybi(k)) *one_elem%state%ps_v(:,:,n0)
   enddo
 
-  tn1(:,:,:) = tn1(:,:,:) + dt*one_elem%derived%FT(:,:,:)
+  tn1(:,:,:) = elem%derived%T + dt*one_elem%derived%FT(:,:,:)
 
   call get_R_star(rstarn1,one_elem%state%Q(:,:,:,1))
 
@@ -423,50 +425,6 @@ contains
       (vthn1 - one_elem%state%vtheta_dp(:,:,:,n0))/dt
 
   end subroutine convert_thermo_forcing_elementwise
-
-
-!----------------------------- CONVERT-THERMO-FORCING-EAM ----------------------------
-
-!in standalone homme derivedT is not inited before the first call of_subcy
-!to not break loop fusion, make it work on 1 elem
-!this call assumes that Q and ps_v were already updated
-  subroutine convert_thermo_forcing_eam(elem,hvcoord,nt,dt)
-  use control_mod,        only : use_moisture
-  implicit none
-  type (element_t),       intent(inout) :: elem
-  real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nt
-  integer                               :: i,j,k,q
-  real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
-  real(kind=real_kind)                  :: pnh(np,np,nlev)
-  real(kind=real_kind)                  :: dpnh_dp_i(np,np,nlevp)
-  real(kind=real_kind)                  :: rstarn1(np,np,nlev)
-  real(kind=real_kind)                  :: tn1(np,np,nlev)
-
-#ifndef CAM
-  call abortmp('Error: Do not call convert_thermo_forcing_eam() for standalone homme.')
-#endif
-
-  tn1 = elem%derived%T + dt*elem%derived%FT
-
-  call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
-
-  do k=1,nlev
-     dp(:,:,k)=&
-         ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-         ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
-  enddo
-
-  call get_theta_from_T(hvcoord,rstarn1,tn1,dp,&
-       elem%state%phinh_i(:,:,:,nt),vthn1)
-
-  !finally, compute difference for FT
-  ! this method is using new dp, new exner, new-new r*, new t
-  elem%derived%FT(:,:,:) = &
-      (vthn1 - elem%state%vtheta_dp(:,:,:,nt))/dt
-
-  end subroutine convert_thermo_forcing_eam
 
 
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------

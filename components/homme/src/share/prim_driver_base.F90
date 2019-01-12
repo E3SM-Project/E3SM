@@ -1152,9 +1152,6 @@ contains
        enddo
 #ifdef MODEL_THETA_L
        call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
-#else
-       !!this can be cleaned to use only get_temp, but for now get_temp is used in other parts (grep?)...
-       !elem(ie)%derived%T => elem(ie)%state%T(:,:,:,tl%np1)
 #endif
     enddo
     call t_stopf("prim_run_subcyle_diags")
@@ -1354,6 +1351,14 @@ contains
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
+!consider cam+f0+nsplit6 case. then here FT conversion happens 6 times, which is
+!wrong. depending on whhether we want to recompute FTheta each nsplit step or
+!just to dribble in the existing FT, there are diff. solutions. For reusing FT
+!which is computed once per physics step, we can insert and if_statement here
+!based on se_nsplit. If we want to recompute FTheta, then FT needs to be saved
+!for each nsplit, which means an extra element container. easiest is to insert
+!and if-statement for nsplit here, esp. because we don't know whether f0 is
+!feasible.
     call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
 #ifdef MODEL_THETA_L
     call convert_thermo_forcing   (elem,hvcoord,n0,      dt_remap,nets,nete)
