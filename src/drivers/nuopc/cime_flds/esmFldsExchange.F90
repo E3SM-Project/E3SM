@@ -2457,21 +2457,25 @@ contains
     !-----------------------------
     ! to ocn: liquid runoff from rof and glc components
     !-----------------------------
-    do n = 1,size(iso)
-       if (phase == 'advertise') then
+    if (phase == 'advertise') then
+       do n = 1,size(iso)
           call addfld(fldListFr(compglc)%flds, 'Fogg_rofl'//iso(n))
           call addfld(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n))
           call addfld(fldListTo(compocn)%flds, 'Foxx_rofl'//iso(n))
-       else
-          if ( fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofl'//iso(n), rc=rc)) then
+       end do
+    else
+       do n = 1,size(iso)
+          if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofl'//iso(n), rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofl'//iso(n), rc=rc)) then
              ! water flux into sea water due to runoff (liquid)
              call addmap(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n), compocn, mapfiler, 'none', rof2ocn_liq_rmap)
           end if
-          if ( fldchk(is_local%wrap%FBImp(comprof, comprof), 'Fogg_rofl'//iso(n), rc=rc)) then
+          if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Fogg_rofl'//iso(n), rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(comprof, comprof), 'Fogg_rofl'//iso(n), rc=rc)) then
              ! glc liquid runoff flux to ocean
              call addmap(fldListFr(compglc)%flds, 'Forr_rofl'//iso(n), compocn,  mapfiler, 'one', glc2ocn_liq_rmap)
           end if
-          if ( fldchk(is_local%wrap%FBExp(comprof), 'Foxx_rofl'//iso(n), rc=rc)) then
+          if ( fldchk(is_local%wrap%FBExp(compocn), 'Foxx_rofl'//iso(n), rc=rc)) then
              if ( fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofl'//iso(n), rc=rc) .and. &
                   fldchk(is_local%wrap%FBImp(compglc, compglc), 'Fogg_rofl'//iso(n), rc=rc)) then
                 call addmrg(fldListTo(compocn)%flds, 'Foxx_rofl'//iso(n), &
@@ -2487,8 +2491,8 @@ contains
                      mrg_from1=compglc, mrg_fld1='Fogg_rofl'//iso(n), mrg_type1='sum')
              end if
           end if
-       end if
-    end do
+       end do
+    end if
 
     !-----------------------------
     ! to ocn: frozen runoff from rof and glc components
@@ -2496,16 +2500,20 @@ contains
     do n = 1,size(iso)
        if (phase == 'advertise') then
           call addfld(fldListFr(compglc)%flds, 'Fogg_rofi'//iso(n))
-          call addfld(fldListFr(comprof)%flds, 'Forr_rofi'//iso(n)) ! rof ice runoff flux to ocean
-          call addfld(fldListTo(compocn)%flds, 'Foxx_rofi'//iso(n)) ! glc ice runoff flux to ocean
+          call addfld(fldListFr(comprof)%flds, 'Forr_rofi'//iso(n))
+          call addfld(fldListTo(compocn)%flds, 'Foxx_rofi'//iso(n))
        else
-          if ( fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofi'//iso(n), rc=rc)) then
+          if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofi'//iso(n), rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofi'//iso(n), rc=rc)) then
+             ! water flux into sea water due to runoff (liquid)
              call addmap(fldListFr(comprof)%flds, 'Forr_rofi'//iso(n), compocn, mapfiler, 'none', rof2ocn_liq_rmap)
           end if
-          if ( fldchk(is_local%wrap%FBImp(comprof, comprof), 'Fogg_rofi'//iso(n), rc=rc)) then
+          if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Fogg_rofi'//iso(n), rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(comprof, comprof), 'Fogg_rofi'//iso(n), rc=rc)) then
+             ! glc liquid runoff flux to ocean
              call addmap(fldListFr(compglc)%flds, 'Forr_rofi'//iso(n), compocn,  mapfiler, 'one', glc2ocn_liq_rmap)
           end if
-          if ( fldchk(is_local%wrap%FBExp(comprof), 'Foxx_rofi'//iso(n), rc=rc)) then
+          if ( fldchk(is_local%wrap%FBExp(compocn), 'Foxx_rofi'//iso(n), rc=rc)) then
              if ( fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofi'//iso(n), rc=rc) .and. &
                   fldchk(is_local%wrap%FBImp(compglc, compglc), 'Fogg_rofi'//iso(n), rc=rc)) then
                 call addmrg(fldListTo(compocn)%flds, 'Foxx_rofi'//iso(n), &
