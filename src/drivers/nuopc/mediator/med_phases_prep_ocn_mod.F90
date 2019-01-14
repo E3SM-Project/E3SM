@@ -32,9 +32,10 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO,ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF                  , only : ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
     use med_internalstate_mod , only : InternalState
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use esmFlds               , only : fldListFr
     use esmFlds               , only : compocn, ncomps, compname
@@ -52,7 +53,6 @@ contains
     !-------------------------------------------------------------------------------
 
     call t_startf('MED:'//subname)
-
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
@@ -66,23 +66,15 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
-    !--- Count the number of fields outside of scalar data, if zero, then return
+    ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
-
-    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
-    ! fieldCount is 0 and not 1 here
-
-    call ESMF_FieldBundleGet(is_local%wrap%FBExp(compocn), fieldCount=ncnt, rc=rc)
+    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt == 0) then
-       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-            ESMF_LOGMSG_INFO, rc=dbrc)
-    else
+    if (ncnt > 0) then
 
        !---------------------------------------
-       !--- map all fields in FBImp that have
-       !--- active ocean coupling to the ocean grid
+       !--- map all fields in FBImp that have active ocean coupling to the ocean grid
        !---------------------------------------
 
        do n1 = 1,ncomps
@@ -99,6 +91,7 @@ contains
           endif
        enddo
     endif
+
     call t_stopf('MED:'//subname)
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -115,6 +108,7 @@ contains
     use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use med_constants_mod     , only : R8
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto, med_merge_field
@@ -190,21 +184,14 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
-    !--- Count the number of fields outside of scalar data, if zero, then return
+    ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
 
-    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
-    ! fieldCount is 0 and not 1 here
-
-    call ESMF_FieldBundleGet(is_local%wrap%FBExp(compocn), fieldCount=ncnt, rc=rc)
+    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
-    else
+    if (ncnt >= 0) then
+
        !---------------------------------------
        !--- auto merges to ocn
        !---------------------------------------
@@ -344,6 +331,7 @@ contains
        if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          write(6,*)'DEBUG: i am here'
        else
           lsize = size(Faxa_swvdr)
           allocate(Foxx_swnet(lsize))
@@ -494,12 +482,12 @@ contains
                 wgtp01(n)  =  1.0_R8
                 wgtm01(n)  = -1.0_R8
              end if
-             
+
              ! check wgts do add to 1 as expected
              if (abs(atmwgt(n)  + icewgt(n) - 1.0_R8) > 1.0e-12 .or. &
                  abs(atmwgt1(n) + icewgt1(n) + wgtp01(n) - 1.0_R8) > 1.0e-12 .or. &
                  abs(atmwgt1(n) + icewgt1(n) - wgtm01(n) - 1.0_R8) > 1.0e-12) then
-                
+
                 call ESMF_LogWrite(trim(subname)//": ERROR atm + ice fracs inconsistent", &
                      ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
                 rc = ESMF_FAILURE
@@ -511,7 +499,7 @@ contains
           if ( fldchk(is_local%wrap%FBMed_aoflux_o        , 'Faox_evap', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm,compocn), 'Faxa_lat' , rc=rc) .and. &
                fldchk(is_local%wrap%FBExp(compocn)        , 'Foxx_evap', rc=rc)) then
-             
+
              customwgt(:) = wgtm01(:) / const_lhvap
              call med_merge_field(is_local%wrap%FBExp(compocn), 'Foxx_evap', &
                   FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_evap', wgtA=atmwgt1, &
@@ -524,31 +512,31 @@ contains
                fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_sen'  , rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_melth', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_sen'  , rc=rc)) then
-             
+
              call med_merge_field(is_local%wrap%FBExp(compocn), 'Foxx_sen',    &
                   FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_sen '  , wgtA=atmwgt1, &
                   FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_melth' , wgtB=icewgt1, &
                   FBinC=is_local%wrap%FBImp(compice,compocn), fnameC='Faxa_sen' ,   wgtc=wgtm01, rc=rc)
           end if
-          
+
           ! determine zonal stress to ocean - NEMS orig
           if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_taux', rc=rc) .and. &
                fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_taux', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_taux', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_taux', rc=rc)) then
-             
+
              call med_merge_field(is_local%wrap%FBExp(compocn), 'Foxx_taux',  &
                   FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_taux ', wgtA=atmwgt1, &
                   FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_taux' , wgtB=icewgt1, &
                   FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_taux' , wgtc=wgtm01, rc=rc)
           end if
-          
+
           ! determine meridional stress to ocean - NEMS orig
           if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_tauy', rc=rc) .and. &
                fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_tauy', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_tauy', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_tauy', rc=rc)) then
-             
+
              call med_merge_field(is_local%wrap%FBExp(compocn), 'Foxx_tauy',  &
                   FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_tauy ', wgtA=atmwgt1, &
                   FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_tauy' , wgtB=icewgt1, &
@@ -560,7 +548,7 @@ contains
                fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_lwup' , rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_lwup' , rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_lwdn' , rc=rc)) then
-             
+
              call med_merge_field(is_local%wrap%FBExp(compocn), 'Foxx_lwnet', &
                   FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_lwup ', wgtA=atmwgt1, &
                   FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lwdn' , wgtB=atmwgt1, &
@@ -576,7 +564,7 @@ contains
           deallocate(customwgt)
 
        end if  ! end of NEMS-orig ocn prep phase
-          
+
        !---------------------------------------
        !--- diagnose output
        !---------------------------------------
@@ -609,10 +597,11 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF                  , only : ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use med_internalstate_mod , only : InternalState, mastertask
     use esmFlds               , only : compocn
     use perf_mod              , only : t_startf, t_stopf
@@ -646,21 +635,12 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
-    !--- Count the number of fields outside of scalar data, if zero, then return
+    ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
-
-    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
-    ! fieldCount is 0 and not 1 here
-
-    call ESMF_FieldBundleGet(is_local%wrap%FBExp(compocn), fieldCount=ncnt, rc=rc)
+    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
-    else
+    if (ncnt > 0) then
 
        !---------------------------------------
        !--- Get the current time from the clock
@@ -668,10 +648,8 @@ contains
 
        call ESMF_GridCompGet(gcomp, clock=clock)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
        call ESMF_ClockGet(clock,currtime=time,rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
        call ESMF_TimeGet(time,timestring=timestr)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        if (dbug_flag > 1) then
@@ -702,6 +680,7 @@ contains
        !--- clean up
        !---------------------------------------
     endif
+
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf('MED:'//subname)
 
@@ -723,6 +702,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_average
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use esmFlds               , only : compocn
     use perf_mod              , only : t_startf, t_stopf
 
@@ -755,65 +735,60 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
-    !--- Count the number of fields outside of scalar data, if zero, then return
+    ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
-
-    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
-    ! fieldCount is 0 and not 1 here
-
-    call ESMF_FieldBundleGet(is_local%wrap%FBExp(compocn), fieldCount=ncnt, rc=rc)
+    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExpAccum(compocn), trim(subname)//"FBExpAccum(compocn)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt == 0) then
+    if (ncnt > 0) then
+
+       !---------------------------------------
+       !--- average ocn accumulator
+       !---------------------------------------
+
        if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compocn), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-       RETURN
+
+       call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
+            is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (dbug_flag > 5) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBaccO_avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+
+       !---------------------------------------
+       !--- copy to FBExp(compocn)
+       !---------------------------------------
+
+       call shr_nuopc_methods_FB_copy(is_local%wrap%FBExp(compocn), is_local%wrap%FBExpAccum(compocn), rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       !---------------------------------------
+       !--- zero accumulator
+       !---------------------------------------
+
+       is_local%wrap%FBExpAccumFlag(compocn) = .true.
+       is_local%wrap%FBExpAccumCnt(compocn) = 0
+       call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       if (dbug_flag > 5) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+
     end if
 
-    !---------------------------------------
-    !--- average ocn accumulator
-    !---------------------------------------
-
     if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
-         is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBaccO_avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    !---------------------------------------
-    !--- copy to FBExp(compocn)
-    !---------------------------------------
-
-    call shr_nuopc_methods_FB_copy(is_local%wrap%FBExp(compocn), &
-         is_local%wrap%FBExpAccum(compocn), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    !--- zero accumulator
-    !---------------------------------------
-
-    is_local%wrap%FBExpAccumFlag(compocn) = .true.
-    is_local%wrap%FBExpAccumCnt(compocn) = 0
-    call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug_flag > 5) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_accum_avg

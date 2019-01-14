@@ -170,7 +170,7 @@ contains
                                if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
                             else
-                               call ESMF_LogWrite(trim(subname)//": ERROR merge_field = "//trim(merge_field)//"not found", &
+                               call ESMF_LogWrite(trim(subname)//": ERROR merge_field = "//trim(merge_field)//" not found", &
                                     ESMF_LOGMSG_INFO, rc=rc)
                                rc = ESMF_FAILURE
                                if (ChkErr(rc,__LINE__,u_FILE_u)) return

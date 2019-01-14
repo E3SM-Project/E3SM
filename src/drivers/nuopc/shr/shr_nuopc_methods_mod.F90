@@ -64,6 +64,7 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_FB_getNameN
   public shr_nuopc_methods_FB_getFieldN
   public shr_nuopc_methods_FB_Field_diagnose
+  public shr_nuopc_methods_FB_getNumflds
   public shr_nuopc_methods_State_reset
   public shr_nuopc_methods_State_diagnose
   public shr_nuopc_methods_State_GeomPrint
@@ -1153,8 +1154,6 @@ module shr_nuopc_methods_mod
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf(subname)
   end subroutine shr_nuopc_methods_FB_FieldRegrid
-
-  !-----------------------------------------------------------------------------
 
   !-----------------------------------------------------------------------------
 
@@ -3741,4 +3740,43 @@ module shr_nuopc_methods_mod
 
   end subroutine shr_nuopc_methods_State_FldDebug
 
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_FB_getNumFlds(FB, string, nflds, rc)
+    ! ---------------------------------------------- 
+    ! Determine if fieldbundle is created and if so, the number of non-scalar
+    ! fields in the field bundle
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
+
+    ! input/output variables
+    type(ESMF_FieldBundle) , intent(in)    :: FB
+    character(len=*)       , intent(in)    :: string
+    integer                , intent(out)   :: nflds
+    integer                , intent(inout) :: rc
+
+    ! local variables
+    integer :: dbrc
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (.not. ESMF_FieldBundleIsCreated(FB)) then
+       call ESMF_LogWrite(trim(string)//": has not been created, returning", ESMF_LOGMSG_INFO, rc=dbrc)
+       nflds = 0 
+    else
+       ! Note - the scalar field has been removed from all mediator
+       ! field bundles - so this is why we check if the fieldCount is 0 and not 1 here
+
+       call ESMF_FieldBundleGet(FB, fieldCount=nflds, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (nflds == 0) then
+          call ESMF_LogWrite(trim(string)//": only has scalar data, returning", ESMF_LOGMSG_INFO, rc=dbrc)
+       end if
+    end if
+
+  end subroutine shr_nuopc_methods_FB_getNumFlds
+
 end module shr_nuopc_methods_mod
+

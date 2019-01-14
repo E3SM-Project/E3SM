@@ -222,7 +222,7 @@ contains
 
     if (trim(aoflux_grid) == 'ocn') then
 
-       ! TODO: ONLY need to regrid fields that are needed for the atm/ocn flux calculation
+       ! TODO(mvertens, 2019-01-12): ONLY regrid atm import fields that are needed for the atm/ocn flux calculation
 
        ! Regrid atm import field bundle from atm to ocn grid as input for ocn/atm flux calculation
        call med_map_FB_Regrid_Norm( &
@@ -434,9 +434,10 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_ptem', fldptr1=aoflux%thbot, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum', fldptr1=aoflux%shum, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-
     if (flds_wiso) then
        call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum_16O', fldptr1=aoflux%shum_16O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -450,11 +451,7 @@ contains
        allocate(aoflux%shum_HDO(lsize)); aoflux%shum_HDO(:) = 0._R8
     end if
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_lwdn', fldptr1=aoflux%lwdn, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
+    ! Optional field used for gust parameterization
     if ( fldchk(FBAtm, 'Faxa_rainc', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_rainc', fldptr1=aoflux%prec_gust, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
