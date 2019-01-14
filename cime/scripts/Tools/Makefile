@@ -105,9 +105,7 @@ endif
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
-ifeq ($(strip $(DEBUG)),TRUE)
-   CPPDEFS += -DDEBUG
-else
+ifneq ($(strip $(DEBUG)),TRUE)
    CPPDEFS += -DNDEBUG
 endif
 
