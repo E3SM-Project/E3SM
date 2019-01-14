@@ -118,6 +118,11 @@ subroutine eul_post_forecast(lat, psm1, qfcst, cwava, &
    integer nlon
    integer i,k,m
 
+!
+! Assign prescribed wfld to the Eulerian omega field
+
+   if (have_omega) omga(1,:,lat) = wfld(:)
+
    call pdelb0 (psm1, pdelb, nlon)
 !
 ! Accumulate mass integrals
