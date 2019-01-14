@@ -1185,26 +1185,40 @@
       <modules>
 	<command name="add">+cmake-2.8.12</command>
 	<command name="add">+python-2.7</command>
+	<command name="add">+metis-5.0.3</command>
       </modules>
       <modules compiler="intel">
-	<command name="add">+intel-17.0.0</command>
-	<command name="add">+netcdf-c-4.4.1-f77-4.4.4-intel-17.0.0-serial</command>
+	<command name="add">+mkl-11.2.1</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-	<command name="add">+mvapich2-2.2-intel-17.0.0-acme</command>
-	<command name="add">+pnetcdf-1.7.0-intel-17.0.0-mvapich2-2.2-acme</command>
+	<command name="add">+mvapich2-2.3-intel-18.0.3-acme</command>
+	<command name="add">+hdf5-1.10.4-intel-18.0.3-mvapich2-2.3-acme</command>
+	<command name="add">+netcdf-4.6.2-intel-18.0.3-mvapich2-2.3-acme</command>
+	<command name="add">+netcdf-cxx-4.2-intel-18.0.3-mvapich2-2.3-acme</command>
+	<command name="add">+netcdf-fortran-4.4.4-intel-18.0.3-mvapich2-2.3-acme</command>
+	<command name="add">+parallel-netcdf-1.10.0-intel-18.0.3-mvapich2-2.3-acme</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-	<command name="add">+openmpi-2.0.1-intel-17.0.0-acme</command>
-	<command name="add">+pnetcdf-1.7.0-intel-17.0.0-openmpi-2.0.1-acme</command>
+	<command name="add">+openmpi-3.1.3-intel-18.0.3-acme</command>
+	<command name="add">+hdf5-1.10.4-intel-18.0.3-openmpi-3.1.3-acme</command>
+	<command name="add">+netcdf-4.6.2-intel-18.0.3-openmpi-3.1.3-acme</command>
+	<command name="add">+netcdf-cxx-4.2-intel-18.0.3-openmpi-3.1.3-acme</command>
+	<command name="add">netcdf-fortran-4.4.4-intel-18.0.3-openmpi-3.1.3-acme</command>
+	<command name="add">+parallel-netcdf-1.10.0-intel-18.0.3-openmpi-3.1.3-acme</command>
       </modules>
       <modules compiler="gnu">
-	<command name="add">+gcc-5.3.0</command>
-	<command name="add">+netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial</command>
+	<command name="add">+gcc-7.3.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
-	<command name="add">+mvapich2-2.2b-gcc-5.3.0-acme</command>
-	<command name="add">+pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b-acme</command>
+	<command name="add">+mvapich2-2.3-gcc-7.3.0-acme</command>
+	<command name="add">+hdf5-1.10.4-gcc-7.3.0-mvapich2-2.3-acme</command>
+	<command name="add">+netcdf-c-4.6.1-cxx-4.2-f77-4.4.4-gcc-7.3.0-mvapich2-2.2.3-acme</command>
+	<command name="add">+parallel-netcdf-1.8.0-gcc-7.3.0-mvapich2-2.3-acme</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+	<command name="add">+netcdf-c-4.6.1-cxx-4.2-f77-4.4.4-gcc-7.3.0-openmpi-3.1.2-acme</command>
+	<command name="add">+parallel-netcdf-1.8.0-gcc-7.3.0-openmpi-3.1.2-acme</command>
+	<command name="add">+hdf5-1.10.4-gcc-7.3.0-openmpi-3.1.2-acme</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
 	<command name="add">+openmpi-1.10.2-gcc-5.3.0-acme</command>
@@ -1251,6 +1265,9 @@
     </environment_variables>
     <environment_variables DEBUG="TRUE" mpilib="mvapich">
       <env name="MV2_SHOW_CPU_BINDING">1</env>
+    </environment_variables>
+    <environment_variables COMPILER="intel">
+      <env name="PATH">/blues/gpfs/home/software/spack-0.10.1/opt/spack/linux-centos6-x86_64/gcc-6.1.0/intel-18.0.3-54quwgv4w5tyzvxg5t5m67ifsssds42h/compilers_and_libraries_2018.3.222/linux/bin/intel64:$ENV{PATH}</env>
     </environment_variables>
 </machine>
 
