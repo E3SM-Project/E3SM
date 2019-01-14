@@ -1063,7 +1063,14 @@ end subroutine diag_conv_tend_ini
 
 ! Vertical velocity and advection
 
-    call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+! EUL-SCM does not properly assign prescribed wfld to state%omega, while SE-SCM does.
+! Keep the original form of outfld for OMEGA until it is fixed for EUL-SCM
+ 
+    if (single_column) then
+       call outfld('OMEGA   ',wfld,    pcols,   lchnk     )
+    else
+       call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    endif
 
 #if (defined BFB_CAM_SCAM_IOP )
     call outfld('omega   ',state%omega,    pcols,   lchnk     )
