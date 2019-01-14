@@ -734,10 +734,10 @@ contains
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
-      ierr = GPTLstart(event(1:str_length)//'_'//cdetail)
+      TIMERSTART(event(1:str_length)//'_'//cdetail)
    else
       str_length = min(SHR_KIND_CM,len_trim(event))
-      ierr = GPTLstart(event(1:str_length))
+      TIMERSTART(event(1:str_length))
    endif
 !$OMP MASTER
    if (perf_ovhd_measurement) then
@@ -797,16 +797,16 @@ contains
 !$OMP END MASTER
 #ifdef NUOPC_INTERFACE
    cur_timing_depth = cur_timing_depth - 1
-   if(cur_timing_depth > timer_depth_limit) return
+   if(cur_timing_depth >= timer_depth_limit) return
 #endif
 
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
-      ierr = GPTLstop(event(1:str_length)//'_'//cdetail)
+      TIMERSTOP(event(1:str_length)//'_'//cdetail)
    else
       str_length = min(SHR_KIND_CM,len_trim(event))
-      ierr = GPTLstop(event(1:str_length))
+      TIMERSTOP(event(1:str_length))
    endif
 
 !$OMP MASTER
