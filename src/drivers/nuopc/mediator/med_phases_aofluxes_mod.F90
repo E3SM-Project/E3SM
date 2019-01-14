@@ -102,8 +102,8 @@ contains
     use shr_nuopc_scalars_mod , only : flds_scalar_num
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)               :: gcomp
     type(aoflux_type) , intent(inout) :: aoflux
@@ -113,7 +113,6 @@ contains
     character(3)        :: aoflux_grid
     character(len=256)  :: cvalue
     type(InternalState) :: is_local
-    integer             :: nflds
     integer             :: localPet
     type(ESMF_VM)       :: vm
     integer             :: dbrc
