@@ -1,5 +1,5 @@
 module mpaso_cpl_indices
-  
+
   use seq_flds_mod
   use mct_mod
 
@@ -10,7 +10,7 @@ module mpaso_cpl_indices
 
   ! ocn -> drv
 
-  integer :: index_o2x_So_t      
+  integer :: index_o2x_So_t
   integer :: index_o2x_So_u
   integer :: index_o2x_So_v
   integer :: index_o2x_So_s
@@ -20,6 +20,15 @@ module mpaso_cpl_indices
   integer :: index_o2x_Fioo_frazil
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
+
+  ! ocn -> drv for calculation of ocean-ice sheet interactions
+
+  integer :: index_o2x_So_blt !boundary layer temperature
+  integer :: index_o2x_So_bls !boundary layer salinity
+  integer :: index_o2x_So_htv !ocean heat-transfer velocity
+  integer :: index_o2x_So_stv !ocean salt-transfer velocity
+  integer :: index_o2x_So_rhoeff !ocean effective density
+
 
   ! ocn -> drv  (BGC)
 
@@ -60,14 +69,14 @@ module mpaso_cpl_indices
   integer :: index_x2o_Foxx_tauy       ! meridonal wind stress (tauy)     (W/m2   )
   integer :: index_x2o_Foxx_swnet      ! net short-wave heat flux         (W/m2   )
   integer :: index_x2o_Foxx_sen        ! sensible heat flux               (W/m2   )
-  integer :: index_x2o_Foxx_lat        
+  integer :: index_x2o_Foxx_lat
   integer :: index_x2o_Foxx_lwup       ! longwave radiation (up)          (W/m2   )
   integer :: index_x2o_Faxa_lwdn       ! longwave radiation (down)        (W/m2   )
   integer :: index_x2o_Fioi_melth      ! heat flux from snow & ice melt   (W/m2   )
   integer :: index_x2o_Fioi_meltw      ! snow melt flux                   (kg/m2/s)
   integer :: index_x2o_Fioi_salt       ! salt                             (kg(salt)/m2/s)
   integer :: index_x2o_Foxx_evap       ! evaporation flux                 (kg/m2/s)
-  integer :: index_x2o_Faxa_prec         
+  integer :: index_x2o_Faxa_prec
   integer :: index_x2o_Faxa_snow       ! water flux due to snow           (kg/m2/s)
   integer :: index_x2o_Faxa_rain       ! water flux due to rain           (kg/m2/s)
   integer :: index_x2o_Faxa_bcphidry   ! flux: Black   Carbon hydrophilic dry deposition
@@ -86,6 +95,18 @@ module mpaso_cpl_indices
   integer :: index_x2o_Faxa_dstdry4    ! flux: Size 4 dust -- dry deposition
   integer :: index_x2o_Foxx_rofl       ! river runoff flux                (kg/m2/s)
   integer :: index_x2o_Foxx_rofi       ! ice runoff flux                  (kg/m2/s)
+
+  ! drv -> glc and internal drv fields
+
+  integer :: index_x2o_Fogx_qicelo
+  integer :: index_x2o_Fogx_qiceho
+  integer :: index_x2o_Sg_blit
+  integer :: index_x2o_Sg_blis
+  integer :: index_x2o_Sg_lithop
+  integer :: index_x2o_Sg_icemask
+  integer :: index_x2o_Sg_icemask_grounded
+  integer :: index_x2o_Sg_icemask_floating
+
 
   ! drv -> ocn (BGC)
 
@@ -134,6 +155,12 @@ contains
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
 
+    index_o2x_So_blt	   = mct_avect_indexra(o2x,'So_blt')
+    index_o2x_So_bls	   = mct_avect_indexra(o2x,'So_bls')
+    index_o2x_So_htv	   = mct_avect_indexra(o2x,'So_htv')
+    index_o2x_So_stv	   = mct_avect_indexra(o2x,'So_stv')
+    index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
+
     index_o2x_So_algae1     = mct_avect_indexra(o2x,'So_algae1',perrWith='quiet')
     index_o2x_So_algae2     = mct_avect_indexra(o2x,'So_algae2',perrWith='quiet')
     index_o2x_So_algae3     = mct_avect_indexra(o2x,'So_algae3',perrWith='quiet')
@@ -170,12 +197,12 @@ contains
     index_x2o_Foxx_sen      = mct_avect_indexra(x2o,'Foxx_sen')
     index_x2o_Foxx_lwup     = mct_avect_indexra(x2o,'Foxx_lwup')
     index_x2o_Faxa_lwdn     = mct_avect_indexra(x2o,'Faxa_lwdn')
-    index_x2o_Fioi_melth    = mct_avect_indexra(x2o,'Fioi_melth')   
+    index_x2o_Fioi_melth    = mct_avect_indexra(x2o,'Fioi_melth')
     index_x2o_Fioi_meltw    = mct_avect_indexra(x2o,'Fioi_meltw')
-    index_x2o_Fioi_salt     = mct_avect_indexra(x2o,'Fioi_salt')   
-    index_x2o_Faxa_prec     = mct_avect_indexra(x2o,'Faxa_prec')   
-    index_x2o_Faxa_snow     = mct_avect_indexra(x2o,'Faxa_snow')   
-    index_x2o_Faxa_rain     = mct_avect_indexra(x2o,'Faxa_rain')   
+    index_x2o_Fioi_salt     = mct_avect_indexra(x2o,'Fioi_salt')
+    index_x2o_Faxa_prec     = mct_avect_indexra(x2o,'Faxa_prec')
+    index_x2o_Faxa_snow     = mct_avect_indexra(x2o,'Faxa_snow')
+    index_x2o_Faxa_rain     = mct_avect_indexra(x2o,'Faxa_rain')
     index_x2o_Foxx_evap     = mct_avect_indexra(x2o,'Foxx_evap')
     index_x2o_Foxx_rofl     = mct_avect_indexra(x2o,'Foxx_rofl')
     index_x2o_Foxx_rofi     = mct_avect_indexra(x2o,'Foxx_rofi')
@@ -216,6 +243,15 @@ contains
     index_x2o_Fioi_fed1     = mct_avect_indexra(x2o,'Fioi_fed1',perrWith='quiet')
     index_x2o_Fioi_fed2     = mct_avect_indexra(x2o,'Fioi_fed2',perrWith='quiet')
     index_x2o_Fioi_dust1    = mct_avect_indexra(x2o,'Fioi_dust1',perrWith='quiet')
+
+    index_x2o_Fogx_qicelo = mct_avect_indexra(x2o,'Fogx_qicelo')
+    index_x2o_Fogx_qiceho = mct_avect_indexra(x2o,'Fogx_qiceho')
+    index_x2o_Sg_blit	 = mct_avect_indexra(x2o,'Sg_blit')
+    index_x2o_Sg_blis	 = mct_avect_indexra(x2o,'Sg_blis')
+    index_x2o_Sg_lithop  = mct_avect_indexra(x2o,'Sg_lithop')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating')
 
     call mct_aVect_clean(x2o)
     call mct_aVect_clean(o2x)
