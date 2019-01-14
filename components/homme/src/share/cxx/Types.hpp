@@ -98,7 +98,7 @@ template <typename DataType, typename... Properties>
 using MPIView = ExecView<DataType,Properties...>;
 # else
 template <typename DataType, typename... Properties>
-using MPIView = typename ExecView<DataType,Properties...>::HostMirror>::type;
+using MPIView = typename ExecView<DataType,Properties...>::HostMirror;
 # endif
 #endif
 
