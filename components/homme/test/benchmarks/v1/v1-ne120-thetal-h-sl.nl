@@ -1,14 +1,18 @@
 &ctl_nl
-!-------------------------------------EULER
-rsplit=2
-qsplit=1
-hypervis_subcycle_q=4
-se_ftype=0
+!-------------------------------------SL
+transport_alg=12
+semi_lagrange_cdr_alg=20
+rsplit=1
+qsplit=6
+hypervis_subcycle_q=6
+se_ftype=4
+nu_q=0
+semi_lagrange_nearest_point_lev = 100
 !-------------------------------------HYDRO/NON
-!theta_hydrostatic_mode=.true.      
-!tstep_type    = 5                   
-theta_hydrostatic_mode = .false.   
-tstep_type    = 7                  
+theta_hydrostatic_mode=.true.      
+tstep_type    = 5                   
+!theta_hydrostatic_mode = .false.   
+!tstep_type    = 7                  
 !-------------------------------------RES,RUN,OUTPUT
 ne=120
 qsize = 40
