@@ -40,42 +40,43 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-def buildlib(bldroot, installpath, caseroot):
+def buildlib(bldroot, installpath, case):
 ###############################################################################
-    with Case(caseroot, read_only=False) as case:
-        cimeroot = case.get_value("CIMEROOT")
-        mct_dir = os.path.join(cimeroot,"src","externals","mct")
-        for _file in glob.iglob(os.path.join(mct_dir, "mpi-serial","*.h")):
-            copyifnewer(_file, os.path.join(bldroot,os.path.basename(_file)))
+    caseroot = case.get_value("CASEROOT")
+    cimeroot = case.get_value("CIMEROOT")
+    mct_dir = os.path.join(cimeroot,"src","externals","mct")
+    for _file in glob.iglob(os.path.join(mct_dir, "mpi-serial","*.h")):
+        copyifnewer(_file, os.path.join(bldroot,os.path.basename(_file)))
 
-        gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
-        gmake_opts += " -C {} ".format(bldroot)
-        gmake_opts += " CASEROOT={} ".format(caseroot)
-        gmake_opts += "MODEL=mpi-serial {}".format(os.path.join(bldroot,"Makefile.conf"))
+    gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
+    gmake_opts += " -C {} ".format(bldroot)
+    gmake_opts += " CASEROOT={} ".format(caseroot)
+    gmake_opts += "MODEL=mpi-serial {}".format(os.path.join(bldroot,"Makefile.conf"))
 
-        gmake_cmd = case.get_value("GMAKE")
+    gmake_cmd = case.get_value("GMAKE")
 
-        # This runs the mpi-serial configure command
-        cmd = "{} {}".format(gmake_cmd, gmake_opts)
-        run_bld_cmd_ensure_logging(cmd, logger)
+    # This runs the mpi-serial configure command
+    cmd = "{} {}".format(gmake_cmd, gmake_opts)
+    run_bld_cmd_ensure_logging(cmd, logger)
 
-        # Now we run the mpi-serial make command
-        gmake_opts = "-f {} ".format(os.path.join(mct_dir,"mpi-serial","Makefile"))
-        gmake_opts += " -C {} ".format(bldroot)
-        gmake_opts += " -j {} ".format(case.get_value("GMAKE_J"))
-        gmake_opts += " SRCDIR={} ".format(os.path.join(mct_dir))
+    # Now we run the mpi-serial make command
+    gmake_opts = "-f {} ".format(os.path.join(mct_dir,"mpi-serial","Makefile"))
+    gmake_opts += " -C {} ".format(bldroot)
+    gmake_opts += " -j {} ".format(case.get_value("GMAKE_J"))
+    gmake_opts += " SRCDIR={} ".format(os.path.join(mct_dir))
 
-        cmd = "{} {}".format(gmake_cmd, gmake_opts)
-        run_bld_cmd_ensure_logging(cmd, logger)
+    cmd = "{} {}".format(gmake_cmd, gmake_opts)
+    run_bld_cmd_ensure_logging(cmd, logger)
 
-        copyifnewer(os.path.join(bldroot, "libmpi-serial.a"), os.path.join(installpath, "lib", "libmpi-serial.a"))
-        for _file in ("mpi.h", "mpif.h", "mpi.mod", "MPI.mod"):
-            if os.path.isfile(os.path.join(bldroot,_file)):
-                copyifnewer(os.path.join(bldroot, _file), os.path.join(installpath, "include", _file))
+    copyifnewer(os.path.join(bldroot, "libmpi-serial.a"), os.path.join(installpath, "lib", "libmpi-serial.a"))
+    for _file in ("mpi.h", "mpif.h", "mpi.mod", "MPI.mod"):
+        if os.path.isfile(os.path.join(bldroot,_file)):
+            copyifnewer(os.path.join(bldroot, _file), os.path.join(installpath, "include", _file))
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
-    buildlib(bldroot, installpath, caseroot)
+    with Case(caseroot) as case:
+        buildlib(bldroot, installpath, case)
 
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

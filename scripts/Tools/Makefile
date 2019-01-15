@@ -354,6 +354,11 @@ else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
+ifdef LIB_PNETCDF
+   CPPDEFS += -D_PNETCDF
+   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
+endif
+
 # Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
 CIME_ESMFMKFILE := undefined_ESMFMKFILE
 ifdef ESMFMKFILE
@@ -374,7 +379,6 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   FFLAGS += $(ESMF_F90COMPILEPATHS)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
-
 
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
@@ -550,6 +554,9 @@ FFLAGS_NOOPT += $(FPPDEFS)
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   # The following is for the COSP simulator code:
   COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  ifeq ($(MODEL),driver)
+    INCLDIR+=-I$(COSP_LIBDIR)
+  endif
 endif
 
 ifeq ($(MODEL),cam)
@@ -585,9 +592,6 @@ ifndef SLIBS
   endif
 endif
 
-ifdef LIB_PNETCDF
-   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
-endif
 ifdef LAPACK_LIBDIR
    SLIBS += -L$(LAPACK_LIBDIR) -llapack -lblas
 endif
@@ -813,9 +817,8 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
 ifeq ($(CIME_MODEL),cesm)
-  ifneq ($(CLMVER),$(null))
+  ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
     USE_SHARED_CLM=FALSE
@@ -826,10 +829,10 @@ endif
 ifeq ($(USE_SHARED_CLM),FALSE)
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
-  ifeq ($(CLMVER),$(null))
-    LNDLIB := liblnd.a
-  else
+  ifeq ($(COMP_LND),clm)
     LNDLIB := libclm.a
+  else
+    LNDLIB := liblnd.a
   endif
   INCLDIR += -I$(LNDOBJDIR)
 else
