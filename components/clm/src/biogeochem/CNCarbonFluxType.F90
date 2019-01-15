@@ -9,7 +9,7 @@ module CNCarbonFluxType
   use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
   use clm_varctl             , only : use_cndv, use_c13, use_fates 
-  use ch4varcon              , only : allowlakeprod
+  use CH4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationType         , only : veg_pp
@@ -3478,24 +3478,10 @@ contains
             avgflag='A', long_name='C13 seed source to patch-level leaf', &
             ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
 
-       this%dwt_seedc_to_leaf_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_LEAF_PATCH', units='gC13/m^2/s', &
-            avgflag='A', &
-            long_name='C13 patch-level seed source to patch-level leaf ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_leaf_patch, default='inactive')
-
        this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
        call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 seed source to patch-level deadstem', &
             ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_PATCH', units='gC13/m^2/s', &
-            avgflag='A', &
-            long_name='C13 patch-level seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
 
        this%dwt_conv_cflux_grc(begg:endg) = spval
        call hist_addfld1d (fname='C13_DWT_CONV_CFLUX_GRC', units='gC13/m^2/s', &
@@ -3548,14 +3534,8 @@ contains
        call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_PATCH', units='gC13/m^2/s', &
             avgflag='A', &
             long_name='patch-level C13 seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+           '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
             ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 conversion C flux (immediate loss to atm) ' // &
-            '(0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
 
        this%dwt_conv_cflux_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
@@ -3783,24 +3763,10 @@ contains
             avgflag='A', long_name='C14 seed source to patch-level leaf', &
             ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
 
-       this%dwt_seedc_to_leaf_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_LEAF_PATCH', units='gC14/m^2/s', &
-            avgflag='A', &
-            long_name='C14 patch-level seed source to patch-level leaf ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_leaf_patch, default='inactive')
-
        this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
        call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 seed source to patch-level deadstem', &
             ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_patch(begp:endp) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM_PATCH', units='gC14/m^2/s', &
-            avgflag='A', &
-            long_name='C14 patch-level seed source to patch-level deadstem ' // &
-            '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
-            ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
 
        this%dwt_conv_cflux_grc(begg:endg) = spval
        call hist_addfld1d (fname='C14_DWT_CONV_CFLUX_GRC', units='gC14/m^2/s', &
@@ -3855,12 +3821,6 @@ contains
             long_name='patch-level C14 seed source to patch-level deadstem ' // &
             '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
             ptr_patch=this%dwt_seedc_to_deadstem_patch, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 conversion C flux (immediate loss to atm) ' // &
-            '(0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
 
        this%dwt_conv_cflux_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_DWT_CONV_CFLUX', units='gC14/m^2/s', &
@@ -4053,7 +4013,7 @@ contains
           this%annsum_npp_col(c) = spval
        end if
 
-       this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
+       this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in CH4Mod
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 
        else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
@@ -5219,7 +5179,7 @@ contains
        this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
        if (.not. (use_pflotran .and. pf_cmode)) then
-       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in EcosystemDynNoLeaching2
        ! thus 'hr_vr_col' should NOT be set to 0
             this%hr_vr_col(c,1:nlevdecomp) = 0._r8
        end if
@@ -5791,7 +5751,7 @@ end subroutine CSummary_interface
        this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
        if (.not. (use_pflotran .and. pf_cmode)) then
-       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in EcosystemDynNoLeaching2
        ! thus 'hr_vr_col' should NOT be set to 0
             this%hr_vr_col(c,1:nlevdecomp) = 0._r8
        end if

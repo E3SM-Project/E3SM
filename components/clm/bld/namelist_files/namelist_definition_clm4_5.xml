@@ -253,6 +253,12 @@ Toggle to turn on the FATES
 Toggle to turn on spitfire (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_parteh_mode" type="integer" category="physics"
+       group="clm_inparm" valid_values="">
+Switch deciding which nutrient model to use in FATES.
+</entry>
+
+
 <entry id="use_fates_logging" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
 Toggle to turn on the logging module (only relevant if FATES is being used).
@@ -1180,7 +1186,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
 Land mask description
 </entry> 
 
@@ -1726,5 +1732,97 @@ Runtime flag to turn on/off PETSc based thermal model.
         group="clm_inparm" valid_values="">
 Runtime flag to turn on/off variable soil thickness.
 </entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options for performing water and energy budgets                                  -->
+<!-- ========================================================================================  -->
+<entry id="do_budgets"
+       type="logical"
+       category="budget"
+       group="clm_inparm"
+       valid_values=".true.,.false."
+       value=".false.">
+logical that turns on diagnostic budgets, false means budgets will never be written
+</entry>
+
+<entry id="budget_inst"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnotics level of the instantaneous budgets. [0,1],
+written only if BUDGETS variable is true
+0=none,
+1=+net summary budgets,
+default: 0
+</entry>
+
+<entry id="budget_daily"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnotics level of the daily budgets. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 0
+</entry>
+
+<entry id="budget_month"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnotics level of the monthy budgets. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 1
+</entry>
+
+<entry id="budget_ann"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnotics level of the annual budgets. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 1
+</entry>
+
+<entry id="budget_ltann"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnotics level of the longterm budgets written at the end
+of the year. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 1
+</entry>
+
+<entry id="budget_ltend"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnotics level of the longterm budgets written at the end
+of each run. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 0
+  </entry>
 
 </namelist_definition>

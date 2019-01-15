@@ -107,7 +107,7 @@ import collections
 # pylint: disable=wildcard-import,unused-wildcard-import
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect
+from CIME.utils import expect, string_in_list
 import six
 
 logger = logging.getLogger(__name__)
@@ -115,7 +115,7 @@ logger = logging.getLogger(__name__)
 # Fortran syntax regular expressions.
 # Variable names.
 #FORTRAN_NAME_REGEX = re.compile(r"(^[a-z][a-z0-9_]{0,62})(\([+-]?\d*:?[+-]?\d*:?[+-]?\d*\))?$", re.IGNORECASE)
-FORTRAN_NAME_REGEX = re.compile(r"""(^[a-z][a-z0-9_]{0,62})                             #  The variable name
+FORTRAN_NAME_REGEX = re.compile(r"""(^[a-z][a-z0-9_@]{0,62})                            #  The variable name
                                   (\(                                                   # begin optional index expression
                                   (([+-]?\d+)                                           # Single valued index
                                   |                                                     # or
@@ -898,12 +898,9 @@ class Namelist(object):
         if groups is not None:
             for group_name in groups:
                 expect(group_name is not None, " Got None in groups {}".format(groups))
-                group_lc = group_name.lower()
-                self._groups[group_lc] = collections.OrderedDict()
+                self._groups[group_name] = collections.OrderedDict()
                 for variable_name in groups[group_name]:
-                    variable_lc = variable_name.lower()
-                    self._groups[group_lc][variable_lc] = \
-                                        groups[group_name][variable_name]
+                    self._groups[group_name][variable_name] = groups[group_name][variable_name]
 
     def clean_groups(self):
         self._groups = collections.OrderedDict()
@@ -935,10 +932,10 @@ class Namelist(object):
         >>> sorted(x.get_variable_names('fOo'))
         ['bar(::)', 'bazz', 'bazz(2)', 'bazz(:2:)']
         """
-        group_name = group_name.lower()
-        if group_name not in self._groups:
+        gn = string_in_list(group_name,self._groups)
+        if not gn:
             return []
-        return list(self._groups[group_name].keys())
+        return list(self._groups[gn].keys())
 
     def get_variable_value(self, group_name, variable_name):
         """Return the value of the specified variable.
@@ -954,13 +951,12 @@ class Namelist(object):
         >>> parse(text='&foo bar=1,2 /').get_variable_value('foO', 'Bar')
         ['1', '2']
         """
-        group_name = group_name.lower()
-        variable_name = variable_name.lower()
-        if group_name not in self._groups or \
-           variable_name not in self._groups[group_name]:
-            return ['']
-
-        return self._groups[group_name][variable_name]
+        gn = string_in_list(group_name,self._groups)
+        if gn:
+            vn = string_in_list(variable_name,self._groups[gn])
+            if vn:
+                return self._groups[gn][vn]
+        return ['']
 
     def get_value(self, variable_name):
         """Return the value of a uniquely-named variable.
@@ -980,14 +976,18 @@ class Namelist(object):
         >>> parse(text='&foo / &bazz /').get_value('bar')
         ['']
         """
-        variable_name = variable_name.lower()
-        possible_groups = [group_name for group_name in self._groups
-                           if variable_name in self._groups[group_name]]
+        possible_groups = []
+        vn = None
+        for group_name in self._groups:
+            vnt = string_in_list(variable_name, self._groups[group_name])
+            if vnt:
+                vn = vnt
+                possible_groups.append(group_name)
         expect(len(possible_groups) <= 1,
                "Namelist.get_value: Variable {} is present in multiple groups: "
                + str(possible_groups))
         if possible_groups:
-            return self._groups[possible_groups[0]][variable_name]
+            return self._groups[possible_groups[0]][vn]
         else:
             return ['']
 
@@ -1016,32 +1016,33 @@ class Namelist(object):
         >>> x.get_variable_value('foo', 'red')
         ['', '2', '', '4', '', '6']
         """
-        group_name = group_name.lower()
-
         minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
-        variable_name = get_fortran_name_only(variable_name.lower())
+        variable_name = get_fortran_name_only(variable_name)
 
         expect(minindex > 0, "Indices < 1 not supported in CIME interface to fortran namelists... lower bound={}".format(minindex))
+        gn = string_in_list(group_name,self._groups)
+        if not gn:
+            gn = group_name
+            self._groups[gn] = {}
 
-        if group_name not in self._groups:
-            self._groups[group_name] = {}
         tlen = 1
-        if variable_name in self._groups[group_name]:
-            tlen = len(self._groups[group_name][variable_name])
+        vn = string_in_list(variable_name, self._groups[gn])
+        if vn:
+            tlen = len(self._groups[gn][vn])
         else:
+            vn = variable_name
             tlen = 1
-            self._groups[group_name][variable_name] = ['']
+            self._groups[gn][vn] = ['']
 
         if minindex > tlen:
-            self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
+            self._groups[gn][vn].extend(['']*(minindex-tlen-1))
 
         for i in range(minindex, maxindex+2*step, step):
-            while len(self._groups[group_name][variable_name]) < i:
-                self._groups[group_name][variable_name].append('')
-            self._groups[group_name][variable_name][i-1] = value.pop(0)
+            while len(self._groups[gn][vn]) < i:
+                self._groups[gn][vn].append('')
+            self._groups[gn][vn][i-1] = value.pop(0)
             if len(value) == 0:
                 break
-
 
     def delete_variable(self, group_name, variable_name):
         """Delete a variable from a specified group.
@@ -1057,11 +1058,11 @@ class Namelist(object):
         >>> x.get_variable_names('brack')
         []
         """
-        group_name = group_name.lower()
-        variable_name = variable_name.lower()
-        if group_name in self._groups and \
-           variable_name in self._groups[group_name]:
-            del self._groups[group_name][variable_name]
+        gn = string_in_list(group_name,self._groups)
+        if gn:
+            vn=string_in_list(variable_name,self._groups[gn])
+            if vn:
+                del self._groups[gn][vn]
 
     def merge_nl(self, other, overwrite=False):
         """Merge this namelist object with another.
@@ -1132,8 +1133,9 @@ class Namelist(object):
             group_variables[name] = value
         return group_variables
 
-    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
-        """Write a Fortran namelist to a file.
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True,
+              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+        """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
         file object with a `write` method that accepts unicode. If specified,
@@ -1147,16 +1149,24 @@ class Namelist(object):
         specifies the file format. Formats other than 'nml' may not support all
         possible output values.
         """
-        expect(format_ in ('nml', 'rc', 'nmlcontents'),
+        expect(format_ in ('nml', 'rc', 'nmlcontents', 'nuopc'),
                "Namelist.write: unexpected output format {!r}".format(str(format_)))
         if isinstance(out_file, six.string_types):
             logger.debug("Writing namelist to: {}".format(out_file))
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
-                self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
+                if format_ == 'nuopc':
+                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups,
+                                      skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                else:
+                    self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
-            self._write(out_file, groups, format_, sorted_groups=sorted_groups)
+            if format_ == 'nuopc':
+                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups,
+                                  skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+            else:
+                self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
     def _write(self, out_file, groups, format_, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
@@ -1167,7 +1177,7 @@ class Namelist(object):
         elif format_ == 'rc':
             equals = ':'
         if (sorted_groups):
-            group_names = sorted(group.lower() for group in groups)
+            group_names = sorted(group for group in groups)
         else:
             group_names = groups
         for group_name in group_names:
@@ -1204,6 +1214,95 @@ class Namelist(object):
             if format_ == 'nmlcontents':
                 out_file.write("\n")
 
+
+    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt):
+        """Unwrapped version of `write` assuming that a file object is input."""
+        if groups is None:
+            groups = self._groups.keys()
+
+        if (sorted_groups):
+            group_names = sorted(group for group in groups)
+        else:
+            group_names = groups
+
+        for group_name in group_names:
+            if "_attributes" not in group_name and "nuopc_" not in group_name:
+                continue
+
+            if "_attributes" in group_name:
+                out_file.write("{}::\n".format(group_name))
+
+            group = self._groups[group_name]
+            for name in sorted(group.keys()):
+                values = group[name]
+                if "component_list" in name:
+                    for skip_comp in skip_comps:
+                        if skip_comp in values[0]:
+                            values[0] = values[0].replace(skip_comp,"")
+
+                # @ is used in a namelist to put the same namelist variable in multiple groups
+                # in the write phase, all characters in the namelist variable name after
+                # the @ and including the @ should be removed
+                if "@" in name:
+                    name = re.sub('@.+$', "", name)
+
+                equals = " ="
+                if group_name == 'nuopc_runseq':
+                    equals = '::\n       '
+                elif "_var" in group_name:
+                    equals = ':'
+
+                # To prettify things for long lists of values, build strings
+                # line-by-line.
+                if values[0] == "True" or values[0] == "False":
+                    values[0] = values[0].replace("True",".true.").replace("False",".false.")
+
+                if "_attribute" in group_name:
+                    lines = ["     {}{} {}".format(name, equals, values[0])]
+                else:
+                    lines = ["{}{} {}".format(name, equals, values[0])]
+
+                for value in values[1:]:
+                    if value == "True" or value == "False":
+                        value = value.replace("True",".true.").replace("False",".false.")
+                    if len(lines[-1]) + len(value) <= 77:
+                        lines[-1] += ", " + value
+                    else:
+                        lines[-1] += ",\n"
+                        lines.append("      " + value)
+                lines[-1] += "\n"
+                for line in lines:
+                    line = line.replace('"','')
+                    # remove un-needed entries from the nuopc_runseq based
+                    # on the prognostic_comps and skip_comps lists
+                    if group_name == 'nuopc_runseq':
+                        run_entries = line.splitlines()
+                        newline = ""
+                        for run_entry in run_entries:
+                            print_entry = True
+                            for skip_comp in skip_comps:
+                                if "@" not in run_entry:
+                                    if skip_comp in run_entry:
+                                        print_entry = False
+                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
+                                    elif "_"+skip_comp.lower().strip() in run_entry:
+                                        print_entry = False
+                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
+                                    elif "2"+skip_comp.lower().strip() in run_entry:
+                                        print_entry = False
+                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
+                            if print_entry:
+                                if "@atm_cpl_dt" in run_entry:
+                                    run_entry = run_entry.replace("atm_cpl_dt",atm_cpl_dt)
+                                if "@ocn_cpl_dt" in run_entry:
+                                    run_entry = run_entry.replace("ocn_cpl_dt",ocn_cpl_dt)
+                                newline += run_entry + "\n"
+                        out_file.write(newline)
+                    else:
+                        out_file.write(line)
+
+            if "_attribute" in group_name or "runseq" in group_name:
+                out_file.write("::\n\n")
 
 class _NamelistEOF(Exception):
 

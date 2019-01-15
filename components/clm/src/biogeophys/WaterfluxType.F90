@@ -461,61 +461,45 @@ contains
          avgflag='A', long_name='excess snowfall due to snow capping not including correction for land use change', &
          ptr_col=this%qflx_snwcp_ice_col, c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_rain_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_RAIN_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='rain on ground after interception', &
-            ptr_patch=this%qflx_rain_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_rain_grnd_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_RAIN_GRND', units='mm H2O/s', &
+         avgflag='A', long_name='rain on ground after interception', &
+         ptr_patch=this%qflx_rain_grnd_patch, default='inactive', c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_snow_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_SNOW_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='snow on ground after interception', &
-            ptr_patch=this%qflx_snow_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_snow_grnd_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_SNOW_GRND', units='mm H2O/s', &
+         avgflag='A', long_name='snow on ground after interception', &
+         ptr_patch=this%qflx_snow_grnd_patch, default='inactive', c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_evap_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_EVAP_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='ground surface evaporation', &
-            ptr_patch=this%qflx_evap_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_evap_grnd_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_EVAP_GRND', units='mm H2O/s', &
+         avgflag='A', long_name='ground surface evaporation', &
+         ptr_patch=this%qflx_evap_grnd_patch, default='inactive', c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_evap_veg_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_EVAP_VEG', units='mm H2O/s', &
-            avgflag='A', long_name='vegetation evaporation', &
-            ptr_patch=this%qflx_evap_veg_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_evap_veg_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_EVAP_VEG', units='mm H2O/s', &
+         avgflag='A', long_name='vegetation evaporation', &
+         ptr_patch=this%qflx_evap_veg_patch, default='inactive', c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_evap_tot_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_EVAP_TOT', units='mm H2O/s', &
-            avgflag='A', long_name='qflx_evap_soi + qflx_evap_can + qflx_tran_veg', &
-            ptr_patch=this%qflx_evap_tot_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_evap_tot_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_EVAP_TOT', units='mm H2O/s', &
+         avgflag='A', long_name='qflx_evap_soi + qflx_evap_can + qflx_tran_veg', &
+         ptr_patch=this%qflx_evap_tot_patch, c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_dew_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_DEW_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='ground surface dew formation', &
-            ptr_patch=this%qflx_dew_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_dew_grnd_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_DEW_GRND', units='mm H2O/s', &
+         avgflag='A', long_name='ground surface dew formation', &
+         ptr_patch=this%qflx_dew_grnd_patch, default='inactive', c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_sub_snow_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_SUB_SNOW', units='mm H2O/s', &
-            avgflag='A', long_name='sublimation rate from snow pack', &
-            ptr_patch=this%qflx_sub_snow_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_sub_snow_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_SUB_SNOW', units='mm H2O/s', &
+         avgflag='A', long_name='sublimation rate from snow pack', &
+         ptr_patch=this%qflx_sub_snow_patch, default='inactive', c2l_scale_type='urbanf')
 
-    if (use_cn) then
-       this%qflx_dew_snow_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_DEW_SNOW', units='mm H2O/s', &
-            avgflag='A', long_name='surface dew added to snow pacK', &
-            ptr_patch=this%qflx_dew_snow_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
+    this%qflx_dew_snow_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QFLX_DEW_SNOW', units='mm H2O/s', &
+         avgflag='A', long_name='surface dew added to snow pacK', &
+         ptr_patch=this%qflx_dew_snow_patch, default='inactive', c2l_scale_type='urbanf')
 
     this%qflx_h2osfc_surf_col(begc:endc) = spval
     call hist_addfld1d (fname='QH2OSFC',  units='mm/s',  &
@@ -576,7 +560,7 @@ contains
     this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
 
     this%dwb_col(bounds%begc:bounds%endc) = 0._r8
-    ! needed for CNNLeaching 
+    ! needed for NitrogenLeaching 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then

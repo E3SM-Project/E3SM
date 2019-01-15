@@ -504,8 +504,8 @@ contains
     if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
     File%iosystem%comp_rank,' UseRearranger: ',UseRearranger,iodesc%glen, iodesc%iomap%start, len
 #ifdef TIMING
-    call t_startf("PIO:pio_rearrange_write")
     call t_startf("PIO:pre_pio_write_nf")
+    call t_startf("PIO:pio_rearrange_write")
 #endif
     if(UseRearranger) then
        if (IOproc) then
@@ -1315,7 +1315,7 @@ contains
 #ifdef _PNETCDF
        ierr  = nfmpi_wait_all(file%fh, cnt-1, array_of_requests, status)
 #endif
-       if(DEBUG) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
+       if(Debug) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
 
        ptr=>file%data_list_top
        do while(associated(ptr))
@@ -1553,4 +1553,3 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
 
 
 end module piodarray
-

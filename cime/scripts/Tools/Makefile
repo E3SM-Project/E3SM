@@ -32,6 +32,7 @@ complib: $(COMPLIB)  Depends
 
 
 CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
+COMP_INTERFACE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_INTERFACE --value)
 EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
 SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
 SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
@@ -41,6 +42,7 @@ COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --valu
 NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
 PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
+COMPARE_TO_NUOPC ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPARE_TO_NUOPC --value)
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -88,6 +90,10 @@ ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
    USE_KOKKOS = TRUE
 endif
 
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
+
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
@@ -108,6 +114,24 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
+ifeq ($(COMP_INTERFACE), nuopc)
+   CPPDEFS += -DNUOPC_INTERFACE
+   CPPDEFS += -DESMFUSE_$(COMP_ATM)
+   CPPDEFS += -DESMFUSE_$(COMP_LND)
+   CPPDEFS += -DESMFUSE_$(COMP_OCN)
+   CPPDEFS += -DESMFUSE_$(COMP_ICE)
+   CPPDEFS += -DESMFUSE_$(COMP_ROF)
+   CPPDEFS += -DESMFUSE_$(COMP_WAV)
+   CPPDEFS += -DESMFUSE_$(COMP_GLC)
+   CPPDEFS += -DESMFUSE_$(COMP_ESP)
+else
+   CPPDEFS += -DMCT_INTERFACE
+endif
+
+ifeq ($(COMPARE_TO_NUOPC), TRUE)
+   CPPDEFS += -DCOMPARE_TO_NUOPC
+endif
+
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
 else
@@ -119,7 +143,7 @@ ifeq ($(strip $(PIO_VERSION)),1)
 endif
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
@@ -324,6 +348,28 @@ else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
+# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+CIME_ESMFMKFILE := undefined_ESMFMKFILE
+ifdef ESMFMKFILE
+   CIME_ESMFMKFILE := $(ESMFMKFILE)
+endif
+ifdef ESMF_LIBDIR
+   CIME_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
+endif
+# For compiling and linking with external ESMF.
+# If linking to external ESMF library then include esmf.mk
+# ESMF_F90COMPILEPATHS
+# ESMF_F90LINKPATHS
+# ESMF_F90LINKRPATHS
+# ESMF_F90ESMFLINKLIBS
+ifeq ($(USE_ESMF_LIB), TRUE)
+  -include $(CIME_ESMFMKFILE)
+  CPPDEFS += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR) -DESMF_VERSION_MINOR=$(ESMF_VERSION_MINOR)
+  FFLAGS += $(ESMF_F90COMPILEPATHS)
+  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+endif
+
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -473,8 +519,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS+=$(CPPDEFS)
-
+CXXFLAGS := $(CFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -524,15 +569,6 @@ endif
 
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
-CCSM_ESMFMKFILE := undefined_CCSM_ESMFMKFILE
-ifdef ESMFMKFILE
-   CCSM_ESMFMKFILE := $(ESMFMKFILE)
-endif
-ifdef ESMF_LIBDIR
-   CCSM_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
-endif
-
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
@@ -556,20 +592,9 @@ ifdef LIB_MPI
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
 endif
+
 ifdef LIB_KOKKOS
    SLIBS += -L$(LIB_KOKKOS) -lkokkos
-endif
-
-# For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk
-# ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
-# ESMF_F90LINKRPATHS
-# ESMF_F90ESMFLINKLIBS
-ifeq ($(USE_ESMF_LIB), TRUE)
-  -include $(CCSM_ESMFMKFILE)
-  FFLAGS += $(ESMF_F90COMPILEPATHS)
-  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
 # Add PETSc libraries

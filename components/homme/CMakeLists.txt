@@ -113,6 +113,13 @@ IF (${HOMME_USE_CXX})
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF ()
 
+# Option to use ARKode package from SUNDIALS
+OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
+IF (${HOMME_USE_ARKODE})
+  MESSAGE(STATUS "Using ARKode, adding -DARKODE")
+  ADD_DEFINITIONS(-DARKODE)
+ENDIF ()
+
 IF (${HOMME_USE_KOKKOS})
   ############################################
   # Selection of Kokkos execution space
@@ -223,6 +230,12 @@ IF (DEFINED EXTRAE_DIR)
   MESSAGE(STATUS "Building with Extrae")
   FIND_PACKAGE(Extrae REQUIRED)
   SET(HAVE_EXTRAE TRUE)
+ENDIF ()
+
+# this section is for linking to SUNDIALS/ARKODE as an external library
+IF (DEFINED SUNDIALS_DIR)
+  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib)
+  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
 ENDIF ()
 
 ###########################################

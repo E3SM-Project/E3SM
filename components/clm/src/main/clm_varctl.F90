@@ -158,7 +158,7 @@ module clm_varctl
   ! used to override an error check on reading in restart files
   logical, public :: override_bgc_restart_mismatch_dump = .false. 
 
-  ! Set in CNAllocationInit (TODO - had to move it here to avoid circular dependency)
+  ! Set in AllocationInit (TODO - had to move it here to avoid circular dependency)
   logical, private:: carbon_only      
   logical, private:: carbonnitrogen_only      
   logical, private:: carbonphosphorus_only      
@@ -195,6 +195,10 @@ module clm_varctl
   logical, public            :: use_fates_ed_prescribed_phys = .false. ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.     ! true => initialize fates from inventory
   character(len=256), public :: fates_inventory_ctrl_filename = ''     ! filename for inventory control
+  integer, public            :: fates_parteh_mode = -9                 ! 1 => carbon only
+                                                                       ! 2 => C+N+P (not enabled yet)
+                                                                       ! no others enabled
+
 
   !----------------------------------------------------------
   !  BeTR switches
@@ -374,6 +378,16 @@ module clm_varctl
    character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
 
 
+  !----------------------------------------------------------
+  ! Budgets
+  !----------------------------------------------------------
+   logical, public :: do_budgets   = .false.
+   integer, public :: budget_inst  = 0
+   integer, public :: budget_daily = 0
+   integer, public :: budget_month = 1
+   integer, public :: budget_ann   = 1
+   integer, public :: budget_ltann = 1
+   integer, public :: budget_ltend = 0
 contains
 
   !---------------------------------------------------------------------------

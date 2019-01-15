@@ -1063,6 +1063,9 @@ end subroutine diag_conv_tend_ini
 
 ! Vertical velocity and advection
 
+! EUL-SCM does not properly assign prescribed wfld to state%omega, while SE-SCM does.
+! Keep the original form of outfld for OMEGA until it is fixed for EUL-SCM
+ 
     if (single_column) then
        call outfld('OMEGA   ',wfld,    pcols,   lchnk     )
     else
@@ -1583,6 +1586,7 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('shflx   ',cam_in%shf,   pcols,   lchnk)
     call outfld('lhflx   ',cam_in%lhf,   pcols,   lchnk)
     call outfld('trefht  ',cam_in%tref,  pcols,   lchnk)
+    call outfld('Tg', cam_in%ts, pcols, lchnk)
 #endif
 !
 ! Ouput ocn and ice fractions

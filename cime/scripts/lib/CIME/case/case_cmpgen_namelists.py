@@ -6,7 +6,7 @@ case_cmpgen_namelists is a member of Class case from file case.py
 from CIME.XML.standard_module_setup import *
 
 from CIME.compare_namelists import is_namelist_file, compare_namelist_files
-from CIME.simple_compare import compare_files
+from CIME.simple_compare import compare_files, compare_runconfigfiles
 from CIME.utils import append_status, safe_copy
 from CIME.test_status import *
 
@@ -40,7 +40,9 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
             comments += "Missing baseline namelist '{}'\n".format(baseline_counterpart)
             all_match = False
         else:
-            if is_namelist_file(item):
+            if item.endswith("runconfig") or item.endswith("runseq"):
+                success, current_comments = compare_runconfigfiles(baseline_counterpart, item, test)
+            elif is_namelist_file(item):
                 success, current_comments = compare_namelist_files(baseline_counterpart, item, test)
             else:
                 success, current_comments = compare_files(baseline_counterpart, item, test)

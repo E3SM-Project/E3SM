@@ -32,6 +32,7 @@ class SystemTestsCommon(object):
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
         self._skip_pnl = False
+        self._cpllog = "med" if self._case.get_value("COMP_INTERFACE")=="nuopc" else "cpl"
 
     def _init_environment(self, caseroot):
         """
@@ -402,7 +403,7 @@ class SystemTestsCommon(object):
         find and return the latest cpl log file in the run directory
         """
         coupler_log_path = self._case.get_value("RUNDIR")
-        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl*.log.*'))
+        cpllogs = glob.glob(os.path.join(coupler_log_path, '{}*.log.*'.format(self._cpllog)))
         lastcpllogs = []
         if cpllogs:
             lastcpllogs.append(max(cpllogs, key=os.path.getctime))
@@ -426,12 +427,12 @@ class SystemTestsCommon(object):
             if len(newestcpllogfiles) > 0:
                 memlist = self._get_mem_usage(newestcpllogfiles[0])
             for cpllog in newestcpllogfiles:
-                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
+                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
                 if m is not None:
                     baselog = os.path.join(basecmp_dir, m.group(1))+".gz"
                 if baselog is None or not os.path.isfile(baselog):
                     # for backward compatibility
-                    baselog = os.path.join(basecmp_dir, "cpl.log")
+                    baselog = os.path.join(basecmp_dir, self._cpllog+".log")
                 if os.path.isfile(baselog) and len(memlist) > 3:
                     blmem = self._get_mem_usage(baselog)
                     blmem = 0 if blmem == [] else blmem[-1][1]
@@ -451,12 +452,12 @@ class SystemTestsCommon(object):
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), baseline_name)
             newestcpllogfiles = self._get_latest_cpl_logs()
             for cpllog in newestcpllogfiles:
-                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
+                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog), cpllog)
                 if m is not None:
                     baselog = os.path.join(basecmp_dir, m.group(1))+".gz"
                 if baselog is None or not os.path.isfile(baselog):
                     # for backward compatibility
-                    baselog = os.path.join(basecmp_dir, "cpl.log")
+                    baselog = os.path.join(basecmp_dir, self._cpllog)
 
                 if os.path.isfile(baselog):
                     # compare throughput to baseline
@@ -505,7 +506,7 @@ class SystemTestsCommon(object):
             # drop the date so that the name is generic
             newestcpllogfiles = self._get_latest_cpl_logs()
             for cpllog in newestcpllogfiles:
-                m = re.search(r"/(cpl.*.log).*.gz",cpllog)
+                m = re.search(r"/({}.*.log).*.gz".format(self._cpllog),cpllog)
                 if m is not None:
                     baselog = os.path.join(basegen_dir, m.group(1))+".gz"
                     safe_copy(cpllog,
@@ -536,7 +537,7 @@ class FakeTest(SystemTestsCommon):
 
             build.post_build(self._case, [], build_complete=True)
 
-    def run_indv(self, suffix='base', st_archive=False):
+    def run_indv(self, suffix="base", st_archive=False):
         mpilib = self._case.get_value("MPILIB")
         # This flag is needed by mpt to run a script under mpiexec
         if mpilib == "mpt":
@@ -552,9 +553,9 @@ class TESTRUNPASS(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(rundir, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
@@ -574,13 +575,13 @@ class TESTRUNDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
 else
-  cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc
 fi
-""".format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
@@ -594,10 +595,10 @@ class TESTTESTDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
-""".format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc.rest
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
                                               model_only=model_only)
@@ -616,14 +617,14 @@ class TESTRUNFAIL(FakeTest):
 """
 if [ -z "$TESTRUNFAIL_PASS" ]; then
   echo Insta fail
-  echo model failed > {}/cpl.log.$LID
+  echo model failed > {rundir}/{log}.log.$LID
   exit -1
 else
   echo Insta pass
-  echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+  echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
 fi
-""".format(rundir, rundir, cimeroot, rundir, case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
@@ -668,9 +669,9 @@ class TESTRUNSLOWPASS(FakeTest):
 """
 sleep 300
 echo Slow pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(rundir, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -684,9 +685,9 @@ class TESTMEMLEAKFAIL(FakeTest):
         script = \
 """
 echo Insta pass
-gunzip -c {} > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(testfile, rundir, cimeroot, rundir, case)
+gunzip -c {testfile} > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(testfile=testfile, rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -700,9 +701,9 @@ class TESTMEMLEAKPASS(FakeTest):
         script = \
 """
 echo Insta pass
-gunzip -c {} > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(testfile, rundir, cimeroot, rundir, case)
+gunzip -c {testfile} > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(testfile=testfile, rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)

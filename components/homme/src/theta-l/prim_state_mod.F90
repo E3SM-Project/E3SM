@@ -92,6 +92,7 @@ contains
     real (kind=real_kind)  :: dp(np,np)
     real (kind=real_kind)  :: phi_i(np,np,nlevp)
     real (kind=real_kind)  :: dphi(np,np,nlev)
+    real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_local(nets:nete),w_over_dz_p
     real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
 
@@ -211,6 +212,9 @@ contains
        call get_phi(elem(ie),dphi,phi_i,hvcoord,n0,n0q)
        do k=1,nlev
           dphi(:,:,k)=-(phi_i(:,:,k+1)-phi_i(:,:,k))
+          w_over_dz(:,:,k)=&
+             g*max(elem(ie)%state%w_i(:,:,k,n0)/dphi(:,:,k),&
+             elem(ie)%state%w_i(:,:,k+1,n0)/dphi(:,:,k))
        enddo
 
        ! surface pressure
@@ -221,6 +225,7 @@ contains
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
+       w_over_dz_local(ie)  = MAXVAL(w_over_dz)
        thetamax_local(ie) = MAXVAL(elem(ie)%state%vtheta_dp(:,:,:,n0)) 
 
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
@@ -333,6 +338,8 @@ contains
     phimin_p = ParallelMin(phimin_local,hybrid)
     phimax_p = ParallelMax(phimax_local,hybrid)
 
+    w_over_dz_p = ParallelMax(w_over_dz_local,hybrid)
+
     call wrap_repro_sum(nvars=12, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
@@ -388,6 +395,8 @@ contains
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
+       if (.not.theta_hydrostatic_mode) &
+          write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
     end if
  
 

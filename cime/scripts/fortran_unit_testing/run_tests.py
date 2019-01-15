@@ -57,6 +57,10 @@ runs "make clean"."""
     parser.add_argument("--cmake-args",
                         help="""Additional arguments to pass to CMake."""
                         )
+    parser.add_argument("--comp-interface",
+                        default="mct",
+                        help="""The cime driver/cpl interface to use."""
+                        )
     parser.add_argument("--color", action="store_true",
                         default=sys.stdout.isatty(),
                         help="""Turn on colorized output."""
@@ -142,7 +146,7 @@ override the command provided by Machines."""
     return output, args.build_dir, args.build_optimized, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
         args.make_j, args.use_mpi, args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
-        args.use_openmp, args.xml_test_list, args.verbose
+        args.use_openmp, args.xml_test_list, args.verbose, args.comp_interface
 
 
 def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_command, output, pfunit_path,
@@ -156,12 +160,10 @@ def cmake_stage(name, test_spec_dir, build_optimized, use_mpiserial, mpirun_comm
                               that need it
     build_optimized (logical) - If True, we'll build in optimized rather than debug mode
     """
-    # Clear CMake cache.
     if clean:
-        pwd_contents = os.listdir(os.getcwd())
-        if "CMakeCache.txt" in pwd_contents:
+        if os.path.isfile("CMakeCache.txt"):
             os.remove("CMakeCache.txt")
-        if "CMakeFiles" in pwd_contents:
+        if os.path.isdir("CMakeFiles"):
             rmtree("CMakeFiles")
 
     if not os.path.isfile("CMakeCache.txt"):
@@ -254,7 +256,7 @@ def _main():
     output, build_dir, build_optimized, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
         make_j, use_mpi, mpilib, mpirun_command, test_spec_dir, ctest_args,\
-        use_openmp, xml_test_list, verbose \
+        use_openmp, xml_test_list, verbose, comp_interface \
         = parse_command_line(sys.argv)
 
 #=================================================
@@ -292,6 +294,13 @@ def _main():
 
     # Switch to the build directory.
     os.chdir(build_dir)
+    if clean:
+        pwd_contents = os.listdir(os.getcwd())
+        # Clear CMake cache.
+        for file_ in pwd_contents:
+            if file_ in ("Macros.cmake", "env_mach_specific.xml") \
+                    or file_.startswith('Depends') or file_.startswith(".env_mach_specific"):
+                os.remove(file_)
 
     #=================================================
     # Functions to perform various stages of build.
@@ -317,11 +326,11 @@ def _main():
     # Create the environment, and the Macros.cmake file
     #
     #
-    configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_,
-              unit_testing=True)
+    configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug,
+              comp_interface, os_, unit_testing=True)
     machspecific = EnvMachSpecific(build_dir, unit_testing=True)
 
-    fake_case = FakeCase(compiler, mpilib, debug)
+    fake_case = FakeCase(compiler, mpilib, debug, comp_interface)
     machspecific.load_env(fake_case)
     os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
@@ -346,6 +355,7 @@ def _main():
             "compiler" : compiler,
             "mpilib"   : mpilib,
             "threaded" : use_openmp,
+            "comp_interface" : comp_interface,
             "unit_testing" : True
         }
 
@@ -400,7 +410,9 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
+            logger.info("Running '{}'".format(" ".join(ctest_command)))
+            output = run_cmd_no_fail(" ".join(ctest_command), from_dir=label, combine_output=True)
+            logger.info(output)
 
 if __name__ == "__main__":
     _main()

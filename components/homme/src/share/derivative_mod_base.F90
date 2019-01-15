@@ -1163,7 +1163,6 @@ contains
        end do
     end do
 
-!dir$ simd
     div(:,:)=(div(:,:)+vvtemp(:,:))*(elem%rmetdet(:,:)*rrearth)
     
   end function divergence_sphere

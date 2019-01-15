@@ -65,6 +65,8 @@ module mpaso_cpl_indices
   integer :: index_x2o_Faxa_lwdn       ! longwave radiation (down)        (W/m2   )
   integer :: index_x2o_Fioi_melth      ! heat flux from snow & ice melt   (W/m2   )
   integer :: index_x2o_Fioi_meltw      ! snow melt flux                   (kg/m2/s)
+  integer :: index_x2o_Fioi_bergh      ! heat flux from iceberg melt      (W/m2   )
+  integer :: index_x2o_Fioi_bergw      ! iceberg melt flux                (kg/m2/s)
   integer :: index_x2o_Fioi_salt       ! salt                             (kg(salt)/m2/s)
   integer :: index_x2o_Foxx_evap       ! evaporation flux                 (kg/m2/s)
   integer :: index_x2o_Faxa_prec         
@@ -172,6 +174,8 @@ contains
     index_x2o_Faxa_lwdn     = mct_avect_indexra(x2o,'Faxa_lwdn')
     index_x2o_Fioi_melth    = mct_avect_indexra(x2o,'Fioi_melth')   
     index_x2o_Fioi_meltw    = mct_avect_indexra(x2o,'Fioi_meltw')
+    index_x2o_Fioi_bergh    = mct_avect_indexra(x2o,'PFioi_bergh')
+    index_x2o_Fioi_bergw    = mct_avect_indexra(x2o,'PFioi_bergw')
     index_x2o_Fioi_salt     = mct_avect_indexra(x2o,'Fioi_salt')   
     index_x2o_Faxa_prec     = mct_avect_indexra(x2o,'Faxa_prec')   
     index_x2o_Faxa_snow     = mct_avect_indexra(x2o,'Faxa_snow')   

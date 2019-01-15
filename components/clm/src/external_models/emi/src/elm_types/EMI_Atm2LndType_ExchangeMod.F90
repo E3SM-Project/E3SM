@@ -7,6 +7,8 @@ module EMI_Atm2LndType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use Atm2LndType                           , only : atm2lnd_type
+  use TopounitType                          , only : top_as
+  use ColumnType                            , only : col_pp
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -48,15 +50,15 @@ contains
     type(atm2lnd_type)     , intent(in) :: atm2lndtype_vars
     !
     ! !LOCAL_VARIABLES:
-    integer                             :: fc,c,j
+    integer                             :: fc,t,c,j
     class(emi_data), pointer            :: cur_data
     logical                             :: need_to_pack
     integer                             :: istage
     integer                             :: count
 
     associate(& 
-         forc_pbot_downscaled => atm2lndtype_vars%forc_pbot_downscaled_col , &
-         forc_t_downscaled    => atm2lndtype_vars%forc_t_downscaled_col      &
+         forc_pbot_downscaled => top_as%pbot , &
+         forc_t_downscaled    => top_as%tbot   &
          )
 
     count = 0
@@ -80,14 +82,16 @@ contains
           case (L2E_STATE_FORC_PBOT_DOWNSCALED)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_real_1d(c) = forc_pbot_downscaled(c)
+                t = col_pp%topounit(c)
+                cur_data%data_real_1d(c) = forc_pbot_downscaled(t)
              enddo
              cur_data%is_set = .true.
 
           case (L2E_STATE_FORC_T_DOWNSCALED)
              do fc = 1, num_filter
                 c = filter(fc)
-                cur_data%data_real_1d(c) = forc_t_downscaled(c)
+                t = col_pp%topounit(c)
+                cur_data%data_real_1d(c) = forc_t_downscaled(t)
              enddo
              cur_data%is_set = .true.
 
