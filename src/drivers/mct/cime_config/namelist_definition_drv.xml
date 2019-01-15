@@ -679,7 +679,7 @@
     </desc>
     <values>
       <value cime_model='e3sm'>.false.</value>
-      <value cime_model='cesm'>.true.</value>
+      <value cime_model='cesm'>.false.</value>
     </values>
   </entry>
 
