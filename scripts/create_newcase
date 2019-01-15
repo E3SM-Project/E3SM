@@ -20,7 +20,7 @@ def parse_command_line(args, cimeroot, description):
     CIME.utils.setup_standard_logging_options(parser)
     try:
         cime_config = get_cime_config()
-    except:
+    except Exception:
         cime_config = None
 
     parser.add_argument("--case", "-case", required=True, metavar="CASENAME",

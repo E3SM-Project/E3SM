@@ -496,7 +496,10 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
                                            run_one_should_pass = False)
 
         # Exercise
-        mytest.run()
+        try:
+            mytest.run()
+        except Exception:
+            pass
 
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
@@ -512,7 +515,10 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
                                            run_two_should_pass = False)
 
         # Exercise
-        mytest.run()
+        try:
+            mytest.run()
+        except Exception:
+            pass
 
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
