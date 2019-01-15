@@ -33,6 +33,7 @@ _TESTS = {
                              ("SMS_Ln9.ne4_ne4.FC5AV1C-L", "cam-outfrq9s"),
                              ("SMS.ne4_ne4.FC5AV1C-L", "cam-cosplite"),
                              "SMS_R_Ld5.T42_T42.FSCM5A97",
+                             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
                              "SMS_D_Ln5.ne4_ne4.FC5AV1C-L")
                             ),
 
