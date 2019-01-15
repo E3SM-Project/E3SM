@@ -55,9 +55,9 @@ int main(int argc, char **argv)
                               -1, &test_comm)))
         ERR(ERR_INIT);
 
-    /* Is the current process a computation task? */    
+    /* Is the current process a computation task? */
     int comp_task = my_rank < NUM_IO_PROCS ? 0 : 1;
-    
+
     /* Only do something on TARGET_NTASKS tasks. */
     if (my_rank < TARGET_NTASKS)
     {
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
                 int my_comp_idx = my_rank - 1; /* Index in iosysid array. */
                 int dim_len_2d[NDIM2] = {DIM_LEN2, DIM_LEN3};
                 int ioid = 0;
-                
+
                 if ((ret = create_decomposition_2d(NUM_COMP_PROCS, my_rank, iosysid[my_comp_idx], dim_len_2d,
                                                    &ioid, PIO_SHORT)))
                     ERR(ret);
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
                     if ((ret = create_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx,
                                                   filename, TEST_NAME, verbose, use_darray, ioid)))
                         ERR(ret);
-                    
+
                     /* Check the file for correctness. */
                     if ((ret = check_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx,
                                                  filename, verbose, 0, ioid)))

@@ -109,13 +109,6 @@
     </values>
   </entry>
   -->
-<!--  <entry id="LND_PIO_REARRANGER">
-    <values>
-      <value compset="_CLM40" >2</value>
-      <value compset="_CLM45" >1</value>
-      <value compset="_CLM50" >1</value>
-    </values>
-  </entry> -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_STRIDE">

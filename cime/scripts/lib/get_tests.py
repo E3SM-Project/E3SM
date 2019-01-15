@@ -11,7 +11,7 @@ _ALL_TESTS = {}
 try:
     from tests import _TESTS # pylint: disable=import-error
     _ALL_TESTS.update(_TESTS)
-except:
+except ImportError:
     pass
 
 # Here are the tests belonging to e3sm suites. Format is
@@ -201,7 +201,7 @@ def get_full_test_names(testargs, machine, compiler):
         else:
             try:
                 tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
-            except:
+            except Exception:
                 if "." not in testarg:
                     expect(False, "Unrecognized test suite '{}'".format(testarg))
                 else:
