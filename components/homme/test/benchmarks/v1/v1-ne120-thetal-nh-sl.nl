@@ -2,8 +2,8 @@
 !-------------------------------------SL
 transport_alg=12
 semi_lagrange_cdr_alg=20
-rsplit=1
-qsplit=6
+rsplit=1                             !NOTE THAT RSPLIT HAS TO DIVIDE # OF TSTEPS/NMAX
+qsplit=6                             !NOTE THAT QSPLIT HAS TO DIVIDE # OF TSTEPS/NMAX
 hypervis_subcycle_q=6
 se_ftype=4
 nu_q=0

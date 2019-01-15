@@ -1,7 +1,7 @@
 &ctl_nl
 !-------------------------------------EULER
-rsplit=2
-qsplit=1
+rsplit=2                             !NOTE THAT RSPLIT HAS TO DIVIDE # OF TSTEPS/NMAX
+qsplit=1                             !NOTE THAT QSPLIT HAS TO DIVIDE # OF TSTEPS/NMAX
 hypervis_subcycle_q=4
 se_ftype=0
 !-------------------------------------HYDRO/NON
