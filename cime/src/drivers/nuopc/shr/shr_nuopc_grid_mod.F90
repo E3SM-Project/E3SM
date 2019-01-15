@@ -1,6 +1,6 @@
 !================================================================================
 module shr_nuopc_grid_mod
-    use shr_nuopc_utils_mod, only : shr_nuopc_utils_ChkErr
+  use shr_nuopc_utils_mod, only : shr_nuopc_utils_ChkErr
   implicit none
   private
 
@@ -247,7 +247,7 @@ contains
          elementConn=elemConn, &
          elementCoords=elemCoords, &
          rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     deallocate(iurpts)
     deallocate(nodeIds, nodeCoords, nodeOwners)
@@ -263,10 +263,12 @@ contains
     use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_SUCCESS
     use ESMF                  , only : ESMF_LogWrite, ESMF_FieldGet, ESMF_StateGet
     use ESMF                  , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
+    use ESMF                  , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
     use shr_kind_mod          , only : R8=>shr_kind_r8, CS=>shr_kind_cs, IN=>shr_kind_in
     use shr_string_mod        , only : shr_string_listGetName, shr_string_listGetNum
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_reset
-    use med_constants_mod, only : CL
+    use med_constants_mod     , only : CL, logunit => shr_log_unit
+
     !----- arguments -----
     real(r8)         , intent(inout) :: array(:,:)
     character(len=*) , intent(in)    :: rList
@@ -275,6 +277,8 @@ contains
     integer          , intent(out)   :: rc
 
     !----- local -----
+    type(ESMF_VM)     :: vm
+    integer           :: localpet
     integer(IN)       :: nflds, lsize, n, nf
     character(len=CS) :: fldname
     type(ESMF_Field)  :: lfield
@@ -286,6 +290,12 @@ contains
 
     rc = ESMF_SUCCESS
     call shr_nuopc_methods_State_reset(state, value = 0.0_r8, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     lsize = size(array, dim=2)
     nflds = shr_string_listGetNum(rList)
@@ -293,18 +303,23 @@ contains
       call shr_string_listGetName(rList, nf, fldname, dbrc)
 
       call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU)) then
-         call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", &
-              ESMF_LOGMSG_INFO, rc=dbrc)
+      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) then
+         ! we don't nessesarily want this message to trigger an ESMF error
+         if(localpet==0) write(logunit,*) trim(subname)//": fldname = "//trim(fldname)//" not found on state"
       else
          call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
+         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
          call ESMF_FieldGet(lfield, farrayPtr=farray1, rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
          do n = 1,lsize
             farray1(n) = array(nf,n)
          enddo
+#ifdef DEBUG
          write(tmpstr,'(a,3g13.6)') trim(subname)//":"//trim(fldname)//"=",minval(farray1),maxval(farray1),sum(farray1)
-         call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
+         call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
       end if
     enddo
 
@@ -318,9 +333,11 @@ contains
     use ESMF           , only : ESMF_State, ESMF_Field
     use ESMF           , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogFoundError, ESMF_LogWrite
     use ESMF           , only : ESMF_LOGERR_PASSTHRU, ESMF_SUCCESS, ESMF_LOGMSG_INFO
+    use ESMF           , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
     use shr_kind_mod   , only : R8=>shr_kind_r8, CS=>shr_kind_CS, IN=>shr_kind_in
     use shr_string_mod , only : shr_string_listGetName, shr_string_listGetNum
-    use med_constants_mod, only : CL
+    use med_constants_mod     , only : CL, logunit => shr_log_unit
+
 
     !----- arguments -----
     type(ESMF_State) , intent(in)    :: state
@@ -330,6 +347,8 @@ contains
     integer          , intent(out)   :: rc
 
     !----- local -----
+    type(ESMF_VM)     :: vm
+    integer           :: localpet
     integer(IN)       :: nflds, lsize, n, nf
     character(len=CS) :: fldname
     type(ESMF_Field)  :: lfield
@@ -340,6 +359,10 @@ contains
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     nflds = shr_string_listGetNum(rList)
     lsize = size(array, dim=2)
@@ -347,10 +370,9 @@ contains
     do nf = 1,nflds
       call shr_string_listGetName(rList, nf, fldname, dbrc)
       call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
-
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU)) then
-         call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" not found on state", &
-              ESMF_LOGMSG_INFO, rc=dbrc)
+      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) then
+         ! we don't nessesarily want this message to trigger an ESMF error
+         if(localpet==0) write(logunit,*) trim(subname)//": fldname = "//trim(fldname)//" not found on state"
       else
         call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
         call ESMF_FieldGet(lfield, farrayPtr=farray1, rc=rc)

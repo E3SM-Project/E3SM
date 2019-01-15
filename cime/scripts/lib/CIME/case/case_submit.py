@@ -8,11 +8,11 @@ submit, check_case and check_da_settings are members of class Case in file case.
 """
 from six.moves                      import configparser
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CASE_SUCCESS, does_file_have_string
+from CIME.utils                     import expect, run_and_log_case_status, verbatim_success_msg, CIMEError
 from CIME.locked_files              import unlock_file, lock_file
 from CIME.test_status               import *
 
-import socket, glob
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +32,18 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # Check if CONTINUE_RUN value makes sense
     if job != "case.test" and case.get_value("CONTINUE_RUN"):
         rundir = case.get_value("RUNDIR")
-        caseroot = case.get_value("CASEROOT")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
-        expect(len(glob.glob(os.path.join(rundir, "*.nc"))) > 0,
-               "CONTINUE_RUN is true but this case does not appear to have been run before (no .nc files in RUNDIR)")
-        expect(does_file_have_string(os.path.join(caseroot, "CaseStatus"), "case.run {}".format(CASE_SUCCESS)),
-               "CONTINUE_RUN is true but this case does not appear to have ever run successfully")
+        expect(os.path.exists(os.path.join(rundir,"rpointer.drv")),
+               "CONTINUE_RUN is true but this case does not appear to have restart files staged in {}".format(rundir))
+        # Finally we open the rpointer.drv file and check that it's correct
+        casename = case.get_value("CASE")
+        with open(os.path.join(rundir,"rpointer.drv"), "r") as fd:
+            ncfile = fd.readline().strip()
+            expect(ncfile.startswith(casename) and
+                   os.path.exists(os.path.join(rundir,ncfile)),
+                   "File {ncfile} not present or does not match case {casename}".
+                   format(ncfile=os.path.join(rundir,ncfile),casename=casename))
 
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
@@ -71,7 +76,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         env_batch_has_changed = False
         try:
             case.check_lockedfile(os.path.basename(env_batch.filename))
-        except SystemExit:
+        except CIMEError:
             env_batch_has_changed = True
 
         if env_batch.get_batch_system_type() != "none" and env_batch_has_changed:
@@ -159,7 +164,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
                                   batch_args=batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=caseroot,
                                 custom_success_msg_functor=verbatim_success_msg)
-    except:
+    except BaseException: # Want to catch KeyboardInterrupt too
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
         if self.get_value("TEST"):
