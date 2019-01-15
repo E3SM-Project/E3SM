@@ -563,6 +563,7 @@ contains
        elem(ie)%accum%Q1mass=0
        elem(ie)%accum%KEner=0
        elem(ie)%accum%IEner=0
+       elem(ie)%accum%IEner_wet=0
        elem(ie)%accum%PEner=0
 
        elem(ie)%derived%Omega_p=0
