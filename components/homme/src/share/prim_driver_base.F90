@@ -563,8 +563,12 @@ contains
        elem(ie)%accum%Q1mass=0
        elem(ie)%accum%KEner=0
        elem(ie)%accum%IEner=0
-       elem(ie)%accum%IEner_wet=0
        elem(ie)%accum%PEner=0
+#ifndef MODEL_THETA_C
+#ifndef MODEL_THETA_L
+       elem(ie)%accum%IEner_wet=0
+#endif
+#endif
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0
