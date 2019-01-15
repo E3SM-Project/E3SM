@@ -187,6 +187,13 @@
            JRA.v1.1.runoff.2007.170807.nc
            JRA.v1.1.runoff.2008.170807.nc
            JRA.v1.1.runoff.2009.170807.nc
+           JRA.v1.1.runoff.2010.170807.nc
+           JRA.v1.1.runoff.2011.170807.nc
+           JRA.v1.1.runoff.2012.170807.nc
+           JRA.v1.1.runoff.2013.170807.nc
+           JRA.v1.1.runoff.2014.170807.nc
+           JRA.v1.1.runoff.2015.170807.nc
+           JRA.v1.1.runoff.2016.170807.nc
       </value>
       <value stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2x.%ym.nc</value>
     </values>
@@ -260,7 +267,7 @@
     <values>
       <value stream="rof.diatren_ann_rx1">1</value>
       <value stream="rof.diatren_iaf_rx1">2009</value>
-      <value stream="rof.iaf_jra">2009</value>
+      <value stream="rof.iaf_jra">2016</value>
       <value stream="rof.cplhist">$DROF_CPLHIST_YR_END</value>
     </values>
   </entry>
