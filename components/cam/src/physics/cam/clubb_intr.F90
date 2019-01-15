@@ -2701,6 +2701,9 @@ end subroutine clubb_init_cnst
 
 
     call cnst_get_ind('Q',ixq)
+    if (eamv2) then
+    call cnst_get_ind('CLDLIQ',ixcldliq)
+    endif
     
     lq(:) = .TRUE.
     call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
