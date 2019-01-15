@@ -129,9 +129,9 @@ kept in the baselines are pre-RUN namelists."""
                     logging.info(run_warn)
             if generate:
                 _do_full_nl_gen(self, test_name, generate_name, baseline_root)
-        except:
-            ts.set_status(NAMELIST_PHASE, TEST_FAIL_STATUS)
+        except Exception:
             success = False
+            ts.set_status(NAMELIST_PHASE, TEST_FAIL_STATUS)
             warn = "Exception during namelist operations:\n{}\n{}".format(sys.exc_info()[1], traceback.format_exc())
             output += warn
             logging.warning(warn)

@@ -33,12 +33,6 @@ module shr_nuopc_methods_mod
     shr_nuopc_methods_FieldPtr_compare2
   end interface
 
-  ! tcraig, interfaces cannot be differentiated, revisit later
-  !  interface shr_nuopc_methods_FB_FieldMerge ; module procedure &
-  !    shr_nuopc_methods_FB_FieldMerge_1D, &
-  !    shr_nuopc_methods_FB_FieldMerge_2D
-  !  end interface
-
   interface shr_nuopc_methods_UpdateTimestamp; module procedure &
     shr_nuopc_methods_State_UpdateTimestamp, &
     shr_nuopc_methods_Field_UpdateTimestamp
@@ -66,12 +60,11 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_FB_Regrid
   public shr_nuopc_methods_FB_FldChk
   public shr_nuopc_methods_FB_FieldRegrid
-  public shr_nuopc_methods_FB_FieldMerge_1D
-  public shr_nuopc_methods_FB_FieldMerge_2D
   public shr_nuopc_methods_FB_GetFldPtr
   public shr_nuopc_methods_FB_getNameN
   public shr_nuopc_methods_FB_getFieldN
   public shr_nuopc_methods_FB_Field_diagnose
+  public shr_nuopc_methods_FB_getNumflds
   public shr_nuopc_methods_State_reset
   public shr_nuopc_methods_State_diagnose
   public shr_nuopc_methods_State_GeomPrint
@@ -88,6 +81,7 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_ChkErr
   public shr_nuopc_methods_Distgrid_Match
   public shr_nuopc_methods_Print_FieldExchInfo
+  public shr_nuopc_methods_FieldPtr_compare
 
   private shr_nuopc_methods_Grid_Write
   private shr_nuopc_methods_Grid_Print
@@ -108,8 +102,6 @@ module shr_nuopc_methods_mod
   private shr_nuopc_methods_FB_accumFB2FB
   private shr_nuopc_methods_FB_accumST2FB
   private shr_nuopc_methods_FB_accumFB2ST
-  private shr_nuopc_methods_FieldPtr_compare1
-  private shr_nuopc_methods_FieldPtr_compare2
   private shr_nuopc_methods_State_UpdateTimestamp
   private shr_nuopc_methods_State_getNameN
   private shr_nuopc_methods_State_getFieldByName
@@ -1165,379 +1157,6 @@ module shr_nuopc_methods_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_FieldMerge_2D(FBout, fnameout, &
-                                    FBinA, fnameA, wgtA, &
-                                    FBinB, fnameB, wgtB, &
-                                    FBinC, fnameC, wgtC, &
-                                    FBinD, fnameD, wgtD, &
-                                    FBinE, fnameE, wgtE, rc)
-
-    ! ----------------------------------------------
-    ! Supports up to a five way merge
-    ! ----------------------------------------------
-    use med_constants_mod , only : R8
-    use ESMF              , only : ESMF_FieldBundle
-    use med_constants_mod , only : czero => med_constants_czero
-
-    type(ESMF_FieldBundle), intent(inout)        :: FBout
-    character(len=*)      , intent(in)           :: fnameout
-    type(ESMF_FieldBundle), intent(in), optional :: FBinA
-    character(len=*)      , intent(in), optional :: fnameA
-    real(R8)    , intent(in), optional, pointer  :: wgtA(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinB
-    character(len=*)      , intent(in), optional :: fnameB
-    real(R8)    , intent(in), optional, pointer  :: wgtB(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinC
-    character(len=*)      , intent(in), optional :: fnameC
-    real(R8)    , intent(in), optional, pointer  :: wgtC(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinD
-    character(len=*)      , intent(in), optional :: fnameD
-    real(R8)    , intent(in), optional, pointer  :: wgtD(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinE
-    character(len=*)      , intent(in), optional :: fnameE
-    real(R8)    , intent(in), optional, pointer  :: wgtE(:,:)
-    integer               , intent(out)          :: rc
-
-    ! local variables
-    real(R8), pointer          :: dataOut(:,:)
-    real(R8), pointer          :: dataPtr(:,:)
-    real(R8), pointer          :: wgt(:,:)
-    integer                    :: lb1,ub1,lb2,ub2,i,j,n
-    logical                    :: wgtfound, FBinfound
-    integer                    :: dbrc
-    character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldMerge_2D)'
-    ! ----------------------------------------------
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc=ESMF_SUCCESS
-
-    if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
-      call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//&
-           trim(fnameout), ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fnameout), fldptr2=dataOut, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    lb1 = lbound(dataOut,1)
-    ub1 = ubound(dataOut,1)
-    lb2 = lbound(dataOut,2)
-    ub2 = ubound(dataOut,2)
-    allocate(wgt(lb1:ub1,lb2:ub2))
-
-    dataOut = czero
-
-    ! check each field has a fieldname passed in
-    if ((present(FBinA) .and. .not.present(fnameA)) .or. &
-        (present(FBinB) .and. .not.present(fnameB)) .or. &
-        (present(FBinC) .and. .not.present(fnameC)) .or. &
-        (present(FBinD) .and. .not.present(fnameD)) .or. &
-        (present(FBinE) .and. .not.present(fnameE))) then
-      call ESMF_LogWrite(trim(subname)//": ERROR fname not present with FBin", &
-           ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    ! check that each field passed in actually exists, if not DO NOT do any merge
-    FBinfound = .true.
-    if (present(FBinA)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinA, trim(fnameA), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinB)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinC)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinD)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinE)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
-    endif
-    if (.not. FBinfound) then
-      call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
-           ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    ! n=1,5 represents adding A to E inputs if they exist
-    do n = 1,5
-      FBinfound = .false.
-      wgtfound = .false.
-
-      if (n == 1 .and. present(FBinA)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinA, trim(fnameA), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtA)) then
-          wgtfound = .true.
-          wgt => wgtA
-        endif
-
-      elseif (n == 2 .and. present(FBinB)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinB, trim(fnameB), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtB)) then
-          wgtfound = .true.
-          wgt => wgtB
-        endif
-
-      elseif (n == 3 .and. present(FBinC)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinC, trim(fnameC), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtC)) then
-          wgtfound = .true.
-          wgt => wgtC
-        endif
-
-      elseif (n == 4 .and. present(FBinD)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinD, trim(fnameD), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtD)) then
-          wgtfound = .true.
-          wgt => wgtD
-        endif
-
-      elseif (n == 5 .and. present(FBinE)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinE, trim(fnameE), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtE)) then
-          wgtfound = .true.
-          wgt => wgtE
-        endif
-
-      endif
-
-      if (FBinfound) then
-        if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
-          call ESMF_LogWrite(trim(subname)//": ERROR FBin wrong size", &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        if (wgtfound) then
-          if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR wgt wrong size", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          do j = lb2,ub2
-          do i = lb1,ub1
-            dataOut(i,j) = dataOut(i,j) + dataPtr(i,j) * wgt(i,j)
-          enddo
-          enddo
-        else
-          do j = lb2,ub2
-          do i = lb1,ub1
-            dataOut(i,j) = dataOut(i,j) + dataPtr(i,j)
-          enddo
-          enddo
-        endif  ! wgtfound
-
-      endif  ! FBin found
-    enddo  ! n
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine shr_nuopc_methods_FB_FieldMerge_2D
-
-  !-----------------------------------------------------------------------------
-
-  subroutine shr_nuopc_methods_FB_FieldMerge_1D(FBout, fnameout, &
-                                    FBinA, fnameA, wgtA, &
-                                    FBinB, fnameB, wgtB, &
-                                    FBinC, fnameC, wgtC, &
-                                    FBinD, fnameD, wgtD, &
-                                    FBinE, fnameE, wgtE, rc)
-    ! ----------------------------------------------
-    ! Supports up to a five way merge
-    ! ----------------------------------------------
-    use med_constants_mod , only : R8
-    use med_constants_mod , only : czero => med_constants_czero
-    use ESMF              , only : ESMF_FieldBundle
-
-    type(ESMF_FieldBundle), intent(inout)                 :: FBout
-    character(len=*)      , intent(in)                    :: fnameout
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinA
-    character(len=*)      , intent(in), optional          :: fnameA
-    real(R8)    , intent(in), optional, pointer :: wgtA(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinB
-    character(len=*)      , intent(in), optional          :: fnameB
-    real(R8)    , intent(in), optional, pointer :: wgtB(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinC
-    character(len=*)      , intent(in), optional          :: fnameC
-    real(R8)    , intent(in), optional, pointer :: wgtC(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinD
-    character(len=*)      , intent(in), optional          :: fnameD
-    real(R8)    , intent(in), optional, pointer :: wgtD(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinE
-    character(len=*)      , intent(in), optional          :: fnameE
-    real(R8)    , intent(in), optional, pointer :: wgtE(:)
-    integer               , intent(out)                   :: rc
-
-    ! local variables
-    real(R8), pointer :: dataOut(:)
-    real(R8), pointer :: dataPtr(:)
-    real(R8), pointer :: wgt(:)
-    integer                     :: lb1,ub1,i,j,n
-    logical                     :: wgtfound, FBinfound
-    integer :: dbrc
-    character(len=*),parameter  :: subname='(shr_nuopc_methods_FB_FieldMerge_1D)'
-    ! ----------------------------------------------
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc=ESMF_SUCCESS
-
-    if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//trim(fnameout), &
-            ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fnameout), fldptr1=dataOut, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    lb1 = lbound(dataOut,1)
-    ub1 = ubound(dataOut,1)
-    allocate(wgt(lb1:ub1))
-
-    dataOut = czero
-
-    ! check each field has a fieldname passed in
-    if ((present(FBinA) .and. .not.present(fnameA)) .or. &
-        (present(FBinB) .and. .not.present(fnameB)) .or. &
-        (present(FBinC) .and. .not.present(fnameC)) .or. &
-        (present(FBinD) .and. .not.present(fnameD)) .or. &
-        (present(FBinE) .and. .not.present(fnameE))) then
-       call ESMF_LogWrite(trim(subname)//": ERROR fname not present with FBin", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    ! check that each field passed in actually exists, if not DO NOT do any merge
-    FBinfound = .true.
-    if (present(FBinA)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinA, trim(fnameA), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinB)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinC)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinD)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinE)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
-    endif
-    if (.not. FBinfound) then
-      call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
-           ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    ! n=1,5 represents adding A to E inputs if they exist
-    do n = 1,5
-      FBinfound = .false.
-      wgtfound = .false.
-
-      if (n == 1 .and. present(FBinA)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinA, trim(fnameA), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtA)) then
-          wgtfound = .true.
-          wgt => wgtA
-        endif
-
-      elseif (n == 2 .and. present(FBinB)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinB, trim(fnameB), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtB)) then
-          wgtfound = .true.
-          wgt => wgtB
-        endif
-
-      elseif (n == 3 .and. present(FBinC)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinC, trim(fnameC), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtC)) then
-          wgtfound = .true.
-          wgt => wgtC
-        endif
-
-      elseif (n == 4 .and. present(FBinD)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinD, trim(fnameD), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtD)) then
-          wgtfound = .true.
-          wgt => wgtD
-        endif
-
-      elseif (n == 5 .and. present(FBinE)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinE, trim(fnameE), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtE)) then
-          wgtfound = .true.
-          wgt => wgtE
-        endif
-
-      endif
-
-      if (FBinfound) then
-        if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
-          call ESMF_LogWrite(trim(subname)//": ERROR FBin wrong size", &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        if (wgtfound) then
-          if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR wgt wrong size", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          do i = lb1,ub1
-            dataOut(i) = dataOut(i) + dataPtr(i) * wgt(i)
-          enddo
-        else
-          do i = lb1,ub1
-            dataOut(i) = dataOut(i) + dataPtr(i)
-          enddo
-        endif  ! wgtfound
-
-      endif  ! FBin found
-    enddo  ! n
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine shr_nuopc_methods_FB_FieldMerge_1D
-
-  !-----------------------------------------------------------------------------
-
   subroutine shr_nuopc_methods_State_reset(State, value, rc)
 
     ! ----------------------------------------------
@@ -2394,8 +2013,14 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_FB_FldChk(FB, fldname, rc)
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    ! ----------------------------------------------
+    ! Determine if field with fldname is in input field bundle
+    ! ----------------------------------------------
 
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use ESMF, only : ESMF_FieldBundleIsCreated
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)  :: FB
     character(len=*)      , intent(in)  :: fldname
     integer               , intent(out) :: rc
@@ -2403,12 +2028,20 @@ module shr_nuopc_methods_mod
     ! local variables
     integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_FldChk)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
 
+    ! If field bundle is not created then set return to .false.
+    if (.not. ESMF_FieldBundleIsCreated(FB)) then
+       shr_nuopc_methods_FB_FldChk = .false.
+       return
+    end if
+
+    ! If field bundle is created determine if fldname is present in field bundle
     shr_nuopc_methods_FB_FldChk = .false.
 
     call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), isPresent=isPresent, rc=rc)
@@ -4111,4 +3744,43 @@ module shr_nuopc_methods_mod
 
   end subroutine shr_nuopc_methods_State_FldDebug
 
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_FB_getNumFlds(FB, string, nflds, rc)
+    ! ---------------------------------------------- 
+    ! Determine if fieldbundle is created and if so, the number of non-scalar
+    ! fields in the field bundle
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
+
+    ! input/output variables
+    type(ESMF_FieldBundle) , intent(in)    :: FB
+    character(len=*)       , intent(in)    :: string
+    integer                , intent(out)   :: nflds
+    integer                , intent(inout) :: rc
+
+    ! local variables
+    integer :: dbrc
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (.not. ESMF_FieldBundleIsCreated(FB)) then
+       call ESMF_LogWrite(trim(string)//": has not been created, returning", ESMF_LOGMSG_INFO, rc=dbrc)
+       nflds = 0 
+    else
+       ! Note - the scalar field has been removed from all mediator
+       ! field bundles - so this is why we check if the fieldCount is 0 and not 1 here
+
+       call ESMF_FieldBundleGet(FB, fieldCount=nflds, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (nflds == 0) then
+          call ESMF_LogWrite(trim(string)//": only has scalar data, returning", ESMF_LOGMSG_INFO, rc=dbrc)
+       end if
+    end if
+
+  end subroutine shr_nuopc_methods_FB_getNumFlds
+
 end module shr_nuopc_methods_mod
+
