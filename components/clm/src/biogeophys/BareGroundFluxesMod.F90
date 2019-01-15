@@ -77,6 +77,7 @@ contains
     real(r8) :: zldis(bounds%begp:bounds%endp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)  ! displacement height [m]
     real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
+    real(r8) :: beta                             ! coefficient of convective velocity [-]
     real(r8) :: wc                               ! convective velocity [m/s]
     real(r8) :: dth(bounds%begp:bounds%endp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv                             ! diff of vir. poten. temp. between ref. height and surface
@@ -131,10 +132,9 @@ contains
 
          t_soisno         =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          t_grnd           =>    col_es%t_grnd           , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]
-         thv              =>    temperature_vars%thv_col              , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)
+         thv              =>    col_es%thv              , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)
          thm              =>    temperature_vars%thm_patch            , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
          t_h2osfc         =>    col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ]  surface water temperature
-         beta             =>    temperature_vars%beta_col             , & ! Input:  [real(r8) (:)   ]  coefficient of conective velocity [-]
 
          frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          qg_snow          =>    waterstate_vars%qg_snow_col           , & ! Input:  [real(r8) (:)   ]  specific humidity at snow surface [kg/kg]
@@ -184,6 +184,8 @@ contains
       !---------------------------------------------------
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
+
+      beta = 1._r8 ! previously set as a constant for all columns in CanopyTemperature()
 
       fn = 0
       do fp = 1,num_nolakeurbanp
@@ -257,7 +259,7 @@ contains
                um(p) = max(ur(p),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta(c)*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
+               wc = beta*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
                um(p) = sqrt(ur(p)*ur(p) + wc*wc)
             end if
             obu(p) = zldis(p)/zeta

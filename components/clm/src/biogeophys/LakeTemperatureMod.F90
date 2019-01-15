@@ -246,8 +246,8 @@ contains
          t_grnd          =>   col_es%t_grnd          , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno        =>   col_es%t_soisno        , & ! Output: [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)   
          t_lake          =>   col_es%t_lake          , & ! Output: [real(r8) (:,:) ]  col lake temperature (Kelvin)             
-         hc_soi          =>   temperature_vars%hc_soi_col          , & ! Output: [real(r8) (:)   ]  soil heat content (MJ/m2)               
-         hc_soisno       =>   temperature_vars%hc_soisno_col       , & ! Output: [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2)
+         hc_soi          =>   col_es%hc_soi          , & ! Output: [real(r8) (:)   ]  soil heat content (MJ/m2)               
+         hc_soisno       =>   col_es%hc_soisno       , & ! Output: [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2)
 
          beta            =>   lakestate_vars%betaprime_col         , & ! Output: [real(r8) (:)   ]  col effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
          lake_icefrac    =>   lakestate_vars%lake_icefrac_col      , & ! Output: [real(r8) (:,:) ]  col mass fraction of lake layer that is frozen

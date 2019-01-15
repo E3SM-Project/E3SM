@@ -378,10 +378,10 @@ contains
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature                                             
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                                           
          t_grnd               => col_es%t_grnd               , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]                                        
-         thv                  => temperature_vars%thv_col                  , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)                                
+         thv                  => col_es%thv                  , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)                                
          thm                  => temperature_vars%thm_patch                , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)                  
          emv                  => temperature_vars%emv_patch                , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                     
-         emg                  => temperature_vars%emg_col                  , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                 
+         emg                  => col_es%emg                  , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                 
          t_veg                => temperature_vars%t_veg_patch              , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
          t_ref2m              => temperature_vars%t_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)                           
          t_ref2m_r            => temperature_vars%t_ref2m_r_patch          , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)                     

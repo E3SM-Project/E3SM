@@ -38,7 +38,6 @@ module clm_instMod
   use TemperatureType            , only : temperature_type
   use WaterfluxType              , only : waterflux_type
   use WaterstateType             , only : waterstate_type
-  use UrbanParamsType            , only : urbanparams_type
   use VOCEmissionMod             , only : vocemis_type
   use atm2lndType                , only : atm2lnd_type
   use lnd2atmType                , only : lnd2atm_type
@@ -46,7 +45,6 @@ module clm_instMod
   use glc2lndMod                 , only : glc2lnd_type
   use glcDiagnosticsMod          , only : glc_diagnostics_type
   use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
-  use UrbanParamsType            , only : urbanparams_type   ! Constants
   use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
@@ -60,6 +58,9 @@ module clm_instMod
   use BeTRSimulationALM          , only : betr_simulation_alm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
+
+  ! instances declared in their own modules
+  use UrbanParamsType            , only : urbanparams_vars
 
 
   !
@@ -99,7 +100,6 @@ module clm_instMod
   type(surfalb_type)                                  :: surfalb_vars
   type(surfrad_type)                                  :: surfrad_vars
   type(temperature_type)                              :: temperature_vars
-  type(urbanparams_type)                              :: urbanparams_vars
   type(waterflux_type)                                :: waterflux_vars
   type(waterstate_type)                               :: waterstate_vars
   type(atm2lnd_type)                                  :: atm2lnd_vars

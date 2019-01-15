@@ -103,7 +103,12 @@ module UrbanParamsType
   logical, public                      :: urban_traffic = .false.   ! urban traffic fluxes
   !----------------------------------------------------------------------- 
 
-contains
+  !-----------------------------------------------------------------------
+  ! declare the public instance of urban parameters data types
+  !-----------------------------------------------------------------------
+  type(urbanparams_type)          , public, target :: urbanparams_vars    ! urban parameters
+
+  contains
 
   !-----------------------------------------------------------------------
   subroutine Init(this, bounds)

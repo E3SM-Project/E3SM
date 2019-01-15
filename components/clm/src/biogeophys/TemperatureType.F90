@@ -38,7 +38,6 @@ module TemperatureType
      real(r8), pointer :: dTdz_top_col             (:)   ! col temperature gradient in top layer  [K m-1]
      real(r8), pointer :: dt_veg_patch             (:)   ! patch change in t_veg, last iteration (Kelvin)
 
-     real(r8), pointer :: dt_grnd_col              (:)   ! col change in t_grnd, last iteration (Kelvin)
      real(r8), pointer :: thv_col                  (:)   ! col virtual potential temperature (kelvin)
      real(r8), pointer :: thm_patch                (:)   ! patch intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
      real(r8), pointer :: t_a10_patch              (:)   ! patch 10-day running mean of the 2 m temperature (K)
@@ -81,7 +80,6 @@ module TemperatureType
      real(r8), pointer :: gdd1020_patch           (:)   ! patch 20-year average of gdd10                    (ddays)
 
      ! Heat content
-     real(r8), pointer :: beta_col                 (:)   ! coefficient of convective velocity [-]
      real(r8), pointer :: hc_soi_col               (:)   ! col soil heat content (MJ/m2)
      real(r8), pointer :: hc_soisno_col            (:)   ! col soil plus snow heat content (MJ/m2)
      real(r8), pointer :: heat1_grc                (:)   ! grc initial gridcell total heat content
@@ -187,7 +185,6 @@ contains
 
     allocate(this%t_soi10cm_col            (begc:endc))                      ; this%t_soi10cm_col            (:)   = nan
     allocate(this%t_soi17cm_col            (begc:endc))                      ; this%t_soi17cm_col            (:)   = spval
-    allocate(this%dt_grnd_col              (begc:endc))                      ; this%dt_grnd_col              (:)   = nan
     allocate(this%thv_col                  (begc:endc))                      ; this%thv_col                  (:)   = nan
     allocate(this%thm_patch                (begp:endp))                      ; this%thm_patch                (:)   = nan
     allocate(this%t_a10_patch              (begp:endp))                      ; this%t_a10_patch              (:)   = nan
@@ -223,7 +220,6 @@ contains
     allocate(this%gdd1020_patch            (begp:endp))                      ; this%gdd1020_patch            (:)   = spval
 
     ! Heat content
-    allocate(this%beta_col                 (begc:endc))                      ; this%beta_col                 (:)   = nan
     allocate(this%hc_soi_col               (begc:endc))                      ; this%hc_soi_col               (:)   = nan
     allocate(this%hc_soisno_col            (begc:endc))                      ; this%hc_soisno_col            (:)   = nan
     allocate(this%heat1_grc                (begg:endg))                      ; this%heat1_grc                (:)   = nan
@@ -359,15 +355,6 @@ contains
          avgflag='A', long_name='internal urban building temperature', &
          ptr_lunit=this%t_building_lun, set_nourb=spval, l2g_scale_type='unity')
 
-    this%hc_soi_col(begc:endc) = spval
-    call hist_addfld1d (fname='HCSOI',  units='MJ/m2',  &
-         avgflag='A', long_name='soil heat content', &
-         ptr_col=this%hc_soi_col, set_lake=spval, set_urb=spval, l2g_scale_type='veg')
-
-    this%hc_soisno_col(begc:endc) = spval
-    call hist_addfld1d (fname='HC',  units='MJ/m2',  &
-         avgflag='A', long_name='heat content of soil/snow/lake', &
-         ptr_col=this%hc_soisno_col, set_urb=spval)
 
     this%heat1_grc(begg:endg) = spval
     call hist_addfld1d (fname='GC_HEAT1',  units='J/m^2',  &
@@ -384,16 +371,6 @@ contains
          avgflag='A', long_name='initial gridcell weighted average liquid water temperature', &
          ptr_lnd=this%liquid_water_temp1_grc, default='inactive')
 
-    this%snot_top_col(begc:endc) = spval 
-    call hist_addfld1d (fname='SNOTTOPL', units='K/m', &
-         avgflag='A', long_name='snow temperature (top layer)', &
-         ptr_col=this%snot_top_col, set_urb=spval, default='inactive')
-
-    this%dTdz_top_col(begc:endc) = spval 
-    call hist_addfld1d (fname='SNOdTdzL', units='K/m', &
-         avgflag='A', long_name='top snow layer temperature gradient (land)', &
-         ptr_col=this%dTdz_top_col, set_urb=spval, default='inactive')
-
     if (use_cn) then
        this%dt_veg_patch(begp:endp) = spval
        call hist_addfld1d (fname='DT_VEG', units='K', &
@@ -406,20 +383,6 @@ contains
        call hist_addfld1d (fname='EMV', units='proportion', &
             avgflag='A', long_name='vegetation emissivity', &
             ptr_patch=this%emv_patch, default='inactive')
-    end if
-
-    if (use_cn) then
-       this%emg_col(begc:endc) = spval
-       call hist_addfld1d (fname='EMG', units='proportion', &
-            avgflag='A', long_name='ground emissivity', &
-            ptr_col=this%emg_col, default='inactive')
-    end if
-
-    if (use_cn) then
-       this%beta_col(begc:endc) = spval
-       call hist_addfld1d (fname='BETA', units='none', &
-            avgflag='A', long_name='coefficient of convective velocity', &
-            ptr_col=this%beta_col, default='inactive')
     end if
 
     ! Accumulated quantities
