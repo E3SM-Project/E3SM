@@ -6,7 +6,7 @@
    entries:
       #
       #-----------------------------------
-      # mediator export
+      # section: mediator export
       #-----------------------------------
       #
      - standard_name: Faox_evap
@@ -63,7 +63,7 @@
        description: mediator export
      #
      #-----------------------------------
-     # land export
+     # section: land export
      #-----------------------------------
      #
      - standard_name: Fall_evap
@@ -753,7 +753,7 @@
        description: land export
      #
      #-----------------------------------
-     # atmosphere export
+     # section: atmosphere export
      #-----------------------------------
      #
      - standard_name: Faxa_bcphidry
@@ -1303,17 +1303,11 @@
      - standard_name: inst_sensi_heat_flx_atm
        canonical_units: W m-2
        description: atmosphere export
-
-
-
-############
-
-
-
-
+     #
+     ############
      #
      #-----------------------------------
-     # atmosphere import
+     # section: atmosphere import
      #-----------------------------------
      #
      - standard_name: Faxx_evap
@@ -1409,7 +1403,7 @@
        description: atmosphere import
      #
      #-----------------------------------
-     # land-ice export
+     # section: land-ice export
      # Note that the fields sent from glc->med do NOT have elevation classes,
      # but the fields from med->lnd are broken into multiple elevation classes
      #-----------------------------------
@@ -1418,6 +1412,21 @@
        canonical_units: kg m-2 s-1
        description: land-ice export
          glc frozen runoff_iceberg flux to ice
+     #
+     - standard_name: Figg_rofi_16O
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glc frozen runoff_iceberg flux to ice for 16O
+     #
+     - standard_name: Figg_rofi_18O
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glc frozen runoff_iceberg flux to ice for 18O
+     #
+     - standard_name: Figg_rofi_HDO
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glc frozen runoff_iceberg flux to ice for HDO
      #
      - standard_name: Flgg_hflx
        canonical_units: W m-2
@@ -1586,13 +1595,43 @@
        description: land-ice export
          glacier_frozen_runoff_flux_to_ocean
      #
+     - standard_name: Fogg_rofi_16O
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glacier_frozen_runoff_flux_to_ocean for 16O
+     #
+     - standard_name: Fogg_rofi_18O
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glacier_frozen_runoff_flux_to_ocean for 18O
+     #
+     - standard_name: Fogg_rofi_HDO
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glacier_frozen_runoff_flux_to_ocean for HDO
+     #
      - standard_name: Fogg_rofl
        canonical_units: kg m-2 s-1
        description: land-ice export
          glacier liquid runoff flux to ocean
      #
+     - standard_name: Fogg_rofl_16O
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glacier_frozen_runoff_flux_to_ocean for 16O
+     #
+     - standard_name: Fogg_rofl_18O
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glacier_frozen_runoff_flux_to_ocean for 18O
+     #
+     - standard_name: Fogg_rofl_HDO
+       canonical_units: kg m-2 s-1
+       description: land-ice export
+         glacier_frozen_runoff_flux_to_ocean for HDO
+     #
      #-----------------------------------
-     # sea-ice export
+     # section: sea-ice export
      #-----------------------------------
      #
      - standard_name: Faii_evap
@@ -1636,7 +1675,7 @@
      #
      - standard_name: Faii_taux
        alias: stress_on_air_ice_zonal
-       canonical_units: N m-2 
+       canonical_units: N m-2
        description: sea-ice export to atm
          air ice zonal stress
      #
@@ -1659,7 +1698,7 @@
      - standard_name: Fioi_flxdst
        canonical_units: kg m-2 s-1
        description: sea-ice export to ocean
-         dust aerosol flux to ocean 
+         dust aerosol flux to ocean
      #
      - standard_name: Fioi_melth
        alias: net_heat_flx_to_ocn
@@ -1721,7 +1760,7 @@
      #
      # NOTE: the following alias requires a new name change for CICE export
      - standard_name: Fioi_swpen_vdf
-       alias: mean_net_swpen_vis_dif_flx 
+       alias: mean_net_swpen_vis_dif_flx
        canonical_units: W m-2
        description: sea-ice export to ocean
          flux of vif dir shortwave through ice to ocean
@@ -1842,7 +1881,7 @@
          volume of snow per unit area
      #
      #-----------------------------------
-     # ocean export
+     # section: ocean export
      #-----------------------------------
      #
      - standard_name: Fioo_q
@@ -1966,18 +2005,47 @@
        description: ocean export
      #
      #-----------------------------------
-     # river export
+     # section: river export
      #-----------------------------------
      #
      - standard_name: Firr_rofi
        canonical_units: kg m-2 s-1
        description: river export
+         water flux into sea ice due to runoff (frozen)
+     #
+     - standard_name: Firr_rofi_16O
+       canonical_units: kg m-2 s-1
+       description: river export
+         water flux into sea ice due to runoff (frozen) for 16O
+     #
+     - standard_name: Firr_rofi_18O
+       canonical_units: kg m-2 s-1
+       description: river export
+         water flux into sea ice due to runoff (frozen) for 18O
+     #
+     - standard_name: Firr_rofi_HDO
+       canonical_units: kg m-2 s-1
+       description: river export
+         water flux into sea ice due to runoff (frozen) for HDO
      #
      - standard_name: Fixx_rofi
        canonical_units: kg m-2 s-1
+       description: frozen runoff to ice from river and land-ice
+     #
+     - standard_name: Fixx_rofi_16O
+       canonical_units: kg m-2 s-1
+       description: frozen runoff to ice from river and land-ice for 16O
+     #
+     - standard_name: Fixx_rofi_18O
+       canonical_units: kg m-2 s-1
+       description: frozen runoff to ice from river and land-ice for 18O
+     #
+     - standard_name: Fixx_rofi_HDO
+       canonical_units: kg m-2 s-1
+       description: frozen runoff to ice from river and land-ice for HDO
      #
      #-----------------------------------
-     # lnd export to glc
+     # section: lnd export to glc
      #-----------------------------------
      #
      - standard_name: Flgl_qice
@@ -2029,7 +2097,7 @@
        description: land export to glc
      #
      #-----------------------------------
-     # lnd export to river
+     # section: lnd export to river
      #-----------------------------------
      #
      - standard_name: Flrl_irrig
@@ -2057,13 +2125,28 @@
        description: land export to river
      #
      #-----------------------------------
-     # river export
+     # section: river export
      #-----------------------------------
      #
      - standard_name: Flrr_flood
        canonical_units: kg m-2 s-1
        description: river export to land
          Water flux due to flooding
+     #
+     - standard_name: Flrr_flood_16O
+       canonical_units: kg m-2 s-1
+       description: river export to land
+         Water flux due to flooding for 16O
+     #
+     - standard_name: Flrr_flood_18O
+       canonical_units: kg m-2 s-1
+       description: river export to land
+         Water flux due to flooding for 18O
+     #
+     - standard_name: Flrr_flood_HDO
+       canonical_units: kg m-2 s-1
+       description: river export to land
+         Water flux due to flooding for HDO
      #
      - standard_name: Flrr_volr
        canonical_units: m
@@ -2080,13 +2163,43 @@
        description: river export to ocean
          Water flux due to runoff (frozen)
      #
+     - standard_name: Forr_rofi_16O
+       canonical_units: kg m-2 s-1
+       description: river export to ocean
+         Water flux due to runoff (frozen) for 16O
+     #
+     - standard_name: Forr_rofi_18O
+       canonical_units: kg m-2 s-1
+       description: river export to ocean
+         Water flux due to runoff (frozen) for 18O
+     #
+     - standard_name: Forr_rofi_HDO
+       canonical_units: kg m-2 s-1
+       description: river export to ocean
+         Water flux due to runoff (frozen) for HDO
+     #
      - standard_name: Forr_rofl
        canonical_units: kg m-2 s-1
        description: river export to ocean
          Water flux due to runoff (liquid)
      #
+     - standard_name: Forr_rofl_16O
+       canonical_units: kg m-2 s-1
+       description: river export to ocean
+         Water flux due to runoff (frozen) for 16O
+     #
+     - standard_name: Forr_rofl_18O
+       canonical_units: kg m-2 s-1
+       description: river export to ocean
+         Water flux due to runoff (frozen) for 18O
+     #
+     - standard_name: Forr_rofl_HDO
+       canonical_units: kg m-2 s-1
+       description: river export to ocean
+         Water flux due to runoff (frozen) for HDO
+     #
      #-----------------------------------
-     # ocean import
+     # section: ocean import
      #-----------------------------------
      #
      - standard_name: Foxx_evap
@@ -2113,8 +2226,27 @@
      - standard_name: Foxx_lat
        canonical_units: W m-2
        description: ocean import
-         latent heat flux into ocean
-         cesm only
+         latent heat flux into ocean (cesm only)
+     #
+     - standard_name: Foxx_lat_16O
+       canonical_units: W m-2
+       description: ocean import
+         latent heat flux into ocean for 16O (cesm only)
+     #
+     - standard_name: Foxx_lat_18O
+       canonical_units: W m-2
+       description: ocean import
+         latent heat flux into ocean for 16O (cesm only)
+     #
+     - standard_name: Foxx_lat_HDO
+       canonical_units: W m-2
+       description: ocean import
+         latent heat flux into ocean for 18O (cesm only)
+     #
+     - standard_name: Foxx_lat
+       canonical_units: W m-2
+       description: ocean import
+         latent heat flux into ocean for HDO (cesm only)
      #
      - standard_name: Foxx_sen
        alias: mean_sensi_heat_flx
@@ -2138,10 +2270,40 @@
        description: ocean import
          water flux due to runoff (frozen)
      #
+     - standard_name: Foxx_rofi_16O
+       canonical_units: kg m-2 s-1
+       description: ocean import
+         water flux due to runoff (frozen) for 16O
+     #
+     - standard_name: Foxx_rofi_18O
+       canonical_units: kg m-2 s-1
+       description: ocean import
+         water flux due to runoff (frozen) for 18O
+     #
+     - standard_name: Foxx_rofi_HDO
+       canonical_units: kg m-2 s-1
+       description: ocean import
+         water flux due to runoff (frozen) for HDO
+     #
      - standard_name: Foxx_rofl
        canonical_units: kg m-2 s-1
        description: ocean import
          water flux due to runoff (liquid)
+     #
+     - standard_name: Foxx_rofl_16O
+       canonical_units: kg m-2 s-1
+       description: ocean import
+         water flux due to runoff (liquid) for 16O
+     #
+     - standard_name: Foxx_rofl_18O
+       canonical_units: kg m-2 s-1
+       description: ocean import
+         water flux due to runoff (liquid) for 18O
+     #
+     - standard_name: Foxx_rofl_HDO
+       canonical_units: kg m-2 s-1
+       description: ocean import
+         water flux due to runoff (liquid) for HDO
      #
      - standard_name: Foxx_swnet
        alias: mean_net_sw_flx

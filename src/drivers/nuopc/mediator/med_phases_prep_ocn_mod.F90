@@ -331,7 +331,6 @@ contains
        if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          write(6,*)'DEBUG: i am here'
        else
           lsize = size(Faxa_swvdr)
           allocate(Foxx_swnet(lsize))
