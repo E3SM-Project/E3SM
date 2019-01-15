@@ -112,7 +112,6 @@ module clm_driver
   use clm_instMod            , only : surfalb_vars
   use clm_instMod            , only : surfrad_vars
   use clm_instMod            , only : temperature_vars
-  use clm_instMod            , only : urbanparams_vars
   use clm_instMod            , only : waterflux_vars
   use clm_instMod            , only : waterstate_vars
   use clm_instMod            , only : atm2lnd_vars
@@ -125,6 +124,7 @@ module clm_driver
   use clm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
+  use UrbanParamsType        , only : urbanparams_vars
   use GridcellType           , only : grc_pp
   use TopounitType           , only : top_as, top_af  
   use LandunitType           , only : lun_pp                

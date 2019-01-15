@@ -1225,8 +1225,8 @@ contains
 
          t_soisno           => col_es%t_soisno      , & ! Input:  [real(r8) (:,:) ]  soil and snow temperature (col,lyr) [K]
          t_grnd             => col_es%t_grnd        , & ! Input:  [real(r8) (:)   ]  ground temperature (col) [K]            
-         snot_top           => temperature_vars%snot_top_col      , & ! Output: [real(r8) (:)   ]  temperature in top snow layer (col) [K]            
-         dTdz_top           => temperature_vars%dTdz_top_col        & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1]
+         snot_top           => col_es%snot_top      , & ! Output: [real(r8) (:)   ]  temperature in top snow layer (col) [K]            
+         dTdz_top           => col_es%dTdz_top        & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1]
          )
   
 

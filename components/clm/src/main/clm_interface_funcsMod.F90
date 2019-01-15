@@ -369,7 +369,7 @@ contains
       t_soisno              => col_es%t_soisno            , & ! [real(r8) (:,:)] snow-soil temperature (Kelvin) (-nlevsno+1:nlevgrnd)
       t_grnd                => col_es%t_grnd              , & ! [real(r8) (:)] ground (snow/soil1/surfwater-mixed) temperature (Kelvin)
       t_h2osfc              => col_es%t_h2osfc            , & ! [real(r8) (:)] surface water temperature (Kelvin)
-      t_nearsurf            => temperature_vars%t_nearsurf_col          , & ! [real(r8) (:)] near surface air temperature (Kelvin)
+      t_nearsurf            => col_es%t_nearsurf          , & ! [real(r8) (:)] near surface air temperature (Kelvin)
       !
       forc_pbot             => atm2lnd_vars%forc_pbot_not_downscaled_grc  & ! atmospheric pressure (Pa)
       )

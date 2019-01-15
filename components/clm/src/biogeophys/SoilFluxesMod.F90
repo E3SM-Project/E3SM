@@ -102,16 +102,16 @@ contains
          sabg_snow               => solarabs_vars%sabg_snow_patch           , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by snow (W/m**2)
          sabg                    => solarabs_vars%sabg_patch                , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
 
-         emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
-         t_h2osfc                => col_es%t_h2osfc                         , & ! Input:  [real(r8) (:)   ]  surface water temperature (K)              
-         tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  soil/snow temperature before update (K)  
-         t_h2osfc_bef            => col_es%t_h2osfc_bef                     , & ! Input:  [real(r8) (:)   ]  saved surface water temperature (K)        
+         emg                     => col_es%emg                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
+         t_h2osfc                => col_es%t_h2osfc           , & ! Input:  [real(r8) (:)   ]  surface water temperature (K)              
+         tssbef                  => col_es%t_ssbef            , & ! Input:  [real(r8) (:,:) ]  soil/snow temperature before update (K)  
+         t_h2osfc_bef            => col_es%t_h2osfc_bef       , & ! Input:  [real(r8) (:)   ]  saved surface water temperature (K)        
          t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          xmf                     => temperature_vars%xmf_col                , & ! Input:  [real(r8) (:)   ]  
          xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  
-         fact                    => temperature_vars%fact_col               , & ! Input:  [real(r8) (:)   ]  
-         c_h2osfc                => temperature_vars%c_h2osfc_col           , & ! Input:  [real(r8) (:)   ]  
+         fact                    => col_es%fact               , & ! Input:  [real(r8) (:)   ]  
+         c_h2osfc                => col_es%c_h2osfc           , & ! Input:  [real(r8) (:)   ]  
 
          htvp                    => energyflux_vars%htvp_col                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
          eflx_building_heat      => energyflux_vars%eflx_building_heat_col  , & ! Input:  [real(r8) (:)   ]  heat flux from urban building interior to walls, roof
@@ -371,7 +371,7 @@ contains
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
          errsoi_patch(p) = eflx_soil_grnd(p) - xmf(c) - xmf_h2osfc(c) &
-              - frac_h2osfc(c)*(t_h2osfc(c)-t_h2osfc_bef(c)) &
+         - frac_h2osfc(c)*(t_h2osfc(c)-t_h2osfc_bef(c)) &
               *(c_h2osfc(c)/dtime)
 
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c)

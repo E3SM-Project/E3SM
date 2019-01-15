@@ -201,12 +201,11 @@ contains
 
          t_h2osfc         =>    col_es%t_h2osfc                       , & ! Input:  [real(r8) (:)   ] surface water temperature (K)              
          t_soisno         =>    col_es%t_soisno                       , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
-         beta             =>    temperature_vars%beta_col             , & ! Output: [real(r8) (:)   ] coefficient of convective velocity [-]   
-         emg              =>    temperature_vars%emg_col              , & ! Output: [real(r8) (:)   ] ground emissivity                        
+         emg              =>    col_es%emg                            , & ! Output: [real(r8) (:)   ] ground emissivity                        
          emv              =>    temperature_vars%emv_patch            , & ! Output: [real(r8) (:)   ] vegetation emissivity                    
          t_h2osfc_bef     =>    col_es%t_h2osfc_bef                   , & ! Output: [real(r8) (:)   ] saved surface water temperature (K)         
-         t_grnd           =>    col_es%t_grnd           , & ! Output: [real(r8) (:)   ] ground temperature (Kelvin)              
-         thv              =>    temperature_vars%thv_col              , & ! Output: [real(r8) (:)   ] virtual potential temperature (kelvin)   
+         t_grnd           =>    col_es%t_grnd                         , & ! Output: [real(r8) (:)   ] ground temperature (Kelvin)              
+         thv              =>    col_es%thv                            , & ! Output: [real(r8) (:)   ] virtual potential temperature (kelvin)   
          thm              =>    temperature_vars%thm_patch            , & ! Output: [real(r8) (:)   ] intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
          tssbef           =>    col_es%t_ssbef                          & ! Output: [real(r8) (:,:) ] soil/snow temperature before update (K)   
          )
@@ -392,7 +391,6 @@ contains
          ! Potential, virtual potential temperature, and wind speed at the
          ! reference height
 
-         beta(c) = 1._r8
          zii(c)  = 1000._r8
          thv(c)  = forc_th(t)*(1._r8+0.61_r8*forc_q(t))
 

@@ -130,8 +130,8 @@ contains
          ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
          t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
-         dTdz_top           => temperature_vars%dTdz_top_col          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
-         snot_top           => temperature_vars%snot_top_col          , & ! Output: [real(r8) (:)   ]  snow temperature in top layer (col) [K]  
+         dTdz_top           => col_es%dTdz_top          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
+         snot_top           => col_es%snot_top          , & ! Output: [real(r8) (:)   ]  snow temperature in top layer (col) [K]  
          t_soisno           => col_es%t_soisno          , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd             => col_es%t_grnd            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_grnd_u           => col_es%t_grnd_u          , & ! Output: [real(r8) (:)   ]  Urban ground temperature (Kelvin)       

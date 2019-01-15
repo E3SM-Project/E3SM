@@ -276,18 +276,18 @@ contains
          eflx_urban_ac           => energyflux_vars%eflx_urban_ac_col       , & ! Output: [real(r8) (:)   ]  urban air conditioning flux (W/m**2)    
          eflx_urban_heat         => energyflux_vars%eflx_urban_heat_col     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)             
          
-         emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
-         hc_soi                  => temperature_vars%hc_soi_col             , & ! Input:  [real(r8) (:)   ]  soil heat content (MJ/m2)               ! TODO: make a module variable
-         hc_soisno               => temperature_vars%hc_soisno_col          , & ! Input:  [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2) !TODO: make a module variable
+         emg                     => col_es%emg                              , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
+         hc_soi                  => col_es%hc_soi                           , & ! Input:  [real(r8) (:)   ]  soil heat content (MJ/m2)               ! TODO: make a module variable
+         hc_soisno               => col_es%hc_soisno                        , & ! Input:  [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2) !TODO: make a module variable
          tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K] 
          t_h2osfc                => col_es%t_h2osfc                         , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => col_es%t_soisno                         , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
-         t_grnd                  => col_es%t_grnd             , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
+         t_grnd                  => col_es%t_grnd                           , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
          t_building              => temperature_vars%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
          xmf                     => temperature_vars%xmf_col                , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
          xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Output: [real(r8) (:)   ] latent heat of phase change of surface water [col]
-         fact                    => temperature_vars%fact_col               , & ! Output: [real(r8) (:)   ] used in computing tridiagonal matrix [col, lev]
-         c_h2osfc                => temperature_vars%c_h2osfc_col           , & ! Output: [real(r8) (:)   ] heat capacity of surface water [col] 
+         fact                    => col_es%fact                             , & ! Output: [real(r8) (:)   ] used in computing tridiagonal matrix [col, lev]
+         c_h2osfc                => col_es%c_h2osfc                         , & ! Output: [real(r8) (:)   ] heat capacity of surface water [col] 
          
          begc                    =>    bounds%begc                          , &
          endc                    =>    bounds%endc                            &
@@ -1129,8 +1129,8 @@ end subroutine SolveTemperature
          
          eflx_h2osfc_to_snow_col   =>    energyflux_vars%eflx_h2osfc_to_snow_col  , & ! Output: [real(r8) (:)   ] col snow melt to h2osfc heat flux (W/m**2)
 
-         fact                      =>    temperature_vars%fact_col      , &
-         c_h2osfc                  =>    temperature_vars%c_h2osfc_col  , &
+         fact                      =>    col_es%fact      , &
+         c_h2osfc                  =>    col_es%c_h2osfc  , &
          xmf_h2osfc                =>    temperature_vars%xmf_h2osfc_col, &
          t_soisno                  =>    col_es%t_soisno         , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
          t_h2osfc                  =>    col_es%t_h2osfc           & ! Output: [real(r8) (:)   ] surface water temperature               
@@ -1372,8 +1372,8 @@ end subroutine SolveTemperature
          eflx_snomelt_r   =>    energyflux_vars%eflx_snomelt_r_col  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)       
          eflx_snomelt_u   =>    energyflux_vars%eflx_snomelt_u_col  , & ! Output: [real(r8) (:)   ] urban snow melt heat flux (W/m**2)       
          
-         xmf              =>    temperature_vars%xmf_col            , &
-         fact             =>    temperature_vars%fact_col           , &
+         xmf              =>    temperature_vars%xmf_col            , & 
+         fact             =>    col_es%fact                         , &
          
          imelt            =>    temperature_vars%imelt_col          , & ! Output: [integer  (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
          t_soisno         =>    col_es%t_soisno         & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
@@ -1765,7 +1765,7 @@ end subroutine SolveTemperature
          qflx_evap_soi           => waterflux_vars%qflx_evap_soi_patch      , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
          qflx_tran_veg           => waterflux_vars%qflx_tran_veg_patch      , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          
-         emg                     => temperature_vars%emg_col                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
+         emg                     => col_es%emg                , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
          t_h2osfc                => col_es%t_h2osfc           , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]          
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             

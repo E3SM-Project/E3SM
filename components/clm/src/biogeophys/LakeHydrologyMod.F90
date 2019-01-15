@@ -140,8 +140,8 @@ contains
          t_lake               =>  col_es%t_lake           , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)             
          t_grnd               =>  col_es%t_grnd           , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno             =>  col_es%t_soisno         , & ! Output: [real(r8) (:,:) ]  snow temperature (Kelvin)             
-         dTdz_top             =>  temperature_vars%dTdz_top_col         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
-         snot_top             =>  temperature_vars%snot_top_col         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO
+         dTdz_top             =>  col_es%dTdz_top         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
+         snot_top             =>  col_es%snot_top         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO
 
          do_capsnow           =>  waterstate_vars%do_capsnow_col        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          begwb                =>  waterstate_vars%begwb_col             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    

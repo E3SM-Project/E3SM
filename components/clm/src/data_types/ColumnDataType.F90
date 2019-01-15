@@ -25,6 +25,7 @@ module ColumnDataType
   ! Define the data structure that holds energy state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_energy_state
+    ! temperature variables
     real(r8), pointer :: t_soisno      (:,:) => null() ! soil temperature (K)  (-nlevsno+1:nlevgrnd) 
     real(r8), pointer :: t_ssbef       (:,:) => null() ! soil/snow temperature before update (K) (-nlevsno+1:nlevgrnd) 
     real(r8), pointer :: t_h2osfc      (:)   => null() ! surface water temperature (K)
@@ -35,6 +36,19 @@ module ColumnDataType
     real(r8), pointer :: t_lake        (:,:) => null() ! lake temperature (K)  (1:nlevlak)          
     real(r8), pointer :: t_grnd_r      (:)   => null() ! rural ground temperature (K)
     real(r8), pointer :: t_grnd_u      (:)   => null() ! urban ground temperature (K) (needed by Hydrology2Mod)
+    real(r8), pointer :: snot_top      (:)   => null() ! temperature of top snow layer (K)
+    real(r8), pointer :: dTdz_top      (:)   => null() ! temperature gradient in top layer  (K m-1)
+    real(r8), pointer :: thv           (:)   => null() ! virtual potential temperature (K)
+    ! heat content variables (diagnostic)
+    real(r8), pointer :: hc_soi        (:)   => null() ! soil heat content (MJ/m2)
+    real(r8), pointer :: hc_soisno     (:)   => null() ! soil plus snow heat content (MJ/m2)
+    ! other quantities related to energy state
+    real(r8), pointer :: emg           (:)   => null() ! ground emissivity (unitless)
+    real(r8), pointer :: fact          (:,:) => null() ! factors used in computing tridiagonal matrix
+    real(r8), pointer :: c_h2osfc      (:)   => null() ! heat capacity of surface water (J/K)
+    ! For coupling with pflotran TH
+    real(r8), pointer :: t_nearsurf    (:)   => null() ! near-surface air temperature averaged over bare-veg (K)
+    
   contains
     procedure, public :: Init    => col_es_init
     procedure, public :: Restart => col_es_restart
@@ -157,8 +171,9 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
-    use clm_varctl     , only : iulog, use_vancouver, use_mexicocity
+    use clm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity
     use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
+    use UrbanParamsType, only : urbanparams_vars
     !
     ! !ARGUMENTS:
     class(column_energy_state) :: this
@@ -185,6 +200,15 @@ contains
     allocate(this%t_lake           (begc:endc,1:nlevlak))           ; this%t_lake             (:,:) = nan
     allocate(this%t_grnd_r         (begc:endc))                     ; this%t_grnd_r           (:)   = nan
     allocate(this%t_grnd_u         (begc:endc))                     ; this%t_grnd_u           (:)   = nan
+    allocate(this%snot_top         (begc:endc))                     ; this%snot_top           (:)   = nan
+    allocate(this%dTdz_top         (begc:endc))                     ; this%dTdz_top           (:)   = nan
+    allocate(this%thv              (begc:endc))                     ; this%thv                (:)   = nan
+    allocate(this%hc_soi           (begc:endc))                     ; this%hc_soi             (:)   = nan
+    allocate(this%hc_soisno        (begc:endc))                     ; this%hc_soisno          (:)   = nan
+    allocate(this%emg              (begc:endc))                     ; this%emg                (:)   = nan
+    allocate(this%fact             (begc:endc, -nlevsno+1:nlevgrnd)); this%fact               (:,:) = nan
+    allocate(this%c_h2osfc         (begc:endc))                     ; this%c_h2osfc           (:)   = nan
+    allocate(this%t_nearsurf       (begc:endc))                     ; this%t_nearsurf         (:)   = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_es
@@ -235,6 +259,32 @@ contains
          avgflag='A', long_name='Urban ground temperature', &
          ptr_col=this%t_grnd_u, set_nourb=spval, c2l_scale_type='urbans')
 
+    this%snot_top(begc:endc) = spval 
+    call hist_addfld1d (fname='SNOTTOPL', units='K', &
+         avgflag='A', long_name='snow temperature (top layer)', &
+         ptr_col=this%snot_top, set_urb=spval, default='inactive')
+
+    this%dTdz_top(begc:endc) = spval 
+    call hist_addfld1d (fname='SNOdTdzL', units='K/m', &
+         avgflag='A', long_name='top snow layer temperature gradient (land)', &
+         ptr_col=this%dTdz_top, set_urb=spval, default='inactive')
+
+    this%hc_soi(begc:endc) = spval
+    call hist_addfld1d (fname='HCSOI',  units='MJ/m2',  &
+         avgflag='A', long_name='soil heat content', &
+         ptr_col=this%hc_soi, set_lake=spval, set_urb=spval, l2g_scale_type='veg')
+
+    this%hc_soisno(begc:endc) = spval
+    call hist_addfld1d (fname='HC',  units='MJ/m2',  &
+         avgflag='A', long_name='heat content of soil/snow/lake', &
+         ptr_col=this%hc_soisno, set_urb=spval)
+
+    if (use_cn) then
+       this%emg(begc:endc) = spval
+       call hist_addfld1d (fname='EMG', units='proportion', &
+            avgflag='A', long_name='ground emissivity', &
+            ptr_col=this%emg, default='inactive')
+    end if
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_es
@@ -312,6 +362,14 @@ contains
        end if
 
        this%t_soi17cm(c) = this%t_grnd(c)
+       
+       ! set emissivity for urban columns
+       if (col_pp%itype(c) == icol_roof       ) this%emg(c) = urbanparams_vars%em_roof(l)
+       if (col_pp%itype(c) == icol_sunwall    ) this%emg(c) = urbanparams_vars%em_wall(l)
+       if (col_pp%itype(c) == icol_shadewall  ) this%emg(c) = urbanparams_vars%em_wall(l)
+       if (col_pp%itype(c) == icol_road_imperv) this%emg(c) = urbanparams_vars%em_improad(l)
+       if (col_pp%itype(c) == icol_road_perv  ) this%emg(c) = urbanparams_vars%em_perroad(l)
+
     end do ! columns loop
     
     
