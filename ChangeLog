@@ -1,6 +1,124 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 1-15-2019
+Tag: cime5.7.7
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Minor fix to e3sm_cime_mgmt to properly handle exe files.
+    - Merge branch for acme split 2019-01-14.
+    - e3sm_cime_mgmt: big upgrade/refactor to auto conf handling
+    - Add expected failure annotations to cs.status output.
+    - Bringing the latest nuopc development to master.
+    - Changes for PGI 18.4.
+    - Bring in the latest pio1 from external .
+    - Fix Case context manager enforcement.
+    - Update to pio 130c564.
+    - docn_comp_mod needs fix for optional variable.
+    - Remove support for CLM4.0.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+e5c2368 Minor fix to e3sm_cime_mgmt to properly handle exe files
+222df09 Merge pull request #2979 from ESMCI/jgfouca/branch-for-acme-split-2019-01-14
+20a635a Merge pull request #2980 from ESMCI/jgfouca/e3sm_cime_mgmt_upgrade
+26a18ff Merge pull request #2962 from billsacks/cs_status_expected_fails
+86ab407 Merge pull request #2976 from jedwards4b/nuopc-cmeps
+f560074 Merge pull request #2974 from fvitt/misc_fixes
+e166e75 Merge pull request #2975 from jedwards4b/pio1_update
+71acf83 Merge pull request #2972 from ESMCI/jgfouca/fix_case_ctx_mgr
+0c6f294 Merge pull request #2967 from jedwards4b/pio2_merge_130c564
+aa8b0fa Merge pull request #2970 from jedwards4b/test_fixes
+74d03b7 Merge pull request #2968 from billsacks/cesm_remove_clm4_rebased
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/syslog.anvil
+D	config/e3sm/machines/syslog.cetus
+M	config/e3sm/machines/syslog.cori-haswell
+M	config/e3sm/machines/syslog.cori-knl
+M	config/e3sm/machines/syslog.edison
+D	config/e3sm/machines/syslog.mira
+M	config/e3sm/machines/syslog.summit
+M	config/e3sm/machines/syslog.theta
+M	config/e3sm/machines/syslog.titan
+M	config/xml_schemas/config_compilers_v2.xsd
+A	config/xml_schemas/expected_fails_file.xsd
+M	scripts/Tools/Makefile
+M	scripts/Tools/cs.status
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/README
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/pgn.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/SystemTests/tsc.py
+A	scripts/lib/CIME/XML/expected_fails_file.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/cs_status.py
+A	scripts/lib/CIME/expected_fails.py
+M	scripts/lib/CIME/test_status.py
+A	scripts/lib/CIME/tests/XML/__init__.py
+A	scripts/lib/CIME/tests/XML/test_expected_fails_file.py
+A	scripts/lib/CIME/tests/custom_assertions_test_status.py
+M	scripts/lib/CIME/tests/test_cs_status.py
+A	scripts/lib/CIME/tests/test_custom_assertions_test_status.py
+A	scripts/lib/CIME/tests/test_test_status.py
+M	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/lib/get_tests.py
+D	scripts/testlist_cmeps.xml
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/docn/mct/docn_comp_mod.F90
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/nuopc/cime_config/buildnml
+M	src/drivers/nuopc/cime_config/config_component_cesm.xml
+M	src/drivers/nuopc/cime_config/fd.yaml
+M	src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+M	src/drivers/nuopc/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/nuopc/cime_flds/esmFlds.F90
+M	src/drivers/nuopc/mediator/med.F90
+M	src/drivers/nuopc/mediator/med_map_mod.F90
+M	src/drivers/nuopc/mediator/med_merge_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_aofluxes_mod.F90
+D	src/drivers/nuopc/mediator/med_phases_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_atm_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ice_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ocn_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_profile_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_fldList_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_grid_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_methods_mod.F90
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/externals/pio2/ctest/runcdash-nwscla-pgi.sh
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+D	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/tests/general/pio_decomp_tests_1d.F90.in
+M	src/share/timing/GPTLprint_memusage.c
+M	src/share/timing/perf_mod.F90
+M	src/share/util/shr_wv_sat_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 01-07-2019
 Tag: cime5.7.6
 Answer Changes: None
