@@ -2,7 +2,6 @@
 !-------------------------------------EULER
 rsplit=2                             !NOTE THAT RSPLIT HAS TO DIVIDE # OF TSTEPS/NMAX
 qsplit=1                             !NOTE THAT QSPLIT HAS TO DIVIDE # OF TSTEPS/NMAX
-hypervis_subcycle_q=4
 se_ftype=0
 !-------------------------------------HYDRO/NON
 !theta_hydrostatic_mode=.true.      
@@ -25,6 +24,7 @@ nu_s=1e13
 nu_top = 2.5e5
 hypervis_scaling=0
 hypervis_order = 2
+hypervis_subcycle=4
 !-------------------------------------UNLIKELY TO CHANGE
 NThreads=-1
 partmethod    = 4

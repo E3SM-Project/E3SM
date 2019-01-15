@@ -29,6 +29,7 @@ nu_s=1e13
 nu_top = 2.5e5
 hypervis_scaling=0
 hypervis_order = 2
+hypervis_subcycle=4
 !-------------------------------------UNLIKELY TO CHANGE
 NThreads=-1
 partmethod    = 4
