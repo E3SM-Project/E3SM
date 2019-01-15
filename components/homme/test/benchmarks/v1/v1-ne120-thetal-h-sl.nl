@@ -24,7 +24,6 @@ tstep=75      ! ne30: 300  ne120: 75
 nu=1e13
 nu_div=2.5e13
 nu_p=1e13
-nu_q=1e13
 nu_s=1e13
 nu_top = 2.5e5
 hypervis_scaling=0
