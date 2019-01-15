@@ -149,7 +149,7 @@ module model_flags
   ! xm_ma affects rtm, thlm, sclrm, um and vm.
   logical, public :: & 
     l_upwind_wpxp_ta = .false., & 
-    l_upwind_xpyp_ta = .false.,  &
+    l_upwind_xpyp_ta = .true.,  &
     l_upwind_xm_ma   = .true.
 
 !$omp threadprivate(l_upwind_wpxp_ta, l_upwind_xpyp_ta, l_upwind_xm_ma)
