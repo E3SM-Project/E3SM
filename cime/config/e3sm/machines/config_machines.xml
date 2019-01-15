@@ -1186,6 +1186,7 @@
 	<command name="add">+cmake-2.8.12</command>
 	<command name="add">+python-2.7</command>
 	<command name="add">+metis-5.0.3</command>
+	<command name="add">+zlib-1.2.11</command>
       </modules>
       <modules compiler="intel">
 	<command name="add">+mkl-11.2.1</command>
@@ -1212,10 +1213,11 @@
       <modules compiler="gnu" mpilib="mvapich">
 	<command name="add">+mvapich2-2.3-gcc-7.3.0-acme</command>
 	<command name="add">+hdf5-1.10.4-gcc-7.3.0-mvapich2-2.3-acme</command>
-	<command name="add">+netcdf-c-4.6.1-cxx-4.2-f77-4.4.4-gcc-7.3.0-mvapich2-2.2.3-acme</command>
+	<command name="add">+netcdf-c-4.6.1-cxx-4.2-f77-4.4.4-gcc-7.3.0-mvapich2-2.3-acme</command>
 	<command name="add">+parallel-netcdf-1.8.0-gcc-7.3.0-mvapich2-2.3-acme</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
+	<command name="add">+openmpi-3.1.2-gcc-7.3.0-acme</command>
 	<command name="add">+netcdf-c-4.6.1-cxx-4.2-f77-4.4.4-gcc-7.3.0-openmpi-3.1.2-acme</command>
 	<command name="add">+parallel-netcdf-1.8.0-gcc-7.3.0-openmpi-3.1.2-acme</command>
 	<command name="add">+hdf5-1.10.4-gcc-7.3.0-openmpi-3.1.2-acme</command>
