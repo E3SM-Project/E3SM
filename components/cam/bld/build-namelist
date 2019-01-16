@@ -3509,7 +3509,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_tk2');
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'relvar_fix');
-   add_default($nl, 'clubb_eamv2');
+   add_default($nl, 'clubb_use_sgv');
 }
 
 add_default($nl, 'do_aerocom_ind3');

@@ -2887,9 +2887,9 @@ CLUBB do explicit diffusion with a stability correction
 Default: .false.
 </entry>
 
-<entry id="clubb_eamv2" type="logical"  category="pblrad"
+<entry id="clubb_use_sgv" type="logical"  category="pblrad"
        group="clubbpbl_diff_nl" valid_values="" >
-Enables EAMv2 features gustiness, tpert, thv fix
+Enables subgrid features gustiness, tpert, and thv fix
 Default: .false.
 </entry>
 

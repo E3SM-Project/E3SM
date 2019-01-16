@@ -127,7 +127,7 @@ module clubb_intr
   logical            :: clubb_do_deep
   logical            :: micro_do_icesupersat
   logical            :: history_budget
-  logical            :: eamv2 !PMA This flag controls EAMv2 tuning and code changes
+  logical            :: use_sgv !PMA This flag controls new tuning and code changes
   integer            :: history_budget_histfile_num
   integer            :: edsclr_dim       ! Number of scalars to transport in CLUBB
   integer            :: offset
@@ -375,7 +375,7 @@ end subroutine clubb_init_cnst
 #ifdef CLUBB_SGS
     logical :: clubb_history, clubb_rad_history, clubb_cloudtop_cooling, clubb_rainevap_turb, &
                clubb_stabcorrect, clubb_expldiff ! Stats enabled (T/F)      
-    logical :: clubb_eamv2 !PMA This flag controls EAMv2 tuning and code changes
+    logical :: clubb_use_sgv !PMA This flag controls new tuning and code changes
 
     integer :: iunit, read_status
 
@@ -383,7 +383,7 @@ end subroutine clubb_init_cnst
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_do_deep, clubb_timestep, clubb_stabcorrect, &
                                 clubb_rnevap_effic, clubb_liq_deep, clubb_liq_sh, clubb_ice_deep, &
-                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix, clubb_eamv2
+                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix, clubb_use_sgv
 
     !----- Begin Code -----
 
@@ -397,7 +397,7 @@ end subroutine clubb_init_cnst
     relvar_fix         = .false.   ! Initialize to false
     clubb_do_adv       = .false.   ! Initialize to false
     clubb_do_deep      = .false.   ! Initialize to false
-    eamv2              = .false.
+    use_sgv              = .false.
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -443,7 +443,7 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
       call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
       call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
-      call mpibcast(clubb_eamv2,              1,   mpilog,   0, mpicom)
+      call mpibcast(clubb_use_sgv,            1,   mpilog,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -452,7 +452,7 @@ end subroutine clubb_init_cnst
     if (clubb_cloudtop_cooling) do_cldcool = .true.
     if (clubb_rainevap_turb) do_rainturb = .true.
     if (clubb_expldiff) do_expldiff = .true.
-    if (clubb_eamv2) eamv2 =.true. 
+    if (clubb_use_sgv) use_sgv =.true. 
     if (clubb_stabcorrect .and. clubb_expldiff)  then
       call endrun('clubb_readnl: clubb_stabcorrect and clubb_expldiff may not both be set to true at the same time')
     end if
@@ -2463,7 +2463,7 @@ end subroutine clubb_init_cnst
    do i=1,ncol
       do k=1,pver
          th(i,k) = state1%t(i,k)*state1%exner(i,k)
-         if (eamv2) then
+         if (use_sgv) then
            thv(i,k) = th(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq) &
                     - state1%q(i,k,ixcldliq))  !PMA corrects thv formula
          else
@@ -2505,7 +2505,7 @@ end subroutine clubb_init_cnst
     vmag_gust_cl(:) = 0._r8
     ktopi(:)        = pver
 
-    if (eamv2) then
+    if (use_sgv) then
     do i=1,ncol
       up2b(i)         = up2(i,pver)
       vp2b(i)         = vp2(i,pver)
@@ -2701,7 +2701,7 @@ end subroutine clubb_init_cnst
 
 
     call cnst_get_ind('Q',ixq)
-    if (eamv2) then
+    if (use_sgv) then
     call cnst_get_ind('CLDLIQ',ixcldliq)
     endif
     
@@ -2714,7 +2714,7 @@ end subroutine clubb_init_cnst
     
     do i = 1, ncol
        th(i) = state%t(i,pver)*state%exner(i,pver)         ! diagnose potential temperature
-       if (eamv2) then
+       if (use_sgv) then
          thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq) & ! PMA corrects virtual potential temperature formula
                        - state%q(i,pver,ixcldliq))
        else

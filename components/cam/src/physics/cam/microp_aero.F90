@@ -123,7 +123,7 @@ integer :: npccn_idx, rndst_idx, nacon_idx
 logical  :: separate_dust = .false.
 logical  :: liqcf_fix
 real(r8), parameter :: unset_r8   = huge(1.0_r8)
-real(r8) :: wsubmin = unset_r8 !PMA EAMv2 uses much lower lower bound
+real(r8) :: wsubmin = unset_r8 !PMA sets a much lower lower bound
 
 
 contains
@@ -606,7 +606,7 @@ subroutine microp_aero_run ( &
 
    ! Set minimum values above top_lev.
 
-!PMA EAMv2 no longer needs the minimum value that is designed for CAM5-UW scheme which 
+!PMA no longer needs the minimum value that is designed for CAM5-UW scheme which 
 !produces very low values
 
 !   if(masterproc)write(iulog,*)'wsubmin = ', wsubmin
