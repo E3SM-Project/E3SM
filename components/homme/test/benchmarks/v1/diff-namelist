@@ -1,0 +1,8 @@
+
+file1=v1-ne120-thetal-nh-sl.nl
+file2=v1-ne120-thetal-h-euler.nl
+
+
+diff <( sed 's/=/ = /' ${file1} | awk '/^[ \t]*[[:alnum:]]/ { print $1, $3 }' | sort ) <(sed 's/=/ = /' ${file2} | awk '/^[ \t]*[[:alnum:]]/ { print $1, $3 }' | sort )
+
+
