@@ -1731,7 +1731,6 @@ contains
              if (trim(fldname) == 'Sa_u' .or. trim(fldname) == 'Sa_v') then
                 call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mappatch, 'one', atm2ice_vmap)
              else
-                write(6,*)'DEBUG: adding bilinear map from atm->ice for ',trim(fldname)
                 call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapbilnr, 'one', atm2ice_smap)
              end if
              call addmrg(fldListTo(compice)%flds, trim(fldname), &
