@@ -18,6 +18,7 @@ import subprocess, argparse
 subprocess.call('/bin/rm -f $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
 import six
 from six import assertRaisesRegex
+import stat as osstat
 
 import collections
 
@@ -74,6 +75,28 @@ def assert_test_status(test_obj, test_name, test_status_obj, test_phase, expecte
 ###############################################################################
     test_status = test_status_obj.get_status(test_phase)
     test_obj.assertEqual(test_status, expected_stat, msg="Problem with {}: for phase '{}': has status '{}', expected '{}'".format(test_name, test_phase, test_status, expected_stat))
+
+###############################################################################
+def verify_perms(test_obj, root_dir):
+###############################################################################
+    for root, dirs, files in os.walk(root_dir):
+
+        for filename in files:
+            full_path = os.path.join(root, filename)
+            st = os.stat(full_path)
+            test_obj.assertTrue(st.st_mode & osstat.S_IWGRP)
+            test_obj.assertTrue(st.st_mode & osstat.S_IRGRP)
+            test_obj.assertTrue(st.st_mode & osstat.S_IROTH)
+
+        for dirname in dirs:
+            full_path = os.path.join(root, dirname)
+            st = os.stat(full_path)
+
+            test_obj.assertTrue(st.st_mode & osstat.S_IWGRP)
+            test_obj.assertTrue(st.st_mode & osstat.S_IRGRP)
+            test_obj.assertTrue(st.st_mode & osstat.S_IXGRP)
+            test_obj.assertTrue(st.st_mode & osstat.S_IROTH)
+            test_obj.assertTrue(st.st_mode & osstat.S_IXOTH)
 
 ###############################################################################
 class A_RunUnitTests(unittest.TestCase):
@@ -1446,12 +1469,11 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
         baseline_glob = glob.glob(os.path.join(self._baseline_area, self._baseline_name, "TESTRUNPASS*"))
         self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
 
-        import stat
         for baseline_dir in baseline_glob:
             nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
             self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
 
-            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            os.chmod(nl_path, osstat.S_IRUSR | osstat.S_IWUSR)
             with open(nl_path, "a") as nl_file:
                 nl_file.write(fake_nl)
 
@@ -1525,12 +1547,24 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
+    def setUp(self):
+    ###########################################################################
+        TestCreateTestCommon.setUp(self)
+
+        # Set a restrictive umask so we can test that SharedAreas used for
+        # recording baselines are working
+        restrictive_mask = 0o027
+        self._orig_umask = os.umask(restrictive_mask)
+
+    ###########################################################################
     def tearDown(self):
     ###########################################################################
         TestCreateTestCommon.tearDown(self)
 
         if "TESTRUNDIFF_ALTERNATE" in os.environ:
             del os.environ["TESTRUNDIFF_ALTERNATE"]
+
+        os.umask(self._orig_umask)
 
     ###############################################################################
     def test_bless_test_results(self):
@@ -1575,6 +1609,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # Hist compare should now pass again
         self._create_test(compargs)
+
+        verify_perms(self, self._baseline_area)
 
     ###############################################################################
     def test_rebless_namelist(self):
@@ -1621,12 +1657,11 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
-        import stat
         for baseline_dir in baseline_glob:
             nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
             self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
 
-            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            os.chmod(nl_path, osstat.S_IRUSR | osstat.S_IWUSR)
             with open(nl_path, "a") as nl_file:
                 nl_file.write(fake_nl)
 
@@ -1660,6 +1695,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # Basic namelist compare should now pass again
         self._create_test(compargs)
+
+        verify_perms(self, self._baseline_area)
 
 class X_TestQueryConfig(unittest.TestCase):
     def test_query_compsets(self):
@@ -2298,6 +2335,8 @@ class L_TestSaveTimings(TestCreateTestCommon):
         if CIME.utils.get_model() == "e3sm":
             provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
             self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
+
+        self.verify_perms(self, timing_dir)
 
     ###########################################################################
     def test_save_timings(self):

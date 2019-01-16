@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask, convert_to_babylonian_time, get_current_commit, indent_string, run_cmd, run_cmd_no_fail
+from CIME.utils import touch, gzip_existing_file, SharedArea, convert_to_babylonian_time, get_current_commit, indent_string, run_cmd, run_cmd_no_fail, safe_copy
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -47,7 +47,7 @@ def _save_build_provenance_e3sm(case, lid):
     if os.path.exists(headfile_prov):
         os.remove(headfile_prov)
     if os.path.exists(headfile):
-        copy_umask(headfile, headfile_prov)
+        safe_copy(headfile, headfile_prov, preserve_meta=False)
 
     # Save SourceMods
     sourcemods = os.path.join(caseroot, "SourceMods")
@@ -230,7 +230,7 @@ def _save_prerun_timing_e3sm(case, lid):
         ]
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
-            copy_umask(item, os.path.join(case_docs, "{}.{}".format(os.path.basename(item).lstrip("."), lid)))
+            safe_copy(item, os.path.join(case_docs, "{}.{}".format(os.path.basename(item).lstrip("."), lid)), preserve_meta=False)
 
     # Copy some items from build provenance
     blddir_globs_to_copy = [
@@ -239,7 +239,7 @@ def _save_prerun_timing_e3sm(case, lid):
         ]
     for blddir_glob_to_copy in blddir_globs_to_copy:
         for item in glob.glob(os.path.join(blddir, blddir_glob_to_copy)):
-            copy_umask(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
+            safe_copy(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid), preserve_meta=False)
 
     # Save state of repo
     from_repo = cimeroot if os.path.exists(os.path.join(cimeroot, ".git")) else os.path.dirname(cimeroot)
@@ -352,7 +352,7 @@ def _save_postrun_timing_e3sm(case, lid):
                 os.remove(syslog_jobid_path)
 
     # copy timings
-    copy_umask("%s.tar.gz" % rundir_timing_dir, full_timing_dir)
+    safe_copy("%s.tar.gz" % rundir_timing_dir, full_timing_dir, preserve_meta=False)
 
     #
     # save output files and logs
@@ -384,9 +384,9 @@ def _save_postrun_timing_e3sm(case, lid):
             basename = os.path.basename(item)
             if basename != timing_saved_file:
                 if lid not in basename and not basename.endswith(".gz"):
-                    copy_umask(item, os.path.join(full_timing_dir, "{}.{}".format(basename, lid)))
+                    safe_copy(item, os.path.join(full_timing_dir, "{}.{}".format(basename, lid)), preserve_meta=False)
                 else:
-                    copy_umask(item, full_timing_dir)
+                    safe_copy(item, full_timing_dir, preserve_meta=False)
 
     # zip everything
     for root, _, files in os.walk(full_timing_dir):
