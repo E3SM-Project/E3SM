@@ -18,4 +18,14 @@ echo "Finding redeclared vars in ${file2}..."
 sed 's/=/ = /' ${file2} | awk '/^[ \t]*[[:alnum:]]/ { print $1 }' | sort | uniq -d && echo "Above are redeclared variables if any."
 
 
+echo " "
+
+echo "Now look for doubles in each file"
+for file in ./*.nl
+do
+  echo "in file ${file}"
+  sed 's/=/ = /' ${file} | awk '/^[ \t]*[[:alnum:]]/ { print $1 }' | sort | uniq -d && echo "Above are redeclared variables if any."
+done
+
+
 
