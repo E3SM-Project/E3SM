@@ -84,19 +84,19 @@ def verify_perms(test_obj, root_dir):
         for filename in files:
             full_path = os.path.join(root, filename)
             st = os.stat(full_path)
-            test_obj.assertTrue(st.st_mode & osstat.S_IWGRP)
-            test_obj.assertTrue(st.st_mode & osstat.S_IRGRP)
-            test_obj.assertTrue(st.st_mode & osstat.S_IROTH)
+            test_obj.assertTrue(st.st_mode & osstat.S_IWGRP, msg="file {} is not group writeable".format(full_path))
+            test_obj.assertTrue(st.st_mode & osstat.S_IRGRP, msg="file {} is not group readable".format(full_path))
+            test_obj.assertTrue(st.st_mode & osstat.S_IROTH, msg="file {} is not world readable".format(full_path))
 
         for dirname in dirs:
             full_path = os.path.join(root, dirname)
             st = os.stat(full_path)
 
-            test_obj.assertTrue(st.st_mode & osstat.S_IWGRP)
-            test_obj.assertTrue(st.st_mode & osstat.S_IRGRP)
-            test_obj.assertTrue(st.st_mode & osstat.S_IXGRP)
-            test_obj.assertTrue(st.st_mode & osstat.S_IROTH)
-            test_obj.assertTrue(st.st_mode & osstat.S_IXOTH)
+            test_obj.assertTrue(st.st_mode & osstat.S_IWGRP, msg="dir {} is not group writable".format(full_path))
+            test_obj.assertTrue(st.st_mode & osstat.S_IRGRP, msg="dir {} is not group readable".format(full_path))
+            test_obj.assertTrue(st.st_mode & osstat.S_IXGRP, msg="dir {} is not group executable".format(full_path))
+            test_obj.assertTrue(st.st_mode & osstat.S_IROTH, msg="dir {} is not world readable".format(full_path))
+            test_obj.assertTrue(st.st_mode & osstat.S_IXOTH, msg="dir {} is not world executable".format(full_path))
 
 ###############################################################################
 class A_RunUnitTests(unittest.TestCase):
@@ -2336,7 +2336,7 @@ class L_TestSaveTimings(TestCreateTestCommon):
             provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
             self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
 
-        self.verify_perms(self, timing_dir)
+        verify_perms(self, timing_dir)
 
     ###########################################################################
     def test_save_timings(self):
