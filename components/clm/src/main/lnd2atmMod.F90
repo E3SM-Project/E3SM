@@ -31,6 +31,7 @@ module lnd2atmMod
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp     
+  use VegetationDataType   , only : veg_es
 
   
   !
@@ -154,7 +155,7 @@ contains
          waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
 
     call p2g(bounds, &
-         temperature_vars%t_ref2m_patch (bounds%begp:bounds%endp), &
+         veg_es%t_ref2m (bounds%begp:bounds%endp), &
          lnd2atm_vars%t_ref2m_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 

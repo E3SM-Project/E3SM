@@ -22,6 +22,7 @@ module BareGroundFluxesMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es
   use VegetationType       , only : veg_pp
+  use VegetationDataType   , only : veg_es
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -160,8 +161,8 @@ contains
          cgrndl           =>    energyflux_vars%cgrndl_patch          , & ! Output: [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp [w/m**2/k]
          cgrnd            =>    energyflux_vars%cgrnd_patch           , & ! Output: [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
 
-         t_ref2m          =>    temperature_vars%t_ref2m_patch        , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
-         t_ref2m_r        =>    temperature_vars%t_ref2m_r_patch      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)
+         t_ref2m          =>    veg_es%t_ref2m        , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
+         t_ref2m_r        =>    veg_es%t_ref2m_r      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)
 
          q_ref2m          =>    waterstate_vars%q_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
          rh_ref2m_r       =>    waterstate_vars%rh_ref2m_r_patch      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)

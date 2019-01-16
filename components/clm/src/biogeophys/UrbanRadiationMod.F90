@@ -28,6 +28,7 @@ module UrbanRadiationMod
   use ColumnType        , only : col_pp 
   use ColumnDataType    , only : col_es  
   use VegetationType    , only : veg_pp                
+  use VegetationDataType, only : veg_es
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -127,7 +128,7 @@ contains
 
          frac_sno           =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
 
-         t_ref2m            =>    temperature_vars%t_ref2m_patch             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
+         t_ref2m            =>    veg_es%t_ref2m             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
          t_grnd             =>    col_es%t_grnd                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
 
          em_roof            =>    urbanparams_vars%em_roof                   , & ! Input:  [real(r8) (:)   ]  roof emissivity                                   

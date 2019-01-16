@@ -37,14 +37,15 @@ module CanopyFluxesMod
   use WaterstateType        , only : waterstate_type
   use CH4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
+  use PhosphorusStateType   , only : phosphorusstate_type
+  use CNNitrogenStateType   , only : nitrogenstate_type
+  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
   use GridcellType          , only : grc_pp 
   use TopounitType          , only : top_as, top_af  
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_es               
   use VegetationType        , only : veg_pp                
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use CNNitrogenStateType   , only : nitrogenstate_type
-  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
+  use VegetationDataType    , only : veg_es  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -382,9 +383,9 @@ contains
          thm                  => temperature_vars%thm_patch                , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)                  
          emv                  => temperature_vars%emv_patch                , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                     
          emg                  => col_es%emg                  , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                 
-         t_veg                => temperature_vars%t_veg_patch              , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
-         t_ref2m              => temperature_vars%t_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)                           
-         t_ref2m_r            => temperature_vars%t_ref2m_r_patch          , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)                     
+         t_veg                => veg_es%t_veg                , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
+         t_ref2m              => veg_es%t_ref2m              , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)                           
+         t_ref2m_r            => veg_es%t_ref2m_r            , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)                     
 
          frac_h2osfc          => waterstate_vars%frac_h2osfc_col           , & ! Input:  [real(r8) (:)   ]  fraction of surface water                                             
          fwet                 => waterstate_vars%fwet_patch                , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is wet (0 to 1)                               

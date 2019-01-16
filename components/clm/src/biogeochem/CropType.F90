@@ -15,6 +15,7 @@ module CropType
   use clm_varpar          , only : crop_prog
   use clm_varctl          , only : iulog, use_crop
   use ColumnDataType      , only : col_es
+  use VegetationDataType  , only : veg_es
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -415,7 +416,7 @@ contains
        if (this%croplive_patch(p)) then ! relative to planting date
           ivt = veg_pp%itype(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               temperature_vars%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
+               veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
                * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)

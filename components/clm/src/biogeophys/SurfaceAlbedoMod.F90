@@ -27,7 +27,8 @@ module SurfaceAlbedoMod
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es  
-  use VegetationType    , only : veg_pp                
+  use VegetationType    , only : veg_pp
+  use VegetationDataType, only : veg_es  
   !
   implicit none
   save
@@ -1162,7 +1163,7 @@ contains
    associate(&
           xl           =>    veg_vp%xl                       , & ! Input:  [real(r8) (:)   ]  ecophys const - leaf/stem orientation index
 
-          t_veg        =>    temperature_vars%t_veg_patch        , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)         
+          t_veg        =>    veg_es%t_veg        , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)         
 
           fwet         =>    waterstate_vars%fwet_patch          , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is wet (0 to 1) 
 

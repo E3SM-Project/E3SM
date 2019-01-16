@@ -13,7 +13,8 @@ module TemperatureType
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use VegetationType       , only : veg_pp                
+  use VegetationType       , only : veg_pp
+  use VegetationDataType   , only : veg_es  
   !
   implicit none
   save
@@ -276,15 +277,6 @@ contains
     begl = bounds%begl; endl= bounds%endl
     begg = bounds%begg; endg= bounds%endg
 
-    this%t_ref2m_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TSA', units='K',  &
-         avgflag='A', long_name='2m air temperature', &
-         ptr_patch=this%t_ref2m_patch)
-
-    this%t_ref2m_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TSA_R', units='K',  &
-         avgflag='A', long_name='Rural 2m air temperature', &
-         ptr_patch=this%t_ref2m_r_patch, set_spec=spval)
 
     this%t_ref2m_min_patch(begp:endp) = spval
     call hist_addfld1d (fname='TREFMNAV', units='K',  &
@@ -306,11 +298,6 @@ contains
          avgflag='A', long_name='Rural daily maximum of average 2-m temperature', &
          ptr_patch=this%t_ref2m_max_r_patch, set_spec=spval)
 
-    this%t_ref2m_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TSA_U', units='K',  &
-         avgflag='A', long_name='Urban 2m air temperature', &
-         ptr_patch=this%t_ref2m_u_patch, set_nourb=spval)
-
     this%t_ref2m_min_u_patch(begp:endp) = spval
     call hist_addfld1d (fname='TREFMNAV_U', units='K',  &
          avgflag='A', long_name='Urban daily minimum of average 2-m temperature', &
@@ -320,11 +307,6 @@ contains
     call hist_addfld1d (fname='TREFMXAV_U', units='K',  &
          avgflag='A', long_name='Urban daily maximum of average 2-m temperature', &
          ptr_patch=this%t_ref2m_max_u_patch, set_nourb=spval)
-
-    this%t_veg_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TV', units='K',  &
-         avgflag='A', long_name='vegetation temperature', &
-         ptr_patch=this%t_veg_patch)
 
     if (use_cndv .or. crop_prog) then
        active = "active"
@@ -660,26 +642,6 @@ contains
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
 
-    call restartvar(ncid=ncid, flag=flag, varname='T_VEG', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='vegetation temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_veg_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='2m height surface air temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_patch)
-    if (flag=='read' .and. .not. readvar) call endrun(msg=errMsg(__FILE__, __LINE__))
-
-    call restartvar(ncid=ncid, flag=flag, varname="T_REF2M_R", xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='Rural 2m height surface air temperature', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_r_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname="T_REF2M_U", xtype=ncd_double, dim1name='pft',                      &
-         long_name='Urban 2m height surface air temperature', units='K',                                              &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_u_patch)
-
 
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN', xtype=ncd_double,  &
          dim1name='pft', &
@@ -997,7 +959,7 @@ contains
 
     ! Accumulate and extract T_VEG24 & T_VEG240 
     do p = begp,endp
-       rbufslp(p) = this%t_veg_patch(p)
+       rbufslp(p) = veg_es%t_veg(p)
     end do
     call update_accum_field  ('T_VEG24' , rbufslp             , nstep)
     call extract_accum_field ('T_VEG24' , this%t_veg24_patch  , nstep)
@@ -1011,7 +973,7 @@ contains
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
 
-    call update_accum_field  ('TREFAV', this%t_ref2m_patch, nstep)
+    call update_accum_field  ('TREFAV', veg_es%t_ref2m, nstep)
     call extract_accum_field ('TREFAV', rbufslp, nstep)
     end_cd = is_end_curr_day()
     do p = begp,endp
@@ -1037,7 +999,7 @@ contains
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
 
-    call update_accum_field  ('TREFAV_U', this%t_ref2m_u_patch, nstep)
+    call update_accum_field  ('TREFAV_U', veg_es%t_ref2m_u, nstep)
     call extract_accum_field ('TREFAV_U', rbufslp, nstep)
     do p = begp,endp
        l = veg_pp%landunit(p)
@@ -1065,7 +1027,7 @@ contains
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
 
-    call update_accum_field  ('TREFAV_R', this%t_ref2m_r_patch, nstep)
+    call update_accum_field  ('TREFAV_R', veg_es%t_ref2m_r, nstep)
     call extract_accum_field ('TREFAV_R', rbufslp, nstep)
     do p = begp,endp
        l = veg_pp%landunit(p)
@@ -1086,7 +1048,7 @@ contains
        endif
     end do
 
-    call update_accum_field  ('T10', this%t_ref2m_patch, nstep)
+    call update_accum_field  ('T10', veg_es%t_ref2m, nstep)
     call extract_accum_field ('T10', this%t_a10_patch, nstep)
 
     if ( crop_prog )then
@@ -1120,7 +1082,7 @@ contains
              rbufslp(p) = accumResetVal ! reset gdd
           else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                    ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
-             rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m_patch(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
+             rbufslp(p) = max(0._r8, min(26._r8, veg_es%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
           else
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if
@@ -1138,7 +1100,7 @@ contains
           else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                    ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(30._r8, &
-                  this%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + 8._r8))) * dtime/SHR_CONST_CDAY
+                  veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + 8._r8))) * dtime/SHR_CONST_CDAY
           else
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if
@@ -1155,7 +1117,7 @@ contains
           else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                    ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(30._r8, &
-                  this%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + 10._r8))) * dtime/SHR_CONST_CDAY
+                  veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + 10._r8))) * dtime/SHR_CONST_CDAY
           else
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if

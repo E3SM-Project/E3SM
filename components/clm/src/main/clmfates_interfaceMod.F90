@@ -87,11 +87,14 @@ module CLMFatesInterfaceMod
    use decompMod         , only : get_proc_bounds,   &
                                   get_proc_clumps,   &
                                   get_clump_bounds
+
    use GridcellType      , only : grc_pp
    use TopounitType      , only : top_as
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es
+   use VegetationDataType, only : veg_es  
    use LandunitType      , only : lun_pp
+   
    use landunit_varcon   , only : istsoil
    use abortutils        , only : endrun
    use shr_log_mod       , only : errMsg => shr_log_errMsg    
@@ -1670,7 +1673,7 @@ contains
     call t_startf('edpsn')
     associate(&
           t_soisno  => col_es%t_soisno               , &
-          t_veg     => temperature_inst%t_veg_patch  , &
+          t_veg     => veg_es%t_veg                  , &
           tgcm      => temperature_inst%thm_patch    , &
           forc_pbot => top_as%pbot                   , &
           rssun     => photosyns_inst%rssun_patch    , &

@@ -52,6 +52,7 @@ module clm_instMod
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es
   use VegetationType             , only : veg_pp
+  use VegetationDataType         , only : veg_es
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -341,7 +342,8 @@ contains
          urbanparams_vars%em_improad(begl:endl), &
          urbanparams_vars%em_perroad(begl:endl))
 
-    call col_es%init(bounds_proc%begc_all, bounds_proc%endc_all)
+    call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
+    call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
     
     call canopystate_vars%init(bounds_proc)
 

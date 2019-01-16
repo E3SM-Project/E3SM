@@ -30,14 +30,15 @@ module PhenologyMod
   use atm2lndType         , only : atm2lnd_type
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
+  use PhosphorusFluxType  , only : phosphorusflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  use clm_varctl          , only : nu_com 
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es 
   use TopounitType        , only : top_af  
   use GridcellType        , only : grc_pp                
   use VegetationType      , only : veg_pp                
-  use PhosphorusFluxType  , only : phosphorusflux_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use clm_varctl          , only : nu_com 
+  use VegetationDataType  , only : veg_es
   
   !
   implicit none
@@ -399,7 +400,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                  & 
-         t_ref2m        => temperature_vars%t_ref2m_patch     , & ! Input:  [real(r8) (:) ]  2m air temperature (K)                            
+         t_ref2m        => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2m air temperature (K)                            
          gdd0           => temperature_vars%gdd0_patch        , & ! Output: [real(r8) (:) ]  growing deg. days base 0 deg C (ddays)            
          gdd8           => temperature_vars%gdd8_patch        , & ! Output: [real(r8) (:) ]     "     "    "    "   8  "  "    "               
          gdd10          => temperature_vars%gdd10_patch       , & ! Output: [real(r8) (:) ]     "     "    "    "  10  "  "    "               
@@ -1950,7 +1951,7 @@ contains
     associate(                                               & 
          tlai        => canopystate_vars%tlai_patch        , & ! Input:  [real(r8) (:) ]  one-sided leaf area index, no burying by snow     
 
-         t_ref2m     => temperature_vars%t_ref2m_patch     , & ! Input:  [real(r8) (:) ]  2 m height surface air temperature (K)            
+         t_ref2m     => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2 m height surface air temperature (K)            
          t_ref2m_min => temperature_vars%t_ref2m_min_patch , & ! Input:  [real(r8) (:) ] daily minimum of average 2 m height surface air temperature (K)
          t_ref2m_max => temperature_vars%t_ref2m_max_patch , & ! Input:  [real(r8) (:) ] daily maximum of average 2 m height surface air temperature (K)
 
