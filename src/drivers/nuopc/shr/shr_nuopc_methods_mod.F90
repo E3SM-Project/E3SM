@@ -1102,58 +1102,72 @@ module shr_nuopc_methods_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc,debug)
+  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc,zeroregion)
 
     ! ----------------------------------------------
     ! Regrid a field in a field bundle to another field in a field bundle
     ! ----------------------------------------------
-    use ESMF, only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
-    use ESMF, only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
-    use med_constants_mod, only : R8
-    use perf_mod, only : t_startf, t_stopf
 
-    type(ESMF_FieldBundle), intent(in) :: FBin
-    character(len=*)      , intent(in)    :: fldin
-    type(ESMF_FieldBundle), intent(inout) :: FBout
-    character(len=*)      , intent(in)    :: fldout
-    type(ESMF_RouteHandle), intent(inout) :: RH
-    integer               , intent(out)   :: rc
-    logical, intent(in), optional :: debug
+    use ESMF              , only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
+    use ESMF              , only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
+    use ESMF              , only : ESMF_Region_Flag, ESMF_REGION_TOTAL
+    use med_constants_mod , only : R8
+    use perf_mod          , only : t_startf, t_stopf
+
+    type(ESMF_FieldBundle), intent(in)           :: FBin
+    character(len=*)      , intent(in)           :: fldin
+    type(ESMF_FieldBundle), intent(inout)        :: FBout
+    character(len=*)      , intent(in)           :: fldout
+    type(ESMF_RouteHandle), intent(inout)        :: RH
+    integer               , intent(out)          :: rc
+    type(ESMF_Region_Flag), intent(in), optional :: zeroregion
+
     ! local
-    real(R8),             pointer :: factorList(:)
-    integer,          pointer :: factorIndexList(:,:)
-    type(ESMF_Field) :: field1, field2
-    integer :: dbrc
+    real(R8), pointer      :: factorList(:)
+    integer,  pointer      :: factorIndexList(:,:)
+    type(ESMF_Field)       :: field1, field2
+    integer                :: dbrc
+    integer                :: rank
+    logical                :: checkflag = .false.
+    character(len=8)       :: filename
+    type(ESMF_Region_Flag) :: localzr
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldRegrid)'
-    integer :: rank
-    logical :: checkflag = .false.
-    character(len=8) :: filename
     ! ----------------------------------------------
 #ifdef DEBUG
     checkflag = .true.
 #endif
     call t_startf(subname)
     rc = ESMF_SUCCESS
+
+    localzr = ESMF_REGION_TOTAL
+    if (present(zeroregion)) then
+       localzr = zeroregion
+    endif
+
     call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
 
     if (shr_nuopc_methods_FB_FldChk(FBin , trim(fldin) , rc=rc) .and. &
-        shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
+         shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
 
-      call shr_nuopc_methods_FB_getFieldByName(FBin, trim(fldin), field1, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call shr_nuopc_methods_FB_getFieldByName(FBout, trim(fldout), field2, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
-        termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-   else
-      if (dbug_flag > 1) then
-        call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)
-      endif
+       call shr_nuopc_methods_FB_getFieldByName(FBin, trim(fldin), field1, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_getFieldByName(FBout, trim(fldout), field2, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
+            termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, & 
+            zeroregion=localzr, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call ESMF_LogWrite(trim(subname)//" field not found: "//&
+            trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf(subname)
-  end subroutine shr_nuopc_methods_FB_FieldRegrid
+
+   end subroutine shr_nuopc_methods_FB_FieldRegrid
 
   !-----------------------------------------------------------------------------
 
@@ -1437,9 +1451,9 @@ module shr_nuopc_methods_mod
     integer                         :: fieldCount, lrank
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     character(len=64)               :: lstring
-    real(R8), pointer     :: dataPtr1d(:)
-    real(R8), pointer     :: dataPtr2d(:,:)
-    integer :: dbrc
+    real(R8), pointer               :: dataPtr1d(:)
+    real(R8), pointer               :: dataPtr2d(:,:)
+    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_diagnose)'
     ! ----------------------------------------------
 
@@ -1460,9 +1474,11 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     do n = 1, fieldCount
+
        call shr_nuopc_methods_State_GetFldPtr(State, lfieldnamelist(n), &
             fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        if (dbug_flag > 1) then
           if (lrank == 0) then
              ! no local data

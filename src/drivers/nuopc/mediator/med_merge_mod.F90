@@ -42,9 +42,9 @@ contains
     use shr_string_mod        , only : shr_string_listGetNum
     use shr_string_mod        , only : shr_string_listGetName
     use esmFlds               , only : compmed, compname
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_type
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
+    use esmFlds               , only : shr_nuopc_fldList_type
+    use esmFlds               , only : shr_nuopc_fldList_GetNumFlds
+    use esmFlds               , only : shr_nuopc_fldList_GetFldInfo
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetNameN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset

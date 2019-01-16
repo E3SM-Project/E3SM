@@ -112,8 +112,8 @@ module med_fraction_mod
   !
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod      , only : R8
-  use esmFlds, only : ncomps
+  use med_constants_mod , only : R8
+  use esmFlds           , only : ncomps
 
   implicit none
   private
@@ -152,8 +152,10 @@ module med_fraction_mod
   !  real(R8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
 
+  logical :: use_nems_orig = .true.
+
 !-----------------------------------------------------------------------------
-  contains
+contains
 !-----------------------------------------------------------------------------
 
   subroutine med_fraction_init(gcomp, rc)
@@ -167,8 +169,8 @@ module med_fraction_mod
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use esmFlds               , only : compatm, compocn, compice, complnd
     use esmFlds               , only : comprof, compglc, compwav, compname
+    use esmFlds               , only : mapconsf, mapfcopy
     use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
@@ -679,14 +681,15 @@ module med_fraction_mod
     use ESMF                  , only : ESMF_GridCompGet, ESMF_FieldBundleIsCreated
     use esmFlds               , only : compatm, compocn, compice, complnd
     use esmFlds               , only : comprof, compglc, compwav, compname
+    use esmFlds               , only : mapconsf, mapfcopy
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use med_internalstate_mod , only : InternalState
-    use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -771,52 +774,79 @@ module med_fraction_mod
           endif
        end if
 
+
        ! Set atm grid fractions for ice and ocean
        if (is_local%wrap%comp_present(compatm)) then
 
-          ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
-          if (is_local%wrap%med_coupling_active(compice,compatm)) then
-             call shr_nuopc_methods_FB_FieldRegrid(&
-                  is_local%wrap%FBfrac(compice), 'ifrac', &
-                  is_local%wrap%FBfrac(compatm), 'ifrac', &
-                  is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
+          ! If atm, ice and ocn are present but lnd is not then assume nems_orig
+          if ( is_local%wrap%comp_present(compatm) .and.       &
+               is_local%wrap%comp_present(compice) .and.       &
+               is_local%wrap%comp_present(compocn) .and. .not. &
+               is_local%wrap%comp_present(complnd)) then
+             
+             ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
+             if (is_local%wrap%med_coupling_active(compice,compatm)) then
+                call shr_nuopc_methods_FB_FieldRegrid(&
+                     is_local%wrap%FBfrac(compice), 'ifrac', &
+                     is_local%wrap%FBfrac(compatm), 'ifrac', &
+                     is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             end if
 
-          ! Map 'ofrac' from FBfrac(compice) to FBfrac(compatm)
-          if (is_local%wrap%med_coupling_active(compocn,compatm)) then
-             call shr_nuopc_methods_FB_FieldRegrid(&
-                  is_local%wrap%FBfrac(compice), 'ofrac', &
-                  is_local%wrap%FBfrac(compatm), 'ofrac', &
-                  is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+             ! Now set ofrac=1-ifrac and lfrac=0 on the atm grid
+             call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
+             call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', lfrac, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          ! Note: 'lfrac' from FBFrac(compatm) is just going to be in the init
-          if ( is_local%wrap%med_coupling_active(compice,compatm) .and. &
-               is_local%wrap%med_coupling_active(compocn,compatm) ) then
-               
-             if (atm_frac_correct) then
-                call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ifrac', ifrac, rc=rc)
+             ofrac = 1.0_R8 - ifrac
+             lfrac = 0.0_R8
+
+          else
+             
+             ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
+             if (is_local%wrap%med_coupling_active(compice,compatm)) then
+                call shr_nuopc_methods_FB_FieldRegrid(&
+                     is_local%wrap%FBfrac(compice), 'ifrac', &
+                     is_local%wrap%FBfrac(compatm), 'ifrac', &
+                     is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                
-                call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
+             end if
+
+             ! Map 'ofrac' from FBfrac(compice) to FBfrac(compatm)
+             if (is_local%wrap%med_coupling_active(compocn,compatm)) then
+                call shr_nuopc_methods_FB_FieldRegrid(&
+                     is_local%wrap%FBfrac(compice), 'ofrac', &
+                     is_local%wrap%FBfrac(compatm), 'ofrac', &
+                     is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                
-                call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', lfrac, rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                where (ifrac + ofrac > 0.0_R8)
-                   ifrac = ifrac * ((1.0_R8 - lfrac)/(ofrac+ifrac))
-                   ofrac = ofrac * ((1.0_R8 - lfrac)/(ofrac+ifrac))
-                elsewhere
-                   ifrac = 0.0_R8
-                   ofrac = 0.0_R8
-                end where
+             end if
+
+             ! Note: 'lfrac' from FBFrac(compatm) is just going to be in the init
+             if ( is_local%wrap%med_coupling_active(compice,compatm) .and. &
+                  is_local%wrap%med_coupling_active(compocn,compatm) ) then
+
+                if (atm_frac_correct) then
+                   call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ifrac', ifrac, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                   call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                   call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', lfrac, rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   where (ifrac + ofrac > 0.0_R8)
+                      ifrac = ifrac * ((1.0_R8 - lfrac)/(ofrac+ifrac))
+                      ofrac = ofrac * ((1.0_R8 - lfrac)/(ofrac+ifrac))
+                   elsewhere
+                      ifrac = 0.0_R8
+                      ofrac = 0.0_R8
+                   end where
+                endif
              endif
-          endif
 
+          end if
        end if
-
     end if
 
     !---------------------------------------

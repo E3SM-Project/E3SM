@@ -445,7 +445,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! bottom level potential temperature will need to be computed if not received from the atm
-    if (shr_nuopc_methods_FB_FldChk(FBAtm, 'Sa_ptem', rc=rc)) then
+    if (fldchk(FBAtm, 'Sa_ptem', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_ptem', fldptr1=aoflux%thbot, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        compute_atm_thbot = .false.
@@ -455,7 +455,7 @@ contains
     end if
 
     ! bottom level density will need to be computed if not received from the atm
-    if (shr_nuopc_methods_FB_FldChk(FBAtm, 'Sa_dens', rc=rc)) then
+    if (fldchk(FBAtm, 'Sa_dens', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        compute_atm_dens = .false.
