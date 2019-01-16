@@ -5665,7 +5665,7 @@ template <> inline std::string strto (const char* s) { return std::string(s); }
 Experiment get_options () {
   Experiment e;
   e.sl_mpi = 1;
-  e.halo = 1;
+  e.halo = 2;
   char* var_s = std::getenv("slmpi");
   if (var_s) e.sl_mpi = strto<int>(var_s);
   var_s = std::getenv("halo");
