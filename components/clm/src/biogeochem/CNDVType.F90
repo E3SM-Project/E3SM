@@ -441,6 +441,7 @@ contains
     use pftvarcon        , only : ndllf_dcd_brl_tree
     use TemperatureType  , only : temperature_type
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
+    use VegetationDataType, only : veg_es
     !
     ! !ARGUMENTS:
     class(dgvs_type)       , intent(inout) :: this
@@ -495,7 +496,7 @@ contains
 
     do p = begp,endp
        rbufslp(p) = max(0.0_r8, &
-            (temperature_vars%t_ref2m_patch(p) - (SHR_CONST_TKFRZ + 5.0_r8)) * dtime/SHR_CONST_CDAY)
+            (veg_es%t_ref2m(p) - (SHR_CONST_TKFRZ + 5.0_r8)) * dtime/SHR_CONST_CDAY)
        !
        ! Fix (for bug 1858) from Sam Levis to reset the annual AGDD variable
        ! 

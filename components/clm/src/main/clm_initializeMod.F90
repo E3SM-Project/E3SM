@@ -30,6 +30,7 @@ module clm_initializeMod
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es  
   use VegetationType         , only : veg_pp  
+
   use clm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
   use clm_varctl             , only : do_budgets

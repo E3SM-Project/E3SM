@@ -31,6 +31,7 @@ module VOCEmissionMod
   use TemperatureType    , only : temperature_type
   use TopounitType       , only : top_as, top_af
   use VegetationType     , only : veg_pp                
+  use VegetationDataType , only : veg_es  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -492,7 +493,7 @@ contains
          cisun_z       => photosyns_vars%cisun_z_patch          , & ! Input:  [real(r8) (:,:) ]  sunlit intracellular CO2 (Pa)
          cisha_z       => photosyns_vars%cisha_z_patch          , & ! Input:  [real(r8) (:,:) ]  shaded intracellular CO2 (Pa)
          
-         t_veg         => temperature_vars%t_veg_patch          , & ! Input:  [real(r8) (:)   ]  pft vegetation temperature (Kelvin)
+         t_veg         => veg_es%t_veg          , & ! Input:  [real(r8) (:)   ]  pft vegetation temperature (Kelvin)
          t_veg24       => temperature_vars%t_veg24_patch        , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 24 hrs
          t_veg240      => temperature_vars%t_veg240_patch       , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 240 hrs
          
