@@ -1704,20 +1704,19 @@ contains
 
     type (domain_type) :: domain
 
-    ! for debugging
+    ! Arguments for verbose debugging
     ! type (MPAS_time_type) :: currentForcingTime
     ! character(len=strKIND) :: currentForcingTimeStr
-
-    logical, pointer :: &
-         config_do_restart
 
     real(kind=RKIND), pointer :: &
          config_dt
 
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
-    ! for debugging
-    ! ! get the current time
+    ! For verbose debugging.
+    ! Uncomment the lines below and the arguments above to print the forcing time
+    ! to the log file, to ensure the forcing times match the simulation times.
+
     ! call MPAS_forcing_get_forcing_time(&
     !    seaiceForcingGroups, &
     !    "seaice_data_iceberg_forcing_monthly", &
