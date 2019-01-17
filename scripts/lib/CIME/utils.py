@@ -9,6 +9,7 @@ import six
 from contextlib import contextmanager
 #pylint: disable=import-error
 from six.moves import configparser
+from distutils import file_util
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -793,7 +794,7 @@ def match_any(item, re_list):
 
     return False
 
-def safe_copy(src_path, tgt_path):
+def safe_copy(src_path, tgt_path, preserve_meta=True):
     """
     A flexbile and safe copy routine. Will try to copy file and metadata, but this
     can fail if the current user doesn't own the tgt file. A fallback data-only copy is
@@ -803,6 +804,11 @@ def safe_copy(src_path, tgt_path):
 
     most of the complexity here is handling the case where the tgt_path file already
     exists. This problem does not exist for the tree operations so we don't need to wrap those.
+
+    preserve_meta toggles if file meta-data, like permissions, should be preserved. If you are
+    copying baseline files, you should be within a SharedArea context manager and preserve_meta
+    should be false so that the umask set up by SharedArea can take affect regardless of the
+    permissions of the src files.
     """
 
     tgt_path = os.path.join(tgt_path, os.path.basename(src_path)) if os.path.isdir(tgt_path) else tgt_path
@@ -823,7 +829,7 @@ def safe_copy(src_path, tgt_path):
 
         if owner_uid == os.getuid():
             # I am the owner, copy file contents, permissions, and metadata
-            shutil.copy2(src_path, tgt_path)
+            file_util.copy_file(src_path, tgt_path, preserve_mode=preserve_meta, preserve_times=preserve_meta)
         else:
             # I am not the owner, just copy file contents
             shutil.copyfile(src_path, tgt_path)
@@ -831,7 +837,12 @@ def safe_copy(src_path, tgt_path):
     else:
         # We are making a new file, copy file contents, permissions, and metadata.
         # This can fail if the underlying directory is not writable by current user.
-        shutil.copy2(src_path, tgt_path)
+        file_util.copy_file(src_path, tgt_path, preserve_mode=preserve_meta, preserve_times=preserve_meta)
+
+    # If src file was executable, then the tgt file should be too
+    st = os.stat(tgt_path)
+    if os.access(src_path, os.X_OK) and st.st_uid == os.getuid():
+        os.chmod(tgt_path, st.st_mode | statlib.S_IXUSR | statlib.S_IXGRP | statlib.S_IXOTH)
 
 def safe_recursive_copy(src_dir, tgt_dir, file_map):
     """
@@ -1645,16 +1656,6 @@ def get_umask():
     os.umask(current_umask)
 
     return current_umask
-
-def copy_umask(src, dst):
-    """
-    Preserves all file metadata except making sure new file obeys umask
-    """
-    curr_umask = get_umask()
-    safe_copy(src, dst)
-    octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
-    dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
-    os.chmod(dst, octal_base - curr_umask)
 
 def stringify_bool(val):
     val = False if val is None else val
