@@ -22,7 +22,7 @@ import cdp.cdp_run
 import acme_diags
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
-from acme_diags.driver.utils import get_set_name, SET_NAMES
+from acme_diags.driver import utils
 from acme_diags import container
 
 
@@ -31,7 +31,7 @@ def _get_default_diags(set_name, run_type):
     Returns the path for the default diags for plotset set_name.
     These are different depending on the run_type.
     """
-    set_name = get_set_name(set_name)
+    set_num = utils.general.get_set_name(set_name)
 
     folder = '{}'.format(set_name)
     fnm = '{}_{}.cfg'.format(set_name, run_type)
@@ -102,7 +102,7 @@ def _save_parameter_files(results_dir, parser):
         else:
             with open(fnm, 'r') as f:
                 contents = ''.join(f.readlines())
-            # Remove any path, just keep the filename
+            # Remove any path, just keep the filename.
             new_fnm = fnm.split('/')[-1]
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, 'w') as f:
@@ -116,7 +116,7 @@ def _save_parameter_files(results_dir, parser):
         else:
             with open(fnm, 'r') as f:
                 contents = ''.join(f.readlines())
-            # Remove any path, just keep the filename
+            # Remove any path, just keep the filename.
             new_fnm = fnm.split('/')[-1]
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, 'w') as f:
@@ -132,6 +132,26 @@ def save_provenance(results_dir, parser):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, 0o775)
 
+    # Create a PHP file to list the contents of the prov dir.
+    php_path = os.path.join(results_dir, 'index.php')
+    with open(php_path, 'w') as f:
+        contents = """
+        <?php
+        # Taken from:
+        # https://stackoverflow.com/questions/3785055/how-can-i-create-a-simple-index-html-file-which-lists-all-files-directories
+        $path = ".";
+        $dh = opendir($path);
+        $i=1;
+        while (($file = readdir($dh)) !== false) {
+            if($file != "." && $file != ".." && $file != "index.php" && $file != ".htaccess" && $file != "error_log" && $file != "cgi-bin") {
+                echo "<a href='$path/$file'>$file</a><br /><br />";
+                $i++;
+            }
+        }
+        closedir($dh);
+        ?>
+        """
+        f.write(contents)
     try:
         _save_env_yml(results_dir)
     except:
@@ -156,7 +176,7 @@ def get_parameters(parser=ACMEParser()):
 
         # Load the default cfg files.
         run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
-        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in SET_NAMES]
+        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in utils.general.SET_NAMES]
 
         other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
@@ -177,7 +197,7 @@ def run_diag(parameters):
     """
     results = []
     for pset in parameters.sets:
-        set_name = get_set_name(pset)
+        set_name = utils.general.get_set_name(pset)
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)

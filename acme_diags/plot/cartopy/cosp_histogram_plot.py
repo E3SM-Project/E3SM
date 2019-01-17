@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize': 11.5}
@@ -141,7 +141,7 @@ def plot(reference, test, diff, _, parameter):
     plot_panel(0, fig, _, test, parameter.contour_levels, 'rainbow',
                (parameter.test_name_yrs, parameter.test_title, test.units), parameter)
     plot_panel(1, fig, _, reference, parameter.contour_levels, 'rainbow',
-               (parameter.reference_name, parameter.reference_title, test.units), parameter)
+               (parameter.ref_name_yrs, parameter.reference_title, test.units), parameter)
     plot_panel(2, fig, _, diff, parameter.diff_levels, parameter.diff_colormap,
                (parameter.diff_name, parameter.diff_title, test.units), parameter)
 

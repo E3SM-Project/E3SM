@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from cdp.cdp_viewer import OutputViewer
 import acme_diags
-from acme_diags.driver.utils import get_set_name
+from acme_diags.driver.utils.general import get_set_name
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
 from acme_diags import container
 
@@ -137,19 +137,20 @@ def _extras(root_dir, parameters):
 
     for f in index_files:
         path = _get_acme_logo_path(root_dir, f)
-        if parameters[0].run_type == 'model_vs_model':
-            _add_header(f, acme_diags.__version__, parameters[0].test_name,
-                parameters[0].ref_name, dt, path)
-        elif parameters[0].run_type == 'model_vs_obs':
-            ref = 'Observation and Reanalysis'
-            _add_header(f, acme_diags.__version__, parameters[0].test_name,
-                ref, dt, path)
+
+        test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
+        if parameters[0].run_type == 'model_vs_obs':
+            ref_name = 'Observation and Reanalysis'
+        else:
+            ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
+        _add_header(f, acme_diags.__version__, test_name, ref_name, dt, path)
         h1_to_h3(f)
 
     _edit_table_html(root_dir)
     _add_table_and_taylor_to_viewer_index(root_dir)
+    _add_provenance_to_viewer_index(root_dir)
 
-    
+
 def _add_pages_and_top_row(viewer, parameters):
     """Add the page and columns of the page"""
     set_to_seasons = collections.OrderedDict()  # dict of {set: [seasons]}
@@ -169,6 +170,8 @@ def _add_pages_and_top_row(viewer, parameters):
                 col_labels.append(s)
         viewer.add_page("{}".format(_better_page_name(set_num)), col_labels)
 
+    # Add the provenance page to the end.
+    viewer.add_page('Provenance', [])
 
 def _get_description(var, parameters):
     """Get the description for the variable from the parameters"""
@@ -295,10 +298,10 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
                 baseline_text = 'E3SMv0_B1850'
                 ax.text(0.6, 0.95, baseline_text, ha='left', va='center', transform=ax.transAxes,color=color[1], fontsize=12)
 
-        model_text = 'test model: ' + test_name
+        model_text = 'Test Model: ' + test_name
         ax.text(0.6, 1, model_text, ha='left', va='center', transform=ax.transAxes,color=color[0], fontsize=12)
         if run_type == 'model_vs_model':
-            ax.text(0.6, 0.95, 'ref. model: '+ref_name, ha='left', va='center', transform=ax.transAxes,color='k', fontsize=12)
+            ax.text(0.6, 0.95, 'Ref. Model: ' + ref_name, ha='left', va='center', transform=ax.transAxes, color='k', fontsize=12)
 
         plt.title(season + ': Spatial Variability', y = 1.08)
         fig.savefig(os.path.join(output_dir, season + '_metrics_taylor_diag.png'))
@@ -338,7 +341,6 @@ def _cvs_to_html(csv_path, season, test_name, ref_name):
         htmlfile.write('</table>')
 
     return html_path
-
 
 def _add_html_to_col(season, season_path, html_path):
     """Since the output viewer doesn't support html images, do this hack.
@@ -451,6 +453,23 @@ def _add_table_and_taylor_to_viewer_index(root_dir):
     with open(index_page, "wb") as f:
         f.write(html)
 
+def _add_provenance_to_viewer_index(root_dir):
+    """
+    In the index, link 'Provenance' to the prov folder.
+    """
+    index_page = os.path.join(root_dir, 'index.html')
+    soup = BeautifulSoup(open(index_page), "lxml")
+
+    for tr in soup.find_all("tr"):
+        for td in tr.find_all("td"):
+            for a in td.find_all("a"):
+                if 'Provenance' in a.text:
+                    a['href'] = '../prov'
+
+    html = soup.prettify("utf-8")
+    with open(index_page, "wb") as f:
+        f.write(html)
+
 def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
     """For each season in LAT_LON_TABLE_INFO, create a csv, convert it to an html and append that html to the viewer."""
     table_dir = os.path.join(root_dir, 'table-data')  # output_dir/viewer/table-data
@@ -459,9 +478,12 @@ def generate_lat_lon_metrics_table(viewer, root_dir, parameters):
         os.mkdir(table_dir)
 
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict(table_dir, season, parameters[0].test_name, parameters[0].run_type)
-        test_name = parameters[0].test_name
-        ref_name = 'Observation and Reanalysis' if parameters[0].run_type == 'model_vs_obs' else parameters[0].ref_name
+        test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
+        if parameters[0].run_type == 'model_vs_obs':
+            ref_name = 'Observation and Reanalysis'
+        else:
+            ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
+        csv_path = _create_csv_from_dict(table_dir, season, test_name, parameters[0].run_type)
         html_path = _cvs_to_html(csv_path, season, test_name, ref_name)
 
         # Ex: change this: /Users/zshaheen/output_dir/viewer/table-data/ANN_metrics_table.html
@@ -481,7 +503,13 @@ def generate_lat_lon_taylor_diag(viewer, root_dir, parameters):
 
     season_to_png = {}
     for season in LAT_LON_TABLE_INFO:
-        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, parameters[0].test_name, parameters[0].run_type, parameters[0].ref_name)
+        test_name = parameters[0].short_test_name if parameters[0].short_test_name else parameters[0].test_name
+        if parameters[0].run_type == 'model_vs_obs':
+            ref_name = 'Observation and Reanalysis'
+        else:
+            ref_name = parameters[0].short_ref_name if parameters[0].short_ref_name else parameters[0].ref_name            
+
+        csv_path = _create_csv_from_dict_taylor_diag(taylor_diag_dir, season, test_name, parameters[0].run_type, ref_name)
         # Remove any reference to the results_dir when inserting the links into HTML pages.
         # This is because that folder can be renamed.
         csv_path = csv_path.split('viewer')[-1]
@@ -496,7 +524,8 @@ def create_metadata(parameter):
     From a set of parameters, extract the metadata.
     """
     metadata = collections.OrderedDict()
-    metadata['Command to run'] = ''
+    msg = 'Use this command to recreate this image:'
+    metadata[msg] = ''
     cmd = 'e3sm_diags --no_viewer '
 
     from acme_diags.acme_parser import ACMEParser
@@ -541,7 +570,7 @@ def create_metadata(parameter):
             else:
                 cmd += "--{} '{}' ".format(param_name, param)
     
-    metadata['Command to run'] = cmd
+    metadata[msg] = cmd
 
     return metadata
 
@@ -561,7 +590,7 @@ def create_viewer(root_dir, parameters, ext):
             # ref_name-variable-season-region
             # or
             # ref_name-variable-plev'mb'-season-region
-            ref_name = parameter.ref_name
+            ref_name = getattr(parameter, 'ref_name', '')
             for var in parameter.variables:
                 for season in parameter.seasons:
                     for region in parameter.regions:
@@ -653,3 +682,4 @@ def create_viewer(root_dir, parameters, ext):
     generate_lat_lon_taylor_diag(viewer, root_dir, parameters)
     viewer.generate_viewer(prompt_user=False)
     _extras(root_dir, parameters)
+

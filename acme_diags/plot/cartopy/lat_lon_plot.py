@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize': 11.5}
@@ -144,7 +143,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     mean2 = metrics_dict['ref']['mean']
     max2 = metrics_dict['ref']['max']
     plot_panel(1, fig, proj, reference, parameter.contour_levels, parameter.reference_colormap,
-               (parameter.reference_name, parameter.reference_title, reference.units), parameter, stats=(max2, mean2, min2))
+               (parameter.ref_name_yrs, parameter.reference_title, reference.units), parameter, stats=(max2, mean2, min2))
 
     # Third panel
     min3 = metrics_dict['diff']['min']

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 import matplotlib.path as mpath
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 plotTitle = {'fontsize': 11.5}
@@ -138,7 +138,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
 
     # Create projection
-    print(parameter.var_region)
     if parameter.var_region.find('N') != -1:
         pole = 'N'
         proj = ccrs.NorthPolarStereo(central_longitude=0)
@@ -160,7 +159,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     if reference.count() > 1:
         plot_panel(1, fig, proj, pole, reference, parameter.contour_levels, parameter.reference_colormap, [
-                   parameter.reference_name, parameter.reference_title, reference.units], parameter, stats=(max2, mean2, min2))
+                   parameter.ref_name_yrs, parameter.reference_title, reference.units], parameter, stats=(max2, mean2, min2))
 
     # Third panel
     min3 = metrics_dict['diff']['min']

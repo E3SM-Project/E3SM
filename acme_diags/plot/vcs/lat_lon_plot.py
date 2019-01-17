@@ -5,7 +5,7 @@ import sys
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 
 textcombined_objs = {}
 
@@ -32,7 +32,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff.long_name = parameter.diff_title
 
     test.id = parameter.test_name_yrs
-    reference.id = parameter.reference_name
+    reference.id = parameter.ref_name_yrs
     diff.id = parameter.diff_name
 
     # model and observation graph

@@ -5,7 +5,7 @@ import sys
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 
 textcombined_objs = {}
 
@@ -66,7 +66,7 @@ def plot(ref, test, diff, metrics_dict, parameters):
     test.id = str(
         parameters.test_name_yrs) if parameters.test_name_yrs is not '' else test.id
     ref.id = str(
-        parameters.reference_name) if parameters.reference_name is not '' else ref.id
+        parameters.ref_name_yrs) if parameters.ref_name_yrs is not '' else ref.id
     diff.id = str(
         parameters.diff_name) if parameters.diff_name is not '' else diff.id
 
