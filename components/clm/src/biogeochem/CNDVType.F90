@@ -485,7 +485,7 @@ contains
     
     do p = begp,endp
        rbufslp(p) = max(0._r8, &
-            (temperature_vars%t_a10_patch(p) - SHR_CONST_TKFRZ - dgv_ecophyscon%twmax(ndllf_dcd_brl_tree)) &
+            (veg_es%t_a10(p) - SHR_CONST_TKFRZ - dgv_ecophyscon%twmax(ndllf_dcd_brl_tree)) &
             * dtime/SHR_CONST_CDAY)
        if (month==1 .and. day==1 .and. secs==int(dtime)) rbufslp(p) = accumResetVal
     end do

@@ -380,8 +380,8 @@ contains
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                                           
          t_grnd               => col_es%t_grnd               , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]                                        
          thv                  => col_es%thv                  , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)                                
-         thm                  => temperature_vars%thm_patch                , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)                  
-         emv                  => temperature_vars%emv_patch                , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                     
+         thm                  => veg_es%thm                  , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)                  
+         emv                  => veg_es%emv                  , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                     
          emg                  => col_es%emg                  , & ! Input:  [real(r8) (:)   ]  vegetation emissivity                                                 
          t_veg                => veg_es%t_veg                , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
          t_ref2m              => veg_es%t_ref2m              , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)                           

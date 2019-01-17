@@ -642,7 +642,7 @@ contains
                waterstate_inst%h2osoi_vol_col(c,1:nlevsoil) 
 
          this%fates(nc)%bc_in(s)%t_veg24_si = &
-               temperature_inst%t_veg24_patch(col_pp%pfti(c))
+               veg_es%t_veg24(col_pp%pfti(c))
 
          this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
               min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
@@ -650,7 +650,7 @@ contains
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             p = ifp+col_pp%pfti(c)
             this%fates(nc)%bc_in(s)%t_veg24_pa(ifp) = &
-                 temperature_inst%t_veg24_patch(p)
+                 veg_es%t_veg24(p)
 
             this%fates(nc)%bc_in(s)%precip24_pa(ifp) = &
                   top_af_inst%prec24h(t)
@@ -1674,7 +1674,7 @@ contains
     associate(&
           t_soisno  => col_es%t_soisno               , &
           t_veg     => veg_es%t_veg                  , &
-          tgcm      => temperature_inst%thm_patch    , &
+          tgcm      => veg_es%thm                    , &
           forc_pbot => top_as%pbot                   , &
           rssun     => photosyns_inst%rssun_patch    , &
           rssha     => photosyns_inst%rssha_patch    , &

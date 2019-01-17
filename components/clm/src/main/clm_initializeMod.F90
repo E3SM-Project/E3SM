@@ -29,7 +29,8 @@ module clm_initializeMod
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es  
-  use VegetationType         , only : veg_pp  
+  use VegetationType         , only : veg_pp
+  use VegetationDataType     , only : veg_es  
 
   use clm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
@@ -629,6 +630,8 @@ contains
     call top_af%InitAccBuffer(bounds_proc)
 
     call temperature_vars%initAccBuffer(bounds_proc)
+    
+    call veg_es%InitAccBuffer(bounds_proc)
 
     call canopystate_vars%initAccBuffer(bounds_proc)
 
@@ -849,6 +852,7 @@ contains
     call top_as%InitAccVars(bounds_proc)
     call top_af%InitAccVars(bounds_proc)
     call temperature_vars%initAccVars(bounds_proc)
+    call veg_es%InitAccVars(bounds_proc)
     call canopystate_vars%initAccVars(bounds_proc)
     if (use_cndv) then
        call dgvs_vars%initAccVars(bounds_proc)

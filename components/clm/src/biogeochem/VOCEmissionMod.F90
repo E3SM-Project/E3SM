@@ -494,8 +494,8 @@ contains
          cisha_z       => photosyns_vars%cisha_z_patch          , & ! Input:  [real(r8) (:,:) ]  shaded intracellular CO2 (Pa)
          
          t_veg         => veg_es%t_veg          , & ! Input:  [real(r8) (:)   ]  pft vegetation temperature (Kelvin)
-         t_veg24       => temperature_vars%t_veg24_patch        , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 24 hrs
-         t_veg240      => temperature_vars%t_veg240_patch       , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 240 hrs
+         t_veg24       => veg_es%t_veg24        , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 24 hrs
+         t_veg240      => veg_es%t_veg240       , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 240 hrs
          
          Eopt_out      => vocemis_vars%Eopt_out_patch           , & ! Output: [real(r8) (:)   ]                                                    
          topt_out      => vocemis_vars%topt_out_patch           , & ! Output: [real(r8) (:)   ]                                                    

@@ -376,12 +376,12 @@ contains
 
     associate(                                                  &
          t_ref2m        => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2m air temperature (K)
-         gdd0           => temperature_vars%gdd0_patch        , & ! Output: [real(r8) (:) ]  growing deg. days base 0 deg C (ddays)
-         gdd8           => temperature_vars%gdd8_patch        , & ! Output: [real(r8) (:) ]     "     "    "    "   8  "  "    "
-         gdd10          => temperature_vars%gdd10_patch       , & ! Output: [real(r8) (:) ]     "     "    "    "  10  "  "    "
-         gdd020         => temperature_vars%gdd020_patch      , & ! Output: [real(r8) (:) ]  20-yr mean of gdd0 (ddays)
-         gdd820         => temperature_vars%gdd820_patch      , & ! Output: [real(r8) (:) ]  20-yr mean of gdd8 (ddays)
-         gdd1020        => temperature_vars%gdd1020_patch     , & ! Output: [real(r8) (:) ]  20-yr mean of gdd10 (ddays)
+         gdd0           => veg_es%gdd0        , & ! Output: [real(r8) (:) ]  growing deg. days base 0 deg C (ddays)
+         gdd8           => veg_es%gdd8        , & ! Output: [real(r8) (:) ]     "     "    "    "   8  "  "    "
+         gdd10          => veg_es%gdd10       , & ! Output: [real(r8) (:) ]     "     "    "    "  10  "  "    "
+         gdd020         => veg_es%gdd020      , & ! Output: [real(r8) (:) ]  20-yr mean of gdd0 (ddays)
+         gdd820         => veg_es%gdd820      , & ! Output: [real(r8) (:) ]  20-yr mean of gdd8 (ddays)
+         gdd1020        => veg_es%gdd1020     , & ! Output: [real(r8) (:) ]  20-yr mean of gdd10 (ddays)
 
          tempavg_t2m    => cnstate_vars%tempavg_t2m_patch       & ! Output: [real(r8) (:) ]  temp. avg 2m air temperature (K)
          )
@@ -1374,13 +1374,13 @@ contains
          leafcn             =>    veg_vp%leafcn                              , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
          fertnitro          =>    veg_vp%fertnitro                           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
 
-         t_ref2m_min        =>    temperature_vars%t_ref2m_min_patch         , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
-         t10                =>    temperature_vars%t_a10_patch               , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
-         a5tmin             =>    temperature_vars%t_a5min_patch             , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature
-         a10tmin            =>    temperature_vars%t_a10min_patch            , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
-         gdd020             =>    temperature_vars%gdd020_patch              , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd0
-         gdd820             =>    temperature_vars%gdd820_patch              , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd8
-         gdd1020            =>    temperature_vars%gdd1020_patch             , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd10
+         t_ref2m_min        =>    veg_es%t_ref2m_min         , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
+         t10                =>    veg_es%t_a10               , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
+         a5tmin             =>    veg_es%t_a5min             , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature
+         a10tmin            =>    veg_es%t_a10min            , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
+         gdd020             =>    veg_es%gdd020              , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd0
+         gdd820             =>    veg_es%gdd820              , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd8
+         gdd1020            =>    veg_es%gdd1020             , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd10
          hui                =>    crop_vars%gddplant_patch                   , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)
          leafout            =>    crop_vars%gddtsoi_patch                    , & ! Input:  [real(r8) (:) ]  gdd from top soil layer temperature
 
@@ -1901,8 +1901,8 @@ contains
          tlai        => canopystate_vars%tlai_patch        , & ! Input:  [real(r8) (:) ]  one-sided leaf area index, no burying by snow
 
          t_ref2m     => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2 m height surface air temperature (K)
-         t_ref2m_min => temperature_vars%t_ref2m_min_patch , & ! Input:  [real(r8) (:) ] daily minimum of average 2 m height surface air temperature (K)
-         t_ref2m_max => temperature_vars%t_ref2m_max_patch , & ! Input:  [real(r8) (:) ] daily maximum of average 2 m height surface air temperature (K)
+         t_ref2m_min => veg_es%t_ref2m_min , & ! Input:  [real(r8) (:) ] daily minimum of average 2 m height surface air temperature (K)
+         t_ref2m_max => veg_es%t_ref2m_max , & ! Input:  [real(r8) (:) ] daily maximum of average 2 m height surface air temperature (K)
 
          snow_depth  => waterstate_vars%snow_depth_col     , & ! Input:  [real(r8) (:) ]  snow height (m)
 
