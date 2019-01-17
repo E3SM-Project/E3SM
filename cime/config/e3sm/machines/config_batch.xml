@@ -549,7 +549,7 @@
        <directive>--account={{ project }}</directive>
      </directives>
     <queues>
-      <queue walltimemax="01:00:00" default="true">lr6</queue>
+      <queue walltimemax="01:00:00" default="true">lr2</queue>
     </queues>
    </batch_system>
 
@@ -560,7 +560,7 @@
        <directive>--account={{ project }}</directive>
      </directives>
     <queues>
-      <queue walltimemax="01:00:00" default="true">lr6</queue>
+      <queue walltimemax="01:00:00" default="true">lr3</queue>
     </queues>
    </batch_system>
 
