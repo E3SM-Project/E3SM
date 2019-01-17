@@ -110,7 +110,7 @@ class modelRun:
       # resampled version of time array - needed for filtering.
       # (Filtering needed b/c the occasional tiny time step that the model is exhibiting leads to inaccurate (noisy) derivatives)
       resampEndtime = self.yrs.max()
-      resampEndtime = 300.0
+      resampEndtime = 500.0
       self.resampYrs = np.linspace(0.0, resampEndtime, num=resampEndtime*12*2)
       self.dresampYrs = self.resampYrs[1:] - self.resampYrs[0:-1]
    
@@ -177,45 +177,45 @@ xtickSpacing = 20.0
 axMeanMelt = fig.add_subplot(nrow, ncol, 1)
 plt.xlabel('Year')
 plt.ylabel('mean melt (m/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 axTotalMelt = fig.add_subplot(nrow, ncol, 3, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('total melt (Gt/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 axCumuMelt = fig.add_subplot(nrow, ncol, 5, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('cumulative melt (Gt)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # VAF
 axVAF = fig.add_subplot(nrow, ncol, 2, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF (Gt)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 axVAFrate = fig.add_subplot(nrow, ncol, 4, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # grounded area
 axGA = fig.add_subplot(nrow, ncol, 6, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('Grounded area (km^2)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 axGArate = fig.add_subplot(nrow, ncol, 8, sharex=axMeanMelt)
 plt.xlabel('Year')
 plt.ylabel('Grounded area rate (km^2/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 
@@ -231,20 +231,20 @@ ncol=1
 ax2MeanMelt = fig2.add_subplot(nrow, ncol, 1)
 plt.xlabel('Year')
 plt.ylabel('mean melt (m/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # VAF
 ax2VAF = fig2.add_subplot(nrow, ncol, 2, sharex=ax2MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF (Gt)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 ax2VAFrate = fig2.add_subplot(nrow, ncol, 3, sharex=ax2MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # ======
@@ -394,28 +394,29 @@ ncol=1
 ax3MeanMelt = fig3.add_subplot(nrow, ncol, 1)
 plt.xlabel('Year')
 plt.ylabel('mean melt (m/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # VAF
 ax3VAF = fig3.add_subplot(nrow, ncol, 2, sharex=ax3MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF (Gt)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # VAF diff
 ax3VAFdiff = fig3.add_subplot(nrow, ncol, 3, sharex=ax3MeanMelt)
 plt.xlabel('Year')
+#plt.ylabel('VAF difference (%)')
 plt.ylabel('VAF difference (Gt)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # VAF rate
 ax3VAFrate = fig3.add_subplot(nrow, ncol, 4, sharex=ax3MeanMelt)
 plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
-plt.xticks(np.arange(22)*xtickSpacing)
+plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 
