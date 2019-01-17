@@ -571,7 +571,7 @@ contains
     logical,save            :: first_call = .true.
     character(*),parameter  :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
     character(*),parameter  :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
-    character(*),parameter  :: subName = '(med_fluxes_run) '
+    character(*),parameter  :: subName = '(med_aofluxes_run) '
     !-----------------------------------------------------------------------
     call t_startf('MED:'//subname)
 
@@ -652,6 +652,24 @@ contains
        end do
     end if
 
+    write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
+    call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+
+    if (compute_atm_thbot) then
+       do n = 1,lsize
+          if (aoflux%mask(n) /= 0._r8) then
+             aoflux%thbot(n) = aoflux%tbot(n)*((100000._R8/aoflux%pbot(n))**0.286_R8) 
+          end if
+       end do
+    end if
+    if (compute_atm_dens) then
+       do n = 1,lsize
+          if (aoflux%mask(n) /= 0._r8) then
+             aoflux%dens(n) = aoflux%pbot(n)/(287.058_R8*(1._R8 + 0.608_R8*aoflux%shum(n))*aoflux%tbot(n)) 
+          end if
+       end do
+    end if
+
     do n = 1,lsize
        if (aoflux%mask(n) /= 0) then
           !--- mask missing atm or ocn data if found
@@ -669,20 +687,6 @@ contains
        aoflux%qref(n) = shr_const_spval
     end do
 
-    write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
-    call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
-
-    if (compute_atm_thbot) then
-       do n = 1,lsize
-          aoflux%thbot(n) = aoflux%tbot(n)*((100000._R8/aoflux%pbot(n))**0.286_R8) 
-       end do
-    end if
-    if (compute_atm_dens) then
-       do n = 1,lsize
-          aoflux%dens(n) = aoflux%pbot(n)/(287.058_R8*(1._R8 + 0.608_R8*aoflux%shum(n))*aoflux%tbot(n)) 
-       end do
-    end if
-
     call shr_flux_atmocn (&
          lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &
          aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, aoflux%dens , &
@@ -691,7 +695,8 @@ contains
          aoflux%roce_16O, aoflux%roce_HDO, aoflux%roce_18O, &
          aoflux%evap, aoflux%evap_16O, aoflux%evap_HDO, aoflux%evap_18O, &
          aoflux%taux, aoflux%tauy, aoflux%tref, aoflux%qref, &
-         aoflux%duu10n, ustar_sv=aoflux%ustar, re_sv=aoflux%re, ssq_sv=aoflux%ssq)
+         aoflux%duu10n, ustar_sv=aoflux%ustar, re_sv=aoflux%re, ssq_sv=aoflux%ssq, &
+         missval = 0.0_r8)
 
     do n = 1,lsize
        if (aoflux%mask(n) /= 0) then

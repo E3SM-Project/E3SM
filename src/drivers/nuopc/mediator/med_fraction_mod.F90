@@ -708,6 +708,7 @@ contains
     real(r8), pointer          :: Si_imask(:)
     integer                    :: i,j,n,n1
     integer                    :: dbrc
+    logical                    :: nems_orig
     character(len=*),parameter :: subname='(med_fraction_set)'
     !---------------------------------------
     call t_startf('MED:'//subname)
@@ -727,33 +728,50 @@ contains
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! If atm, ice and ocn are present but lnd is not then assume nems_orig
+    if ( is_local%wrap%comp_present(compatm) .and.       &
+         is_local%wrap%comp_present(compice) .and.       &
+         is_local%wrap%comp_present(compocn) .and. .not. &
+         is_local%wrap%comp_present(complnd)) then
+       nems_orig = .true.
+    else
+       nems_orig = .false.
+    end if
+
     !---------------------------------------
     !--- update ice fraction
     !---------------------------------------
 
     if (is_local%wrap%comp_present(compice)) then
 
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ifrac', ifrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ofrac', ofrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+       ! -------------------------------------------
+       ! Set FBfrac(compice)
+       ! -------------------------------------------
        ! Note Si_imask is the ice domain real fraction which is a constant over time
        ! and  Si_ifrac is the time evolving ice fraction on the ice grid
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice) , 'Si_ifrac', Si_ifrac, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compice,compice) , 'Si_imask' , Si_imask, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       ! for FBfrac(compice): set ifrac = Si_ifrac * Si_imask
+       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ifrac', ifrac, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compice), 'ofrac', ofrac, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! set ifrac = Si_ifrac * Si_imask
        ifrac(:) = Si_ifrac(:) * Si_imask(:)
 
-       ! for FBfrac(compice): set ofrac = Si_imask - ifrac
-       ofrac(:) = Si_imask(:) - ifrac(:)
+       ! set ofrac = Si_imask - ifrac
+       if (.not. nems_orig) then
+          ofrac(:) = Si_imask(:) - ifrac(:)  
+       else
+          ofrac(:) = 1._r8 - ifrac(:)
+       end if
 
-       ! Set ocean grid fractions
+       ! -------------------------------------------
+       ! Set FBfrac(compocn)
+       ! -------------------------------------------
        if (is_local%wrap%comp_present(compocn)) then
           ! Map 'ifrac' from FBfrac(compice) to FBfrac(compocn)
           if (is_local%wrap%med_coupling_active(compice,compocn)) then
@@ -774,15 +792,12 @@ contains
           endif
        end if
 
-
-       ! Set atm grid fractions for ice and ocean
+       ! -------------------------------------------
+       ! Set FBfrac(compatm)
+       ! -------------------------------------------
        if (is_local%wrap%comp_present(compatm)) then
 
-          ! If atm, ice and ocn are present but lnd is not then assume nems_orig
-          if ( is_local%wrap%comp_present(compatm) .and.       &
-               is_local%wrap%comp_present(compice) .and.       &
-               is_local%wrap%comp_present(compocn) .and. .not. &
-               is_local%wrap%comp_present(complnd)) then
+          if (nems_orig) then
              
              ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
              if (is_local%wrap%med_coupling_active(compice,compatm)) then

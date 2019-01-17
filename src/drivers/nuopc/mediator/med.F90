@@ -1383,6 +1383,7 @@ contains
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Copy
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
     use med_infodata_mod        , only : med_infodata_CopyStateToInfodata
     use med_infodata_mod        , only : med_infodata
     use med_fraction_mod        , only : med_fraction_init, med_fraction_set
@@ -1653,21 +1654,28 @@ contains
 
          ! NOTE: this section must be done BEFORE the call to esmFldsExchange
          ! Create field bundles for mediator ocean albedo computation
+         ! Only do this if atmosphere expects albedos from mediator
 
-         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb)
-         if (fieldCount > 0) then
-            allocate(fldnames(fieldCount))
-            call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb%flds, fldnames, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            deallocate(fldnames)
+         if ( shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sx_avsdr', rc=rc) .and. &
+              shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sx_avsdf', rc=rc) .and. &
+              shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sx_anidf', rc=rc) .and. &
+              shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sx_anidf', rc=rc)) then
+
+            fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb)
+            if (fieldCount > 0) then
+               allocate(fldnames(fieldCount))
+               call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb%flds, fldnames, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               deallocate(fldnames)
+            end if
          end if
             
          ! Create field bundles for mediator ocean/atmosphere flux computation

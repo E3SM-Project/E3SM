@@ -6,13 +6,42 @@
    entries:
       #
       #-----------------------------------
-      # section: mediator export
+      # section: mediator export for atm/ocn flux calculation
       #-----------------------------------
       #
      - standard_name: Faox_evap
+       alias: mean_evap_rate_atm_into_ocn
        canonical_units: kg m-2 s-1
        description: mediator export
          atm/ocn evaporation water flux
+     #
+     - standard_name: Faox_lat
+       alias: mean_laten_heat_flx_atm_into_ocn
+       canonical_units: W m-2
+       description: mediator export
+         atm/ocn surface latent heat flux
+     #
+     - standard_name: Faox_sen
+       alias: mean_sensi_heat_flx_atm_into_ocn 
+       canonical_units: W m-2
+       description: mediator export
+         atm/ocn surface sensible heat flux
+     #
+     - standard_name: Faox_lwup
+       alias: mean_up_lw_flx_ocn
+       canonical_units: W m-2
+       description: mediator export
+         long wave radiation flux over the ocean
+     #
+     - standard_name: Faox_taux
+       alias: stress_on_air_ocn_zonal
+       canonical_units: N m-2
+       description: mediator export
+     #
+     - standard_name: Faox_tauy
+       alias: stress_on_air_ocn_merid
+       canonical_units: N m-2
+       description: mediator export
      #
      - standard_name: Faox_evap_16O
        canonical_units: kg m-2 s-1
@@ -28,39 +57,6 @@
        canonical_units: kg m-2 s-1
        description: mediator export
          atm/ocn evaporation water flux HDO
-     #
-     - standard_name: Faox_lat
-       canonical_units: W m-2
-       description: mediator export
-         atm/ocn surface latent heat flux
-     #
-     - standard_name: Faox_sen
-       canonical_units: W m-2
-       description: mediator export
-         atm/ocn surface sensible heat flux
-     #
-     - standard_name: Faox_lwup
-       canonical_units: W m-2
-       description: mediator export
-         long wave radiation flux over the ocean
-     #
-     - standard_name: Faox_swdn
-       canonical_units: W m-2
-       description: mediator export
-         downward solar radiation flux over the ocean (sum of all four radiative fluxes)
-     #
-     - standard_name: Faox_swup
-       canonical_units: W m-2
-       description: mediator export
-         upward solar radiation over the ocean (sum of all four radiative fluxes)
-     #
-     - standard_name: Faox_taux
-       canonical_units: N m-2
-       description: mediator export
-     #
-     - standard_name: Faox_tauy
-       canonical_units: N m-2
-       description: mediator export
      #
      #-----------------------------------
      # section: land export
@@ -812,12 +808,18 @@
        description: atmosphere export
          mean downward SW heat flux
      #
+     - standard_name: Faxa_lwnet
+       alias: mean_net_lw_flx_atm
+       canonical_units: W m-2
+       description: atmosphere export
+          mean merge longwave flux from atm (NEMS)
+     #
      - standard_name: inst_down_lw_flx
        canonical_units: W m-2
        description: atmosphere export
          instantaneous downward long wave radiation flux (fv3 only)
      #
-     - standard_name: inst_net_lw_flx
+     - standard_name: inst_net_lw_flx_atm
        canonical_units: W m-2
        description: atmosphere export
          instantaneous NET long wave radiation flux (fv3 only)
@@ -1349,13 +1351,11 @@
      #
      - standard_name: Faxx_taux
        alias: mean_zonal_moment_flx
-       alias: mean_zonal_moment_flx_atm
        canonical_units: N m-2
        description: atmosphere import
          zonal component of momentum flux
          for fv3, for sea ice covered area
          for cesm, merged ice/ocn/land
-
      #
      - standard_name: Faxx_tauy
        alias: mean_merid_moment_flx
