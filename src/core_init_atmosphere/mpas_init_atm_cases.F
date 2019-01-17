@@ -967,16 +967,19 @@ module init_atm_cases
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         do k = 1, nVertLevels
+         
+         ! Avoid a potential divide by zero below if areaCell(nCells+1) is used in the denominator
+         if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
+            do k = 1, nVertLevels
 
-            if (config_theta_adv_order == 2) then
+               if (config_theta_adv_order == 2) then
 
-               z_edge = (zgrid(k,cell1)+zgrid(k,cell2))/2.
+                  z_edge = (zgrid(k,cell1)+zgrid(k,cell2))/2.
 
-            else if (config_theta_adv_order == 3 .or. config_theta_adv_order ==4) then !theta_adv_order == 3 or 4 
+               else if (config_theta_adv_order == 3 .or. config_theta_adv_order ==4) then !theta_adv_order == 3 or 4 
 
-               d2fdx2_cell1 = deriv_two(1,1,iEdge) * zgrid(k,cell1)
-               d2fdx2_cell2 = deriv_two(1,2,iEdge) * zgrid(k,cell2)
+                  d2fdx2_cell1 = deriv_two(1,1,iEdge) * zgrid(k,cell1)
+                  d2fdx2_cell2 = deriv_two(1,2,iEdge) * zgrid(k,cell2)
 
 !  WCS fix 20120711
 
@@ -989,23 +992,24 @@ module init_atm_cases
                      d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,cellsOnCell(i,cell2))
                   end do             
 
-               z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
-                             - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12.
+                  z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
+                                - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12.
 
-               if (config_theta_adv_order == 3) then
-                  z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.
-               else
-                  z_edge3 = 0.
+                  if (config_theta_adv_order == 3) then
+                     z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.
+                  else
+                     z_edge3 = 0.
+                  end if
+
                end if
-
-            end if
 
                zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/areaCell(cell1)
                zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/areaCell(cell2)
                zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell1)
                zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell2)
 
-         end do
+            end do
+         end if
 
       end do
 
