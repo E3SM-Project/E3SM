@@ -1,4 +1,4 @@
-module CNNStateUpdate3BeTRMod
+module NitrogenStateUpdate3BeTRMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -13,7 +13,7 @@ module CNNStateUpdate3BeTRMod
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  !! bgc interface & pflotran:
+  ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
@@ -21,13 +21,15 @@ module CNNStateUpdate3BeTRMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: NStateUpdate3
+  public:: NitrogenStateUpdate3
+  public:: NitrogenStateUpdate3Soil
+  public:: NitrogenStateUpdate3Veg
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate3Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -59,7 +61,89 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               if (.not. use_nitrif_denitrif) then
+                  ! mineral N loss due to leaching
+                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) - nf%sminn_leached_vr_col(c,j) * dt
+               else
+                  ! mineral N loss due to leaching and runoff
+                  ns%smin_no3_vr_col(c,j) = max( ns%smin_no3_vr_col(c,j) - &
+                       ( nf%smin_no3_leached_vr_col(c,j) + nf%smin_no3_runoff_vr_col(c,j) ) * dt, 0._r8)
+
+                  ns%sminn_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + ns%smin_nh4_vr_col(c,j)
+                  if (use_pflotran .and. pf_cmode) then
+                        ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + ns%smin_nh4sorb_vr_col(c,j)
+                  end if
+               end if
+
+               if (.not.(use_pflotran .and. pf_cmode)) then
+                   ! column level nitrogen fluxes from fire
+                   ! pft-level wood to column-level CWD (uncombusted wood)
+                   ns%decomp_npools_vr_col(c,j,i_cwd) = ns%decomp_npools_vr_col(c,j,i_cwd) &
+                        + nf%fire_mortality_n_to_cwdn_col(c,j) * dt
+
+                   ! pft-level wood to column-level litter (uncombusted wood)
+                   ns%decomp_npools_vr_col(c,j,i_met_lit) = ns%decomp_npools_vr_col(c,j,i_met_lit) &
+                        + nf%m_n_to_litr_met_fire_col(c,j)* dt
+                   ns%decomp_npools_vr_col(c,j,i_cel_lit) = ns%decomp_npools_vr_col(c,j,i_cel_lit) &
+                        + nf%m_n_to_litr_cel_fire_col(c,j)* dt
+                   ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) &
+                        + nf%m_n_to_litr_lig_fire_col(c,j)* dt
+               end if !(.not.(use_pflotran .and. pf_cmode))
+            end do ! end of column loop
+         end do
+
+         ! litter and CWD losses to fire
+         do l = 1, ndecomp_pools
+            do j = 1, nlevdecomp
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  ns%decomp_npools_vr_col(c,j,l) = ns%decomp_npools_vr_col(c,j,l) - nf%m_decomp_npools_to_fire_vr_col(c,j,l) * dt
+               end do
+            end do
+         end do
+
       ! patch-level nitrogen fluxes
+  end associate
+  end subroutine NitrogenStateUpdate3Soil
+  !-----------------------------------------------------------------------
+  subroutine NitrogenStateUpdate3Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update all the prognostic nitrogen state
+    ! variables affected by gap-phase mortality fluxes. Also the Sminn leaching flux.
+    ! NOTE - associate statements have been removed where there are
+    ! no science equations. This increases readability and maintainability.
+    !
+    use tracer_varcon, only : is_active_betr_bgc
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,p,j,l,k        ! indices
+    integer :: fp,fc      ! lake filter indices
+    real(r8):: dt         ! radiation time step (seconds)
+    !-----------------------------------------------------------------------
+
+    associate(                      &
+         nf => nitrogenflux_vars  , &
+         ns => nitrogenstate_vars   &
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -113,10 +197,39 @@ contains
          ! retranslocated N pool
          ns%retransn_patch(p)           =  ns%retransn_patch(p) - nf%m_retransn_to_fire_patch(p)        * dt
          ns%retransn_patch(p)           =  ns%retransn_patch(p) - nf%m_retransn_to_litter_fire_patch(p) * dt
+         ns%npool_patch(p)              =  ns%npool_patch(p)    - nf%m_npool_to_fire_patch(p)           * dt
+         ns%npool_patch(p)              =  ns%npool_patch(p)    - nf%m_npool_to_litter_fire_patch(p)    * dt
       end do
 
     end associate
 
-  end subroutine NStateUpdate3
+  end subroutine NitrogenStateUpdate3Veg
 
-end module CNNStateUpdate3BeTRMod
+  !-----------------------------------------------------------------------
+  subroutine NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update all the prognostic nitrogen state
+    ! variables affected by gap-phase mortality fluxes. Also the Sminn leaching flux.
+    ! NOTE - associate statements have been removed where there are
+    ! no science equations. This increases readability and maintainability.
+    !
+    use tracer_varcon, only : is_active_betr_bgc
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+
+
+    call NitrogenStateUpdate3Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+         nitrogenflux_vars, nitrogenstate_vars)
+
+    call NitrogenStateUpdate3Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+     nitrogenflux_vars, nitrogenstate_vars)
+
+  end subroutine NitrogenStateUpdate3
+end module NitrogenStateUpdate3BeTRMod

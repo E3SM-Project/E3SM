@@ -519,6 +519,7 @@ contains
 !    use AllocationMod        , only: cnallocation
     use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use SoilLittDecompMod            , only: SoilLittDecompAlloc2 !after SoilLittDecompAlloc
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -588,7 +589,7 @@ contains
        !----------------------------------------------------------------
        call t_stopf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
-
+       endif
        !--------------------------------------------
        ! Phenology
        !--------------------------------------------

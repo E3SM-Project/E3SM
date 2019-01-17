@@ -1,4 +1,4 @@
-module CNNStateUpdate2BeTRMod
+module NitrogenStateUpdate2BeTRMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -12,9 +12,9 @@ module CNNStateUpdate2BeTRMod
   use clm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  use VegetationType                , only : veg_pp
+  use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
-  !! bgc interface & pflotran:
+  ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
@@ -22,14 +22,70 @@ module CNNStateUpdate2BeTRMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: NStateUpdate2
-  public:: NStateUpdate2h
+  public:: NitrogenStateUpdate2
+  public:: NitrogenStateUpdate2h
+  public:: NitrogenStateUpdate2Soil
+  public:: NitrogenStateUpdate2hSoil
+  public:: NitrogenStateUpdate2Veg
+  public:: NitrogenStateUpdate2hVeg
+
+
   !-----------------------------------------------------------------------
 
 contains
-
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate2Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update all the prognostic nitrogen state
+    ! variables affected by gap-phase mortality fluxes
+    ! NOTE - associate statements have been removed where there are
+    ! no science equations. This increases readability and maintainability
+    !
+    use tracer_varcon, only : is_active_betr_bgc
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c,p,j,l ! indices
+    integer  :: fp,fc   ! lake filter indices
+    real(r8) :: dt      ! radiation time step (seconds)
+    !-----------------------------------------------------------------------
+
+    associate(                      &
+         nf => nitrogenflux_vars  , &
+         ns => nitrogenstate_vars   &
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+      ! column-level nitrogen fluxes from gap-phase mortality
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               ns%decomp_npools_vr_col(c,j,i_met_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cwd)     = &
+                    ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
+            end do
+         end do
+
+    end associate
+  end subroutine NitrogenStateUpdate2Soil
+  !-----------------------------------------------------------------------
+  subroutine NitrogenStateUpdate2Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -74,6 +130,7 @@ contains
          ns%livecrootn_patch(p)         =  ns%livecrootn_patch(p) - nf%m_livecrootn_to_litter_patch(p) * dt
          ns%deadcrootn_patch(p)         =  ns%deadcrootn_patch(p) - nf%m_deadcrootn_to_litter_patch(p) * dt
          ns%retransn_patch(p)           =  ns%retransn_patch(p)   - nf%m_retransn_to_litter_patch(p)   * dt
+         ns%npool_patch(p)              =  ns%npool_patch(p)      - nf%m_npool_to_litter_patch(p)      * dt
 
          ! storage pools
          ns%leafn_storage_patch(p)      =  ns%leafn_storage_patch(p)      - nf%m_leafn_storage_to_litter_patch(p)      * dt
@@ -95,10 +152,9 @@ contains
 
     end associate
 
-  end subroutine NStateUpdate2
-
+  end subroutine NitrogenStateUpdate2Veg
   !-----------------------------------------------------------------------
-  subroutine NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine NitrogenStateUpdate2hSoil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        nitrogenflux_vars, nitrogenstate_vars)
     !
     ! !DESCRIPTION:
@@ -131,6 +187,57 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               ns%decomp_npools_vr_col(c,j,i_met_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cwd)     = &
+                    ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
+            end do
+         end do
+    end associate
+  end subroutine NitrogenStateUpdate2hSoil
+  !-----------------------------------------------------------------------
+  subroutine NitrogenStateUpdate2hVeg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Update all the prognostic nitrogen state
+    ! variables affected by harvest mortality fluxes
+    ! NOTE - associate statements have been removed where there are
+    ! no science equations. This increases readability and maintainability
+    !
+    use tracer_varcon, only : is_active_betr_bgc
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,p,j,l ! indices
+    integer :: fp,fc   ! lake filter indices
+    real(r8):: dt      ! radiation time step (seconds)
+    !-----------------------------------------------------------------------
+
+    associate(                      &
+         ivt => veg_pp%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
+         nf => nitrogenflux_vars  , &
+         ns => nitrogenstate_vars   &
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+
+
       ! patch-level nitrogen fluxes from harvest mortality
 
       do fp = 1,num_soilp
@@ -145,6 +252,7 @@ contains
          ns%livecrootn_patch(p) = ns%livecrootn_patch(p) - nf%hrv_livecrootn_to_litter_patch(p) * dt
          ns%deadcrootn_patch(p) = ns%deadcrootn_patch(p) - nf%hrv_deadcrootn_to_litter_patch(p) * dt
          ns%retransn_patch(p)   = ns%retransn_patch(p)   - nf%hrv_retransn_to_litter_patch(p)   * dt
+         ns%npool_patch(p)      = ns%npool_patch(p)      - nf%hrv_npool_to_litter_patch(p)     * dt
 
        if (ivt(p) >= npcropmin) then ! skip 2 generic crops
            ns%livestemn_patch(p)= ns%livestemn_patch(p)  - nf%hrv_livestemn_to_prod1n_patch(p)  * dt
@@ -172,6 +280,61 @@ contains
 
     end associate
 
-  end subroutine NStateUpdate2h
+  end subroutine NitrogenStateUpdate2hVeg
 
-end module CNNStateUpdate2BeTRMod
+  !-----------------------------------------------------------------------
+  subroutine NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update all the prognostic nitrogen state
+    ! variables affected by gap-phase mortality fluxes
+    ! NOTE - associate statements have been removed where there are
+    ! no science equations. This increases readability and maintainability
+    !
+    use tracer_varcon, only : is_active_betr_bgc
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+
+
+  call NitrogenStateUpdate2Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+
+  call NitrogenStateUpdate2Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+     nitrogenflux_vars, nitrogenstate_vars)
+
+  end subroutine NitrogenStateUpdate2
+
+
+  !-----------------------------------------------------------------------
+  subroutine NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Update all the prognostic nitrogen state
+    ! variables affected by harvest mortality fluxes
+    ! NOTE - associate statements have been removed where there are
+    ! no science equations. This increases readability and maintainability
+    !
+    use tracer_varcon, only : is_active_betr_bgc
+    ! !ARGUMENTS:
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+
+    call NitrogenStateUpdate2hSoil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+
+    call NitrogenStateUpdate2hVeg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       nitrogenflux_vars, nitrogenstate_vars)
+
+  end subroutine NitrogenStateUpdate2h
+end module NitrogenStateUpdate2BeTRMod
