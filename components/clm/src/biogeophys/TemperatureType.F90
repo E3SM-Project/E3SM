@@ -37,7 +37,6 @@ module TemperatureType
      real(r8), pointer :: t_building_lun           (:)   ! lun internal building temperature (K)
      real(r8), pointer :: snot_top_col             (:)   ! col temperature of top snow layer [K]
      real(r8), pointer :: dTdz_top_col             (:)   ! col temperature gradient in top layer  [K m-1]
-     real(r8), pointer :: dt_veg_patch             (:)   ! patch change in t_veg, last iteration (Kelvin)
 
      real(r8), pointer :: thv_col                  (:)   ! col virtual potential temperature (kelvin)
      real(r8), pointer :: thm_patch                (:)   ! patch intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
@@ -182,7 +181,6 @@ contains
     allocate(this%t_building_lun           (begl:endl))                      ; this%t_building_lun           (:)   = nan
     allocate(this%snot_top_col             (begc:endc))                      ; this%snot_top_col             (:)   = nan
     allocate(this%dTdz_top_col             (begc:endc))                      ; this%dTdz_top_col             (:)   = nan
-    allocate(this%dt_veg_patch             (begp:endp))                      ; this%dt_veg_patch             (:)   = nan
 
     allocate(this%t_soi10cm_col            (begc:endc))                      ; this%t_soi10cm_col            (:)   = nan
     allocate(this%t_soi17cm_col            (begc:endc))                      ; this%t_soi17cm_col            (:)   = spval
@@ -278,58 +276,10 @@ contains
     begg = bounds%begg; endg= bounds%endg
 
 
-    this%t_ref2m_min_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TREFMNAV', units='K',  &
-         avgflag='A', long_name='daily minimum of average 2-m temperature', &
-         ptr_patch=this%t_ref2m_min_patch)
-
-    this%t_ref2m_max_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TREFMXAV', units='K',  &
-         avgflag='A', long_name='daily maximum of average 2-m temperature', &
-         ptr_patch=this%t_ref2m_max_patch)
-
-    this%t_ref2m_min_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TREFMNAV_R', units='K',  &
-         avgflag='A', long_name='Rural daily minimum of average 2-m temperature', &
-         ptr_patch=this%t_ref2m_min_r_patch, set_spec=spval)
-
-    this%t_ref2m_max_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TREFMXAV_R', units='K',  &
-         avgflag='A', long_name='Rural daily maximum of average 2-m temperature', &
-         ptr_patch=this%t_ref2m_max_r_patch, set_spec=spval)
-
-    this%t_ref2m_min_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TREFMNAV_U', units='K',  &
-         avgflag='A', long_name='Urban daily minimum of average 2-m temperature', &
-         ptr_patch=this%t_ref2m_min_u_patch, set_nourb=spval)
-
-    this%t_ref2m_max_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TREFMXAV_U', units='K',  &
-         avgflag='A', long_name='Urban daily maximum of average 2-m temperature', &
-         ptr_patch=this%t_ref2m_max_u_patch, set_nourb=spval)
-
     if (use_cndv .or. crop_prog) then
        active = "active"
     else
        active = "inactive"
-    end if
-    this%t_a10_patch(begp:endp) = spval
-    call hist_addfld1d (fname='T10', units='K',  &
-         avgflag='A', long_name='10-day running mean of 2-m temperature', &
-         ptr_patch=this%t_a10_patch, default=active)
-
-    if (use_cn .and.  crop_prog )then
-       this%t_a5min_patch(begp:endp) = spval
-       call hist_addfld1d (fname='A5TMIN', units='K',  &
-            avgflag='A', long_name='5-day running mean of min 2-m temperature', &
-            ptr_patch=this%t_a5min_patch, default='inactive')
-    end if
-
-    if (use_cn .and. crop_prog )then
-       this%t_a10min_patch(begp:endp) = spval
-       call hist_addfld1d (fname='A10TMIN', units='K',  &
-            avgflag='A', long_name='10-day running mean of min 2-m temperature', &
-            ptr_patch=this%t_a10min_patch, default='inactive')
     end if
 
     this%t_building_lun(begl:endl) = spval
@@ -353,66 +303,9 @@ contains
          avgflag='A', long_name='initial gridcell weighted average liquid water temperature', &
          ptr_lnd=this%liquid_water_temp1_grc, default='inactive')
 
-    if (use_cn) then
-       this%dt_veg_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DT_VEG', units='K', &
-            avgflag='A', long_name='change in t_veg, last iteration', &
-            ptr_patch=this%dt_veg_patch, default='inactive')
-    end if
-
-    if (use_cn ) then
-       this%emv_patch(begp:endp) = spval
-       call hist_addfld1d (fname='EMV', units='proportion', &
-            avgflag='A', long_name='vegetation emissivity', &
-            ptr_patch=this%emv_patch, default='inactive')
-    end if
 
     ! Accumulated quantities
 
-    this%t_veg24_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TV24', units='K',  &
-         avgflag='A', long_name='vegetation temperature (last 24hrs)', &
-         ptr_patch=this%t_veg24_patch, default='inactive')
-
-    this%t_veg240_patch(begp:endp)  = spval
-    call hist_addfld1d (fname='TV240', units='K',  &
-         avgflag='A', long_name='vegetation temperature (last 240hrs)', &
-         ptr_patch=this%t_veg240_patch, default='inactive')
-
-    if (crop_prog) then
-       this%gdd0_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GDD0', units='ddays', &
-            avgflag='A', long_name='Growing degree days base  0C from planting', &
-            ptr_patch=this%gdd0_patch, default='inactive')
-    end if
-
-    if (crop_prog) then
-       this%gdd8_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GDD8', units='ddays', &
-            avgflag='A', long_name='Growing degree days base  8C from planting', &
-            ptr_patch=this%gdd8_patch, default='inactive')
-
-       this%gdd10_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GDD10', units='ddays', &
-            avgflag='A', long_name='Growing degree days base 10C from planting', &
-            ptr_patch=this%gdd10_patch, default='inactive')
-
-       this%gdd020_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GDD020', units='ddays', &
-            avgflag='A', long_name='Twenty year average of growing degree days base  0C from planting', &
-            ptr_patch=this%gdd020_patch, default='inactive')
-
-       this%gdd820_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GDD820', units='ddays', &
-            avgflag='A', long_name='Twenty year average of growing degree days base  8C from planting', &
-            ptr_patch=this%gdd820_patch, default='inactive')
-
-       this%gdd1020_patch(begp:endp) = spval
-       call hist_addfld1d (fname='GDD1020', units='ddays', &
-            avgflag='A', long_name='Twenty year average of growing degree days base 10C from planting', &
-            ptr_patch=this%gdd1020_patch, default='inactive')
-
-    end if
 
   end subroutine InitHistory
 
@@ -453,147 +346,6 @@ contains
     SHR_ASSERT_ALL((ubound(em_improad_lun) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(em_perroad_lun) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
 
-    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
-
-      ! Set snow/soil temperature
-      ! t_lake only has valid values over non-lake   
-      ! t_soisno, t_grnd and t_veg have valid values over all land 
-
-      do c = bounds%begc,bounds%endc
-         l = col_pp%landunit(c)
-
-         this%t_soisno_col(c,-nlevsno+1:nlevgrnd) = spval
-
-         ! Snow level temperatures - all land points
-         if (snl(c) < 0) then
-            do j = snl(c)+1, 0
-               this%t_soisno_col(c,j) = 250._r8
-            end do
-         end if
-
-         ! Below snow temperatures - nonlake points (lake points are set below)
-         if (.not. lun_pp%lakpoi(l)) then 
-
-            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
-               this%t_soisno_col(c,1:nlevgrnd) = 250._r8
-
-            else if (lun_pp%itype(l) == istwet) then
-               this%t_soisno_col(c,1:nlevgrnd) = 277._r8
-
-            else if (lun_pp%urbpoi(l)) then
-               if (use_vancouver) then
-                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
-                     ! Set road top layer to initial air temperature and interpolate other
-                     ! layers down to 20C in bottom layer
-                     do j = 1, nlevgrnd
-                        this%t_soisno_col(c,j) = 297.56 - (j-1) * ((297.56-293.16)/(nlevgrnd-1)) 
-                     end do
-                     ! Set wall and roof layers to initial air temperature
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
-                       .or. col_pp%itype(c) == icol_roof) then
-                     this%t_soisno_col(c,1:nlevurb) = 297.56
-                  else
-                     this%t_soisno_col(c,1:nlevgrnd) = 283._r8
-                  end if
-               else if (use_mexicocity) then
-                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
-                     ! Set road top layer to initial air temperature and interpolate other
-                     ! layers down to 22C in bottom layer
-                     do j = 1, nlevgrnd
-                        this%t_soisno_col(c,j) = 289.46 - (j-1) * ((289.46-295.16)/(nlevgrnd-1)) 
-                     end do
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
-                       .or. col_pp%itype(c) == icol_roof) then
-                     ! Set wall and roof layers to initial air temperature
-                     this%t_soisno_col(c,1:nlevurb) = 289.46
-                  else
-                     this%t_soisno_col(c,1:nlevgrnd) = 283._r8
-                  end if
-               else
-                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
-                     this%t_soisno_col(c,1:nlevgrnd) = 274._r8
-                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
-                       .or. col_pp%itype(c) == icol_roof) then
-                     ! Set sunwall, shadewall, roof to fairly high temperature to avoid initialization
-                     ! shock from large heating/air conditioning flux
-                     this%t_soisno_col(c,1:nlevurb) = 292._r8
-                  end if
-               end if
-            else
-               this%t_soisno_col(c,1:nlevgrnd) = 274._r8
-            endif
-         endif
-      end do
-
-      ! Set Ground temperatures
-
-      do c = bounds%begc,bounds%endc
-         l = col_pp%landunit(c)
-
-         if (lun_pp%lakpoi(l)) then 
-            this%t_grnd_col(c) = 277._r8
-         else
-            this%t_grnd_col(c) = this%t_soisno_col(c,snl(c)+1)
-         end if
-         this%t_soi17cm_col(c) = this%t_grnd_col(c)
-      end do
-
-      do c = bounds%begc,bounds%endc
-         l = col_pp%landunit(c)
-         if (lun_pp%lakpoi(l)) then ! lake
-            this%t_lake_col(c,1:nlevlak) = this%t_grnd_col(c)
-            this%t_soisno_col(c,1:nlevgrnd) = this%t_grnd_col(c)
-         end if
-      end do
-
-      ! Set t_veg, t_ref2m, t_ref2m_u and tref2m_r 
-
-      do p = bounds%begp, bounds%endp
-         c = veg_pp%column(p)
-         l = veg_pp%landunit(p)
-
-         if (use_vancouver) then
-            this%t_veg_patch(p)   = 297.56
-         else if (use_mexicocity) then
-            this%t_veg_patch(p)   = 289.46
-         else
-            this%t_veg_patch(p)   = 283._r8
-         end if
-
-         if (use_vancouver) then
-            this%t_ref2m_patch(p) = 297.56
-         else if (use_mexicocity) then
-            this%t_ref2m_patch(p) = 289.46
-         else
-            this%t_ref2m_patch(p) = 283._r8
-         end if
-
-         if (lun_pp%urbpoi(l)) then
-            if (use_vancouver) then
-               this%t_ref2m_u_patch(p) = 297.56
-            else if (use_mexicocity) then
-               this%t_ref2m_u_patch(p) = 289.46
-            else
-               this%t_ref2m_u_patch(p) = 283._r8
-            end if
-         else 
-            if (.not. lun_pp%ifspecial(l)) then 
-               if (use_vancouver) then
-                  this%t_ref2m_r_patch(p) = 297.56
-               else if (use_mexicocity) then
-                  this%t_ref2m_r_patch(p) = 289.46
-               else
-                  this%t_ref2m_r_patch(p) = 283._r8
-               end if
-            else 
-               this%t_ref2m_r_patch(p) = spval
-            end if
-         end if
-
-      end do
-
-    end associate
-
     do l = bounds%begl, bounds%endl 
        if (lun_pp%urbpoi(l)) then
           if (use_vancouver) then
@@ -604,16 +356,6 @@ contains
              this%taf_lun(l) = 283._r8
           end if
        end if
-    end do
-
-    do c = bounds%begc,bounds%endc
-       l = col_pp%landunit(c)
-
-       if (col_pp%itype(c) == icol_roof       ) this%emg_col(c) = em_roof_lun(l)
-       if (col_pp%itype(c) == icol_sunwall    ) this%emg_col(c) = em_wall_lun(l)
-       if (col_pp%itype(c) == icol_shadewall  ) this%emg_col(c) = em_wall_lun(l)
-       if (col_pp%itype(c) == icol_road_imperv) this%emg_col(c) = em_improad_lun(l)
-       if (col_pp%itype(c) == icol_road_perv  ) this%emg_col(c) = em_perroad_lun(l)
     end do
 
   end subroutine InitCold
@@ -643,79 +385,9 @@ contains
     !-----------------------------------------------------------------------
 
 
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='daily minimum of average 2 m height surface air temperature (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_R', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='rural daily minimum of average 2 m height surface air temperature (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_r_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_U', xtype=ncd_double, dim1name='pft',                  &
-         long_name='urban daily minimum of average 2 m height surface air temperature (K)', units='K',                &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_u_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='daily maximum of average 2 m height surface air temperature (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_R', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='rural daily maximum of average 2 m height surface air temperature (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_r_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_U', xtype=ncd_double, dim1name='pft',                  &
-         long_name='urban daily maximum of average 2 m height surface air temperature (K)', units='K',                &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_u_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_INST', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='instantaneous daily min of average 2 m height surface air temp (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_inst_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_INST_R', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='rural instantaneous daily min of average 2 m height surface air temp (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_inst_r_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MIN_INST_U', xtype=ncd_double, dim1name='pft',             &
-         long_name='urban instantaneous daily min of average 2 m height surface air temp (K)', units='K',             &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_min_inst_u_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_INST', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='instantaneous daily max of average 2 m height surface air temp (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_inst_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_INST_R', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='rural instantaneous daily max of average 2 m height surface air temp (K)', units='K', &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_inst_r_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='T_REF2M_MAX_INST_U', xtype=ncd_double,  dim1name='pft',            &
-         long_name='urban instantaneous daily max of average 2 m height surface air temp (K)', units='K',             &
-         interpinic_flag='interp', readvar=readvar, data=this%t_ref2m_max_inst_u_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='taf', xtype=ncd_double, dim1name='landunit',                       &
          long_name='urban canopy air temperature', units='K',                                                         &
          interpinic_flag='interp', readvar=readvar, data=this%taf_lun)
-
-    if (crop_prog) then
-       call restartvar(ncid=ncid, flag=flag,  varname='gdd1020', xtype=ncd_double,  &
-            dim1name='pft', long_name='20 year average of growing degree-days base 10C from planting', units='ddays', &
-            interpinic_flag='interp', readvar=readvar, data=this%gdd1020_patch)
-
-       call restartvar(ncid=ncid, flag=flag,  varname='gdd820', xtype=ncd_double,  &
-            dim1name='pft', long_name='20 year average of growing degree-days base 8C from planting', units='ddays', &
-            interpinic_flag='interp', readvar=readvar, data=this%gdd820_patch)
-
-       call restartvar(ncid=ncid, flag=flag,  varname='gdd020', xtype=ncd_double,  &
-            dim1name='pft', long_name='20 year average of growing degree-days base 0C from planting', units='ddays', &
-            interpinic_flag='interp', readvar=readvar, data=this%gdd020_patch)
-    end if
 
   end subroutine Restart
 
@@ -758,60 +430,6 @@ contains
 
     dtime = get_step_size()
 
-    this%t_veg24_patch(bounds%begp:bounds%endp) = spval
-    call init_accum_field (name='T_VEG24', units='K',                                              &
-         desc='24hr average of vegetation temperature',  accum_type='runmean', accum_period=-1,    &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    this%t_veg240_patch(bounds%begp:bounds%endp) = spval
-    call init_accum_field (name='T_VEG240', units='K',                                             &
-         desc='240hr average of vegetation temperature',  accum_type='runmean', accum_period=-10,  &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    call init_accum_field(name='TREFAV', units='K', &
-         desc='average over an hour of 2-m temperature', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    call init_accum_field(name='TREFAV_U', units='K', &
-         desc='average over an hour of urban 2-m temperature', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    call init_accum_field(name='TREFAV_R', units='K', &
-         desc='average over an hour of rural 2-m temperature', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
-         subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    ! The following is a running mean. The accumulation period is set to -10 for a 10-day running mean.
-    call init_accum_field (name='T10', units='K', &
-         desc='10-day running mean of 2-m temperature', accum_type='runmean', accum_period=-10, &
-         subgrid_type='pft', numlev=1,init_value=SHR_CONST_TKFRZ+20._r8)
-
-    if ( crop_prog )then
-       call init_accum_field (name='TDM10', units='K', &
-            desc='10-day running mean of min 2-m temperature', accum_type='runmean', accum_period=-10, &
-            subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
-
-       call init_accum_field (name='TDM5', units='K', &
-            desc='5-day running mean of min 2-m temperature', accum_type='runmean', accum_period=-5, &
-            subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
-    end if
-
-    if ( crop_prog )then
-
-       ! All GDD summations are relative to the planting date (Kucharik & Brye 2003)
-       call init_accum_field (name='GDD0', units='K', &
-            desc='growing degree-days base 0C from planting', accum_type='runaccum', accum_period=not_used, &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-
-       call init_accum_field (name='GDD8', units='K', &
-            desc='growing degree-days base 8C from planting', accum_type='runaccum', accum_period=not_used, &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-
-       call init_accum_field (name='GDD10', units='K', &
-            desc='growing degree-days base 10C from planting', accum_type='runaccum', accum_period=not_used,  &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    end if
-
     if (use_cndv) then
        ! 30-day average of 2m temperature.
        call init_accum_field (name='TDA', units='K', &
@@ -848,72 +466,6 @@ contains
     real(r8), pointer :: rbufslp(:)  ! temporary
     !---------------------------------------------------------------------
 
-    begp = bounds%begp; endp = bounds%endp
-
-    ! Allocate needed dynamic memory for single level pft field
-    allocate(rbufslp(begp:endp), stat=ier)
-    if (ier/=0) then
-       write(iulog,*)' in '
-       call endrun(msg="extract_accum_hist allocation error for rbufslp"//&
-            errMsg(__FILE__, __LINE__))
-    endif
-
-    ! Determine time step
-    nstep = get_nstep()
-
-    call extract_accum_field ('T_VEG24', rbufslp, nstep)
-    this%t_veg24_patch(begp:endp) = rbufslp(begp:endp)
-
-    call extract_accum_field ('T_VEG240', rbufslp, nstep)
-    this%t_veg240_patch(begp:endp) = rbufslp(begp:endp)
-
-    call extract_accum_field ('T10', rbufslp, nstep)
-    this%t_a10_patch(begp:endp) = rbufslp(begp:endp)
-
-    if (crop_prog) then
-       call extract_accum_field ('TDM10', rbufslp, nstep) 
-       this%t_a10min_patch(begp:endp)= rbufslp(begp:endp)
-
-       call extract_accum_field ('TDM5', rbufslp, nstep) 
-       this%t_a5min_patch(begp:endp) = rbufslp(begp:endp)
-    end if
-
-    ! Initialize variables that are to be time accumulated
-    ! Initialize 2m ref temperature max and min values
-
-    if (nsrest == nsrStartup) then 
-       this%t_ref2m_max_patch(begp:endp)        =  spval
-       this%t_ref2m_max_r_patch(begp:endp)      =  spval
-       this%t_ref2m_max_u_patch(begp:endp)      =  spval
-
-       this%t_ref2m_min_patch(begp:endp)        =  spval
-       this%t_ref2m_min_r_patch(begp:endp)      =  spval
-       this%t_ref2m_min_u_patch(begp:endp)      =  spval
-
-       this%t_ref2m_max_inst_patch(begp:endp)   = -spval
-       this%t_ref2m_max_inst_r_patch(begp:endp) = -spval
-       this%t_ref2m_max_inst_u_patch(begp:endp) = -spval
-
-       this%t_ref2m_min_inst_patch(begp:endp)   =  spval
-       this%t_ref2m_min_inst_r_patch(begp:endp) =  spval
-       this%t_ref2m_min_inst_u_patch(begp:endp) =  spval
-    end if
-
-    if ( crop_prog ) then
-
-       call extract_accum_field ('GDD0', rbufslp, nstep)
-       this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
-
-       call extract_accum_field ('GDD8', rbufslp, nstep) ;
-       this%gdd8_patch(begp:endp) = rbufslp(begp:endp)
-
-       call extract_accum_field ('GDD10', rbufslp, nstep) 
-       this%gdd10_patch(begp:endp) = rbufslp(begp:endp)
-
-    end if
-
-
-    deallocate(rbufslp)
 
   end subroutine InitAccVars
 
@@ -943,194 +495,6 @@ contains
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
 
-    begp = bounds%begp; endp = bounds%endp
-
-    dtime = get_step_size()
-    nstep = get_nstep()
-    call get_curr_date (year, month, day, secs)
-
-    ! Allocate needed dynamic memory for single level pft field
-
-    allocate(rbufslp(begp:endp), stat=ier)
-    if (ier/=0) then
-       write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    endif
-
-    ! Accumulate and extract T_VEG24 & T_VEG240 
-    do p = begp,endp
-       rbufslp(p) = veg_es%t_veg(p)
-    end do
-    call update_accum_field  ('T_VEG24' , rbufslp             , nstep)
-    call extract_accum_field ('T_VEG24' , this%t_veg24_patch  , nstep)
-    call update_accum_field  ('T_VEG240', rbufslp             , nstep)
-    call extract_accum_field ('T_VEG240', this%t_veg240_patch , nstep)
-
-    ! Accumulate and extract TREFAV - hourly average 2m air temperature
-    ! Used to compute maximum and minimum of hourly averaged 2m reference
-    ! temperature over a day. Note that "spval" is returned by the call to
-    ! accext if the time step does not correspond to the end of an
-    ! accumulation interval. First, initialize the necessary values for
-    ! an initial run at the first time step the accumulator is called
-
-    call update_accum_field  ('TREFAV', veg_es%t_ref2m, nstep)
-    call extract_accum_field ('TREFAV', rbufslp, nstep)
-    end_cd = is_end_curr_day()
-    do p = begp,endp
-       if (rbufslp(p) /= spval) then
-          this%t_ref2m_max_inst_patch(p) = max(rbufslp(p), this%t_ref2m_max_inst_patch(p))
-          this%t_ref2m_min_inst_patch(p) = min(rbufslp(p), this%t_ref2m_min_inst_patch(p))
-       endif
-       if (end_cd) then
-          this%t_ref2m_max_patch(p) = this%t_ref2m_max_inst_patch(p)
-          this%t_ref2m_min_patch(p) = this%t_ref2m_min_inst_patch(p)
-          this%t_ref2m_max_inst_patch(p) = -spval
-          this%t_ref2m_min_inst_patch(p) =  spval
-       else if (secs == int(dtime)) then
-          this%t_ref2m_max_patch(p) = spval
-          this%t_ref2m_min_patch(p) = spval
-       endif
-    end do
-
-    ! Accumulate and extract TREFAV_U - hourly average urban 2m air temperature
-    ! Used to compute maximum and minimum of hourly averaged 2m reference
-    ! temperature over a day. Note that "spval" is returned by the call to
-    ! accext if the time step does not correspond to the end of an
-    ! accumulation interval. First, initialize the necessary values for
-    ! an initial run at the first time step the accumulator is called
-
-    call update_accum_field  ('TREFAV_U', veg_es%t_ref2m_u, nstep)
-    call extract_accum_field ('TREFAV_U', rbufslp, nstep)
-    do p = begp,endp
-       l = veg_pp%landunit(p)
-       if (rbufslp(p) /= spval) then
-          this%t_ref2m_max_inst_u_patch(p) = max(rbufslp(p), this%t_ref2m_max_inst_u_patch(p))
-          this%t_ref2m_min_inst_u_patch(p) = min(rbufslp(p), this%t_ref2m_min_inst_u_patch(p))
-       endif
-       if (end_cd) then
-         if (lun_pp%urbpoi(l)) then
-          this%t_ref2m_max_u_patch(p) = this%t_ref2m_max_inst_u_patch(p)
-          this%t_ref2m_min_u_patch(p) = this%t_ref2m_min_inst_u_patch(p)
-          this%t_ref2m_max_inst_u_patch(p) = -spval
-          this%t_ref2m_min_inst_u_patch(p) =  spval
-         end if
-       else if (secs == int(dtime)) then
-          this%t_ref2m_max_u_patch(p) = spval
-          this%t_ref2m_min_u_patch(p) = spval
-       endif
-    end do
-
-    ! Accumulate and extract TREFAV_R - hourly average rural 2m air temperature
-    ! Used to compute maximum and minimum of hourly averaged 2m reference
-    ! temperature over a day. Note that "spval" is returned by the call to
-    ! accext if the time step does not correspond to the end of an
-    ! accumulation interval. First, initialize the necessary values for
-    ! an initial run at the first time step the accumulator is called
-
-    call update_accum_field  ('TREFAV_R', veg_es%t_ref2m_r, nstep)
-    call extract_accum_field ('TREFAV_R', rbufslp, nstep)
-    do p = begp,endp
-       l = veg_pp%landunit(p)
-       if (rbufslp(p) /= spval) then
-          this%t_ref2m_max_inst_r_patch(p) = max(rbufslp(p), this%t_ref2m_max_inst_r_patch(p))
-          this%t_ref2m_min_inst_r_patch(p) = min(rbufslp(p), this%t_ref2m_min_inst_r_patch(p))
-       endif
-       if (end_cd) then
-         if (.not.(lun_pp%ifspecial(l))) then
-          this%t_ref2m_max_r_patch(p) = this%t_ref2m_max_inst_r_patch(p)
-          this%t_ref2m_min_r_patch(p) = this%t_ref2m_min_inst_r_patch(p)
-          this%t_ref2m_max_inst_r_patch(p) = -spval
-          this%t_ref2m_min_inst_r_patch(p) =  spval
-         end if
-       else if (secs == int(dtime)) then
-          this%t_ref2m_max_r_patch(p) = spval
-          this%t_ref2m_min_r_patch(p) = spval
-       endif
-    end do
-
-    call update_accum_field  ('T10', veg_es%t_ref2m, nstep)
-    call extract_accum_field ('T10', this%t_a10_patch, nstep)
-
-    if ( crop_prog )then
-       ! Accumulate and extract TDM10
-
-       do p = begp,endp
-          rbufslp(p) = min(this%t_ref2m_min_patch(p),this%t_ref2m_min_inst_patch(p)) !slevis: ok choice?
-          if (rbufslp(p) > 1.e30_r8) rbufslp(p) = SHR_CONST_TKFRZ !and were 'min'&
-       end do                                                     !'min_inst' not initialized?
-       call update_accum_field  ('TDM10', rbufslp, nstep)
-       call extract_accum_field ('TDM10', this%t_a10min_patch, nstep)
-
-       ! Accumulate and extract TDM5
-
-       do p = begp,endp
-          rbufslp(p) = min(this%t_ref2m_min_patch(p),this%t_ref2m_min_inst_patch(p)) !slevis: ok choice?
-          if (rbufslp(p) > 1.e30_r8) rbufslp(p) = SHR_CONST_TKFRZ !and were 'min'&
-       end do                                         !'min_inst' not initialized?
-       call update_accum_field  ('TDM5', rbufslp, nstep)
-       call extract_accum_field ('TDM5', this%t_a5min_patch, nstep)
-
-    end if
-
-    if ( crop_prog )then
-
-       ! Accumulate and extract GDD0
-
-       do p = begp,endp
-          g = veg_pp%gridcell(p)
-          if (month==1 .and. day==1 .and. secs==int(dtime)) then
-             rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
-             rbufslp(p) = max(0._r8, min(26._r8, veg_es%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
-          else
-             rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
-          end if
-       end do
-!       write(iulog,*) 'SPM before this one line 1258 '
-       call update_accum_field  ('GDD0', rbufslp, nstep)
-       call extract_accum_field ('GDD0', this%gdd0_patch, nstep)
-
-       ! Accumulate and extract GDD8
-
-       do p = begp,endp
-          g = veg_pp%gridcell(p)
-          if (month==1 .and. day==1 .and. secs==int(dtime)) then
-             rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
-             rbufslp(p) = max(0._r8, min(30._r8, &
-                  veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + 8._r8))) * dtime/SHR_CONST_CDAY
-          else
-             rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
-          end if
-       end do
-       call update_accum_field  ('GDD8', rbufslp, nstep)
-       call extract_accum_field ('GDD8', this%gdd8_patch, nstep)
-
-       ! Accumulate and extract GDD10
-
-       do p = begp,endp
-          g = veg_pp%gridcell(p)
-          if (month==1 .and. day==1 .and. secs==int(dtime)) then
-             rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
-             rbufslp(p) = max(0._r8, min(30._r8, &
-                  veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + 10._r8))) * dtime/SHR_CONST_CDAY
-          else
-             rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
-          end if
-       end do
-       call update_accum_field  ('GDD10', rbufslp, nstep)
-       call extract_accum_field ('GDD10', this%gdd10_patch, nstep)
-
-    end if
-
-    ! Accumulate and extract T10
-    !(acumulates TSA as 10-day running mean)
-
-    deallocate(rbufslp)
 
   end subroutine UpdateAccVars
 

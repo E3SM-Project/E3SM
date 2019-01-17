@@ -134,7 +134,7 @@ contains
          t_soisno         =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          t_grnd           =>    col_es%t_grnd           , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]
          thv              =>    col_es%thv              , & ! Input:  [real(r8) (:)   ]  virtual potential temperature (kelvin)
-         thm              =>    temperature_vars%thm_patch            , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
+         thm              =>    veg_es%thm              , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
          t_h2osfc         =>    col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ]  surface water temperature
 
          frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
