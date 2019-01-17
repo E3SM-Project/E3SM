@@ -6,8 +6,7 @@ module med_internalstate_mod
 
   use ESMF                  , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
   use ESMF                  , only : ESMF_VM
-  use esmFlds               , only : ncomps
-  use shr_nuopc_fldList_mod , only : nmappers
+  use esmFlds               , only : ncomps, nmappers
 
   implicit none
   private
