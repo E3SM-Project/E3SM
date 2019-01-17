@@ -497,19 +497,19 @@ contains
           ! determine sensible heat flux to ocean - NEMS orig
           if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_sen'  , rc=rc) .and. &
                fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_sen'  , rc=rc) .and. &
-               fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_melth', rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(compice, compocn), 'Fioi_melth', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_sen'  , rc=rc)) then
 
              call med_merge_field(is_local%wrap%FBExp(compocn),      'Foxx_sen',    &
                   FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_sen '  , wgtA=ocnwgt1, &
                   FBinB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_melth' , wgtB=icewgt1, &
-                  FBinC=is_local%wrap%FBImp(compice,compocn), fnameC='Faxa_sen'   , wgtc=wgtm01, rc=rc)
+                  FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_sen'   , wgtc=wgtm01, rc=rc)
           end if
 
           ! determine zonal stress to ocean - NEMS orig
           if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_taux', rc=rc) .and. &
                fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_taux', rc=rc) .and. &
-               fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_taux', rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(compice, compocn), 'Fioi_taux', rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm, compocn), 'Faxa_taux', rc=rc)) then
 
              call med_merge_field(is_local%wrap%FBExp(compocn),      'Foxx_taux',  &
