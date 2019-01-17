@@ -38,7 +38,7 @@ input_filename='precip.mon.mean.nc'
 input_hostANDfilename="".join([input_hostpath, input_filename])
 #output_hostpath='/work/terai1/ACME/GPCP/'    #!!! change directory to wherever you want to save processed data
 output_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/GPCP/time_series/'    #!!! change directory to wherever you want to save processed data
-output_filename='PRCET_197901_201412.nc'
+output_filename='PRECT_197901_201712.nc'
 #==============================================
 # Git has script location
 #GIT_HASH = "~/ACME/PreAndPostProcessingScripts/utils/add_git_hash_to_netcdf_metadata "
@@ -62,7 +62,7 @@ for fi in fisc:
     print "".join(["** Processing: ",fi," **"])
     #GRAB DATA - make sure it works and print the shape of data
     try:
-        dattable=f_in(fi,time=("1978-12-31 23:59:59","2015-01-01 00:00:00"))
+        dattable=f_in(fi,time=("1978-12-31 23:59:59","2018-01-01 00:00:00"))
         print dattable.shape
     except:
         print "Couldn't access data for ",fi

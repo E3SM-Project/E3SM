@@ -6,15 +6,20 @@ path='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/ERA-Interim/'
 original_data_path=$path'original_data/'
 time_series_output_path=$path'time_series/'
 climo_output_path=$path'climatology/'
+tmp=$path'tmp/'
+
+start_yr=1979
+end_yr=2016
 
 mkdir $time_series_output_path
 mkdir $climo_output_path
+mkdir $tmp
 
-start_yr=1979
-end_yr=2015
 
 cd $original_data_path
 #Get varibles
+#Note: in original data sets, 3d variables are stored one year of data per file
+
 for file0 in *197901-*nc
 do 
     var=$(echo $file0 | cut -d'_' -f1)
@@ -23,7 +28,7 @@ do
     for file1 in ${var}_*nc
     do
         echo $file1
-        cdo splityear $file1 ${time_series_output_path}ERA-Interim_yearly_${var}_
+        cdo splityear $file1 ${tmp}ERA-Interim_yearly_${var}_
     done
 
     for yr in $(eval echo "{$start_yr..$end_yr}"); do
@@ -31,15 +36,13 @@ do
         yyyy=`printf "%04d" $yr`
         for mth in {1..12}; do
             mm=`printf "%02d" $mth`
-           ncks -O -F -d time,${mth} ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}ERA-Interim_monthly_${var}_${yyyy}${mm}.nc
+           ncks -O -F -d time,${mth} ${tmp}ERA-Interim_yearly_${var}_${yyyy}.nc ${tmp}ERA-Interim_monthly_${var}_${yyyy}${mm}.nc
         done
     done
-    ncrcat ${time_series_output_path}ERA-Interim_yearly_${var}_${yyyy}.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc 
-    ncclimo -a sdd --lnk_flg -c ERA-Interim_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${time_series_output_path} -o ${climo_output_path}
-rm ${time_series_output_path}*yearly*nc
-rm ${time_series_output_path}*monthly*nc
-        
-
+    ncrcat ${tmp}ERA-Interim_yearly_${var}_*.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc 
+    ncclimo -a sdd --lnk_flg -c ERA-Interim_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${tmp} -o ${climo_output_path}
+#rm ${time_series_output_path}*yearly*nc
+#rm ${time_series_output_path}*monthly*nc
 done
 
 #Combine all variables in one climo file then rename
