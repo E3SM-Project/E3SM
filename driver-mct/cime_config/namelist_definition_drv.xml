@@ -679,7 +679,9 @@
     </desc>
     <values>
       <value cime_model='e3sm'>.false.</value>
-      <value cime_model='cesm'>.false.</value>
+      <value cime_model='cesm'>.true.</value>
+      <value cime_model='cesm' atm_grid="T62">.false.</value>
+      <value cime_model='cesm' atm_grid="TL319">.false.</value>
     </values>
   </entry>
 
