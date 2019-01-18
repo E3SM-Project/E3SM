@@ -22,7 +22,7 @@ import stat as osstat
 
 import collections
 
-from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy, CIMEError
+from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit, safe_copy, CIMEError, get_cime_root
 import get_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
@@ -243,7 +243,7 @@ class N_TestUnitTest(unittest.TestCase):
         test_dir = os.path.join(cls._testroot,"unit_tester_test")
         cls._testdirs.append(test_dir)
         os.makedirs(test_dir)
-        unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"scripts","fortran_unit_testing","run_tests.py"))
+        unit_test_tool = os.path.abspath(os.path.join(get_cime_root(),"scripts","fortran_unit_testing","run_tests.py"))
         test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
         args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
         args += " --machine {}".format(MACHINE.get_machine_name())
@@ -261,7 +261,7 @@ class N_TestUnitTest(unittest.TestCase):
         test_dir = os.path.join(cls._testroot,"driver_f90_tests")
         cls._testdirs.append(test_dir)
         os.makedirs(test_dir)
-        test_spec_dir = CIME.utils.get_cime_root()
+        test_spec_dir = get_cime_root()
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"scripts","fortran_unit_testing","run_tests.py"))
         args = "--build-dir {} --test-spec-dir {}".format(test_dir, test_spec_dir)
         args += " --machine {}".format(MACHINE.get_machine_name())
@@ -696,7 +696,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         machlist_before = MACHINE.list_available_machines()
         self.assertEqual(len(machlist_before)>1, True, msg="Problem reading machine list")
 
-        newmachfile = os.path.join(CIME.utils.get_cime_root(),"config",
+        newmachfile = os.path.join(get_cime_root(),"config",
                                    "xml_schemas","config_machines_template.xml")
         MACHINE.read(newmachfile)
         machlist_after = MACHINE.list_available_machines()
@@ -2283,6 +2283,27 @@ class K_TestCimeCase(TestCreateTestCommon):
             with Case(casedir) as case:
                 time.sleep(0.2)
                 safe_copy(backup, active)
+
+    ###########################################################################
+    def test_configure(self):
+    ###########################################################################
+        self._create_test(["SMS.f09_g16.X", "--no-build"], test_id=self._baseline_name)
+
+        casedir = os.path.join(self._testroot,
+                               "{}.{}".format(CIME.utils.get_full_test_name("SMS.f09_g16.X", machine=self._machine, compiler=self._compiler), self._baseline_name))
+
+        manual_config_dir = os.path.join(casedir, "manual_config")
+        os.mkdir(manual_config_dir)
+
+        run_cmd_no_fail("{} --machine={} --compiler={}".format(os.path.join(get_cime_root(), "tools", "configure"), self._machine, self._compiler), from_dir=manual_config_dir)
+
+        with open(os.path.join(casedir, "env_mach_specific.xml"), "r") as fd:
+            case_env_contents = fd.read()
+
+        with open(os.path.join(manual_config_dir, "env_mach_specific.xml"), "r") as fd:
+            man_env_contents = fd.read()
+
+        self.assertEqual(case_env_contents, man_env_contents)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
