@@ -549,7 +549,7 @@ contains
     integer :: ie
 
     ! Initialize output fields for plotting...
-    call prim_printstate_init(par)
+    call prim_printstate_init(par, elem)
 
     ! initialize flux terms to 0
     do ie=1,nelemd
@@ -557,13 +557,6 @@ contains
        elem(ie)%derived%FQ=0.0
        elem(ie)%derived%FQps=0.0
        elem(ie)%derived%FT=0.0
-
-       elem(ie)%accum%Qvar=0
-       elem(ie)%accum%Qmass=0
-       elem(ie)%accum%Q1mass=0
-       elem(ie)%accum%KEner=0
-       elem(ie)%accum%IEner=0
-       elem(ie)%accum%PEner=0
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0

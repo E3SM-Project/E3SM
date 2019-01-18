@@ -37,11 +37,12 @@ contains
 !=======================================================================================================! 
 
 
-  subroutine prim_printstate_init(par)
+  subroutine prim_printstate_init(par, elem)
     type (parallel_t) :: par
+    type (element_t), pointer :: elem(:)
 
     real (kind=real_kind) :: time
-    integer               :: c0
+    integer               :: c0,ie
 
     if (par%masterproc) then
        time=0.0D0
@@ -56,6 +57,15 @@ contains
 #endif
     end if
 
+    do ie = 1,nelemd
+       elem(ie)%accum%Qvar=0
+       elem(ie)%accum%Qmass=0
+       elem(ie)%accum%Q1mass=0
+       elem(ie)%accum%KEner=0
+       elem(ie)%accum%IEner=0
+       elem(ie)%accum%PEner=0
+       elem(ie)%accum%IEner_wet=0
+    end do
   end subroutine prim_printstate_init
 !=======================================================================================================! 
 
