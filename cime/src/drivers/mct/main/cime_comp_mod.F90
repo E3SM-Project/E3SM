@@ -400,6 +400,7 @@ module cime_comp_mod
   logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
+  logical  :: ocn_c2_glc             ! .true.  => ocn to glc coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
@@ -410,6 +411,8 @@ module cime_comp_mod
   logical  :: glc_c2_lnd             ! .true.  => glc to lnd coupling on
   logical  :: glc_c2_ocn             ! .true.  => glc to ocn coupling on
   logical  :: glc_c2_ice             ! .true.  => glc to ice coupling on
+  logical  :: glcshelf_c2_ocn        ! .true.  => glc ice shelf to ocn coupling on
+  logical  :: glcshelf_c2_ice        ! .true.  => glc ice shelf to ice coupling on
   logical  :: wav_c2_ocn             ! .true.  => wav to ocn coupling on
 
   logical  :: dead_comps             ! .true.  => dead components
@@ -1487,6 +1490,7 @@ contains
     lnd_c2_glc = .false.
     ocn_c2_atm = .false.
     ocn_c2_ice = .false.
+    ocn_c2_glc = .false.
     ocn_c2_wav = .false.
     ice_c2_atm = .false.
     ice_c2_ocn = .false.
@@ -1497,6 +1501,8 @@ contains
     glc_c2_lnd = .false.
     glc_c2_ocn = .false.
     glc_c2_ice = .false.
+    glcshelf_c2_ocn = .false.
+    glcshelf_c2_ice = .false.
     wav_c2_ocn = .false.
 
     if (atm_present) then
@@ -1516,6 +1522,8 @@ contains
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
+       if (glc_prognostic) ocn_c2_glc = .true.
+
     endif
     if (ice_present) then
        if (atm_prognostic) ice_c2_atm = .true.
@@ -1530,7 +1538,9 @@ contains
     if (glc_present) then
        if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
        if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+       if (glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
        if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
+       if (glcocn_present .and. ice_prognostic) glcshelf_c2_ice = .true.
     endif
     if (wav_present) then
        if (ocn_prognostic) wav_c2_ocn = .true.
@@ -1602,6 +1612,7 @@ contains
        write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
        write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
+       write(logunit,F0L)'ocn_c2_glc            = ',ocn_c2_glc
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
        write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
@@ -1612,6 +1623,8 @@ contains
        write(logunit,F0L)'glc_c2_lnd            = ',glc_c2_lnd
        write(logunit,F0L)'glc_c2_ocn            = ',glc_c2_ocn
        write(logunit,F0L)'glc_c2_ice            = ',glc_c2_ice
+       write(logunit,F0L)'glcshelf_c2_ocn       = ',glcshelf_c2_ocn
+       write(logunit,F0L)'glcshelf_c2_ice       = ',glcshelf_c2_ice
        write(logunit,F0L)'wav_c2_ocn            = ',wav_c2_ocn
 
        write(logunit,F0L)'dead components       = ',dead_comps
@@ -1727,13 +1740,13 @@ contains
 
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
 
-       call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn)
+       call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
-       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
+       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
        call prep_rof_init(infodata, lnd_c2_rof)
 
-       call prep_glc_init(infodata, lnd_c2_glc)
+       call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc)
 
        call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
@@ -2122,12 +2135,22 @@ contains
        if (glc_c2_ocn) then
           call prep_ocn_calc_g2x_ox(timer='CPL:init_glc2ocn')
        endif
+
+       if (glcshelf_c2_ocn) then
+          call prep_ocn_shelf_calc_g2x_ox(timer='CPL:init_glc2ocn_shelf')
+       endif
+
        if (rof_c2_ice) then
           call prep_ice_calc_r2x_ix(timer='CPL:init_rof2ice')
        endif
        if (glc_c2_ice) then
           call prep_ice_calc_g2x_ix(timer='CPL:init_glc2ice')
        endif
+
+       if (glcshelf_c2_ice) then
+          call prep_ice_shelf_calc_g2x_ix(timer='CPL:init_glc2ice_shelf')
+       endif
+
        if (rof_c2_lnd) then
           call prep_lnd_calc_r2x_lx(timer='CPL:init_rof2lnd')
        endif
@@ -2523,8 +2546,93 @@ contains
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
+       if (glc_present) then
+
+          if (ocn_c2_glc) then
+             call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
+          end if
+          if (lnd_c2_glc) then
+             ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+             call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+                !...and then here is where Bill S. does the new in-coupler downscaling.  I changed this so it's downscaling
+                ! non-accumulated fields.  This means (in theory) that it is called more frequently, but then can be merged 
+                ! and averaged with the other stuff, below.
+             call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+          end if
+
+          if (glc_c2_ocn) then
+             call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
+                                           !x2g_g/g2x_g, where latter is going
+                                           !to ocean, so should get remapped to
+                                           !ocean grid in prep_ocn_shelf_calc_g2x_ox
+             call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
+                                           !Map g2x_gx shelf fields that were updated above, to g2x_ox.
+                                           !Do this at intrinsic coupling
+                                           !frequency
+             call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
+                                           !Map g2x_gx shelf fields to g2x_ix.
+                                           !Do this at intrinsic coupling
+                                           !frequency.  This is perhaps an
+                                           !unnecessary place to put this
+                                           !call, since these fields aren't
+                                           !changing on the intrinsic
+                                           !timestep.  But I don't think it's
+                                           !unsafe to do it here.
+          endif
+
+          call prep_glc_accum(timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+
+       endif
+
        if (glc_present .and. glcrun_alarm) then
-          call cime_run_glc_setup_send(lnd2glc_averaged_now)
+
+          !----------------------------------------------------
+          !| glc prep-merge
+          !----------------------------------------------------
+
+          if (iamin_CPLID .and. glc_prognostic) then
+             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
+             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+                ! NOTE - only create appropriate input to glc if the avg_alarm is on
+                if (glcrun_avg_alarm) then
+                   call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+
+                   if (lnd_c2_glc .or. ocn_c2_glc) then
+                      call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                           info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
+                   endif
+                else
+                   call prep_glc_zero_fields() !Jer: double-check.  I bet this is wrong, as implemented
+                end if  ! glcrun_avg_alarm
+
+             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+             call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
+
+          end if  ! iamin_CPLID .and. glc_prognostic
+
+          ! Set the infodata field on all tasks (not just those with iamin_CPLID).
+          if (glc_prognostic) then
+             if (glcrun_avg_alarm) then
+                call seq_infodata_PutData(infodata, glc_valid_input=.true.)
+             else
+                call seq_infodata_PutData(infodata, glc_valid_input=.false.)
+             end if
+          end if
+
+          !----------------------------------------------------
+          !| cpl -> glc
+          !----------------------------------------------------
+
+          if (iamin_CPLALLGLCID .and. glc_prognostic) then
+             call component_exch(glc, flow='x2c', &
+                  infodata=infodata, infodata_string='cpl2glc_run', &
+                  mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
+                  timer_barrier='CPL:C2G_BARRIER', timer_comp_exch='CPL:C2G', &
+                  timer_map_exch='CPL:c2g_glcx2glcg', timer_infodata_exch='CPL:c2g_infoexch')
+          endif
+
        endif
 
        !----------------------------------------------------------
