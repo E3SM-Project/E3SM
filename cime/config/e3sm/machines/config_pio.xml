@@ -271,6 +271,7 @@
   <entry id="CPL_PIO_TYPENAME">
     <values>
       <value mach="mira" grid="a%ne120">netcdf</value>
+      <value mach="onyx" >netcdf</value>
     </values>
   </entry>
 

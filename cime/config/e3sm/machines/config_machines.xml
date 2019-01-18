@@ -201,6 +201,113 @@
 
   </machine>
 
+  <machine MACH="onyx">
+    <DESC>ERDC XC40, os is CNL, 44 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>onyx</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CHARGE_ACCOUNT>NPSCA07935YF5</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/p/app/unsupported/RASM/acme</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{WORKDIR}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/p/app/unsupported/RASM/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/p/app/unsupported/RASM/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/app/unsupported/RASM/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/p/app/unsupported/RASM/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>44</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>44</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>aprun</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node">-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTAL_TASKS` ];then echo `./xmlquery --value TOTAL_TASKS`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
+        <arg name="hyperthreading">--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
+        <arg name="env_vars">$ENV{SMP_VARS} $ENV{labeling}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">intel</command>
+        <command name="rm">cce</command>
+        <command name="rm">gcc</command>
+        <command name="rm">cray-parallel-netcdf</command>
+        <command name="rm">cray-parallel-hdf5</command>
+        <command name="rm">pmi</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">cray-mpich2</command>
+        <command name="rm">cray-mpich</command>
+        <command name="rm">cray-netcdf</command>
+        <command name="rm">cray-hdf5</command>
+        <command name="rm">cray-netcdf-hdf5parallel</command>
+        <command name="rm">craype-sandybridge</command>
+        <command name="rm">craype-ivybridge</command>
+        <command name="rm">craype</command>
+        <command name="rm">papi</command>
+        <command name="rm">cray-petsc</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">esmf</command>
+        <command name="rm">craype</command>
+      </modules>
+
+      <modules compiler="intel">
+        <command name="load">PrgEnv-intel/6.0.3</command>
+        <command name="rm">intel</command>
+        <command name="load">intel/17.0.1.132</command>
+        <command name="rm">cray-mpich</command>
+        <command name="load">cray-mpich/7.5.2</command>
+        <command name="rm">cray-hdf5</command>
+        <command name="rm">cray-hdf5-parallel</command>
+        <command name="rm">cray-netcdf-hdf5parallel</command>
+        <command name="rm">cray-parallel-netcdf</command>
+        <command name="rm">netcdf</command>
+        <command name="load">cray-netcdf/4.4.1.1</command>
+        <command name="load">cray-hdf5/1.10.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.7.0</command>
+        <command name="rm">cray-libsci</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <environment_variables>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="NETCDF_DIR">/opt/cray/pe/netcdf/4.4.1.1/intel/15.0</env>
+      <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
+
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+
+      <!--env name="HDF5_DISABLE_VERSION_CHECK">2</env-->
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="FORT_BUFFERED">yes</env>
+    </environment_variables>
+    <environment_variables compiler="intel18">
+      <env name="FORT_BUFFERED">yes</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="cori-haswell">
     <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
     <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>

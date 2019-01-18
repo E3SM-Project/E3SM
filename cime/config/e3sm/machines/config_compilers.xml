@@ -1605,6 +1605,21 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </SLIBS>
 </compiler>
 
+<compiler MACH="onyx" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+  </FFLAGS>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
+  <SLIBS>
+    <append> -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdf </append>
+    <append> -mkl -lpthread </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
   <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>

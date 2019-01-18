@@ -288,6 +288,19 @@
       </queues>
     </batch_system>
 
+    <!-- onyx is PBS -->
+    <batch_system MACH="onyx" type="pbs" >
+      <directives>
+        <directive>-A {{ PROJECT }}</directive>
+        <directive>-l application=Regional-Arctic-System-Model</directive>
+        <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+      </directives>
+      <queues>
+	<queue walltimemax="00:59:00" nodemax="155" strict="true">debug</queue>
+	<queue walltimemax="04:00:00" default="true">frontier</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="bebop" type="slurm" >
       <queues>
 	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
