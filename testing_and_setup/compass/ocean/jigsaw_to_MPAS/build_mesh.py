@@ -11,11 +11,10 @@ Step 5. Create vtk file for visualization
 import sys
 sys.path.append(".")
 
-import os
-import subprocess
-import scipy.io as sio
 import define_base_mesh
-
+import scipy.io as sio
+import subprocess
+import os
 
 def removeFile(fileName):
     try:
@@ -51,39 +50,26 @@ args = ['./MpasMeshConverter.x',
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-print 'Step 4.1 Inject correct meshDensity variable into base mesh file'
+print 'Step 5. Inject correct meshDensity variable into base mesh file'
 args = ['./inject_meshDensity.py',
         'cellWidthVsLatLon.mat',
         'base_mesh.nc']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-print 'Step 5. Injecting bathymetry'
+print 'Step 6. Injecting bathymetry'
 args = ['./inject_bathymetry.py',
         'base_mesh.nc']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-#print 'Step 6. Create vtk file for visualization'
-# args = ['./paraview_vtk_field_extractor.py',
-#        '--ignore_time',
-#				'-d','maxEdges=0',
-#        '-v', 'allOnCells',
-#        '-f', 'base_mesh.nc',
-#        '-o', 'base_mesh_vtk']
-#print "running", ' '.join(args)
-#subprocess.check_call(args, env=os.environ.copy())
-
-print 'Step 7. Cull land cells'
-args = ['./MpasCellCuller.x',
-        'base_mesh.nc',
-        'base_mesh_culled.nc']
-print "running", ' '.join(args)
-subprocess.check_call(args, env=os.environ.copy())
-
-print 'Step 8. Injecting bathymetry'
-args = ['./inject_bathymetry.py',
-        'base_mesh_culled.nc']
+print 'Step 7. Create vtk file for visualization'
+args = ['./paraview_vtk_field_extractor.py',
+        '--ignore_time',
+        '-d', 'maxEdges=0',
+        '-v', 'allOnCells',
+        '-f', 'base_mesh.nc',
+        '-o', 'base_mesh_vtk']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
