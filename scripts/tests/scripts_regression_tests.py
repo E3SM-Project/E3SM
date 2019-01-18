@@ -79,7 +79,6 @@ def assert_test_status(test_obj, test_name, test_status_obj, test_phase, expecte
 ###############################################################################
 def verify_perms(test_obj, root_dir):
 ###############################################################################
-    print ("root_dir is {}".format(root_dir))
     for root, dirs, files in os.walk(root_dir):
 
         for filename in files:
