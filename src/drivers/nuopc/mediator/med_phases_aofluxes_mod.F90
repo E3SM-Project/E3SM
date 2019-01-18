@@ -38,7 +38,6 @@ module med_phases_aofluxes_mod
      real(R8) , pointer :: ubot        (:) ! atm velocity, zonal
      real(R8) , pointer :: vbot        (:) ! atm velocity, meridional
      real(R8) , pointer :: thbot       (:) ! atm potential T
-     real(R8) , pointer :: pbot        (:) ! atm pressure
      real(R8) , pointer :: shum        (:) ! atm specific humidity
      real(R8) , pointer :: shum_16O    (:) ! atm H2O tracer
      real(R8) , pointer :: shum_HDO    (:) ! atm HDO tracer
@@ -74,9 +73,8 @@ module med_phases_aofluxes_mod
 
      ! Fields that are not obtained via GetFldPtr
      real(R8) , pointer :: uGust       (:) ! wind gust
+     real(R8) , pointer :: prec        (:) ! precip
      real(R8) , pointer :: prec_gust   (:) ! atm precip for convective gustiness (kg/m^3)
-     logical  :: calc_thbot = .false.
-     logical  :: calc_dens  = .false.
   end type aoflux_type
 
   ! The following three variables are obtained as attributes from gcomp
@@ -225,7 +223,6 @@ contains
     ! Initialize aoflux instance
     if (first_call) then
        call med_phases_aofluxes_init(gcomp, aoflux, rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        first_call = .false.
     end if
 
@@ -299,7 +296,6 @@ contains
 !================================================================================
 
   subroutine med_aofluxes_init(gcomp, aoflux, FBAtm, FBOcn, FBFrac, FBMed_ocnalb, FBMed_aoflux, rc)
-
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
     use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU, ESMF_FAILURE
     use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundle, ESMF_VM, ESMF_Field
@@ -309,7 +305,6 @@ contains
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use med_constants_mod     , only : CL, CX
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use perf_mod              , only : t_startf, t_stopf
     !-----------------------------------------------------------------------
@@ -457,40 +452,10 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_tbot', fldptr1=aoflux%tbot, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_tbot', fldptr1=aoflux%pbot, rc=rc)
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_ptem', fldptr1=aoflux%thbot, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum', fldptr1=aoflux%shum, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_lwdn', fldptr1=aoflux%lwdn, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (shr_nuopc_methods_FB_FldChk(FBAtm, 'Sa_ptem', rc=rc)) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_ptem', fldptr1=aoflux%thbot, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       call ESMF_LogWrite(trim(subname)//" : calculating bottom level potential temperature &
-            - not obtained from atmosphere")
-       allocate(aoflux%thbot(lsize))
-       aoflux%calc_thbot = .true.
-    end if
-
-    if (shr_nuopc_methods_FB_FldChk(FBAtm, 'Sa_dens', rc=rc)) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       call ESMF_LogWrite(trim(subname)//" : calculating bottom level density &
-            - not obtained from atmosphere")
-       allocate(aoflux%dens(lsize))
-       aoflux%calc_dens = .true.
-    end if
-
-    if (shr_nuopc_methods_FB_FldChk(FBAtm, 'Faxa_rainc', rc=rc)) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_rainc', fldptr1=aoflux%rainc, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       allocate(aoflux%rainc(lsize))
-       aoflux%rainc(:) = 0.0_R8
-    end if
 
     if (flds_wiso) then
        call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum_16O', fldptr1=aoflux%shum_16O, rc=rc)
@@ -505,10 +470,24 @@ contains
        allocate(aoflux%shum_HDO(lsize)); aoflux%shum_HDO(:) = 0._R8
     end if
 
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_lwdn', fldptr1=aoflux%lwdn, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_rainc', fldptr1=aoflux%rainc, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_rainl', fldptr1=aoflux%rainl, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_snowc', fldptr1=aoflux%snowc, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_snowl', fldptr1=aoflux%snowl, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     !----------------------------------
     ! Fields that are not obtained via GetFldPtr
     !----------------------------------
     allocate(aoflux%uGust(lsize))     ; aoflux%uGust(:)     =  0.0_R8
+    allocate(aoflux%prec(lsize))      ; aoflux%prec(:)      =  0.0_R8
     allocate(aoflux%prec_gust(lsize)) ; aoflux%prec_gust(:) =  0.0_R8
 
     !----------------------------------
@@ -546,7 +525,6 @@ contains
 !===============================================================================
 
   subroutine med_aofluxes_run(gcomp, aoflux, rc)
-
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LogMsg_Info
@@ -652,29 +630,17 @@ contains
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
-    if (aoflux%calc_dens) then
-       do n = 1,lsize
-          if (aoflux%mask(n) /= 0) then
-             aoflux%dens(n) = aoflux%pbot(n)/(287.058_R8*(1._R8+0.608_R8*aoflux%shum(n))*aoflux%tbot(n)) 
-          end if
-       end do
-    end if
-
     write(tmpstr,'(g22.12,g22.12)') sum(aoflux%dens),sum(aoflux%tocn)
     call ESMF_LogWrite(trim(subname)//" : dens,tocn= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
-
     !----------------------------------
     ! Update atmosphere/ocean surface fluxes
     !----------------------------------
 
     do n = 1,lsize
        if (aoflux%mask(n) /= 0) then
-          !--- mask missing atm or ocn data if found
-          if (aoflux%dens(n) < 1.0e-12 .or. aoflux%tocn(n) < 1.0) then
-             aoflux%mask(n) = 0
-          endif
-        !!aoflux%uGust(n) = 1.5_R8*sqrt(aoflux%uocn(n)**2 + aoflux%vocn(n)**2) ! there is no wind gust data from ocn
+          !!uGust(n) = 1.5_R8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
           aoflux%uGust(n) = 0.0_R8
+          aoflux%prec(n) = aoflux%rainc(n) + aoflux%rainl(n) + aoflux%snowc(n) + aoflux%snowl(n)
           aoflux%prec_gust(n) = aoflux%rainc(n)
           ! Note: swdn and swup are set in flux_ocnalb using data from previous timestep
        end if
@@ -690,22 +656,6 @@ contains
 
     write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
-
-    if (aoflux%calc_thbot) then
-       do n = 1,lsize
-          if (aoflux%mask(n) /= 0) then
-             aoflux%thbot(n) = aoflux%tbot(n)*((100000._R8/aoflux%pbot(n))**0.286_R8)  
-          end if
-       end do
-    end if
-
-    do n = 1,lsize
-       write(6,*)'DEBUG: n, mask= ',n,aoflux%mask(n)
-       write(6,*)'DEBUG: n, uocn= ',n,aoflux%uocn(n)
-       write(6,*)'DEBUG: n, vocn= ',n,aoflux%vocn(n)
-       write(6,*)'DEBUG: n, ubot= ',n,aoflux%ubot(n)
-       write(6,*)'DEBUG: n, vbot= ',n,aoflux%vbot(n)
-    end do
 
     call shr_flux_atmocn (&
          lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &

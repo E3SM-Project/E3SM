@@ -381,7 +381,7 @@ contains
        gbuf(n,dead_grid_lat  ) = yc
        gbuf(n,dead_grid_index) = gindex(n)
        gbuf(n,dead_grid_area ) = area
-       gbuf(n,dead_grid_mask ) = 1
+       gbuf(n,dead_grid_mask ) = 0
        gbuf(n,dead_grid_frac ) = 1.0_R8
     enddo
 
@@ -528,7 +528,8 @@ contains
     case('ocn')
 
        ki = shr_string_listGetIndexF(flds_d2x, "So_omask")
-       d2x(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x(ki,:)))))
+       d2x(ki,:) = 0.0_R8
+!       d2x(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x(ki,:)))))
 
     case('lnd')
 

@@ -201,9 +201,7 @@ CONTAINS
         ! nothing
 
       elseif (type == 'rof2cpli') then
-        infodata%flood_present=(nint(data(flds_scalar_index_flood_present)) /= 0)
-        infodata%rofice_present=(nint(data(flds_scalar_index_rofice_present)) /= 0)
-
+        ! nothing
       elseif (type == 'wav2cpli') then
         ! nothing
 
