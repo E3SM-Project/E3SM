@@ -79,6 +79,7 @@ def assert_test_status(test_obj, test_name, test_status_obj, test_phase, expecte
 ###############################################################################
 def verify_perms(test_obj, root_dir):
 ###############################################################################
+    print ("root_dir is {}".format(root_dir))
     for root, dirs, files in os.walk(root_dir):
 
         for filename in files:
@@ -2335,8 +2336,7 @@ class L_TestSaveTimings(TestCreateTestCommon):
         if CIME.utils.get_model() == "e3sm":
             provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
             self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
-
-        verify_perms(self, timing_dir)
+            verify_perms(self, timing_dir)
 
     ###########################################################################
     def test_save_timings(self):
