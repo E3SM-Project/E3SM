@@ -190,6 +190,9 @@ module CNNitrogenStateType
      real(r8), pointer :: plmr_ptlai_z                              (:,:)
      real(r8), pointer :: plmr_pleafn_z                             (:,:)
 
+     real(r8), pointer :: som1n_col                                 (:) => null()
+     real(r8), pointer :: som2n_col                                 (:) => null()
+     real(r8), pointer :: som3n_col                                 (:) => null()
    contains
 
      procedure , public  :: Init   
@@ -389,7 +392,10 @@ contains
     allocate(this%smin_nh4sorb_col         (begc:endc))                   ; this%smin_nh4sorb_col         (:)   = nan
 
     allocate(this%plant_nbuffer_col(begc:endc));this%plant_nbuffer_col(:) = nan
-
+    !type needed by betr
+    allocate(this%som1n_col(begc:endc)); this%som1n_col(:) = nan
+    allocate(this%som2n_col(begc:endc)); this%som2n_col(:) = nan
+    allocate(this%som3n_col(begc:endc)); this%som3n_col(:) = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------

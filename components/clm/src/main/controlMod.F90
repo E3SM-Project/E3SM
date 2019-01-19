@@ -18,7 +18,7 @@ module controlMod
   use abortutils              , only: endrun
   use spmdMod                 , only: masterproc
   use decompMod               , only: clump_pproc
-  use clm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers
+  use clm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers, nsoilorder
   use histFileMod             , only: max_tapes, max_namlen 
   use histFileMod             , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape 
   use histFileMod             , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
@@ -112,7 +112,7 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use clm_interface_pflotranMod , only : clm_pf_readnl
-    use ALMBeTRNLMod              , only : betr_readNL
+    use ALMBeTRNLMod              , only : betr_readNL,set_betr_cnpbgc
     !
     implicit none
     !
@@ -231,7 +231,7 @@ contains
           fates_inventory_ctrl_filename,                &
           fates_parteh_mode
 
-    namelist /clm_inparm / use_betr
+    namelist /clm_inparm / use_betr, lbgcalib
         
     namelist /clm_inparm / use_lai_streams
 
@@ -457,7 +457,8 @@ contains
     end if
 
     if (use_betr) then
-       call betr_readNL( NLFilename, use_c13, use_c14)
+       call set_betr_cnpbgc(suplnitro,suplphos, spinup_state)
+       call betr_readNL( NLFilename, use_c13, use_c14, nsoilorder,lbgcalib)
     endif    
 
     ! ----------------------------------------------------------------------
@@ -656,6 +657,8 @@ contains
 
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    call mpi_bcast (lbgcalib, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -832,6 +835,7 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
+    write(iulog,*) '    lbgcalib = ', lbgcalib
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)

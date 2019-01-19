@@ -238,7 +238,7 @@ contains
   end subroutine CarbonStateUpdate1Soil
 
   !-----------------------------------------------------------------------
-  subroutine CarbonStateUpdate1(bounds, &
+  subroutine CarbonStateUpdate1Veg(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        crop_vars, carbonflux_vars, carbonstate_vars)
@@ -483,7 +483,7 @@ contains
 
  end associate
 
-end subroutine CarbonStateUpdate1
+end subroutine CarbonStateUpdate1Veg
 
 
 

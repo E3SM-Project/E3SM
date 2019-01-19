@@ -45,7 +45,7 @@ module PhosphorusDynamicsMod
   public :: PhosphorusBiochemMin
   public :: PhosphorusLeaching
   public :: PhosphorusBiochemMin_balance
-
+  public :: PhosphorusBiochemMin_Ptaseact
   !-----------------------------------------------------------------------
 
 contains
@@ -777,4 +777,70 @@ contains
 
   end subroutine PhosphorusBiochemMin_balance
 
+
+  subroutine PhosphorusBiochemMin_Ptaseact(bounds,num_soilc, filter_soilc, &
+       cnstate_vars,nitrogenstate_vars, phosphorusstate_vars, phosphorusflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! created, Aug 2015 by Q. Zhu
+    ! update the phosphatase activity induced P release based on Wang 2007
+    !
+    ! !USES:
+    use pftvarcon              , only : noveg
+    use clm_varpar             , only : ndecomp_pools
+    use clm_time_manager       , only : get_step_size
+
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
+    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    !
+    integer  :: c,fc,p,j,l
+    real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
+    real(r8) :: sop_profile(1:ndecomp_pools)
+    real(r8) :: sop_tot
+    integer  :: dt
+
+
+
+    associate(                                                              &
+         froot_prof           => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+         biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
+         npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
+         vmax_ptase           => veg_vp%vmax_ptase                        , &
+         km_ptase             => veg_vp%km_ptase                          , &
+         totsomp_col          => phosphorusstate_vars%totsomp_col         , &
+         lamda_ptase          => veg_vp%lamda_ptase                       , & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         cn_scalar             => cnstate_vars%cn_scalar                  , &
+         cp_scalar             => cnstate_vars%cp_scalar                    &
+         )
+
+    dt = real( get_step_size(), r8 )
+
+    ! set initial values for potential C and N fluxes
+    do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            biochem_pmin_vr(c,j) = 0.0_r8
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+                if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+                    !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
+                    lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
+                    lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
+                    biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
+                        vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * veg_pp%wtcol(p)
+                end if
+            enddo
+        enddo
+    enddo
+   end associate
+
+
+  end subroutine PhosphorusBiochemMin_Ptaseact
 end module PhosphorusDynamicsMod

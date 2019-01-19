@@ -172,7 +172,7 @@ module CNStateType
      logical           :: pdatasets_present          ! surface dataset has p pools info
      !!! annual mortality rate dynamically calcaulted at patch
      real(r8), pointer :: r_mort_cal_patch                 (:)     ! patch annual mortality rate  
-
+     integer , pointer :: lithoclass_col                   (:)
    contains
 
      procedure, public  :: Init         
@@ -361,7 +361,7 @@ contains
     allocate(fert_start                       (begc:endc))                   ; fert_start    (:) = 0
     allocate(fert_end                         (begc:endc))                   ; fert_end      (:) = 0
     allocate(this%r_mort_cal_patch                (begp:endp))               ; this%r_mort_cal_patch   (:) = nan
-
+    allocate(this%lithoclass_col              (begc:endc))                   ; this%lithoclass_col(:) = -999
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------

@@ -200,7 +200,8 @@ module CNNitrogenFluxType
      real(r8), pointer :: nfix_to_ecosysn_col                       (:)     ! total nitrogen fixation
      real(r8), pointer :: fert_to_sminn_col                         (:)     ! col fertilizer N to soil mineral N (gN/m2/s)
      real(r8), pointer :: soyfixn_to_sminn_col                      (:)     ! col soybean fixation to soil mineral N (gN/m2/s)
-      
+     real(r8), pointer :: ndep_to_smin_nh3_col                      (:)     ! col atmospheric N deposition to soil mineral N (gN/m2/s)
+     real(r8), pointer :: ndep_to_smin_no3_col                      (:)     ! col atmospheric N deposition to soil mineral N (gN/m2/s)      
      ! phenology: litterfall and crop fluxes
      real(r8), pointer :: phenology_n_to_litr_met_n_col             (:,:)   ! col N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
      real(r8), pointer :: phenology_n_to_litr_cel_n_col             (:,:)   ! col N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
@@ -274,7 +275,8 @@ module CNNitrogenFluxType
      real(r8), pointer :: smin_no3_leached_col                      (:)     ! col soil mineral NO3 pool loss to leaching (gN/m2/s)
      real(r8), pointer :: smin_no3_runoff_vr_col                    (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
      real(r8), pointer :: smin_no3_runoff_col                       (:)     ! col soil mineral NO3 pool loss to runoff (gN/m2/s)
-
+     real(r8), pointer :: smin_nh4_runoff_col                       (:)
+     real(r8), pointer :: smin_nh4_leached_col                      (:)
      ! nitrification /denitrification diagnostic quantities
      real(r8), pointer :: smin_no3_massdens_vr_col                  (:,:)   ! col (ugN / g soil) soil nitrate concentration
      real(r8), pointer :: soil_bulkdensity_col                      (:,:)   ! col (kg soil / m3) bulk density of soil
@@ -413,6 +415,18 @@ module CNNitrogenFluxType
      real(r8), pointer :: hrv_nloss_litter                          (:)     ! total nloss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
 
+     !betr needed variables
+     !------------------------------------------------------------------------
+     real(r8), pointer :: nflx_plant_to_soilbgc_col                 (:)
+     real(r8), pointer :: som_n_runoff_col                          (:) => null()
+
+     real(r8), pointer :: nflx_input_litr_met_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_input_litr_cel_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_input_litr_lig_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_input_litr_cwd_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_minn_input_nh4_vr_col              (:,:) => null()
+     real(r8), pointer :: nflx_minn_input_no3_vr_col              (:,:) => null()
+     real(r8), pointer :: nh3_soi_flx_col                        (:)=> null()
    contains
 
      procedure , public  :: Init   
@@ -605,6 +619,8 @@ contains
     allocate(this%nfix_to_plantn_patch              (begp:endp)) ; this%nfix_to_plantn_patch              (:) = nan
 
     allocate(this%ndep_to_sminn_col             (begc:endc))    ; this%ndep_to_sminn_col	     (:) = nan
+    allocate(this%ndep_to_smin_nh3_col          (begc:endc))    ; this%ndep_to_smin_nh3_col	     (:) = nan
+    allocate(this%ndep_to_smin_no3_col          (begc:endc))    ; this%ndep_to_smin_no3_col	     (:) = nan
     allocate(this%nfix_to_sminn_col             (begc:endc))    ; this%nfix_to_sminn_col	     (:) = nan
     allocate(this%nfix_to_ecosysn_col           (begc:endc))    ; this%nfix_to_ecosysn_col           (:) = nan
     allocate(this%fert_to_sminn_col             (begc:endc))    ; this%fert_to_sminn_col	     (:) = nan
@@ -678,6 +694,9 @@ contains
     allocate(this%smin_no3_leached_col        (begc:endc))                   ; this%smin_no3_leached_col             (:)   = nan
     allocate(this%smin_no3_runoff_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr_col           (:,:) = nan
     allocate(this%smin_no3_runoff_col         (begc:endc))                   ; this%smin_no3_runoff_col              (:)   = nan
+    allocate(this%smin_nh4_leached_col        (begc:endc))                   ; this%smin_nh4_leached_col             (:)   = nan
+    allocate(this%smin_nh4_runoff_col         (begc:endc))                   ; this%smin_nh4_runoff_col              (:)   = nan
+
     allocate(this%pot_f_nit_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr_col                 (:,:) = nan
     allocate(this%pot_f_nit_col               (begc:endc))                   ; this%pot_f_nit_col                    (:)   = nan
     allocate(this%pot_f_denit_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr_col               (:,:) = nan
@@ -848,7 +867,19 @@ contains
     allocate(this%fire_nloss_litter           (begp:endp)) ; this%fire_nloss_litter                 (:) = nan
     allocate(this%hrv_nloss_litter            (begp:endp)) ; this%hrv_nloss_litter                  (:) = nan
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
-    
+
+
+    !betr needed variables
+    !------------------------------------------------------------------------
+    allocate(this%nflx_plant_to_soilbgc_col   (begc:endc)) ;             this%nflx_plant_to_soilbgc_col(:)= nan    
+    allocate(this%som_n_runoff_col            (begc:endc)) ;             this%som_n_runoff_col      (:)  = nan
+
+    allocate(this%nflx_input_litr_met_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_met_vr_col(:,:)=nan
+    allocate(this%nflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_cel_vr_col(:,:)=nan
+    allocate(this%nflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_lig_vr_col(:,:)=nan
+    allocate(this%nflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_cwd_vr_col(:,:)=nan
+    allocate(this%nflx_minn_input_nh4_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_nh4_vr_col(:,:)=nan
+    allocate(this%nflx_minn_input_no3_vr_col  (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_no3_vr_col(:,:)=nan    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -2697,6 +2728,8 @@ contains
     do fi = 1,num_column
        i = filter_column(fi)
 
+       this%ndep_to_smin_nh3_col(i)          = value_column
+       this%ndep_to_smin_no3_col(i)          = value_column
        this%ndep_to_sminn_col(i)             = value_column
        this%nfix_to_sminn_col(i)             = value_column
        this%nfix_to_ecosysn_col(i)           = value_column
@@ -2725,6 +2758,8 @@ contains
           this%f_n2o_nit_col(i)              = value_column
           this%smin_no3_leached_col(i)       = value_column
           this%smin_no3_runoff_col(i)        = value_column
+          this%smin_nh4_leached_col(i)       = value_column
+          this%smin_nh4_runoff_col(i)        = value_column
 
           this%f_ngas_decomp_col(i)         = value_column
           this%f_ngas_nitri_col(i)          = value_column
@@ -2751,6 +2786,8 @@ contains
 
        ! bgc-interface
        this%plant_ndemand_col(i) = value_column
+
+       this%som_n_runoff_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools

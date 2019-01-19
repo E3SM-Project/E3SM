@@ -436,6 +436,16 @@ module CNCarbonFluxType
      ! that are dribbled throughout the year
      type(annual_flux_dribbler_type) :: dwt_conv_cflux_dribbler
      type(annual_flux_dribbler_type) :: hrv_xsmrpool_to_atm_dribbler
+
+     !betr needed varaibles
+     real(r8), pointer :: cflx_plant_to_soilbgc_col(:)
+     real(r8), pointer :: som_c_runoff_col(:)    => null()
+
+
+     real(r8), pointer :: cflx_input_litr_met_vr_col              (:,:) => null()
+     real(r8), pointer :: cflx_input_litr_cel_vr_col              (:,:) => null()
+     real(r8), pointer :: cflx_input_litr_lig_vr_col              (:,:) => null()
+     real(r8), pointer :: cflx_input_litr_cwd_vr_col              (:,:) => null()
    contains
 
      procedure , public  :: Init   
@@ -864,7 +874,16 @@ contains
      this%f_co2_soil_vr_col             (:,:)   = nan
      allocate(this%f_co2_soil_col                (begc:endc))
      this%f_co2_soil_col                (:)     = nan
+     !betr needed variables
      !------------------------------------------------------------------------
+
+     allocate(this%cflx_plant_to_soilbgc_col (begc:endc)); this%cflx_plant_to_soilbgc_col(:) = nan
+     allocate(this%som_c_runoff_col(begc:endc)); this%som_c_runoff_col(:) = nan
+
+     allocate(this%cflx_input_litr_met_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_met_vr_col(:,:)=nan
+     allocate(this%cflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_cel_vr_col(:,:)=nan
+     allocate(this%cflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_lig_vr_col(:,:)=nan
+     allocate(this%cflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_cwd_vr_col(:,:)=nan
   end subroutine InitAllocate; 
 
   !------------------------------------------------------------------------
@@ -4611,7 +4630,7 @@ contains
        this%cwdc_loss_col(i)                 = value_column
        this%litterc_loss_col(i)              = value_column
        this%som_c_leached_col(i)             = value_column
-
+       this%som_c_runoff_col(i)          = value_column
        ! Zero p2c column fluxes
        this%rr_col(i)                    = value_column  
        this%ar_col(i)                    = value_column  

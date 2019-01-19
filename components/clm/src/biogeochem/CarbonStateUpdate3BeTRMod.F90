@@ -204,10 +204,10 @@ contains
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
 
 
-  call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  call CarbonStateUpdate3Soil( num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars)
 
-  call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  call CarbonStateUpdate3Veg( num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars)
 
   end subroutine CarbonStateUpdate3

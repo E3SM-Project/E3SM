@@ -235,7 +235,7 @@ contains
          end do
       end if
 
-
+  end associate
   end subroutine PhosphorusStateUpdate1Soil
   !-----------------------------------------------------------------------
   subroutine PhosphorusStateUpdate1Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &

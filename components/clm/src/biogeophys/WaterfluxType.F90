@@ -132,7 +132,7 @@ module WaterfluxType
      ! that are dribbled throughout the year
      type(annual_flux_dribbler_type) :: qflx_liq_dynbal_dribbler
      type(annual_flux_dribbler_type) :: qflx_ice_dynbal_dribbler
-
+     real(r8), pointer :: qflx_runoff_betr_col(:)   !this is used to drive the Hartmann p-weathering model in betr
    contains
  
      procedure, public  :: Init
@@ -250,6 +250,7 @@ contains
     allocate(this%qflx_floodc_col          (begc:endc))              ; this%qflx_floodc_col          (:)   = nan
     allocate(this%qflx_sl_top_soil_col     (begc:endc))              ; this%qflx_sl_top_soil_col     (:)   = nan
     allocate(this%qflx_runoff_col          (begc:endc))              ; this%qflx_runoff_col          (:)   = nan
+    allocate(this%qflx_runoff_betr_col      (begc:endc))              ; this%qflx_runoff_betr_col    (:)   = 0._r8
     allocate(this%qflx_runoff_r_col        (begc:endc))              ; this%qflx_runoff_r_col        (:)   = nan
     allocate(this%qflx_runoff_u_col        (begc:endc))              ; this%qflx_runoff_u_col        (:)   = nan
     allocate(this%qflx_rsub_sat_col        (begc:endc))              ; this%qflx_rsub_sat_col        (:)   = nan

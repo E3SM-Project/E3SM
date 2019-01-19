@@ -138,6 +138,10 @@ module CNCarbonStateType
      real(r8), pointer :: totsomc_end_col(:)
      real(r8), pointer :: decomp_som2c_vr_col(:,:)
 
+    real(r8), pointer :: som1c_col               (:) => null()
+    real(r8), pointer :: som2c_col               (:) => null()
+    real(r8), pointer :: som3c_col               (:) => null()
+
    contains
 
      procedure , public  :: Init   
@@ -286,6 +290,11 @@ contains
     allocate(this%cwdc_end_col   (begc:endc));  this%cwdc_end_col    (:) = nan
     allocate(this%totlitc_end_col(begc:endc));  this%totlitc_end_col (:) = nan
     allocate(this%totsomc_end_col(begc:endc));  this%totsomc_end_col (:) = nan
+
+    !types needed by betr
+    allocate(this%som1c_col(begc:endc)); this%som1c_col(:) = nan
+    allocate(this%som2c_col(begc:endc)); this%som2c_col(:) = nan
+    allocate(this%som3c_col(begc:endc)); this%som3c_col(:) = nan
 
   end subroutine InitAllocate
 

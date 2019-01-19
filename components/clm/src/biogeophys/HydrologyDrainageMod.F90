@@ -117,7 +117,8 @@ contains
          qflx_runoff_r          => waterflux_vars%qflx_runoff_r_col           , & ! Output: [real(r8) (:)   ]  Rural total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_snwcp_ice         => waterflux_vars%qflx_snwcp_ice_col          , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
          qflx_glcice            => waterflux_vars%qflx_glcice_col             , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O /s)               
-         qflx_glcice_frz        => waterflux_vars%qflx_glcice_frz_col           & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)         
+         qflx_glcice_frz        => waterflux_vars%qflx_glcice_frz_col         , & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)         
+         qflx_runoff_betr       => waterflux_vars%qflx_runoff_betr_col          & ! Output: [real(r8) (:)   ]  runoff to drive
          )
 
       ! Determine time step and step size
@@ -272,7 +273,7 @@ contains
          end if
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
-
+         qflx_runoff_betr(c)=qflx_runoff(c) 
          if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
             qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
          end if

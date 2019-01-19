@@ -866,7 +866,7 @@ contains
                  atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                 PlantMicKinetics_vars,                                         &
+                 PlantMicKinetics_vars, ch4_vars,                               &
                  phosphorusflux_vars, phosphorusstate_vars)
 
            if(ep_betr%do_bgc_type('type1_bgc')) &
@@ -881,7 +881,7 @@ contains
                  atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                 PlantMicKinetics_vars,                                         &
+                 PlantMicKinetics_vars,  ch4_vars,                              &
                  phosphorusflux_vars, phosphorusstate_vars)
 
            if(ep_betr%do_bgc_type('type2_bgc')) &
@@ -1140,16 +1140,21 @@ contains
             call CNFluxStateBeTR1Summary(bounds_clump, col_pp, veg_pp, &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
+                 filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
+                 cnstate_vars,                                                 &
                  carbonflux_vars, carbonstate_vars,                            &
                  c13_carbonflux_vars, c13_carbonstate_vars,                    &
                  c14_carbonflux_vars, c14_carbonstate_vars,                    &
+                 dgvs_vars,                                                    &
                  nitrogenflux_vars, nitrogenstate_vars,                        &
+                 waterstate_vars, waterflux_vars,                              &
+                 frictionvel_vars, canopystate_vars,                           &
                  phosphorusflux_vars, phosphorusstate_vars)
           endif
 
           if(ep_betr%do_bgc_type('type2_bgc'))then
             !summarize total column nitrogen and carbon
-            call CNFluxStateBeTR2Summary(bounds_clump, col_pp, veg_pp, &
+            call CNFluxStateBeTR2Summary(bounds_clump, col_pp, veg_pp,         &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
                  carbonflux_vars, carbonstate_vars,                            &

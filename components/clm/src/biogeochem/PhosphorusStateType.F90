@@ -144,7 +144,10 @@ module PhosphorusStateType
      real(r8), pointer :: secondp_end_col              (:)
      real(r8), pointer :: cwdp_end_col                 (:)
      real(r8), pointer :: totsomp_end_col              (:)
-     
+     real(r8), pointer :: som1p_col                    (:) => null()
+     real(r8), pointer :: som2p_col                    (:) => null()
+     real(r8), pointer :: som3p_col                    (:) => null()
+     real(r8), pointer :: weather_scalar               (:) => null()        
    contains
 
      procedure , public  :: Init   
@@ -314,7 +317,13 @@ contains
     allocate(this%solutionp_end_col  (begc:endc)); this%solutionp_end_col    (:) = nan
     allocate(this%cwdp_end_col       (begc:endc)); this%cwdp_end_col         (:) = nan
     allocate(this%totsomp_end_col    (begc:endc)); this%totsomp_end_col      (:) = nan
-    
+
+
+    !type needed by betr
+    allocate(this%som1p_col(begc:endc)); this%som1p_col(:) = nan
+    allocate(this%som2p_col(begc:endc)); this%som2p_col(:) = nan
+    allocate(this%som3p_col(begc:endc)); this%som3p_col(:) = nan    
+    allocate(this%weather_scalar(bounds%begg:bounds%endg)); this%weather_scalar(:)=1._r8    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------

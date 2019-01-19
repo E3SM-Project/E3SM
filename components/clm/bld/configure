@@ -683,6 +683,9 @@ sub write_filepath_cesmbld
                      "external_models/sbetr/src/Applications/soil-farm/v1eca/v1eca1layer",
                      "external_models/sbetr/src/Applications/soil-farm/v1eca/v1ecaNlayer",
                      "external_models/sbetr/src/Applications/soil-farm/v1eca/v1ecaPara",
+                     "external_models/sbetr/src/Applications/soil-farm/ecacnp/ecacnp1layer",
+                     "external_models/sbetr/src/Applications/soil-farm/ecacnp/ecacnpNlayer",
+                     "external_models/sbetr/src/Applications/soil-farm/ecacnp/ecacnpPara",
 		     "utils",
 		     "cpl" );
 

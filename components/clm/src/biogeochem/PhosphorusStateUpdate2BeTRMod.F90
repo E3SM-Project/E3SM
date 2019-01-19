@@ -26,8 +26,8 @@ module PhosphorusStateUpdate2BeTRMod
   public:: PhosphorusStateUpdate2
   public:: PhosphorusStateUpdate2h
   public:: PhosphorusStateUpdate2Soil
-  public:: PhosphorusStateUpdate2hVeg
-  public:: PhosphorusStateUpdate2Soil
+  public:: PhosphorusStateUpdate2hSoil
+  public:: PhosphorusStateUpdate2Veg
   public:: PhosphorusStateUpdate2hVeg
   !-----------------------------------------------------------------------
 

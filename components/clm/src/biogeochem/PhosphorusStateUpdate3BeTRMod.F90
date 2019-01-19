@@ -88,7 +88,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             flux_mineralization(c,j) = 0._r8
-         enddof
+         enddo
       enddo
 
         do k = 1, ndecomp_cascade_transitions
@@ -334,7 +334,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine PhosphorusStateUpdate3Soil(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -356,8 +356,8 @@ contains
   call PhosphorusStateUpdate3Soil(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
 
-  call PhosphorusStateUpdate3Soil(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  call PhosphorusStateUpdate3Veg(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
 
-  end PhosphorusStateUpdate3Soil
-end module PhosphorusStateUpdate3Mod
+  end subroutine PhosphorusStateUpdate3
+end module PhosphorusStateUpdate3BeTRMod

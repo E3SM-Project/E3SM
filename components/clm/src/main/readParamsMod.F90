@@ -76,16 +76,14 @@ contains
   subroutine readPrivateParameters
     ! read CN and BGC shared parameters
     !
-    use AllocationMod          , only : readCNAllocParams    
-    use SoilLittDecompMod              , only : readSoilLittDecompParams
-    use DecompCascadeBGCMod    , only : readDecompBGCParams
-    use DecompCascadeCNMod     , only : readDecompCNParams
+    use AllocationMod            , only : readCNAllocParams    
+    use SoilLittDecompMod        , only : readSoilLittDecompParams
+    use DecompCascadeBGCMod      , only : readDecompBGCParams
+    use DecompCascadeCNMod       , only : readDecompCNParams
     use PhenologyMod             , only : readPhenolParams
-    use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
-    use MaintenanceRespMod               , only : readMaintenanceRespParams
-    use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
+    use MaintenanceRespMod       , only : readMaintenanceRespParams
+    use NitrogenDynamicsMod      , only : readNitrogenDynamicsParams
     use GapMortalityMod          , only : readGapMortParams 
-    use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
@@ -151,18 +149,10 @@ contains
     end if
 
     if (use_cn) then
-       if(is_active_betr_bgc)then
-         call readCNPhenolBeTRParams(ncid)
-       else
-         call readPhenolParams(ncid)
-       endif
+       call readPhenolParams(ncid)
        call readMaintenanceRespParams (ncid)
        call readNitrogenDynamicsParams (ncid)
-       if(is_active_betr_bgc)then
-         call readCNGapMortBeTRParams (ncid)
-       else
-         call readGapMortParams (ncid)
-       endif
+       call readGapMortParams (ncid)
     end if
 
     !

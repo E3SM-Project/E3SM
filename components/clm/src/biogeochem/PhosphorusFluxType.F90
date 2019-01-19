@@ -341,6 +341,17 @@ module PhosphorusFluxType
      real(r8), pointer :: hrv_ploss_litter                          (:)     ! total ploss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
 
+
+     real(r8), pointer :: pflx_input_litr_met_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_input_litr_cel_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_input_litr_lig_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_input_litr_cwd_vr_col                (:,:) => null()
+     real(r8), pointer :: pflx_minp_input_po4_vr_col                (:,:) => null()
+     real(r8), pointer :: sminp_to_plant_trans_patch                (:)  => null()
+     real(r8), pointer :: sminp_to_plant_trans_col                  (:)  => null()
+     real(r8), pointer :: pflx_plant_to_soilbgc_col                 (:)  => null()
+     real(r8), pointer :: sminp_runoff_col                          (:)   => null()  !col inorganic P runoff loss, gP/m2/time step
+     real(r8), pointer :: som_p_runoff_col                          (:)   => null()
    contains
 
      procedure , public  :: Init   
@@ -718,6 +729,16 @@ contains
     allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    
     this%sminp_net_transport_delta_col     (:)     = spval
     !------------------------------------------------------------------------
+    allocate(this%pflx_input_litr_met_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_met_vr_col(:,:)=nan
+    allocate(this%pflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_cel_vr_col(:,:)=nan
+    allocate(this%pflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_lig_vr_col(:,:)=nan
+    allocate(this%pflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_input_litr_cwd_vr_col(:,:)=nan
+    allocate(this%pflx_minp_input_po4_vr_col  (begc:endc,1:nlevdecomp_full));this%pflx_minp_input_po4_vr_col(:,:)=nan
+    allocate(this%sminp_to_plant_trans_patch    (begp:endp)) ; this%sminp_to_plant_trans_patch                (:) = nan
+    allocate(this%sminp_to_plant_trans_col      (begc:endc))    ; this%sminp_to_plant_trans_col(:) = nan
+    allocate(this%pflx_plant_to_soilbgc_col   (begc:endc                   )) ; this%pflx_plant_to_soilbgc_col   (:)   = nan
+    allocate(this%sminp_runoff_col      (begc:endc              ))      ;this%sminp_runoff_col         (:)    = nan
+    allocate(this%som_p_runoff_col      (begc:endc              ))      ;this%som_p_runoff_col         (:)    = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -2070,6 +2091,7 @@ contains
        this%fire_ploss_litter(i)                         = value_patch
        this%hrv_ploss_litter(i)                          = value_patch
        this%sen_ploss_litter(i)                          = value_patch
+       this%sminp_to_plant_trans_patch(i)                = value_patch
     end do
 
     if ( crop_prog )then
@@ -2180,6 +2202,8 @@ contains
        this%adsorb_to_labilep_col(i)         = value_column
        this%desorb_to_solutionp_col(i)       = value_column
 
+       this%sminp_runoff_col(i) = value_column
+       this%som_p_runoff_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools
