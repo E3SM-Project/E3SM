@@ -2160,10 +2160,40 @@
        description: river export to land
          River channel total water volume
      #
+     - standard_name: Flrr_volr_16O
+       canonical_units: m
+       description: river export to land
+         River channel total water volume from 16O
+     #
+     - standard_name: Flrr_volr_18O
+       canonical_units: m
+       description: river export to land
+         River channel total water volume from 18O
+     #
+     - standard_name: Flrr_volr_HDO
+       canonical_units: m
+       description: river export to land
+         River channel total water olume from HDO
+     #
      - standard_name: Flrr_volrmch
        canonical_units: m
        description: river export to land
          River channel main channel water volume
+     #
+     - standard_name: Flrr_volrmch_16O
+       canonical_units: m
+       description: river export to land
+         River channel main channel water volume from 16O
+     #
+     - standard_name: Flrr_volrmch_18O
+       canonical_units: m
+       description: river export to land
+         River channel main channel water volume from 18O
+     #
+     - standard_name: Flrr_volrmch_HDO
+       canonical_units: m
+       description: river export to land
+         River channel main channel water volume from HDO
      #
      - standard_name: Forr_rofi
        canonical_units: kg m-2 s-1

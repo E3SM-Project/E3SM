@@ -1036,34 +1036,6 @@
   <!-- MED general attributes                      -->
   <!-- =========================================== -->
 
-  <entry id="compute_aofluxes_in_mediator">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>MED_attributes</group>
-    <desc>
-      If true, compute the atm/ocn fluxes in the mediator.
-      If false, it is assumed that these will be computed in the atmospheric component.
-    </desc>
-    <values>
-      <value>.true.</value>
-      <value COMP_ATM="fv3gfs">.true.</value>
-    </values>
-  </entry>
-
-  <entry id="compute_ocnalbs_in_mediator">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>MED_attributes</group>
-    <desc>
-      If true, compute the ocean albedos in the mediator.
-      If false, it is assumed that these will be computed in the atmospheric component.
-    </desc>
-    <values>
-      <value>.true.</value>
-      <value COMP_ATM="fv3gfs">.false.</value>
-    </values>
-  </entry>
-
   <entry id="info_debug" modify_via_xml="INFO_DBUG">
     <type>integer</type>
     <category>expdef</category>
@@ -1299,30 +1271,6 @@
     </desc>
     <values>
       <value>0.0D0</value>
-    </values>
-  </entry>
-
-  <entry id="vect_map" modify_via_xml="VECT_MAP">
-    <type>char</type>
-    <category>mapping</category>
-    <group>MED_attributes</group>
-    <valid_values>none,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <desc>
-      Turns on the vector mapping option for u and v vector mapping between
-      atm and ocean grids in the coupler.  The options are none,
-      cart3d, cart3d_diag, cart3d_uvw, and cart3d_uvw_diag.  The none option
-      results in scalar mapping independently for the u and v field which
-      tends to generate large errors near the poles. The cart3d
-      options convert the east (u) and north (v) vectors to 3d (x,y,z)
-      triplets, and maps those fields before converting back to the east (u)
-      and north (v) directions.  The cart3d ignores the resuling "w"
-      velocity. The cart3d_uvw calculates the resulting u and v vectors by
-      preserving the total "u,v,w" speed and the angle of the (u,v) vector.
-      the _diag options just add diagnotics to the log file about the vector
-      mapping.
-    </desc>
-    <values>
-      <value>$VECT_MAP</value>
     </values>
   </entry>
 
