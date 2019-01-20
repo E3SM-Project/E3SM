@@ -362,20 +362,6 @@ contains
              call addfld(fldListFr(compatm)%flds, 'Sa_dens')
              call addmap(fldListFr(compatm)%flds, 'Sa_dens', compocn, mapbilnr, 'one', atm2ocn_smap)
           end if
-
-          ! Following fields are not mapped since atm/ocn flux computation is assumed to be on ocean grid for now
-          if (.not. fldchk(is_local%wrap%FBImp(compocn,compocn), 'So_t', rc=rc)) then
-             call shr_sys_abort(trim(subname)//'ocn import So_t required for atm/ocn flux calculation')
-          end if
-          if (.not. fldchk(is_local%wrap%FBImp(compocn,compocn), 'So_u', rc=rc)) then
-             call shr_sys_abort(trim(subname)//'ocn import So_u required for atm/ocn flux calculation')
-          end if
-          if (.not. fldchk(is_local%wrap%FBImp(compocn,compocn), 'So_v', rc=rc)) then
-             call shr_sys_abort(trim(subname)//'ocn import So_v required for atm/ocn flux calculation')
-          end if
-          if (.not. fldchk(is_local%wrap%FBImp(compocn,compocn), 'So_omask', rc=rc)) then
-             call shr_sys_abort(trim(subname)//'ocn import So_omask required for atm/ocn flux calculation')
-          end if
        end if
     end if
 
