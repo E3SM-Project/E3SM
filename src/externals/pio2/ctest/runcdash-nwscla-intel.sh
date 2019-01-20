@@ -12,10 +12,11 @@ source /etc/profile.d/modules.sh
 module reset
 module unload netcdf
 module swap intel intel/17.0.1
+module switch mpt mpt/2.16
 module load cmake/3.7.2
 module load netcdf-mpi/4.4.1.1
 module load pnetcdf/1.8.1
-module switch mpt mpt/2.16
+
 echo "MODULE LIST..."
 module list
 

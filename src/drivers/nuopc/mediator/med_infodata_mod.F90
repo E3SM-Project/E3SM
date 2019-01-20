@@ -114,6 +114,7 @@ CONTAINS
 
   !================================================================================
   subroutine med_infodata_CopyStateToInfodata(State, infodata, type, vm, rc)
+
     use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag
     use ESMF                  , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
@@ -123,8 +124,6 @@ CONTAINS
     use shr_nuopc_scalars_mod , only : flds_scalar_num, flds_scalar_name
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_flood_present
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_rofice_present
     use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
 
@@ -136,7 +135,7 @@ CONTAINS
     type(ESMF_State),        intent(in)     :: State
     type(med_infodata_type), intent(inout)  :: infodata
     character(len=*),        intent(in)     :: type
-    type(ESMF_VM)                           :: vm
+    type(ESMF_VM),           intent(inout)  :: vm
     integer,                 intent(inout)  :: rc
 
     ! local variables
@@ -192,52 +191,12 @@ CONTAINS
 
       if (type == 'atm2cpli') then
         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
-
       elseif (type == 'ocn2cpli') then
         infodata%precip_fact=data(flds_scalar_index_precip_fact)
-
-      elseif (type == 'ice2cpli') then
-        ! nothing
-
-      elseif (type == 'lnd2cpli') then
-        ! nothing
-
-      elseif (type == 'rof2cpli') then
-        infodata%flood_present=(nint(data(flds_scalar_index_flood_present)) /= 0)
-        infodata%rofice_present=(nint(data(flds_scalar_index_rofice_present)) /= 0)
-
-      elseif (type == 'wav2cpli') then
-        ! nothing
-
-      elseif (type == 'glc2cpli') then
-        ! nothing
-
       elseif (type == 'atm2cpl') then
          infodata%nextsw_cday=data(flds_scalar_index_nextsw_cday)
-
       elseif (type == 'ocn2cpl') then
          infodata%precip_fact=data(flds_scalar_index_precip_fact)
-
-      elseif (type == 'ice2cpl') then
-        ! nothing
-
-      elseif (type == 'lnd2cpl') then
-        ! nothing
-
-      elseif (type == 'rof2cpl') then
-        ! nothing
-
-      elseif (type == 'wav2cpl') then
-        ! nothing
-
-      elseif (type == 'glc2cpl') then
-        ! nothing
-
-      else
-         call ESMF_LogWrite(trim(subname)//": ERROR in type = "//trim(type), &
-              ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
-        rc = ESMF_FAILURE
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
 
     endif
@@ -245,7 +204,9 @@ CONTAINS
   end subroutine med_infodata_CopyStateToInfodata
 
   !================================================================================
+
   subroutine med_infodata_CopyInfodataToState(infodata, State, type, mytask, rc)
+
     use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
     use ESMF                  , only : operator(==), ESMF_FAILURE
@@ -267,11 +228,11 @@ CONTAINS
     integer,           intent(inout)  :: rc
 
     ! local variables
-    type(ESMF_Field)            :: field
-    type(ESMF_StateItem_Flag)   :: ItemType
-    real(R8), pointer :: farrayptr(:,:)
-    real(R8)          :: nextsw_cday, precip_fact
-    integer :: dbrc
+    type(ESMF_Field)          :: field
+    type(ESMF_StateItem_Flag) :: ItemType
+    real(R8), pointer         :: farrayptr(:,:)
+    real(R8)                  :: nextsw_cday, precip_fact
+    integer                   :: dbrc
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
 
@@ -309,9 +270,11 @@ CONTAINS
   end subroutine med_infodata_CopyInfodataToState
 
   !===============================================================================
+
   subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
 
     ! Get values out of the infodata object.
+
     use med_constants_mod     , only : CL, IN
     use med_internalstate_mod , only : logunit, loglevel
     use shr_sys_mod           , only : shr_sys_abort

@@ -113,6 +113,7 @@ int PIOc_write_darray_multi(int ncid, const int *varids, int ioid, int nvars,
     int fndims;            /* Number of dims in the var in the file. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function calls. */
     int ierr;              /* Return code. */
+    void *tmparray;
 
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -264,9 +265,19 @@ int PIOc_write_darray_multi(int ncid, const int *varids, int ioid, int nvars,
             return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
         LOG((3, "allocated token for variable buffer"));
     }
+    if (iodesc->needssort)
+    {
+	if (!(tmparray = malloc(arraylen*nvars*iodesc->piotype_size)))
+	    return pio_err(ios, NULL, PIO_ENOMEM, __FILE__, __LINE__);
+	pio_sorted_copy(array, tmparray, iodesc, nvars, 0);
+    }
+    else
+    {
+	tmparray = array;
+    }
 
     /* Move data from compute to IO tasks. */
-    if ((ierr = rearrange_comp2io(ios, iodesc, array, file->iobuf, nvars)))
+    if ((ierr = rearrange_comp2io(ios, iodesc, tmparray, file->iobuf, nvars)))
         return pio_err(ios, file, ierr, __FILE__, __LINE__);
 
     /* Write the darray based on the iotype. */
@@ -364,10 +375,119 @@ int PIOc_write_darray_multi(int ncid, const int *varids, int ioid, int nvars,
         }
     }
 
+    if(iodesc->needssort && tmparray != NULL)
+	free(tmparray);
+
     /* Flush data to disk for pnetcdf. */
     if (ios->ioproc && file->iotype == PIO_IOTYPE_PNETCDF)
         if ((ierr = flush_output_buffer(file, flushtodisk, 0)))
             return pio_err(ios, file, ierr, __FILE__, __LINE__);
+
+    return PIO_NOERR;
+}
+
+/**
+ * Find the fill value that would be used for a variable, if fill mode
+ * was turned on.
+ *
+ * @param ncid File ID.
+ * @param varid Variable ID.
+ * @param pio_type Type of the variable.
+ * @param type_size Size of one element of this type.
+ * @param fillvalue Pointer that will get the fill value.
+ *
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
+ * @author Ed Hartnett
+ */
+static int
+pio_inq_var_fill_expected(int ncid, int varid, int pio_type, PIO_Offset type_size,
+                          void *fillvalue)
+{
+    signed char byte_fill_value = NC_FILL_BYTE;
+    char char_fill_value = NC_FILL_CHAR;
+    short short_fill_value = NC_FILL_SHORT;
+    int int_fill_value = NC_FILL_INT;
+    float float_fill_value = NC_FILL_FLOAT;
+    double double_fill_value = NC_FILL_DOUBLE;
+    unsigned char ubyte_fill_value = NC_FILL_UBYTE;
+    unsigned short ushort_fill_value = NC_FILL_USHORT;
+    unsigned int uint_fill_value = NC_FILL_UINT;
+    long long int64_fill_value = NC_FILL_INT64;
+    unsigned long long uint64_fill_value = NC_FILL_UINT64;
+    char *string_fill_value = "";
+    int ret;
+
+    /* Check inputs. */
+    assert(fillvalue);
+
+    LOG((2, "pio_inq_var_fill_expected ncid %d varid %d pio_type %d type_size %d",
+         ncid, varid, pio_type, type_size));
+
+    /* Is there a _FillValue attribute? */
+    ret = PIOc_inq_att_eh(ncid, varid, "_FillValue", 0, NULL, NULL);
+
+    LOG((3, "pio_inq_var_fill_expected ret %d", ret));
+
+    /* If there is a fill value, get it. */
+    if (!ret)
+    {
+        if ((ret = PIOc_get_att(ncid, varid, "_FillValue", fillvalue)))
+            return ret;
+    }
+    else /* If no _FillValue at was found we still have work to do. */
+    {
+        /* Did we get some other error? */
+        if (ret != PIO_ENOTATT)
+            return ret;
+
+        /* What is the default fill value for this type? */
+        switch (pio_type)
+        {
+        case PIO_BYTE:
+            memcpy(fillvalue, &byte_fill_value, type_size);
+            break;
+        case PIO_CHAR:
+            memcpy(fillvalue, &char_fill_value, type_size);
+            break;
+        case PIO_SHORT:
+            memcpy(fillvalue, &short_fill_value, type_size);
+            break;
+        case PIO_INT:
+            memcpy(fillvalue, &int_fill_value, type_size);
+            break;
+        case PIO_FLOAT:
+            memcpy(fillvalue, &float_fill_value, type_size);
+            break;
+        case PIO_DOUBLE:
+            memcpy(fillvalue, &double_fill_value, type_size);
+            break;
+#if defined(_NETCDF4) || defined(_PNETCDF)
+        case PIO_UBYTE:
+            memcpy(fillvalue, &ubyte_fill_value, type_size);
+            break;
+        case PIO_USHORT:
+            memcpy(fillvalue, &ushort_fill_value, type_size);
+            break;
+        case PIO_UINT:
+            memcpy(fillvalue, &uint_fill_value, type_size);
+            break;
+        case PIO_INT64:
+            memcpy(fillvalue, &int64_fill_value, type_size);
+            break;
+        case PIO_UINT64:
+            memcpy(fillvalue, &uint64_fill_value, type_size);
+            break;
+#ifdef _NETCDF4
+        case PIO_STRING:
+            memcpy(fillvalue, string_fill_value, type_size);
+            break;
+#endif /* _NETCDF4 */
+#endif/* _NETCDF4 || _PNETCDF */
+        default:
+            return PIO_EBADTYPE;
+        }
+    }
 
     return PIO_NOERR;
 }
@@ -410,11 +530,19 @@ int find_var_fillvalue(file_desc_t *file, int varid, var_desc_t *vdesc)
     if (!(vdesc->fillvalue = malloc(type_size)))
         return pio_err(ios, NULL, PIO_ENOMEM, __FILE__, __LINE__);
 
-    /* Get the fill value. */
+    /* Get the fill mode and value, if fill mode is on (which is will
+     * not be, because it is turned off at open/create). */
     if ((ierr = PIOc_inq_var_fill(file->pio_ncid, varid, &no_fill, vdesc->fillvalue)))
         return pio_err(ios, NULL, ierr, __FILE__, __LINE__);
     vdesc->use_fill = no_fill ? 0 : 1;
     LOG((3, "vdesc->use_fill = %d", vdesc->use_fill));
+
+    /* Get the fill value one would expect, if NOFILL were not turned
+     * on. */
+    if (!vdesc->use_fill)
+        if ((ierr = pio_inq_var_fill_expected(file->pio_ncid, varid, pio_type, type_size,
+                                              vdesc->fillvalue)))
+            return pio_err(ios, NULL, ierr, __FILE__, __LINE__);
 
     return PIO_NOERR;
 }
@@ -529,8 +657,10 @@ int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *
         if ((ierr = find_var_fillvalue(file, varid, vdesc)))
             return pio_err(ios, file, PIO_EBADID, __FILE__, __LINE__);
 
-    /* Check that if the user passed a fill value, it is correct. */
-    if (fillvalue)
+    /* Check that if the user passed a fill value, it is correct. If
+     * use_fill is false, then find_var_fillvalue will not end up
+     * getting a fill value. */
+    if (fillvalue && vdesc->use_fill)
         if (memcmp(fillvalue, vdesc->fillvalue, vdesc->pio_type_size))
             return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
@@ -717,8 +847,8 @@ int PIOc_read_darray(int ncid, int varid, int ioid, PIO_Offset arraylen,
     io_desc_t *iodesc;     /* Pointer to IO description information. */
     void *iobuf = NULL;    /* holds the data as read on the io node. */
     size_t rlen = 0;       /* the length of data in iobuf. */
-    int ierr;           /* Return code. */
-
+    int ierr;              /* Return code. */
+    void *tmparray;        /* unsorted copy of array buf if required */
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
         return pio_err(NULL, NULL, PIO_EBADID, __FILE__, __LINE__);
@@ -758,9 +888,25 @@ int PIOc_read_darray(int ncid, int varid, int ioid, PIO_Offset arraylen,
         return pio_err(NULL, NULL, PIO_EBADIOTYPE, __FILE__, __LINE__);
     }
 
+    if (iodesc->needssort)
+    {
+	if (!(tmparray = malloc(iodesc->piotype_size*iodesc->maplen)))
+	    return pio_err(ios, NULL, PIO_ENOMEM, __FILE__, __LINE__);
+	for(int m=0; m<iodesc->maplen;m++)
+	    ((int *) array)[m] = -1;
+    }
+    else
+	tmparray = array;
+
     /* Rearrange the data. */
-    if ((ierr = rearrange_io2comp(ios, iodesc, iobuf, array)))
+    if ((ierr = rearrange_io2comp(ios, iodesc, iobuf, tmparray)))
         return pio_err(ios, file, ierr, __FILE__, __LINE__);
+
+    if (iodesc->needssort)
+    {
+	pio_sorted_copy(tmparray, array, iodesc, 1, 1);
+	free(tmparray);
+    }
 
     /* Free the buffer. */
     if (rlen > 0)

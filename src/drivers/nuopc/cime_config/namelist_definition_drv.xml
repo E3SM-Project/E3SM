@@ -13,6 +13,7 @@
     <category>nuopc_attribute</category>
     <group>nuopc_runseq</group>
     <values>
+
       <value>
       @ocn_cpl_dt   #ocean coupling step
 	  MED med_phases_prep_ocn_accum_avg
@@ -24,56 +25,41 @@
 	    MED med_phases_prep_ocn_merge
 	    MED med_phases_prep_ocn_accum_fast
  	    MED med_phases_ocnalb_run
-	    #
             MED med_phases_prep_lnd
             MED med_connectors_prep_med2lnd
             MED -> LND :remapMethod=redist
-	    #
             MED med_phases_prep_ice
             MED med_connectors_prep_med2ice
             MED -> ICE :remapMethod=redist
-	    #
             MED med_phases_prep_wav
             MED med_connectors_prep_med2wav
             MED -> WAV :remapMethod=redist
-	    #
             MED med_phases_prep_rof_avg
             MED med_connectors_prep_med2rof
             MED -> ROF :remapMethod=redist
-	    #
             ICE
             LND
             ROF
 	    WAV
-	    #
             ICE -> MED :remapMethod=redist
             MED med_connectors_post_ice2med
-	    #
             MED med_fraction_set
-	    #
             LND -> MED :remapMethod=redist
             MED med_connectors_post_lnd2med
-	    #
             ROF -> MED :remapMethod=redist
             MED med_connectors_post_rof2med
-	    #
             MED med_phases_prep_glc
             MED med_connectors_prep_med2glc
             MED -> GLC :remapMethod=redist
-	    #
             MED med_phases_prep_atm
             MED med_connectors_prep_med2atm
             MED -> ATM :remapMethod=redist
-	    #
             ATM
 	    GLC
-	    #
             WAV -> MED :remapMethod=redist
             MED med_connectors_post_wav2med
-	    #
             GLC -> MED :remapMethod=redist
             MED med_connectors_post_glc2med
-	    #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
             MED med_phases_history_write
@@ -117,95 +103,74 @@
             MED med_phases_prep_ice
             MED med_connectors_prep_med2ice
             MED -> ICE :remapMethod=redist
-            #
             MED med_phases_prep_wav
             MED med_connectors_prep_med2wav
             MED -> WAV :remapMethod=redist
-            #
             MED med_phases_prep_lnd
             MED med_connectors_prep_med2lnd
             MED -> LND :remapMethod=redist
-            #
             MED med_phases_prep_glc
             MED med_connectors_prep_med2glc
             MED -> GLC :remapMethod=redist
-            #
             MED med_phases_prep_rof
             MED med_connectors_prep_med2rof
             MED -> ROF :remapMethod=redist
-            #
             ICE
             LND
             ROF
 	    WAV
-            #
             ROF -> MED :remapMethod=redist
             MED med_connectors_post_rof2med
-            #
             LND -> MED :remapMethod=redist
             MED med_connectors_post_lnd2med
-            #
             ICE -> MED :remapMethod=redist
             MED med_connectors_post_ice2med
-            #
             MED med_fraction_set
-            #
             MED med_phases_prep_atm
             MED med_connectors_prep_med2atm
             MED -> ATM :remapMethod=redist
-            #
             ATM
 	    GLC
-            #
             WAV -> MED :remapMethod=redist
             MED med_connectors_post_wav2med
-            #
             GLC -> MED :remapMethod=redist
             MED med_connectors_post_glc2med
-            #
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med
-	    #
             MED med_phases_history_write
 	    MED med_phases_profile
 	  @
           MED med_phases_restart_write
        @
       </value>
+
       <value COMP_ATM="cam" COMP_OCN="docn" COMP_WAV="swav">
       @ocn_cpl_dt   #ocean coupling step
   	  @atm_cpl_dt # atmosphere coupling step
 	    MED med_phases_prep_ocn_accum_avg
             MED med_connectors_prep_med2ocn
 	    MED -> OCN :remapMethod=redist
-	    #
 	    MED med_phases_prep_lnd
             MED med_connectors_prep_med2lnd
 	    MED -> LND :remapMethod=redist
-	    #
 	    MED med_phases_prep_ice
             MED med_connectors_prep_med2ice
             MED -> ICE :remapMethod=redist
-	    #
 	    ICE
 	    LND
 	    OCN
-	    #
   	    OCN -> MED :remapMethod=redist
 	    MED med_connectors_post_ocn2med
             ICE -> MED :remapMethod=redist
             MED med_connectors_post_ice2med
 	    MED med_fraction_set
-	    #
             MED med_phases_prep_ocn_map
 	    MED med_phases_aofluxes_run
 	    MED med_phases_prep_ocn_merge
 	    MED med_phases_prep_ocn_accum_fast
  	    MED med_phases_ocnalb_run
-	    #
   	    LND -> MED :remapMethod=redist
 	    MED med_connectors_post_lnd2med
-	    #
 	    MED med_phases_prep_atm
             MED med_connectors_prep_med2atm
 	    MED -> ATM :remapMethod=redist
@@ -218,6 +183,71 @@
           MED med_phases_restart_write
        @
       </value>
+
+      <value COMP_ATM="fv3gfs" COMP_OCN="docn" COMP_WAV="swav">
+      @ocn_cpl_dt   #ocean coupling step
+          MED med_phases_prep_ocn_accum_avg
+          MED med_connectors_prep_med2ocn
+          MED -> OCN :remapMethod=redist
+          OCN
+  	  @atm_cpl_dt # atmosphere coupling step
+	    MED med_phases_prep_atm
+            MED med_connectors_prep_med2atm
+	    MED -> ATM :remapMethod=redist
+	    ATM
+	    ATM -> MED :remapMethod=redist
+	    MED med_connectors_post_atm2med
+	    MED med_phases_prep_ice
+            MED med_connectors_prep_med2ice
+            MED -> ICE :remapMethod=redist
+	    ICE
+            ICE -> MED :remapMethod=redist
+            MED med_connectors_post_ice2med
+            MED med_fraction_set
+            MED med_phases_prep_ocn_map
+	    MED med_phases_aofluxes_run
+	    MED med_phases_prep_ocn_merge
+	    MED med_phases_prep_ocn_accum_fast
+            MED med_phases_history_write
+	  @
+          OCN -> MED :remapMethod=redist
+          MED med_connectors_post_ocn2med
+          MED med_phases_restart_write
+       @
+      </value>
+
+      <value COMP_ATM="fv3gfs" COMP_OCN="mom">
+      @ocn_cpl_dt   #ocean coupling step
+          MED med_phases_prep_ocn_accum_avg
+          MED med_connectors_prep_med2ocn
+          MED -> OCN :remapMethod=redist
+          OCN
+  	  @atm_cpl_dt # atmosphere coupling step
+	    MED med_phases_prep_atm
+            MED med_connectors_prep_med2atm
+	    MED -> ATM :remapMethod=redist
+	    ATM
+	    ATM -> MED :remapMethod=redist
+	    MED med_connectors_post_atm2med
+	    MED med_phases_prep_ice
+            MED med_connectors_prep_med2ice
+            MED -> ICE :remapMethod=redist
+	    ICE
+            ICE -> MED :remapMethod=redist
+            MED med_connectors_post_ice2med
+            MED med_fraction_set
+            MED med_phases_prep_ocn_map
+	    MED med_phases_aofluxes_run
+	    MED med_phases_prep_ocn_merge
+	    MED med_phases_prep_ocn_accum_fast
+            MED med_phases_history_write
+	  @
+          OCN -> MED :remapMethod=redist
+          MED med_connectors_post_ocn2med
+          MED med_phases_restart_write
+       @
+      </value>
+
     </values>
   </entry>
 
@@ -1008,6 +1038,7 @@
       Iterate atmocn flux calculation a max of this value
     </desc>
     <values>
+      <value cime_model='cesm' COMP_ATM="fv3gfs">2</value>
       <value cime_model='cesm'>5</value>
       <value cime_model='e3sm'>2</value>
     </values>
@@ -1265,30 +1296,6 @@
     </desc>
     <values>
       <value>0.0D0</value>
-    </values>
-  </entry>
-
-  <entry id="vect_map" modify_via_xml="VECT_MAP">
-    <type>char</type>
-    <category>mapping</category>
-    <group>MED_attributes</group>
-    <valid_values>none,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <desc>
-      Turns on the vector mapping option for u and v vector mapping between
-      atm and ocean grids in the coupler.  The options are none,
-      cart3d, cart3d_diag, cart3d_uvw, and cart3d_uvw_diag.  The none option
-      results in scalar mapping independently for the u and v field which
-      tends to generate large errors near the poles. The cart3d
-      options convert the east (u) and north (v) vectors to 3d (x,y,z)
-      triplets, and maps those fields before converting back to the east (u)
-      and north (v) directions.  The cart3d ignores the resuling "w"
-      velocity. The cart3d_uvw calculates the resulting u and v vectors by
-      preserving the total "u,v,w" speed and the angle of the (u,v) vector.
-      the _diag options just add diagnotics to the log file about the vector
-      mapping.
-    </desc>
-    <values>
-      <value>$VECT_MAP</value>
     </values>
   </entry>
 

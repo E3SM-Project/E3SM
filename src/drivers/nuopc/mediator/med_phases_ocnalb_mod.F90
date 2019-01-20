@@ -55,7 +55,7 @@ contains
     use ESMF                  , only : operator(==)
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
-    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
+    use shr_nuopc_utils_mod   , only : shr_nuopc_utils_chkerr
     use med_internalstate_mod , only : InternalState
     use med_constants_mod     , only : CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
@@ -184,12 +184,12 @@ contains
     use shr_const_mod         , only : shr_const_pi
     use shr_sys_mod           , only : shr_sys_abort
     use shr_orb_mod           , only : shr_orb_cosz, shr_orb_decl
-    use shr_nuopc_fldList_mod , only : mapconsf, mapnames
+    use esmFlds               , only : mapconsf, mapnames
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
+    use shr_nuopc_utils_mod   , only : shr_nuopc_utils_chkerr
     use med_constants_mod     , only : CS, CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use med_internalstate_mod , only : InternalState, logunit
@@ -400,7 +400,7 @@ contains
     use med_internalstate_mod , only : InternalState
     use med_constants_mod     , only : R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
-    use esmFlds               , only : fldListMed_ocnalb_o
+    use esmFlds               , only : fldListMed_ocnalb
     use esmFlds               , only : compatm, compocn
     use perf_mod              , only : t_startf, t_stopf
     ! Arguments
@@ -426,7 +426,7 @@ contains
 
     ! Map the field bundle from the ocean to the atm grid
     call med_map_FB_Regrid_Norm( &
-         fldListMed_ocnalb_o%flds, compocn, compatm, &
+         fldListMed_ocnalb%flds, compocn, compatm, &
          is_local%wrap%FBMed_ocnalb_o, &
          is_local%wrap%FBMed_ocnalb_a, &
          is_local%wrap%FBFrac(compocn), &

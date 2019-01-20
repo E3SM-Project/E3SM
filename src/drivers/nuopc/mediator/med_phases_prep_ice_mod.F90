@@ -22,20 +22,25 @@ module med_phases_prep_ice_mod
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF                  , only : ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_FieldBundleGet, ESMF_RouteHandleIsCreated
+    use ESMF                  , only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use NUOPC                 , only : NUOPC_IsConnected
     use med_constants_mod     , only : CL, CS, R8
     use esmFlds               , only : compatm, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
+    use esmFlds               , only : mapbilnr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, logunit, mastertask
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -45,17 +50,23 @@ module med_phases_prep_ice_mod
     type(ESMF_Time)            :: time
     character(len=64)          :: timestr
     type(InternalState)        :: is_local
-    real(R8), pointer          :: dataPtr1(:), dataPtr2(:), dataPtr3(:), dataPtr4(:)
+    real(R8), pointer          :: dataPtr1(:)
     integer                    :: i,n,n1,ncnt
     character(len=CS)          :: fldname
     real(R8), pointer          :: dataptr(:)
+    real(R8), pointer          :: temperature(:)
+    real(R8), pointer          :: pressure(:)
+    real(R8), pointer          :: humidity(:)
+    real(R8), pointer          :: air_density(:)
+    real(R8), pointer          :: pot_temp(:)
     character(len=1024)        :: msgString
-    integer                    :: dbrc
     ! TODO: the calculation needs to be set at run time based on receiving it from the ocean
     real(R8)                   :: flux_epbalfact = 1._R8
     logical,save               :: first_call = .true.
+    integer                    :: dbrc
     character(len=*),parameter :: subname='(med_phases_prep_ice)'
     !---------------------------------------
+
     call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
@@ -80,7 +91,6 @@ module med_phases_prep_ice_mod
 
     call ESMF_FieldBundleGet(is_local%wrap%FBExp(compice), fieldCount=ncnt, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (ncnt == 0) then
        if (dbug_flag > 5) then
           call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compice), returning", &
@@ -95,10 +105,8 @@ module med_phases_prep_ice_mod
 
     call ESMF_GridCompGet(gcomp, clock=clock)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call ESMF_ClockGet(clock,currtime=time,rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call ESMF_TimeGet(time,timestring=timestr)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (dbug_flag > 1) then
@@ -138,15 +146,68 @@ module med_phases_prep_ice_mod
          document=first_call, string='(merge_to_ice)', mastertask=mastertask, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
     !---------------------------------------
     !--- custom calculations
     !---------------------------------------
 
+    ! If either air density or ptem from atm is not available - then need to remp pbot since it will be
+    ! required for either calculation
+    if ( .not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_dens',rc=rc) .or. &
+         .not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_ptem',rc=rc)) then 
+
+       ! Determine Sa_pbot on the ice grid and get a pointer to it
+       if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Sa_pbot',rc=rc)) then
+          if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapbilnr))) then
+             call ESMF_LogWrite(trim(subname)//": ERROR bilinr RH not available for atm->ice", &
+                  ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+             rc = ESMF_FAILURE
+             return
+          end if
+          call shr_nuopc_methods_FB_FieldRegrid( &
+               is_local%wrap%FBImp(compatm,compatm), 'Sa_pbot', &
+               is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', &
+               is_local%wrap%RH(compatm,compice,mapbilnr), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! Get a pointer to Sa_tbot on the ice grid
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+    
+    ! compute air density as a custom calculation
+    if ( .not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_dens',rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//": computing air density as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_shum', humidity, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_dens', air_density, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do n = 1,size(temperature)
+          if (temperature(n) /= 0._R8) then
+             air_density(n) = pressure(n) / (287.058_R8*(1._R8 + 0.608_R8*humidity(n))*temperature(n))
+          else
+             air_density(n) = 0._R8
+          endif
+       end do
+    end if
+
+    ! compute potential temperature as a custom calculation
+    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_ptem',rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//": computing potential temp as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
+
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_ptem', pot_temp, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       do n = 1,size(temperature)
+          pot_temp(n) = temperature(n) * (100000._R8/pressure(n))**0.286_R8 ! Potential temperature (K)
+       end do
+    end if
+
+    ! scale rain, snow and rof to ice by flux_epbalfact
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_rain', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_rain' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -171,6 +232,11 @@ module med_phases_prep_ice_mod
           write(logunit,'(a)')'(merge_to_ice): Scaling Fixx_rofi by flux_epbalfact '
        end if
     end if
+
+    if (dbug_flag > 1) then
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
 
     !---------------------------------------
     !--- update local scalar data

@@ -390,6 +390,7 @@ def buildnml(case, caseroot, component):
     files.set_value("COMP_ROOT_DIR_CPL", comp_root_dir_cpl)
 
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component": "drv-nuopc"})]
+    fd_dir = os.path.dirname(definition_file[0])
     user_definition = os.path.join(user_xml_dir, "namelist_definition_drv.xml")
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
@@ -419,8 +420,8 @@ def buildnml(case, caseroot, component):
     shutil.copy(os.path.join(confdir,"nuopc.runseq"), rundir)
 
     # copy fd.yaml to rundir
-    config_dir = os.path.dirname(definition_file[0])
-    filename = os.path.join(config_dir,"fd.yaml")
+    #config_dir = os.path.dirname(definition_file[0])
+    filename = os.path.join(fd_dir,"fd.yaml")
     shutil.copy(filename, rundir)
 
     drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")

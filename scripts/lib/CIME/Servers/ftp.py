@@ -5,6 +5,7 @@ FTP Server class.  Interact with a server using FTP protocol
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
 from ftplib import FTP as FTPpy
+from ftplib import all_errors as all_ftp_errors
 
 logger = logging.getLogger(__name__)
 # I think that multiple inheritence would be useful here, but I couldnt make it work
@@ -31,9 +32,10 @@ class FTP(GenericServer):
     def fileexists(self, rel_path):
         try:
             stat = self.ftp.nlst(rel_path)
-        except:
+        except all_ftp_errors:
             logger.warning("ERROR from ftp server, trying next server")
             return False
+
         if rel_path not in stat:
             if not stat or not stat[0].startswith(rel_path):
                 logging.warning("FAIL: File {} not found.\nerror {}".format(rel_path, stat))
@@ -43,7 +45,7 @@ class FTP(GenericServer):
     def getfile(self, rel_path, full_path):
         try:
             stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
-        except:
+        except all_ftp_errors:
             logger.warning("ERROR from ftp server, trying next server")
             return False
 
@@ -56,7 +58,7 @@ class FTP(GenericServer):
     def getdirectory(self, rel_path, full_path):
         try:
             stat = self.ftp.nlst(rel_path)
-        except:
+        except all_ftp_errors:
             logger.warning("ERROR from ftp server, trying next server")
             return False
 
