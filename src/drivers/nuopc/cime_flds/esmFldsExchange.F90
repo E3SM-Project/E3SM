@@ -1465,7 +1465,7 @@ contains
           call addfld(fldListFr(compglc)%flds, 'Fogg_rofi'//iso(n))
           call addfld(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n))
           call addfld(fldListFr(comprof)%flds, 'Forr_rofi'//iso(n))
-;          call addfld(fldListTo(compocn)%flds, 'Foxx_rofl'//iso(n))
+          call addfld(fldListTo(compocn)%flds, 'Foxx_rofl'//iso(n))
           call addfld(fldListTo(compocn)%flds, 'Foxx_rofi'//iso(n))
        end do
     else
