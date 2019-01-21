@@ -9,7 +9,8 @@ namespace unit_test {
 struct UnitWrap;
 }
 
-namespace util {
+namespace scream {
+namespace wsm {
 
 /*
  * WorkspaceManager is a utility for requesting workspaces
@@ -254,7 +255,8 @@ class WorkspaceManager
   view_2d<T> m_data;
 }; // class WorkspaceManager
 
-} // namespace util
+} // namespace wsm
+} // namespace scream
 
 #include "wsm_impl.hpp"
 

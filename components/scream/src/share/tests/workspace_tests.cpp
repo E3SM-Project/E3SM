@@ -1,11 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/util/wsm.hpp"
+#include "share/wsm.hpp"
 
 namespace {
 
 TEST_CASE("workspace_manager", "[utils]") {
   using namespace scream::util;
+  using namespace scream::wsm;
 
   int nerr = 0;
   const int ints_per_ws = 37;

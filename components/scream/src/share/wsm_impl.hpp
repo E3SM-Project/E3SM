@@ -3,7 +3,8 @@
 
 #include "util.hpp"
 
-namespace util {
+namespace scream {
+namespace wsm {
 
 /*
  * An implementation header for wsm.hpp, this helps keep wsm.hpp clean by avoiding
@@ -432,6 +433,7 @@ void WorkspaceManager<T, D>::Workspace::release_impl(const Unmanaged<view_1d<S> 
   m_team.team_barrier();
 }
 
-} // namespace util
+} // namespace wsm
+} // namespace scream
 
 #endif
