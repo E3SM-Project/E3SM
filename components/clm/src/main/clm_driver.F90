@@ -1057,7 +1057,7 @@ contains
              chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
              cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
 
-           if(ep_betr%do_bgc_type('type2'))then
+           if(ep_betr%do_bgc_type('type2_bgc'))then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
                filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
@@ -1066,7 +1066,7 @@ contains
            call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
          endif  !end use_betr
 
-         if (use_lch4 .and. .not. ep_betr%do_bgc_type('type2')) then
+         if (use_lch4) then
            !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
            call CH4 (bounds_clump,                                                                  &
@@ -1126,7 +1126,7 @@ contains
           call t_stopf('betr balchk')
           call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
 
-          if(ep_betr%do_bgc_type('bgc'))then
+          if(ep_betr%do_bgc_type('type1_bgc') .or. ep_betr%do_bgc_type('type2_bgc'))then
 
             !extract nitrogen pool and flux from betr
             call ep_betr%PlantSoilBGCRecv(bounds_clump, col_pp, veg_pp, filter(nc)%num_soilc, filter(nc)%soilc,&
@@ -1135,7 +1135,7 @@ contains
                nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
           endif
 
-          if(ep_betr%do_bgc_type('type1_bgc') .or. ep_betr%do_bgc_type('type0_bgc'))then
+          if(ep_betr%do_bgc_type('type0_bgc') .or. ep_betr%do_bgc_type('type1_bgc'))then
             !summarize total column nitrogen and carbon
             call CNFluxStateBeTR1Summary(bounds_clump, col_pp, veg_pp, &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
