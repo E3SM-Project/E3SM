@@ -16,7 +16,7 @@ using Real = float;
 typedef int Int;
 
 // Detect ExecSpace using some ifdef logic. I put Serial here as a placeholder
-using ExecSpace = Kokkos::Serial;
+using ExecSpace = Kokkos::DefaultExecutionSpace;
 using HostSpace = Kokkos::HostSpace;
 
 // Memory spaces
