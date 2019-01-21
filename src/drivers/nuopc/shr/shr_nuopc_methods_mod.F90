@@ -82,6 +82,7 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_Distgrid_Match
   public shr_nuopc_methods_Print_FieldExchInfo
   public shr_nuopc_methods_FieldPtr_compare
+  public shr_nuopc_methods_States_GetSharedFlds
 
   private shr_nuopc_methods_Grid_Write
   private shr_nuopc_methods_Grid_Print
@@ -3763,6 +3764,7 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_getNumFlds(FB, string, nflds, rc)
+
     ! ---------------------------------------------- 
     ! Determine if fieldbundle is created and if so, the number of non-scalar
     ! fields in the field bundle
@@ -3797,6 +3799,75 @@ module shr_nuopc_methods_mod
     end if
 
   end subroutine shr_nuopc_methods_FB_getNumFlds
+
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_States_GetSharedFlds(State1, State2, flds_scalar_name, fldnames_shared, rc)
+
+    ! ---------------------------------------------- 
+    ! Get shared Fld names between State1 and State2 and
+    ! allocate the return array fldnames_shared
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_State, ESMF_StateGet, ESMF_MAXSTR
+
+    ! input/output variables
+    type(ESMF_State)           , intent(in)    :: State1
+    type(ESMF_State)           , intent(in)    :: State2
+    character(len=*)           , intent(in)    :: flds_scalar_name
+    character(len=ESMF_MAXSTR) , pointer       :: fldnames_shared(:)
+    integer                    , intent(inout) :: rc
+
+    ! local variables
+    integer                                 :: ncnt1, ncnt2
+    integer                                 :: n1, n2, nshr
+    character(len=ESMF_MAXSTR), allocatable :: fldnames1(:)
+    character(len=ESMF_MAXSTR), allocatable :: fldnames2(:)
+    character(len=*), parameter :: subname='(shr_nuopc_methods_States_GetSharedFlds)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (associated(fldnames_shared)) then
+       call ESMF_LogWrite(trim(subname)//": ERROR fldnames_shared must not be associated ", ESMF_LOGMSG_INFO, rc=rc)
+       rc = ESMF_FAILURE
+       RETURN
+    end if
+
+    call ESMF_StateGet(State1, itemCount=ncnt1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(fldnames1(ncnt1))
+    call ESMF_StateGet(State1, itemNameList=fldnames1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_StateGet(State2, itemCount=ncnt2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(fldnames2(ncnt2))
+    call ESMF_StateGet(State2, itemNameList=fldnames2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    nshr = 0
+    do n1 = 1,ncnt1
+       do n2 = 1,ncnt2
+          if (trim(fldnames1(n1)) == trim(fldnames2(n2)) .and. trim(fldnames1(n1)) /= flds_scalar_name) then
+             nshr = nshr + 1
+          end if
+       end do
+    end do
+    allocate(fldnames_shared(nshr))
+
+    nshr = 0
+    do n1 = 1,ncnt1
+       do n2 = 1,ncnt2
+          if (trim(fldnames1(n1)) == trim(fldnames2(n2)) .and. trim(fldnames1(n1)) /= flds_scalar_name) then
+             nshr = nshr + 1
+             fldnames_shared(nshr) = trim(fldnames1(n1))
+             exit
+          end if
+       end do
+    end do
+
+  end subroutine shr_nuopc_methods_States_GetSharedFlds
 
 end module shr_nuopc_methods_mod
 

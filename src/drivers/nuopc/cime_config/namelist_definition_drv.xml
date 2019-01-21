@@ -85,9 +85,7 @@
             LND
             LND -> MED :remapMethod=redist
             MED med_connectors_post_lnd2med
-            MED med_phases_prep_lnd2rof_accum_fast
-            MED med_phases_prep_atm
-            MED med_connectors_prep_med2atm
+            MED med_phases_prep_rof_accum_fast
             ATM
             ATM -> MED :remapMethod=redist
             MED med_connectors_post_atm2med

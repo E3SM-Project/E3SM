@@ -310,7 +310,8 @@ contains
                       endif
                       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       ! Check that a valid route handle has been created
-                      if (mapindex /= mapnstod_consd .and. mapindex /= mapnstod_consf .and. .not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
+                      if (  mapindex /= mapnstod_consd .and. mapindex /= mapnstod_consf .and. &
+                           .not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapindex), rc=rc)) then
                          call ESMF_LogWrite(trim(subname)//trim(string)//": failed   RH "//trim(mapname), &
                               ESMF_LOGMSG_INFO, rc=dbrc)
                       endif
@@ -590,19 +591,19 @@ contains
     type(ESMF_Field)            :: srcField
     type(ESMF_Field)            :: tmpfield
     integer                     :: mapindex
-    character(len=CS)  :: lstring
-    character(len=CS)  :: mapnorm
-    character(len=CS)  :: fldname
-    real(R8), allocatable :: data_srctmp(:)  ! temporary
-    real(R8), allocatable :: data_dsttmp(:)  ! temporary
-    real(R8), pointer     :: data_src(:)
-    real(R8), pointer     :: data_dst(:)
-    real(R8), pointer     :: data_frac(:)
-    real(R8), pointer     :: data_norm(:)
+    character(len=CS)           :: lstring
+    character(len=CS)           :: mapnorm
+    character(len=CS)           :: fldname
+    real(R8), allocatable       :: data_srctmp(:)  ! temporary
+    real(R8), allocatable       :: data_dsttmp(:)  ! temporary
+    real(R8), pointer           :: data_src(:)
+    real(R8), pointer           :: data_dst(:)
+    real(R8), pointer           :: data_frac(:)
+    real(R8), pointer           :: data_norm(:)
+    integer                     :: dbrc
     character(len=*), parameter :: subname='(module_MED_Map:med_map_Regrid_Norm)'
-    integer :: dbrc
-
     !-------------------------------------------------------------------------------
+
     call t_startf('MED:'//subname)
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     call shr_nuopc_memcheck(subname, 1, mastertask)
@@ -658,7 +659,7 @@ contains
           end if
        else if (mapindex == mapnstod_consf) then
           if (.not. ESMF_RouteHandleIsCreated(RouteHandles(mapconsf), rc=rc) .or. &
-               .not. ESMF_RouteHandleIsCreated(RouteHandles(mapnstod), rc=rc)) then
+              .not. ESMF_RouteHandleIsCreated(RouteHandles(mapnstod), rc=rc)) then
              call ESMF_LogWrite(trim(subname)//trim(lstring)//&
                   ": ERROR RH not available for "//mapnames(mapindex)//": fld="//trim(fldname), &
                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
@@ -693,16 +694,21 @@ contains
        if (mapindex == mapfcopy) then
           call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapindex), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        else
           ! Determine the normalization for the map
           mapnorm  = fldsSrc(n)%mapnorm(destcomp)
           if ( trim(mapnorm) /= 'unset' .and. trim(mapnorm) /= 'one' .and. trim(mapnorm) /= 'none') then
+
+             write(6,*)'DEBUG: mapindex= ',mapindex
+             write(6,*)'DEBUG: mapnorm = ',trim(mapnorm)
+
              ! Get field and pointer to source field data in FBSrc
              call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, field=srcfield, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
              if (.not. allocated(data_srctmp) .or. size(data_srctmp) /= size(data_src)) then
-                if(allocated(data_srctmp)) then
+                if (allocated(data_srctmp)) then
                    deallocate(data_srctmp)
                 endif
                 allocate(data_srctmp(size(data_src)))
@@ -738,6 +744,7 @@ contains
                 ! temp diagnostics
                 call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              else if (mapindex == mapnstod_consf) then
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
@@ -755,8 +762,10 @@ contains
                 call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consf: ", rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              else
+
                 call shr_nuopc_methods_FB_FieldRegrid( FBSrc, trim(fldname), FBDst, fldname, RouteHandles(mapindex), rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              end if
 
              ! Restore original value
@@ -771,6 +780,7 @@ contains
                 endif
                 allocate(data_dsttmp(size(data_dst)))
              endif
+
              ! Copy data_dst to tmp location, regrid fraction from source
              data_dsttmp = data_dst
              data_dst = czero
@@ -830,6 +840,7 @@ contains
                 ! temp diagnostics
                 call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              else if (mapindex == mapnstod_consf) then
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
@@ -848,17 +859,23 @@ contains
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
              else
+
+                write(6,*)'DEBUG: fldname= ', trim(fldname)
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapindex), rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                write(6,*)'DEBUG: here4'
+                
              end if
 
              ! obtain unity normalization factor and multiply interpolated field by reciprocal of normalization factor
              if (trim(mapnorm) == 'one') then
+                write(6,*)'DEBUG: here5'
                 call shr_nuopc_methods_FB_GetFldPtr(FBNormOne(mapindex), 'one', data_norm, rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                 call shr_nuopc_methods_FB_GetFldPtr(FBDst, trim(fldname), data_dst, rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
                 do i= 1,size(data_dst)
                    if (data_norm(i) == 0.0_R8) then
                       data_dst(i) = 0.0_R8
@@ -872,18 +889,17 @@ contains
        end if ! mapindex is not mapfcopy and field exists
 
        !if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, &
-               string=trim(subname) //' FBImp('//trim(compname(srccomp))//','//trim(compname(destcomp))//') ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write(6,*)'DEBUG: here6'
+       call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, &
+            string=trim(subname) //' FBImp('//trim(compname(srccomp))//','//trim(compname(destcomp))//') ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write(6,*)'DEBUG: here7'
        !end if
 
     end do  ! loop over fields
-    if (allocated(data_srctmp)) then
-       deallocate(data_srctmp)
-    endif
-    if (allocated(data_dsttmp)) then
-       deallocate(data_dsttmp)
-    endif
+
+    if (allocated(data_srctmp)) deallocate(data_srctmp)
+    if (allocated(data_dsttmp)) deallocate(data_dsttmp)
 
     call t_stopf('MED:'//subname)
 
@@ -891,7 +907,7 @@ contains
 
   !================================================================================
 
-  subroutine med_map_FB_Regrid_Norm_Frac(FBSrc, FBDst, fldnames, &
+  subroutine med_map_FB_Regrid_Norm_Frac(fldnames, FBSrc, FBDst, &
        FBFrac, mapnorm, RouteHandle, string, rc)
 
     ! ----------------------------------------------
@@ -915,9 +931,9 @@ contains
     use perf_mod              , only: t_startf, t_stopf
 
     ! input/output variables
+    character(len=*)       , intent(in)           :: fldnames(:)
     type(ESMF_FieldBundle) , intent(inout)        :: FBSrc
     type(ESMF_FieldBundle) , intent(inout)        :: FBDst
-    character(len=*)       , intent(in)           :: fldnames(:)
     type(ESMF_FieldBundle) , intent(in)           :: FBFrac
     character(len=*)       , intent(in)           :: mapnorm
     type(ESMF_RouteHandle) , intent(inout)        :: RouteHandle
@@ -955,25 +971,13 @@ contains
       lstring = " "
     endif
 
-    !---------------------------------------
-    ! First - reset the field bundle on the destination grid to zero
-    !---------------------------------------
+    !-------------------------------------------------
+    ! Loop over all fields in the source field bundle and map them to
+    ! the destination field bundle accordingly
+    !-------------------------------------------------
 
     call shr_nuopc_methods_FB_reset(FBDst, value=czero, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !---------------------------------------
-    ! Loop over all fields in the source field bundle and map them to
-    ! the destination field bundle accordingly
-    !---------------------------------------
-
-    ! call ESMF_FieldBundleGet(FBsrc, fieldCount=fieldCount, fieldNameList=fldnames, rc=rc)
-    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-
-    !-------------------------------------------------
-    ! Map with fractional normalization
-    !-------------------------------------------------
 
     do n = 1,size(fldnames)
 
@@ -1093,7 +1097,7 @@ contains
        call shr_nuopc_methods_FB_clean(FBNormDst, rc=rc)
        if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
     end if
-    call t_startf('MED:'//subname)
+    call t_stopf('MED:'//subname)
 
   end subroutine med_map_FB_Regrid_Norm_Frac
 
