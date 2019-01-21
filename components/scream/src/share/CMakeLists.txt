@@ -7,6 +7,7 @@ set(SHARE_SRC
   scream_session.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
+  util/scream_arch.cpp
   util/array_io.cpp
   util/array_io_mod.f90
 )
@@ -28,6 +29,9 @@ set(SHARE_HEADERS
   util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp
+  util/scream_arch.hpp
+  util/scream_kokkos.hpp
+  wsm.hpp
 )
 
 add_library(scream_share ${SHARE_SRC})
