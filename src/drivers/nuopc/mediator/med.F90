@@ -512,9 +512,9 @@ contains
     use esmFlds               , only : ncomps, compmed, compatm, compocn
     use esmFlds               , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds               , only : fldListFr, fldListTo
+    use esmFlds               , only : shr_nuopc_fldList_GetNumFlds
+    use esmFlds               , only : shr_nuopc_fldList_GetFldInfo
     use esmFldsExchange_mod   , only : esmFldsExchange
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -647,8 +647,8 @@ contains
     use med_internalstate_mod , only : InternalState
     use esmFlds               , only : ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
+    use esmFlds               , only : shr_nuopc_fldList_Realize
     use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
 
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -1375,14 +1375,15 @@ contains
     use esmFlds                 , only : ncomps, compname, ncomps, compmed, compatm, compocn
     use esmFlds                 , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds                 , only : fldListMed_ocnalb, fldListMed_aoflux
+    use esmFlds                 , only : shr_nuopc_fldList_GetNumFlds
+    use esmFlds                 , only : shr_nuopc_fldList_GetFldNames
     use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Copy
-    use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetNumFlds
-    use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetFldNames
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
     use med_infodata_mod        , only : med_infodata_CopyStateToInfodata
     use med_infodata_mod        , only : med_infodata
     use med_fraction_mod        , only : med_fraction_init, med_fraction_set
@@ -1659,11 +1660,11 @@ contains
             allocate(fldnames(fieldCount))
             call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb%flds, fldnames, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
