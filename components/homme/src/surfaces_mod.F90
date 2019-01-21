@@ -989,7 +989,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     use hybrid_mod, only : hybrid_t
 
     use quadrature_mod, only : quadrature_t, gausslobatto
-    use dimensions_mod, only : nlev
+    use dimensions_mod, only : nlev,nelem
     use cube_mod, only : convert_gbl_index
 
     integer,              intent(in)    :: nets,nete
@@ -1098,6 +1098,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     call construct_cv_gll(elem,hybrid,nets,nete)
 
     iter_max=2000
+    if (nelem > 240*240*6) iter_max=500   
     if (iter_max>0) then
        ! areas computed from eleemnts on boundaries are from hexagons and pentagons
        ! compute new areas where all CVs are squares or triangles
@@ -1300,7 +1301,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        d1_global = ParallelMax(dx,hybrid)
        dx=maxval(d1mid)
        d1_global_mid = ParallelMax(dx,hybrid)
-       if (mod(iter-1,250).eq.0) then
+       if (mod(iter-1,100).eq.0) then
           if (hybrid%masterthread) print *,iter,"max d1=",d1_global,d1_global_mid
        endif
        ! compute new global CV  (cvlist(ie)%vert from cvlist(ie)%cartp_dual).  

@@ -2,8 +2,8 @@
 #SBATCH -N 1
 #SBATCH --account=FY127788
 #SBATCH --time=0:10:00
-#PBS -l walltime=1:00:00
-#PBS -l nodes=20
+#PBS -l walltime=2:00:00
+#PBS -l nodes=180
 #PBS -q acme
 
 set NCPU = 1
@@ -40,7 +40,7 @@ echo using NCPU = $NCPU
 #
 # GLL points within each element:
 set NPTS = 4
-set ne = 1024; 
+set ne = 4096; 
 
 #set HOMME = `cd ../.. ; pwd`  # doesnot work on Anvil
 set HOMME = ~/codes/acme/components/homme

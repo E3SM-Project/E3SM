@@ -317,6 +317,7 @@ contains
         elem(ie)%idxP%UniquePtOffset=gOffset(ig)
      enddo
      GlobalUniqueColsP = gOffset(nelem)+numElem2P(nelem)-1
+     if (GlobalUniqueColsP<0) stop 'ERROR: GlobalUniqueColsP integer overflow'
 
      deallocate(numElemP)
      deallocate(numElem2P)
