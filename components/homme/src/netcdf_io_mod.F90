@@ -639,13 +639,17 @@ contains
            TRIM(ADJUSTL(output_dir))//TRIM(output_prefix)//TRIM(ADJUSTL(file_prefix)),ios,".nc"
 
       if(output_type.eq.'netcdf') then
-         ierr = PIO_CreateFile(pio_subsystem, FileID, iotype_netcdf, filename, PIO_64BIT_OFFSET)
+         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_netcdf, filename, PIO_64BIT_OFFSET)
+      else if(output_type.eq.'netcdf4p') then
+         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_netcdf4p, filename, PIO_64BIT_DATA)
+      else if(output_type.eq.'pnetcdf64') then
+         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_pnetcdf, filename, PIO_64BIT_DATA)
       else
-         ierr = PIO_CreateFile(pio_subsystem, FileID, iotype_pnetcdf, filename, PIO_64BIT_OFFSET)
+         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_pnetcdf, filename, PIO_64BIT_OFFSET)
       endif
       ncFileID = 0
 
-      if(masterproc) print *, 'Opening file ',trim(filename), fileid%fh, output_type
+      if(masterproc) print *, 'netcdf_io_mod opening file ',trim(filename), fileid%fh, output_type
     end subroutine nf_open_file
   end module netcdf_io_mod
 

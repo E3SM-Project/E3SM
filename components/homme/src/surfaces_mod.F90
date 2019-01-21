@@ -1021,7 +1021,6 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     real (kind=real_kind)            :: xp1,xm1,yp1,ym1,sumdiff
     real (kind=real_kind)            :: tiny=1e-11,norm
     real (kind=real_kind)            :: tol=2e-11  ! convergece outer iteration
-    real (kind=real_kind)            :: tol_pentagons=1e-13  ! convergece pentagon iteration
 
     ! area difference to trigger pentagons.  
     ! if it is too small, we will have pentagons with 1 very short edges

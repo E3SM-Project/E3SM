@@ -106,6 +106,10 @@ if ( $ne == 30 ) then
    #set toponame = 16xdel2-NH
    #set toponame = NH
    #set toponame = H
+
+   set topo = '/lcrc/group/acme/taylorm/topodata/USGS-gtopo30_ne30np4_8xdel2.nc'
+   set toponame = 8xdel2-H
+
 endif
 if ( $ne == 60 ) then
    # 0.5 degree     tbird 200 nodes, 560 days: 20h
