@@ -5,7 +5,7 @@
 #include <sstream>
 #include <memory>
 
-#include "share/error_defs.hpp"
+#include "share/scream_assert.hpp"
 
 namespace scream {
 namespace util {

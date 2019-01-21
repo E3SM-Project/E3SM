@@ -1,7 +1,7 @@
 #include "atmosphere_driver.hpp"
 
 #include <control/atmosphere_process_group.hpp>
-#include <share/error_defs.hpp>
+#include <share/scream_assert.hpp>
 #include <share/util/string_utils.hpp>
 
 #include "control/surface_coupling.hpp"

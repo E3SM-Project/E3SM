@@ -1,5 +1,5 @@
 set(SHARE_SRC
-  error_defs.cpp
+  scream_assert.cpp
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
@@ -13,7 +13,7 @@ set(SHARE_SRC
 
 set(SHARE_HEADERS
   atmosphere_process.hpp
-  error_defs.hpp
+  scream_assert.hpp
   field/field.hpp
   field/field_alloc_prop.hpp
   field/field_identifier.hpp

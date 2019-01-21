@@ -4,7 +4,7 @@
 #include <string>
 #include <set>
 
-#include <share/error_defs.hpp>
+#include <share/scream_assert.hpp>
 #include <share/mpi/scream_comm.hpp>
 #include <share/field/field_identifier.hpp>
 #include <share/field/field_repository.hpp>

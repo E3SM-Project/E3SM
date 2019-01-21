@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_REPOSITORY_HPP
 
 #include <share/scream_types.hpp>
-#include <share/error_defs.hpp>
+#include <share/scream_assert.hpp>
 #include <share/field/field.hpp>
 
 #include <map>

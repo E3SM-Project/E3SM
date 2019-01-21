@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_ALLOC_PROP_HPP
 #define SCREAM_FIELD_ALLOC_PROP_HPP
 
-#include <share/error_defs.hpp>
+#include <share/scream_assert.hpp>
 #include <share/field/field_identifier.hpp>
 
 #include <share/scream_types.hpp>

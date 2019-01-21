@@ -2,7 +2,7 @@
 #include "share/util/file_utils.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
-#include "share/error_defs.hpp"
+#include "share/scream_assert.hpp"
 
 #include "p3_f90.hpp"
 #include "p3_ic_cases.hpp"
