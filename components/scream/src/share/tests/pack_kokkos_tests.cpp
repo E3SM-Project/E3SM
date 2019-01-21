@@ -182,4 +182,62 @@ TEST_CASE("repack", "scream::pack") {
   }
 }
 
+TEST_CASE("kokkos_packs", "scream::pack") {
+static Int unittest_pack () {
+  int nerr = 0;
+  const int num_bigs = 17;
+
+  using TestBigPack = scream::pack::Pack<Real, 16>;
+
+  view_1d<TestBigPack> test_k_array("test_k_array", num_bigs);
+  Kokkos::parallel_reduce("unittest_pack",
+                          util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1),
+                          KOKKOS_LAMBDA(const MemberType& team, int& total_errs) {
+
+    int nerrs_local = 0;
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_bigs), [&] (int i) {
+      test_k_array(i) = i;
+    });
+
+    auto small = scream::pack::repack<4>(test_k_array);
+    if (small.extent(0) != 4 * num_bigs) ++nerrs_local;
+
+    team.team_barrier();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_bigs*4), [&] (int i) {
+      for (int p = 0; p < 4; ++p) {
+        if (small(i)[p] != i / 4) ++nerrs_local;
+      }
+    });
+
+    auto big = scream::pack::repack<16>(small);
+    if (big.extent(0) != num_bigs) ++nerrs_local;
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_bigs*4), [&] (int i) {
+      for (int p = 0; p < 4; ++p) {
+        small(i)[p] = p * i;
+      }
+    });
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_bigs*4), [&] (int i) {
+      auto mask = small(i) >= (2 * i);
+      for (int p = 0; p < 4; ++p) {
+        if (i == 0) {
+          if (!mask[p]) ++nerrs_local;
+        }
+        else {
+          if (mask[p] != (p >= 2)) ++nerrs_local;
+        }
+      }
+    });
+
+    total_errs += nerrs_local;
+  }, nerr);
+
+  // NOTE: catch2 documentation says that its assertion macros are not
+  // thread safe, so we have to put them outside of kokkos kernels.
+  REQUIRE(nerr == 0);
+}
+
+
 } // namespace
