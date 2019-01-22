@@ -2158,9 +2158,17 @@
 			     description="salinity tendency due to kpp non-local flux"
 		      />
       </var_array>
+      <var_array name="activeTracerVerticalAdvectionTopTend" type="real" dimensions="nVertLevelsP1 nCells Time" packages="tracerBudget">
+          <var name="temperatureVerticalAdvectionTopTend" array_group="activeTracerVertTopTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTopTend"
+            description="potential temperature advective flux on cell top"
+            />
+          <var name="salinityVerticalAdvectionTopTend" array_group="activeTracerVertTopTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTopTend"
+            description="salinity advective flux on cell top"
+            />
+        </var_array>
      <var_array name="activeTracerHorizontalAdvectionEdgeTend" type="real" dimensions="nVertLevels nEdges Time" packages="tracerBudget">
 		      <var name="temperatureHorizontalAdvectionEdgeTend" array_group="activeTracerHorAdvEdgeTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionEdgeTend"
-			     description="potential temperature tendency due to horizontal advection on edges"
+			     description="potential temperature advective flux due to horizontal advection on edges"
 		      />
 		      <var name="salinityHorizontalAdvectionEdgeTend" array_group="activeTracerHorAdvEdgeTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionEdgeTend"
 			     description="salinity tendency due to horizontal advection on edges"
