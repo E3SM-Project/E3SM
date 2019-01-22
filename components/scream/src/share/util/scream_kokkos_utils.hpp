@@ -172,12 +172,12 @@ public:
 
 // Get a 1d subview of the i-th dimension of a 2d view
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
-Unmanaged<Kokkos::View<T*, Parms...> >
+ko::Unmanaged<Kokkos::View<T*, Parms...> >
 subview (const Kokkos::View<T**, Parms...>& v_in, const int i) {
-  micro_kassert(v_in.data() != nullptr);
-  micro_kassert(i < v_in.extent_int(0));
-  micro_kassert(i >= 0);
-  return Unmanaged<Kokkos::View<T*, Parms...> >(
+  scream_kassert(v_in.data() != nullptr);
+  scream_kassert(i < v_in.extent_int(0));
+  scream_kassert(i >= 0);
+  return ko::Unmanaged<Kokkos::View<T*, Parms...> >(
     &v_in.impl_map().reference(i, 0), v_in.extent(1));
 }
 

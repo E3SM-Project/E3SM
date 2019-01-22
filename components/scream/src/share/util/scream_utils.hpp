@@ -1,8 +1,8 @@
 #ifndef SCREAM_UTILS_HPP
 #define SCREAM_UTILS_HPP
 
-#include "scream_types.hpp"
-#include "scream_assert.hpp"
+#include "share/scream_types.hpp"
+#include "share/scream_assert.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -97,10 +97,6 @@ void set_min_max (const Integer& lim0, const Integer& lim1,
                   Integer& min, Integer& max, const Integer1& vector_size) {
   min = util::min(lim0, lim1) / vector_size;
   max = util::max(lim0, lim1) / vector_size;
-}
-
-template <typename T> KOKKOS_INLINE_FUNCTION T reldif (const T& a, const T& b) {
-  return std::abs((b - a)/a);
 }
 
 } // namespace util

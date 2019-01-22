@@ -1,9 +1,9 @@
 #ifndef WSM_HPP
 #define WSM_HPP
 
-#include "types.hpp"
-#include "scream_arch.hpp"
-#include "kokkos_util.hpp"
+#include "scream_types.hpp"
+#include "util/scream_arch.hpp"
+#include "util/scream_kokkos_utils.hpp"
 
 namespace unit_test {
 struct UnitWrap;
@@ -99,7 +99,7 @@ class WorkspaceManager
     // Take an individual sub-block
     template <typename S=T>
     KOKKOS_INLINE_FUNCTION
-    Unmanaged<view_1d<S> > take(const char* name) const;
+    ko::Unmanaged<view_1d<S> > take(const char* name) const;
 
     // Take several sub-blocks. The user gets pointers to their sub-blocks
     // via the ptrs argument.
@@ -155,19 +155,19 @@ class WorkspaceManager
 
     template <typename S>
     KOKKOS_INLINE_FUNCTION
-    void release_impl(const Unmanaged<view_1d<S> >& space) const;
+    void release_impl(const ko::Unmanaged<view_1d<S> >& space) const;
 
 #ifndef NDEBUG
     template <typename S>
     KOKKOS_INLINE_FUNCTION
-    const char* get_name_impl(const Unmanaged<view_1d<S> >& space) const;
+    const char* get_name_impl(const ko::Unmanaged<view_1d<S> >& space) const;
 
     KOKKOS_INLINE_FUNCTION
     void change_num_used(int change_by) const;
 
     template <typename S>
     KOKKOS_INLINE_FUNCTION
-    void change_indv_meta(const Unmanaged<view_1d<S> >& space, const char* name, bool release=false) const;
+    void change_indv_meta(const ko::Unmanaged<view_1d<S> >& space, const char* name, bool release=false) const;
 
     KOKKOS_INLINE_FUNCTION
     int get_name_idx(const char* name, bool add) const;
@@ -186,7 +186,7 @@ class WorkspaceManager
 
     template <typename S>
     KOKKOS_INLINE_FUNCTION
-    bool is_active(const Unmanaged<view_1d<S> >& space) const
+    bool is_active(const ko::Unmanaged<view_1d<S> >& space) const
     { return m_parent.m_active(m_ws_idx, m_parent.template get_index<S>(space));}
 #endif
 
@@ -210,21 +210,21 @@ class WorkspaceManager
 
   template <typename S=T>
   KOKKOS_FORCEINLINE_FUNCTION
-  int get_index(const Unmanaged<view_1d<S> >& space) const
+  int get_index(const ko::Unmanaged<view_1d<S> >& space) const
   { return reinterpret_cast<const int*>(reinterpret_cast<const T*>(space.data()) - m_reserve)[0]; }
 
   template <typename S=T>
   KOKKOS_FORCEINLINE_FUNCTION
-  int get_next(const Unmanaged<view_1d<S> >& space) const
+  int get_next(const ko::Unmanaged<view_1d<S> >& space) const
   { return reinterpret_cast<const int*>(reinterpret_cast<const T*>(space.data()) - m_reserve)[1]; }
 
   template <typename S=T>
   KOKKOS_FORCEINLINE_FUNCTION
-  int set_next_and_get_index(const Unmanaged<view_1d<S> >& space, int next) const;
+  int set_next_and_get_index(const ko::Unmanaged<view_1d<S> >& space, int next) const;
 
   template <typename S=T>
   KOKKOS_FORCEINLINE_FUNCTION
-  Unmanaged<view_1d<S> > get_space_in_slot(const int team_idx, const int slot) const;
+  ko::Unmanaged<view_1d<S> > get_space_in_slot(const int team_idx, const int slot) const;
 
   KOKKOS_INLINE_FUNCTION
   void init_metadata(const int ws_idx, const int slot) const;
@@ -236,7 +236,7 @@ class WorkspaceManager
   // data
   //
 
-  enum { m_pad_factor   = OnGpu<ExeSpace>::value ? 1 : 32,
+  enum { m_pad_factor   = util::OnGpu<ExeSpace>::value ? 1 : 32,
          m_max_name_len = 128,
          m_max_names    = 256
   };

@@ -6,7 +6,11 @@
 # include <omp.h>
 #endif
 
-#include "scream_arch.hpp"
+#include <sstream>
+
+#include "share/util/scream_arch.hpp"
+#include "share/scream_types.hpp"
+#include "share/scream_config.hpp"
 
 /*
  * Implementations of scream_arch.hpp functions.
@@ -29,37 +33,35 @@ std::string active_avx_string () {
   return s;
 }
 
-void dump_arch () {
-  printf("ARCH: dp %d avx %s FPE %d nthread %d packn %d\n",
-#ifdef DOUBLE_PRECISION
-         1,
+std::string config_string () {
+  std::stringstream ss;
+  ss << "sizeof(Real) " << sizeof(Real)
+     << " avx " << active_avx_string()
+     << " packsize " << SCREAM_PACK_SIZE
+     << " compiler " <<
+#if defined __INTEL_COMPILER
+    "Intel"
+#elif defined __GNUG__
+    "GCC"
 #else
-         0,
+    "unknown"
 #endif
-         util::active_avx_string().c_str(),
-#ifdef FPE
-         1,
+     << " FPE " <<
+#ifdef SCREAM_FPE
+    "on"
 #else
-         0,
+    "off"
 #endif
+     << " #threads " <<
 #ifdef KOKKOS_ENABLE_OPENMP
-         Kokkos::OpenMP::concurrency(),
+         Kokkos::OpenMP::concurrency()
 #elif defined _OPENMP
-         omp_get_max_threads(),
+         omp_get_max_threads()
 #else
-         1,
+         1
 #endif
-         SCREAM_PACK_SIZE
-         );
-}
-
-void initialize () {
-#ifdef FPE
-  _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() &
-                         ~( _MM_MASK_INVALID |
-                            _MM_MASK_DIV_ZERO |
-                            _MM_MASK_OVERFLOW ));
-#endif
+    ;
+  return ss.str();
 }
 
 #ifdef SCREAM_FPE

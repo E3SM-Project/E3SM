@@ -1,14 +1,17 @@
 #ifndef WSM_IMPL_HPP
 #define WSM_IMPL_HPP
 
-#include "util.hpp"
+#include "util/scream_utils.hpp"
+#include "scream_assert.hpp"
+
+#include <map>
 
 namespace scream {
 namespace wsm {
 
 /*
  * An implementation header for wsm.hpp, this helps keep wsm.hpp clean by avoiding
- * mixing interface and implementation. Clients should NOT even include this file.
+ * mixing interface and implementation. Clients should NOT ever include this file.
  */
 
 template <typename T, typename D>
@@ -114,7 +117,7 @@ void WorkspaceManager<T, D>::init(const WorkspaceManager<T, D>& wm, const view_2
 template <typename T, typename D>
 template <typename S>
 KOKKOS_FORCEINLINE_FUNCTION
-int WorkspaceManager<T, D>::set_next_and_get_index(const Unmanaged<view_1d<S> >& space, int next) const
+int WorkspaceManager<T, D>::set_next_and_get_index(const ko::Unmanaged<view_1d<S> >& space, int next) const
 {
   const auto metadata = reinterpret_cast<int*>(reinterpret_cast<T*>(space.data()) - m_reserve);
   metadata[1] = next;
@@ -124,10 +127,10 @@ int WorkspaceManager<T, D>::set_next_and_get_index(const Unmanaged<view_1d<S> >&
 template <typename T, typename D>
 template <typename S>
 KOKKOS_FORCEINLINE_FUNCTION
-Unmanaged<typename WorkspaceManager<T, D>::template view_1d<S> >
+ko::Unmanaged<typename WorkspaceManager<T, D>::template view_1d<S> >
 WorkspaceManager<T, D>::get_space_in_slot(const int team_idx, const int slot) const
 {
-  return Unmanaged<view_1d<S> >(
+  return ko::Unmanaged<view_1d<S> >(
     reinterpret_cast<S*>(&m_data(team_idx, slot*m_total) + m_reserve),
     sizeof(T) == sizeof(S) ?
     m_size :
@@ -154,7 +157,7 @@ WorkspaceManager<T, D>::Workspace::Workspace(
 template <typename T, typename D>
 template <typename S>
 KOKKOS_INLINE_FUNCTION
-Unmanaged<typename WorkspaceManager<T, D>::template view_1d<S> > WorkspaceManager<T, D>::Workspace::take(
+ko::Unmanaged<typename WorkspaceManager<T, D>::template view_1d<S> > WorkspaceManager<T, D>::Workspace::take(
   const char* name) const
 {
 #ifndef NDEBUG
@@ -191,7 +194,7 @@ void WorkspaceManager<T, D>::Workspace::take_many_contiguous_unsafe(
   // Verify contiguous
   for (int n = 0; n < static_cast<int>(N); ++n) {
     const auto space = m_parent.get_space_in_slot<S>(m_ws_idx, m_next_slot + n);
-    micro_kassert(m_parent.get_next<S>(space) == m_next_slot + n + 1);
+    scream_kassert(m_parent.get_next<S>(space) == m_next_slot + n + 1);
   }
 #endif
 
@@ -347,7 +350,7 @@ void WorkspaceManager<T, D>::Workspace::print() const
 template <typename T, typename D>
 template <typename S>
 KOKKOS_INLINE_FUNCTION
-const char* WorkspaceManager<T, D>::Workspace::get_name_impl(const Unmanaged<view_1d<S> >& space) const
+const char* WorkspaceManager<T, D>::Workspace::get_name_impl(const ko::Unmanaged<view_1d<S> >& space) const
 {
   const int slot = m_parent.get_index<S>(space);
   return &(m_parent.m_curr_names(m_ws_idx, slot, 0));
@@ -359,8 +362,8 @@ void WorkspaceManager<T, D>::Workspace::change_num_used(int change_by) const
 {
   Kokkos::single(Kokkos::PerTeam(m_team), [&] () {
     int curr_used = m_parent.m_num_used(m_ws_idx) += change_by;
-    micro_kassert(curr_used <= m_parent.m_max_used);
-    micro_kassert(curr_used >= 0);
+    scream_kassert(curr_used <= m_parent.m_max_used);
+    scream_kassert(curr_used >= 0);
     if (curr_used > m_parent.m_high_water(m_ws_idx)) {
       m_parent.m_high_water(m_ws_idx) = curr_used;
     }
@@ -371,19 +374,19 @@ template <typename T, typename D>
 template <typename S>
 KOKKOS_INLINE_FUNCTION
 void WorkspaceManager<T, D>::Workspace::change_indv_meta(
-  const Unmanaged<view_1d<S> >& space, const char* name, bool release) const
+  const ko::Unmanaged<view_1d<S> >& space, const char* name, bool release) const
 {
   Kokkos::single(Kokkos::PerTeam(m_team), [&] () {
     const int slot = m_parent.get_index<S>(space);
     if (!release) {
-      micro_kassert(util::strlen(name) < m_max_name_len); // leave one char for null terminator
-      micro_kassert(util::strlen(name) > 0);
-      micro_kassert(!m_parent.m_active(m_ws_idx, slot));
+      scream_kassert(util::strlen(name) < m_max_name_len); // leave one char for null terminator
+      scream_kassert(util::strlen(name) > 0);
+      scream_kassert(!m_parent.m_active(m_ws_idx, slot));
       char* val = &(m_parent.m_curr_names(m_ws_idx, slot, 0));
       util::strcpy(val, name);
     }
     else {
-      micro_kassert(m_parent.m_active(m_ws_idx, slot));
+      scream_kassert(m_parent.m_active(m_ws_idx, slot));
       name = get_name(space);
     }
     const int name_idx = get_name_idx(name, !release);
@@ -410,7 +413,7 @@ int WorkspaceManager<T, D>::Workspace::get_name_idx(const char* name, bool add) 
       break;
     }
   }
-  micro_kassert(name_idx != -1);
+  scream_kassert(name_idx != -1);
   return name_idx;
 }
 #endif
@@ -418,7 +421,7 @@ int WorkspaceManager<T, D>::Workspace::get_name_idx(const char* name, bool add) 
 template <typename T, typename D>
 template <typename S>
 KOKKOS_INLINE_FUNCTION
-void WorkspaceManager<T, D>::Workspace::release_impl(const Unmanaged<view_1d<S> >& space) const
+void WorkspaceManager<T, D>::Workspace::release_impl(const ko::Unmanaged<view_1d<S> >& space) const
 {
 #ifndef NDEBUG
   change_num_used(-1);

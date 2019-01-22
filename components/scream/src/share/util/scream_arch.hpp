@@ -29,9 +29,7 @@ namespace util {
 
 std::string active_avx_string();
 
-void dump_arch();
-
-void initialize();
+std::string config_string();
 
 void activate_floating_point_exceptions_if_enabled();
 

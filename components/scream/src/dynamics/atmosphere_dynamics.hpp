@@ -29,7 +29,7 @@ public:
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
-  // The name of the subcomponent 
+  // The name of the subcomponent
   std::string name () const { return "dynamics"; }
 
   // The communicator used by the dynamics
@@ -41,7 +41,7 @@ public:
   void finalize   (/* what inputs? */);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const;
+  void register_fields (FieldRepository<Real, device_type>& field_repo) const;
 
   // Get the set of required/computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
@@ -50,8 +50,8 @@ public:
 protected:
 
   // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& /*f*/) { /* impl */ }
-  void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& /*f*/) { /* impl */ }
+  void set_required_field_impl (const Field<const Real, device_type>& /*f*/) { /* impl */ }
+  void set_computed_field_impl (const Field<      Real, device_type>& /*f*/) { /* impl */ }
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;

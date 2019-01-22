@@ -106,7 +106,7 @@ FortranData::Ptr Factory::create (IC ic) {
  switch (ic) {
    case mixed: return make_mixed();
  default:
-   scream_throw_if(true, "Not an IC: " << ic);
+   scream_require_msg(false, "Not an IC: " << ic);
  }
 }
 

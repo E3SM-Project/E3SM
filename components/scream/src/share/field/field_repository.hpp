@@ -22,13 +22,14 @@ enum class RepoState {
   CLOSED
 };
 
-template<typename ScalarType, typename MemSpace>
+template<typename ScalarType, typename D=DefaultDevice>
 class FieldRepository {
 public:
 
   // Public types
+  using device_type     = D;
   using scalar_type     = ScalarType;
-  using field_type      = Field<scalar_type,MemSpace,MemoryManaged>;
+  using field_type      = Field<scalar_type,device_type>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
   using map_type        = std::map<identifier_type,field_type>;
@@ -82,7 +83,7 @@ void FieldRepository<ScalarType,MemSpace>::register_field (const identifier_type
                 std::is_same<ScalarType,typename util::ScalarProperties<RequestedValueType>::scalar_type>::value,
                 "Error! The template argument 'RequestedValueType' of this function must either match "
                 "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
-  
+
   // Sanity checks
   error::runtime_check(m_state==RepoState::OPEN,"Error! Registration of new fields no longer allowed.\n");
 

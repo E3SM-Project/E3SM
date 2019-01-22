@@ -1,12 +1,32 @@
 #include "catch2/catch.hpp"
 
 #include "share/wsm.hpp"
+#include "share/util/scream_kokkos_utils.hpp"
 
-namespace {
+namespace unit_test {
 
-TEST_CASE("workspace_manager", "[utils]") {
-  using namespace scream::util;
-  using namespace scream::wsm;
+using namespace scream;
+
+struct UnitWrap {
+
+template <typename D=DefaultDevice>
+struct UnitTest {
+
+using Device     = D;
+using MemberType = typename KokkosTypes<Device>::MemberType;
+using TeamPolicy = typename KokkosTypes<Device>::TeamPolicy;
+using ExeSpace   = typename KokkosTypes<Device>::ExeSpace;
+
+template <typename S>
+using view_1d = typename KokkosTypes<Device>::template view_1d<S>;
+template <typename S>
+using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
+template <typename S>
+using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
+
+static int unittest_workspace()
+{
+  using namespace scream;
 
   int nerr = 0;
   const int ints_per_ws = 37;
@@ -14,15 +34,15 @@ TEST_CASE("workspace_manager", "[utils]") {
   const int ni = 128;
   const int nk = 128;
 
-  TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk));
+  TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk));
 
   {
-    WorkspaceManager<double, Device> wsmd(17, num_ws, policy);
+    wsm::WorkspaceManager<double, Device> wsmd(17, num_ws, policy);
     REQUIRE(wsmd.m_reserve == 1);
     REQUIRE(wsmd.m_size == 17);
   }
   {
-    WorkspaceManager<char, Device> wsmc(16, num_ws, policy);
+    wsm::WorkspaceManager<char, Device> wsmc(16, num_ws, policy);
     REQUIRE(wsmc.m_reserve == 8);
     REQUIRE(wsmc.m_size == 16);
     Kokkos::parallel_for(
@@ -36,7 +56,7 @@ TEST_CASE("workspace_manager", "[utils]") {
       });
   }
   {
-    WorkspaceManager<short, Device> wsms(16, num_ws, policy);
+    wsm::WorkspaceManager<short, Device> wsms(16, num_ws, policy);
     REQUIRE(wsms.m_reserve == 4);
     REQUIRE(wsms.m_size == 16);
   }
@@ -44,12 +64,12 @@ TEST_CASE("workspace_manager", "[utils]") {
   // Test host-explicit WorkspaceMgr
   {
     using HostDevice = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::HostSpace>;
-    typename KokkosTypes<HostDevice>::TeamPolicy policy_host(ExeSpaceUtils<typename KokkosTypes<HostDevice>::ExeSpace>::get_default_team_policy(ni, nk));
-    WorkspaceManager<short, HostDevice> wsmh(16, num_ws, policy_host);
+    typename KokkosTypes<HostDevice>::TeamPolicy policy_host(util::ExeSpaceUtils<typename KokkosTypes<HostDevice>::ExeSpace>::get_default_team_policy(ni, nk));
+    wsm::WorkspaceManager<short, HostDevice> wsmh(16, num_ws, policy_host);
     wsmh.m_data(0, 0) = 0; // check on cuda machine
   }
 
-  WorkspaceManager<int, Device> wsm(ints_per_ws, num_ws, policy);
+  wsm::WorkspaceManager<int, Device> wsm(ints_per_ws, num_ws, policy);
 
   REQUIRE(wsm.m_reserve == 2);
   REQUIRE(wsm.m_size == ints_per_ws);
@@ -74,7 +94,7 @@ TEST_CASE("workspace_manager", "[utils]") {
     }
     team.team_barrier();
 
-    Kokkos::Array<Unmanaged<view_1d<int> >, num_ws> wssub;
+    Kokkos::Array<ko::Unmanaged<view_1d<int> >, num_ws> wssub;
 
     // Main test. Test different means of taking and release spaces.
     for (int r = 0; r < 8; ++r) {
@@ -86,8 +106,8 @@ TEST_CASE("workspace_manager", "[utils]") {
         }
       }
       else {
-        Unmanaged<view_1d<int> > ws1, ws2, ws3, ws4;
-        Kokkos::Array<Unmanaged<view_1d<int> >*, num_ws> ptrs = { {&ws1, &ws2, &ws3, &ws4} };
+        ko::Unmanaged<view_1d<int> > ws1, ws2, ws3, ws4;
+        Kokkos::Array<ko::Unmanaged<view_1d<int> >*, num_ws> ptrs = { {&ws1, &ws2, &ws3, &ws4} };
         Kokkos::Array<const char*, num_ws> names = { {"ws0", "ws1", "ws2", "ws3"} };
         if (r % 4 == 1) {
           ws.take_many(names, ptrs);
@@ -121,7 +141,7 @@ TEST_CASE("workspace_manager", "[utils]") {
           char buf[8] = "ws";
           buf[2] = 48 + w; // 48 is offset to integers in ascii
 #ifndef NDEBUG
-          if (strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
+          if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
           if (ws.get_num_used() != 4) ++nerrs_local;
 #endif
           for (int i = 0; i < ints_per_ws; ++i) {
@@ -175,7 +195,7 @@ TEST_CASE("workspace_manager", "[utils]") {
             char buf[8] = "ws";
             buf[2] = 48 + w; // 48 is offset to integers in ascii
 #ifndef NDEBUG
-            if (strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
+            if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
             if (ws.get_num_used() != 4) ++nerrs_local;
 #endif
             for (int i = 0; i < ints_per_ws; ++i) {
@@ -243,7 +263,7 @@ TEST_CASE("workspace_manager", "[utils]") {
             buf[2] = 48 + w; // 48 is offset to integers in ascii
             if (exp_active[w]) {
 #ifndef NDEBUG
-              if (strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
+              if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
               ++exp_num_active;
               if (!ws.template is_active<int>(wssub[w])) ++nerrs_local;
 #endif
@@ -274,5 +294,23 @@ TEST_CASE("workspace_manager", "[utils]") {
 
   REQUIRE(nerr == 0);
 }
+
+}; // struct UnitTest
+}; // struct UnitWrap
+
+} // namespace unit_test
+
+namespace {
+
+TEST_CASE("workspace_manager", "[utils]") {
+  unit_test::UnitWrap::UnitTest<>::unittest_workspace();
+}
+
+#ifdef KOKKOS_ENABLE_CUDA
+// Force host testing on CUDA
+TEST_CASE("workspace_manager_host", "[utils]") {
+  unit_test::UnitWrap::UnitTest<scream::HostDevice>::unittest_workspace();
+}
+#endif
 
 } // anonymous namespace

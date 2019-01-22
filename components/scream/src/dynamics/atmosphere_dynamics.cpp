@@ -21,7 +21,7 @@ void AtmosphereDynamics::finalize (/* what inputs? */)
 
 }
 
-void AtmosphereDynamics::register_fields (FieldRepository<Real, ExecMemSpace>& /* field_repo */) const {
+void AtmosphereDynamics::register_fields (FieldRepository<Real, device_type>& /* field_repo */) const {
   // register in/out fields in the repo
 }
 

@@ -12,7 +12,7 @@ namespace util {
 template <typename Scalar>
 void write (const char* filename, Scalar* a, const int n) {
   FILEPtr fid(fopen(filename, "w"));
-  scream_throw_if( ! fid, "Could not open " << filename << " for writing.");
+  scream_require_msg( fid, "Could not open " << filename << " for writing.");
   write<int>(&n, 1, fid);
   write<Scalar>(a, n, fid);
 }
@@ -20,10 +20,10 @@ void write (const char* filename, Scalar* a, const int n) {
 template <typename Scalar>
 void read (const char* filename, Scalar* a, const int n) {
   FILEPtr fid(fopen(filename, "r"));
-  scream_throw_if( ! fid, "Could not open " << filename << " for reading.");
+  scream_require_msg( fid, "Could not open " << filename << " for reading.");
   int n_file;
   read<int>(&n_file, 1, fid);
-  scream_throw_if(n_file != n, "Expected " << n << " but got " << n_file);
+  scream_require_msg(n_file == n, "Expected " << n << " but got " << n_file);
   read<Scalar>(a, n, fid);
 }
 } // namespace util

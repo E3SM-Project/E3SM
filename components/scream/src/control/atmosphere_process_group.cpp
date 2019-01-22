@@ -78,7 +78,7 @@ void AtmosphereProcessGroup::finalize   (/* what inputs? */) {
   }
 }
 
-void AtmosphereProcessGroup::register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const {
+void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>& field_repo) const {
   for (const auto& atm_proc : m_atm_processes) {
     atm_proc->register_fields(field_repo);
 
@@ -96,7 +96,7 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, ExecMemSpace
   }
 }
 
-void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f) {
+void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real, device_type>& f) {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->requires(f.get_header().get_identifier())) {
       atm_proc->set_required_field(f);
@@ -104,7 +104,7 @@ void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real, Ex
   }
 }
 
-void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real, ExecMemSpace, MemoryManaged>& f) {
+void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real, device_type>& f) {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->computes(f.get_header().get_identifier())) {
       atm_proc->set_computed_field(f);

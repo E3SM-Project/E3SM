@@ -87,7 +87,7 @@ void p3_init () {
   static const char* dir = ".";
   Int info;
   p3_init_c(&dir, &info);
-  scream_throw_if(info != 0, "p3_init_c returned info " << info);
+  scream_require_msg(info == 0, "p3_init_c returned info " << info);
 }
 
 void p3_main (const FortranData& d) {

@@ -4,6 +4,7 @@
 #include <Kokkos_Core.hpp>
 
 #include "share/scream_config.hpp"
+#include "share/scream_kokkos_meta.hpp"
 
 /*
  * Header contains globally useful types for Scream.
@@ -31,6 +32,9 @@ typedef int Int;
 
 // The default device we use.
 using DefaultDevice = Kokkos::Device<Kokkos::DefaultExecutionSpace, Kokkos::DefaultExecutionSpace::memory_space>;
+
+// A device type to force host execution
+using HostDevice = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::DefaultHostExecutionSpace::memory_space>;
 
 // Struct for getting useful Kokkos types based on the device
 template <typename D=DefaultDevice>
@@ -63,10 +67,10 @@ struct KokkosTypes
 
   // Our workspace implementation makes this a useful type
   template <typename Scalar, int N>
-  using view_1d_ptr_array = Kokkos::Array<Unmanaged<view_1d<Scalar> >*, N>;
+  using view_1d_ptr_array = Kokkos::Array<ko::Unmanaged<view_1d<Scalar> >*, N>;
 
   template <typename Scalar, int N>
-  using view_1d_ptr_carray = Kokkos::Array<const Unmanaged<view_1d<Scalar> >*, N>;
+  using view_1d_ptr_carray = Kokkos::Array<const ko::Unmanaged<view_1d<Scalar> >*, N>;
 };
 
 // Memory traits

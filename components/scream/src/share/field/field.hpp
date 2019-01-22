@@ -16,18 +16,17 @@ namespace scream
 
 // A field should be composed of metadata info (the header) and a pointer to the view
 
-template<typename ScalarType, typename MemSpace, typename MemManagement>
+template<typename ScalarType, typename D=DefaultDevice>
 class Field {
 private:
 public:
 
-  using view_type            = ViewType<ScalarType*,MemSpace,MemManagement>;
-  using memory_space         = MemSpace;
-  using memory_management    = MemManagement;
+  using device_type          = D;
+  using view_type            = typename KokkosTypes<device_type>::template view<ScalarType*>;
   using value_type           = typename view_type::traits::value_type;
   using const_value_type     = typename view_type::traits::const_value_type;
   using non_const_value_type = typename view_type::traits::non_const_value_type;
-  using const_field_type     = Field<const_value_type,MemSpace,MemManagement>;
+  using const_field_type     = Field<const_value_type, device_type>;
   using header_type          = FieldHeader;
   using identifier_type      = header_type::identifier_type;
 
@@ -41,11 +40,11 @@ public:
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
-  Field (const Field<SrcDT,MemSpace,MemManagement>& src);
+  Field (const Field<SrcDT,device_type>& src);
 
   // Assignment: allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
-  Field& operator= (const Field<SrcDT,MemSpace,MemManagement>& src);
+  Field& operator= (const Field<SrcDT,device_type>& src);
 
   // ---- Getters ---- //
   const header_type& get_header () const { return *m_header; }
@@ -55,7 +54,7 @@ public:
   const view_type&   get_view   () const { return  m_view;   }
 
   template<typename DT>
-  ko::Unmanaged<ViewType<DT,MemSpace,MemManagement>>
+  ko::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
   get_reshaped_view () const;
 
   bool is_allocated () const { return m_allocated; }
@@ -79,8 +78,8 @@ protected:
 
 // ================================= IMPLEMENTATION ================================== //
 
-template<typename ScalarType, typename MemSpace, typename MemManagement>
-Field<ScalarType,MemSpace,MemManagement>::
+template<typename ScalarType, typename D>
+Field<ScalarType,D>::
 Field (const identifier_type& id)
  : m_header    (new header_type(id))
  , m_allocated (false)
@@ -89,15 +88,15 @@ Field (const identifier_type& id)
   m_header->get_alloc_properties().request_value_type_allocation<value_type>();
 }
 
-template<typename ScalarType, typename MemSpace, typename MemManagement>
+template<typename ScalarType, typename D>
 template<typename SrcScalarType>
-Field<ScalarType,MemSpace,MemManagement>::
-Field (const Field<SrcScalarType,MemSpace,MemManagement>& src)
+Field<ScalarType,D>::
+Field (const Field<SrcScalarType,D>& src)
  : m_header    (src.get_header_ptr())
  , m_view      (src.get_view())
  , m_allocated (src.is_allocated())
 {
-  using src_field_type = Field<SrcScalarType,MemSpace,MemManagement>;
+  using src_field_type = Field<SrcScalarType,D>;
 
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
@@ -110,11 +109,11 @@ Field (const Field<SrcScalarType,MemSpace,MemManagement>& src)
                 "Error! Cannot create a nonconst field from a const field.\n");
 }
 
-template<typename ScalarType, typename MemSpace, typename MemManagement>
+template<typename ScalarType, typename D>
 template<typename SrcScalarType>
-Field<ScalarType,MemSpace,MemManagement>&
-Field<ScalarType,MemSpace,MemManagement>::
-operator= (const Field<SrcScalarType,MemSpace,MemManagement>& src) {
+Field<ScalarType,D>&
+Field<ScalarType,D>::
+operator= (const Field<SrcScalarType,D>& src) {
 
   using src_field_type = decltype(src);
 
@@ -136,10 +135,10 @@ operator= (const Field<SrcScalarType,MemSpace,MemManagement>& src) {
   return *this;
 }
 
-template<typename ScalarType, typename MemSpace, typename MemManagement>
+template<typename ScalarType, typename D>
 template<typename DT>
-ko::Unmanaged<ViewType<DT,MemSpace,MemManagement>>
-Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
+ko::Unmanaged<typename KokkosTypes<D>::template view<DT> >
+Field<ScalarType,D>::get_reshaped_view () const {
   // The dst value types
   using DstValueType = typename util::ValueType<DT>::type;
 
@@ -158,7 +157,7 @@ Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
-  using DstView = ko::Unmanaged<ViewType<DT,MemSpace,MemManagement>>;
+  using DstView = ko::Unmanaged<typename KokkosTypes<D>::template view<DT> >;
   typename DstView::traits::array_layout layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
@@ -181,8 +180,8 @@ Field<ScalarType,MemSpace,MemManagement>::get_reshaped_view () const {
   return DstView (reinterpret_cast<DstValueType*>(m_view.data()),layout);
 }
 
-template<typename ScalarType, typename MemSpace, typename MemManagement>
-void Field<ScalarType,MemSpace,MemManagement>::allocate_view ()
+template<typename ScalarType, typename D>
+void Field<ScalarType,D>::allocate_view ()
 {
   // Not sure if simply returning would be safe enough. Re-allocating
   // would definitely be error prone (someone may have already gotten

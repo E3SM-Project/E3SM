@@ -57,7 +57,7 @@ struct Baseline {
 
   Int generate_baseline (const std::string& filename) {
     auto fid = FILEPtr(fopen(filename.c_str(), "w"));
-    scream_throw_if( ! fid, "generate_baseline can't write " << filename);
+    scream_require_msg( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     bool first = true;
     for (auto ps : params_) {
@@ -79,7 +79,7 @@ struct Baseline {
 
   Int run_and_cmp (const std::string& filename, const double& tol) {
     auto fid = FILEPtr(fopen(filename.c_str(), "r"));
-    scream_throw_if( ! fid, "generate_baseline can't read " << filename);
+    scream_require_msg( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     for (auto ps : params_) {
       // Read the reference impl's data from the baseline file.
@@ -124,12 +124,12 @@ private:
       const auto& f = fdi.getfield(i);
       int dim, ds[3];
       util::read(&dim, 1, fid);
-      scream_throw_if(dim != f.dim,
+      scream_require_msg(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
       util::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
-        scream_throw_if(ds[i] != f.extent[i],
+        scream_require_msg(ds[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
                         << ds[i]);
@@ -139,7 +139,7 @@ private:
 };
 
 void expect_another_arg (int i, int argc) {
-  scream_throw_if(i == argc-1, "Expected another cmd-line arg.");
+  scream_require_msg(i != argc-1, "Expected another cmd-line arg.");
 }
 
 } // namespace anon
