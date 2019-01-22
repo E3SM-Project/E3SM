@@ -125,13 +125,6 @@ int test_p3_init () {
   return 0;
 }
 
-int test_p3_main () {
-  FortranData d(11, 72);
-  d.dt = 0;
-  p3_main(d);
-  return 0;
-}
-
 int test_p3_ic () {
   const auto d = ic::Factory::create(ic::Factory::mixed);
   p3_init();
