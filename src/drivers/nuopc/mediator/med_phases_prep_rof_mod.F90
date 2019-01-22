@@ -31,8 +31,8 @@ module med_phases_prep_rof_mod
   type(ESMF_FieldBundle)      :: FBlndIrrig         ! needed for lnd2rof irrigation
   type(ESMF_FieldBundle)      :: FBrofIrrig         ! needed for lnd2rof irrigation
 
-  character(len=*), parameter :: irrig_flux_field       = 'Flrl_irrig'
   character(len=*), parameter :: volr_field             = 'Flrr_volrmch'
+  character(len=*), parameter :: irrig_flux_field       = 'Flrl_irrig'
   character(len=*), parameter :: irrig_normalized_field = 'Flrl_irrig_normalized'
   character(len=*), parameter :: irrig_volr0_field      = 'Flrl_irrig_volr0'
 
@@ -69,7 +69,7 @@ contains
     type(InternalState) :: is_local
     integer             :: i,j,n,ncnt
     integer             :: dbrc
-    character(len=*), parameter :: subname='(med_phases_prep_rof_mod: med_phases_prep_rof_accum_fast )'
+    character(len=*), parameter :: subname='(med_phases_prep_rof_mod: med_phases_prep_rof_accum_fast)'
     !---------------------------------------
 
     call t_startf('MED:'//subname)
@@ -100,8 +100,6 @@ contains
     if (ncnt == 0) then
        call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
             ESMF_LOGMSG_INFO, rc=dbrc)
-       RETURN
-
     else
 
        !---------------------------------------
@@ -113,7 +111,7 @@ contains
        end if
 
        !---------------------------------------
-       !--- Get the current time from the clock
+       ! Get the current time from the clock
        !---------------------------------------
        if (dbug_flag > 5) then
           call ESMF_GridCompGet(gcomp, clock=clock)
@@ -126,7 +124,7 @@ contains
        end if
 
        !---------------------------------------
-       !--- accumulate lnd input on lnd grid to send to rof
+       ! Accumulate lnd input on lnd grid to send to rof
        !---------------------------------------
        call shr_nuopc_methods_FB_accum(FBImpAccum_lnd, is_local%wrap%FBImp(complnd,complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -137,7 +135,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
-       !--- clean up
+       ! Clean up
        !---------------------------------------
        if (dbug_flag > 5) then
           call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -183,7 +181,7 @@ contains
     logical                     :: connected
     real(r8), pointer           :: dataptr(:)
     logical , save              :: first_call = .true.
-    character(len=*),parameter  :: subname='(med_phases_prep_rof_mod: med_phases_prep_rof_avg )'
+    character(len=*),parameter  :: subname='(med_phases_prep_rof_mod: med_phases_prep_rof_avg)'
     !---------------------------------------
 
     call t_startf('MED:'//subname)
@@ -312,7 +310,6 @@ contains
        first_call = .false.
     endif
 
-    write(6,*)'DEBUG: i am here with first_call = ',first_call
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf('MED:'//subname)
 
@@ -393,6 +390,8 @@ contains
           end do
        end if
     end if
+
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_rof_init_accum
 
@@ -603,6 +602,8 @@ contains
     do r = 1, size(irrig_flux_r)
        irrig_flux_r(r) = (irrig_normalized_r(r) * volr_r(r)) + irrig_volr0_r(r)
     end do
+
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_rof_irrig
 
