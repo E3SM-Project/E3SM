@@ -24,7 +24,7 @@ using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
 template <typename S>
 using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
-static int unittest_workspace()
+static void unittest_workspace()
 {
   using namespace scream;
 

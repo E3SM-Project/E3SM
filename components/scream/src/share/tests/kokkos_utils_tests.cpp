@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/util/scream_kokkos_utils.hpp"
+#include "share/util/scream_arch.hpp"
 
 namespace {
 
@@ -31,16 +32,20 @@ TEST_CASE("data_type", "[kokkos_utils]") {
 
 TEST_CASE("team_policy", "[kokkos_utils]") {
   using namespace scream::util;
+  using namespace scream;
+
+  using Device = DefaultDevice;
+  using ExeSpace = typename KokkosTypes<Device>::ExeSpace;
 
   for (int nk: {128, 122, 255, 42}) {
     const int ni = 1000;
     const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
-    if (p.league_size() != ni) ++nerr;
+    REQUIRE(p.league_size() == ni);
     if (OnGpu<ExeSpace>::value) {
       if (nk == 42) {
-        if (p.team_size() != 64) ++nerr;
+        REQUIRE(p.team_size() == 64);
       } else {
-        if (p.team_size() != 128) ++nerr;
+        REQUIRE(p.team_size() == 128);
       }
     }
     else {
@@ -53,6 +58,11 @@ TEST_CASE("team_policy", "[kokkos_utils]") {
 
 TEST_CASE("team_utils", "[kokkos_utils]") {
   using namespace scream::util;
+  using namespace scream;
+
+  using Device = DefaultDevice;
+  using ExeSpace = typename KokkosTypes<Device>::ExeSpace;
+  using MemberType = typename KokkosTypes<Device>::MemberType;
 
 #ifdef KOKKOS_ENABLE_OPENMP
   const int n = omp_get_max_threads();
@@ -61,9 +71,9 @@ TEST_CASE("team_utils", "[kokkos_utils]") {
     const auto p = ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(ni, s);
     TeamUtils<ExeSpace> tu(p);
     const int c = tu.get_num_concurrent_teams();
-    view_2d<int> ws_idxs("ws_idxs", ni, s);
-    const int real_ts = omp_get_max_threads() / c;
+    typename KokkosTypes<Device>::template view_2d<int> ws_idxs("ws_idxs", ni, s);
 #if 0
+    const int real_ts = omp_get_max_threads() / c;
     std::cout << "thrds " << n << " teamsizeV " << s << " teamsizeR " << real_ts << " ni " << ni << " conc " << c <<  std::endl;
 #endif
     int kernel_errors = 0;

@@ -4,6 +4,7 @@
 #include "share/scream_config.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_utils.hpp"
+#include "share/util/scream_kokkos_utils.hpp"
 
 namespace {
 
@@ -105,7 +106,7 @@ TEST_CASE("scalarize", "scream::pack") {
     typedef decltype(a2) VT;
     static_assert(VT::traits::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 160);
-  }  
+  }
 
   {
     const Array2 a1("a1", 10, 4);
@@ -183,13 +184,18 @@ TEST_CASE("repack", "scream::pack") {
 }
 
 TEST_CASE("kokkos_packs", "scream::pack") {
-static Int unittest_pack () {
+  using namespace scream;
+  using namespace scream::pack;
+
+  using TestBigPack = Pack<Real, 16>;
+
+  using ExeSpace = typename KokkosTypes<DefaultDevice>::ExeSpace;
+  using MemberType = typename KokkosTypes<DefaultDevice>::MemberType;
+
   int nerr = 0;
   const int num_bigs = 17;
 
-  using TestBigPack = scream::pack::Pack<Real, 16>;
-
-  view_1d<TestBigPack> test_k_array("test_k_array", num_bigs);
+  typename KokkosTypes<DefaultDevice>::template view_1d<TestBigPack> test_k_array("test_k_array", num_bigs);
   Kokkos::parallel_reduce("unittest_pack",
                           util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1),
                           KOKKOS_LAMBDA(const MemberType& team, int& total_errs) {
@@ -200,7 +206,7 @@ static Int unittest_pack () {
       test_k_array(i) = i;
     });
 
-    auto small = scream::pack::repack<4>(test_k_array);
+    auto small = repack<4>(test_k_array);
     if (small.extent(0) != 4 * num_bigs) ++nerrs_local;
 
     team.team_barrier();
@@ -210,7 +216,7 @@ static Int unittest_pack () {
       }
     });
 
-    auto big = scream::pack::repack<16>(small);
+    auto big = repack<16>(small);
     if (big.extent(0) != num_bigs) ++nerrs_local;
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_bigs*4), [&] (int i) {
@@ -238,6 +244,5 @@ static Int unittest_pack () {
   // thread safe, so we have to put them outside of kokkos kernels.
   REQUIRE(nerr == 0);
 }
-
 
 } // namespace

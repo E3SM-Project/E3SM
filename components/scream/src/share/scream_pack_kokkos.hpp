@@ -90,27 +90,27 @@ repack (const Kokkos::View<Pack<T, old_pack_size>*, Parms...>& vp) {
   static_assert(new_pack_size > 0 &&
                 new_pack_size % old_pack_size == 0,
                 "Old pack size must divide new pack size.");
-  micro_kassert(vp.extent_int(0) % (new_pack_size / old_pack_size) == 0);
+  scream_kassert(vp.extent_int(0) % (new_pack_size / old_pack_size) == 0);
   return ko::Unmanaged<Kokkos::View<Pack<T, new_pack_size>*, Parms...> >(
     reinterpret_cast<Pack<T, new_pack_size>*>(vp.data()),
     vp.extent_int(0) / (new_pack_size / old_pack_size));
 }
 
 template <typename T>
-using BigPack = Pack<T, SCREAM_PACKN>;
+using BigPack = Pack<T, SCREAM_PACK_SIZE>;
 template <typename T>
-using SmallPack = Pack<T, SCREAM_PACKN / SCREAM_SMALL_PACK_FACTOR>;
+using SmallPack = Pack<T, SCREAM_PACK_SIZE / SCREAM_SMALL_PACK_FACTOR>;
 
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<SmallPack<T>**, Parms...> >
 smallize (const Kokkos::View<BigPack<T>**, Parms...>& vp) {
-  return repack<SCREAM_PACKN / SCREAM_SMALL_PACK_FACTOR>(vp);
+  return repack<SCREAM_PACK_SIZE / SCREAM_SMALL_PACK_FACTOR>(vp);
 }
 
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<SmallPack<T>*, Parms...> >
 smallize (const Kokkos::View<BigPack<T>*, Parms...>& vp) {
-  return repack<SCREAM_PACKN / SCREAM_SMALL_PACK_FACTOR>(vp);
+  return repack<SCREAM_PACK_SIZE / SCREAM_SMALL_PACK_FACTOR>(vp);
 }
 
 } // namespace pack
