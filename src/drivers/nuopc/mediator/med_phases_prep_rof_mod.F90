@@ -2,6 +2,12 @@ module med_phases_prep_rof_mod
 
   !-----------------------------------------------------------------------------
   ! Create rof export fields
+  ! - accumulate import lnd fields on the land grid that are sent to rof 
+  !   this will be done in med_phases_prep_rof_accum_fast
+  ! - time avergage accumulated import lnd fields when necessary
+  !   map the time averaged accumulated lnd fields to the rof grid
+  !   merge the mapped lnd fields to create FBExp(comprof)
+  !   this will be done in med_phases_prep_rof_avg
   !-----------------------------------------------------------------------------
 
   use ESMF                  , only : ESMF_FieldBundle, ESMF_MAXSTR
@@ -18,12 +24,10 @@ module med_phases_prep_rof_mod
   public  :: med_phases_prep_rof_accum_fast
   public  :: med_phases_prep_rof_avg
 
-  private :: med_phases_prep_rof_init_accum
-  private :: med_phases_prep_rof_irrig
+  private :: med_phases_prep_rof_init_accum  ! initializes
+  private :: med_phases_prep_rof_irrig       
 
-  type(ESMF_FieldBundle)              :: FBImpAccum_lnd     ! Accumulator for various import components
-  type(ESMF_FieldBundle)              :: FBImpAccum_rof     ! Accumulator for various import components
-  integer                             :: FBImpAccumCnt      ! Accumulator counter
+  type(ESMF_FieldBundle)              :: FBImpAccum_lnd     ! Accumulator for input land component
   character(len=ESMF_MAXSTR), pointer :: fldnames_accum(:)  ! Names of accumulated fields from the land
 
   type(ESMF_FieldBundle)      :: FBlndVolr          ! needed for lnd2rof irrigation
@@ -100,8 +104,6 @@ contains
     if (ncnt == 0) then
        call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
             ESMF_LOGMSG_INFO, rc=dbrc)
-       RETURN
-
     else
 
        !---------------------------------------
@@ -131,7 +133,7 @@ contains
        call shr_nuopc_methods_FB_accum(FBImpAccum_lnd, is_local%wrap%FBImp(complnd,complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       FBImpAccumCnt = FBImpAccumCnt + 1
+       is_local%wrap%FBExpAccumCnt(comprof) = is_local%wrap%FBExpAccumCnt(comprof) + 1
 
        call shr_nuopc_methods_FB_diagnose(FBImpAccum_lnd, string=trim(subname)//' FBImpAccum_lnd ', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -241,14 +243,14 @@ contains
        !--- average import from land accumuled FB
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_average(FBImpAccum_lnd, FBImpAccumCnt, rc=rc)
+       call shr_nuopc_methods_FB_average(FBImpAccum_lnd, is_local%wrap%FBExpAccumCnt(comprof), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call shr_nuopc_methods_FB_diagnose(FBImpAccum_lnd, string=trim(subname)//' FBImpAccum_lnd after avg ', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
-       !--- map to create FBImpAccum_rof
+       !--- map to create FBExpAccum(comprof)
        !---------------------------------------
 
        ! The following assumes that only land import fields are needed to create the
@@ -256,9 +258,9 @@ contains
 
        if (is_local%wrap%med_coupling_active(complnd,comprof)) then
           call med_map_FB_Regrid_Norm( fldnames_accum,     &
-               FBImpAccum_lnd, FBImpAccum_rof,             &
+               FBImpAccum_lnd, is_local%wrap%FBExpAccum(comprof),        &
                is_local%wrap%FBFrac(complnd), 'lfrin',     &
-               is_local%wrap%RH(complnd,comprof,mapconsf),        &
+               is_local%wrap%RH(complnd,comprof,mapconsf), &
                string=trim(compname(complnd))//'2'//trim(compname(comprof)), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -268,7 +270,7 @@ contains
              if (chkerr(rc,__LINE__,u_FILE_u)) return
           else
              ! This will ensure that no irrig is sent from the land
-             call shr_nuopc_methods_FB_getFldPtr(FBImpAccum_rof, trim(irrig_flux_field), dataptr, rc=rc)
+             call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBExpAccum(comprof), trim(irrig_flux_field), dataptr, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              dataptr(:) = 0._r8
           end if
@@ -281,7 +283,7 @@ contains
        call med_merge_auto(trim(compname(comprof)), &
             is_local%wrap%FBExp(comprof), &
             is_local%wrap%FBFrac(comprof), &
-            (/FBImpAccum_rof/), &
+            is_local%wrap%FBExpAccum(:), &
             fldListTo(comprof), &
             document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -293,12 +295,9 @@ contains
        !--- zero accumulator
        !---------------------------------------
 
-       FBImpAccumCnt = 0
+       is_local%wrap%FBExpAccumCnt(comprof) = 0
 
        call shr_nuopc_methods_FB_reset(FBImpAccum_lnd, value=czero, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       call shr_nuopc_methods_FB_reset(FBImpAccum_rof, value=czero, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
@@ -366,27 +365,27 @@ contains
          ESMF_StateIsCreated(is_local%wrap%NStateImp(complnd),rc=rc) .and. &
          ESMF_StateIsCreated(is_local%wrap%NStateExp(comprof),rc=rc)) then
 
-       FBImpAccumCnt = 0
+       is_local%wrap%FBExpAccumCnt(comprof) = 0
 
        call shr_nuopc_methods_FB_init(FBImpAccum_lnd, flds_scalar_name, &
             STgeom=is_local%wrap%NStateImp(complnd), fieldNameList=fldnames_accum, &
             name='FBImpAccum_lnd', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_init(FBImpAccum_rof, flds_scalar_name, &
+       call shr_nuopc_methods_FB_init(is_local%wrap%FBExpAccum(comprof), flds_scalar_name, &
             STgeom=is_local%wrap%NStateImp(comprof), fieldNameList=fldnames_accum, &
-            name='FBImpAccum_rof', rc=rc)
+            name='FBExpAccum(comprof)', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call shr_nuopc_methods_FB_reset(FBImpAccum_lnd, value=czero, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_reset(FBImpAccum_rof, value=czero, rc=rc)
+       call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(comprof), value=czero, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (mastertask) then
           write(logunit,100) trim(subname)// &
-               ' initialized accumulated FBs FBImpAccum_lnd and FBImpAccum_rof with following fields:'
+               ' initialized accumulated field bundle FBImpAccum_lnd with following fields:'
 100       format(/,a)
           do n = 1,size(fldnames_accum)
              write(logunit,*)'   ',n,trim(fldnames_accum(n))
@@ -596,8 +595,8 @@ contains
     call shr_nuopc_methods_FB_getFldPtr(FBrofIrrig, trim(irrig_volr0_field), irrig_volr0_r, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Convert to a total irrigation flux on the ROF grid, and put this in the pre-merge FBImpAccum_rof
-    call shr_nuopc_methods_FB_getFldPtr(FBImpAccum_rof, trim(irrig_flux_field), irrig_flux_r, rc=rc)
+    ! Convert to a total irrigation flux on the ROF grid, and put this in the pre-merge FBExpAccum(comprof)
+    call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBExpAccum(comprof), trim(irrig_flux_field), irrig_flux_r, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     do r = 1, size(irrig_flux_r)

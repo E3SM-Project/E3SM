@@ -68,7 +68,7 @@ module med_internalstate_mod
 
     ! Accumulators
     type(ESMF_FieldBundle):: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
-    integer               :: FBExpAccumcnt(ncomps)              ! Accumulator counter for each FBExpAccum
+    integer               :: FBExpAccumCnt(ncomps)              ! Accumulator counter for each FBExpAccum
     logical               :: FBExpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
 
     ! Connectors
