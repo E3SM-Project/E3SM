@@ -31,6 +31,7 @@ module dynConsBiogeophysMod
   use subgridAveMod     , only : p2c, c2g
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use clm_varcon      , only : spval
+  use GridcellDataType, only : grc_es
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -90,8 +91,8 @@ contains
          num_lakec, filter_lakec,                                         &
          urbanparams_vars, soilstate_vars, soilhydrology_vars,            &
          temperature_vars, waterstate_vars,                               &
-         heat_grc = temperature_vars%heat1_grc(bounds%begg:bounds%endg),  &
-         liquid_water_temp_grc = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg))
+         heat_grc = grc_es%heat1(bounds%begg:bounds%endg),  &
+         liquid_water_temp_grc = grc_es%liquid_water_temp1(bounds%begg:bounds%endg))
 
   end subroutine dyn_hwcontent_init
 
@@ -147,8 +148,8 @@ contains
          num_lakec, filter_lakec, &
          urbanparams_vars, soilstate_vars, soilhydrology_vars, &
          temperature_vars, waterstate_vars, &
-         heat_grc = temperature_vars%heat2_grc(bounds%begg:bounds%endg), &
-         liquid_water_temp_grc = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg))
+         heat_grc = grc_es%heat2(bounds%begg:bounds%endg), &
+         liquid_water_temp_grc = grc_es%liquid_water_temp2(bounds%begg:bounds%endg))
 
     if (get_for_testing_zero_dynbal_fluxes()) then
        do g = begg, endg
@@ -160,7 +161,7 @@ contains
        do g = begg, endg
           delta_liq(g)  = waterstate_vars%liq2_grc(g) - waterstate_vars%liq1_grc(g)
           delta_ice(g)  = waterstate_vars%ice2_grc(g) - waterstate_vars%ice1_grc(g)
-          delta_heat(g) = temperature_vars%heat2_grc(g) - temperature_vars%heat1_grc(g)
+          delta_heat(g) = grc_es%heat2(g) - grc_es%heat1(g)
           waterflux_vars%qflx_liq_dynbal_grc (g) = delta_liq(g)/dtime
           waterflux_vars%qflx_ice_dynbal_grc (g) = delta_ice(g)/dtime
           energyflux_vars%eflx_dynbal_grc    (g) = delta_heat(g)/dtime
