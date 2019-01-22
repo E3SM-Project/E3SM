@@ -1457,12 +1457,13 @@ module EcosystemDynBeTRMod
     use spmdMod              , only: masterproc
     use PhosphorusDynamicsMod         , only: PhosphorusWeathering,PhosphorusAdsportion
     use PhosphorusDynamicsMod         , only: PhosphorusDesoprtion,PhosphorusOcclusion
+    use NitrogenDynamicsMod       , only: NitrogenLeaching
     use NitrogenStateUpdate3BeTRMod   , only: NitrogenStateUpdate3
     use PhosphorusStateUpdate3BeTRMod     , only: PhosphorusStateUpdate3
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
-    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance
+    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance,PhosphorusLeaching
 
     !
     ! !ARGUMENTS:
