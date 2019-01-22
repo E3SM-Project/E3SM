@@ -2279,6 +2279,7 @@
         <command name="load">PrgEnv-cray</command>
         <command name="switch">cce cce/8.1.9</command>
         <command name="load">cray-libsci/12.1.00</command>
+=======
       </modules>
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu</command>
