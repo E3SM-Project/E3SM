@@ -88,7 +88,7 @@ void FieldRepository<ScalarType,MemSpace>::register_field (const identifier_type
   error::runtime_check(m_state==RepoState::OPEN,"Error! Registration of new fields no longer allowed.\n");
 
   // Try to create the field. Allow case where it is already existing.
-  auto it_bool = m_fields.emplace(id,id);
+  auto it_bool = m_fields.emplace(id,field_type(id));
 
   // Make sure the field can accommodate the requested value type
   it_bool.first->second.get_header().get_alloc_properties().template request_value_type_allocation<RequestedValueType>();
