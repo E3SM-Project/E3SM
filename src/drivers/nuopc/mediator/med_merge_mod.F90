@@ -123,9 +123,15 @@ contains
                 ! Determine the merge information for the import field
                 call shr_nuopc_fldList_GetFldInfo(fldListTo, nf, compsrc, merge_fields, merge_type, merge_fracname)
 
+                ! If merge_field is a colon delimited string then cycle through every field - otherwise by default nm
+                ! will only equal 1
                 do nm = 1,shr_string_listGetNum(merge_fields)
+
                    call shr_string_listGetName(merge_fields, nm, merge_field)
+
                    if (merge_type /= 'unset' .and. merge_field /= 'unset') then
+
+                      write(6,*)'DEBUG: nf, merge_type, merge_fields=', nf, trim(merge_type), trim(merge_fields)
 
                       ! Document merging if appropriate
                       if (document) then
@@ -221,10 +227,10 @@ contains
                    end if ! end of check of merge_type and merge_field not unset
                 end do ! end of nmerges loop
              end do  ! end of compsrc loop
-             if (document) then
-                if (mastertask) write(logunit,'(a)')trim(mrgstr)
-             end if
           end if ! end of check if stdname and fldname are the same
+          if (document) then
+             if (mastertask) write(logunit,'(a)')trim(mrgstr)
+          end if
        end do ! end of loop over fldsListTo
     end do ! end of loop over fields in FBOut
 

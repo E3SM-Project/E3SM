@@ -1534,7 +1534,7 @@ contains
     ! to ocn: Stokes drift v component from wave
     ! to ocn: Stokes drift depth from wave
     !-----------------------------
-    allocate(flds(5))
+    allocate(flds(4))
     flds = (/'Sw_lamult', 'Sw_ustokes', 'Sw_vstokes', 'Sw_hstokes'/)
 
     do n = 1,size(flds)

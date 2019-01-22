@@ -276,9 +276,17 @@ contains
           end if
        endif
 
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(comprof), &
+            string=trim(subname)//' FBExpAccum(comprof) after avg ', rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
        !---------------------------------------
        !--- auto merges to create FBExp(comprof)
        !---------------------------------------
+
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(comprof), &
+            string=trim(subname)//' FBFrac(comprof) before merge ', rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call med_merge_auto(trim(compname(comprof)), &
             is_local%wrap%FBExp(comprof), &
@@ -288,7 +296,8 @@ contains
             document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), string=trim(subname)//' FBexp(comprof) ', rc=rc)
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
+            string=trim(subname)//' FBexp(comprof) ', rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
