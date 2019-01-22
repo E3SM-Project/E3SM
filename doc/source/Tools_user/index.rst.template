@@ -1,0 +1,15 @@
+.. _Tools_user:
+
+##########
+User Tools
+##########
+
+CIME includes a number of user scripts. Some of these scripts are copied into
+the CASEROOT as part of **create_newcase**, **create_test**, **create_clone**,
+and **case.setup**.
+
+.. toctree::
+   :maxdepth: 1
+
+
+

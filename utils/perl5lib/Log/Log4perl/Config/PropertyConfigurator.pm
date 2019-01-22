@@ -36,7 +36,7 @@ sub parse {
         local $_ = shift @$text;
         s/^\s*$COMMENT_REGEX.*//;
         next unless /\S/;
-    
+
         my @parts = ();
 
         while (/(.+?)\\\s*$/) {
@@ -76,14 +76,14 @@ sub parse {
             # log4j.appender.jabbender.to = him@a.jabber.server
             # log4j.appender.jabbender.to = her@a.jabber.server
             #into an arrayref like this:
-            #to => { value => 
+            #to => { value =>
             #       ["him\@a.jabber.server", "her\@a.jabber.server"] },
-            # 
+            #
             # This only is allowed for properties of appenders
             # not listed in %NOT_A_MULT_VALUE (see top of file).
-            if (exists $ptr->{value} && 
+            if (exists $ptr->{value} &&
                 $how_deep > 2 &&
-                defined $parts[0] && lc($parts[0]) eq "appender" && 
+                defined $parts[0] && lc($parts[0]) eq "appender" &&
                 defined $parts[2] && ! exists $NOT_A_MULT_VALUE{lc($parts[2])}
                ) {
                 if (ref ($ptr->{value}) ne 'ARRAY') {
@@ -155,7 +155,7 @@ Log::Log4perl::Config::PropertyConfigurator - reads properties file
     $conf->parse(); # will die() on error
 
     my $value = $conf->value("log4perl.appender.LOGFILE.filename");
-   
+
     if(defined $value) {
         printf("The appender's file name is $value\n");
     } else {
@@ -188,11 +188,11 @@ Log::Log4perl::Config::LDAPConfigurator (tbd!)
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -202,7 +202,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -213,8 +213,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

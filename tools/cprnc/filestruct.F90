@@ -4,16 +4,16 @@ module filestruct
   type dim_t
      integer :: dimsize
      integer :: start, kount  ! used for user requested dimension subsetting
-     character(len=nf90_MAX_NAME) ::name
+     character(len=nf90_MAX_NAME) ::name = ''
   end type dim_t
-     
+
   type var_t
      integer :: matchid
      integer :: ndims
      integer :: natts
      integer, pointer :: dimids(:)
      integer :: xtype
-     character(len=nf90_MAX_NAME) ::name
+     character(len=nf90_MAX_NAME) ::name = ''
   end type var_t
 
   type file_t
@@ -89,7 +89,7 @@ contains
           end do
        end do
     end if
-    
+
     do i=1,nvars
        file%var(i)%matchid=-1
        ierr = nf90_inquire_variable(file%fh, i, file%var(i)%name, file%var(i)%xtype, file%var(i)%ndims, dimids, &
@@ -101,7 +101,7 @@ contains
 
   end subroutine init_file_struct
 
-  
+
   subroutine compare_metadata(file1, file2, vid)
     type(file_t) :: file1, file2
     integer, optional, intent(in) :: vid
@@ -133,13 +133,14 @@ contains
 
     do i=1,natts1
        found = .true.
+       attname = ''
        ierr = nf90_inq_attname(file1%fh, id1, i, attname)
        ierr = nf90_inquire_attribute(file1%fh, id1, trim(attname), atttype, attlen)
        select case(atttype)
        case(nf90_char)
           attchar1=' '
           attchar2=' '
-          
+
           ierr = nf90_get_att(file1%fh,id1, trim(attname), attchar1)
           ierr = nf90_get_att(file2%fh,id2, trim(attname), attchar2)
           if(ierr==NF90_NOERR) then
@@ -198,7 +199,7 @@ contains
              print *, 'Attribute ',trim(attname),' from file1: ',attdouble1,' not found on file2'
           end if
           deallocate(attdouble1, attdouble2)
-       case default             
+       case default
           print *,' Did not recognize attribute type ',atttype, trim(attname), attlen
        end select
     end do
@@ -263,10 +264,10 @@ contains
     integer, intent(inout) :: num_not_found_on_file2
 
     type(var_t), pointer :: varfile1(:),varfile2(:)
-    
+
     integer :: vs1, vs2, i, j
 
-    
+
 
     varfile1 => file1%var
     varfile2 => file2%var
@@ -300,7 +301,7 @@ contains
   function vdimsize(dims, dimids)
     type(dim_t), intent(in) :: dims(:)
     integer, intent(in) :: dimids(:)
-    
+
     integer :: vdimsize
     integer :: i
 
@@ -343,7 +344,7 @@ contains
     n1 = size(f1%var(i1)%dimids)
     start = 1
     do i=1,n1
-       count(i) =  f1%dim(f1%var(i1)%dimids(i))%dimsize
+       count(i) = f1%dim(f1%var(i1)%dimids(i))%dimsize
        if(f1%var(i1)%dimids(i) == f1%unlimdimid) then
           count(i)=1
           start(i)=t1
@@ -477,12 +478,12 @@ contains
 
     deallocate(v1,v2)
   end subroutine compare_var_double
-  
 
 
-  
 
-  
+
+
+
 
 
 

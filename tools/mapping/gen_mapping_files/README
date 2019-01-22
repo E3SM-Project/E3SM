@@ -59,100 +59,69 @@ built prior to running gen_cesm_maps.sh, unless you use the --nogridcheck or
 USAGE: INTERACTIVE MODE
 =======================
 
-gen_cesm_maps.sh 
+gen_cesm_maps.sh
   --fileatm|-fatm  input atm_grid_filename
   --fileocn|-focn  input ocn_grid_filename
   --filelnd|-flnd  input lnd_grid_filename
   --filertm|-frtm  input rtm_grid_filename
+  --fileglc|-fglc  input glc_grid_filename
   --nameocn|-nocn  output ocn_name in mapping file
   --nameatm|-natm  output atm_name in mapping file
   --namelnd|-nlnd  output lnd_name in mapping file
   --namertm|-nrtm  output rtm_name in mapping file
+  --nameglc|-nglc  output glc_name in mapping file
   [ --typeocn|tocn ] [regional|global]
   [ --typeatm|tatm ] [regional|global]
   [ --nogridcheck ]
   [ --batch|-b ]
   [ --help|-h ]
   [ -v ]
- 
-where 
- --fileatm (or -fatm) 
+
+where
+ --fileatm (or -fatm)
    SCRIP grid format atmosphere filename (full pathname)
- --fileocn (or -focn) 
+ --fileocn (or -focn)
    SCRIP grid format ocean filename (full pathname)
- --filelnd (or -flnd) 
+ --filelnd (or -flnd)
    SCRIP grid format land filename (full pathname), must be global
- --filertm (or -frtm) 
+ --filertm (or -frtm)
    SCRIP grid format runoff filename (full pathname)
- --nameatm (or -natm) 
+ --fileglc (or -fglc)
+   SCRIP grid format glc filename (full pathname), assumed to be regional
+ --nameatm (or -natm)
    Shortname to use for atm in mapping filename
- --nameocn (or -nocn) 
+ --nameocn (or -nocn)
    Shortname to use for ocn in mapping filename
- --namelnd (or -nlnd) 
+ --namelnd (or -nlnd)
    Shortname to use for lnd in mapping filename
- --namertm (or -nrtm) 
+ --namertm (or -nrtm)
    Shortname to use for rtm in mapping filename
- --typeocn (or -tocn) 
+ --nameglc (or -nglc)
+   Shortname to use for glc in mapping filename
+ --typeocn (or -tocn)
    ocean grid type,  valid values are regional or global
    default is global
- --typeatm (or -tatm) 
+ --typeatm (or -tatm)
    atm grid type, valid values are regional or global
    default is global
    value must be global if -frtm and -nrtm are specified
- --nogridcheck 
+ --nogridcheck
    By default, script will run consistency check on new
    maps; this flag disables these checks
- --batch (or -b) 
-   Toggles batch mode usage. If you want to run in batch mode
-   you need to have a separate batch script for a supported machine
-   that calls this script interactively - you cannot submit this
-   script directly to the batch system
- -rc 
+ --serial
+   Run the ESMF tools in serial rather than parallel
+ -rc
    Pass the "--recompile" flag to the ESMF tool
    (Only necessary if nothing has been built in ../check_maps/)
- -d 
-   toggle debug-only 
- --help or -h  
+ --help or -h
    displays this help message
 
-Note: if rtm is specified and lnd is not, then this tool will
+Note: if rtm or glc are specified and lnd is not, then this tool will
       assume lnd and atm are on the same grid.
 
 You can also set the following env variables:
-  ESMFBIN_PATH - Path to ESMF binaries 
-                 (Leave unset on yellowstone and caldera and the tool
-                 will be loaded from modules)
+  ESMFBIN_PATH - Path to ESMF binaries
+                 (Known machines will load tools from modules)
   MPIEXEC ------ Name of mpirun executable
-                 (default is mpirun.lsf on yellowstone and caldera; if
-                 you run interactively on yellowstone, mpi is not used)
-  REGRID_PROC -- Number of MPI processors to use
-                 (default is 8)
-
-=================
-USAGE: BATCH MODE
-=================
-
-Currently, batch mode is only set up for yellowstone. This uses the file
-regridbatch.yellowstone.sh as a wrapper to gen_cesm_maps.sh.
-
-IMPORTANT NOTE: check_maps is NOT run when you run in batch mode. This must be
-run as a separate step after you have created the mapping files. See below for
-an example of how to do this.
-
-(1) Modify the #BSUB lines at the top of regridbatch.yellowstone.sh. You need to
-at least specify a project number; you may want to change some of the other
-settings, too.
-
-(2) Modify the variables in the section labeled "Set user-defined parameters
-here". See the documentation for gen_cesm_maps.sh above for more details on
-the parameters that can be set here.
-
-(3) Submit with:
-
-bsub < regridbatch.yellowstone.sh
-
-(4) Run the check_maps tool on the generated mapping files; e.g.:
-
-    files=*.nc
-    ../check_maps/check_map.sh $files
+                 (currently tools only run in serial due to module issues)
 

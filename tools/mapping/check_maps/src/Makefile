@@ -1,25 +1,32 @@
 #===============================================================================
 # $Id: Makefile 46158 2013-04-19 18:41:34Z mlevy@ucar.edu $
 # $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/check_maps/src/Makefile $
-# 
+#
 # This is the makefile for the RegridWeightGen application in ESMF
 # Altered for use with CESM's gen_atm_ocn_maps.sh tool
 #===============================================================================
 
 ################################################################################
 ### Finding and including esmf.mk                                         ######
-### NOTE: On Yellowstone, ESMF is only available with the intel compilers ######
+### NOTE: On Cheyenne, ESMF is only available with the intel compilers    ######
 ###       And require running the following:                              ######
-###           $ module load esmf                                          ######
-###           $ module load esmf-6.3.0r-ncdfio-uni-O                      ######
-###       The executable should run on the yellowstone login node         ######
+###           $ module load esmf_libs/7.0.0                               ######
+###           $ module load esmf-7.0.0-ncdfio-uni-O                       ######
+###       The executable should run on the cheyenne login node            ######
 ################################################################################
 
-ifneq ($(origin ESMFMKFILE), environment)
-$(error Environment variable ESMFMKFILE was not set.)
+# Don't require ESMF to be loaded to run "make clean":
+USE_ESMF=TRUE
+ifeq ($(MAKECMDGOALS),clean)
+  USE_ESMF=FALSE
 endif
 
-include $(ESMFMKFILE)
+ifeq ($(USE_ESMF),TRUE)
+  ifneq ($(origin ESMFMKFILE), environment)
+    $(error Environment variable ESMFMKFILE was not set.)
+  endif
+  include $(ESMFMKFILE)
+endif
 TARGET = ESMF_RegridWeightGenCheck
 
 # To compile with verbose output, run
@@ -35,8 +42,8 @@ ifneq ($(strip $(VERBOSE)),)
     # ESMF_F90COMPILECPPFLAGS += -WF,-DVERBOSE=1
     ESMF_F90COMPILECPPFLAGS += -DVERBOSE
   endif
-  $(shell rm -f $(TARGET).o) 
-endif  
+  $(shell rm -f $(TARGET).o)
+endif
 
 
 ################################################################################
@@ -44,7 +51,7 @@ endif
 
 ../ESMF_RegridWeightGenCheck: $(TARGET).o
 	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) \
-  $(ESMF_F90LINKRPATHS) -o $@ $(TARGET).o $(ESMF_F90ESMFLINKLIBS)        
+  $(ESMF_F90LINKRPATHS) -o $@ $(TARGET).o $(ESMF_F90ESMFLINKLIBS)
 
 .PHONY: verbose clean
 verbose:

@@ -1,8 +1,3 @@
-!===============================================================================
-! SVN $Id: main.F90 59443 2014-04-22 22:57:10Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/main.F90 $
-!===============================================================================
-
 PROGRAM main
 
    use shr_timer_mod
@@ -32,31 +27,36 @@ PROGRAM main
    character(10)     :: tstr            ! wall clock time
 
    !--- namelist vars ---
-   character(180) :: gridtype      ! type of run-off grid
-   character(180) :: file_roff     ! file name: rtm rdirc file
-   character(180) :: file_roff_out ! file name: rtm rdirc file
-   character(180) :: file_ocn      ! file name: ocn scrip grid file
-   character(180) :: file_nn       ! file name: orig matrix, corrected
-   character(180) :: file_new      ! file name: orig matrix, corrected, smoothed, sorted -- done
-   character(180) :: file_smooth   ! file name: smoothing matrix
-   character(180) :: title         ! netCDF title attribute
-   logical        :: step1         ! gen nn
-   logical        :: step2         ! gen smooth
-   logical        :: step3         ! mat mult
-   logical        :: lmake_rSCRIP  ! .true. => convert runoff grid to SCRIP
+   character(180) :: gridtype                        ! type of run-off grid
+   character(180) :: file_roff                       ! file name: rtm rdirc file
+   character(180) :: file_roff_out                   ! file name: rtm rdirc file
+   character(180) :: file_ocn                        ! file name: ocn scrip grid file (all ocean points masked as such)
+   character(180) :: file_ocn_coastal_mask           ! file name: ocn scrip grid file (only coastal points masked as ocean)
+   character(180) :: file_nn                         ! file name: orig matrix, corrected
+   character(180) :: file_new                        ! file name: orig matrix, corrected, smoothed, sorted -- done
+   character(180) :: file_smooth                     ! file name: smoothing matrix
+   character(180) :: title                           ! netCDF title attribute
+   logical        :: restrict_smooth_src_to_nn_dest  ! use step1 dest cells as
+                                                     ! step2 source cells
+   logical        :: step1                           ! gen nn
+   logical        :: step2                           ! gen smooth
+   logical        :: step3                           ! mat mult
+   logical        :: lmake_rSCRIP                    ! .true. => convert runoff grid to SCRIP
 
-   namelist / input_nml / &
-      gridtype      &
-   ,  file_roff     &
-   ,  file_roff_out &
-   ,  file_ocn      &
-   ,  file_nn       &
-   ,  file_new      &
-   ,  file_smooth   &
-   ,  title         &
-   ,  eFold         &
-   ,  rMax          &
-   ,  lmake_rSCRIP  &
+   namelist / input_nml /            &
+      gridtype                       &
+   ,  file_roff                      &
+   ,  file_roff_out                  &
+   ,  file_ocn                       &
+   ,  file_ocn_coastal_mask          &
+   ,  file_nn                        &
+   ,  file_new                       &
+   ,  file_smooth                    &
+   ,  title                          &
+   ,  eFold                          &
+   ,  rMax                           &
+   ,  lmake_rSCRIP                   &
+   ,  restrict_smooth_src_to_nn_dest &
    ,  step1, step2, step3
 
    !--- formats ---
@@ -71,7 +71,7 @@ PROGRAM main
 ! PURPOSE:
 !   Take a scrip conservative map matrix, runoff->ocean (unmasked ocean)
 !   and produce a runoff->ocean map suitable for use in CCSM
-! 
+!
 ! Step 1: Read raw grids and genearate nearest neighbor mapping file
 !         (or read nearest neighbor map)
 ! Step 2: Create the smoothing map (and sort it)
@@ -80,8 +80,6 @@ PROGRAM main
 !-------------------------------------------------------------------------------
 
    write(6,F10) "correct/smooth/sort runoff -> ocean map"
-   write(6,F10) "SVN &
-   & $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/main.F90 $"
 
    call shr_timer_init()
 
@@ -89,39 +87,45 @@ PROGRAM main
    write(6,F10) "Step 0:  read input namelist data"
    !----------------------------------------------------------------------------
 
-   gridtype      = 'unset'
-   file_roff     = 'unset'
-   file_ocn      = 'unset'
-   file_nn       = 'unset'
-   file_smooth   = 'unset'
-   file_new      = 'unset'
-   title         = 'unset'
-   eFold         = 1000000.00000 ! smoothing eFold distance in meters
-   rMax          =  500000.00000 ! max smoothing radius in meters
-   step1         = .true.
-   step2         = .true.
-   step3         = .true.
+   gridtype                       = 'unset'
+   file_roff                      = 'unset'
+   file_ocn                       = 'unset'
+   file_ocn_coastal_mask          = 'unset'
+   file_nn                        = 'nn.nc'
+   file_smooth                    = 'smooth.nc'
+   file_new                       = 'nnsm.nc'
+   title                          = 'unset'
+   restrict_smooth_src_to_nn_dest = .true.
+   eFold                          = 1000000._R8 ! smoothing eFold distance in meters
+   rMax                           =  300000._R8 ! max smoothing radius in meters
+   step1                          = .true.
+   step2                          = .true.
+   step3                          = .true.
 
    ! These two variables typically don't appear in namelist
-   lmake_rSCRIP  = .false.    
+   lmake_rSCRIP  = .false.
    file_roff_out = "runoff.nc"
 
-   open (10,file="runoff_map.nml",status="old",action="read")
-   read (10,nml=input_nml,iostat=rCode)
-   close(10)
+   read (*,nml=input_nml,iostat=rCode)
+   if (trim(file_ocn_coastal_mask) == 'unset') then
+     file_ocn_coastal_mask = file_ocn
+   end if
+
    write(6,F00) "Namelist values..."
-   write(6,F00) "   gridtype       = ",trim(gridtype      )
-   write(6,F00) "   file_roff      = ",trim(file_roff     )
-   write(6,F00) "   file_ocn       = ",trim(file_ocn      )
-   write(6,F00) "   file_nn        = ",trim(file_nn       )
-   write(6,F00) "   file_smooth    = ",trim(file_smooth   )
-   write(6,F00) "   file_new       = ",trim(file_new      )
-   write(6,F00) "   title          = ",trim(title         )
-   write(6,F02) "   eFold distance = ",eFold
-   write(6,F02) "   rMax  distance = ",rMax
-   write(6,F03) "   step1          = ",step1
-   write(6,F03) "   step2          = ",step2
-   write(6,F03) "   step3          = ",step3
+   write(6,F00) "   gridtype                       = ",trim(gridtype      )
+   write(6,F00) "   file_roff                      = ",trim(file_roff     )
+   write(6,F00) "   file_ocn (global)              = ",trim(file_ocn)
+   write(6,F00) "   file_ocn (coast)               = ",trim(file_ocn_coastal_mask)
+   write(6,F00) "   file_nn                        = ",trim(file_nn       )
+   write(6,F00) "   file_smooth                    = ",trim(file_smooth   )
+   write(6,F00) "   file_new                       = ",trim(file_new      )
+   write(6,F00) "   title                          = ",trim(title         )
+   write(6,F02) "   eFold distance                 = ",eFold
+   write(6,F02) "   rMax  distance                 = ",rMax
+   write(6,F03) "   restrict_smooth_src_to_nn_dest = ",restrict_smooth_src_to_nn_dest
+   write(6,F03) "   step1                          = ",step1
+   write(6,F03) "   step2                          = ",step2
+   write(6,F03) "   step3                          = ",step3
 !  if (rCode > 0) then
 !     write(6,F01) 'ERROR: reading input namelist, iostat=',rCode
 !     stop
@@ -147,7 +151,7 @@ if (step1) then
    !----------------------------------------------------------------------------
    write(6,F10) "Step 1: read grid info & create nearest neighbor map"
    !----------------------------------------------------------------------------
-   call map_gridRead(map_orig , trim(file_roff), trim(file_ocn), gridtype)
+   call map_gridRead(map_orig , trim(file_roff), trim(file_ocn_coastal_mask), gridtype)
 
    call date_and_time(dstr,tstr)
    call map_print(map_orig)
@@ -155,7 +159,7 @@ if (step1) then
    call map_gennn0(map_orig)    ! non-optimized nn map generation
    call mapsort_sort(map_orig)  ! sort map
    call map_check(map_orig)
-   call map_write(map_orig, trim(file_nn)) 
+   call map_write(map_orig, trim(file_nn))
 else if (step2.or.step3) then
    !----------------------------------------------------------------------------
    write(6,F10) "Step 1: read nearest neighbor map"
@@ -176,12 +180,12 @@ if (step2) then
    !----------------------------------------------------------------------------
    write(6,F02) "   eFold distance = ",eFold
    write(6,F02) "   rMax  distance = ",rMax
-   call smooth_init(map_orig,map_smooth)
+   call smooth_init(file_ocn, restrict_smooth_src_to_nn_dest, map_orig,map_smooth)
 !  call restrictSources(map_smooth,trim(file_sources)) ! restrict cells subject to smoothing
    call smooth(map_smooth,eFold,rMax)
    call mapsort_sort(map_smooth)
    call map_check(map_smooth)
-   call map_write(map_smooth, trim(file_smooth)) 
+   call map_write(map_smooth, trim(file_smooth))
 else if (step3) then
    !----------------------------------------------------------------------------
    write(6,F10) "Step 2:  read smoothing map"
@@ -204,16 +208,25 @@ if (step3) then
    !--- create new map datatype to hold result of matrix-matrix multiply ---
    call map_dup(map_orig,map_new)
    map_new%title  = trim(title)
+   map_new%domain_b = trim(map_smooth%domain_b)
+
+   ! Need to use mask_b and frac_b from the smooth map rather than the nearest neighbor
+   ! map because, in the case where the nearest neighbor map uses a file_ocn_coastal_mask
+   ! that is a subset of file_ocn, the nearest neighbor map has a too-limited mask_b and
+   ! frac_b (containing only the coastal points).
+   map_new%mask_b = map_smooth%mask_b
+   map_new%frac_b = map_smooth%frac_b
+
    call map_matMatMult(map_orig,map_new,map_smooth) ! mult(A,B,S): B=S*A
    call mapsort_sort(map_new)
    call map_check(map_new)
-   call map_write(map_new, trim(file_new)) 
+   call map_write(map_new, trim(file_new))
 else if (.not.(step1.or.step2)) then
    ! If we want to generate the rof->ocn nearest-neighbor or ocn->ocn smooth
    ! map, we won't necessarily have the rof->ocn nnsm map to sort and check.
    ! It only makes sense to call this step if we are skipping all three
    ! steps.
-   call map_read(map_new, trim(file_new)) 
+   call map_read(map_new, trim(file_new))
    call mapsort_sort(map_new)
    call map_check(map_new)
 endif

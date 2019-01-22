@@ -2,24 +2,24 @@ package Build::Config;
 #-----------------------------------------------------------------------------------------------
 #
 # SYNOPSIS
-# 
+#
 #   use Build::Config;
-# 
+#
 #   # read the configuration definition and defaults xml files.
 #   my $cfg = Build::Config->new("config_definition.xml", "config_setup.xml");
-# 
+#
 #   # set configuration parameters
 #   $cfg->set('dyn', 'fv');
 #   $cfg->set('hgrid', '2x2.5');
-# 
+#
 #   # query configuration parameters
 #   my $exe = $cfg->get('cam_exe');
-# 
+#
 #   # write a configuration cache file
 #   $cfg->write_file("config_cache.xml", "configure commandline");
-# 
+#
 # DESCRIPTION
-# 
+#
 # Build::Config objects are used to represent features of a model
 # configuration that must be specified at build time.
 #
@@ -78,9 +78,9 @@ package Build::Config;
 #       used to configure the executable.
 #
 # print() Print the configuration to STDOUT.
-# 
+#
 # COLLABORATORS
-# 
+#
 # IO::File
 # XML::Lite
 #-----------------------------------------------------------------------------------------------
@@ -202,7 +202,7 @@ sub get_valid_values
 
     my @return_array;
     # Check that the parameter name is in the configuration definition
-    if ($self->is_valid_name($id)) { 
+    if ($self->is_valid_name($id)) {
 
        my $valid_values = $self->{$id}->{'valid_values'};
        if ( $valid_values ) {

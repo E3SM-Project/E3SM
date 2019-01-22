@@ -1,0 +1,65 @@
+
+Slab Ocean Model (SOM) forcing files.
+
+The two main scripts in this directory are:
+
+pop_frc.csh
+
+and
+
+pop_frc*.ncl
+
+Step 1:
+
+First, one needs to edit the 'pop_frc.csh' script to select a particular case
+name from which to make a monthly-mean annual climatology.
+
+1. Change CASE to the case name you are interested in.
+2. Set BEGYR and ENDYR to the appropriate years for your climatology.
+3. If there are coupler history files available, these can be used
+   for the velocities and sea surface tilt terms. Set CPLHIST to TRUE.
+3. The script assumes the 'pop_frc' directory sits in your home directory,
+   and your work directory is /ptmp/${USER}/${CASE}. These can be changed
+   as needed.
+4. Specify the path name to the mass store directory where the case resides.
+
+Execute the script by typing, say:
+
+./pop_frc.csh > pop_frc.out &
+
+For a twenty year climatology, the script takes about a day of wall-clock time
+on gale, gust, breeze, etc.
+
+Step 2:
+
+Once the two climatogical files have been created, you can run one of
+the NCL scripts, 'pop_frc*.ncl'. You will need to edit the script and
+point to the POP and coupler (popmac and cplmac) climatological files.
+
+pop_frc_mlt.ncl*   -> uses mixed-layer temperature to derive the Q-flux
+
+pop_frc_mlann.ncl  -> uses mixed-layer temperature to derive the Q-flux
+                      also produces velocities and salinities averaged
+                      over the annual mean ml depth
+
+pop_frc_interp.ncl -> Interpolates the data onto a standard 1x1d grid
+
+* recommended script
+
+Execute the script by typing:
+
+ncl pop_frc_mlt.ncl
+
+A file called 'oceanmixed_ice.nc' should be created with the appropriate SOM
+forcing fields. To make this file usable by the DOCN7 SOM, have a look in:
+
+/fs/cgd/csm/inputdata/ocn/docn7/SOM
+
+The file 'oceanmixed_ice.nc' should be renamed with the convention:
+
+pop_frc.${GRID}.yymmdd.nc
+
+A text stream file also needs to accompany the netcdf file. See the examples
+in the above directory for the conventions.
+
+

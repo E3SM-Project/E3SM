@@ -1,7 +1,7 @@
 #//////////////////////////////////////////
 package Log::Log4perl::Util::Semaphore;
 #//////////////////////////////////////////
-use IPC::SysV qw(IPC_RMID IPC_CREAT IPC_EXCL SEM_UNDO IPC_NOWAIT 
+use IPC::SysV qw(IPC_RMID IPC_CREAT IPC_EXCL SEM_UNDO IPC_NOWAIT
                  IPC_SET IPC_STAT SETVAL);
 use IPC::Semaphore;
 use POSIX qw(EEXIST);
@@ -29,7 +29,7 @@ sub new {
     $self->{ikey} = unpack("i", pack("A4", $self->{key}));
 
       # Accept usernames in the uid field as well
-    if(defined $self->{uid} and 
+    if(defined $self->{uid} and
        $self->{uid} =~ /\D/) {
         $self->{uid} = (getpwnam $self->{uid})[2];
     }
@@ -53,11 +53,11 @@ sub init {
 
     print "Semaphore init '$self->{key}'/'$self->{ikey}'\n" if INTERNAL_DEBUG;
 
-    $self->{id} = semget( $self->{ikey}, 
-                          1, 
+    $self->{id} = semget( $self->{ikey},
+                          1,
                           &IPC_EXCL|&IPC_CREAT|($self->{mode}||0777),
                   );
-   
+
    if(! defined $self->{id} and
       $! == EEXIST) {
        print "Semaphore '$self->{key}' already exists\n" if INTERNAL_DEBUG;
@@ -119,7 +119,7 @@ sub semlock {
 ###########################################
     my($self) = @_;
 
-    my $operation = pack("s!*", 
+    my $operation = pack("s!*",
                           # wait until it's 0
                          0, 0, 0,
                           # increment by 1
@@ -135,7 +135,7 @@ sub semunlock {
 ###########################################
     my($self) = @_;
 
-#    my $operation = pack("s!*", 
+#    my $operation = pack("s!*",
 #                          # decrement by 1
 #                         0, -1, SEM_UNDO
 #                        );
@@ -156,7 +156,7 @@ sub remove {
 
     print "Removing semaphore '$self->{key}'\n" if INTERNAL_DEBUG;
 
-    semctl ($self->{id}, 0, &IPC_RMID, 0) or 
+    semctl ($self->{id}, 0, &IPC_RMID, 0) or
         die "Removing semaphore $self->{key} failed: $!";
 }
 
@@ -182,11 +182,11 @@ sub semop {
     {
         $rc = semop($args[0], $args[1]);
 
-        if(!$rc and 
+        if(!$rc and
            $! =~ /temporarily unavailable/ and
            $retries-- > 0) {
             $rc = 'undef' unless defined $rc;
-            print "semop failed (rc=$rc), retrying\n", 
+            print "semop failed (rc=$rc), retrying\n",
                   $self->status_as_string if INTERNAL_DEBUG;
             select undef, undef, undef, $self->{semop_wait};
             redo;
@@ -213,10 +213,10 @@ Log::Log4perl::Util::Semaphore - Easy to use semaphores
     my $sem = Log::Log4perl::Util::Semaphore->new( key => "abc" );
 
     $sem->semlock();
-      # ... critical section 
+      # ... critical section
     $sem->semunlock();
 
-    $sem->semset( uid  => (getpwnam("hugo"))[2], 
+    $sem->semset( uid  => (getpwnam("hugo"))[2],
                   gid  => 102,
                   mode => 0644
                 );
@@ -227,16 +227,16 @@ Log::Log4perl::Util::Semaphore provides the synchronisation mechanism
 for the Synchronized.pm appender in Log4perl, but can be used independently
 of Log4perl.
 
-As a convenience, the C<uid> field accepts user names as well, which it 
+As a convenience, the C<uid> field accepts user names as well, which it
 translates into the corresponding uid by running C<getpwnam>.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -246,7 +246,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -257,8 +257,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

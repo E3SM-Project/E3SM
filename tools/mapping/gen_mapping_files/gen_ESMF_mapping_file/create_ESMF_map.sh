@@ -4,8 +4,8 @@
 # SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh $
 #
 # Create needed mapping files for gen_domain and coupler mapping
-# Currently supported on yellowstone, geyser, caldera, pronghorn, and jaguarpf
-# 
+# Currently supported on cheyenne, geyser, caldera, and pronghorn
+#
 #===============================================================================
 echo $0
 date
@@ -18,16 +18,16 @@ usage() {
   echo ''
   echo '**********************************************************'
   echo 'usage:'
-  echo './create_ESMF_map.sh  '
+  echo './create_ESMF_map.sh'
   echo ' A wrapper for the ESMF mapping tool that creates a mapping file'
   echo ' from the source grid to the destination grid. Specify what type'
   echo ' of mapping to use with the -maptype flag (aave, blin, bilin,patc,'
   echo ' nearestdtos, or neareststod)'
   echo ''
-  echo 'create_ESMF_map.sh '
-  echo '  --filesrc|-fsrc  input source grid_filename (required) '
+  echo 'create_ESMF_map.sh'
+  echo '  --filesrc|-fsrc  input source grid_filename (required)'
   echo '  --filedst|-fdst  input destination grid_filename (required)'
-  echo '  --namesrc|-nsrc  output source name in mapping file (required)' 
+  echo '  --namesrc|-nsrc  output source name in mapping file (required)'
   echo '  --namedst|-ndst  output destination name in mapping file (required)'
   echo '  --maptype|-map   type of mapping [aave|blin|bilin|patc|nearestdtos|neareststod] (required)'
   echo '  [ --typesrc|tsrc ] [regional|global]'
@@ -40,13 +40,13 @@ usage() {
   echo '  [ --large_file|-big ]'
   echo '  [ --help|-h ]'
   echo '  [ -v ]'
-  echo ' '
-  echo 'where '
+  echo ''
+  echo 'where'
   echo ' --filesrc (or -fsrc)'
   echo '   SCRIP grid format source filename (full pathname)'
   echo ' --filedst (or -fdst)'
   echo '   SCRIP grid format destination filename (full pathname)'
-  echo ' --namesrc (or -nsrc) and --namesrc (or -nsrc) will result in the '
+  echo ' --namesrc (or -nsrc) and --namesrc (or -nsrc) will result in the'
   echo '   following mapping files'
   echo '     namesrc_TO_namedst_maptype.cdate.nc'
   echo ''
@@ -58,35 +58,27 @@ usage() {
   echo '   default is global'
   echo ' --pass2esmf'
   echo '   pass options directly to the ESMF tool.'
-  echo ' --batch (or -b)'
-  echo '   Toggles batch mode usage. If you want to run in batch mode'
-  echo '   you need to have a separate batch script for a supported machine'
-  echo '   that calls this script interactively - you cannot submit this'
-  echo '   script directly to the batch system'
   echo ' --clm_name'
   echo '   Use the CLM naming convention'
   echo ' --serial'
-  echo '   For yellowstone batch jobs only! Load the serial ESMF tools rather'
-  echo '   than the parallel tools (necessary for mapping grids with a single'
-  echo '   point).'
+  echo '   Load the serial ESMF tools rather than the parallel tools'
+  echo '   (necessary for mapping grids with a single point).'
   echo ' --machine (or -mach)'
-  echo '   Name of the machine you are running on. Currently supports yellowstone,'
-  echo '   geyser, caldera, pronghorn, and jaguar. Note that this script will'
+  echo '   Name of the machine you are running on. Currently supports cheyenne,'
+  echo '   geyser, caldera, and pronghorn. Note that this script will'
   echo '   determine the machine name automatically from the hostfile command.'
   echo ' -d'
-  echo '   toggle debug-only '
-  echo ' --help or -h  '
+  echo '   toggle debug-only'
+  echo ' --help or -h'
   echo '   displays this help message'
   echo ''
   echo 'You can also set the following env variables:'
-  echo '  ESMFBIN_PATH - Path to ESMF binaries '
-  echo '                 (Leave unset on yellowstone/caldera/pronghorn and the tool'
-  echo '                 will be loaded from modules)'
+  echo '  ESMFBIN_PATH - Path to ESMF binaries'
+  echo '                 (Leave unset on cheyenne/caldera/geyser/pronghorn'
+  echo '                 and the tool will be loaded from modules)'
   echo '  MPIEXEC ------ Name of mpirun executable'
-  echo '                 (default is mpirun.lsf on yellowstone/caldera/pronghorn; if'
-  echo '                 you run interactively on yellowstone, mpi is not used)'
-  echo '  REGRID_PROC -- Number of MPI processors to use (jaguar only!)'
-  echo '                 (default is 8)'
+  echo '                 (ignored if --serial, which is default on cheyenne'
+  echo '                 login nodes'
   echo '**********************************************************'
 }
 
@@ -128,7 +120,6 @@ runcmd() {
 # Process input arguments
 #-------------------------------------------------------------------------------
 
-interactive="YES"
 debug="no"
 verbose="no"
 type_src="global"
@@ -145,9 +136,6 @@ while [ $# -gt 0 ]; do
   case $1 in
     -v )
       verbose="YES"
-    ;;
-    -b|--batch )
-      interactive="NO"
     ;;
     --clm_name )
       CLMNAME="TRUE"
@@ -211,46 +199,45 @@ while [ $# -gt 0 ]; do
     ;;
   esac
 
-  shift 
+  shift
 done
 
 #-------------------------------------------------------------------------------
 # Determine machine to run on
 #-------------------------------------------------------------------------------
 
+shopt -s extglob
 if [ $MACH == "UNSET" ]; then
   hostname=`hostname`
   case $hostname in
-    ## yellowstone
-    ys* )
-      MACH="yellowstone"
+    cheyenne* )
+      MACH="cheyenne"
+      cheyenne_login=TRUE
+    ;;
+    r+([0-9])i+([0-9])n+([0-9]) )
+      MACH="cheyenne"
     ;;
     geyser* )
-      MACH="geyser"
+      MACH="dav"
     ;;
     caldera* )
-      MACH="caldera"
+      MACH="dav"
     ;;
     pronghorn* )
-      MACH="pronghorn"
-    ;;
-    jaguarpf* )
-      MACH="jaguar"
+      MACH="dav"
     ;;
     *)
-      echo "Machine $hostname NOT recognized"
-    ;;   
+      echo "Can not determine machine name from hostname '$hostname'"
+      exit 1
+    ;;
   esac
 fi
 
-# Machine specific settings:
-# 1) can not run in parallel interactively on yellowstone
-if [ $MACH == "yellowstone" ] && [ $interactive == "YES" ]; then
-  serial="TRUE"
-fi
-# 2) jaguar requires additional environment var
-if [ $MACH == "jaguar" ] && [ -z "$REGRID_PROC" ]; then
-  REGRID_PROC=8
+# machine-specific restrictions
+if [ "$cheyenne_login" == "TRUE" ] && [ "$serial" != "TRUE" ]; then
+  echo "ERROR: You are trying to use parallal ESMF tools on the cheyenne login node."
+  echo "       Either run with '--serial' or move to a compute node."
+  exit 1
 fi
 
 # check for required arguments
@@ -307,62 +294,58 @@ fi
 #-------------------------------------------------------------------------------
 # Machine specific env stuff
 #-------------------------------------------------------------------------------
- 
-case $MACH in
-  ## yellowstone, geyser, caldera, or pronghorn
-  "yellowstone" | "geyser" | "caldera" | "pronghorn" )
-    # From tcsh, script will not find module command
-    # So check to see if module works, otherwise source an init file
-    module list > /dev/null 2>&1 || source /etc/profile.d/modules.sh
-    module purge
-    module load intel
-    module load nco
-    module load esmf
 
-    if [ $serial == "TRUE" ]; then
-      module load esmf-6.3.0rp1-ncdfio-uni-O
+case $MACH in
+  ## cheyenne
+  "cheyenne" )
+    module purge
+    module load intel/17.0.1 esmf_libs/7.0.0
+    if [ "$serial" == "TRUE" ]; then
+      # No MPIEXEC
       if [ -z "$MPIEXEC" ]; then
         MPIEXEC=""
       fi
+      module load esmf-7.1.0r-ncdfio-uni-O
     else
-      module load esmf-6.3.0rp1-ncdfio-mpi-O
+      # MPIEXEC should be mpirun -np
       if [ -z "$MPIEXEC" ]; then
-        MPIEXEC="mpirun.lsf"
+        if [ -z "$NCPUS" ]; then
+          NCPUS=1
+        fi
+        MPIEXEC="mpirun -np $NCPUS"
       fi
+      module load esmf-7.1.0r-ncdfio-mpi-O
+      module load mpt/2.15f
     fi
-
+    # need to load module to access ncatted
+    module load nco
   ;;
-  ##jaguarpf
-  ## NOTE that for jaguarpf there is no batch script for now
-  "jaguar" )
-    if [ -z "$ESMFBIN_PATH" ]; then
-      module load esmf/5.2.0-p1_with-netcdf_g
-      ESMFBIN_PATH=$ESMF_BINDIR
+## geyser, caldera, or pronghorn
+  "dav" )
+    module purge
+    module load intel/17.0.1 esmflibs/7.1.0r
+    if [ "$serial" == "TRUE" ]; then
+      # No MPIEXEC
+      if [ -z "$MPIEXEC" ]; then
+        MPIEXEC=""
+      fi
+      module load esmf-7.1.0r-ncdfio-uni-O
+    else
+      echo "ERROR: Parallel ESMF tools are not available on $MACH, use --serial"
+      exit 1
     fi
-    
-    if [ -z "$MPIEXEC" ]; then
-      MPIEXEC="aprun -n $REGRID_PROC"
-    fi
+    # need to load module to access ncatted
+    module load nco
   ;;
   *)
     echo "Machine $MACH NOT recognized"
-  ;;   
+    exit
+  ;;
 esac
 
 #-------------------------------------------------------------------------------
 # run ESMF_RegridWeightGen
 #-------------------------------------------------------------------------------
-
-# Resolve interactive or batch mode command
-# NOTE - if you want to run in batch mode - you need to have a separate
-# batch file that calls this script interactively - you cannot submit
-# this script to the batch system
-
-if [ "$interactive" = "YES" ]; then
-  echo "Running interactively"
-else
-  echo "Running in batch mode"
-fi
 
 if [ ! -z $ESMFBIN_PATH ]; then
   ESMF_REGRID="$ESMFBIN_PATH/ESMF_RegridWeightGen"

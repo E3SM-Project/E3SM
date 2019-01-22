@@ -34,7 +34,7 @@ sub add_priority {
   $PRIORITY{$prio}    = $intval;
   $LEVELS{$intval}    = $prio;
 
-  # Set up the mapping between Log4perl integer levels and 
+  # Set up the mapping between Log4perl integer levels and
   # Log::Dispatch levels
   # Note: Log::Dispatch uses the following levels:
   # 0 debug
@@ -46,10 +46,10 @@ sub add_priority {
   # 6 alert
   # 7 emergency
 
-      # The equivalent Log::Dispatch level is optional, set it to 
+      # The equivalent Log::Dispatch level is optional, set it to
       # the highest value (7=emerg) if it's not provided.
   $log_dispatch_level = 7 unless defined $log_dispatch_level;
-  
+
   $L4P_TO_LD{$prio}  = $log_dispatch_level;
 
   $SYSLOG{$prio}      = $syslog if defined($syslog);
@@ -72,7 +72,7 @@ sub numerically {$a <=> $b}
 sub import {
 ###########################################
     my($class, $namespace) = @_;
-           
+
     if(defined $namespace) {
         # Export $OFF, $FATAL, $ERROR etc. to
         # the given namespace
@@ -94,7 +94,7 @@ sub import {
 }
 
 ##################################################
-sub new { 
+sub new {
 ##################################################
     # We don't need any of this class nonsense
     # in Perl, because we won't allow subclassing
@@ -116,7 +116,7 @@ sub to_priority {
 
 ##################################################
 sub to_level {
-# changes a priority numeric constant to a level name string 
+# changes a priority numeric constant to a level name string
 ##################################################
     my ($priority) = @_;
     if (exists $LEVELS{$priority}) {
@@ -147,11 +147,11 @@ sub to_LogDispatch_string {
     if($priority == $PRIORITY{WARN}) {
         $string = "WARNING";
     }
-         
+
     if($priority == $PRIORITY{FATAL}) {
         $string = "EMERGENCY";
     }
-         
+
     return $string;
 }
 
@@ -165,7 +165,7 @@ sub is_valid {
     }else{
         return $LEVELS{$q};
     }
-    
+
 }
 
 sub get_higher_level {
@@ -213,7 +213,7 @@ sub get_lower_level {
 sub isGreaterOrEqual {
   my $lval = shift;
   my $rval = shift;
-  
+
   # in theory, we should check if the above really ARE valid levels.
   # but we just use numeric comparison, since they aren't really classes.
 
@@ -223,7 +223,7 @@ sub isGreaterOrEqual {
 }
 
 ######################################################################
-# 
+#
 # since the integer representation of levels is reversed from what
 # we normally want, we don't want to use < and >... instead, we
 # want to use this comparison function
@@ -252,7 +252,7 @@ Log::Log4perl::Level - Predefined log levels
 =head1 DESCRIPTION
 
 C<Log::Log4perl::Level> simply exports a predefined set of I<Log4perl> log
-levels into the caller's name space. It is used internally by 
+levels into the caller's name space. It is used internally by
 C<Log::Log4perl>. The following scalars are defined:
 
     $OFF
@@ -269,7 +269,7 @@ if you pull it in providing the C<:levels> tag:
 
     use Log::Log4perl qw(:levels);
 
-This is the preferred way, there's usually no need to call 
+This is the preferred way, there's usually no need to call
 C<Log::Log4perl::Level> explicitly.
 
 The numerical values assigned to these constants are purely virtual,
@@ -285,8 +285,8 @@ But if you want to figure out which of two levels is more verbose, use
 Log4perl's own comparator:
 
     if( Log::Log4perl::Level::isGreaterOrEqual( $level1, $level2 ) ) {
-        print Log::Log4perl::Level::to_level( $level1 ), 
-            " is equal or more verbose than ", 
+        print Log::Log4perl::Level::to_level( $level1 ),
+            " is equal or more verbose than ",
             Log::Log4perl::Level::to_level( $level2 ), "\n";
     }
 
@@ -295,12 +295,12 @@ it can be provided with the C<use> command:
 
     use Log::Log4perl::Level qw(MyNameSpace);
 
-After this C<$MyNameSpace::ERROR>, C<$MyNameSpace::INFO> etc. 
+After this C<$MyNameSpace::ERROR>, C<$MyNameSpace::INFO> etc.
 will be defined accordingly.
 
 =head2 Numeric levels and Strings
 
-Level variables like $DEBUG or $WARN have numeric values that are 
+Level variables like $DEBUG or $WARN have numeric values that are
 internal to Log4perl. Transform them to strings that can be used
 in a Log4perl configuration file, use the c<to_level()> function
 provided by Log::Log4perl::Level:
@@ -326,11 +326,11 @@ after which $numval could be used where a numerical value is required:
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -340,7 +340,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -351,8 +351,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

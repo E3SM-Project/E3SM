@@ -32,7 +32,7 @@ sub new {
         # save old signal handlers; they belong to other appenders or
         # possibly something else in the consuming application
         my $old_sig_handler = $SIG{$self->{signal}};
-        $SIG{$self->{signal}} = sub { 
+        $SIG{$self->{signal}} = sub {
             print "Caught $self->{signal} signal\n" if _INTERNAL_DEBUG;
             $self->force_next_check();
             $old_sig_handler->(@_) if $old_sig_handler and ref $old_sig_handler eq 'CODE';
@@ -115,7 +115,7 @@ sub file_has_moved {
         my $current_inode = "$stat[0]:$stat[1]";
         print "Current inode: $current_inode\n" if _INTERNAL_DEBUG;
 
-        if(exists $self->{_file_inode} and 
+        if(exists $self->{_file_inode} and
             $self->{_file_inode} ne $current_inode) {
             print "Inode changed from $self->{_file_inode} to ",
                   "$current_inode\n" if _INTERNAL_DEBUG;
@@ -157,7 +157,7 @@ sub change_detected {
             $L4P_TEST_CHANGE_DETECTED = 1;
             return 1; # Has changed
         }
-           
+
         print "$self->{file} unchanged (file=$new_timestamp ",
               "stored=$self->{_last_timestamp})!\n" if _INTERNAL_DEBUG;
         return "";  # Hasn't changed
@@ -184,12 +184,12 @@ sub check {
 
         # Do we need to check?
     if(!$force and
-       $self->{_last_checked_at} + 
+       $self->{_last_checked_at} +
        $self->{check_interval} > $time) {
         print "No need to check\n" if _INTERNAL_DEBUG;
         return ""; # don't need to check, return false
     }
-       
+
     $self->{_last_checked_at} = $time;
 
     # Set global var for optimizations in case we just have one watcher
@@ -232,8 +232,8 @@ Log::Log4perl::Config::Watch - Detect file changes
 This module helps detecting changes in files. Although it comes with the
 C<Log::Log4perl> distribution, it can be used independently.
 
-The constructor defines the file to be watched and the check interval 
-in seconds. Subsequent calls to C<change_detected()> will 
+The constructor defines the file to be watched and the check interval
+in seconds. Subsequent calls to C<change_detected()> will
 
 =over 4
 
@@ -245,25 +245,25 @@ if C<check_interval> hasn't elapsed.
 =item *
 
 perform a physical test on the specified file if the number
-of seconds specified in C<check_interval> 
+of seconds specified in C<check_interval>
 have elapsed since the last physical check. If the file's modification
-date has changed since the last physical check, it will return a true 
+date has changed since the last physical check, it will return a true
 value, otherwise a false value is returned.
 
 =back
 
 Bottom line: C<check_interval> allows you to call the function
 C<change_detected()> as often as you like, without paying the performing
-a significant performance penalty because file system operations 
+a significant performance penalty because file system operations
 are being performed (however, you pay the price of not knowing about
 file changes until C<check_interval> seconds have elapsed).
 
-The module clearly distinguishes system time from file system time. 
+The module clearly distinguishes system time from file system time.
 If your (e.g. NFS mounted) file system is off by a constant amount
 of time compared to the executing computer's clock, it'll just
 work fine.
 
-To disable the resource-saving delay feature, just set C<check_interval> 
+To disable the resource-saving delay feature, just set C<check_interval>
 to 0 and C<change_detected()> will run a physical file test on
 every call.
 
@@ -277,7 +277,7 @@ provided.
 
 =head2 SIGNAL MODE
 
-Instead of polling time and file changes, C<new()> can be instructed 
+Instead of polling time and file changes, C<new()> can be instructed
 to set up a signal handler. If you call the constructor like
 
     my $watcher = Log::Log4perl::Config::Watch->new(
@@ -285,7 +285,7 @@ to set up a signal handler. If you call the constructor like
                           signal  => 'HUP'
                   );
 
-then a signal handler will be installed, setting the object's variable 
+then a signal handler will be installed, setting the object's variable
 C<$self-E<gt>{signal_caught}> to a true value when the signal arrives.
 Comes with all the problems that signal handlers go along with.
 
@@ -300,7 +300,7 @@ on the watcher object.
 
 =head2 DETECT MOVED FILES
 
-The watcher can also be used to detect files that have moved. It will 
+The watcher can also be used to detect files that have moved. It will
 not only detect if a watched file has disappeared, but also if it has
 been replaced by a new file in the meantime.
 
@@ -316,16 +316,16 @@ been replaced by a new file in the meantime.
         sleep(1);
     }
 
-The parameters C<check_interval> and C<signal> limit the number of physical 
+The parameters C<check_interval> and C<signal> limit the number of physical
 file system checks, similarily as with C<change_detected()>.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -335,7 +335,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -346,8 +346,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

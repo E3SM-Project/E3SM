@@ -44,8 +44,8 @@ sub warning_render {
     my($logger, @message) = @_;
 
     $STRING_APP->string("");
-    $STRING_APP_CODEREF->($logger, 
-                          @message, 
+    $STRING_APP_CODEREF->($logger,
+                          @message,
                           Log::Log4perl::Level::to_level($ALL));
     return $STRING_APP->string();
 }
@@ -55,10 +55,10 @@ sub cleanup {
 ##################################################
     # warn "Logger cleanup";
 
-    # Nuke all convenience loggers to avoid them causing cleanup to 
+    # Nuke all convenience loggers to avoid them causing cleanup to
     # be delayed until global destruction. Problem is that something like
     #     *{"DEBUG"} = sub { $logger->debug };
-    # ties up a reference to $logger until global destruction, so we 
+    # ties up a reference to $logger until global destruction, so we
     # need to clean up all :easy shortcuts, hence freeing the last
     # logger references, to then rely on the garbage collector for cleaning
     # up the loggers.
@@ -79,7 +79,7 @@ sub cleanup {
 ##################################################
 sub DESTROY {
 ##################################################
-    CORE::warn "Destroying logger $_[0] ($_[0]->{category})" 
+    CORE::warn "Destroying logger $_[0] ($_[0]->{category})"
             if $Log::Log4perl::CHATTY_DESTROY_METHODS;
 }
 
@@ -87,8 +87,8 @@ sub DESTROY {
 sub reset {
 ##################################################
     $ROOT_LOGGER        = __PACKAGE__->_new("", $OFF);
-#    $LOGGERS_BY_NAME    = {};  #leave this alone, it's used by 
-                                #reset_all_output_methods when 
+#    $LOGGERS_BY_NAME    = {};  #leave this alone, it's used by
+                                #reset_all_output_methods when
                                 #the config changes
 
     %APPENDER_BY_NAME   = ();
@@ -123,7 +123,7 @@ sub _new {
 
     die "usage: __PACKAGE__->_new(category)" unless
         defined $category;
-    
+
     $category  =~ s/::/./g;
 
        # Have we created it previously?
@@ -182,24 +182,24 @@ sub set_output_methods {
 #
 ##################################################
    my ($self) = @_;
-    
+
    my (@appenders, %seen);
 
    my ($level) = $self->level();
 
    print "set_output_methods: $self->{category}/$level\n" if _INTERNAL_DEBUG;
 
-   #collect the appenders in effect for this category    
+   #collect the appenders in effect for this category
 
    for(my $logger = $self; $logger; $logger = parent_logger($logger)) {
 
         foreach my $appender_name (@{$logger->{appender_names}}){
 
                 #only one message per appender, (configurable)
-            next if $seen{$appender_name} ++ && 
+            next if $seen{$appender_name} ++ &&
                     $Log::Log4perl::one_message_per_appender;
 
-            push (@appenders,     
+            push (@appenders,
                    [$appender_name,
                     $APPENDER_BY_NAME{$appender_name},
                    ]
@@ -212,7 +212,7 @@ sub set_output_methods {
     my $noop = generate_noop_coderef();
 
        #make a coderef
-    my $coderef = (! @appenders ? $noop : &generate_coderef(\@appenders)); 
+    my $coderef = (! @appenders ? $noop : &generate_coderef(\@appenders));
 
     my %priority = %Log::Log4perl::Level::PRIORITY; #convenience and cvs
 
@@ -234,8 +234,8 @@ sub set_output_methods {
         }
 
         print("  Setting [$self] $self->{category}.$levelname to ",
-              ($self->{$levelname} == $noop ? "NOOP" : 
-              ("Coderef [$coderef]: " . scalar @appenders . " appenders")), 
+              ($self->{$levelname} == $noop ? "NOOP" :
+              ("Coderef [$coderef]: " . scalar @appenders . " appenders")),
               "\n") if _INTERNAL_DEBUG;
     }
 }
@@ -244,8 +244,8 @@ sub set_output_methods {
 sub generate_coderef {
 ##################################################
     my $appenders = shift;
-                    
-    print "generate_coderef: ", scalar @$appenders, 
+
+    print "generate_coderef: ", scalar @$appenders,
           " appenders\n" if _INTERNAL_DEBUG;
 
     my $watch_check_code = generate_watch_code("logger", 1);
@@ -256,7 +256,7 @@ sub generate_coderef {
 
       my $message;
       my $appenders_fired = 0;
-      
+
       # Evaluate all parameters that need to be evaluated. Two kinds:
       #
       # (1) It's a hash like { filter => "filtername",
@@ -267,13 +267,13 @@ sub generate_coderef {
       #     => coderef()
       #
 
-      $message   = [map { ref $_ eq "HASH" && 
-                           exists $_->{filter} && 
+      $message   = [map { ref $_ eq "HASH" &&
+                           exists $_->{filter} &&
                            ref $_->{filter} eq 'CODE' ?
                                $_->{filter}->($_->{value}) :
                            ref $_ eq "CODE" ?
-                               $_->() : $_ 
-                          } @_];                  
+                               $_->() : $_
+                          } @_];
 
       print("coderef: $logger->{category}\n") if _INTERNAL_DEBUG;
 
@@ -286,12 +286,12 @@ sub generate_coderef {
 
           print("  Sending message '<$message->[0]>' ($level) " .
                 "to $appender_name\n") if _INTERNAL_DEBUG;
-                
+
           $appender->log(
               #these get passed through to Log::Dispatch
               { name    => $appender_name,
                 level   => $Log::Log4perl::Level::L4P_TO_LD{
-                               $level},   
+                               $level},
                 message => $message,
               },
               #these we need
@@ -300,9 +300,9 @@ sub generate_coderef {
           ) and $appenders_fired++;
               # Only counting it if it returns a true value. Otherwise
               # the appender threshold might have suppressed it after all.
-    
+
       } #end foreach appenders
-    
+
       return $appenders_fired;
 
     }; #end coderef
@@ -314,7 +314,7 @@ sub generate_noop_coderef {
     my $watch_delay_code;
 
     # This might seem crazy at first, but even in a Log4perl noop, we
-    # need to check if the configuration changed in a init_and_watch 
+    # need to check if the configuration changed in a init_and_watch
     # situation. Why? Say, an application is running in a loop that
     # constantly tries to issue debug() messages, but they're suppressed by
     # the current Log4perl configuration. If debug() (which is a noop
@@ -373,8 +373,8 @@ sub generate_watch_code {
 
            if(exists $Log::Log4perl::Config::OPTS->{ preinit_callback } ) {
                print "Calling preinit_callback\n" if _INTERNAL_DEBUG;
-               $init_permitted = 
-               $Log::Log4perl::Config::OPTS->{ preinit_callback }->( 
+               $init_permitted =
+               $Log::Log4perl::Config::OPTS->{ preinit_callback }->(
                    Log::Log4perl::Config->watcher()->file() );
                print "Callback returned $init_permitted\n" if _INTERNAL_DEBUG;
            }
@@ -410,7 +410,7 @@ sub generate_watch_code {
                $logger->$methodname(@_); # send the message
                # to the new configuration
                return undef;     # Return false, so the logger finishes
-               # prematurely and doesn't log the same 
+               # prematurely and doesn't log the same
                # message again.
            } else {
                die "internal error: unknown type";
@@ -437,8 +437,8 @@ sub generate_watch_conditional {
     }
 
     return sub {
-        return 
-            ( time() > $Log::Log4perl::Config::Watch::NEXT_CHECK_TIME and 
+        return
+            ( time() > $Log::Log4perl::Config::Watch::NEXT_CHECK_TIME and
               $Log::Log4perl::Config::WATCHER->change_detected() );
     };
 }
@@ -453,7 +453,7 @@ sub parent_string {
     }
 
     my @components = split /\./, $string;
-    
+
     if(@components == 1) {
         return "";
     }
@@ -470,16 +470,16 @@ sub level {
 
         # 'Set' function
     if(defined $level) {
-        croak "invalid level '$level'" 
+        croak "invalid level '$level'"
                 unless Log::Log4perl::Level::is_valid($level);
         if ($level =~ /\D/){
             $level = Log::Log4perl::Level::to_priority($level);
         }
-        $self->{level} = $level;   
+        $self->{level} = $level;
 
         &reset_all_output_methods
-            unless $dont_reset_all;  #keep us from getting overworked 
-                                     #if it's the config file calling us 
+            unless $dont_reset_all;  #keep us from getting overworked
+                                     #if it's the config file calling us
 
         return $level;
     }
@@ -497,7 +497,7 @@ sub level {
             # It's the root logger
             return $ROOT_LOGGER->{level};
         }
-            
+
         if(defined $LOGGERS_BY_NAME->{$logger->{category}}->{level}) {
             return $LOGGERS_BY_NAME->{$logger->{category}}->{level};
         }
@@ -542,7 +542,7 @@ sub parent_logger {
 sub get_root_logger {
 ##################################################
     my($class) = @_;
-    return $ROOT_LOGGER;    
+    return $ROOT_LOGGER;
 }
 
 ##################################################
@@ -590,7 +590,7 @@ sub add_appender {
 
       # Add newly created appender to the end of the appender array
     unless (grep{$_ eq $appender_name} @{$self->{appender_names}}){
-        $self->{appender_names} = [sort @{$self->{appender_names}}, 
+        $self->{appender_names} = [sort @{$self->{appender_names}},
                                         $appender_name];
     }
 
@@ -610,7 +610,7 @@ sub remove_appender {
     my($self, $appender_name, $dont_reset_all, $sloppy) = @_;
 
     my %appender_names = map { $_ => 1 } @{$self->{appender_names}};
-    
+
     if(!exists $appender_names{$appender_name}) {
         die "No such appender: $appender_name" unless $sloppy;
         return undef;
@@ -621,7 +621,7 @@ sub remove_appender {
     $self->{appender_names} = [sort keys %appender_names];
 
     &reset_all_output_methods
-                unless $dont_reset_all; 
+                unless $dont_reset_all;
 }
 
 ##################################################
@@ -632,7 +632,7 @@ sub eradicate_appender {
 
     my($appender_name, $dont_reset_all) = @_;
 
-    return 0 unless exists 
+    return 0 unless exists
         $APPENDER_BY_NAME{$appender_name};
 
         # Remove the given appender from all loggers
@@ -643,11 +643,11 @@ sub eradicate_appender {
     }
         # Also remove it from the root logger
     $ROOT_LOGGER->remove_appender($appender_name, 0, 1);
-    
+
     delete $APPENDER_BY_NAME{$appender_name};
 
     &reset_all_output_methods
-                unless $dont_reset_all; 
+                unless $dont_reset_all;
 
     return 1;
 }
@@ -669,7 +669,7 @@ sub log {
     confess("log: No priority given!") unless defined($priority);
 
        # Just in case of 'init_and_watch' -- see Changes 0.21
-    $_[0] = $LOGGERS_BY_NAME->{$_[0]->{category}} if 
+    $_[0] = $LOGGERS_BY_NAME->{$_[0]->{category}} if
         defined $Log::Log4perl::Config::WATCHER;
 
     init_warn() unless $INITIALIZED or $NON_INIT_WARNED;
@@ -678,13 +678,13 @@ sub log {
 
     my $which = Log::Log4perl::Level::to_level($priority);
 
-    $self->{$which}->($self, @messages, 
+    $self->{$which}->($self, @messages,
                     Log::Log4perl::Level::to_level($priority));
 }
 
 ######################################################################
 #
-# create_custom_level 
+# create_custom_level
 # creates a custom level
 # in theory, could be used to create the default ones
 ######################################################################
@@ -705,7 +705,7 @@ sub create_custom_level {
 
   my %PRIORITY = %Log::Log4perl::Level::PRIORITY; #convenience
 
-  die("create_custom_level: no such level \"$after\"! Use one of: ", 
+  die("create_custom_level: no such level \"$after\"! Use one of: ",
      join(", ", sort keys %PRIORITY)) unless $PRIORITY{$after};
 
   # figure out new int value by AFTER + (AFTER+ 1) / 2
@@ -735,7 +735,7 @@ sub create_custom_level {
 
   print("Adding prio $level at $cust_prio\n") if _INTERNAL_DEBUG;
 
-  # get $LEVEL into namespace of Log::Log4perl::Logger to 
+  # get $LEVEL into namespace of Log::Log4perl::Logger to
   # create $logger->foo nd $logger->is_foo
   my $name = "Log::Log4perl::Logger::";
   my $key = $level;
@@ -776,7 +776,7 @@ sub create_log_level_methods {
 
   *{__PACKAGE__ . "::$lclevel"} = sub {
         if(_INTERNAL_DEBUG) {
-            my $level_disp = (defined $_[0]->{level} ? $_[0]->{level} 
+            my $level_disp = (defined $_[0]->{level} ? $_[0]->{level}
                                                      : "[undef]");
             print "$lclevel: ($_[0]->{category}/$level_disp) [@_]\n";
         }
@@ -786,20 +786,20 @@ sub create_log_level_methods {
 
   # Added these to have is_xxx functions as fast as xxx functions
   # -ms
-  
+
   my $islevel   = "is_" . $level;
   my $islclevel = "is_" . $lclevel;
 
   *{__PACKAGE__ . "::is_$lclevel"} = sub {
       $_[0]->{$islevel}->($_[0], $islclevel);
   };
-  
+
   # Add the isXxxEnabled() methods as identical to the is_xxx
   # functions. - dviner
-  
-  *{__PACKAGE__ . "::is".$initial_cap."Enabled"} = 
+
+  *{__PACKAGE__ . "::is".$initial_cap."Enabled"} =
                            \&{__PACKAGE__ . "::is_$lclevel"};
-  
+
   use strict qw(refs);
 
   return 0;
@@ -825,8 +825,8 @@ sub init_warn {
 sub callerline {
   my $message = join ('', @_);
 
-  my $caller_offset = 
-    Log::Log4perl::caller_depth_offset( 
+  my $caller_offset =
+    Log::Log4perl::caller_depth_offset(
         $Log::Log4perl::caller_depth + 1 );
 
   my ($pack, $file, $line) = caller($caller_offset);
@@ -874,7 +874,7 @@ sub logwarn {
 ##################################################
   my $self = shift;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   if ($self->is_warn()) {
@@ -892,7 +892,7 @@ sub logdie {
 ##################################################
   my $self = shift;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   if ($self->is_fatal()) {
@@ -902,8 +902,8 @@ sub logdie {
     $self->fatal(@chomped);
   }
 
-  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ? 
-      $self->and_die(@_) : 
+  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ?
+      $self->and_die(@_) :
         exit($Log::Log4perl::LOGEXIT_CODE);
 }
 
@@ -912,7 +912,7 @@ sub logexit {
 ##################################################
   my $self = shift;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   if ($self->is_fatal()) {
@@ -931,10 +931,10 @@ sub logcluck {
 ##################################################
   my $self = shift;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
-  local $Carp::CarpLevel = 
+  local $Carp::CarpLevel =
         $Carp::CarpLevel + 1;
 
   my $msg = $self->warning_render(@_);
@@ -956,7 +956,7 @@ sub logcarp {
 
   local $Carp::CarpLevel = $Carp::CarpLevel + 1;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   my $msg = $self->warning_render(@_);
@@ -981,10 +981,10 @@ sub logcroak {
 
   my $msg = $self->warning_render(@_);
 
-  local $Carp::CarpLevel = 
+  local $Carp::CarpLevel =
         $Carp::CarpLevel + 1;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   if ($self->is_fatal()) {
@@ -1000,8 +1000,8 @@ sub logcroak {
       $croak_msg = $msg;
   }
 
-  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ? 
-      Carp::croak($croak_msg) : 
+  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ?
+      Carp::croak($croak_msg) :
         exit($Log::Log4perl::LOGEXIT_CODE);
 }
 
@@ -1011,10 +1011,10 @@ sub logconfess {
   my $self = shift;
   my $arg  = $_[0];
 
-  local $Carp::CarpLevel = 
+  local $Carp::CarpLevel =
         $Carp::CarpLevel + 1;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   my $msg = $self->warning_render(@_);
@@ -1032,7 +1032,7 @@ sub logconfess {
       $confess_msg = $msg;
   }
 
-  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ? 
+  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ?
       confess($confess_msg) :
         exit($Log::Log4perl::LOGEXIT_CODE);
 }
@@ -1044,7 +1044,7 @@ sub error_warn {
 ##################################################
   my $self = shift;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   if ($self->is_error()) {
@@ -1059,7 +1059,7 @@ sub error_die {
 ##################################################
   my $self = shift;
 
-  local $Log::Log4perl::caller_depth = 
+  local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 1;
 
   my $msg = $self->warning_render(@_);
@@ -1068,7 +1068,7 @@ sub error_die {
     $self->error($msg);
   }
 
-  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ? 
+  $Log::Log4perl::LOGDIE_MESSAGE_ON_STDERR ?
       $self->and_die($msg) :
         exit($Log::Log4perl::LOGEXIT_CODE);
 }
@@ -1087,7 +1087,7 @@ sub inc_level {
 
     $delta ||= 1;
 
-    $self->level(Log::Log4perl::Level::get_higher_level($self->level(), 
+    $self->level(Log::Log4perl::Level::get_higher_level($self->level(),
                                                         $delta));
 
     $self->set_output_methods;
@@ -1133,11 +1133,11 @@ please refer to L<Log::Log4perl> for documentation.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -1147,7 +1147,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -1158,8 +1158,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

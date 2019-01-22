@@ -1,0 +1,6 @@
+The directory structure of this tests directory mirrors the directory structure
+of the parent (production code) directory.
+
+So, for example, unit tests for CIME/foo.py should live in
+CIME/tests/test_foo.py, and unit tests for CIME/SystemTests/bar.py should live
+in CIME/tests/SystemTests/test_bar.py.

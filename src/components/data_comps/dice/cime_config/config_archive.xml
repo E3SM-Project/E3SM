@@ -1,0 +1,15 @@
+<components version="2.0">
+  <comp_archive_spec compname="dice" compclass="ice">
+    <rest_file_extension>r</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
+      <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+    </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">casename.dice.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">rpointer.ice_0001</tfile>
+      <tfile disposition="copy">rpointer.ice</tfile>
+    </test_file_names>
+  </comp_archive_spec>
+</components>

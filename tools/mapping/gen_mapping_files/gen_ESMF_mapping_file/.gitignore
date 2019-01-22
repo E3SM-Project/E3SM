@@ -1,0 +1,5 @@
+.env_mach*
+env_mach*
+Depends*
+*.Log
+*.nc

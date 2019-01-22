@@ -1,0 +1,4 @@
+# Ignore auto-generated documentation for the addendum
+source/Tools_user/*.rst
+source/Tools_api
+source/CIME_api

@@ -1,8 +1,3 @@
-!===============================================================================
-! SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90 $
-!===============================================================================
-
 MODULE smooth_mod
 
 #define _NEW 1
@@ -17,25 +12,38 @@ MODULE smooth_mod
 
 ! from map_mod:
 !   real,parameter   :: rEarth   =  6.37122e6    ! radius of earth ~ m
-!   real,parameter   :: DtoR     =  3.14159265358979323846/180.0  
+!   real,parameter   :: DtoR     =  3.14159265358979323846/180.0
    real(r8),parameter   :: DtoR = DEGtoRAD
    real(r8),allocatable :: garr(:,:,:)   ! dummy runoff (nx,ny,nbasin) in kg/s/m^2
    integer, parameter :: maxLinear = 120000
 
 !===============================================================================
-CONTAINS 
+CONTAINS
 !===============================================================================
 
-SUBROUTINE smooth_init(map_in, map_out)
+SUBROUTINE smooth_init(ofilename, restrict_smooth_src_to_nn_dest,  map_in, map_out)
 
    implicit none
 
    !--- arguments ---
-   type(sMatrix),intent( in)   :: map_in   ! original unsmoothed, matrix
-   type(sMatrix),intent(inout) :: map_out  ! smoothing matrix
+   ! name of ocn scrip grid file
+   character(*), intent(in)    :: ofilename
+
+   ! original unsmoothed, matrix
+   type(sMatrix),intent(in)    :: map_in
+
+   ! map_out%mask_a = pts mapped to map_in?
+   ! This should be set to .true. if you are making a single map, but it may be
+   ! useful to set it to .false. if you plan on mapping several runoff grids to
+   ! the same ocean grid. The nearest-neighbor / smooth map generated in step 3
+   ! will be the same regardless of the value of this variable.
+   logical,      intent(in)    :: restrict_smooth_src_to_nn_dest
+
+   ! smoothing matrix
+   type(sMatrix),intent(inout) :: map_out
 
    !--- local ---
-   integer :: i,j,n ! indicies: row, col, sparse matrix 
+   integer :: i,j,n ! indicies: row, col, sparse matrix
    integer :: rcode ! return code
    integer :: ns    ! number of links
    integer :: nactive
@@ -48,7 +56,7 @@ SUBROUTINE smooth_init(map_in, map_out)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o Given map_in create map_out which maps from domain_b of
-!   map_in to itself.  This is a template for the square smoothing 
+!   map_in to itself.  This is a template for the square smoothing
 !   map, which we assume is needed for domain_b of map_in.
 ! Notes:
 ! o Deallocation below copied from map_dup routine.  Depending on the context,
@@ -61,7 +69,7 @@ SUBROUTINE smooth_init(map_in, map_out)
 !   So a good guess might be, say, 40 x (the number of src cells).
 !   But typically some cells, where the grid is finer, may get smooth over many
 !   more, and the nml radius might be set much larger than typically desired.
-!   Thus the current guess is close (2 ^ 31 ) - 1   
+!   Thus the current guess is close (2 ^ 31 ) - 1
 !   which is the maximum size that can be indexed with a 4-byte integer.
 !-------------------------------------------------------------------------------
 
@@ -123,26 +131,19 @@ SUBROUTINE smooth_init(map_in, map_out)
    allocate(map_out%  yv_a(map_in%nv_b,map_in%n_b) )
    allocate(map_out%mask_a(            map_in%n_b) )
    allocate(map_out%area_a(            map_in%n_b) )
-
-   allocate(map_out%  xc_b(            map_in%n_b) )
-   allocate(map_out%  yc_b(            map_in%n_b) )
-   allocate(map_out%  xv_b(map_in%nv_b,map_in%n_b) )
-   allocate(map_out%  yv_b(map_in%nv_b,map_in%n_b) )
-   allocate(map_out%mask_b(            map_in%n_b) )
-   allocate(map_out%area_b(            map_in%n_b) )
-
    allocate(map_out%frac_a(map_in%n_b) )
-   allocate(map_out%frac_b(map_in%n_b) )
 
    allocate(map_out%s  (ns))
    allocate(map_out%row(ns))
    allocate(map_out%col(ns))
-   allocate(map_out%sn1(map_in%n_b) )
-   allocate(map_out%sn2(map_in%n_b) )
 
    !------------------------------------------------
    ! set values
    !------------------------------------------------
+
+   ! map_in maps from runoff -> coastal ocean
+   ! map_out maps from coastal ocean -> global ocean
+   ! So source of map_out = dest of map_in
    map_out%   n_a = map_in%   n_b
    map_out%dims_a = map_in%dims_b
    map_out%  ni_a = map_in%  ni_b
@@ -152,36 +153,30 @@ SUBROUTINE smooth_init(map_in, map_out)
    map_out%  yc_a = map_in%  yc_b
    map_out%  xv_a = map_in%  xv_b
    map_out%  yv_a = map_in%  yv_b
-!  map_out%mask_a = map_in%mask_b ! all active ocn cells
    map_out%area_a = map_in%area_b
+   map_out%domain_a   = map_in%domain_b
 
-   !--- compute minimal src domain mask for smoothing matrix ---
-   jmd_count = 0
-   map_out%mask_a = 0
-   do n=1,map_in%n_s
-      i = map_in%row(n)     ! this ocn cell could get runoff
-      map_out%mask_a(i) = 1 ! this ocn cell's runoff get's smoothed
-      if(map_in%s(n) > 0.0) then 
-        jmd_count = jmd_count+1
-      endif
-   end do
-   write(*,*) subName,'number of source points is =  ',jmd_count
-   write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
+   if (restrict_smooth_src_to_nn_dest) then
+      !--- compute minimal src domain mask for smoothing matrix ---
+      jmd_count = 0
+      map_out%mask_a = 0
+      do n=1,map_in%n_s
+         i = map_in%row(n)     ! this ocn cell could get runoff
+         map_out%mask_a(i) = 1 ! this ocn cell's runoff get's smoothed
+         if(map_in%s(n) > 0.0) then
+            jmd_count = jmd_count+1
+         endif
+      end do
+      write(*,*) subName,'number of source points is =  ',jmd_count
+      write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
+   else
+      map_out%mask_a = map_in%mask_b ! all active ocn cells
+   end if
 
-   map_out%   n_b = map_in%   n_b
-   map_out%dims_b = map_in%dims_b
-   map_out%  ni_b = map_in%  ni_b
-   map_out%  nj_b = map_in%  nj_b
-   map_out%  nv_b = map_in%  nv_b
-   map_out%  xc_b = map_in%  xc_b
-   map_out%  yc_b = map_in%  yc_b
-   map_out%  xv_b = map_in%  xv_b
-   map_out%  yv_b = map_in%  yv_b
-   map_out%mask_b = map_in%mask_b
-   map_out%area_b = map_in%area_b
+   ! destination of map_out must be read in from file
+   call map_DestGridRead(map_out, ofilename)
 
-!  map_out%frac_a = map_in%frac_b
-!  map_out%frac_b = map_in%frac_b
+   ! Overwrite frac_a and frac_b to be 1 globally
    map_out%frac_a = 1.0
    map_out%frac_b = 1.0
 
@@ -189,16 +184,11 @@ SUBROUTINE smooth_init(map_in, map_out)
    map_out%s      = 1.0
    map_out%row    = 1
    map_out%col    = 1
-   map_out%sn1    = map_in%sn1
-   map_out%sn2    = map_in%sn2
 
    map_out%title      = "CCSM conservative smoothing map"
    map_out%normal     = map_in%normal
-   map_out%method     = "created using SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $"
    map_out%history    = map_in%history
    map_out%convention = map_in%convention
-   map_out%domain_a   = map_in%domain_b
-   map_out%domain_b   = map_in%domain_b
 
 END SUBROUTINE smooth_init
 
@@ -209,7 +199,7 @@ SUBROUTINE smooth(map,efold,rmax)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
    real(kind=r8), intent(in) :: efold                    ! efold scale (m)
    real(kind=r8), intent(in) :: rmax                     ! max smoothing distance (m)
 
@@ -262,7 +252,7 @@ SUBROUTINE smooth(map,efold,rmax)
 ! o Given a square sMatrix, map, generate the links for local smoothing
 !   of input fluxes with following properties:
 !       -must be conservative
-!       -must redistribute onto active points only 
+!       -must redistribute onto active points only
 !       -uses a 2D Gaussian defined by efold & rmax for weights
 !       -weights are a function of shortest active distance, so that
 !        weights are zero across land isthmuses
@@ -320,7 +310,7 @@ SUBROUTINE smooth(map,efold,rmax)
 
 
 
-   length = 0  
+   length = 0
    allocate(i2ind(maxLinear))
    allocate(j2ind(maxLinear))
    allocate(indxLinear(ni,nj))
@@ -329,7 +319,7 @@ SUBROUTINE smooth(map,efold,rmax)
    do i=1,map%n_b
        ii = iind(i)
        jj = jind(i)
-       indxLinear(ii,jj) = i    
+       indxLinear(ii,jj) = i
    end do
 #endif
 
@@ -385,7 +375,7 @@ SUBROUTINE smooth(map,efold,rmax)
 
         ic = iind(j)
         jc = jind(j)
-        length = 1  
+        length = 1
         j2ind=0;i2ind=0
 
         rdist = 0.0
@@ -394,9 +384,9 @@ SUBROUTINE smooth(map,efold,rmax)
         wgtsum = 0.0
         nbox = 0
         gdcnt = 0
+        kStart = 1
 
 #ifdef _BREADTH
-        kStart = 2
         i2ind(1) = ic
         j2ind(1) = jc
         imask_JMD = -1000
@@ -408,22 +398,21 @@ SUBROUTINE smooth(map,efold,rmax)
                 rdist,rmax,i2ind,j2ind, strPtr, length)
 
 #else
-        kStart = 1
         !--- recursive function to find dest cells ---
-      
+
         call depth_setDist(ic,jc,ni,nj,map%xc_a,map%yc_a,0.0,imask,rdist,rmax,i2ind,j2ind,length)
 #endif
 
-!        print *,'smooth: after _setDist: length is: ',length-kStart+1  
-        if(length > maxLinear) then 
-           print *,'Error need to increase maxLinear length is:', length-kStart+1 
+!        print *,'smooth: after _setDist: length is: ',length-kStart+1
+        if(length > maxLinear) then
+           print *,'Error need to increase maxLinear length is:', length-kStart+1
         endif
 
 #if _DBG
         print *,'source point: ',ic,jc
         do k=kStart,length
-           i2 = i2ind(k) 
-           j2 = j2ind(k) 
+           i2 = i2ind(k)
+           j2 = j2ind(k)
            print *,'neighbor points: (i,j): ',i2,j2,rdist(i2,j2)
         enddo
         stop 'smooth: After first call to _setDist'
@@ -435,10 +424,10 @@ SUBROUTINE smooth(map,efold,rmax)
        !-------------------------------------------------------------
        wgtsum = 0.d0
        do k = kStart,length ! loop over destination points for input cell j
-          ii = i2ind(k)  
-          jj = j2ind(k)  
+          ii = i2ind(k)
+          jj = j2ind(k)
           wgt(ii,jj) = exp(-rdist(ii,jj)/efold)*areaa(ii,jj)
-          wgtsum = wgtsum + wgt(ii,jj) 
+          wgtsum = wgtsum + wgt(ii,jj)
        enddo
 
        !-------------------------------------------------------------
@@ -483,12 +472,12 @@ SUBROUTINE smooth(map,efold,rmax)
           endif
        end do
 #endif
-! 
-!     else              
+!
+!     else
 !        !---------------------------------------------------
 !        ! if mask_a == 0 (is not considered for smoothing)
 !        ! but mask_b != 0 (is an active ocn point)
-!        ! then fill in 1.0 on diagonal 
+!        ! then fill in 1.0 on diagonal
 !        !      just in case runoff appears where mask_a == 0
 !        !---------------------------------------------------
 !        ! BK: comment out this else-option...
@@ -518,8 +507,8 @@ SUBROUTINE smooth(map,efold,rmax)
    nDest(:) = 0
    do n=1,n_s  ! loop over all non-zero matrix elements
       j = map%col(n)          ! corresponding src cell
-      nDest(j) = nDest(j) + 1 ! count # dest cells for each src cell 
-   end do 
+      nDest(j) = nDest(j) + 1 ! count # dest cells for each src cell
+   end do
 
    n = 0
    minDest = n_s
@@ -541,11 +530,11 @@ SUBROUTINE smooth(map,efold,rmax)
             nDest100   = nDest100   + 1
          else if (nDest(j) < 1000) then
             nDest1000  = nDest1000  + 1
-         else 
+         else
             nDest10000 = nDest10000 + 1
          end if
       end if
-   end do 
+   end do
    deallocate(nDest)
    avgDest = nint(avgDest/float(n))
  ! avggd = int(avggd/count(map%mask_a == 1))
@@ -716,7 +705,7 @@ SUBROUTINE test_smooth(map,field,value,source)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(in) :: map     ! smoothing map     
+   type(sMatrix), intent(in) :: map     ! smoothing map
    real(r8), intent(inout) :: field(:,:)    ! output flux field
    real(r8), intent(in) :: value            ! source flux value
    integer, intent(in) :: source(:,:)   ! source points
@@ -783,7 +772,7 @@ SUBROUTINE smooth_field_write(map,field,filename)
 ! o writes a field computed from smoothing "map" for viewing
 ! o assumes field grid is equivalent to b grid of "map"
 !-------------------------------------------------------------------------------
-   
+
    spv = maxval(field)
 
    !-----------------------------------------------------------------
@@ -821,7 +810,7 @@ SUBROUTINE smooth_field_write(map,field,filename)
    rcode = nf_def_dim(fid, 'nj_b', map%nj_b, did) ! # of points wrt j
 
    !-----------------------------------------------------------------
-   ! define data 
+   ! define data
    !-----------------------------------------------------------------
 
    rcode = nf_inq_dimid(fid,'ni_b',vdid(1))
@@ -837,7 +826,7 @@ SUBROUTINE smooth_field_write(map,field,filename)
    rcode = nf_enddef(fid)
 
    rcode = nf_inq_varid     (fid,  'field',vid)
-   rcode = nf_put_var_double(fid, vid, field) 
+   rcode = nf_put_var_double(fid, vid, field)
 
    rcode = nf_close(fid)
 
@@ -856,23 +845,23 @@ SUBROUTINE dummyflux(imt,jmt,mask,xt,yt,at,runfile,efold)
 !
 ! PURPOSE:
 !  o Construct runoff mapping based on a 'runfile' data file which
-!    partitions known river runoffs into a 19-basin scheme by Large. 
+!    partitions known river runoffs into a 19-basin scheme by Large.
 !  o runfile specifies rivers/coastal discharges (kg/s) for each basin along
 !    with lon/lat boxes within which this discharge is to be distributed.
 !    The distribution array is g(:,:,:) with units (kg/s/m^2).
 !    This routine distributes 'coastal' runoff as:
 !
 !        g(i,j,thisbasin) = [total coastal discharge (kg/s)]/[total
-!                               distribution area (m^2)]                
+!                               distribution area (m^2)]
 !
 !    This routine distributes 'river' runoff as:
 !
-!        g(i,j,thisriver) = [exponential falloff factor]*[total river 
+!        g(i,j,thisriver) = [exponential falloff factor]*[total river
 !                               discharge (kg/s)]/[total exponential-weighted
-!                               distribution area (m^2)]     
+!                               distribution area (m^2)]
 !
 !    Areas (from array at) are based on ocean grid TAREA.
-!  
+!
 !-------------------------------------------------------------------------------
 
    !--- local ---
@@ -890,12 +879,12 @@ SUBROUTINE dummyflux(imt,jmt,mask,xt,yt,at,runfile,efold)
    integer :: nb,nbo,ibasin,nrivers,msea
    real(r8) :: efold                        ! efold scale (m) for falloff
    real(r8) :: rarea                        ! sum of destination cell areas
-   real(r8) :: firarea                      ! exponential-weighted sum of 
+   real(r8) :: firarea                      ! exponential-weighted sum of
                                         ! destination cell areas
    real(r8) :: sumb,sumd,gmax
    real(r8), dimension(2,nrmax) :: blon,blat
    real(r8), dimension(nrmax) :: clon,clat,nref,discharge
-   character*40, allocatable :: bname(:)        
+   character*40, allocatable :: bname(:)
 
 !-------------------------------------------------------------------------------
 !
@@ -935,7 +924,7 @@ SUBROUTINE dummyflux(imt,jmt,mask,xt,yt,at,runfile,efold)
      total(n) = sumd    ! includes coastal runoff
 
      do nr=1,nrivers
-       xf = discharge(nr) / sumd        
+       xf = discharge(nr) / sumd
        rarea = 0.0
        firarea = 0.0
        do j=1,jmt
@@ -965,7 +954,7 @@ SUBROUTINE dummyflux(imt,jmt,mask,xt,yt,at,runfile,efold)
                 if ((mask(im,j).eq.0).or.(mask(im,jp).eq.0) &
      & .or.(mask(i,jp).eq.0).or.(mask(ip,jp).eq.0).or. &
      & (mask(ip,j).eq.0).or.(mask(ip,jm).eq.0).or. &
-     & (mask(i,jm).eq.0).or.(mask(im,jm).eq.0)) then 
+     & (mask(i,jm).eq.0).or.(mask(im,jm).eq.0)) then
                   A(i,j) = at(i,j)
                   rarea = rarea + A(i,j)
                 else
@@ -973,9 +962,9 @@ SUBROUTINE dummyflux(imt,jmt,mask,xt,yt,at,runfile,efold)
                 endif
               else                      ! for River runoff
                  A(i,j)  = at(i,j)
-                 rarea = rarea + A(i,j)     
+                 rarea = rarea + A(i,j)
                  fi(i,j) = falloff(rlon,rlat,clon(nr),clat(nr),efold)
-                 firarea = firarea + fi(i,j)*A(i,j)     
+                 firarea = firarea + fi(i,j)*A(i,j)
               endif
            else
               A(i,j)  = 0.0
@@ -986,7 +975,7 @@ SUBROUTINE dummyflux(imt,jmt,mask,xt,yt,at,runfile,efold)
 
        do j=1,jmt
          do i=1,imt
-           !  for unitless 
+           !  for unitless
            !  garr(i,j,n) = garr(i,j,n) + xf * A(i,j) / rarea
            !  for [kg/m^2/s]
            if (A(i,j) .gt. 0.) then
@@ -1057,8 +1046,8 @@ SUBROUTINE dummyweights(map,at)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o Based on M. Hecht's /fs/cgd/home0/hecht/csm/runoff/transfer_matrix.ncl
-! o Compute correct weights to map 19-element 'normalized' runoff flux vector 
-!   (kg/s/m^2) onto the POP ocean grid.  
+! o Compute correct weights to map 19-element 'normalized' runoff flux vector
+!   (kg/s/m^2) onto the POP ocean grid.
 !
 !       R(j)  = net runoff (kg/s) into basin j
 !       dA(j) = fictitious area (m^2) associated with basin j (1/19 of globe)
@@ -1075,7 +1064,7 @@ SUBROUTINE dummyweights(map,at)
 !       s(i,j) = dA(j)*[garr(i)/R(j)]*[dA_o(i)/dA_s(i)]
 !
 !   The "flux" mapping, then will be:
-!       Fo(i) = sum_over_j{s(i,j)*F(j)} 
+!       Fo(i) = sum_over_j{s(i,j)*F(j)}
 !             = sum_over_j{dA(j)   garr(i)    dA_o(i)   R(j)  }
 !                         {     * --------- * ------- * ----  }
 !                         {        R(j)       dA_s(i)   dA(j) }
@@ -1088,20 +1077,20 @@ SUBROUTINE dummyweights(map,at)
 !              = garr(i), by definition the correct flux into ocean cell i
 !
 !   Therefore, sum_over_i{F*o(i)*dAo(i)} = sum_over_j{R(j)}
-!                
+!
 !-------------------------------------------------------------------------------
 
    imt = map%ni_b
    jmt = map%nj_b
    ni = map%ni_a
    nj = map%nj_a
-   
+
    allocate(col(map%n_b,map%n_a))
    allocate(row(map%n_b,map%n_a))
    allocate(s(map%n_b,map%n_a))
    allocate(total(map%n_a))
    allocate(smask(map%n_b,map%n_a))
-   nbasin = size(garr,3) 
+   nbasin = size(garr,3)
    allocate(garr2d(map%n_b,nbasin-1))
    allocate(cplratio(map%n_b))
    allocate(at1d(map%n_b))
@@ -1109,7 +1098,7 @@ SUBROUTINE dummyweights(map,at)
    ! This is the areafact ratio that cpl will multiply
    ! runoff flux with before sending to ocean
    cplratio = (map%area_b*(rEarth**2))/reshape(at,(/map%n_b/))
-   
+
    garr2d = reshape(garr(:,:,2:nbasin),(/map%n_b,nbasin-1/))
    at1d = reshape(at,(/map%n_b/))
 
@@ -1196,15 +1185,15 @@ SUBROUTINE dummy_aroff_write(map,srcfile,datafile,at)
 !   will output a data.runoff.nc file for 19-basin data runoff.  This
 !   file is needed by dlnd6, and both "domain.runoff.nc" and "data.runoff.nc"
 !   get softlinked to this file in the dlnd buildnml script.  The dlnd
-!   namelist parameter data_aroff will get set to this file.  
+!   namelist parameter data_aroff will get set to this file.
 !
 ! o The contents of the netcdf are fictitious 19-basin grid information (derived
-!   from the r19.nc file through the sMatrix "map") and runoff values for each 
-!   basin in kg/s/m^2.  These values are computed as the total runoff for each 
-!   basin as specified in srcfile (kg/s) normalized by a fictitious area 
+!   from the r19.nc file through the sMatrix "map") and runoff values for each
+!   basin in kg/s/m^2.  These values are computed as the total runoff for each
+!   basin as specified in srcfile (kg/s) normalized by a fictitious area
 !   (1/19 of the globe) in m^2.
 !-------------------------------------------------------------------------------
-   
+
    imt = map%ni_b
    jmt = map%nj_b
    ni = map%ni_a
@@ -1312,19 +1301,19 @@ SUBROUTINE dummy_aroff_write(map,srcfile,datafile,at)
    rcode = nf_enddef(fid)
    rcode = nf_inq_varid(fid,'xc',vid)
    work = reshape(map%xc_a,(/ni,nj/))
-   rcode = nf_put_var_double(fid, vid, work) 
+   rcode = nf_put_var_double(fid, vid, work)
    rcode = nf_inq_varid(fid,'yc',vid)
    work = reshape(map%yc_a,(/ni,nj/))
-   rcode = nf_put_var_double(fid, vid, work) 
+   rcode = nf_put_var_double(fid, vid, work)
    rcode = nf_inq_varid(fid,'xv',vid)
    work2 = reshape(map%xv_a,(/ni,nj,4/))
-   rcode = nf_put_var_double(fid, vid, work2) 
+   rcode = nf_put_var_double(fid, vid, work2)
    rcode = nf_inq_varid(fid,'yv',vid)
    work2 = reshape(map%yv_a,(/ni,nj,4/))
-   rcode = nf_put_var_double(fid, vid, work2) 
+   rcode = nf_put_var_double(fid, vid, work2)
    rcode = nf_inq_varid(fid,'mask',vid)
    iwork = reshape(map%mask_a,(/ni,nj/))
-   rcode = nf_put_var_int(fid, vid, iwork) 
+   rcode = nf_put_var_int(fid, vid, iwork)
    rcode = nf_inq_varid(fid,'area',vid)
    work = reshape(map%area_a,(/ni,nj/))
    rcode = nf_put_var_double(fid, vid, work)
@@ -1393,7 +1382,7 @@ SUBROUTINE POP_TAREA_compute(filename,nx,ny,area)
       where (dyt == 0.0) dyt=1.0
 
       area = dxt*dyt
- 
+
 END SUBROUTINE POP_TAREA_compute
 
 !===============================================================================
@@ -1437,14 +1426,14 @@ SUBROUTINE POP_2D_read(filename,varname,data)
    rcode = nf_inq_varid(fid,varname,vid)
    if (rcode.ne.NF_NOERR) write(*,F00) nf_strerror(rcode)
    rcode = nf_inq_varndims(fid,vid,ndims)
-   if (ndims.ne.2) then 
+   if (ndims.ne.2) then
         write(*,F00) 'variable did not have dim 2'
         stop
    endif
    rcode = nf_inq_vardimid(fid,vid,dimid)
    rcode = nf_inq_dimlen(fid, dimid(1)   , nx  )
    rcode = nf_inq_dimlen(fid, dimid(2)   , ny  )
-   if (nx.ne.nxin.or.ny.ne.nyin) then 
+   if (nx.ne.nxin.or.ny.ne.nyin) then
         write(*,F00) 'variable does not have correct size',nx,ny
         stop
    endif
@@ -1494,22 +1483,22 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
    length2=length
    do kk=strPtr,length2
       i0 = i2ind(kk)
-      j0 = j2ind(kk) 
+      j0 = j2ind(kk)
       ! ------------------------------------------
-      ! only perform the search if patch length 
+      ! only perform the search if patch length
       ! is below cutoff threshold
       ! ------------------------------------------
-      if(rdist(i0,j0) < rmax) then 
+      if(rdist(i0,j0) < rmax) then
       if(Debug) print *,'rdist(i0,j0) rmax: ',rdist(i0,j0),rmax
-      
+
       j = (j0-1)*ni+i0
 
       !-----------------
-      ! West neighbor 
+      ! West neighbor
       !-----------------
       iw = iadd(i0,-1,ni)
       jw = j0
-      if(mask(iw,jw) == -1) then 
+      if(mask(iw,jw) == -1) then
           k = (j0-1)*ni+iw
           dw = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(iw,jw) = level
@@ -1525,7 +1514,7 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
       !-----------------
       ie = iadd(i0,1,ni)
       je = j0
-      if(mask(ie,je) == -1) then 
+      if(mask(ie,je) == -1) then
          k = (j0-1)*ni+ie
           de = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(ie,je) = level
@@ -1541,7 +1530,7 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
       !----------------
       jn = jadd(j0,1,nj)
       in = i0
-      if(mask(in,jn) == -1) then 
+      if(mask(in,jn) == -1) then
           k = (jn-1)*ni+i0
           dn = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(in,jn) = level
@@ -1557,7 +1546,7 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
       !----------------
       js = jadd(j0,-1,nj)
       is = i0
-      if(mask(is,js) == -1) then 
+      if(mask(is,js) == -1) then
          k = (js-1)*ni+i0
          ds = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
          mask(is,js) = level
@@ -1573,11 +1562,11 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
 ! Note: this was meant to add diagonal search to smoother, but
 !       it doesn't work so it is not run at this time
       !-----------------
-      ! North West neighbor 
+      ! North West neighbor
       !-----------------
       inw = iadd(i0,-1,ni)
       jnw = jadd(j0,1,nj)
-      if(mask(inw,jnw) == -1) then 
+      if(mask(inw,jnw) == -1) then
           k = (jnw-1)*ni+inw
           dnw = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(inw,jnw) = level
@@ -1589,11 +1578,11 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
       endif
 
       !-----------------
-      ! North East neighbor 
+      ! North East neighbor
       !-----------------
       ine = iadd(i0,1,ni)
       jne = jadd(j0,1,nj)
-      if(mask(ine,jne) == -1) then 
+      if(mask(ine,jne) == -1) then
           k = (jne-1)*ni+ine
           dne = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(ine,jne) = level
@@ -1605,11 +1594,11 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
       endif
 
       !-----------------
-      ! South East neighbor 
+      ! South East neighbor
       !-----------------
       ise = iadd(i0,1,ni)
       jse = jadd(j0,-1,nj)
-      if(mask(ise,jse) == -1) then 
+      if(mask(ise,jse) == -1) then
           k = (jse-1)*ni+ise
           dse = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(ise,jse) = level
@@ -1621,11 +1610,11 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
       endif
 
       !-----------------
-      ! South West neighbor 
+      ! South West neighbor
       !-----------------
       isw = iadd(i0,-1,ni)
       jsw = jadd(j0,-1,nj)
-      if(mask(isw,jsw) == -1) then 
+      if(mask(isw,jsw) == -1) then
           k = (jsw-1)*ni+isw
           dsw = distance(x(k),y(k),x(j),y(j))+rdist(i0,j0)
           mask(isw,jsw) = level
@@ -1639,10 +1628,10 @@ recursive SUBROUTINE breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2in
 
   enddo
   level = level + 1
-  if(length > strptr2) then 
+  if(length > strptr2) then
       call breadth_setDist(ni,nj,level,x,y,mask, rdist,rmax,i2ind,j2ind,strptr2,length)
   endif
- 
+
 END SUBROUTINE breadth_setDist
 
 recursive SUBROUTINE depth_setDist(i0,j0,ni,nj,x,y,value,mask,rdist,rmax,i2ind,j2ind,length)
@@ -1658,16 +1647,16 @@ recursive SUBROUTINE depth_setDist(i0,j0,ni,nj,x,y,value,mask,rdist,rmax,i2ind,j
    real(r8) :: rmax,d,value
    real(r8), dimension(ni*nj) :: x,y
    integer, dimension(:) :: i2ind,j2ind
-   integer :: length  
-   
+   integer :: length
+
    if (mask(i0,j0) /= 0 .and. value < rmax .and. value < rdist(i0,j0)) then
       j = (j0-1)*ni+i0
-      if(rdist(i0,j0) > 1.e10) then 
-         ! first visit to point 
+      if(rdist(i0,j0) > 1.e10) then
+         ! first visit to point
          length = length + 1
          i2ind(length) = i0
          j2ind(length) = j0
-      endif  
+      endif
       rdist(i0,j0)=value
       mask(i0,j0)=1
 

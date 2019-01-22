@@ -11,9 +11,9 @@ GetOptions(
 	   "filetab=s" => \$opts{'filetab'},
 	   "filechk=s" => \$opts{'filechk'}
 	   );
-my $file    = $opts{'file'}; 
-my $filetab = $opts{'filetab'}; 
-my $filechk = $opts{'filechk'}; 
+my $file    = $opts{'file'};
+my $filetab = $opts{'filetab'};
+my $filechk = $opts{'filechk'};
 
 my $name = ' ';
 my $status = ' ';
@@ -29,7 +29,7 @@ foreach my $line (@data)
 {
     chomp($line);
     my @entry = split(' ',$line);
-    $line_num++; 
+    $line_num++;
     if ( $line_num == 1 ) {
 	$name = $entry[1];
 	$status = $entry[0]
@@ -49,7 +49,7 @@ foreach my $line (@data)
     my @entry = split(' ',$line);
     if ($entry[0] =~ /CHE/) {
 	$check_status[$check_num] = $line;
-	$check_num++; 
+	$check_num++;
     }
 }
 close (FILE);

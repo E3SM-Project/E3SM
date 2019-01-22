@@ -1,5 +1,0 @@
-fsurdat = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/surfdata_map/surfdata_0.9x1.25_16pftsmodwshrubwglcr_simyr1850_c151210.nc'
-init_interp_fill_missing_with_natveg = .true.
-finidat = '/glade/scratch/hannay/land_ic/b.e15.B1850.f09_g16.pi_control.35_ic.clm2.r.0001-01-06-00000.nc'
-
-

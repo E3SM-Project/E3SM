@@ -42,7 +42,7 @@ sub new {
            # the eval string just consists of valid perl code (e.g. an
            # appended ';' in $appenderclass variable). Fail if we see
            # anything in there that can't be class name.
-        die "'$appenderclass' not a valid class name " if 
+        die "'$appenderclass' not a valid class name " if
             $appenderclass =~ /[^:\w]/;
 
         # Check if the class/package is already available because
@@ -54,7 +54,7 @@ sub new {
             # Not available yet, try to pull it in.
             # see 'perldoc -f require' for why two evals
             eval "require $appenderclass";
-                 #unless ${$appenderclass.'::IS_LOADED'};  #for unit tests, 
+                 #unless ${$appenderclass.'::IS_LOADED'};  #for unit tests,
                                                           #see 004Config
             die $@ if $@;
         }
@@ -64,7 +64,7 @@ sub new {
 
     $params{name} = unique_name() unless exists $params{name};
 
-    # If it's a Log::Dispatch::File appender, default to append 
+    # If it's a Log::Dispatch::File appender, default to append
     # mode (Log::Dispatch::File defaults to 'clobber') -- consensus 9/2002
     # (Log::Log4perl::Appender::File already defaults to 'append')
     if ($appenderclass eq 'Log::Dispatch::File' &&
@@ -73,7 +73,7 @@ sub new {
     }
 
     my $appender = $appenderclass->new(
-            # Set min_level to the lowest setting. *we* are 
+            # Set min_level to the lowest setting. *we* are
             # controlling this now, the appender should just
             # log it with no questions asked.
         min_level => 'debug',
@@ -92,11 +92,11 @@ sub new {
         #whether to collapse arrays, etc.
     $self->{warp_message} = $params{warp_message};
     if($self->{warp_message} and
-       my $cref = 
+       my $cref =
        Log::Log4perl::Config::compile_if_perl($self->{warp_message})) {
         $self->{warp_message} = $cref;
     }
-    
+
     bless $self, $class;
 
     return $self;
@@ -129,7 +129,7 @@ sub threshold { # Set/Get the appender threshold
 }
 
 ##################################################
-sub log { 
+sub log {
 ##################################################
 # Relay this call to Log::Log4perl::Appender:* or
 # Log::Dispatch::*
@@ -168,32 +168,32 @@ sub log {
                     if( !defined $p->{message}->[ $i ] ) {
                         local $Carp::CarpLevel =
                         $Carp::CarpLevel + $Log::Log4perl::caller_depth + 1;
-                        carp "Warning: Log message argument #" . 
+                        carp "Warning: Log message argument #" .
                              ($i+1) . " undefined";
                     }
                 }
-                $p->{message} = 
-                    join($Log::Log4perl::JOIN_MSG_ARRAY_CHAR, 
-                         @{$p->{message}} 
+                $p->{message} =
+                    join($Log::Log4perl::JOIN_MSG_ARRAY_CHAR,
+                         @{$p->{message}}
                          );
             }
-            
+
             #defined but false, e.g. Appender::DBI
         } elsif (! $self->{warp_message}) {
             ;  #leave the message alone
-    
+
         } elsif (ref($self->{warp_message}) eq "CODE") {
             #defined and a subref
-            $p->{message} = 
+            $p->{message} =
                 [$self->{warp_message}->(@{$p->{message}})];
         } else {
             #defined and a function name?
             no strict qw(refs);
-            $p->{message} = 
+            $p->{message} =
                 [$self->{warp_message}->(@{$p->{message}})];
         }
 
-        $p->{message} = $self->{layout}->render($p->{message}, 
+        $p->{message} = $self->{layout}->render($p->{message},
             $category,
             $level,
             3 + $Log::Log4perl::caller_depth,
@@ -266,9 +266,9 @@ sub filter { # Set filter
 }
 
 ##################################################
-sub AUTOLOAD { 
+sub AUTOLOAD {
 ##################################################
-# Relay everything else to the underlying 
+# Relay everything else to the underlying
 # Log::Log4perl::Appender::* or Log::Dispatch::*
 #  object
 ##################################################
@@ -327,7 +327,7 @@ Log::Log4perl::Appender - Log appender class
 =head1 DESCRIPTION
 
 This class is a wrapper around the C<Log::Log4perl::Appender>
-appender set. 
+appender set.
 
 It also supports the <Log::Dispatch::*> collections of appenders. The
 module hides the idiosyncrasies of C<Log::Dispatch> (e.g. every
@@ -340,7 +340,7 @@ dispatchers already created and tested in C<Log::Dispatch>.
 =head2 Log::Log4perl::Appender->new($dispatcher_class_name, ...);
 
 The constructor C<new()> takes the name of the appender
-class to be created as a I<string> (!) argument, optionally followed by 
+class to be created as a I<string> (!) argument, optionally followed by
 a number of appender-specific parameters,
 for example:
 
@@ -357,11 +357,11 @@ the C<name()> method:
   print "The appender's name is ", $appender->name(), "\n";
 
 Other parameters are specific to the appender class being used.
-In the case above, the C<filename> parameter specifies the name of 
-the C<Log::Log4perl::Appender::File> dispatcher used. 
+In the case above, the C<filename> parameter specifies the name of
+the C<Log::Log4perl::Appender::File> dispatcher used.
 
-However, if, for instance, 
-you're using a C<Log::Dispatch::Email> dispatcher to send you 
+However, if, for instance,
+you're using a C<Log::Dispatch::Email> dispatcher to send you
 email, you'll have to specify C<from> and C<to> email addresses.
 Every dispatcher is different.
 Please check the C<Log::Dispatch::*> documentation for the appender used
@@ -371,23 +371,23 @@ The C<new()> method will just pass these parameters on to a newly created
 C<Log::Dispatch::*> object of the specified type.
 
 When it comes to logging, the C<Log::Log4perl::Appender> will transparently
-relay all messages to the C<Log::Dispatch::*> object it carries 
+relay all messages to the C<Log::Dispatch::*> object it carries
 in its womb.
 
 =head2 $appender->layout($layout);
 
 The C<layout()> method sets the log layout
-used by the appender to the format specified by the 
+used by the appender to the format specified by the
 C<Log::Log4perl::Layout::*> object which is passed to it as a reference.
 Currently there's two layouts available:
 
     Log::Log4perl::Layout::SimpleLayout
     Log::Log4perl::Layout::PatternLayout
 
-Please check the L<Log::Log4perl::Layout::SimpleLayout> and 
+Please check the L<Log::Log4perl::Layout::SimpleLayout> and
 L<Log::Log4perl::Layout::PatternLayout> manual pages for details.
 
-=head1 Supported Appenders 
+=head1 Supported Appenders
 
 Here's the list of appender modules currently available via C<Log::Dispatch>,
 if not noted otherwise, written by Dave Rolsky:
@@ -405,14 +405,14 @@ if not noted otherwise, written by Dave Rolsky:
        Log::Dispatch::Syslog
        Log::Dispatch::Tk (by Dominique Dumont)
 
-C<Log4perl> doesn't care which ones you use, they're all handled in 
+C<Log4perl> doesn't care which ones you use, they're all handled in
 the same way via the C<Log::Log4perl::Appender> interface.
-Please check the well-written manual pages of the 
+Please check the well-written manual pages of the
 C<Log::Dispatch> hierarchy on how to use each one of them.
 
 =head1 Parameters passed on to the appender's log() method
 
-When calling the appender's log()-Funktion, Log::Log4perl will 
+When calling the appender's log()-Funktion, Log::Log4perl will
 submit a list of key/value pairs. Entries to the following keys are
 guaranteed to be present:
 
@@ -435,8 +435,8 @@ Log::Log4perl level of the event
 =head1 Pitfalls
 
 Since the C<Log::Dispatch::File> appender truncates log files by default,
-and most of the time this is I<not> what you want, we've instructed 
-C<Log::Log4perl> to change this behavior by slipping it the 
+and most of the time this is I<not> what you want, we've instructed
+C<Log::Log4perl> to change this behavior by slipping it the
 C<mode =E<gt> append> parameter behind the scenes. So, effectively
 with C<Log::Log4perl> 0.23, a configuration like
 
@@ -445,7 +445,7 @@ with C<Log::Log4perl> 0.23, a configuration like
     log4perl.appender.FileAppndr.filename = test.log
     log4perl.appender.FileAppndr.layout   = Log::Log4perl::Layout::SimpleLayout
 
-will always I<append> to an existing logfile C<test.log> while if you 
+will always I<append> to an existing logfile C<test.log> while if you
 specifically request clobbering like in
 
     log4perl.category = INFO, FileAppndr
@@ -459,25 +459,25 @@ it will overwrite an existing log file C<test.log> and start from scratch.
 =head1 Appenders Expecting Message Chunks
 
 Instead of simple strings, certain appenders are expecting multiple fields
-as log messages. If a statement like 
+as log messages. If a statement like
 
     $logger->debug($ip, $user, "signed in");
 
-causes an off-the-shelf C<Log::Log4perl::Appender::Screen> 
-appender to fire, the appender will 
+causes an off-the-shelf C<Log::Log4perl::Appender::Screen>
+appender to fire, the appender will
 just concatenate the three message chunks passed to it
 in order to form a single string.
-The chunks will be separated by a string defined in 
+The chunks will be separated by a string defined in
 C<$Log::Log4perl::JOIN_MSG_ARRAY_CHAR> (defaults to the empty string
-""). 
+"").
 
-However, different appenders might choose to 
+However, different appenders might choose to
 interpret the message above differently: An
 appender like C<Log::Log4perl::Appender::DBI> might take the
 three arguments passed to the logger and put them in three separate
 rows into the DB.
 
-The  C<warp_message> appender option is used to specify the desired 
+The  C<warp_message> appender option is used to specify the desired
 behavior.
 If no setting for the appender property
 
@@ -496,20 +496,20 @@ If, on the other hand, it is set to a false value, like in
 
 then the message chunks are passed unmodified to the appender as an
 array reference. Please note that you need to set the appender's
-layout to C<Log::Log4perl::Layout::NoopLayout> which just leaves 
+layout to C<Log::Log4perl::Layout::NoopLayout> which just leaves
 the messages chunks alone instead of formatting them or replacing
 conversion specifiers.
 
 B<Please note that the standard appenders in the Log::Dispatch hierarchy
-will choke on a bunch of messages passed to them as an array reference. 
+will choke on a bunch of messages passed to them as an array reference.
 You can't use C<warp_message = 0> (or the function name syntax
 defined below) on them.
 Only special appenders like Log::Log4perl::Appender::DBI can deal with
 this.>
 
 If (and now we're getting fancy)
-an appender expects message chunks, but we would 
-like to pre-inspect and probably modify them before they're 
+an appender expects message chunks, but we would
+like to pre-inspect and probably modify them before they're
 actually passed to the appender's C<log>
 method, an inspection subroutine can be defined with the
 appender's C<warp_message> property:
@@ -519,7 +519,7 @@ appender's C<warp_message> property:
                                            $#_ = 2 if @_ > 3; \
                                            return @_; }
 
-The inspection subroutine defined by the C<warp_message> 
+The inspection subroutine defined by the C<warp_message>
 property will receive the list of message chunks, like they were
 passed to the logger and is expected to return a corrected list.
 The example above simply limits the argument list to a maximum of
@@ -531,7 +531,7 @@ Also, the warp function can be specified by name like in
     log4perl.appender.SomeApp.warp_message = main::filter_my_message
 
 In this example,
-C<filter_my_message> is a function in the C<main> package, 
+C<filter_my_message> is a function in the C<main> package,
 defined like this:
 
     my $COUNTER = 0;
@@ -543,20 +543,20 @@ defined like this:
     }
 
 The subroutine above will add an ever increasing counter
-as an additional first field to 
+as an additional first field to
 every message passed to the C<SomeApp> appender -- but not to
 any other appender in the system.
 
 =head2 Composite Appenders
 
 Composite appenders relay their messages to sub-appenders after providing
-some filtering or synchronizing functionality on incoming messages. 
-Examples are 
+some filtering or synchronizing functionality on incoming messages.
+Examples are
 Log::Log4perl::Appender::Synchronized,
 Log::Log4perl::Appender::Limit, and
 Log::Log4perl::Appender::Buffer. Check their manual pages for details.
 
-Composite appender objects are regular Log::Log4perl::Appender objects, 
+Composite appender objects are regular Log::Log4perl::Appender objects,
 but they have the composite flag set:
 
     $app->composite(1);
@@ -568,19 +568,19 @@ its messages to:
     sub post_init {
     ############################################
         my($self) = @_;
-    
+
         if(! exists $self->{appender}) {
             die "No appender defined for " . __PACKAGE__;
         }
-    
+
         my $appenders = Log::Log4perl->appenders();
         my $appender = Log::Log4perl->appenders()->{$self->{appender}};
-    
+
         if(! defined $appender) {
             die "Appender $self->{appender} not defined (yet) when " .
                 __PACKAGE__ . " needed it";
         }
-    
+
         $self->{app} = $appender;
     }
 
@@ -597,9 +597,9 @@ For example, if you define a Synchronized appender like
 
 then Log4perl will set the appender's C<appender> attribute to the
 I<name> of the appender to finally relay messages to. After the
-Log4perl configuration file has been processed, Log4perl will remember to 
+Log4perl configuration file has been processed, Log4perl will remember to
 call the composite appender's post_init() method, which will grab
-the relay appender instance referred to by the name (Logfile) 
+the relay appender instance referred to by the name (Logfile)
 and set it in its C<app> attribute. This is exactly what the
 code snippet above does.
 
@@ -607,7 +607,7 @@ But if you initialize Log4perl by its API, you need to remember to
 perform these steps. Here's the lineup:
 
     use Log::Log4perl qw(get_logger :levels);
-    
+
     my $fileApp = Log::Log4perl::Appender->new(
     		'Log::Log4perl::Appender::File',
     		name     => 'MyFileApp',
@@ -621,7 +621,7 @@ perform these steps. Here's the lineup:
       # Make the appender known to the system (without assigning it to
       # any logger
     Log::Log4perl->add_appender( $fileApp );
-    
+
     my $syncApp = Log::Log4perl::Appender->new(
     		'Log::Log4perl::Appender::Synchronized',
     		name       => 'MySyncApp',
@@ -638,7 +638,7 @@ perform these steps. Here's the lineup:
     get_logger("")->level($DEBUG);
     get_logger("wonk")->debug("waah!");
 
-The composite appender's log() function will typically cache incoming 
+The composite appender's log() function will typically cache incoming
 messages until a certain trigger condition is met and then forward a bulk
 of messages to the relay appender.
 
@@ -678,7 +678,7 @@ correctly.  The cache will then contain a correctly rendered message, according
 to the layout of the target appender.
 
 Later, when the time comes to flush the cached messages, a call to the relay
-appender's base class' log_cached() method with the cached message as 
+appender's base class' log_cached() method with the cached message as
 an argument will forward the correctly rendered message:
 
     ###########################################
@@ -701,11 +701,11 @@ Log::Dispatch
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -715,7 +715,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -726,8 +726,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

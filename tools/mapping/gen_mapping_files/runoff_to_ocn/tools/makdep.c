@@ -3,16 +3,16 @@
 ** line.  A dependency is anything that is referenced by a "#include"' or
 ** f90 "use" statement.  In addition to these dependencies, write a dependency
 ** rule of "file.d" for each "file.F" or "file.c".  This is to accomodate the
-** default "make" procedure for CCM.  
+** default "make" procedure for CCM.
 **
-** The name of the module being "use"d is assumed to be case sensitive even 
-** though the Fortran language is not.  In addition, Fortran source files are 
-** assumed to end in .F.  For example, the statement "use Xxx" will translate 
-** into a dependency of Xxx.o, and the file searched for will be Xxx.F.  
+** The name of the module being "use"d is assumed to be case sensitive even
+** though the Fortran language is not.  In addition, Fortran source files are
+** assumed to end in .F.  For example, the statement "use Xxx" will translate
+** into a dependency of Xxx.o, and the file searched for will be Xxx.F.
 **
-** Only files which exist in at least one directory named in the current 
+** Only files which exist in at least one directory named in the current
 ** directory or one or more "-I" command line arguments will be considered.
-** 
+**
 ** An ANSI C compiler is required to build this code.
 */
 
@@ -36,7 +36,7 @@ struct node {
   struct node *next;
 };
 
-/* 
+/*
 ** lists of dependencies already found: prevents duplicates.
 */
 
@@ -55,7 +55,7 @@ main (int argc, char **argv)
 {
   int lastdot;             /* points to the last . in fname */
   int c;                   /* return from getopt */
-  int recursive = FALSE;   /* flag asks for recursive check: 
+  int recursive = FALSE;   /* flag asks for recursive check:
 			   ** i.e. check the thing being #included for #includes */
   FILE *fpFname;
 
@@ -78,7 +78,7 @@ main (int argc, char **argv)
   struct node *sptr;       /* pointer into suffix_list */
 
   /*
-  ** Always put "." first in Filepath since gnumake will put "." first 
+  ** Always put "." first in Filepath since gnumake will put "." first
   ** regardless of whether it is specified in VPATH
   */
 
@@ -151,9 +151,9 @@ main (int argc, char **argv)
   /*
   ** Define the .o file by changing tail to ".o"
   */
-  
+
   strcpy (doto, fname);
-  for (lastdot = strlen (fname) - 1; doto[lastdot] != '.' && lastdot > 0; 
+  for (lastdot = strlen (fname) - 1; doto[lastdot] != '.' && lastdot > 0;
        lastdot--);
 
   if (lastdot == 0) {
@@ -167,7 +167,7 @@ main (int argc, char **argv)
   strcat (dotd, ".d ");
 
   /*
-  ** write the blah.o blah.d: blah.F (or .c or whatever) dependency to stdout 
+  ** write the blah.o blah.d: blah.F (or .c or whatever) dependency to stdout
   */
 
   fputs (doto   , stdout);
@@ -193,7 +193,7 @@ main (int argc, char **argv)
       if (strncmp (lptr, "include ", 8) == 0) {
 	for (lptr += 8; *lptr != '<' && *lptr != '"' && *lptr != '\0'; lptr++);
 
-	if (*lptr == '\0') 
+	if (*lptr == '\0')
 	  break;              /* Bad input line: ignore */
 
 	/*
@@ -205,7 +205,7 @@ main (int argc, char **argv)
 	     fptr++)
 	  *fptr = *lptr;
 
-	if (*lptr == '\0') 
+	if (*lptr == '\0')
 	  break;              /* Bad input line: ignore */
 
 	*fptr = '\0';
@@ -214,7 +214,7 @@ main (int argc, char **argv)
 
 	  /*
 	  ** Include only dependencies which are specified by -Ixxx on the
-	  ** command line.  These directories are defined by the linked list 
+	  ** command line.  These directories are defined by the linked list
 	  ** pointed to by dirlist.
 	  */
 
@@ -258,14 +258,14 @@ main (int argc, char **argv)
       }
 
     } else {
-      
+
       /*
-      ** Check for dependencies of the f90 "use" variety.  To strictly adhere 
+      ** Check for dependencies of the f90 "use" variety.  To strictly adhere
       ** to fortran std, should allow for spaces between chars of "use".
       */
 
       for (lptr = line; isspace (*lptr); lptr++);
-      if (tolower ((int) lptr[0]) == 'u' && 
+      if (tolower ((int) lptr[0]) == 'u' &&
 	  tolower ((int) lptr[1]) == 's' &&
 	  tolower ((int) lptr[2]) == 'e') {
 
@@ -298,7 +298,7 @@ main (int argc, char **argv)
 
 	    /*
 	    ** Include only dependencies which are specified by -Ixxx on the
-	    ** command line.  These directories are defined by the linked list 
+	    ** command line.  These directories are defined by the linked list
 	    ** pointed to by dirlist.
 	    */
 
@@ -317,14 +317,14 @@ main (int argc, char **argv)
 		newnode->name = malloc (strlen (srcfile) + 1);
 		strcpy (newnode->name, depnam);
 		newnode->next = NULL;
-		
+
 		if (uselist == NULL)
 		  uselist = newnode;
 		else
 		  uselast->next = newnode;
-		
+
 		uselast = newnode;
-	      
+
 		fputs (doto  , stdout);
 		fputs (": "  , stdout);
 		fputs (depnam, stdout);
@@ -384,7 +384,7 @@ void check (char *file, struct node *dirlist, char *doto, int recurse_level)
       if (strncmp (lptr, "include ", 8) == 0) {
 	for (lptr += 8; *lptr != '<' && *lptr != '"' && *lptr != '\0'; lptr++);
 
-	if (*lptr == '\0') 
+	if (*lptr == '\0')
 	  break;              /* Bad input line: ignore */
 
 	/*
@@ -395,7 +395,7 @@ void check (char *file, struct node *dirlist, char *doto, int recurse_level)
 	for (fptr = depnam; *++lptr != '>' && *lptr != '"' && *lptr != '\0'; fptr++)
 	  *fptr = *lptr;
 
-	if (*lptr == '\0') 
+	if (*lptr == '\0')
 	  break;              /* Bad input line: ignore */
 
 	*fptr = '\0';

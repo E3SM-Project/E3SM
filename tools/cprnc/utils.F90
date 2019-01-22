@@ -11,12 +11,12 @@ subroutine get_dimname_str(ndims,dimids,dims,dimname_str)
   integer :: dlen
   integer :: j
 
-  dimname_str = ' ' 
-  
+  dimname_str = ' '
+
   if(ndims>0) then
      dimname_str(1:1) = '('
      dlen=2
-     
+
      do j=1,ndims
         dimname_str(dlen:) = trim(dims(dimids(j))%name)//','
         dlen=dlen+ len_trim(dims(dimids(j))%name) + 1
@@ -35,12 +35,12 @@ subroutine get_dim_str(ndims,loc,dim_str)
   integer :: dlen
   integer :: j
 
-  dim_str = ' ' 
-  
+  dim_str = ' '
+
   if(ndims>0) then
      dim_str(1:1) = '('
      dlen=2
-     
+
      do j=1,ndims
         write(dim_str(dlen:),'(i6,a)') loc(j),','
 
@@ -54,13 +54,17 @@ end subroutine get_dim_str
 
 
 
-subroutine checknf90(ierr,returnflag)
+subroutine checknf90(ierr,returnflag,err_str)
   use netcdf, only : nf90_noerr, nf90_strerror
   integer, intent(in) :: ierr
   logical, optional, intent(in) :: returnflag
+  character(len=*), optional, intent(in) :: err_str
 
   if(ierr/=NF90_NOERR) then
      print *, trim(nf90_strerror(ierr))
+     if(present(err_str)) then
+        print *, trim(err_str)
+     end if
      if(present(returnflag)) then
         if(returnflag) return
      end if
@@ -74,7 +78,7 @@ subroutine checknf90(ierr,returnflag)
 
 
 end subroutine checknf90
-  
+
 
 
 

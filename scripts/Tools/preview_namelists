@@ -1,278 +1,57 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use IO::File;
-use IO::Handle;
-use File::Basename;
-use File::Copy;
-use File::Path;
+"""
+Creates namelist and other model input files for each component (by running each
+component's buildnml script). Then copies the generated files to the CaseDocs
+subdirectory for inspection.
 
-sub usage {
-    die <<EOF;
+It is not required to run this manually: namelists will be generated
+automatically when the run starts. However, this can be useful in order to
+review the namelists before submitting the case.
 
-SYNOPSIS
-  preview_namelists  [options]
+case.setup must be run before this.
 
-OPTIONS
-  -loglevel  Controls the level of output from the script, 5 levels supported
-                  DEBUG (most verbose), INFO (default), WARN, ERROR, FATAL (silent)
-  -dryrun    Do not attempt to load modules or create directories
+Typical usage is simply:
+   ./preview_namelists
+"""
 
-  -help [or -h]  Print usage to STDOUT (optional).
-EOF
-} 
+from standard_script_setup import *
 
-my %opts = ( loglevel => "INFO");
+from CIME.case              import Case
+from CIME.utils             import expect
 
-GetOptions(
-    "loglevel=s" => \$opts{'loglevel'},
-    "dryrun" => \$opts{dryrun},
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+import argparse
 
-# Give usage message.
-usage() if $opts{'help'};
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
 
-# Check for unparsed argumentss
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    usage();
-}
-my $EXEROOT		= `./xmlquery  EXEROOT		-value`;
-my $LIBROOT		= `./xmlquery  LIBROOT		-value`;
-my $INCROOT		= `./xmlquery  INCROOT		-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR	 	-value`;
-my $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
-my $COMP_CPL		= `./xmlquery  COMP_CPL		-value`;
-my $COMP_ATM		= `./xmlquery  COMP_ATM		-value`;
-my $COMP_LND		= `./xmlquery  COMP_LND		-value`;
-my $COMP_ICE		= `./xmlquery  COMP_ICE		-value`;
-my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
-my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
-my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
-my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
-my $COMP_ESP		= `./xmlquery  COMP_ESP		-value`;
-my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
-my $COMPILER            = `./xmlquery  COMPILER		-value`;
-my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
-my $MACH             	= `./xmlquery  MACH		-value`;
-my $MPILIB             	= `./xmlquery  MPILIB		-value`;
-my $DEBUG             	= `./xmlquery  DEBUG		-value`;
-my $CONFIG_ATM_FILE	= `./xmlquery  CONFIG_ATM_FILE	-value `;
-my $CONFIG_LND_FILE	= `./xmlquery  CONFIG_LND_FILE	-value `;
-my $CONFIG_ICE_FILE	= `./xmlquery  CONFIG_ICE_FILE	-value `;
-my $CONFIG_OCN_FILE	= `./xmlquery  CONFIG_OCN_FILE	-value `;
-my $CONFIG_GLC_FILE	= `./xmlquery  CONFIG_GLC_FILE	-value `;
-my $CONFIG_WAV_FILE	= `./xmlquery  CONFIG_WAV_FILE	-value `;
-my $CONFIG_ROF_FILE	= `./xmlquery  CONFIG_ROF_FILE	-value `;
-my $CONFIG_ESP_FILE	= `./xmlquery  CONFIG_ESP_FILE	-value `;
-my $CONFIG_DRV_FILE	= `./xmlquery  CONFIG_DRV_FILE	-value `;
-my $MODEL               = `./xmlquery  MODEL		-value`;
-my $TESTCASE;
-$TESTCASE               = `./xmlquery  TESTCASE		-value` if(-e "env_test.xml");
+    CIME.utils.setup_standard_logging_options(parser)
 
-my $CONFIG_ATM_DIR	= dirname($CONFIG_ATM_FILE);
-my $CONFIG_LND_DIR	= dirname($CONFIG_LND_FILE);
-my $CONFIG_ICE_DIR	= dirname($CONFIG_ICE_FILE);
-my $CONFIG_OCN_DIR	= dirname($CONFIG_OCN_FILE);
-my $CONFIG_GLC_DIR	= dirname($CONFIG_GLC_FILE);
-my $CONFIG_WAV_DIR	= dirname($CONFIG_WAV_FILE);
-my $CONFIG_ROF_DIR	= dirname($CONFIG_ROF_FILE);
-my $CONFIG_ESP_DIR	= dirname($CONFIG_ESP_FILE);
-my $CONFIG_DRV_DIR	= dirname($CONFIG_DRV_FILE);
-my $logger;
-my $dryrun = $opts{dryrun};
-$dryrun = 1 if ($TESTCASE eq 'SBN');
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory for which namelists are generated.\n"
+                        "Default is current directory.")
 
-#  Load Modules
-my $perl5lib = "$CIMEROOT/utils/perl5lib";
-push(@INC, $perl5lib);
-require Module::ModuleLoader;
-require Log::Log4perl;
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
+    parser.add_argument('--component',
+                        help="Specify component's namelist to build.\n"
+                        "If not specified, generates namelists for all components.")
 
-$logger = Log::Log4perl::get_logger("preview_namelists");
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    
+    return args
 
-if($dryrun){
-    # DO not load modules, only create rundir 
-    my $sysmod = "mkdir -p $RUNDIR";
-    if(system($sysmod) != 0) {
-	warn "Not able to create $RUNDIR, trying a subdirectory of $CASEROOT";
-	$RUNDIR = $CASEROOT."/".$RUNDIR;
-	$sysmod = "mkdir -p $RUNDIR";
-	if(system($sysmod) == 0){
-	    print "Success! Setting RUNDIR=$RUNDIR\n";
-	    system("./xmlchange -noecho -file env_run.xml -id RUNDIR -val $RUNDIR");
-	}else{
-	    die "Could not create $RUNDIR";
-	}
-    }
+###############################################################################
+def _main_func(description):
+###############################################################################
+    args = parse_command_line(sys.argv, description)
 
-}else{
+    expect(os.path.isfile(os.path.join(args.caseroot, "CaseStatus")),
+           "case.setup must be run prior to running preview_namelists")
+    with Case(args.caseroot, read_only=False) as case:
+        case.create_namelists(component=args.component)
 
-    my $moduleloader = new Module::ModuleLoader(machine		=> "$MACH", 
-						compiler	=> "$COMPILER",
-						mpilib		=> "$MPILIB", 
-						debug		=> "$DEBUG", 
-						cimeroot	=> "$CIMEROOT", 
-						caseroot	=> "$CASEROOT",
-						model		=> "$MODEL");
-    $moduleloader->loadModules();
-    $moduleloader->findModulesForCase();
-
-
-    # -------------------------------------------------------------------------
-    # Make necessary directories
-    # -------------------------------------------------------------------------
-
-    my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
-    foreach my $dir (@dirs) {
-	if (! -d $dir) {
-	    mkpath($dir, 0755) or $logger->logdie("Could not create directory $dir");
-	    $logger->debug("Created directory $dir");
-	}
-    }
-    
-    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof", "esp");
-    foreach my $model ( @models ){
-	my $objdir = "$EXEROOT/$model/obj"; 
-	if (! -d $objdir) {
-	    mkpath($objdir, 0755) or $logger->logdie("Could not create directory $objdir");
-	    $logger->debug("Created directory $objdir");
-	}
-	my $libdir = "$EXEROOT/$model";
-	if (! -d $libdir) {
-	    mkpath($libdir, 0755) or $logger->logdie("Could not create directory $libdir");
-	    $logger->debug("Created directory $libdir");
-	}
-    }
-}
-
-# -------------------------------------------------------------------------
-# Create namelists
-# -------------------------------------------------------------------------
-
-# Note - COMP_CPL must be last so that it can use xml vars potentially set 
-# by other component's buildnml scripts
-
-my @modelsorder = qw( atm lnd ice ocn glc wav rof esp drv );
-
-my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
-	       ocn => $COMP_OCN, glc => $COMP_GLC, wav => $COMP_WAV,
-	       rof => $COMP_ROF, wav => $COMP_ESP, drv => $COMP_CPL);
-my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_ICE_DIR,
-	       ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
-	       rof => $CONFIG_ROF_DIR, esp => $CONFIG_ESP_DIR, drv => $CONFIG_DRV_DIR );
-
-my $drvfldsnl = "${RUNDIR}/drv_flds_in";
-if ( -f $drvfldsnl ) {
-   if ($opts{loglevel} eq "DEBUG") {
-      print "Remove $drvfldsnl\n";
-   }
-   system( "rm $drvfldsnl" );
-   if($? != 0){
-       $logger->logdie("Removal of $drvfldsnl failed: $?");
-   }
-}
-
-foreach my $model (@modelsorder) {
-    my $comp = $models{$model};
-    my $file = "$dirs{$model}/buildnml";
-    $logger->info( "     Calling $file ");
-#   This change requires a tag for all components, defering for the moment
-#    system(" $file -loglevel $opts{loglevel} $CASEROOT ");
-
-    if ($opts{loglevel} eq "DEBUG") {
-       system("env PREVIEW_NML=1 $file $CASEROOT");
-    } else {
-       system("$file $CASEROOT");
-    }
-    if($? != 0){
-	$logger->logdie("$file failed $?");
-    }
-}
-
-# -------------------------------------------------------------------------
-# Save namelists to docdir
-# -------------------------------------------------------------------------
-
-my $docdir = "$CASEROOT/CaseDocs";
-if (! -d "$docdir") {
-    mkpath($docdir, "0755") or $logger->logdie("Could not create directory $docdir");
-    $logger->debug("Created directory $docdir");
-    open my $fileh, ">", "$docdir/README" or $logger->logdie("Failed to open $docdir/README: $!");
-    print $fileh " CESM Resolved Namelist Files";
-    print $fileh "   For documentation only DO NOT MODIFY";
-    close $fileh;
-}
-
-opendir(RD,$RUNDIR) or $logger->logdie("Failed to open directory $RUNDIR to read $!");
-my @runfiles = readdir(RD);
-closedir(RD);
-
-my $sysmod = "chmod 666 $docdir/*";
-system($sysmod) == 0 or $logger->logdie ("ERROR preview_namelists: $sysmod failed: $?");
-
-foreach my $rfile (@runfiles){
-    my $copied=0;
-    if($rfile =~ /_in$/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
-	$copied = 1;
-    }
-    if($rfile =~ /_in_\d+$/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
-	$copied = 1;
-    }
-    if($rfile =~ /modelio/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
-	$copied = 1;
-    }
-    if($rfile =~ /streams.*txt/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
-	$copied = 1;
-    }
-    if($rfile =~ /stxt$/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
-	$copied = 1;
-    }
-    if($rfile =~ /maps.rc$/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
-	$copied = 1;
-    }
-    if($rfile =~ /cism.config/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir"); 
-	$copied = 1;
-    }
-    
-    $logger->debug("Copied $rfile to $docdir") if($copied==1);
-
-}
-
-# copy over chemistry mechanism docs if they exist
-if ( -e "$CASEBUILD/camconf" ) {
-    opendir(CC,"$CASEBUILD/camconf");
-    my @chemfiles = grep(/chem_mech/,readdir(CC));
-    closedir(CC);
-    foreach(@chemfiles){
-	copy("$CASEBUILD/camconf/$_","$docdir/$_") or $logger->logdie("Could not copy $_ to $docdir"); 
-	$logger->debug("Copied $CASEBUILD/camconf/$_ to $docdir") ;
-    }
-}
-
-my $sysmod = "chmod 444 $docdir/*";
-system($sysmod) == 0 or $logger->logdie("ERROR preview_namelists: $sysmod failed: $?");
-
-exit (0);
-
-
-
-
+if (__name__ == "__main__"):
+    _main_func(__doc__)

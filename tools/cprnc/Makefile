@@ -5,7 +5,7 @@
 # These macros can be changed by setting environment variables:
 #
 # Set the path to netcdf:
-# 
+#
 # gmake NETCDF=pathToNetcdf
 #
 # This sets LIB_NETCDF=$NETCDF/lib and INC_NETCDF=$NETCDF/include
@@ -33,19 +33,21 @@ null  :=
 EXENAME = cprnc
 RM = rm
 
-# Default for the netcdf library and include directories 
+NETCDF_PATH ?= $(NETCDF_FORTRAN_PATH)
+
+# Default for the netcdf library and include directories
 LIB_NETCDF := $(NETCDF_PATH)/lib
 INC_NETCDF := $(NETCDF_PATH)/include
+LDFLAGS = -L$(LIB_NETCDF) -lnetcdff
 
-# Determine platform 
+# Determine platform
 UNAMES := $(shell uname -s)
 SNAME := $(shell uname -n | cut -c1-2)
 
-GENF90 = ../../externals/genf90/genf90.pl
+GENF90 = ../../src/externals/genf90/genf90.pl
 
 FC := $(SFC)
 FFLAGS += -I$(INC_NETCDF) -I.
-LDFLAGS=$(SLIBS)
 #------------------------------------------------------------------------
 # Default rules and macros
 #------------------------------------------------------------------------
@@ -72,13 +74,13 @@ endif
 	$(FC) -c $(FFLAGS) $<
 
 $(EXEDIR)/$(EXENAME): $(OBJS)
-	$(FC) -o $@ $(OBJS) $(LDFLAGS)
+	$(FC) -o $@ $(OBJS) $(LDFLAGS) $(SLIBS)
 
 compare_vars_mod.F90 : compare_vars_mod.F90.in
 	perl $(GENF90) $< > $@
 
 clean:
-	$(RM) -f $(OBJS) *.mod $(EXEDIR)/$(EXENAME) 
+	$(RM) -f $(OBJS) *.mod $(EXEDIR)/$(EXENAME)
 
 # remove generated file during clean
 realclean:
