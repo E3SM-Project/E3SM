@@ -1139,6 +1139,16 @@
 
     <!--- mali grids -->
 
+    <model_grid alias="ne30_oECv3_g" compset="_MALI">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="f09_g16_g" compset="_MALI">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -3132,6 +3142,20 @@
       <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_mpas.gis20km_bilin.150922.nc</map>
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150922.nc</map>
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150922.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis20km" lnd_grid="ne30np4">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_gis20km_aave.181115.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_gis20km_aave.181115.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_ne30np4_aave.181115.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_ne30np4_aave.181115.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis20km" ocn_grid="oEC60to30v3">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.gis20km_aave.181115.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.gis20km_bilin.181115.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_oEC60to30v3_aave.181115.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_oEC60to30v3_aave.181115.nc</map>
     </gridmap>
 
     <!-- ====================  -->

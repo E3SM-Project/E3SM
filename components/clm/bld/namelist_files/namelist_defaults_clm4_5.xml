@@ -423,6 +423,8 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 this mask will have smb calculated over the entire global land surface
 -->
 <fglcmask hgrid="0.9x1.25" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_0.9x1.25_GIS_AIS.nc</fglcmask>
+<fglcmask hgrid="ne30np4" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_ne30np4_GIS_AIS.nc</fglcmask>
+
 
 <fglcmask hgrid="48x96"    glc_grid="gland20" >glc/cism/griddata/glcmaskdata_48x96_Gland20km.nc</fglcmask>
 <fglcmask hgrid="48x96"    glc_grid="gland10" >glc/cism/griddata/glcmaskdata_48x96_Gland10km.nc</fglcmask>
@@ -441,6 +443,7 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
 
 <!-- Land topo datasets (when running glc_nec) (relative to {csmdata}) -->
+<flndtopo hgrid="ne30np4"  >lnd/clm2/griddata/topodata_ne30np4_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="0.9x1.25"  >lnd/clm2/griddata/topodata_0.9x1.25_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="1.9x2.5"   >lnd/clm2/griddata/topodata_1.9x2.5_USGS_061130.nc</flndtopo>
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
