@@ -288,22 +288,6 @@ contains
          ptr_lunit=this%t_building_lun, set_nourb=spval, l2g_scale_type='unity')
 
 
-    this%heat1_grc(begg:endg) = spval
-    call hist_addfld1d (fname='GC_HEAT1',  units='J/m^2',  &
-         avgflag='A', long_name='initial gridcell total heat content', &
-         ptr_lnd=this%heat1_grc)
-
-    this%heat2_grc(begg:endg) = spval
-    call hist_addfld1d (fname='GC_HEAT2',  units='J/m^2',  &
-         avgflag='A', long_name='post land cover change total heat content', &
-         ptr_lnd=this%heat2_grc, default='inactive')  
-
-    this%liquid_water_temp1_grc(begg:endg) = spval
-    call hist_addfld1d (fname='LIQUID_WATER_TEMP1', units='K', &
-         avgflag='A', long_name='initial gridcell weighted average liquid water temperature', &
-         ptr_lnd=this%liquid_water_temp1_grc, default='inactive')
-
-
     ! Accumulated quantities
 
 
