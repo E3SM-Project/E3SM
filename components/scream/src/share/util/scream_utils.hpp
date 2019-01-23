@@ -53,7 +53,7 @@ const T* max_element (const T* const begin, const T* const end) {
 KOKKOS_INLINE_FUNCTION
 size_t strlen(const char* str)
 {
-  micro_kassert(str != NULL);
+  scream_kassert(str != NULL);
   const char *char_ptr;
   for (char_ptr = str; ; ++char_ptr)  {
     if (*char_ptr == '\0') return char_ptr - str;
@@ -62,7 +62,7 @@ size_t strlen(const char* str)
 KOKKOS_INLINE_FUNCTION
 void strcpy(char* dst, const char* src)
 {
-  micro_kassert(dst != NULL && src != NULL);
+  scream_kassert(dst != NULL && src != NULL);
   while(*dst++ = *src++);
 }
 KOKKOS_INLINE_FUNCTION
