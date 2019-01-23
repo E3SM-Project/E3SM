@@ -4,10 +4,9 @@
 //TODO
 // - bounds checking define
 
-#include "util/math_utils.hpp"    // for min, max
-#include "scream_types.hpp"       // for Int
-#include "util/scream_utils.hpp"  // for TypeName
-#include "scream_macros.hpp"      // for vector annotations
+#include "scream_types.hpp"
+#include "util/scream_utils.hpp"
+#include "scream_macros.hpp"
 
 namespace scream {
 namespace pack {

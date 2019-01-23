@@ -3,8 +3,6 @@
 
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
-#include "share/util/math_utils.hpp"
-
 
 using scream::Real;
 using scream::Int;
