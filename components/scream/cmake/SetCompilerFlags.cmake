@@ -78,12 +78,7 @@ ENDIF ()
 # Handle Cuda.
 find_package(CUDA QUIET)
 if (${CUDA_FOUND})
-  string (FIND ${CMAKE_CXX_COMPILER} "nvcc" pos)
-  if (${pos} GREATER -1)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
-  else ()
-    message ("Cuda was found, but the C++ compiler is not nvcc_wrapper, so building without Cuda support.")
-  endif ()
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
 endif ()
 
 ##############################################################################
