@@ -24,7 +24,7 @@ module UrbanFluxesMod
   use WaterfluxType        , only : waterflux_type
   use SurfaceResistanceMod , only : do_soilevap_beta
   use GridcellType         , only : grc_pp
-  use TopounitType         , only : top_as  
+  use TopounitDataType     , only : top_as  
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es  

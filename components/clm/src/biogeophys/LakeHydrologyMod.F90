@@ -19,7 +19,7 @@ module LakeHydrologyMod
   ! ! USES
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
-  use TopounitType         , only : top_as, top_af    ! atmospheric state and flux variables
+  use TopounitDataType     , only : top_as, top_af    ! atmospheric state and flux variables
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es  
   use VegetationType       , only : veg_pp                

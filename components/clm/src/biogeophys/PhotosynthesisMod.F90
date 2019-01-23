@@ -34,7 +34,7 @@ module  PhotosynthesisMod
   use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
   use SharedParamsMod     , only : ParamsShareInst
-  use TopounitType        , only : top_as
+  use TopounitDataType    , only : top_as
   use VegetationDataType  , only : veg_es  
   
   !

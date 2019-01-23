@@ -66,7 +66,7 @@ module CLMFatesInterfaceMod
    use clm_varpar        , only : nlevdecomp_full
    use clm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
    use PhotosynthesisType , only : photosyns_type
-   Use TopounitType      , only : topounit_atmospheric_flux, topounit_atmospheric_state
+   Use TopounitDataType  , only : topounit_atmospheric_flux, topounit_atmospheric_state
    use atm2lndType       , only : atm2lnd_type
    use SurfaceAlbedoType , only : surfalb_type
    use SolarAbsorbedType , only : solarabs_type
@@ -89,7 +89,7 @@ module CLMFatesInterfaceMod
                                   get_clump_bounds
 
    use GridcellType      , only : grc_pp
-   use TopounitType      , only : top_as
+   use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es
    use VegetationDataType, only : veg_es  

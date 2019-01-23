@@ -17,7 +17,7 @@ module SurfaceRadiationMod
   use SurfaceAlbedoType , only : surfalb_type
   use SolarAbsorbedType , only : solarabs_type
   use GridcellType      , only : grc_pp  
-  use TopounitType      , only : top_af  
+  use TopounitDataType  , only : top_af  
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType    , only : veg_pp

@@ -25,7 +25,8 @@ module clm_initializeMod
   ! Definition of component types
   !-----------------------------------------
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_pp, top_as, top_af, top_es
+  use TopounitType           , only : top_pp
+  use TopounitDataType       , only : top_as, top_af, top_es
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es  

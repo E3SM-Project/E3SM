@@ -23,7 +23,7 @@ module CanopyHydrologyMod
   use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
-  use TopounitType    , only : top_as, top_af ! Atmospheric state and flux variables
+  use TopounitDataType, only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnType      , only : col_pp 
   use ColumnDataType  , only : col_es  
   use VegetationType       , only : veg_pp                

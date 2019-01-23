@@ -62,7 +62,7 @@ Module DryDepVelocity
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
-  use TopounitType         , only : top_as, top_af ! atmospheric state and flux variables  
+  use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables  
   use LandunitType         , only : lun_pp                
   use VegetationType       , only : veg_pp                
   !

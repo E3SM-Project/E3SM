@@ -27,7 +27,7 @@ module DUSTMod
   use CanopyStateType      , only : canopystate_type
   use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
-  use TopounitType         , only : top_as
+  use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
   use VegetationType       , only : veg_pp
