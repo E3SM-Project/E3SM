@@ -492,7 +492,7 @@ end subroutine CarbonStateUpdate1Veg
   subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       crop_vars, carbonflux_vars, carbonstate_vars)
+       crop_vars, carbonflux_vars, carbonstate_vars, ldecomp_on)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -510,13 +510,17 @@ end subroutine CarbonStateUpdate1Veg
     type(crop_type)        , intent(inout) :: crop_vars
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    logical, optional, intent(in) :: ldecomp_on
 
+    logical :: is_decomp_on
+    is_decomp_on = .true.
+    if(present(ldecomp_on))is_decomp_on=ldecomp_on
 
   call CarbonStateUpdate1Veg(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             crop_vars, carbonflux_vars, carbonstate_vars)
 
   call CarbonStateUpdate1Soil(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars, is_decomp_on=is_decomp_on)
 
   end subroutine CarbonStateUpdate1
 end module CarbonStateUpdate1BeTRMod

@@ -82,8 +82,6 @@ module EcosystemDynBeTRMod
     use CarbonIsoFluxMod             , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
     use C14DecayMod             , only : C14Decay, C14BombSpike
     use WoodProductsMod         , only : WoodProducts
-    use DecompCascadeBGCMod     , only : decomp_rate_constants_bgc
-    use DecompCascadeCNMod      , only : decomp_rate_constants_cn
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
     use clm_varpar                , only : crop_prog
@@ -280,15 +278,15 @@ module EcosystemDynBeTRMod
        end if
 
        call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars, ldecomp_on=.true.)
 
        if ( use_c13 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, ldecomp_on=.true.)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, ldecomp_on=.true.)
        end if
 
        call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -450,7 +448,7 @@ module EcosystemDynBeTRMod
   end subroutine CNEcosystemDynBeTR0
 
   !-----------------------------------------------------------------------
-  subroutine CNEcosystemDynBeTR1(bounds,                             &
+  subroutine CNEcosystemDynBeTR1(bounds, col, pft,                       &
          num_soilc, filter_soilc,                                        &
          num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,      &
          cnstate_vars, carbonflux_vars, carbonstate_vars,                &
@@ -461,7 +459,7 @@ module EcosystemDynBeTRMod
          canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
          dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars, &
          PlantMicKinetics_vars, ch4_vars,                                &
-         phosphorusflux_vars, phosphorusstate_vars)
+         phosphorusflux_vars, phosphorusstate_vars, ep_betr)
 
     ! Description:
     ! Update vegetation related state variables and
@@ -480,8 +478,6 @@ module EcosystemDynBeTRMod
     use CarbonIsoFluxMod             , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
     use C14DecayMod             , only : C14Decay, C14BombSpike
     use WoodProductsMod         , only : WoodProducts
-    use DecompCascadeBGCMod     , only : decomp_rate_constants_bgc
-    use DecompCascadeCNMod      , only : decomp_rate_constants_cn
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
     use clm_varpar                , only : crop_prog
@@ -496,17 +492,20 @@ module EcosystemDynBeTRMod
     use VerticalProfileMod      , only : decomp_vertprofiles
     use RootDynamicsMod           , only: RootDynamics
     use PhenologyFLuxLimitMod     , only : phenology_flux_limiter
-    use abortutils          , only : endrun
-    use shr_log_mod         , only : errMsg => shr_log_errMsg
-    use EcosystemDynMod     , only : EcosystemDynNoLeaching1
-    use SoilLittVertTranspMod, only: SoilLittVertTransp
-    use SoilLittDecompMod            , only: SoilLittDecompAlloc2
+    use abortutils                , only : endrun
+    use shr_log_mod               , only : errMsg => shr_log_errMsg
+    use EcosystemDynMod           , only : EcosystemDynNoLeaching1
+    use SoilLittVertTranspMod     , only : SoilLittVertTransp
+    use SoilLittDecompMod         , only : SoilLittDecompAlloc2
+    use BeTRSimulationALM         , only : betr_simulation_alm_type
     implicit none
 
 
     !
     ! !ARGUMENTS:
     type(bounds_type)                , intent(in)    :: bounds
+    type(column_physical_properties_type)        , intent(in)    :: col
+    type(vegetation_physical_properties_type)         , intent(in)    :: pft
     integer                          , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                          , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                          , intent(in)    :: num_soilp         ! number of soil patches in filter
@@ -538,8 +537,9 @@ module EcosystemDynBeTRMod
     type(PlantMicKinetics_type)      , intent(inout) :: PlantMicKinetics_vars
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
+    class(betr_simulation_alm_type)  , intent(inout):: ep_betr
 
-
+    call t_startf('EcosystemDynNoLeaching1')
     call EcosystemDynNoLeaching1(bounds,                                  &
          num_soilc, filter_soilc,                                         &
          num_soilp, filter_soilp,                                         &
@@ -551,10 +551,25 @@ module EcosystemDynBeTRMod
          canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
          ch4_vars, photosyns_vars,                                        &
          phosphorusflux_vars,phosphorusstate_vars)
+     call t_stopf('EcosystemDynNoLeaching1')
+       !----------------------------------------------------------------
+       !call decomposition method from betr
+       !----------------------------------------------------------------
+      call t_startf('betr type1 soil bgc')
+      call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
+       carbonstate_vars, carbonflux_vars, &
+       c13_carbonstate_vars, c14_carbonstate_vars,  &
+       nitrogenstate_vars,  phosphorusstate_vars)
 
-       !----------------------------------------------------------------
-       call t_stopf('SoilLittDecompAlloc')
-       !----------------------------------------------------------------
+      call ep_betr%OutLoopSoilBGC(bounds, col, pft)
+
+      call ep_betr%ExitOutLoopBGC(bounds, col, pft, &
+        carbonstate_vars, carbonflux_vars, &
+        c13_carbonstate_vars, c13_carbonflux_vars, &
+        c14_carbonstate_vars, c14_carbonflux_vars, &
+        nitrogenstate_vars, nitrogenflux_vars, &
+        phosphorusstate_vars, phosphorusflux_vars)
+      call t_stopf('betr type1 soil bgc')
        !--------------------------------------------
        ! Phenology
        !--------------------------------------------
@@ -659,15 +674,15 @@ module EcosystemDynBeTRMod
        end if
 
        call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars, ldecomp_on=.false.)
 
        if ( use_c13 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, ldecomp_on=.false.)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, ldecomp_on=.false.)
        end if
 
        call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -861,8 +876,6 @@ module EcosystemDynBeTRMod
     use CarbonIsoFluxMod             , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
     use C14DecayMod             , only : C14Decay, C14BombSpike
     use WoodProductsMod         , only : WoodProducts
-    use DecompCascadeBGCMod     , only : decomp_rate_constants_bgc
-    use DecompCascadeCNMod      , only : decomp_rate_constants_cn
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
     use clm_varpar                , only : crop_prog

@@ -870,7 +870,7 @@ contains
                  phosphorusflux_vars, phosphorusstate_vars)
 
            if(ep_betr%do_bgc_type('type1_bgc')) &
-           call CNEcosystemDynBeTR1(bounds_clump,                               &
+           call CNEcosystemDynBeTR1(bounds_clump, col_pp, veg_pp,               &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
@@ -882,7 +882,7 @@ contains
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars,  ch4_vars,                              &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 phosphorusflux_vars, phosphorusstate_vars, ep_betr)
 
            if(ep_betr%do_bgc_type('type2_bgc')) &
            call CNEcosystemDynBeTR2(bounds_clump,                               &
