@@ -898,10 +898,10 @@ program convterr
   
   IF (ltarget_latlon) THEN
     CALL wrtncdf_rll(nlon,nlat,lpole,ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
-         landm_coslat_target,target_center_lon,target_center_lat,.true.)
+         landm_coslat_target,target_center_lon,target_center_lat,.true.,output_topography_file)
   ELSE
     CALL wrtncdf_unstructured(ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
-         landm_coslat_target,target_center_lon,target_center_lat)
+         landm_coslat_target,target_center_lon,target_center_lat,output_topography_file)
   END IF
   DEALLOCATE(terr_target,landfrac_target,sgh30_target,sgh_target,landm_coslat_target)
   
