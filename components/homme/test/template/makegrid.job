@@ -71,11 +71,6 @@ set input = $HOMME/test/template
 set output = jw_baroclinic1.nc
 
 
-# have to run stable for 1 timestep:
-set nu = 0
-set tstep = 0.0001
-set hypervis_subcycle = 1
-set HYPERVIS_OPTS = 
 
 if ( $ne == 0 ) then
 #    set meshname = kite_grid.g
@@ -94,20 +89,7 @@ endif
 
 
 set nlev=20
-set qsize = 0
 
-
-set outnames = "'area','corners','hypervis'"
-if ( $NPTS == 4 ) then
-   # if NPTS=4, HOMME can compute cv_lat and cv_lon 
-   set outnames = "$outnames,'cv_lat','cv_lon'"
-endif
-if ( $ne != 0 )  then
-   # can compute CSLAM/physics grid
-   #set outnames = "$outnames,'phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
-   set outnames = "$outnames,'cv_lat','cv_lon'"
-endif
-echo $outnames
 
 cd $bld
 if (!( -f $exe )) then
@@ -125,15 +107,8 @@ endif
 cd $wdir
 
 rm -f $wdir/input.nl
-sed s/NE/$ne/ $input/explicit20.nl.sed | sed s/TSTEP/$tstep/ |\
-sed s:meshfile.\*:"mesh_file = '$meshfile'    $HYPERVIS_OPTS":   |\
-sed s/qsize.\*/"qsize = $qsize"/   |\
-sed s/nu=.\*/"nu=$nu"/   |\
-sed s/hypervis_subcycle=.\*/"hypervis_subcycle=$hypervis_subcycle"/   |\
-sed s/hypervis_subcycle_q.\*/"hypervis_subcycle_q=$hypervis_subcycle"/   |\
-sed s/runtype.\*/"runtype = 0"/   |\
-sed s/output_frequency.\*/"output_frequency = 1"/   |\
-sed s:output_varnames1.\*:"output_varnames1=$outnames": \
+sed s/NE/$ne/ $input/explicit20.nl.sed |\
+sed s:meshfile.\*:"mesh_file = '$meshfile'": \
 > $wdir/input.nl
 
 if ( $status ) exit
