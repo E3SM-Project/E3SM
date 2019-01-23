@@ -300,6 +300,7 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
     use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+!    use ESMF                  , only : ESMF_VMGetCurrent, ESMF_VMGet
     use med_constants_mod     , only : R4, R8
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use pio                   , only : var_desc_t, io_desc_t, pio_offset_kind
@@ -368,8 +369,8 @@ contains
     endif
     rc = ESMF_Success
 
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, mpiCommunicator=mpicom, rc=rc)
+!    call ESMF_VMGetCurrent(vm, rc=rc)
+!    call ESMF_VMGet(vm, mpiCommunicator=mpicom, rc=rc)
 
     lfillvalue = fillvalue
     if (present(fillval)) then
@@ -974,8 +975,8 @@ contains
     use pio                   , only : pio_noerr, pio_inq_varndims, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
     use pio                   , only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
     use pio                   , only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
-    use pio                   , only : pio_read_darray, pio_initdecomp
-
+    use pio                   , only : pio_read_darray, pio_initdecomp, pio_offset_kind
+    use pio                   , only : pio_setframe
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNameN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
