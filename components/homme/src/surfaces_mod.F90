@@ -753,6 +753,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
   integer :: nvert
   if (abs(nvert) == 3 ) then
      area2=0
+     area3=0
      if (cv(1)%x==0) then
         call sphere_tri_area(cv(2),cv(3),cv(4),area1)
      else if (cv(2)%x==0) then
