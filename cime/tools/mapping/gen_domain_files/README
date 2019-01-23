@@ -29,13 +29,17 @@ $ gen_domain -m <filemap>
              -l <gridlnd>
              [-p set_fv_pole_yc]
              [-c <user comment gen_domain.nml>]
-
+             [--fminval <fminval>]'
+             [--fmaxval <fmaxval>]'
+ 
 where:
     filemap = input mapping file name  (character string)
     gridocn = output ocean grid name   (NOT A FILE NAME!)
     gridlnd = output land grid name    (NOT A FILE NAME!)
     usercomment = optional, netcdf global attribute (character string)
     set_fv_pole_yc = [0,1,2] ~ optional, default = 0 (see comments below)
+    fminval = minimum allowable land fraction (reset to 0 below fminval)'
+    fmaxval = maximum allowable land fraction (reset to 1 above fmaxval)'
 
 The following output domain files are created:
   domain.lnd.gridlnd_gridocn.nc

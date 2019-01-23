@@ -38,6 +38,8 @@ program fmain
   character(LEN=512) :: usercomment ! user comment
   character(LEN= 8)  :: cdate       ! wall clock date
   character(LEN=10)  :: ctime       ! wall clock time
+  real(r8) :: fminval = 0.001_r8    ! min allowable land fraction; frac set to 0 if frac < fminval
+  real(r8) :: fmaxval = 1.000_r8    ! max allowable land fraction; frac set to 1 if frac > fmaxval
   !----------------------------------------------------
 
   set_fv_pole_yc = 0
@@ -84,6 +86,16 @@ program fmain
        n = n + 1
        set_fv_pole_yc = ichar(trim(arg))-48
        write(6,*)'set_fv_pole_yc is ',set_fv_pole_yc
+    case ('--fminval')
+       ! set fminval (min allowable land fraction)
+       call getarg (n, arg)
+       n = n + 1
+       read(arg,*) fminval
+    case ('--fmaxval')
+       ! set fminval (min allowable land fraction)
+       call getarg (n, arg)
+       n = n + 1
+       read(arg,*) fmaxval
     case ('-c')
        ! user comment
        call getarg (n, arg)
@@ -107,11 +119,11 @@ program fmain
   fn2_out_lnd = 'domain.lnd.' // trim(fn2_out) // '_' // trim(fn1_out) // '.' // cdate(3:8) // '.nc'
   fn2_out_ocn = 'domain.ocn.' // trim(fn2_out) // '_' // trim(fn1_out) // '.' // cdate(3:8) // '.nc'
 
-  call gen_domain (fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment)
+  call gen_domain (fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment, fminval, fmaxval)
 
 contains
 
-  subroutine gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment)
+  subroutine gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment, fminval, fmaxval)
 
    implicit none
 
@@ -124,6 +136,8 @@ contains
    character(LEN=*), intent(in) :: fn2_out_ocn ! file name (output nc file) for grid _b (ocn frac)
    integer         , intent(in) :: set_fv_pole_yc
    character(LEN=*), intent(in) :: usercomment ! user comment from namelist
+   real(r8)        , intent(in) :: fminval     ! set frac to zero if frac < fminval
+   real(r8)        , intent(in) :: fmaxval     ! set frac to one  if frac > fmaxval
 
    !--- domain data ---
    integer         ::   n         ! size of 1d domain
@@ -155,8 +169,6 @@ contains
    real(r8)         :: eps       ! allowable frac error
    real(r8)         :: lfrac_min ! min frac value before being set to fminval
    real(r8)         :: lfrac_max ! max frac value before being set to fmaxval
-   real(r8)         :: fminval   ! set frac to zero if frac < fminval
-   real(r8)         :: fmaxval   ! set frac to one  if frac > fmaxval
 
     !--- local ---
    character(LEN=CL)     :: str_da      ! global attribute str - domain_a
@@ -191,8 +203,6 @@ contains
    !----------------------------------------------------------------------------
 
    eps = 1.0e-12
-   fminval = 0.001
-   fmaxval = c1
    write(6,*) 'fmap   = ',trim(fmap)
    write(6,*) 'fn1_out_ocn= ',trim(fn1_out_ocn)
    write(6,*) 'fn2_out_lnd= ',trim(fn2_out_lnd)
@@ -520,6 +530,8 @@ contains
     write(6,*) '                -l <gridlnd>'
     write(6,*) '                [-p set_fv_pole_yc]'
     write(6,*) '                [-c <usercomment>]'
+    write(6,*) '                [--fminval <fminval>]'
+    write(6,*) '                [--fmaxval <fmaxval>]'
     write(6,*) ' '
     write(6,*) ' Where: '
     write(6,*) '    filemap = input conservative mapping file name (from ocn->atm)'
@@ -527,6 +539,8 @@ contains
     write(6,*) '    gridlnd = output land  grid name'
     write(6,*) '    set_fv_pole_yc = [0,1,2] ~ optional, default = 0'
     write(6,*) '    usercomment = optional, netcdf global attribute (character string)'
+    write(6,*) '    fminval = minimum allowable land fraction (reset to 0 below fminval)'
+    write(6,*) '    fmaxval = maximum allowable land fraction (reset to 1 above fmaxval)'
     write(6,*) ' '
     write(6,*) ' The following output domain files are created:'
     write(6,*) '    domain.lnd.gridlnd_gridocn.nc'
