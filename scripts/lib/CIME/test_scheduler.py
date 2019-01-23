@@ -613,9 +613,6 @@ class TestScheduler(object):
                         envtest.set_test_parameter("NTASKS_"+comps[c], "1")
                         envtest.set_test_parameter("NTHRDS_"+comps[c], "1")
 
-                    envtest.set_test_parameter("HIST_OPTION", "never")
-                    envtest.set_test_parameter("HIST_N", "-999")
-
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
                       opt.startswith('P') or # handled in create_newcase
