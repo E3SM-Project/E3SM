@@ -7,7 +7,7 @@ module EMI_Atm2LndType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use Atm2LndType                           , only : atm2lnd_type
-  use TopounitType                          , only : top_as
+  use TopounitDataType                      , only : top_as
   use ColumnType                            , only : col_pp
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants

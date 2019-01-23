@@ -35,7 +35,7 @@ module PhenologyMod
   use clm_varctl          , only : nu_com 
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es 
-  use TopounitType        , only : top_af  
+  use TopounitDataType    , only : top_af  
   use GridcellType        , only : grc_pp                
   use VegetationType      , only : veg_pp                
   use VegetationDataType  , only : veg_es

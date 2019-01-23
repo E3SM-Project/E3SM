@@ -126,7 +126,7 @@ module clm_driver
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_as, top_af  
+  use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : col_es  

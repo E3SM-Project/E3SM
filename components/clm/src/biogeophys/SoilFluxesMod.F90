@@ -19,7 +19,7 @@ module SoilFluxesMod
   use TemperatureType   , only : temperature_type
   use WaterstateType    , only : waterstate_type
   use WaterfluxType     , only : waterflux_type
-  use TopounitType      , only : top_af
+  use TopounitDataType  , only : top_af
   use LandunitType	   , only : lun_pp                
   use ColumnType	      , only : col_pp
   use ColumnDataType    , only : col_es                

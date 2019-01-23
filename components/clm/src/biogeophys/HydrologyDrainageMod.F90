@@ -16,7 +16,7 @@ module HydrologyDrainageMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use topounitType      , only : top_af ! atmospheric flux variables
+  use TopounitDataType  , only : top_af ! atmospheric flux variables
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType    , only : veg_pp                

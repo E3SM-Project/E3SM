@@ -41,7 +41,7 @@ module CanopyFluxesMod
   use CNNitrogenStateType   , only : nitrogenstate_type
   use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
   use GridcellType          , only : grc_pp 
-  use TopounitType          , only : top_as, top_af  
+  use TopounitDataType      , only : top_as, top_af  
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_es               
   use VegetationType        , only : veg_pp                

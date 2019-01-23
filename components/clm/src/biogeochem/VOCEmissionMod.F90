@@ -29,7 +29,7 @@ module VOCEmissionMod
   use SoilStateType      , only : soilstate_type
   use SolarAbsorbedType  , only : solarabs_type
   use TemperatureType    , only : temperature_type
-  use TopounitType       , only : top_as, top_af
+  use TopounitDataType   , only : top_as, top_af
   use VegetationType     , only : veg_pp                
   use VegetationDataType , only : veg_es  
   !

@@ -23,7 +23,7 @@ module SoilTemperatureMod
   use SoilStateType     , only : soilstate_type
   use EnergyFluxType    , only : energyflux_type
   use TemperatureType   , only : temperature_type
-  use TopounitType      , only : top_af
+  use TopounitDataType  , only : top_af
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es                
