@@ -10,7 +10,8 @@ module ESM
   use shr_log_mod           , only : shr_log_Unit, shr_log_Level
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use med_internalstate_mod , only : logunit, loglevel, mastertask
-  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+  use seq_comm_mct          , only : num_inst_total
+  use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
 
   implicit none
   private
