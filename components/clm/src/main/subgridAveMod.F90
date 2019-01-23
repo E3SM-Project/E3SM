@@ -15,6 +15,7 @@ module subgridAveMod
   use clm_varctl    , only : iulog
   use abortutils    , only : endrun
   use decompMod     , only : bounds_type
+  use TopounitType  , only : top_pp
   use LandunitType  , only : lun_pp                
   use ColumnType    , only : col_pp                
   use VegetationType     , only : veg_pp                
@@ -30,6 +31,7 @@ module subgridAveMod
   public :: c2l   ! Perform an average columns to landunits
   public :: c2g   ! Perform an average columns to gridcells
   public :: l2g   ! Perform an average landunits to gridcells
+  public :: t2g   ! Perform an average topounits to gridcells
 
   interface p2c
      module procedure p2c_1d
@@ -56,6 +58,10 @@ module subgridAveMod
   interface l2g
      module procedure l2g_1d
      module procedure l2g_2d
+  end interface
+  interface t2g
+     module procedure t2g_1d
+     module procedure t2g_2d
   end interface
   !
   ! !PRIVATE MEMBER FUNCTIONS:
@@ -1316,5 +1322,123 @@ contains
      end if
 
   end subroutine create_scale_l2g_lookup
+
+  !-----------------------------------------------------------------------
+  subroutine t2g_1d(bounds, tarr, garr, t2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Perfrom subgrid-average from topounits to gridcells.
+    ! Averaging is only done for points that are not equal to "spval".
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds        
+    real(r8), intent(in)  :: tarr( bounds%begt: )  ! input topounit array
+    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    character(len=*), intent(in) :: t2g_scale_type ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: t,g,index                       ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
+    real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+
+    ! for now, assume that this scale type is always 'unity'
+    do t = bounds%begt,bounds%endt
+       scale_t2g(t) = 1.0_r8
+    end do
+    
+    garr(bounds%begg : bounds%endg) = spval
+    sumwt(bounds%begg : bounds%endg) = 0._r8
+    do t = bounds%begt,bounds%endt
+       if (top_pp%wtgcell(t) /= 0._r8) then
+          if (tarr(t) /= spval .and. scale_t2g(t) /= spval) then
+             g = top_pp%gridcell(t)
+             if (sumwt(g) == 0._r8) garr(g) = 0._r8
+             garr(g) = garr(g) + tarr(t) * scale_t2g(t) * top_pp%wtgcell(t)
+             sumwt(g) = sumwt(g) + top_pp%wtgcell(t)
+          end if
+       end if
+    end do
+    found = .false.
+    do g = bounds%begg, bounds%endg
+       if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = g
+       else if (sumwt(g) /= 0._r8) then
+          garr(g) = garr(g)/sumwt(g)
+       end if
+    end do
+    if (found) then
+       write(iulog,*)'t2g_1d error: sumwt is greater than 1.0 at g= ',index
+       call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine t2g_1d
+
+  !-----------------------------------------------------------------------
+  subroutine t2g_2d(bounds, num2d, tarr, garr, t2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Perfrom subgrid-average from topounits to gridcells.
+    ! Averaging is only done for points that are not equal to "spval".
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds            
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: tarr( bounds%begt: , 1: ) ! input topounit array
+    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    character(len=*), intent(in) :: t2g_scale_type     ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,g,t,index                         ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
+    real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt, num2d/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
+
+    ! for now, assume that this scale type is always 'unity'
+    do t = bounds%begt,bounds%endt
+       scale_t2g(t) = 1.0_r8
+    end do
+
+    garr(bounds%begg : bounds%endg, :) = spval
+    do j = 1,num2d
+       sumwt(bounds%begg : bounds%endg) = 0._r8
+       do t = bounds%begt,bounds%endt
+          if (top_pp%wtgcell(t) /= 0._r8) then
+             if (tarr(t,j) /= spval .and. scale_t2g(t) /= spval) then
+                g = top_pp%gridcell(t)
+                if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
+                garr(g,j) = garr(g,j) + tarr(t,j) * scale_t2g(t) * top_pp%wtgcell(t)
+                sumwt(g) = sumwt(g) + top_pp%wtgcell(t)
+             end if
+          end if
+       end do
+       found = .false.
+       do g = bounds%begg,bounds%endg
+          if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index= g
+          else if (sumwt(g) /= 0._r8) then
+             garr(g,j) = garr(g,j)/sumwt(g)
+          end if
+       end do
+       if (found) then
+          write(iulog,*)'t2g_2d error: sumwt is greater than 1.0 at g= ',index,' lev= ',j
+          call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+  end subroutine t2g_2d
+
 
 end module subgridAveMod
