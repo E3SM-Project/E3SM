@@ -1,7 +1,7 @@
 #ifndef SCREAM_P3_F90_HPP
 #define SCREAM_P3_F90_HPP
 
-#include "share/util/math_utils.hpp"
+#include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
 
 #include <memory>

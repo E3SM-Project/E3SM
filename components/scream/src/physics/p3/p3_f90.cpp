@@ -3,8 +3,6 @@
 
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
-#include "share/util/math_utils.hpp"
-
 
 using scream::Real;
 using scream::Int;
@@ -122,13 +120,6 @@ int test_FortranData () {
 
 int test_p3_init () {
   p3_init();
-  return 0;
-}
-
-int test_p3_main () {
-  FortranData d(11, 72);
-  d.dt = 0;
-  p3_main(d);
   return 0;
 }
 

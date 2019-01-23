@@ -4,10 +4,9 @@
 //TODO
 // - bounds checking define
 
-#include "util/math_utils.hpp"    // for min, max
-#include "scream_types.hpp"       // for Int
-#include "util/scream_utils.hpp"  // for TypeName
-#include "scream_macros.hpp"      // for vector annotations
+#include "scream_types.hpp"
+#include "util/scream_utils.hpp"
+#include "scream_macros.hpp"
 
 namespace scream {
 namespace pack {
@@ -256,7 +255,7 @@ scream_pack_gen_unary_stdfn(tgamma)
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar> min (const Pack& p) {
   typename Pack::scalar v(p[0]);
-  vector_simd for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
+  vector_disabled for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
   return v;
 }
 
@@ -271,7 +270,7 @@ OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar>
 min (const Mask<Pack::n>& mask, typename Pack::scalar init, const Pack& p) {
-  vector_simd for (int i = 0; i < Pack::n; ++i)
+  vector_disabled for (int i = 0; i < Pack::n; ++i)
     if (mask[i]) init = util::min(init, p[i]);
   return init;
 }

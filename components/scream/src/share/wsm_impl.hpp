@@ -55,7 +55,11 @@ void WorkspaceManager<T, D>::report() const
   }
 
   std::cout << "\nWS deep analysis" << std::endl;
-  std::map<std::string, std::tuple<int, int, int> > ws_usage_map;
+  struct Data {
+    int used, takes, releases;
+    Data (int u, int t, int r) : used(u), takes(t), releases(r) {}
+  };
+  std::map<std::string, Data> ws_usage_map;
   for (int t = 0; t < m_concurrent_teams; ++t) {
     std::cout << "  For wsidx " << t << std::endl;
     for (int n = 0; n < m_max_names; ++n) {
@@ -73,12 +77,13 @@ void WorkspaceManager<T, D>::report() const
         }
         std::string sname(name);
         if (ws_usage_map.find(sname) == ws_usage_map.end()) {
-          ws_usage_map[sname] = std::make_tuple(1, takes, releases);
+          ws_usage_map[sname] = Data(1, takes, releases);
         }
         else {
-          std::get<0>(ws_usage_map[sname]) += 1;
-          std::get<1>(ws_usage_map[sname]) += takes;
-          std::get<2>(ws_usage_map[sname]) += releases;
+          auto& e = ws_usage_map[sname];
+          e.used += 1;
+          e.takes += takes;
+          e.releases += releases;
         }
       }
     }
@@ -87,8 +92,8 @@ void WorkspaceManager<T, D>::report() const
   std::cout << "\nWS workspace summary" << std::endl;
   for (auto& kv : ws_usage_map) {
     auto data = kv.second;
-    std::cout << "Workspace '" << kv.first << "' was used by " << std::get<0>(data) << " wsindices with "
-              << std::get<1>(data) << " takes and " << std::get<2>(data) << " releases." << std::endl;
+    std::cout << "Workspace '" << kv.first << "' was used by " << data.used << " wsindices with "
+              << data.takes << " takes and " << data.releases << " releases." << std::endl;
   }
 #endif
 }
