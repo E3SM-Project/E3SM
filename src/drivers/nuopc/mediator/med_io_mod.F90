@@ -311,7 +311,7 @@ contains
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
     use pio, only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
     use pio, only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
-    use pio, only : pio_syncfile, pio_writedof
+    use pio, only : pio_syncfile
 
     ! input/output variables
     character(len=*),           intent(in) :: filename  ! file
