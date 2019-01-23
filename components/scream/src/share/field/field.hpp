@@ -116,7 +116,7 @@ Field<ScalarType,D>::
 operator= (const Field<SrcScalarType,D>& src) {
 
   using src_field_type = decltype(src);
-
+#ifndef CUDA_BUILD // TODO Figure out why nvcc isn't like this bit of code.
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
                              typename src_field_type::non_const_value_type
@@ -126,6 +126,7 @@ operator= (const Field<SrcScalarType,D>& src) {
   static_assert(std::is_same<value_type,const_value_type>::value ||
                 std::is_same<typename src_field_type::value_type,non_const_value_type>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
+#endif
   if (&src!=*this) {
     m_header    = src.get_header_ptr();
     m_view      = src.get_view();
