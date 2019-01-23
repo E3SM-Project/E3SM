@@ -9,6 +9,9 @@
 
 #include <cassert>
 #include <type_traits>
+#ifdef _OPENMP
+# include <omp.h>
+#endif
 
 // This file should not be merged with share/scream_kokkos_meta.hpp.
 // That file contains functionalities that *ideally* should be in kokkos
@@ -145,7 +148,11 @@ public:
   KOKKOS_INLINE_FUNCTION
   int get_workspace_idx(const MemberType& team_member) const
   {
+#ifdef _OPENMP
     return omp_get_thread_num() / _team_size;
+#else
+    return 1;
+#endif
   }
 };
 
