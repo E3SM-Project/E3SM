@@ -23,6 +23,7 @@ module glc_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_getFldPtr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use dead_nuopc_mod        , only : dead_grid_lat, dead_grid_lon, dead_grid_index
@@ -49,8 +50,6 @@ module glc_comp_nuopc
   integer , allocatable      :: gindex(:)
   real(r8), allocatable      :: x2d(:,:)
   real(r8), allocatable      :: d2x(:,:)
-  character(CXX)             :: flds_g2x = ''
-  character(CXX)             :: flds_x2g = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
   integer                    :: my_task              ! my task in mpi communicator mpicom
@@ -195,11 +194,11 @@ contains
     if (nxg /= 0 .and. nyg /= 0) then
 
        call fld_list_add(fldsFrGlc_num, fldsFrGlc, trim(flds_scalar_name))
-       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_icemask'                , flds_concat=flds_g2x)
-       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_icemask_coupled_fluxes' , flds_concat=flds_g2x)
-       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_ice_covered'            , flds_concat=flds_g2x)
-       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_topo'                   , flds_concat=flds_g2x)
-       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Flgg_hflx'                 , flds_concat=flds_g2x)
+       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_icemask'                )
+       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_icemask_coupled_fluxes' )
+       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_ice_covered'            )
+       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Sg_topo'                   )
+       call fld_list_add(fldsFrGlc_num, fldsFrGlc, 'Flgg_hflx'                 )
 
        do n = 1,fldsFrGlc_num
           if (mastertask) write(logunit,*)'Advertising From Xglc ',trim(fldsFrGlc(n)%stdname)
@@ -212,11 +211,11 @@ contains
        do num = 0,glc_nec
           nec_str = glc_elevclass_as_string(num)
           fldname = 'Sl_tsrf' // nec_str
-          call fld_list_add(fldsToGlc_num, fldsToGlc, trim(fldname) , flds_concat=flds_g2x)
+          call fld_list_add(fldsToGlc_num, fldsToGlc, trim(fldname))
           fldname = 'Sl_topo' // nec_str
-          call fld_list_add(fldsToGlc_num, fldsToGlc, trim(fldname) , flds_concat=flds_g2x)
+          call fld_list_add(fldsToGlc_num, fldsToGlc, trim(fldname))
           fldname = 'Flgl_qice' // nec_str
-          call fld_list_add(fldsToGlc_num, fldsToGlc, trim(fldname) , flds_concat=flds_g2x)
+          call fld_list_add(fldsToGlc_num, fldsToGlc, trim(fldname))
        end do
 
        do n = 1,fldsToGlc_num
@@ -361,15 +360,18 @@ contains
 
   subroutine ModelAdvance(gcomp, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)         :: clock
-    type(ESMF_State)         :: importState, exportState
-    integer                  :: n
-    integer                  :: shrlogunit     ! original log unit
-    integer                  :: shrloglev      ! original log level
+    type(ESMF_Clock)  :: clock
+    type(ESMF_State)  :: exportState
+    integer           :: n
+    integer           :: shrlogunit     ! original log unit
+    integer           :: shrloglev      ! original log level
+    real(r8), pointer :: dataptr(:)
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -382,37 +384,13 @@ contains
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! query the Component for its clock, importState and exportState
-    !--------------------------------
-
-    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, &
-      exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 1) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-    endif
-
-    !--------------------------------
-    ! Unpack import state
-    !--------------------------------
-
-    do n = 1, FldsFrGlc_num
-       if (fldsFrGlc(n)%stdname /= flds_scalar_name) then
-          call state_getimport(importState, trim(fldsToGlc(n)%stdname), x2d(n,:), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end do
-
-    !--------------------------------
-    ! Run model
-    !--------------------------------
-
-    call dead_run_nuopc('glc', d2x, gbuf, flds_g2x)
-
-    !--------------------------------
     ! Pack export state
     !--------------------------------
+
+    call NUOPC_ModelGet(gcomp, modelClock=clock, exportState=exportState, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dead_run_nuopc('glc', d2x, gbuf)
 
     do n = 1, FldsFrGlc_num
        if (fldsFrGlc(n)%stdname /= flds_scalar_name) then
@@ -421,20 +399,35 @@ contains
        end if
     end do
 
+    ! Reset some fields
+    call shr_nuopc_methods_State_GetFldPtr(exportState, fldname='Sg_icemask', fldptr1=dataptr, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,size(dataptr)
+       dataptr(n) = 1.0_R8
+    end do
+
+    call shr_nuopc_methods_State_GetFldPtr(exportState, fldname='Sg_icemask_coupled_fluxes', fldptr1=dataptr, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,size(dataptr)
+       dataptr(n) = 1.0_R8
+    end do
+
+    call shr_nuopc_methods_State_GetFldPtr(exportState, fldname='Sg_ice_covered', fldptr1=dataptr, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,size(dataptr)
+       dataptr(n) = 1.0_R8
+    end do
+
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
-          call Print_FieldExchInfo(values=d2x, logunit=logunit, &
-               fldlist=fldsFrGlc, nflds=fldsFrGlc_num, istr="ModelAdvance: glc->mediator")
-       end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-    if (my_task == master_task) then
-       call shr_nuopc_log_clock_advance(clock, 'GLC', logunit)
+       if (my_task == master_task) then
+          call shr_nuopc_log_clock_advance(clock, 'GLC', logunit)
+       endif
     endif
 
     call shr_file_setLogLevel(shrloglev)

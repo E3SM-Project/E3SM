@@ -167,8 +167,8 @@ module med_fraction_mod
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use esmFlds               , only : compatm, compocn, compice, complnd
     use esmFlds               , only : comprof, compglc, compwav, compname
+    use esmFlds               , only : mapconsf, mapfcopy
     use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
@@ -663,11 +663,10 @@ module med_fraction_mod
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_State, ESMF_Field
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_FieldBundleIsCreated
-    use esmFlds               , only : compatm, compocn, compice, complnd
-    use esmFlds               , only : comprof, compglc, compwav, compname
+    use esmFlds               , only : compatm, compocn, compice, complnd, compname
+    use esmFlds               , only : mapconsf, mapfcopy
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use med_internalstate_mod , only : InternalState
-    use shr_nuopc_fldList_mod , only : mapconsf, mapfcopy
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
