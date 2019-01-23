@@ -15,7 +15,7 @@ module TopounitType
   use clm_varcon     , only : ispval, spval
   use clm_varpar     , only : numrad
   use clm_varctl     , only : iulog, use_cn, use_fates
-  use histFileMod    , only : hist_addfld1d
+!  use histFileMod    , only : hist_addfld1d
   use decompMod      , only : bounds_type
 
   implicit none
