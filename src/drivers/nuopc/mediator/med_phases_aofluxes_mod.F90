@@ -538,7 +538,6 @@ contains
     use ESMF          , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
     use ESMF          , only : ESMF_LogWrite, ESMF_LogMsg_Info
     use NUOPC         , only : NUOPC_CompAttributeGet
-    use shr_const_mod , only : shr_const_spval
     use shr_flux_mod  , only : shr_flux_atmocn, shr_flux_adjust_constants
     use perf_mod      , only : t_startf, t_stopf
 
@@ -546,8 +545,6 @@ contains
     ! Determine atm/ocn fluxes eother on atm or on ocean grid
     ! The module arrays are set via pointers the the mediator internal states
     ! in med_ocnatm_init and are used below.
-    ! gcomp (the mediator gridded component) is only needed to retreive the
-    ! attributes
     !-----------------------------------------------------------------------
 
     ! Arguments
@@ -556,10 +553,6 @@ contains
     integer           , intent(out)   :: rc
     !
     ! Local variables
-    type(ESMF_clock)        :: EClock
-    type(ESMF_Time)         :: ETime
-    type(ESMF_TimeInterval) :: timeStep
-    integer                 :: tod, dt
     character(CL)           :: cvalue
     integer                 :: n,i                     ! indices
     integer                 :: lsize                   ! local size
@@ -569,24 +562,13 @@ contains
     logical                 :: coldair_outbreak_mod    ! cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
     character(len=CX)       :: tmpstr
     logical,save            :: first_call = .true.
-    character(*),parameter  :: F01 = "('(med_aofluxes_run) ',a,i4,2x,d21.14)"
-    character(*),parameter  :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
     character(*),parameter  :: subName = '(med_aofluxes_run) '
     !-----------------------------------------------------------------------
     call t_startf('MED:'//subname)
 
-    call ESMF_GridCompGet(gcomp, clock=Eclock, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Get tod and dt
-    call ESMF_ClockGet( Eclock, currTime=ETime, timeStep=timeStep, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeGet( ETime, s=tod, rc=rc )
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeIntervalGet( timeStep, s=dt, rc=rc )
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    write(tmpstr,'(2i12)') tod,dt
-    call ESMF_LogWrite(trim(subname)//" : tod,dt= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+    !----------------------------------
+    ! Get config variables on first call
+    !----------------------------------
 
     if (first_call) then
        call NUOPC_CompAttributeGet(gcomp, name='gust_fac', value=cvalue, rc=rc)
@@ -638,8 +620,8 @@ contains
     write(tmpstr,'(i12,g22.12,i12)') lsize,sum(aoflux%rmask),sum(aoflux%mask)
     call ESMF_LogWrite(trim(subname)//" : maskB= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
-    write(tmpstr,'(g22.12,g22.12)') sum(aoflux%dens),sum(aoflux%tocn)
-    call ESMF_LogWrite(trim(subname)//" : dens,tocn= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
+    write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
+    call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     !----------------------------------
     ! Update atmosphere/ocean surface fluxes
@@ -651,9 +633,6 @@ contains
           aoflux%uGust(n) = 0.0_R8
        end do
     end if
-
-    write(tmpstr,'(3i12)') lsize,size(aoflux%mask),sum(aoflux%mask)
-    call ESMF_LogWrite(trim(subname)//" : mask= "//trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
 
     if (compute_atm_thbot) then
        do n = 1,lsize
@@ -669,23 +648,6 @@ contains
           end if
        end do
     end if
-
-    do n = 1,lsize
-       if (aoflux%mask(n) /= 0) then
-          !--- mask missing atm or ocn data if found
-          if (aoflux%dens(n) < 1.0e-12 .or. aoflux%tocn(n) < 1.0) then
-             aoflux%mask(n) = 0
-          endif
-       end if
-       aoflux%sen(n)  = shr_const_spval
-       aoflux%lat(n)  = shr_const_spval
-       aoflux%lwup(n) = shr_const_spval
-       aoflux%evap(n) = shr_const_spval
-       aoflux%taux(n) = shr_const_spval
-       aoflux%tauy(n) = shr_const_spval
-       aoflux%tref(n) = shr_const_spval
-       aoflux%qref(n) = shr_const_spval
-    end do
 
     call shr_flux_atmocn (&
          lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &

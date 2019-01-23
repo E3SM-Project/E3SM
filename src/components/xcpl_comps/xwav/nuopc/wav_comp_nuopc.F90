@@ -50,8 +50,6 @@ module wav_comp_nuopc
   integer , allocatable      :: gindex(:)
   real(r8), allocatable      :: x2d(:,:)
   real(r8), allocatable      :: d2x(:,:)
-  character(CXX)             :: flds_w2x = ''
-  character(CXX)             :: flds_x2w = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
   integer                    :: my_task              ! my task in mpi communicator mpicom
@@ -185,10 +183,10 @@ contains
     if (nxg /= 0 .and. nyg /= 0) then
 
        call fld_list_add(fldsFrWav_num, fldsFrWav, trim(flds_scalar_name))
-       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_lamult'  , flds_concat=flds_w2x)
-       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_ustokes' , flds_concat=flds_w2x)
-       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_vstokes' , flds_concat=flds_w2x)
-       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_hstokes' , flds_concat=flds_w2x)
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_lamult'  )
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_ustokes' )
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_vstokes' )
+       call fld_list_add(fldsFrWav_num, fldsFrWav, 'Sw_hstokes' )
 
        do n = 1,fldsFrWav_num
           if (mastertask) write(logunit,*)'Advertising From Xwav ',trim(fldsFrWav(n)%stdname)
@@ -198,14 +196,14 @@ contains
        enddo
 
        call fld_list_add(fldsToWav_num, fldsToWav, trim(flds_scalar_name))
-       call fld_list_add(fldsToWav_num, fldsToWav, 'Sa_u'       , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'Sa_v'       , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'Sa_tbot'    , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'Si_ifrac'   , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'So_t'       , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'So_u'       , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'So_v'       , flds_concat=flds_x2w)
-       call fld_list_add(fldsToWav_num, fldsToWav, 'So_bldepth' , flds_concat=flds_x2w)
+       call fld_list_add(fldsToWav_num, fldsToWav, 'Sa_u'       )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'Sa_v'       )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'Sa_tbot'    )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'Si_ifrac'   )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'So_t'       )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'So_u'       )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'So_v'       )
+       call fld_list_add(fldsToWav_num, fldsToWav, 'So_bldepth' )
 
        do n = 1,fldsToWav_num
           if(mastertask) write(logunit,*)'Advertising To Xwav ',trim(fldsToWav(n)%stdname)
@@ -356,7 +354,7 @@ contains
 
     ! local variables
     type(ESMF_Clock)         :: clock
-    type(ESMF_State)         :: importState, exportState
+    type(ESMF_State)         :: exportState
     integer                  :: n
     integer                  :: shrlogunit     ! original log unit
     integer                  :: shrloglev      ! original log level
@@ -372,36 +370,13 @@ contains
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! query the Component for its clock, importState and exportState
-    !--------------------------------
-
-    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 1) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-    endif
-
-    !--------------------------------
-    ! Unpack import state
-    !--------------------------------
-
-    do n = 1, FldsFrWav_num
-       if (fldsFrWav(n)%stdname /= flds_scalar_name) then
-          call state_getimport(importState, trim(fldsToWav(n)%stdname), x2d(n,:), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end do
-
-    !--------------------------------
-    ! Run model
-    !--------------------------------
-
-    call dead_run_nuopc('wav', d2x, gbuf, flds_w2x)
-
-    !--------------------------------
     ! Pack export state
     !--------------------------------
+
+    call NUOPC_ModelGet(gcomp, modelClock=clock, exportState=exportState, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dead_run_nuopc('wav', d2x, gbuf)
 
     do n = 1, FldsFrWav_num
        if (fldsFrWav(n)%stdname /= flds_scalar_name) then
@@ -415,15 +390,11 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
-          call Print_FieldExchInfo(values=d2x, logunit=logunit, &
-               fldlist=fldsFrWav, nflds=fldsFrWav_num, istr="ModelAdvance: wav->mediator")
-       end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-    if(my_task == master_task) then
-       call shr_nuopc_log_clock_advance(clock, 'WAV', logunit)
+       if (my_task == master_task) then
+          call shr_nuopc_log_clock_advance(clock, 'WAV', logunit)
+       endif
     endif
 
     call shr_file_setLogLevel(shrloglev)
