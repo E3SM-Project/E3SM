@@ -65,16 +65,6 @@ ENDIF ()
 
 # C++ Flags
 
-INCLUDE(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" CXX11_SUPPORTED)
-IF (${CXX11_SUPPORTED})
-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-ELSE ()
-  MESSAGE (FATAL_ERROR "The C++ compiler does not support C++11")
-ENDIF ()
-
-CHECK_CXX_COMPILER_FLAG("-cxxlib" CXXLIB_SUPPORTED)
-
 STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
 IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
   ADD_DEFINITIONS(-DVTUNE_PROFILE)
@@ -90,7 +80,7 @@ find_package(CUDA QUIET)
 if (${CUDA_FOUND})
   string (FIND ${CMAKE_CXX_COMPILER} "nvcc" pos)
   if (${pos} GREATER -1)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda -DCUDA_BUILD")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
   else ()
     message ("Cuda was found, but the C++ compiler is not nvcc_wrapper, so building without Cuda support.")
   endif ()

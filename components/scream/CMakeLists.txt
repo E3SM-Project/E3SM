@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 cmake_policy(SET CMP0057 NEW)
 
 project(SCREAM CXX Fortran)
+set (CMAKE_CXX_STANDARD 11)
 
 # Print the sha of the last commit (useful to double check which version was tested on CDash)
 EXECUTE_PROCESS (COMMAND git rev-parse HEAD
