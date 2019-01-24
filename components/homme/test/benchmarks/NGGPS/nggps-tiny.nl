@@ -1,4 +1,5 @@
 &ctl_nl
+ndays = 1
 NThreads=-1   ! use maximum threads available
 partmethod    = 4
 topology      = "cube"
@@ -49,12 +50,12 @@ profile_single_file		= .true.
 ! interp_nlon = 64
 ! interp_gridtype=2
  
- output_timeunits=1,1
- output_frequency=0,0
+ output_timeunits=1,1  !0=timesteps, 1=days, 2=hours, 3=seconds
+ output_frequency=1,0
  output_start_time=0,0
  output_end_time=30000,30000
- output_varnames1='ps','zeta','dp3d','T','u','v','omega'
- output_varnames2='Q','Q2','Q3','Q4','Q5'
+ output_varnames1='ps','zeta','dp3d','T','u','v','omega','Q','Q2','Q3','Q4','Q5'
+ output_varnames2=
  io_stride=8
  output_type = 'netcdf' 
 /

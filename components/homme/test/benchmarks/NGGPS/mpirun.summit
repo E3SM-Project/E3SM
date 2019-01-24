@@ -1,0 +1,95 @@
+#!/bin/bash
+## 
+# @file mpirun.summit
+# @brief Launch script for task distribution on Summit
+# @author Matt Norman, Sarat Sreepathi
+# @version 1.0
+# @date 2018-03-13
+
+function usage {
+  echo "mpirun.summit -n|-np <total # tasks> -N <tasks per node> [-gpu] [-h|--help] <extra args> <executable>"
+  echo "Note: Number of tasks should preferably be a multiple of the tasks per node"
+  echo "parameters:"
+  echo "   -gpu           Use GPU jsrun parameters (6 resource sets per node, gpu-cpu latency priority)"
+  echo "   -h | --help    Print help"
+  exit 0
+}
+
+echo "Script called as: $@"
+
+##########################################################################################
+## READ IN COMMAND LINE PARAMETERS
+##########################################################################################
+#Defaults
+GPU=0
+TASKS_PER_NODE=-1
+NTASKS=-1
+EXE=
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -n|-np)
+    NTASKS="$2"
+    shift # past argument
+    ;;
+    -N)
+    TASKS_PER_NODE="$2"
+    shift # past argument
+    ;;
+    -exe)
+    EXE="$2"
+    shift # past argument
+    ;;
+    -gpu)
+    GPU=1
+    ;;
+    -h|--help)
+    usage
+    ;;
+    *)
+    EXE="$EXE $1"
+    ;;
+esac
+shift # past argument or value
+done
+
+#Process parameters
+[ "$NTASKS"         == "-1" ] && echo "Must specify -n or -np"                            && exit -1
+[ "$EXE"            == ""   ] && echo "Must specify an executable"                        && exit -1
+[ "$TASKS_PER_NODE" == "-1" ] && echo "-N not specified. Defaulting to 84 tasks per node (smt2)" && TASKS_PER_NODE=84
+
+if [ "$GPU" == "1" ]; then
+# NUM_NODES=`echo "$NTASKS/$TASKS_PER_NODE" | bc`
+# Calculates ceil of NTASKS/TASKS_PER_NODE 
+  NUM_NODES=`echo "(($NTASKS + $TASKS_PER_NODE - 1)/$TASKS_PER_NODE)" | bc`
+  RS_PER_NODE=6
+  NRS=`echo "$NUM_NODES*$RS_PER_NODE" | bc`
+  TASKS_PER_RS=`echo "$TASKS_PER_NODE/$RS_PER_NODE" | bc`
+  CPU_PER_RS=7
+# By default 'jsrun' does not exit (i.e. hung) if any process / thread fails.
+# To avoid this, pass the option '-X 1' to exit on error
+  if [ -z "$OMP_NUM_THREADS" ]; then 
+    mpirun="jsrun -X 1                                     --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --gpu_per_rs 1 --latency_priority gpu-cpu                                $EXE"
+  else
+    mpirun="jsrun -X 1 -E OMP_NUM_THREADS=$OMP_NUM_THREADS --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --gpu_per_rs 1 --latency_priority cpu-cpu --bind packed:$OMP_NUM_THREADS $EXE"
+  fi
+  echo "Running: $mpirun"
+else
+# Calculates ceil of NTASKS/TASKS_PER_NODE 
+  NUM_NODES=`echo "(($NTASKS + $TASKS_PER_NODE - 1)/$TASKS_PER_NODE)" | bc`
+  RS_PER_NODE=2
+  NRS=`echo "$NUM_NODES*$RS_PER_NODE" | bc`
+  TASKS_PER_RS=`echo "$TASKS_PER_NODE/$RS_PER_NODE" | bc`
+  CPU_PER_RS=21
+  if [ -z "$OMP_NUM_THREADS" ]; then 
+    mpirun="jsrun -X 1                                     --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --latency_priority cpu-cpu                                $EXE"
+  else
+    mpirun="jsrun -X 1 -E OMP_NUM_THREADS=$OMP_NUM_THREADS --nrs $NRS --rs_per_host $RS_PER_NODE --tasks_per_rs $TASKS_PER_RS --cpu_per_rs $CPU_PER_RS --latency_priority cpu-cpu --bind packed:$OMP_NUM_THREADS $EXE"
+  fi
+  echo "Running: $mpirun"
+fi
+
+$mpirun
+

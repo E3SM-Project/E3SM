@@ -4,9 +4,9 @@
 #BSUB -W 10
 #BSUB -nnodes 1
 #BSUB -alloc_flags gpumps
-#BSUB -J e3sm_atm_dycore
-#BSUB -o e3sm_atm_dycore.%J
-#BSUB -e e3sm_atm_dycore.%J
+#BSUB -J dycore_cpu
+#BSUB -o dycore_cpu.%J
+#BSUB -e dycore_cpu.%J
 
 source $MODULESHOME/init/bash
 module purge
@@ -25,7 +25,7 @@ limit stacksize unlimited
 limit coredumpsize unlimited
 
 #  set paths to source code, build directory and run directory
-set wdir =  /gpfs/alpine/cli115/proj-shared/$USER/homme-runs           # run directory
+set wdir =  /gpfs/alpine/cli115/proj-shared/$USER/homme-runs/cpu           # run directory
 set HOMME = `pwd`/../../..               # /path/to/acme/components/homme
 set MACH = $HOMME/cmake/machineFiles/summit.cmake
 set exe = $HOMME/compile_scripts/summit/build_summit/src/theta-l/theta-l
@@ -43,20 +43,17 @@ set NNODES=`echo $LSB_HOSTS | tr " " "\n" | uniq -c | wc -l`
 set NMPI = $NNODES
 @ NMPI *= $PER_NODE
 @ NMPI /= $OMP_NUM_THREADS
-# compute number of MPI tasks per node
-set NMPI_PER_NODE = $PER_NODE
-@ NMPI_PER_NODE /= $OMP_NUM_THREADS
 
 echo NODES =            $NNODES
 echo NMPI_PER_NODE =    $PER_NODE
 echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
 # note: in tests on 4K nodes,the --bcase and --compress options were much slower. DONT USE:
-set mpirun = "/gpfs/alpine/world-shared/csc190/e3sm/mpirun.summit -n $NMPI -N $NMPI_PER_NODE"
+set mpirun = "$HOMME/test/benchmarks/NGGPS/mpirun.summit -n $NMPI -N $PER_NODE"
 echo "mpi commnand: $mpirun"
 
 set input = $HOMME/test/benchmarks/NGGPS  # input files for test case
 set vdir = $HOMME/test/vcoord             # vertical coordinate files
-set run = $wdir/run-$NNODES-$OMP_NUM_THREADS-$$
+set run = $wdir/$name
 
 #  Run the code
 mkdir -p $run/movies
@@ -74,8 +71,8 @@ date
 #Print timing data for convenience
 if (-f  HommeTime  ) then
    # save timings from run
-   set timingfile = $name.nodes${NNODES}.HommeTime
-   set summary    = $name.nodes${NNODES}.summary
+   set timingfile = nodes${NNODES}.tasks${PER_NODE}.threads${OMP_NUM_THREADS}.HommeTime
+   set summary    = nodes${NNODES}.tasks${PER_NODE}.threads${OMP_NUM_THREADS}.summary
    mv HommeTime $timingfile
    # total run time (not counting init)
    grep -a prim_main_loop $timingfile | head -1 | tee $summary
