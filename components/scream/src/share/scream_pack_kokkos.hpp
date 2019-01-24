@@ -99,18 +99,18 @@ repack (const Kokkos::View<Pack<T, old_pack_size>*, Parms...>& vp) {
 template <typename T>
 using BigPack = Pack<T, SCREAM_PACK_SIZE>;
 template <typename T>
-using SmallPack = Pack<T, SCREAM_PACK_SIZE / SCREAM_SMALL_PACK_FACTOR>;
+using SmallPack = Pack<T, SCREAM_SMALL_PACK_SIZE>;
 
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<SmallPack<T>**, Parms...> >
 smallize (const Kokkos::View<BigPack<T>**, Parms...>& vp) {
-  return repack<SCREAM_PACK_SIZE / SCREAM_SMALL_PACK_FACTOR>(vp);
+  return repack<SCREAM_SMALL_PACK_SIZE>(vp);
 }
 
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<SmallPack<T>*, Parms...> >
 smallize (const Kokkos::View<BigPack<T>*, Parms...>& vp) {
-  return repack<SCREAM_PACK_SIZE / SCREAM_SMALL_PACK_FACTOR>(vp);
+  return repack<SCREAM_SMALL_PACK_SIZE>(vp);
 }
 
 } // namespace pack
