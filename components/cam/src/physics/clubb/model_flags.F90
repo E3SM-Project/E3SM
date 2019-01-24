@@ -248,6 +248,10 @@ module model_flags
     l_Lscale_plume_centered = .false.,   & ! Alternate that uses the PDF to
                                            ! compute the perturbed values
 
+    l_diag_Lscale_from_tau  = .false.,   & ! First diagnose dissipation time tau, 
+                                           ! and then diagnose the mixing length
+                                           ! scale as Lscale = tau * tke
+
     l_use_ice_latent = .false.,          & ! Includes the effects of ice latent heating in
                                            !  turbulence terms
 
@@ -269,7 +273,8 @@ module model_flags
 
 !$omp threadprivate( l_stability_correct_tau_zm, l_damp_wp2_using_em, &
 !$omp                l_do_expldiff_rtm_thlm, &
-!$omp                l_Lscale_plume_centered, l_use_ice_latent, l_use_C7_Richardson, &
+!$omp                l_Lscale_plume_centered, l_diag_Lscale_from_tau, &
+!$omp                l_use_ice_latent, l_use_C7_Richardson, &
 !$omp                l_use_C11_Richardson, l_brunt_vaisala_freq_moist, l_use_thvm_in_bv_freq, &
 !$omp                l_use_wp3_pr3, l_rcm_supersat_adj, l_single_C2_Skw, l_damp_wp3_Skw_squared )
 
@@ -284,7 +289,7 @@ module model_flags
     l_tke_aniso, l_vert_avg_closure, l_single_C2_Skw, l_standard_term_ta, &
     l_use_cloud_cover, l_calc_thlp2_rad, l_rcm_supersat_adj, &
     l_damp_wp3_Skw_squared, l_min_wp2_from_corr_wx, l_min_xp2_from_corr_wx, &
-    l_C2_cloud_frac, l_predict_upwp_vpwp
+    l_C2_cloud_frac, l_predict_upwp_vpwp, l_diag_Lscale_from_tau
 
   contains
 
