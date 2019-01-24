@@ -10,11 +10,27 @@ grid to any target grid. The code is documented in:
  
 USAGE
 -----
+Generating topography to be used in full atmosphere simulations involves 
+multiple steps:
+
+1. Interpolate high resolution topography on cubed-sphere to target grid
+2. Apply dycore-specific smoothing to interpolated topography so that atmosphere 
+   can run stably
+3. Recompute subgrid surface roughness
+
+This tool performs steps 1 and 3, but the smoothing needs to be handled by the 
+dycore. (NOTE: there is an option to have this code perform the smoothing, but
+this option is currently *untested* and *unsupported*, and it is preferred to
+use the dycore to perform the smoothing separately)
+
 To run the code, execute:
 ```
     ./cube_to_target <arguments>                                            
 ```
-See below for description of arguments.
+See below for description of arguments. To create topography for new grids, the
+code will need to be run twice: once to interpolate the input topography to the
+target grid, and then again after using the dycore to apply smoothing to the
+interpolated topography to recompute the subgrid surface roughness.
                                                                              
 REQUIRED ARGUMENTS                                                          
 ------------------
