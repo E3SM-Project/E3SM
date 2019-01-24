@@ -49,7 +49,8 @@ def buildlib(bldroot, installpath, case):
         " SHAREDPATH={install} COMP_INTERFACE={comp_interface}"\
         .format(gptl=gptl_dir, bldroot=bldroot, macfile=os.path.join(caseroot,"Macros.make"),
                 install=installpath,comp_interface=comp_interface)
-
+    if debug:
+        gmake_opts += " DEBUG=True"
     if case.get_build_threaded():
         gmake_opts += " compile_threaded=true "
 
