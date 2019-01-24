@@ -7,7 +7,6 @@
 #include <map>
 
 namespace scream {
-namespace wsm {
 
 /*
  * An implementation header for wsm.hpp, this helps keep wsm.hpp clean by avoiding
@@ -441,7 +440,6 @@ void WorkspaceManager<T, D>::Workspace::release_impl(const ko::Unmanaged<view_1d
   m_team.team_barrier();
 }
 
-} // namespace wsm
 } // namespace scream
 
 #endif

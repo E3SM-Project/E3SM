@@ -31,7 +31,7 @@ set(SHARE_HEADERS
   util/scream_utils.hpp
   util/scream_arch.hpp
   util/scream_kokkos.hpp
-  wsm.hpp
+  scream_workspace.hpp
 )
 
 add_library(scream_share ${SHARE_SRC})

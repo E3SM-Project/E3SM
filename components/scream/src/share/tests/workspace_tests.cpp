@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/wsm.hpp"
+#include "share/scream_workspace.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
 
 namespace unit_test {
@@ -37,12 +37,12 @@ static void unittest_workspace()
   TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk));
 
   {
-    wsm::WorkspaceManager<double, Device> wsmd(17, num_ws, policy);
+    WorkspaceManager<double, Device> wsmd(17, num_ws, policy);
     REQUIRE(wsmd.m_reserve == 1);
     REQUIRE(wsmd.m_size == 17);
   }
   {
-    wsm::WorkspaceManager<char, Device> wsmc(16, num_ws, policy);
+    WorkspaceManager<char, Device> wsmc(16, num_ws, policy);
     REQUIRE(wsmc.m_reserve == 8);
     REQUIRE(wsmc.m_size == 16);
     Kokkos::parallel_for(
@@ -56,7 +56,7 @@ static void unittest_workspace()
       });
   }
   {
-    wsm::WorkspaceManager<short, Device> wsms(16, num_ws, policy);
+    WorkspaceManager<short, Device> wsms(16, num_ws, policy);
     REQUIRE(wsms.m_reserve == 4);
     REQUIRE(wsms.m_size == 16);
   }
@@ -65,11 +65,11 @@ static void unittest_workspace()
   {
     using HostDevice = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::HostSpace>;
     typename KokkosTypes<HostDevice>::TeamPolicy policy_host(util::ExeSpaceUtils<typename KokkosTypes<HostDevice>::ExeSpace>::get_default_team_policy(ni, nk));
-    wsm::WorkspaceManager<short, HostDevice> wsmh(16, num_ws, policy_host);
+    WorkspaceManager<short, HostDevice> wsmh(16, num_ws, policy_host);
     wsmh.m_data(0, 0) = 0; // check on cuda machine
   }
 
-  wsm::WorkspaceManager<int, Device> wsm(ints_per_ws, num_ws, policy);
+  WorkspaceManager<int, Device> wsm(ints_per_ws, num_ws, policy);
 
   REQUIRE(wsm.m_reserve == 2);
   REQUIRE(wsm.m_size == ints_per_ws);
