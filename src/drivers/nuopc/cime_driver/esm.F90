@@ -1627,7 +1627,7 @@ module ESM
           comms(i+1) = MPI_COMM_NULL
        endif
     enddo
-    call mct_world_init(componentCount, GLOBAL_COMM, comms, comps)
+    call mct_world_init(componentCount+1, GLOBAL_COMM, comms, comps)
     deallocate(petlist, comms, comps)
 
   end subroutine esm_init_pelayout
