@@ -1,0 +1,1 @@
+bsub -XF -alloc_flags gpumps -W 120 -nnodes 1 -P CLI115 -Is /bin/bash

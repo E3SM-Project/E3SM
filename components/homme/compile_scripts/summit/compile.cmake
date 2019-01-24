@@ -1,7 +1,7 @@
 #!/bin/bash
 
 do_cmake=0
-do_clean=1
+do_clean=0
 do_make=1
  
 HOMME_ROOT=`pwd`/../..
@@ -49,8 +49,8 @@ make clean                                                          || exit -1
 fi
 
 if [ $do_make -eq 1 ]; then
-make -j24 theta-l                                                   || exit -1
-make -j24 theta-l-acc                                               || exit -1
+make -j8 theta-l                                                   || exit -1
+make -j8 theta-l-acc                                               || exit -1
 fi
 
 
