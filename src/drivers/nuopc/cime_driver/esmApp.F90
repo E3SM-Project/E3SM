@@ -21,12 +21,15 @@ program esmApp
 
   call MPI_init(rc)
   COMP_COMM = MPI_COMM_WORLD
-  ! This call must be after initializing mpi but before initializing esmf, so that io tasks can be
-  ! spun up if pio_async is true
+  ! For planned future use of async io using pio2.  The IO tasks are seperated from the compute tasks here
+  ! and COMP_COMM will be MPI_COMM_NULL on the IO tasks which then call shr_pio_init2 and do not return until
+  ! the model completes.  All other tasks call ESMF_Initialize.  8 is the maximum number of component models
+  ! supported
   call shr_pio_init1(8, "drv_in", COMP_COMM)
   if(COMP_COMM .eq. MPI_COMM_NULL) then
 !     call shr_pio_init2(
      call mpi_finalize(ierror=rc)
+     stop
   endif
   !-----------------------------------------------------------------------------
   ! Initialize ESMF
