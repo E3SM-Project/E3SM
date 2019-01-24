@@ -1,0 +1,24 @@
+#! /bin/bash -f
+
+# Modules
+source $MODULESHOME/init/bash
+module purge
+module load DefApps
+module load pgi/18.7
+module load netcdf
+module load netcdf-fortran
+module load parallel-netcdf
+module load cmake
+module load cuda
+module load hdf5
+
+module list
+
+ulimit -c unlimited
+ulimit -s unlimited
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine. 
+export MPSTKZ=64M
+export OMP_STACKSIZE=64M
+

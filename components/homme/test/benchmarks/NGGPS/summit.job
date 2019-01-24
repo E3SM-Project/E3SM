@@ -12,7 +12,7 @@
 set wdir =  /gpfs/alpine/cli115/proj-shared/$USER/homme-runs           # run directory
 set HOMME = `pwd`/../../..               # /path/to/acme/components/homme
 set MACH = $HOMME/cmake/machineFiles/summit.cmake
-set exe = $HOMME/build/theta-l/theta-l
+set exe = $HOMME/compile_scripts/summit/build_summit/src/theta-l/theta-l
 
 #  Which problem?  tiny, ne30 or ne120 configuration
 set namelist = nggps-tiny.nl ; set name = tiny      # use 4 nodes
@@ -35,7 +35,7 @@ echo NODES =            $NNODES
 echo NMPI_PER_NODE =    $PER_NODE
 echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
 # note: in tests on 4K nodes,the --bcase and --compress options were much slower. DONT USE:
-set mpirun = "srun -n $NMPI -N $NNODES"
+set mpirun = "/gpfs/alpine/world-shared/csc190/e3sm/mpirun.summit -n $NMPI -N $NNODES"
 echo "mpi commnand: $mpirun"
 
 set input = $HOMME/test/benchmarks/NGGPS  # input files for test case
