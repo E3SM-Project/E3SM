@@ -30,6 +30,7 @@ vert_remap_q_alg = 1
 hypervis_order = 2
 hypervis_subcycle=1
 hypervis_subcycle_q=1
+theta_hydrostatic_mode = .true.
 /
 &vert_nl
 vform         = "ccm"
