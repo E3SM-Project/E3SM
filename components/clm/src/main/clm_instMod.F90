@@ -50,6 +50,7 @@ module clm_instMod
 
   use GridcellDataType           , only : grc_es
   use LandunitType               , only : lun_pp
+  use LandunitDataType           , only : lun_es
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es
   use VegetationType             , only : veg_pp
@@ -344,6 +345,7 @@ contains
          urbanparams_vars%em_perroad(begl:endl))
 
     call grc_es%Init(bounds_proc%begg_all, bounds_proc%endg_all)
+    call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
     

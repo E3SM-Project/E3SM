@@ -24,7 +24,8 @@ module SoilTemperatureMod
   use EnergyFluxType    , only : energyflux_type
   use TemperatureType   , only : temperature_type
   use TopounitDataType  , only : top_af
-  use LandunitType      , only : lun_pp                
+  use LandunitType      , only : lun_pp
+  use LandunitDataType  , only : lun_es  
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es                
   use VegetationType    , only : veg_pp                
@@ -283,7 +284,7 @@ contains
          t_h2osfc                => col_es%t_h2osfc                         , & ! Output: [real(r8) (:)   ]  surface water temperature               
          t_soisno                => col_es%t_soisno                         , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd                  => col_es%t_grnd                           , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
-         t_building              => temperature_vars%t_building_lun         , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
+         t_building              => lun_es%t_building                       , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
          xmf                     => temperature_vars%xmf_col                , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
          xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Output: [real(r8) (:)   ] latent heat of phase change of surface water [col]
          fact                    => col_es%fact                             , & ! Output: [real(r8) (:)   ] used in computing tridiagonal matrix [col, lev]
@@ -1985,7 +1986,7 @@ end subroutine SolveTemperature
          zi         => col_pp%zi                          , & ! Input: [real(r8) (:,:) ] interface level below a "z" level (m)
          dz         => col_pp%dz                          , & ! Input: [real(r8) (:,:) ] layer depth (m)
          z          => col_pp%z                           , & ! Input: [real(r8) (:,:) ] layer thickness (m)
-         t_building => temperature_vars%t_building_lun , & ! Input: [real(r8) (:)   ] internal building temperature (K)       
+         t_building => lun_es%t_building , & ! Input: [real(r8) (:)   ] internal building temperature (K)       
          t_soisno   => col_es%t_soisno   , & ! Input: [real(r8) (:,:) ] soil temperature (Kelvin)             
          eflx_bot   => energyflux_vars%eflx_bot_col      & ! Input: [real(r8) (:)   ] heat flux from beneath column (W/m**2) [+ = upward]
          )

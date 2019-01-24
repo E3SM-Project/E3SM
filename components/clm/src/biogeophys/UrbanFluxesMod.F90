@@ -25,7 +25,8 @@ module UrbanFluxesMod
   use SurfaceResistanceMod , only : do_soilevap_beta
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_as  
-  use LandunitType         , only : lun_pp                
+  use LandunitType         , only : lun_pp 
+  use LandunitDataType     , only : lun_es  
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es  
   use VegetationType       , only : veg_pp                
@@ -214,8 +215,8 @@ contains
          t_ref2m             =>   veg_es%t_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (K)            
          t_ref2m_u           =>   veg_es%t_ref2m_u          , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface air temperature (K)     
          t_veg               =>   veg_es%t_veg                , & ! Output: [real(r8) (:)   ]  vegetation temperature (K)                        
-         t_building          =>   temperature_vars%t_building_lun           , & ! Output: [real(r8) (:)   ]  internal building temperature (K)                 
-         taf                 =>   temperature_vars%taf_lun                  , & ! Output: [real(r8) (:)   ]  urban canopy air temperature (K)                  
+         t_building          =>   lun_es%t_building           , & ! Output: [real(r8) (:)   ]  internal building temperature (K)                 
+         taf                 =>   lun_es%taf                  , & ! Output: [real(r8) (:)   ]  urban canopy air temperature (K)                  
 
          frac_sno            =>   waterstate_vars%frac_sno_col              , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
          snow_depth          =>   waterstate_vars%snow_depth_col            , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
