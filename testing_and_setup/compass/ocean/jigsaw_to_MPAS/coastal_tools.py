@@ -239,7 +239,6 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
         params["region_box"],
         params["z_contour"],
         params["n_longest"],
-        params["lon_wrap"],
         params["plot_option"],
         params["plot_box"],
         call_count)
@@ -252,7 +251,6 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
         params["origin"],
         params["nn_search"],
         params["smooth_coastline"],
-        params["lon_wrap"],
         params["plot_option"],
         params["plot_box"],
         call_count)
@@ -267,7 +265,6 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
         params["trans_start"],
         params["trans_width"],
         params["restrict_box"],
-        params["lon_wrap"],
         params["plot_option"],
         params["plot_box"],
         lon_grd,
@@ -291,12 +288,15 @@ coastal_refined_mesh.counter = 0
 def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
                            plot_option=False, plot_box=[], call=None):
 
+    print "Create background mesh"
+    print "------------------------"
+
     # Create cell width background grid
     lat_grd = np.arange(grd_box[2], grd_box[3], ddeg)
     lon_grd = np.arange(grd_box[0], grd_box[1], ddeg)
     nx_grd = lon_grd.size
     ny_grd = lat_grd.size
-    print "Background grid dimensions:", ny_grd, nx_grd
+    print "   Background grid dimensions:", ny_grd, nx_grd
 
     # Assign background grid cell width values
     if mesh_type == 'QU':
@@ -309,6 +309,7 @@ def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
 
     # Plot background cell width
     if plot_option:
+        print "   Plotting background cell width"
 
         plt.figure()
         plt.plot(lat_grd, cell_width_lat)
@@ -324,46 +325,55 @@ def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
             '.png',
             bbox_inches='tight')
         plt.close()
+        print "   Done"
 
     return (lon_grd, lat_grd, cell_width)  # }}}
 
 ##############################################################
 
 
-def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=False,  # {{{
+def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,   # {{{
                        plot_option=False, plot_box=[], call=None):
+
+    print "Extract coastlines"
+    print "------------------"
 
     # Open NetCDF file and read cooordintes
     nc_fid = Dataset(nc_file, "r")
     lon = nc_fid.variables['lon'][:]
     lat = nc_fid.variables['lat'][:]
-    zdata = nc_fid.variables['z']
+    bathy_data = nc_fid.variables['z']
 
     # Get coastlines for refined region
     coastline_list = []
-    for box in region_box["include"]:
+    for i,box in enumerate(region_box["include"]):
 
         # Find coordinates and data inside bounding box
-        lon_region, lat_region, z_region = get_data_inside_box(lon, lat, zdata, box)
-        print "Regional bathymetry data shape:", z_region.shape
+        xb,rect= get_convex_hull_coordinates(box)
+        lon_region, lat_region, z_region = get_data_inside_box(lon, lat, bathy_data, xb)
+        z_data = np.zeros(z_region.shape)
+        z_data.fill(np.nan)
+        idx = get_indices_inside_quad(lon_region,lat_region,box)
+        z_data[idx] = z_region[idx]
+        print "   Regional bathymetry data shape:", z_region.shape
 
         # Find coastline contours
-        print "Extracting coastline"
-        contours = measure.find_contours(z_region, z_contour)
+        print "   Extracting coastline "+str(i+1)+"/"+str(len(region_box["include"]))
+        contours = measure.find_contours(z_data, z_contour)
 
         # Keep only n_longest coastlines and those not within exclude areas
         contours.sort(key=len, reverse=True)
         for c in contours[:n_longest]:
             # Convert from pixel to lon,lat
-            c[:, 0] = (box[3] - box[2]) / float(len(lat_region)) * c[:, 0] + box[2]
-            c[:, 1] = (box[1] - box[0]) / float(len(lon_region)) * c[:, 1] + box[0]
+            c[:, 0] = (xb[3] - xb[2]) / float(len(lat_region)) * c[:, 0] + xb[2]
+            c[:, 1] = (xb[1] - xb[0]) / float(len(lon_region)) * c[:, 1] + xb[0]
             c = np.fliplr(c)
 
             exclude = False
             for area in region_box["exclude"]:
                 # Determine coastline coordinates in exclude area
                 idx = get_indices_inside_quad(
-                    c[:, 0], c[:, 1], area, grid=False, wrap=lon_wrap)
+                    c[:, 0], c[:, 1], area, grid=False)
 
                 # Exlude coastlines that are entirely contained in exclude area
                 if idx.size == c.shape[0]:
@@ -377,16 +387,17 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=
                 cpad = np.vstack((c, [np.nan, np.nan]))
                 coastline_list.append(cpad)
 
-        print "Done"
+        print "   Done"
 
     # Combine coastlines
     coastlines = np.concatenate(coastline_list)
 
     if plot_option:
+        print "   Plotting coastlines"
 
         # Find coordinates and data inside plotting box
         lon_plot, lat_plot, z_plot = get_data_inside_box(
-            lon, lat, zdata, plot_box)
+            lon, lat, bathy_data, plot_box)
 
         # Plot bathymetry data, coastlines and region boxes
         plt.figure()
@@ -410,14 +421,18 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10, lon_wrap=
             '.png',
             bbox_inches='tight')
         plt.close()
+        print "   Done"
 
     return coastlines  # }}}
 
 ##############################################################
 
 
-def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_window, lon_wrap,  # {{{
+def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_window,  # {{{
                       plot_option=False, plot_box=[], call=None):
+ 
+    print "Distance to coast"
+    print "-----------------"
 
     # Remove Nan values separating coastlines
     coast_pts = coastlines[np.isfinite(coastlines).all(axis=1)]
@@ -427,57 +442,41 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_wi
         coast_pts[:, 0], coast_pts[:, 1] = smooth_coastline(
             coast_pts[:, 0], coast_pts[:, 1], smooth_window)
 
-    # Apply correction for the regions near the antimeridian
-    Lon_grd, Lat_grd = np.meshgrid(lon_grd, lat_grd)
-    if lon_wrap:
-        coast_pts_adj = np.copy(coast_pts)
-        idx = get_data_inside_box(
-            lon_grd, lat_grd, Lon_grd, [-180.0, 0.0, -90.0, 90.0], idx=True)
-        Lon_grd[idx] = Lon_grd[idx] + 180.0
-        idx = get_indices_inside_quad(coast_pts[:, 0], coast_pts[:, 1], np.array(
-            [-180.0, 0.0, -90.0, 90.0]), grid=False)
-        coast_pts_adj[idx, 0] = coast_pts[idx, 0] + 180.0
-
-        idx = get_data_inside_box(lon_grd, lat_grd, Lon_grd, [
-                                  0.0, 180.0, -90.0, 90.0], idx=True)
-        Lon_grd[idx] = Lon_grd[idx] - 180.0
-        idx = get_indices_inside_quad(coast_pts[:, 0], coast_pts[:, 1], np.array([
-                                      0.0, 180.0, -90.0, 90.0]), grid=False)
-        coast_pts_adj[idx, 0] = coast_pts[idx, 0] - 180.0
-        coast_pts = coast_pts_adj
-
-    # Convert to x,y and create kd-tree
-    coast_pts_xy = np.copy(coast_pts)
-    coast_pts_xy[:, 0], coast_pts_xy[:, 1] = CPP_projection(coast_pts[:, 0], coast_pts[:, 1], origin)
+    # Convert coastline points to x,y,z and create kd-tree
+    npts = coast_pts.shape[0]
+    coast_pts_xyz = np.zeros((npts,3))
+    coast_pts_xyz[:, 0], coast_pts_xyz[:, 1], coast_pts_xyz[:, 2] = lonlat2xyz(coast_pts[:, 0], coast_pts[:, 1])
     if nn_search == "kdtree":
-        tree = spatial.KDTree(coast_pts_xy)
+        tree = spatial.KDTree(coast_pts_xyz)
     elif nn_search == "flann":
         flann = pyflann.FLANN()
         flann.build_index(
-            coast_pts_xy,
+            coast_pts_xyz,
             algorithm='kdtree',
             target_precision=1.0)
 
-    # Put x,y backgound grid coordinates in a nx_grd x 2 array for kd-tree query
-    X_grd, Y_grd = CPP_projection(Lon_grd, Lat_grd, origin)
-    pts = np.vstack([X_grd.ravel(), Y_grd.ravel()]).T
+    # Convert  backgound grid coordinates to x,y,z and put in a nx_grd x 3 array for kd-tree query
+    Lon_grd, Lat_grd = np.meshgrid(lon_grd, lat_grd)
+    X_grd, Y_grd, Z_grd = lonlat2xyz(Lon_grd,Lat_grd)
+    pts = np.vstack([X_grd.ravel(), Y_grd.ravel(), Z_grd.ravel()]).T
 
     # Find distances of background grid coordinates to the coast
-    print "Finding distance"
+    print "   Finding distance"
     start = timeit.default_timer()
     if nn_search == "kdtree":
         d, idx = tree.query(pts)
     elif nn_search == "flann":
-        idx, d = flann.nn_index(pts, checks=1000)
+        idx, d = flann.nn_index(pts, checks=2000)
         d = np.sqrt(d)
     end = timeit.default_timer()
-    print "Done"
-    print end - start, " seconds"
+    print "   Done"
+    print "   " + str(end - start) + " seconds"
 
     # Make distance array that corresponds with cell_width array
     D = np.reshape(d, Lon_grd.shape)
 
     if plot_option:
+        print "   Plotting distance to coast"
 
         # Find coordinates and data inside plotting box
         lon_plot, lat_plot, D_plot = get_data_inside_box(
@@ -501,15 +500,21 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_wi
         plt.axis('equal')
         plt.savefig('distance' + str(call) + '.png', bbox_inches='tight')
         plt.close()
+        print "   Done"
+
     return D  # }}}
 
 ##############################################################
 
 
-def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width, restrict_box, lon_wrap=False,  # {{{
+def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width, restrict_box,   # {{{
                        plot_option=False, plot_box=[], lon_grd=[], lat_grd=[], coastlines=[], call=None):
 
+    print "Compute cell width"
+    print "------------------"
+
     # Compute cell width based on distance
+    print "   Computing cell width"
     backgnd_weight = .5 * \
         (np.tanh((D - trans_start - .5 * trans_width) / (.2 * trans_width)) + 1.0)
     dist_weight = 1.0 - backgnd_weight
@@ -529,7 +534,7 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
     if len(restrict_box["include"]) > 0:
         # Only apply inside include regions
         for box in restrict_box["include"]:
-            idx = get_indices_inside_quad(lon, lat, box, wrap=lon_wrap)
+            idx = get_indices_inside_quad(lon, lat, box)
             cell_width[idx] = (dx_min*dist_weight[idx] +
                                np.multiply(cell_width_old[idx], backgnd_weight[idx]))
     else:
@@ -540,11 +545,13 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
     # Don't applt cell width function in exclude regions (revert to previous values)
     if restrict_box["exclude"] > 0:
         for box in restrict_box["exclude"]:
-            idx = get_indices_inside_quad(lon, lat, box, wrap=lon_wrap)
+            idx = get_indices_inside_quad(lon, lat, box)
             cell_width[idx] = cell_width_old[idx]
+    print "   Done"
 
     if plot_option:
-
+        print "   Plotting cell width"
+ 
         # Find coordinates and data inside plotting box
         lon_plot, lat_plot, cell_width_plot = get_data_inside_box(
             lon_grd, lat_grd, cell_width / km, plot_box)
@@ -583,6 +590,7 @@ def compute_cell_width(D, cell_width, lon, lat, dx_min, trans_start, trans_width
         plt.ylabel('weight')
         plt.savefig('trans_func'+str(call)+'.png',bbox_inches='tight')
         plt.close()
+        print "   Done"
 
     return cell_width  # }}}
 
@@ -608,6 +616,17 @@ def CPP_projection(lon, lat, origin):
     y = R * lat * deg2rad
 
     return x, y
+
+##############################################################
+
+def lonlat2xyz(lon,lat):
+
+    R = 6378206.4
+    x = R*np.multiply(np.cos(lon*deg2rad),np.cos(lat*deg2rad))
+    y = R*np.multiply(np.sin(lon*deg2rad),np.cos(lat*deg2rad))
+    z = R*np.sin(lat*deg2rad)
+
+    return x,y,z
 
 ##############################################################
 
@@ -652,7 +671,9 @@ def get_data_inside_box(lon, lat, data, box, idx=False):
 ##############################################################
 
 
-def get_indices_inside_quad(lon, lat, box, grid=True, wrap=False):
+def get_indices_inside_quad(lon, lat, box, grid=True):
+
+    wrap = flag_wrap(box)
 
     lon_adj = np.copy(lon)
     if wrap:
@@ -668,36 +689,17 @@ def get_indices_inside_quad(lon, lat, box, grid=True, wrap=False):
         X = lon_adj
         Y = lat
 
-    if box.size == 4:
-        if wrap:
-            for i in range(2):
-                if box[i] >= -180.0 and box[i] <= -90.0:
-                    box[i] = box[i] + 360.0
-
-        xb1 = box[0]
-        xb2 = box[1]
-        yb1 = box[2]
-        yb2 = box[3]
-        rect = True
-    else:
-        if wrap:
-            for i in range(4):
-                if box[i, 0] >= -180.0 and box[i, 0] <= -90.0:
-                    box[i, 0] = box[i, 0] + 360.0
-
-        xb1 = np.amin(box[:, 0])
-        xb2 = np.amax(box[:, 0])
-        yb1 = np.amin(box[:, 1])
-        yb2 = np.amax(box[:, 1])
-        rect = False
+    xb,rect = get_convex_hull_coordinates(box)
 
     # Find indices of coordinates in convex hull of quad region
-    idxx = np.where((X >= xb1) & (X <= xb2))
-    idxy = np.where((Y >= yb1) & (Y <= yb2))
+    idxx = np.where((X >= xb[0]) & (X <= xb[1]))
+    idxy = np.where((Y >= xb[2]) & (Y <= xb[3]))
     idx_ch = np.intersect1d(idxx, idxy)
     idx = np.copy(idx_ch)
 
     if rect == True:
+        if grid == True:
+            idx = np.unravel_index(idx, Lon_grd.shape)
         return idx
 
     # Initialize the local coordinate vectors to be outside unit square
@@ -798,6 +800,51 @@ def get_indices_inside_quad(lon, lat, box, grid=True, wrap=False):
 
 ##############################################################
 
+def get_convex_hull_coordinates(box):
+ 
+    wrap = flag_wrap(box)
+ 
+    xb = np.zeros(4)
+    if box.size == 4:
+        if wrap:
+            for i in range(2):
+                if box[i] >= -180.0 and box[i] <= -90.0:
+                    box[i] = box[i] + 360.0
+
+        xb[0] = box[0]
+        xb[1] = box[1]
+        xb[2] = box[2]
+        xb[3] = box[3]
+        rect = True
+    else:
+        if wrap:
+            for i in range(4):
+                if box[i, 0] >= -180.0 and box[i, 0] <= -90.0:
+                    box[i, 0] = box[i, 0] + 360.0
+
+        xb[0] = np.amin(box[:, 0])
+        xb[1] = np.amax(box[:, 0])
+        xb[2] = np.amin(box[:, 1])
+        xb[3] = np.amax(box[:, 1])
+        rect = False
+
+    return xb,rect
+
+##############################################################
+
+def flag_wrap(box):
+
+    wrap = False
+    if box.size == 4:
+      if box[0] > 0.0 and box[1] < 0.0:
+        wrap = True
+    else:
+      if np.any(box[:,0] > 0.0) and np.any(box[:,0] < 0.0):
+        wrap = True
+
+    return wrap
+
+##############################################################
 
 def plot_coarse_coast(plot_box):
 

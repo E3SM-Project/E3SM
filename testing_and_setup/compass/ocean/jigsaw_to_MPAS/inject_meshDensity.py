@@ -8,7 +8,6 @@
 # Mark Petersen, 7/24/2018
 
 import matplotlib.pyplot as plt
-from open_msh import readmsh
 import numpy as np
 from scipy import interpolate
 import netCDF4 as nc4
@@ -19,29 +18,33 @@ rtod = 180.0 / np.pi
 if __name__ == "__main__":
     import sys
 
+    print 'Read cell width field from Matlab regular grid...'
     matData = sio.loadmat(sys.argv[1])
-    cellWidth = matData['cellWidth']
-    LonPos = matData['lon'].T * dtor
+    # Add extra column in longitude to interpolate over the Date Line
+    cellWidth = np.concatenate(
+        (matData['cellWidth'], matData['cellWidth'][:, 0:1]), axis=1)
+    LonPos = np.concatenate(
+        (matData['lon'].T, matData['lon'].T[0:1] + 360)) * dtor
     LatPos = matData['lat'].T * dtor
+    # set max lat position to be exactly at North Pole to avoid interpolation
+    # errors
+    LatPos[np.argmax(LatPos)] = np.pi / 2.0
     minCellWidth = cellWidth.min()
     meshDensityVsLatLon = (minCellWidth / cellWidth)**4
-    print 'minimum cell width in grid definition:', minCellWidth
-    print 'maximum cell width in grid definition:', cellWidth.max()
-    print 'cellWidth, south to north:'
-    print cellWidth
-    print 'meshDensityVsLatLon, south to north, smallest cell gets a 1:'
-    print meshDensityVsLatLon
+    print '  minimum cell width in grid definition:', minCellWidth
+    print '  maximum cell width in grid definition:', cellWidth.max()
 
     LON, LAT = np.meshgrid(LonPos, LatPos)
 
+    print 'Open unstructured MPAS mesh file...'
     ds = nc4.Dataset(sys.argv[2], 'r+')
-    meshDensity = ds.variables["meshDensity"][:]
+    meshDensity = ds.variables['meshDensity'][:]
 
-    print "Preparing interpolation of meshDensity from lat/lon to mesh..."
+    print 'Preparing interpolation of meshDensity from lat/lon to mesh...'
     meshDensityInterp = interpolate.LinearNDInterpolator(
         np.vstack((LAT.ravel(), LON.ravel())).T, meshDensityVsLatLon.ravel())
 
-    print "Interpolating and writing meshDensity..."
+    print 'Interpolating and writing meshDensity...'
     ds.variables['meshDensity'][:] = meshDensityInterp(
         np.vstack(
             (ds.variables['latCell'][:],

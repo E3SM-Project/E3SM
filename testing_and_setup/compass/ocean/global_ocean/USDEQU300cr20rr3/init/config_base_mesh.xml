@@ -4,7 +4,7 @@
 	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 	<add_executable source="cell_culler"    dest="MpasCellCuller.x"/>
 
-	<add_link source_path="jigsaw_to_MPAS"      source="build_mesh_compass.py"           dest="build_mesh.py"/>
+	<add_link source_path="jigsaw_to_MPAS"      source="build_mesh.py"                   dest="build_mesh.py"/>
 	<add_link source_path="jigsaw_to_MPAS"      source="jigsaw_driver.m"                 dest="jigsaw_driver.m"/>
 	<add_link source_path="jigsaw_to_MPAS"      source="triangle_jigsaw_to_netcdf.py"    dest="triangle_jigsaw_to_netcdf.py"/>
 	<add_link source_path="jigsaw_to_MPAS"      source="mesh_definition_tools.py"        dest="mesh_definition_tools.py"/>
