@@ -3767,7 +3767,8 @@ contains
   !-----------------------------------------------------------------------
 
   subroutine UpdateInudation(bounds, &
-       num_soilc, filter_soilc, soilhydrology_vars, ch4_vars, waterstate_vars)
+       num_soilc, filter_soilc, soilhydrology_vars, ch4_vars, &
+       waterstate_vars, waterflux_vars)
 
     use CH4varcon          , only : fin_use_fsat
     use clm_varcon         , only : secspday
@@ -3778,15 +3779,17 @@ contains
   type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
   type(ch4_type)           , intent(inout) :: ch4_vars
   type(waterstate_type)    , intent(in)    :: waterstate_vars
-
+  type(waterflux_type)     , intent(in)    :: waterflux_vars
   real(r8) :: dtime
   real(r8) :: qflxlags
-  real(r8) :: zwt_actual
+  
+  real(r8) :: zwt_actual, qflxlagd, highlatfact
   integer :: c, g, fc
 
   associate(                                                               &
      z                    =>   col_pp%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)
      zwt_perched          =>   soilhydrology_vars%zwt_perched_col        , & ! Input:  [real(r8) (:)   ]  perched water table depth (m)
+     zwt                  =>   soilhydrology_vars%zwt_col                , & !
      zwt0                 =>   ch4_vars%zwt0_col                         , & ! Input:  [real(r8) (:)   ]  decay factor for finundated (m)
      frac_h2osfc          =>   waterstate_vars%frac_h2osfc_col           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
      finundated           =>   ch4_vars%finundated_col                   , & ! Output: [real(r8) (:)   ]  fractional inundated area in soil column (excluding dedicated wetland columns)
@@ -3796,8 +3799,8 @@ contains
      qflx_surf_lag        =>   ch4_vars%qflx_surf_lag_col                  & ! Output: [real(r8) (:)   ]  time-lagged surface runoff (mm H2O /s)
    )
 
-    qflxlagd          = CH4ParamsInst%qflxlagd
-    highlatfact       = CH4ParamsInst%highlatfact
+     qflxlagd             =   CH4ParamsInst%qflxlagd                    
+     highlatfact          =   CH4ParamsInst%highlatfact                  
    dtime = get_step_size()
       do fc = 1, num_soilc
          c = filter_soilc(fc)
@@ -3826,5 +3829,6 @@ contains
          end if
          finundated(c) = max( min(finundated(c),1._r8), 0._r8)
     enddo
+  end associate
   end subroutine UpdateInudation
 end module CH4Mod
