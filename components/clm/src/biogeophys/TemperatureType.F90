@@ -282,11 +282,6 @@ contains
        active = "inactive"
     end if
 
-    this%t_building_lun(begl:endl) = spval
-    call hist_addfld1d(fname='TBUILD', units='K',  &
-         avgflag='A', long_name='internal urban building temperature', &
-         ptr_lunit=this%t_building_lun, set_nourb=spval, l2g_scale_type='unity')
-
 
     ! Accumulated quantities
 
@@ -325,22 +320,6 @@ contains
     integer  :: lev
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(em_roof_lun)    == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(em_wall_lun)    == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(em_improad_lun) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(em_perroad_lun) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
-
-    do l = bounds%begl, bounds%endl 
-       if (lun_pp%urbpoi(l)) then
-          if (use_vancouver) then
-             this%taf_lun(l) = 297.56_r8
-          else if (use_mexicocity) then
-             this%taf_lun(l) = 289.46_r8
-          else
-             this%taf_lun(l) = 283._r8
-          end if
-       end if
-    end do
 
   end subroutine InitCold
 
@@ -368,10 +347,6 @@ contains
     logical :: readvar   ! determine if variable is on initial file
     !-----------------------------------------------------------------------
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='taf', xtype=ncd_double, dim1name='landunit',                       &
-         long_name='urban canopy air temperature', units='K',                                                         &
-         interpinic_flag='interp', readvar=readvar, data=this%taf_lun)
 
   end subroutine Restart
 

@@ -40,7 +40,7 @@ module GridcellDataType
   !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
-  type(gridcell_energy_state)          , public, target :: grc_es    ! column energy state
+  type(gridcell_energy_state)          , public, target :: grc_es    ! gridcell energy state
 
   !------------------------------------------------------------------------
 

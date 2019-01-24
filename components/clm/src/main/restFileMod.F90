@@ -58,6 +58,7 @@ module restFileMod
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
+  use LandunitDataType     , only : lun_es
   use ColumnDataType       , only : col_es
   use VegetationDataType   , only : veg_es
   !
@@ -203,6 +204,8 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='define')
     
+    call lun_es%restart (bounds, ncid, flag='define')
+
     call col_es%restart (bounds, ncid, flag='define')
 
     call veg_es%restart (bounds, ncid, flag='define')
@@ -319,6 +322,8 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='write')
     
+    call lun_es%restart (bounds, ncid, flag='write')
+
     call col_es%restart (bounds, ncid, flag='write')
 
     call veg_es%restart (bounds, ncid, flag='write')
@@ -536,6 +541,8 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='read')
     
+    call lun_es%restart (bounds, ncid, flag='read')
+
     call col_es%restart (bounds, ncid, flag='read')
 
     call veg_es%restart (bounds, ncid, flag='read')
