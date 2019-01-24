@@ -946,7 +946,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        err = abs(diff1)+abs(diff2)+abs(diffp)
        if (err< tol_pentagon_iteration) exit
        !write(*,'(i5,3e18.5)') iter,diff1,diff2,diffp
-       if (mod(iter,1000).eq.0) write(*,'(i5,3e18.5)') iter,err
+       !if (mod(iter,1000).eq.0) write(*,'(i5,3e18.5)') iter,err
 
        ds1%x = diff1* ( sq1com%x - sq1(1)%x )
        ds1%y = diff1* ( sq1com%y - sq1(1)%y )

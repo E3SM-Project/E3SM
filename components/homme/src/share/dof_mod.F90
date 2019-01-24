@@ -115,9 +115,6 @@ contains
        call LongEdgeVunpackMIN(edge,ldofP(:,:,ie),1,kptr,elem(ie)%desc)
        elem(ie)%gdofP(:,:)=ldofP(:,:,ie)
     end do
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
     call FreeLongEdgeBuffer(edge)
        
   end subroutine global_dof
@@ -409,6 +406,7 @@ contains
        fdofp=-fdofp_local
     end if
     
+    call FreeLongEdgeBuffer(edge)
 
 
   end subroutine CreateMetaData
