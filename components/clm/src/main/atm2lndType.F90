@@ -313,46 +313,46 @@ contains
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
 
-    this%forc_wind_grc(begg:endg) = spval
-    call hist_addfld1d (fname='WIND', units='m/s',  &
-         avgflag='A', long_name='atmospheric wind velocity magnitude', &
-         ptr_lnd=this%forc_wind_grc)
+!    this%forc_wind_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='WIND', units='m/s',  &
+!         avgflag='A', long_name='atmospheric wind velocity magnitude', &
+!         ptr_lnd=this%forc_wind_grc)
     ! Rename of WIND for Urban intercomparision project
     call hist_addfld1d (fname='Wind', units='m/s',  &
          avgflag='A', long_name='atmospheric wind velocity magnitude', &
          ptr_gcell=this%forc_wind_grc, default = 'inactive')
 
-    this%forc_hgt_grc(begg:endg) = spval
-    call hist_addfld1d (fname='ZBOT', units='m',  &
-         avgflag='A', long_name='atmospheric reference height', &
-         ptr_lnd=this%forc_hgt_grc)
+!    this%forc_hgt_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='ZBOT', units='m',  &
+!         avgflag='A', long_name='atmospheric reference height', &
+!         ptr_lnd=this%forc_hgt_grc)
 
-    this%forc_solar_grc(begg:endg) = spval
-    call hist_addfld1d (fname='FSDS', units='W/m^2',  &
-         avgflag='A', long_name='atmospheric incident solar radiation', &
-         ptr_lnd=this%forc_solar_grc)
+!    this%forc_solar_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='FSDS', units='W/m^2',  &
+!         avgflag='A', long_name='atmospheric incident solar radiation', &
+!         ptr_lnd=this%forc_solar_grc)
 
-    this%forc_pco2_grc(begg:endg) = spval
-    call hist_addfld1d (fname='PCO2', units='Pa',  &
-         avgflag='A', long_name='atmospheric partial pressure of CO2', &
-         ptr_lnd=this%forc_pco2_grc)
+!    this%forc_pco2_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='PCO2', units='Pa',  &
+!         avgflag='A', long_name='atmospheric partial pressure of CO2', &
+!         ptr_lnd=this%forc_pco2_grc)
 
     this%forc_solar_grc(begg:endg) = spval
     call hist_addfld1d (fname='SWdown', units='W/m^2',  &
          avgflag='A', long_name='atmospheric incident solar radiation', &
          ptr_gcell=this%forc_solar_grc, default='inactive')
 
-    this%forc_rh_grc(begg:endg) = spval
-    call hist_addfld1d (fname='RH', units='%',  &
-         avgflag='A', long_name='atmospheric relative humidity', &
-         ptr_gcell=this%forc_rh_grc, default='inactive')
+!    this%forc_rh_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='RH', units='%',  &
+!         avgflag='A', long_name='atmospheric relative humidity', &
+!         ptr_gcell=this%forc_rh_grc, default='inactive')
 
-    if (use_lch4) then
-       this%forc_pch4_grc(begg:endg) = spval
-       call hist_addfld1d (fname='PCH4', units='Pa',  &
-            avgflag='A', long_name='atmospheric partial pressure of CH4', &
-            ptr_lnd=this%forc_pch4_grc)
-    end if
+!    if (use_lch4) then
+!       this%forc_pch4_grc(begg:endg) = spval
+!       call hist_addfld1d (fname='PCH4', units='Pa',  &
+!            avgflag='A', long_name='atmospheric partial pressure of CH4', &
+!            ptr_lnd=this%forc_pch4_grc)
+!    end if
 
     this%forc_t_not_downscaled_grc(begg:endg) = spval
     call hist_addfld1d (fname='Tair', units='K',  &
@@ -374,45 +374,45 @@ contains
          avgflag='A', long_name='atmospheric longwave radiation', &
          ptr_gcell=this%forc_lwrad_not_downscaled_grc, default='inactive')
 
-    this%forc_rain_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='RAIN', units='mm/s',  &
-         avgflag='A', long_name='atmospheric rain', &
-         ptr_lnd=this%forc_rain_not_downscaled_grc)
+!    this%forc_rain_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='RAIN', units='mm/s',  &
+!         avgflag='A', long_name='atmospheric rain', &
+!         ptr_lnd=this%forc_rain_not_downscaled_grc)
 
-    this%forc_snow_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='SNOW', units='mm/s',  &
-         avgflag='A', long_name='atmospheric snow', &
-         ptr_lnd=this%forc_snow_not_downscaled_grc)
+!    this%forc_snow_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='SNOW', units='mm/s',  &
+!         avgflag='A', long_name='atmospheric snow', &
+!         ptr_lnd=this%forc_snow_not_downscaled_grc)
 
-    this%forc_t_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='TBOT', units='K',  &
-         avgflag='A', long_name='atmospheric air temperature', &
-         ptr_lnd=this%forc_t_not_downscaled_grc)
+!   this%forc_t_not_downscaled_grc(begg:endg) = spval
+!   call hist_addfld1d (fname='TBOT', units='K',  &
+!        avgflag='A', long_name='atmospheric air temperature', &
+!        ptr_lnd=this%forc_t_not_downscaled_grc)
 
-    this%forc_th_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='THBOT', units='K',  &
-         avgflag='A', long_name='atmospheric air potential temperature', &
-         ptr_lnd=this%forc_th_not_downscaled_grc)
+!    this%forc_th_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='THBOT', units='K',  &
+!         avgflag='A', long_name='atmospheric air potential temperature', &
+!         ptr_lnd=this%forc_th_not_downscaled_grc)
 
-    this%forc_q_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='QBOT', units='kg/kg',  &
-         avgflag='A', long_name='atmospheric specific humidity', &
-         ptr_lnd=this%forc_q_not_downscaled_grc)
+!    this%forc_q_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='QBOT', units='kg/kg',  &
+!         avgflag='A', long_name='atmospheric specific humidity', &
+!         ptr_lnd=this%forc_q_not_downscaled_grc)
     ! Rename of QBOT for Urban intercomparision project
     this%forc_q_not_downscaled_grc(begg:endg) = spval
     call hist_addfld1d (fname='Qair', units='kg/kg',  &
          avgflag='A', long_name='atmospheric specific humidity', &
          ptr_lnd=this%forc_q_not_downscaled_grc, default='inactive')
 
-    this%forc_lwrad_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='FLDS', units='W/m^2',  &
-         avgflag='A', long_name='atmospheric longwave radiation', &
-         ptr_lnd=this%forc_lwrad_not_downscaled_grc)
+!    this%forc_lwrad_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='FLDS', units='W/m^2',  &
+!         avgflag='A', long_name='atmospheric longwave radiation', &
+!         ptr_lnd=this%forc_lwrad_not_downscaled_grc)
 
-    this%forc_pbot_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='PBOT', units='Pa',  &
-         avgflag='A', long_name='atmospheric pressure', &
-         ptr_lnd=this%forc_pbot_not_downscaled_grc)
+!    this%forc_pbot_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='PBOT', units='Pa',  &
+!         avgflag='A', long_name='atmospheric pressure', &
+!         ptr_lnd=this%forc_pbot_not_downscaled_grc)
 
 #ifdef CPL_BYPASS
    call hist_addfld1d (fname='HDM', units='counts/km^2',      &
