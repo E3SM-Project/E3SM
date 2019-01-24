@@ -60,6 +60,10 @@ module stats_zm_module
     use stats_variables, only: &
         iupwp, & 
         ivpwp, & 
+        iupthlp, &
+        iuprtp, &
+        ivpthlp, &
+        ivprtp, &
         irho_zm, & 
         isigma_sqd_w, &
         irho_ds_zm, &
@@ -717,6 +721,30 @@ module stats_zm_module
         call stat_assign( var_index=ivpwp, var_name="vpwp", &
              var_description="v'w', Vertical north-south momentum flux [m^2/s^2]", &
              var_units="m^2/s^2", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('upthlp')
+        iupthlp = k
+        call stat_assign( var_index=iupthlp, var_name="upthlp", &
+             var_description="u'thl', Eastward theta_l flux [(m/s)K]", &
+             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('uprtp')
+        iuprtp = k
+        call stat_assign( var_index=iuprtp, var_name="uprtp", &
+             var_description="u'rt', Eastward total water flux [(m/s)(kg/kg)]", &
+             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('vpthlp')
+        ivpthlp = k
+        call stat_assign( var_index=ivpthlp, var_name="vpthlp", &
+             var_description="v'thl', Northward theta_l flux [(m/s)K]", &
+             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('vprtp')
+        ivprtp = k
+        call stat_assign( var_index=ivprtp, var_name="vprtp", &
+             var_description="v'rt', Northward total water flux [(m/s)(kg/kg)]", &
+             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
       case ('rho_zm')
         irho_zm = k

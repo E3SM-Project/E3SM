@@ -29,14 +29,19 @@ module adg1_adg2_3d_luhar_pdf
   contains
 
   !=============================================================================
-  subroutine ADG1_pdf_driver( wm, rtm, thlm, wp2, rtp2, thlp2,         & ! In
-                              Skw, wprtp, wpthlp, sqrt_wp2,            & ! In
+  subroutine ADG1_pdf_driver( wm, rtm, thlm, um, vm,                   & ! In
+                              wp2, rtp2, thlp2, up2, vp2,              & ! In
+                              Skw, wprtp, wpthlp, upwp, vpwp, sqrt_wp2,& ! In
                               sigma_sqd_w, mixt_frac_max_mag,          & ! In
                               sclrm, sclrp2, wpsclrp, l_scalar_calc,   & ! In
                               w_1, w_2, rt_1, rt_2, thl_1, thl_2,      & ! Out
+                              u_1, u_2, v_1, v_2,                      & ! Out
                               varnce_w_1, varnce_w_2, varnce_rt_1,     & ! Out
                               varnce_rt_2, varnce_thl_1, varnce_thl_2, & ! Out
+                              varnce_u_1, varnce_u_2,                  & ! Out
+                              varnce_v_1, varnce_v_2,                  & ! Out
                               mixt_frac, alpha_rt, alpha_thl,          & ! Out
+                              alpha_u, alpha_v,                        & ! Out
                               sclr_1, sclr_2, varnce_sclr_1,           & ! Out
                               varnce_sclr_2, alpha_sclr )                ! Out
 
@@ -67,12 +72,18 @@ module adg1_adg2_3d_luhar_pdf
       wm,          & ! Mean of w-wind comp. (vert. vel.)    [m/s] 
       rtm,         & ! Mean of total water mixing ratio     [kg/kg]
       thlm,        & ! Mean of liquid water potential temp. [K]
+      um,          & ! Mean of eastward wind                [m/s]
+      vm,          & ! Mean of northward wind               [m/s]
       wp2,         & ! Variance of w (overall)              [m^2/s^2] 
       rtp2,        & ! Variance of r_t (overall)            [(kg/kg)^2]
       thlp2,       & ! Variance of th_l (overall)           [K^2]
+      up2,         & ! Variance of eastward wind (overall)  [m^2/s^2]
+      vp2,         & ! Variance of northward wind (overall) [m^2/s^2]
       Skw,         & ! Skewness of w                        [-]
       wprtp,       & ! Covariance of w and r_t              [(kg/kg)(m/s)]
       wpthlp,      & ! Covariance of w and th_l             [K(m/s)]
+      upwp,        & ! Covariance of u and w                [m^2/s^2]
+      vpwp,        & ! Covariance of v and w                [m^2/s^2]
       sqrt_wp2,    & ! Square root of variance of w         [m/s]
       sigma_sqd_w    ! Width of individual w plumes         [-]
 
@@ -95,15 +106,25 @@ module adg1_adg2_3d_luhar_pdf
       rt_2,         & ! Mean of r_t (2nd PDF component)                  [kg/kg]
       thl_1,        & ! Mean of th_l (1st PDF component)                     [K]
       thl_2,        & ! Mean of th_l (2nd PDF component)                     [K]
+      u_1,          & ! Mean of u (eastward wind) (1st PDF component)      [m/s]
+      u_2,          & ! Mean of u (eastward wind) (2nd PDF component)      [m/s]
+      v_1,          & ! Mean of v (northward wind) (1st PDF component)     [m/s]
+      v_2,          & ! Mean of v (northward wind) (2nd PDF component)     [m/s]
       varnce_w_1,   & ! Variance of w (1st PDF component)              [m^2/s^2]
       varnce_w_2,   & ! Variance of w (2nd PDF component)              [m^2/s^2]
       varnce_rt_1,  & ! Variance of r_t (1st PDF component)          [kg^2/kg^2]
       varnce_rt_2,  & ! Variance of r_t (2nd PDF component)          [kg^2/kg^2]
       varnce_thl_1, & ! Variance of th_l (1st PDF component)               [K^2]
       varnce_thl_2, & ! Variance of th_l (2nd PDF component)               [K^2]
+      varnce_u_1,   & ! Variance of u wind (1st PDF component)         [m^2/s^2]
+      varnce_u_2,   & ! Variance of u wind (2nd PDF component)         [m^2/s^2]
+      varnce_v_1,   & ! Variance of v wind (1st PDF component)         [m^2/s^2]
+      varnce_v_2,   & ! Variance of v wind (2nd PDF component)         [m^2/s^2]
       mixt_frac,    & ! Mixture fraction (weight of 1st PDF component)       [-]
       alpha_thl,    & ! Factor relating to normalized variance for th_l      [-]
-      alpha_rt        ! Factor relating to normalized variance for r_t       [-]
+      alpha_rt,     & ! Factor relating to normalized variance for r_t       [-]
+      alpha_u,      & ! Factor relating to normalized variance for u wind    [-]
+      alpha_v         ! Factor relating to normalized variance for v wind    [-]
 
     real( kind = core_rknd ), dimension(gr%nz, sclr_dim), intent(out) ::  &
       sclr_1,        & ! Mean of passive scalar (1st PDF component) [units vary]
@@ -140,6 +161,20 @@ module adg1_adg2_3d_luhar_pdf
                                      sigma_sqd_w, thl_tol, &            ! In
                                      thl_1, thl_2, varnce_thl_1, &      ! Out
                                      varnce_thl_2, alpha_thl )          ! Out
+
+    ! Calculate the PDF component means and variances of u wind.
+    call ADG1_ADG2_responder_params( um, up2, wp2, sqrt_wp2, &        ! In
+                                     upwp, w_1_n, w_2_n, mixt_frac, & ! In
+                                     sigma_sqd_w, thl_tol, &          ! In
+                                     u_1, u_2, varnce_u_1, &          ! Out
+                                     varnce_u_2, alpha_u )            ! Out
+
+    ! Calculate the PDF component means and variances of v wind.
+    call ADG1_ADG2_responder_params( vm, vp2, wp2, sqrt_wp2, &        ! In
+                                     vpwp, w_1_n, w_2_n, mixt_frac, & ! In
+                                     sigma_sqd_w, thl_tol, &          ! In
+                                     v_1, v_2, varnce_v_1, &          ! Out
+                                     varnce_v_2, alpha_v )            ! Out
 
     ! Calculate the PDF component means and variances of passive scalars.
     if ( l_scalar_calc ) then

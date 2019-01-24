@@ -991,6 +991,10 @@ module stats_variables
      ircp2 = 0, & 
      iupwp = 0, & 
      ivpwp = 0, &
+     iupthlp = 0, &
+     iuprtp = 0, &
+     ivpthlp = 0, &
+     ivprtp = 0, &
      iSkw_zm = 0, &
      iSkthl_zm = 0, &
      iSkrt_zm = 0
@@ -1023,6 +1027,7 @@ module stats_variables
 !$omp   threadprivate(iwp4, iwpthvp, irtpthvp, ithlpthvp, itau_zm, iKh_zm)
 !$omp   threadprivate(iwprcp, irc_coef_zm, ithlprcp, irtprcp, ircp2)
 !$omp   threadprivate(iupwp, ivpwp)
+!$omp   threadprivate(iupthlp, iuprtp, ivpthlp, ivprtp)
 !$omp   threadprivate(iSkw_zm, iSkthl_zm, iSkrt_zm)
 !$omp   threadprivate(irho_zm, isigma_sqd_w, irho_ds_zm, ithv_ds_zm, iem, ishear)
 !$omp   threadprivate(imean_w_up, imean_w_down)
