@@ -1,0 +1,73 @@
+#!/bin/tcsh 
+#  This script will run HOMME using the NGGPS benchmark problem with 128 levels and 10 tracers.
+#BSUB -P CLI115
+#BSUB -W 10
+#BSUB -nnodes 1
+#BSUB -alloc_flags gpumps
+#BSUB -J e3sm_atm_dycore
+#BSUB -o e3sm_atm_dycore.%J
+#BSUB -e e3sm_atm_dycore.%J
+
+#  set paths to source code, build directory and run directory
+set wdir =  /gpfs/alpine/cli115/proj-shared/$USER/homme-runs           # run directory
+set HOMME = `pwd`/../../..               # /path/to/acme/components/homme
+set MACH = $HOMME/cmake/machineFiles/summit.cmake
+set exe = $HOMME/build/theta-l/theta-l
+
+#  Which problem?  tiny, ne30 or ne120 configuration
+set namelist = nggps-tiny.nl ; set name = tiny      # use 4 nodes
+    
+#  mpi run command
+setenv OMP_NUM_THREADS 1
+setenv OMP_STACKSIZE   64M
+setenv PER_NODE        42
+# compute number of MPI tasks
+set NNODES=`echo $LSB_HOSTS | tr " " "\n" | uniq -c | wc -l`
+@ NNODES -= 1
+set NMPI = $NNODES
+@ NMPI *= $PER_NODE
+@ NMPI /= $OMP_NUM_THREADS
+# compute number of MPI tasks per node
+set NMPI_PER_NODE = $PER_NODE
+@ NMPI_PER_NODE /= $OMP_NUM_THREADS
+
+echo NODES =            $NNODES
+echo NMPI_PER_NODE =    $PER_NODE
+echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
+# note: in tests on 4K nodes,the --bcase and --compress options were much slower. DONT USE:
+set mpirun = "srun -n $NMPI -N $NNODES"
+echo "mpi commnand: $mpirun"
+
+set input = $HOMME/test/benchmarks/NGGPS  # input files for test case
+set vdir = $HOMME/test/vcoord             # vertical coordinate files
+set run = $wdir/run-$NNODES-$OMP_NUM_THREADS-$$
+
+#  Run the code
+mkdir -p $run/movies
+cd $run
+# copy all vertical levels to run directory
+rsync -a  $vdir/sab?-128.ascii  $run   
+# namelist has to be called input.nl for perf settings to be read
+rm -f input.nl
+cp -f $input/$namelist input.nl
+
+date
+$mpirun $exe < input.nl
+date
+
+#Print timing data for convenience
+if (-f  HommeTime  ) then
+   # save timings from run
+   set timingfile = $name.nodes${NNODES}.HommeTime
+   set summary    = $name.nodes${NNODES}.summary
+   mv HommeTime $timingfile
+   # total run time (not counting init)
+   grep -a prim_main_loop $timingfile | head -1 | tee $summary
+   # breakdown dyn, tracers, remap.  about 97% of the cost:
+   grep -a prim_step_dyn  $timingfile | head -1 | tee -a $summary
+   grep -a PAT_remap      $timingfile | head -1 | tee -a $summary
+   grep -a vertical_remap $timingfile | head -1 | tee -a $summary
+   echo "run parameters:" >> $summary
+   cat input.nl >> $summary
+endif
+
