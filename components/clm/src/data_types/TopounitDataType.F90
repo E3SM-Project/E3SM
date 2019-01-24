@@ -10,7 +10,7 @@ module TopounitDataType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use clm_varcon     , only : spval, ispval
-  use clm_varctl     , only : iulog, use_cn, use_fates
+  use clm_varctl     , only : iulog, use_cn, use_fates, use_lch4
   use clm_varpar     , only : numrad
   use histFileMod    , only : hist_addfld1d, hist_addfld2d
   use ncdio_pio      , only : file_desc_t, ncd_double
@@ -120,14 +120,55 @@ module TopounitDataType
       allocate(this%wind24h(begt:endt)) ; this%wind24h   (:) = spval
     end if
     
-    ! Set history fields for atmospheric state forcing variables
-    !call hist_addfld1d (fname='TBOT', units='K',  &
-    !     avgflag='A', long_name='temperature of air at atmospheric forcing height', &
-    !     ptr_lnd=this%tbot)
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of top_as
+    !-----------------------------------------------------------------------
+    this%tbot(begt:endt) = spval
+    call hist_addfld1d (fname='TBOT', units='K',  &
+         avgflag='A', long_name='atmospheric air temperature', &
+         ptr_lnd=this%tbot)
 
-    !call hist_addfld1d (fname='THBOT', units='K',  &
-    !     avgflag='A', long_name='potential temperature of air at atmospheric forcing height', &
-    !     ptr_lnd=this%thbot)
+    this%thbot(begt:endt) = spval
+    call hist_addfld1d (fname='THBOT', units='K',  &
+         avgflag='A', long_name='atmospheric air potential temperature', &
+         ptr_lnd=this%thbot)
+
+    this%pbot(begt:endt) = spval
+    call hist_addfld1d (fname='PBOT', units='Pa',  &
+         avgflag='A', long_name='atmospheric pressure', &
+         ptr_lnd=this%pbot)
+
+    this%qbot(begt:endt) = spval
+    call hist_addfld1d (fname='QBOT', units='kg/kg',  &
+         avgflag='A', long_name='atmospheric specific humidity', &
+         ptr_lnd=this%qbot)
+
+    this%rhbot(begt:endt) = spval
+    call hist_addfld1d (fname='RH', units='%',  &
+         avgflag='A', long_name='atmospheric relative humidity', &
+         ptr_gcell=this%rhbot, default='inactive')
+
+    this%windbot(begt:endt) = spval
+    call hist_addfld1d (fname='WIND', units='m/s',  &
+         avgflag='A', long_name='atmospheric wind velocity magnitude', &
+         ptr_lnd=this%windbot)
+
+    this%zbot(begt:endt) = spval
+    call hist_addfld1d (fname='ZBOT', units='m',  &
+         avgflag='A', long_name='atmospheric reference height', &
+         ptr_lnd=this%zbot)
+
+    this%pco2bot(begt:endt) = spval
+    call hist_addfld1d (fname='PCO2', units='Pa',  &
+         avgflag='A', long_name='atmospheric partial pressure of CO2', &
+         ptr_lnd=this%pco2bot)
+
+    if (use_lch4) then
+       this%pch4bot(begt:endt) = spval
+       call hist_addfld1d (fname='PCH4', units='Pa',  &
+            avgflag='A', long_name='atmospheric partial pressure of CH4', &
+            ptr_lnd=this%pch4bot)
+    end if
   end subroutine init_top_as
 
   !-----------------------------------------------------------------------
@@ -307,15 +348,31 @@ module TopounitDataType
     allocate(this%fsi24h   (begt:endt))          ; this%fsi24h    (:) = spval
     allocate(this%fsi240h  (begt:endt))          ; this%fsi240h   (:) = spval
     
-    ! Set history fields for atmospheric flux forcing variables
-    !call hist_addfld1d (fname='TBOT', units='K',  &
-    !     avgflag='A', long_name='temperature of air at atmospheric forcing height', &
-    !     ptr_lnd=this%tbot)
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of top_af
+    !-----------------------------------------------------------------------
+    this%rain(begt:endt) = spval
+    call hist_addfld1d (fname='RAIN', units='mm/s',  &
+         avgflag='A', long_name='atmospheric rain', &
+         ptr_lnd=this%rain)
 
-    !call hist_addfld1d (fname='THBOT', units='K',  &
-    !     avgflag='A', long_name='potential temperature of air at atmospheric forcing height', &
-    !     ptr_lnd=this%thbot)
-  end subroutine init_top_af
+    this%snow(begt:endt) = spval
+    call hist_addfld1d (fname='SNOW', units='mm/s',  &
+         avgflag='A', long_name='atmospheric snow', &
+         ptr_lnd=this%snow)
+
+    this%solar(begt:endt) = spval
+    call hist_addfld1d (fname='FSDS', units='W/m^2',  &
+         avgflag='A', long_name='atmospheric incident solar radiation', &
+         ptr_lnd=this%solar)
+
+    this%lwrad(begt:endt) = spval
+    call hist_addfld1d (fname='FLDS', units='W/m^2',  &
+         avgflag='A', long_name='atmospheric longwave radiation', &
+         ptr_lnd=this%lwrad)
+
+    end subroutine init_top_af
 
   !-----------------------------------------------------------------------
   subroutine clean_top_af(this, begt, endt)
