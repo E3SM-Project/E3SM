@@ -361,22 +361,28 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
         with open(output_filename, "r") as fd:
             out = fd.read()
 
-    if multiinst_driver_compare:
-        #  In a multiinstance test the cpl hist file will have a different number of
-        # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
-        # in this case we only want to check that the fields we are able to compare
-        # have no differences.
-        files_match = cpr_stat == 0 and " 0 had non-zero differences" in out
-        comment = ''
-    else:
-        files_match = cpr_stat == 0 and "files seem to be IDENTICAL" in out
-        if files_match:
-            comment = ''
+    comment = ''
+    if cpr_stat == 0:
+        # Successful exit from cprnc
+        if multiinst_driver_compare:
+            #  In a multiinstance test the cpl hist file will have a different number of
+            # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
+            # in this case we only want to check that the fields we are able to compare
+            # have no differences.
+            files_match = " 0 had non-zero differences" in out
         else:
-            if "the two files DIFFER only in their field lists" in out:
+            if "files seem to be IDENTICAL" in out:
+                files_match = True
+            elif "the two files seem to be DIFFERENT" in out:
+                files_match = False
+            elif "the two files DIFFER only in their field lists" in out:
+                files_match = False
                 comment = CPRNC_FIELDLISTS_DIFFER
             else:
-                comment = ''
+                expect(False, "Did not find an expected summary string in cprnc output")
+    else:
+        # If there is an error in cprnc, we do the safe thing of saying the comparison failed
+        files_match = False
     return (files_match, output_filename, comment)
 
 def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
