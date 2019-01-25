@@ -108,8 +108,8 @@ contains
          t_h2osfc_bef            => col_es%t_h2osfc_bef       , & ! Input:  [real(r8) (:)   ]  saved surface water temperature (K)        
          t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
-         xmf                     => temperature_vars%xmf_col                , & ! Input:  [real(r8) (:)   ]  
-         xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  
+         xmf                     => col_ef%xmf                , & ! Input:  [real(r8) (:)   ]  
+         xmf_h2osfc              => col_ef%xmf_h2osfc         , & ! Input:  [real(r8) (:)   ]  
          fact                    => col_es%fact               , & ! Input:  [real(r8) (:)   ]  
          c_h2osfc                => col_es%c_h2osfc           , & ! Input:  [real(r8) (:)   ]  
 

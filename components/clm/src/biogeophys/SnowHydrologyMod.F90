@@ -27,7 +27,7 @@ module SnowHydrologyMod
   use WaterstateType  , only : waterstate_type
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp 
-  use ColumnDataType  , only : col_es  
+  use ColumnDataType  , only : col_es, col_ef  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -568,7 +568,7 @@ contains
           ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type                             
 
           t_soisno     => col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
-          imelt        => temperature_vars%imelt_col       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
+          imelt        => col_ef%imelt       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
 
           snow_depth   => waterstate_vars%snow_depth_col   , & ! Input:  [real(r8) (:)   ] snow height (m)                         
           frac_sno     => waterstate_vars%frac_sno_eff_col , & ! Input:  [real(r8) (:)   ] snow covered fraction                    

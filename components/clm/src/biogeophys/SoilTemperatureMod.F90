@@ -285,8 +285,8 @@ contains
          t_soisno                => col_es%t_soisno                         , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)             
          t_grnd                  => col_es%t_grnd                           , & ! Output: [real(r8) (:)   ]  ground surface temperature [K]          
          t_building              => lun_es%t_building                       , & ! Output: [real(r8) (:)   ]  internal building temperature (K)       
-         xmf                     => temperature_vars%xmf_col                , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
-         xmf_h2osfc              => temperature_vars%xmf_h2osfc_col         , & ! Output: [real(r8) (:)   ] latent heat of phase change of surface water [col]
+         xmf                     => col_ef%xmf                              , & ! Output: [real(r8) (:)   ] melting or freezing within a time step [kg/m2]
+         xmf_h2osfc              => col_ef%xmf_h2osfc                       , & ! Output: [real(r8) (:)   ] latent heat of phase change of surface water [col]
          fact                    => col_es%fact                             , & ! Output: [real(r8) (:)   ] used in computing tridiagonal matrix [col, lev]
          c_h2osfc                => col_es%c_h2osfc                         , & ! Output: [real(r8) (:)   ] heat capacity of surface water [col] 
          
@@ -1132,7 +1132,7 @@ end subroutine SolveTemperature
 
          fact                      =>    col_es%fact      , &
          c_h2osfc                  =>    col_es%c_h2osfc  , &
-         xmf_h2osfc                =>    temperature_vars%xmf_h2osfc_col, &
+         xmf_h2osfc                =>    col_ef%xmf_h2osfc, &
          t_soisno                  =>    col_es%t_soisno         , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
          t_h2osfc                  =>    col_es%t_h2osfc           & ! Output: [real(r8) (:)   ] surface water temperature               
          )
@@ -1373,10 +1373,10 @@ end subroutine SolveTemperature
          eflx_snomelt_r   =>    col_ef%eflx_snomelt_r  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)       
          eflx_snomelt_u   =>    col_ef%eflx_snomelt_u  , & ! Output: [real(r8) (:)   ] urban snow melt heat flux (W/m**2)       
          
-         xmf              =>    temperature_vars%xmf_col            , & 
+         xmf              =>    col_ef%xmf            , & 
          fact             =>    col_es%fact                         , &
          
-         imelt            =>    temperature_vars%imelt_col          , & ! Output: [integer  (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
+         imelt            =>    col_ef%imelt          , & ! Output: [integer  (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
          t_soisno         =>    col_es%t_soisno         & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
          )
 
