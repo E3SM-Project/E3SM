@@ -17,6 +17,7 @@
 * [Documentation Website](https://e3sm-project.github.io/e3sm_diags)
 * [Sample Output, Historical H1 (2011-2013) vs Historical H1 (1850-1852)](https://e3sm-project.github.io/e3sm_diags/sample_output/modTS_vs_modTS_3years/viewer/index.html)
 * Quick Start Guides:
+  * [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-cori.html)
   * [Quick Start Guide for NERSC Edison](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-edison-shifter.html)
   * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-aims4.html)
   * [Quick Start Guide for OLCF Rhea](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-rhea.html)
