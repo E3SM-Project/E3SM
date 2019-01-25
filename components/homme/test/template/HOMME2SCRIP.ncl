@@ -20,6 +20,9 @@ print("input: "+template+" output:"+output)
  
 
 fin   = addfile(template,"r")   ;
+if (ne .gt. 512) then
+  setfileoption("nc","Format","NetCDF4")
+end if
 fout  = addfile(output,"c")   ;
 
 grid_size = dimsizes(fin->lat)
@@ -110,11 +113,13 @@ grid_dims=1
 grid_dims!0 = "grid_rank"
 
 ; write the 'title' global attribute
+print("writing attributes...")
 fout@title = "ne"+ne+"np" + np
 fout@Created_by = "HOMME2SCRIP.ncl mt 2009"
 fout@history = "HOMME2SCRIP.ncl mt 2009"
 
 ; write all the data to the output field:
+print("writing grid data....")
 fout->grid_area = grid_area
 fout->grid_center_lat = grid_center_lat
 fout->grid_center_lon = grid_center_lon
