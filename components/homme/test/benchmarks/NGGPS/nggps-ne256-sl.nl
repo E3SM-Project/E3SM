@@ -15,6 +15,7 @@ disable_diagnostics = .true.
 restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = 0
+theta_hydrostatic_mode=.true.
 tstep=40
 
 !rsplit=3
