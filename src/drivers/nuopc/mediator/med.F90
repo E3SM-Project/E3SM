@@ -1377,6 +1377,7 @@ contains
     use esmFlds                 , only : fldListMed_ocnalb, fldListMed_aoflux
     use esmFlds                 , only : shr_nuopc_fldList_GetNumFlds
     use esmFlds                 , only : shr_nuopc_fldList_GetFldNames
+    use esmFlds                 , only : shr_nuopc_fldList_Document_Mapping
     use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
@@ -1644,8 +1645,8 @@ contains
       ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
       !---------------------------------------
 
-      if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
-          is_local%wrap%med_coupling_active(compatm,compocn)) then
+      if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
+           is_local%wrap%med_coupling_active(compatm,compocn)) then
 
          ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
          ! rather than NStateExp(n2), since the export state might only
@@ -1696,6 +1697,10 @@ contains
 
       call esmFldsExchange(gcomp, phase='initialize', rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+      if (mastertask) then
+         call shr_nuopc_fldList_Document_Mapping(logunit, is_local%wrap%med_coupling_active)
+      end if
 
       !---------------------------------------
       ! Initialize route handles and required normalization field bunds

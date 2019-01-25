@@ -1979,9 +1979,15 @@ This allows using a different mpirun command to launch unit tests
     <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="impi">
       <executable>ibrun</executable>
+      <arguments>
+	<arg name="ntasks"> -n {{ total_tasks }} </arg>
+      </arguments>
     </mpirun>
     <mpirun mpilib="mvapich2">
       <executable>ibrun</executable>
+      <arguments>
+	<arg name="ntasks"> -n {{ total_tasks }} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
