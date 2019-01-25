@@ -1,13 +1,13 @@
 [submodule "components/clm/src/external_models/fates"]
 	path = components/clm/src/external_models/fates
-	url = git@github.com:NGEET/fates.git
+	url = git@ssh.github.com:NGEET/fates.git
 [submodule "alm-mpp"]
 	path = components/clm/src/external_models/mpp
-	url = git@github.com:MPP-LSM/MPP.git
+	url = git@ssh.github.com:MPP-LSM/MPP.git
 	branch = alm/develop
 [submodule "sbetr"]
 	path = components/clm/src/external_models/sbetr
-	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+	url = git@ssh.github.com:BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "components/mpas-source"]
 	path = components/mpas-source
-	url = git@github.com:MPAS-Dev/MPAS-Model.git
+	url = git@ssh.github.com:MPAS-Dev/MPAS-Model.git

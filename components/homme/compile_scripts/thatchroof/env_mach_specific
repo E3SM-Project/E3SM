@@ -1,0 +1,12 @@
+#! /bin/bash -f
+
+# Modules
+
+ulimit -c unlimited
+ulimit -s unlimited
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine. 
+export MPSTKZ=64M
+export OMP_STACKSIZE=64M
+

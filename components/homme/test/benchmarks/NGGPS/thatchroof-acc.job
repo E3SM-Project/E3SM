@@ -1,0 +1,56 @@
+#!/bin/tcsh 
+#  This script will run HOMME using the NGGPS benchmark problem with 26 levels and 10 tracers.
+
+limit stacksize unlimited
+limit coredumpsize unlimited
+
+#  set paths to source code, build directory and run directory
+set wdir =  ~/homme-runs/acc           # run directory
+set HOMME = `pwd`/../../..               # /path/to/acme/components/homme
+set MACH = $HOMME/cmake/machineFiles/summit.cmake
+set exe = $HOMME/compile_scripts/thatchroof/build_thatchroof/src/theta-l-acc/theta-l-acc
+
+set namelist = nggps-laptop.nl ; set name = laptop      # use 4 nodes
+    
+#  mpi run command
+setenv OMP_NUM_THREADS 2
+setenv OMP_STACKSIZE   64M
+setenv NMPI            4
+# compute number of MPI tasks
+# note: in tests on 4K nodes,the --bcase and --compress options were much slower. DONT USE:
+set mpirun = "mpirun -n $NMPI"
+echo "mpi commnand: $mpirun"
+
+set input = $HOMME/test/benchmarks/NGGPS  # input files for test case
+set vdir = $HOMME/test/vcoord             # vertical coordinate files
+set run = $wdir/$name
+
+#  Run the code
+mkdir -p $run/movies
+cd $run
+# copy all vertical levels to run directory
+rsync -a  $vdir/cam?-26.ascii  $run   
+# namelist has to be called input.nl for perf settings to be read
+rm -f input.nl
+cp -f $input/$namelist input.nl
+
+date
+$mpirun $exe < input.nl
+date
+
+#Print timing data for convenience
+if (-f  HommeTime  ) then
+   # save timings from run
+   set timingfile = tasks${NMPI}.threads${OMP_NUM_THREADS}.HommeTime
+   set summary    = tasks${NMPI}.threads${OMP_NUM_THREADS}.summary
+   mv HommeTime $timingfile
+   # total run time (not counting init)
+   grep -a prim_main_loop $timingfile | head -1 | tee $summary
+   # breakdown dyn, tracers, remap.  about 97% of the cost:
+   grep -a prim_step_dyn  $timingfile | head -1 | tee -a $summary
+   grep -a PAT_remap      $timingfile | head -1 | tee -a $summary
+   grep -a vertical_remap $timingfile | head -1 | tee -a $summary
+   echo "run parameters:" >> $summary
+   cat input.nl >> $summary
+endif
+

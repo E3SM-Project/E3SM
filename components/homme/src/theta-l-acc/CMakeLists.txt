@@ -105,3 +105,4 @@ thetal_acc_setup()
 createTestExec(theta-l-acc theta-l-acc ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 TARGET_LINK_LIBRARIES(theta-l-acc dl)
+TARGET_LINK_LIBRARIES(theta-l-acc ${LINKER_TAG})
