@@ -7,9 +7,9 @@ u_perturb = 1
 rotate_grid = 0
 ne=1024
 qsize = 10
-! tstep=9  800 steps = 4h  (Bechmark reports 2h time)
-nmax = 8
-statefreq=1
+! tstep=9  200 steps = 30min  (Bechmark reports 30min time)
+nmax = 90
+statefreq=360
 disable_diagnostics = .true.
 theta_hydrostatic_mode=.false.
 runtype       = 0
