@@ -29,7 +29,7 @@ module clm_interface_funcsMod
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es 
+  use ColumnDataType        , only : col_es, col_ef 
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -444,13 +444,13 @@ contains
       qflx_tran_veg     => waterflux_vars%qflx_tran_veg_col         , & ! [real(:)] ! col plant transpiration (mm H2O/s) (+ = to atm)
       qflx_rootsoil     => waterflux_vars%qflx_rootsoi_col          , & ! [real(:,:)] ! col vertically-resolved root and soil water exchange [mm H2O/s] [+ into root]
       !
-      htvp              => energyflux_vars%htvp_col                 , & ! [real(:) ! latent heat of vapor of water (or sublimation) [j/kg]
-      eflx_bot          => energyflux_vars%eflx_bot_col             , & ! [real(:) ! col heat flux from beneath the soil or ice column (W/m**2)
-      eflx_soil_grnd    => energyflux_vars%eflx_soil_grnd_col       , & ! [real(:) ! col soil (ground) heat flux (W/m**2) [+ = into ground]
-      eflx_fgr0_snow    => energyflux_vars%eflx_fgr0_snow_col       , & ! [real(:) ! col ground heat flux from snow bottom to first soil layer (W/m**2) [+ = into soil]
-      eflx_fgr0_h2osfc  => energyflux_vars%eflx_fgr0_h2osfc_col     , & ! [real(:) ! col ground heat flux from surface water bottom to first soil layer (W/m**2) [+ = into soil]
-      eflx_fgr0_soil    => energyflux_vars%eflx_fgr0_soil_col       , & ! [real(:) ! col ground heat flux from near-surface air to first soil layer (W/m**2) [+ = into soil]
-      eflx_rnet_soil    => energyflux_vars%eflx_rnet_soil_col         & ! [real(:) ! net radiation flux between soil layer 1 and above-air, excluding SH and LE (i.e. radiation form only ) (W/m2) [+ = into soil]
+      htvp              => col_ef%htvp                 , & ! [real(:) ! latent heat of vapor of water (or sublimation) [j/kg]
+      eflx_bot          => col_ef%eflx_bot             , & ! [real(:) ! col heat flux from beneath the soil or ice column (W/m**2)
+      eflx_soil_grnd    => col_ef%eflx_soil_grnd       , & ! [real(:) ! col soil (ground) heat flux (W/m**2) [+ = into ground]
+      eflx_fgr0_snow    => col_ef%eflx_fgr0_snow       , & ! [real(:) ! col ground heat flux from snow bottom to first soil layer (W/m**2) [+ = into soil]
+      eflx_fgr0_h2osfc  => col_ef%eflx_fgr0_h2osfc     , & ! [real(:) ! col ground heat flux from surface water bottom to first soil layer (W/m**2) [+ = into soil]
+      eflx_fgr0_soil    => col_ef%eflx_fgr0_soil       , & ! [real(:) ! col ground heat flux from near-surface air to first soil layer (W/m**2) [+ = into soil]
+      eflx_rnet_soil    => col_ef%eflx_rnet_soil         & ! [real(:) ! net radiation flux between soil layer 1 and above-air, excluding SH and LE (i.e. radiation form only ) (W/m2) [+ = into soil]
 
     )
 

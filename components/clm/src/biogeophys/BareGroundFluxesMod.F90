@@ -20,7 +20,7 @@ module BareGroundFluxesMod
   use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es
+  use ColumnDataType       , only : col_es, col_ef
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es
   !
@@ -126,7 +126,7 @@ contains
 
          frac_veg_nosno   =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [logical  (:)   ]  true=> pft is bare ground (elai+esai = zero)
 
-         htvp             =>    energyflux_vars%htvp_col              , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]
+         htvp             =>    col_ef%htvp             , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]
 
          watsat           =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          soilbeta         =>    soilstate_vars%soilbeta_col           , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity

@@ -27,7 +27,7 @@ module SoilTemperatureMod
   use LandunitType      , only : lun_pp
   use LandunitDataType  , only : lun_es  
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es                
+  use ColumnDataType    , only : col_es, col_ef                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -253,7 +253,7 @@ contains
          sabg_lyr                => solarabs_vars%sabg_lyr_patch            , & ! Input:  [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
          sabg                    => solarabs_vars%sabg_patch                , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
          
-         htvp                    => energyflux_vars%htvp_col                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
+         htvp                    => col_ef%htvp               , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
          cgrnd                   => energyflux_vars%cgrnd_patch             , & ! Input:  [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
          dlrad                   => energyflux_vars%dlrad_patch             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
          eflx_sh_grnd            => energyflux_vars%eflx_sh_grnd_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
@@ -261,9 +261,9 @@ contains
          eflx_sh_snow            => energyflux_vars%eflx_sh_snow_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
          eflx_sh_soil            => energyflux_vars%eflx_sh_soil_patch      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
          eflx_sh_h2osfc          => energyflux_vars%eflx_sh_h2osfc_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from surface water (W/m**2) [+ to atm]
-         eflx_bot                => energyflux_vars%eflx_bot_col            , & ! Input:  [real(r8) (:)   ]  heat flux from beneath column (W/m**2) [+ = upward]
-         eflx_fgr12              => energyflux_vars%eflx_fgr12_col          , & ! Input:  [real(r8) (:)   ]  heat flux between soil layer 1 and 2 (W/m2)
-         eflx_fgr                => energyflux_vars%eflx_fgr_col            , & ! Input:  [real(r8) (:,:) ]  (rural) soil downward heat flux (W/m2) (1:nlevgrnd)
+         eflx_bot                => col_ef%eflx_bot            , & ! Input:  [real(r8) (:)   ]  heat flux from beneath column (W/m**2) [+ = upward]
+         eflx_fgr12              => col_ef%eflx_fgr12          , & ! Input:  [real(r8) (:)   ]  heat flux between soil layer 1 and 2 (W/m2)
+         eflx_fgr                => col_ef%eflx_fgr            , & ! Input:  [real(r8) (:,:) ]  (rural) soil downward heat flux (W/m2) (1:nlevgrnd)
          eflx_traffic            => energyflux_vars%eflx_traffic_lun        , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
          eflx_traffic_patch      => energyflux_vars%eflx_traffic_patch      , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
          eflx_wasteheat          => energyflux_vars%eflx_wasteheat_lun      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
@@ -273,9 +273,9 @@ contains
          eflx_anthro             => energyflux_vars%eflx_anthro_patch       , & ! Input:  [real(r8) (:)   ]  total anthropogenic heat flux (W/m**2)  
          dgnetdT                 => energyflux_vars%dgnetdT_patch           , & ! Output: [real(r8) (:)   ]  temperature derivative of ground net heat flux  
          eflx_gnet               => energyflux_vars%eflx_gnet_patch         , & ! Output: [real(r8) (:)   ]  net ground heat flux into the surface (W/m**2)
-         eflx_building_heat      => energyflux_vars%eflx_building_heat_col  , & ! Output: [real(r8) (:)   ]  heat flux from urban building interior to walls, roof (W/m**2)
-         eflx_urban_ac           => energyflux_vars%eflx_urban_ac_col       , & ! Output: [real(r8) (:)   ]  urban air conditioning flux (W/m**2)    
-         eflx_urban_heat         => energyflux_vars%eflx_urban_heat_col     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)             
+         eflx_building_heat      => col_ef%eflx_building_heat  , & ! Output: [real(r8) (:)   ]  heat flux from urban building interior to walls, roof (W/m**2)
+         eflx_urban_ac           => col_ef%eflx_urban_ac       , & ! Output: [real(r8) (:)   ]  urban air conditioning flux (W/m**2)    
+         eflx_urban_heat         => col_ef%eflx_urban_heat     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)             
          
          emg                     => col_es%emg                              , & ! Input:  [real(r8) (:)   ]  ground emissivity                       
          hc_soi                  => col_es%hc_soi                           , & ! Input:  [real(r8) (:)   ]  soil heat content (MJ/m2)               ! TODO: make a module variable
@@ -1128,7 +1128,7 @@ end subroutine SolveTemperature
          
          qflx_h2osfc_to_ice        =>    waterflux_vars%qflx_h2osfc_to_ice_col , & ! Output: [real(r8) (:)   ] conversion of h2osfc to ice             
          
-         eflx_h2osfc_to_snow_col   =>    energyflux_vars%eflx_h2osfc_to_snow_col  , & ! Output: [real(r8) (:)   ] col snow melt to h2osfc heat flux (W/m**2)
+         eflx_h2osfc_to_snow_col   =>    col_ef%eflx_h2osfc_to_snow  , & ! Output: [real(r8) (:)   ] col snow melt to h2osfc heat flux (W/m**2)
 
          fact                      =>    col_es%fact      , &
          c_h2osfc                  =>    col_es%c_h2osfc  , &
@@ -1369,9 +1369,9 @@ end subroutine SolveTemperature
          qflx_glcice_melt =>    waterflux_vars%qflx_glcice_melt_col , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)  
          qflx_snomelt     =>    waterflux_vars%qflx_snomelt_col     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)                   
          
-         eflx_snomelt     =>    energyflux_vars%eflx_snomelt_col    , & ! Output: [real(r8) (:)   ] snow melt heat flux (W/m**2)             
-         eflx_snomelt_r   =>    energyflux_vars%eflx_snomelt_r_col  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)       
-         eflx_snomelt_u   =>    energyflux_vars%eflx_snomelt_u_col  , & ! Output: [real(r8) (:)   ] urban snow melt heat flux (W/m**2)       
+         eflx_snomelt     =>    col_ef%eflx_snomelt    , & ! Output: [real(r8) (:)   ] snow melt heat flux (W/m**2)             
+         eflx_snomelt_r   =>    col_ef%eflx_snomelt_r  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)       
+         eflx_snomelt_u   =>    col_ef%eflx_snomelt_u  , & ! Output: [real(r8) (:)   ] urban snow melt heat flux (W/m**2)       
          
          xmf              =>    temperature_vars%xmf_col            , & 
          fact             =>    col_es%fact                         , &
@@ -1771,7 +1771,7 @@ end subroutine SolveTemperature
          t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]          
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          
-         htvp                    => energyflux_vars%htvp_col                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
+         htvp                    => col_ef%htvp                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
          cgrnd                   => energyflux_vars%cgrnd_patch             , & ! Input:  [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
          dlrad                   => energyflux_vars%dlrad_patch             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
          eflx_traffic            => energyflux_vars%eflx_traffic_lun        , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
@@ -1988,7 +1988,7 @@ end subroutine SolveTemperature
          z          => col_pp%z                           , & ! Input: [real(r8) (:,:) ] layer thickness (m)
          t_building => lun_es%t_building , & ! Input: [real(r8) (:)   ] internal building temperature (K)       
          t_soisno   => col_es%t_soisno   , & ! Input: [real(r8) (:,:) ] soil temperature (Kelvin)             
-         eflx_bot   => energyflux_vars%eflx_bot_col      & ! Input: [real(r8) (:)   ] heat flux from beneath column (W/m**2) [+ = upward]
+         eflx_bot   => col_ef%eflx_bot      & ! Input: [real(r8) (:)   ] heat flux from beneath column (W/m**2) [+ = upward]
          )
 
       ! Determine heat diffusion through the layer interface and factor used in computing
@@ -5022,11 +5022,11 @@ end subroutine SolveTemperature
     integer                                :: c, j
 
     associate(                                                      &
-         eflx_sabg_lyr    => energyflux_vars%eflx_sabg_lyr_col,     &
-         eflx_dhsdT       => energyflux_vars%eflx_dhsdT_col ,       &
-         eflx_hs_soil     => energyflux_vars%eflx_hs_soil_col ,     &
-         eflx_hs_top_snow => energyflux_vars%eflx_hs_top_snow_col , &
-         eflx_hs_h2osfc   => energyflux_vars%eflx_hs_h2osfc_col     &
+         eflx_sabg_lyr    => col_ef%eflx_sabg_lyr,     &
+         eflx_dhsdT       => col_ef%eflx_dhsdT ,       &
+         eflx_hs_soil     => col_ef%eflx_hs_soil ,     &
+         eflx_hs_top_snow => col_ef%eflx_hs_top_snow , &
+         eflx_hs_h2osfc   => col_ef%eflx_hs_h2osfc     &
          )
 
       do c = bounds%begc, bounds%endc

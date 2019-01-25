@@ -20,7 +20,7 @@ module LakeTemperatureMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es  
+  use ColumnDataType    , only : col_es, col_ef  
   use VegetationType    , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
@@ -261,7 +261,7 @@ contains
          eflx_sh_grnd    =>   energyflux_vars%eflx_sh_grnd_patch   , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_sh_tot     =>   energyflux_vars%eflx_sh_tot_patch    , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
          eflx_gnet       =>   energyflux_vars%eflx_gnet_patch      , & ! Output: [real(r8) ( :)  ]  net heat flux into ground (W/m**2) at the surface interface
-         errsoi          =>   energyflux_vars%errsoi_col             & ! Output: [real(r8) (:)   ]  soil/lake energy conservation error (W/m**2)
+         errsoi          =>   col_ef%errsoi             & ! Output: [real(r8) (:)   ]  soil/lake energy conservation error (W/m**2)
          )
 
     ! 1!) Initialization
@@ -1313,7 +1313,7 @@ contains
           t_lake          => col_es%t_lake        , & ! Input:  [real(r8)  (:,:) ] lake temperature (Kelvin)             
           imelt           => temperature_vars%imelt_col         , & ! Output: [integer   (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
 
-          eflx_snomelt    => energyflux_vars%eflx_snomelt_col     & ! Output: [real(r8)  (:)   ] snow melt heat flux (W/m**2)            
+          eflx_snomelt    => col_ef%eflx_snomelt     & ! Output: [real(r8)  (:)   ] snow melt heat flux (W/m**2)            
           )
 
        ! Get step size

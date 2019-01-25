@@ -129,7 +129,7 @@ module clm_driver
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
-  use ColumnDataType         , only : col_es  
+  use ColumnDataType         , only : col_es, col_ef  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es
   use shr_sys_mod            , only : shr_sys_flush
@@ -1527,7 +1527,7 @@ contains
 
          qflx_glcice        => waterflux_vars%qflx_glcice_col            , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) [+ = ice grows]
 
-         eflx_bot           => energyflux_vars%eflx_bot_col              , & ! Output: [real(r8) (:)   ]  heat flux from beneath soil/ice column (W/m**2)
+         eflx_bot           => col_ef%eflx_bot              , & ! Output: [real(r8) (:)   ]  heat flux from beneath soil/ice column (W/m**2)
 
          cisun_z            => photosyns_vars%cisun_z_patch              , & ! Output: [real(r8) (:)   ]  intracellular sunlit leaf CO2 (Pa)
          cisha_z            => photosyns_vars%cisha_z_patch                & ! Output: [real(r8) (:)   ]  intracellular shaded leaf CO2 (Pa)

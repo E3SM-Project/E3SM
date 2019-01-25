@@ -59,7 +59,7 @@ module restFileMod
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
   use LandunitDataType     , only : lun_es
-  use ColumnDataType       , only : col_es
+  use ColumnDataType       , only : col_es, col_ef
   use VegetationDataType   , only : veg_es
   !
   ! !PUBLIC TYPES:
@@ -188,6 +188,8 @@ contains
 
     call energyflux_vars%restart (bounds, ncid, flag='define')
 
+    call col_ef%Restart (bounds, ncid, flag='define')
+
     call frictionvel_vars% restart (bounds, ncid, flag='define')
 
     call lakestate_vars%restart (bounds, ncid, flag='define')
@@ -204,11 +206,11 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='define')
     
-    call lun_es%restart (bounds, ncid, flag='define')
+    call lun_es%Restart (bounds, ncid, flag='define')
 
-    call col_es%restart (bounds, ncid, flag='define')
+    call col_es%Restart (bounds, ncid, flag='define')
 
-    call veg_es%restart (bounds, ncid, flag='define')
+    call veg_es%Restart (bounds, ncid, flag='define')
 
     call waterstate_vars%restart (bounds, ncid, flag='define', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:)) 
@@ -306,6 +308,8 @@ contains
     call canopystate_vars%restart (bounds, ncid, flag='write')
 
     call energyflux_vars%restart (bounds, ncid, flag='write')
+
+    call col_ef%Restart (bounds, ncid, flag='write')
 
     call frictionvel_vars% restart (bounds, ncid, flag='write')
 
@@ -526,6 +530,8 @@ contains
     call canopystate_vars%restart (bounds, ncid, flag='read')
 
     call energyflux_vars%restart (bounds, ncid, flag='read')
+
+    call col_ef%Restart (bounds, ncid, flag='read')
 
     call frictionvel_vars% restart (bounds, ncid, flag='read')
 

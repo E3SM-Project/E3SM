@@ -99,10 +99,40 @@ module ColumnDataType
   ! Define the data structure that holds energy flux information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_energy_flux
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: eflx_h2osfc_to_snow     (:)   => null() ! snow melt to h2osfc heat flux (W/m2)
+    real(r8), pointer :: eflx_snomelt            (:)   => null() ! snow melt heat flux (W/m**2)
+    real(r8), pointer :: eflx_snomelt_r          (:)   => null() ! rural snow melt heat flux (W/m2)
+    real(r8), pointer :: eflx_snomelt_u          (:)   => null() ! urban snow melt heat flux (W/m2)
+    real(r8), pointer :: eflx_bot                (:)   => null() ! heat flux from beneath the soil or ice column (W/m2)
+    real(r8), pointer :: eflx_fgr12              (:)   => null() ! ground heat flux between soil layers 1 and 2 (W/m2)
+    real(r8), pointer :: eflx_fgr                (:,:) => null() ! (rural) soil downward heat flux (W/m2) (1:nlevgrnd)  (pos upward; usually eflx_bot >= 0)
+    real(r8), pointer :: eflx_building_heat      (:)   => null() ! heat flux from urban building interior to urban walls, roof (W/m2)
+    real(r8), pointer :: eflx_urban_ac           (:)   => null() ! urban air conditioning flux (W/m2)
+    real(r8), pointer :: eflx_urban_heat         (:)   => null() ! urban heating flux (W/m**2)
+    real(r8), pointer :: eflx_hs_h2osfc          (:)   => null() ! heat flux on standing water (W/m2)
+    real(r8), pointer :: eflx_hs_top_snow        (:)   => null() ! heat flux on top snow layer (W/m2)
+    real(r8), pointer :: eflx_hs_soil            (:)   => null() ! heat flux on soil [W/m2
+    real(r8), pointer :: eflx_sabg_lyr           (:,:) => null() ! absorbed solar radiation (col,lyr) (W/m2)
+    ! Derivatives of energy fluxes                      
+    real(r8), pointer :: eflx_dhsdT              (:)   => null() ! deriv. of energy flux into surface layer wrt temp (W/m2/K)
+    ! Latent heat of vaporization
+    real(r8), pointer :: htvp                    (:)   => null() ! latent heat of vapor of water (or sublimation) [j/kg]
+    ! for couplig with pflotran                         
+    real(r8), pointer :: eflx_soil_grnd          (:)   => null() ! integrated soil ground heat flux (W/m2)  [+ = into ground]
+    real(r8), pointer :: eflx_rnet_soil          (:)   => null() ! soil net (sw+lw) radiation flux (W/m2) [+ = into soil]
+    real(r8), pointer :: eflx_fgr0_soil          (:)   => null() ! soil-air heat flux (W/m2) [+ = into soil]
+    real(r8), pointer :: eflx_fgr0_snow          (:)   => null() ! soil-snow heat flux (W/m2) [+ = into soil]
+    real(r8), pointer :: eflx_fgr0_h2osfc        (:)   => null() ! soil-surfacewater heat flux (W/m2) [+ = into soil]
+    ! Balance Checks                                    
+    real(r8), pointer :: errsoi                  (:)   => null() ! soil/lake energy conservation error   (W/m2)
+    real(r8), pointer :: errseb                  (:)   => null() ! surface energy conservation error     (W/m2)
+    real(r8), pointer :: errsol                  (:)   => null() ! solar radiation conservation error    (W/m2)
+    real(r8), pointer :: errlon                  (:)   => null() ! longwave radiation conservation error (W/m2)
+
   contains
-    procedure, public :: Init  => init_col_ef
-    procedure, public :: Clean => clean_col_ef
+    procedure, public :: Init    => col_ef_init
+    procedure, public :: Restart => col_ef_restart
+    procedure, public :: Clean   => col_ef_clean
   end type column_energy_flux
   
   !-----------------------------------------------------------------------
@@ -530,23 +560,146 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column energy flux data structure
   !------------------------------------------------------------------------
-  subroutine init_col_ef(this, begc, endc)
+  subroutine col_ef_init(this, begc, endc)
     !
     ! !ARGUMENTS:
     class(column_energy_flux) :: this
     integer, intent(in) :: begc,endc
-    !------------------------------------------------------------------------
+    ! !LOCAL VARIABLES:
+    integer  :: l,c
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_ef
+    !-----------------------------------------------------------------------
+    allocate(this%eflx_h2osfc_to_snow  (begc:endc))              ; this%eflx_h2osfc_to_snow  (:)   = nan
+    allocate(this%eflx_snomelt         (begc:endc))              ; this%eflx_snomelt         (:)   = nan
+    allocate(this%eflx_snomelt_r       (begc:endc))              ; this%eflx_snomelt_r       (:)   = nan
+    allocate(this%eflx_snomelt_u       (begc:endc))              ; this%eflx_snomelt_u       (:)   = nan
+    allocate(this%eflx_bot             (begc:endc))              ; this%eflx_bot             (:)   = nan
+    allocate(this%eflx_fgr12           (begc:endc))              ; this%eflx_fgr12           (:)   = nan
+    allocate(this%eflx_fgr             (begc:endc, 1:nlevgrnd))  ; this%eflx_fgr             (:,:) = nan
+    allocate(this%eflx_building_heat   (begc:endc))              ; this%eflx_building_heat   (:)   = nan
+    allocate(this%eflx_urban_ac        (begc:endc))              ; this%eflx_urban_ac        (:)   = nan
+    allocate(this%eflx_urban_heat      (begc:endc))              ; this%eflx_urban_heat      (:)   = nan
+    allocate(this%eflx_hs_h2osfc       (begc:endc))              ; this%eflx_hs_h2osfc       (:)   = nan
+    allocate(this%eflx_hs_top_snow     (begc:endc))              ; this%eflx_hs_top_snow     (:)   = nan
+    allocate(this%eflx_hs_soil         (begc:endc))              ; this%eflx_hs_soil         (:)   = nan
+    allocate(this%eflx_sabg_lyr        (begc:endc, -nlevsno+1:1)); this%eflx_sabg_lyr        (:,:) = nan
+    allocate(this%eflx_dhsdT           (begc:endc))              ; this%eflx_dhsdT           (:)   = nan
+    allocate(this%htvp                 (begc:endc))              ; this%htvp                 (:)   = nan
+    allocate(this%eflx_soil_grnd       (begc:endc))              ; this%eflx_soil_grnd       (:)   = nan
+    allocate(this%eflx_rnet_soil       (begc:endc))              ; this%eflx_rnet_soil       (:)   = nan
+    allocate(this%eflx_fgr0_soil       (begc:endc))              ; this%eflx_fgr0_soil       (:)   = nan
+    allocate(this%eflx_fgr0_snow       (begc:endc))              ; this%eflx_fgr0_snow       (:)   = nan
+    allocate(this%eflx_fgr0_h2osfc     (begc:endc))              ; this%eflx_fgr0_h2osfc     (:)   = nan
+    allocate(this%errsoi               (begc:endc))              ; this%errsoi               (:)   = nan
+    allocate(this%errseb               (begc:endc))              ; this%errseb               (:)   = nan
+    allocate(this%errsol               (begc:endc))              ; this%errsol               (:)   = nan
+    allocate(this%errlon               (begc:endc))              ; this%errlon               (:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_ef
+    !-----------------------------------------------------------------------
+    this%eflx_snomelt(begc:endc) = spval
+    call hist_addfld1d (fname='FSM',  units='W/m^2',  &
+         avgflag='A', long_name='snow melt heat flux', &
+         ptr_col=this%eflx_snomelt, c2l_scale_type='urbanf')
+
+    this%eflx_snomelt_r(begc:endc) = spval
+    call hist_addfld1d (fname='FSM_R',  units='W/m^2',  &
+         avgflag='A', long_name='Rural snow melt heat flux', &
+         ptr_col=this%eflx_snomelt_r, set_spec=spval)
+
+    this%eflx_snomelt_u(begc:endc) = spval
+    call hist_addfld1d (fname='FSM_U',  units='W/m^2',  &
+         avgflag='A', long_name='Urban snow melt heat flux', &
+         ptr_col=this%eflx_snomelt_u, c2l_scale_type='urbanf', set_nourb=spval)
+
+    this%eflx_building_heat(begc:endc) = spval
+    call hist_addfld1d (fname='BUILDHEAT', units='W/m^2',  &
+         avgflag='A', long_name='heat flux from urban building interior to walls and roof', &
+         ptr_col=this%eflx_building_heat, set_nourb=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_urban_ac(begc:endc) = spval
+    call hist_addfld1d (fname='URBAN_AC', units='W/m^2',  &
+         avgflag='A', long_name='urban air conditioning flux', &
+         ptr_col=this%eflx_urban_ac, set_nourb=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_urban_heat(begc:endc) = spval
+    call hist_addfld1d (fname='URBAN_HEAT', units='W/m^2',  &
+         avgflag='A', long_name='urban heating flux', &
+         ptr_col=this%eflx_urban_heat, set_nourb=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_fgr12(begc:endc) = spval
+    call hist_addfld1d (fname='FGR12',  units='W/m^2',  &
+         avgflag='A', long_name='heat flux between soil layers 1 and 2', &
+         ptr_col=this%eflx_fgr12, set_lake=spval)
+
+    this%eflx_fgr(begc:endc,:) = spval
+    call hist_addfld2d (fname='FGR_SOIL_R', units='watt/m^2', type2d='levgrnd', &
+         avgflag='A', long_name='Rural downward heat flux at interface below each soil layer', &
+         ptr_col=this%eflx_fgr, set_spec=spval, default='inactive')
+
+    this%errsoi(begc:endc) = spval
+    call hist_addfld1d (fname='ERRSOI',  units='W/m^2',  &
+         avgflag='A', long_name='soil/lake energy conservation error', &
+         ptr_col=this%errsoi)
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_ef
+    !-----------------------------------------------------------------------
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%urbpoi(l)) then
+          this%eflx_building_heat(c) = 0._r8
+          this%eflx_urban_ac(c)      = 0._r8
+          this%eflx_urban_heat(c)    = 0._r8
+       else
+          this%eflx_building_heat(c) = 0._r8
+          this%eflx_urban_ac(c)      = 0._r8
+          this%eflx_urban_heat(c)    = 0._r8
+       end if
+    end do
     
-  end subroutine init_col_ef
+  end subroutine col_ef_init
     
   !------------------------------------------------------------------------
-  subroutine clean_col_ef(this)
+  subroutine col_ef_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write column energy state information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(column_energy_flux) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='URBAN_AC', xtype=ncd_double,  dim1name='column', &
+         long_name='urban air conditioning flux', units='watt/m^2', &
+         interpinic_flag='interp', readvar=readvar, data=this%eflx_urban_ac)
+
+    call restartvar(ncid=ncid, flag=flag, varname='URBAN_HEAT', xtype=ncd_double, dim1name='column', &
+         long_name='urban heating flux', units='watt/m^2', &
+         interpinic_flag='interp', readvar=readvar, data=this%eflx_urban_heat)
+
+  end subroutine col_ef_restart
+  
+  !------------------------------------------------------------------------
+  subroutine col_ef_clean(this)
     !
     ! !ARGUMENTS:
     class(column_energy_flux) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_col_ef
+  end subroutine col_ef_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column water flux data structure

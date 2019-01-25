@@ -297,21 +297,6 @@ contains
          avgflag='A', long_name='dynamic land cover change conversion energy flux', &
          ptr_lnd=this%eflx_dynbal_grc)
 
-    this%eflx_snomelt_col(begc:endc) = spval
-    call hist_addfld1d (fname='FSM',  units='W/m^2',  &
-         avgflag='A', long_name='snow melt heat flux', &
-         ptr_col=this%eflx_snomelt_col, c2l_scale_type='urbanf')
-
-    this%eflx_snomelt_r_col(begc:endc) = spval
-    call hist_addfld1d (fname='FSM_R',  units='W/m^2',  &
-         avgflag='A', long_name='Rural snow melt heat flux', &
-         ptr_col=this%eflx_snomelt_r_col, set_spec=spval)
-
-    this%eflx_snomelt_u_col(begc:endc) = spval
-    call hist_addfld1d (fname='FSM_U',  units='W/m^2',  &
-         avgflag='A', long_name='Urban snow melt heat flux', &
-         ptr_col=this%eflx_snomelt_u_col, c2l_scale_type='urbanf', set_nourb=spval)
-
     this%eflx_lwrad_net_patch(begp:endp) = spval
     call hist_addfld1d (fname='FIRA', units='W/m^2',  &
          avgflag='A', long_name='net infrared (longwave) radiation', &
@@ -492,35 +477,10 @@ contains
          avgflag='A', long_name='net heat flux into lake/snow surface, excluding light transmission', &
          ptr_patch=this%eflx_grnd_lake_patch, set_nolake=spval)
 
-    this%eflx_building_heat_col(begc:endc) = spval
-    call hist_addfld1d (fname='BUILDHEAT', units='W/m^2',  &
-         avgflag='A', long_name='heat flux from urban building interior to walls and roof', &
-         ptr_col=this%eflx_building_heat_col, set_nourb=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_urban_ac_col(begc:endc) = spval
-    call hist_addfld1d (fname='URBAN_AC', units='W/m^2',  &
-         avgflag='A', long_name='urban air conditioning flux', &
-         ptr_col=this%eflx_urban_ac_col, set_nourb=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_urban_heat_col(begc:endc) = spval
-    call hist_addfld1d (fname='URBAN_HEAT', units='W/m^2',  &
-         avgflag='A', long_name='urban heating flux', &
-         ptr_col=this%eflx_urban_heat_col, set_nourb=0._r8, c2l_scale_type='urbanf')
-
     this%dgnetdT_patch(begp:endp) = spval
     call hist_addfld1d (fname='DGNETDT', units='W/m^2/K', &
          avgflag='A', long_name='derivative of net ground heat flux wrt soil temp', &
          ptr_patch=this%dgnetdT_patch, default='inactive', c2l_scale_type='urbanf')
-
-    this%eflx_fgr12_col(begc:endc) = spval
-    call hist_addfld1d (fname='FGR12',  units='W/m^2',  &
-         avgflag='A', long_name='heat flux between soil layers 1 and 2', &
-         ptr_col=this%eflx_fgr12_col, set_lake=spval)
-
-    this%eflx_fgr_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='FGR_SOIL_R', units='watt/m^2', type2d='levgrnd', &
-         avgflag='A', long_name='Rural downward heat flux at interface below each soil layer', &
-         ptr_col=this%eflx_fgr_col, set_spec=spval, default='inactive')
 
     this%eflx_traffic_patch(begp:endp) = spval
     call hist_addfld1d (fname='TRAFFICFLUX', units='W/m^2',  &
@@ -570,11 +530,6 @@ contains
             ptr_patch=this%rresis_patch, default='inactive')
     end if
 
-    this%errsoi_col(begc:endc) = spval
-    call hist_addfld1d (fname='ERRSOI',  units='W/m^2',  &
-         avgflag='A', long_name='soil/lake energy conservation error', &
-         ptr_col=this%errsoi_col)
-
     this%errseb_patch(begp:endp) = spval
     call hist_addfld1d (fname='ERRSEB',  units='W/m^2',  &
          avgflag='A', long_name='surface energy conservation error', &
@@ -615,21 +570,6 @@ contains
     SHR_ASSERT_ALL((ubound(t_grnd_col) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
-
-      do c = bounds%begc, bounds%endc
-         l = col_pp%landunit(c)
-
-         if (lun_pp%urbpoi(l)) then
-            this%eflx_building_heat_col(c) = 0._r8
-            this%eflx_urban_ac_col(c)      = 0._r8
-            this%eflx_urban_heat_col(c)    = 0._r8
-         else
-            this%eflx_building_heat_col(c) = 0._r8
-            this%eflx_urban_ac_col(c)      = 0._r8
-            this%eflx_urban_heat_col(c)    = 0._r8
-         end if
-
-    end do
 
       do p = bounds%begp, bounds%endp 
          c = veg_pp%column(p)
@@ -699,14 +639,6 @@ contains
          dim1name='pft', &
          long_name='emitted infrared (longwave) radiation', units='watt/m^2', &
          interpinic_flag='interp', readvar=readvar, data=this%eflx_lwrad_out_patch)
-
-    call restartvar(ncid=ncid, flag=flag, varname='URBAN_AC', xtype=ncd_double,  dim1name='column', &
-         long_name='urban air conditioning flux', units='watt/m^2', &
-         interpinic_flag='interp', readvar=readvar, data=this%eflx_urban_ac_col)
-
-    call restartvar(ncid=ncid, flag=flag, varname='URBAN_HEAT', xtype=ncd_double, dim1name='column', &
-         long_name='urban heating flux', units='watt/m^2', &
-         interpinic_flag='interp', readvar=readvar, data=this%eflx_urban_heat_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='btran2', xtype=ncd_double,  &
          dim1name='pft', &

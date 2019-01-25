@@ -22,7 +22,7 @@ module SoilFluxesMod
   use TopounitDataType  , only : top_af
   use LandunitType	   , only : lun_pp                
   use ColumnType	      , only : col_pp
-  use ColumnDataType    , only : col_es                
+  use ColumnDataType    , only : col_es, col_ef                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -85,7 +85,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                &
-         eflx_h2osfc_to_snow_col => energyflux_vars%eflx_h2osfc_to_snow_col , & ! Input:  [real(r8) (:)   ]  col snow melt to h2osfc heat flux (W/m**2)
+         eflx_h2osfc_to_snow_col => col_ef%eflx_h2osfc_to_snow , & ! Input:  [real(r8) (:)   ]  col snow melt to h2osfc heat flux (W/m**2)
          forc_lwrad              => top_af%lwrad                            , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
 
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer (:)    ]  fraction of veg not covered by snow (0/1 now) [-]
@@ -113,8 +113,8 @@ contains
          fact                    => col_es%fact               , & ! Input:  [real(r8) (:)   ]  
          c_h2osfc                => col_es%c_h2osfc           , & ! Input:  [real(r8) (:)   ]  
 
-         htvp                    => energyflux_vars%htvp_col                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
-         eflx_building_heat      => energyflux_vars%eflx_building_heat_col  , & ! Input:  [real(r8) (:)   ]  heat flux from urban building interior to walls, roof
+         htvp                    => col_ef%htvp                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
+         eflx_building_heat      => col_ef%eflx_building_heat  , & ! Input:  [real(r8) (:)   ]  heat flux from urban building interior to walls, roof
          eflx_wasteheat_patch    => energyflux_vars%eflx_wasteheat_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
          eflx_heat_from_ac_patch => energyflux_vars%eflx_heat_from_ac_patch , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
          eflx_traffic_patch      => energyflux_vars%eflx_traffic_patch      , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
@@ -158,7 +158,7 @@ contains
          eflx_lh_vege            => energyflux_vars%eflx_lh_vege_patch      , & ! Output: [real(r8) (:)   ]  veg evaporation heat flux (W/m**2) [+ to atm]
          eflx_lh_vegt            => energyflux_vars%eflx_lh_vegt_patch      , & ! Output: [real(r8) (:)   ]  veg transpiration heat flux (W/m**2) [+ to atm]
          eflx_lh_grnd            => energyflux_vars%eflx_lh_grnd_patch      , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]
-         errsoi_col              => energyflux_vars%errsoi_col              , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
+         errsoi_col              => col_ef%errsoi              , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
          errsoi_patch            => energyflux_vars%errsoi_patch              & ! Output: [real(r8) (:)   ]  pft-level soil/lake energy conservation error (W/m**2)
          )
 
