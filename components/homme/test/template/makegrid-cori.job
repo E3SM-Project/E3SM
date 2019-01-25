@@ -1,17 +1,16 @@
 #!/bin/tcsh 
 #SBATCH --job-name template
-#SBATCH -N 256
+#SBATCH -N 3
 #SBATCH -C knl
-#SBATCH --time=0:30:00
-#SBATCH -p debug
-#XXSBATCH -p regular
+#SBATCH --time=1:30:00
+#XXSBATCH -p debug
+#SBATCH -p regular
 #SBATCH -A acme
 
 
 
 setenv OMP_STACKSIZE 16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 setenv PER_NODE  64          #  MPI per node
-#setenv PER_NODE  16          #  MPI per node
 setenv OMP_NUM_THREADS 1
 #setenv OMP_NUM_THREADS 1
 
@@ -60,13 +59,12 @@ echo using NCPU = $NCPU
 #   ne$NEnp$NP_scrip.nc      template for SCRIP/ESMF mapping utility
 #
 #
-# Cori timings                      F90       NCL
-#  NE=512   3 nodes, io_stride=8:  10min       (not tested - see makegrid-anvil.job)
+# Cori timings (2019)               F90       NCL
+#  NE=512   3 nodes, io_stride=8:  10min    (not tested - see makegrid-anvil.job)
 # NE=1024  12 nodes, io_stride=8:  13min
 # NE=2048  48 nodes, io_strade=8:  25min
-# NE=4096  192,256,384 OOM
-# NE=4096  512 IN
-# NE=6144
+# NE=3072  128 nodes, io_stride=8: 37min
+# NE=4096  256:  NaN's detected in pentagon iteraiton
 #
 #
 # Note that for NE=1024, we need netcdf4p format to support arrays > 2GB
@@ -75,7 +73,7 @@ echo using NCPU = $NCPU
 #
 # GLL points within each element:
 set NPTS = 4
-set ne = 4096
+set ne = 512
 
 #set HOMME = `cd ../.. ; pwd`  # doesnot work on Anvil
 set HOMME = ~/codes/acme/components/homme

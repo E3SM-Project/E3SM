@@ -262,6 +262,7 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # PIO
 #
 #set search paths for PIO's findNetCDF
+ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
 message("** Configuring PIO with:")

@@ -450,7 +450,7 @@ contains
     character*(*),intent(in) :: file_prefix
 
 
-    integer :: ios
+    integer :: ios,ierr
     logical :: isInit
     isInit = .false.
 
@@ -467,7 +467,31 @@ contains
             call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,&
                       PIO_REARR_BOX,pio_subsystem)
             isInit = .true.
+#if 0
+  Flow control options. before testing these, be sure PIO is being
+  compiled with -D_NO_MPI_RSEND 
+
+  fcd=PIO_rearr_comm_coll or  PIO_rearr_comm_p2p
+  function PIO_set_rearr_opts(iosystem, comm_type, fcd,&
+                              enable_hs_c2i, enable_isend_c2i,&
+                              max_pend_req_c2i,&
+                              enable_hs_i2c, enable_isend_i2c,&
+                              max_pend_req_i2c) result(ierr)
+
+            ! attempt to mimick E3SM defaults
+            ierr=PIO_set_rearr_opts(pio_subsystem,PIO_REARR_COMM_P2P,&
+                 PIO_REARR_COMM_FC_2D_ENABLE,&
+                 .true.,.false.,0,.false.,.true.,64)
+
+            ! w/o NO_MPI_RSEND, cori was hanging in comp2io
+            ! worley suggested throttling down to 2:
+            ierr=PIO_set_rearr_opts(pio_subsystem,PIO_rearr_comm_coll,&
+                 PIO_REARR_COMM_FC_2D_ENABLE,&
+                 .true.,.false.,2,.false.,.true.,64)
+#endif
           endif
+
+
 
           call nf_open_file(masterproc,nprocs,comm,rank,ios,&
                output_prefix,file_prefix,runtype,ncdf(ios)%ncFileID, ncdf(ios)%FileID)
