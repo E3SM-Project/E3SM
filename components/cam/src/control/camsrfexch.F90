@@ -465,11 +465,11 @@ subroutine cam_export(state,cam_out,pbuf)
 !PMA adds gustiness to surface scheme c20181128
 
    do i=1,ncol
-      cam_out%ubot(i)  = state%u(i,pver) * vmag_gust(i)
-      cam_out%vbot(i)  = state%v(i,pver) * vmag_gust(i)
       cam_out%tbot(i)  = state%t(i,pver)
       cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
       cam_out%zbot(i)  = state%zm(i,pver)
+      cam_out%ubot(i)  = state%u(i,pver) * vmag_gust(i)
+      cam_out%vbot(i)  = state%v(i,pver) * vmag_gust(i)
       cam_out%pbot(i)  = state%pmid(i,pver)
       cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
       psm1(i,lchnk)    = state%ps(i)

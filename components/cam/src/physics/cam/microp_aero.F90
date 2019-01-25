@@ -606,13 +606,10 @@ subroutine microp_aero_run ( &
 
    ! Set minimum values above top_lev.
 
-!PMA no longer needs the minimum value that is designed for CAM5-UW scheme which 
-!produces very low values
-
-!   if(masterproc)write(iulog,*)'wsubmin = ', wsubmin
+   !PMA no longer needs the minimum value that is designed for CAM5-UW scheme which 
+   !produces very low values
 
    wsub(:ncol,:top_lev-1)  = wsubmin
-
    wsubi(:ncol,:top_lev-1) = 0.001_r8
    wsig(:ncol,:top_lev-1)  = 0.001_r8
 

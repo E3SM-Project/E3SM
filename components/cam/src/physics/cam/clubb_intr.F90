@@ -127,7 +127,7 @@ module clubb_intr
   logical            :: clubb_do_deep
   logical            :: micro_do_icesupersat
   logical            :: history_budget
-  logical            :: use_sgv !PMA This flag controls new tuning and code changes
+  logical            :: use_sgv !PMA This flag controls tuning for tpert and gustiness
   integer            :: history_budget_histfile_num
   integer            :: edsclr_dim       ! Number of scalars to transport in CLUBB
   integer            :: offset
@@ -375,7 +375,7 @@ end subroutine clubb_init_cnst
 #ifdef CLUBB_SGS
     logical :: clubb_history, clubb_rad_history, clubb_cloudtop_cooling, clubb_rainevap_turb, &
                clubb_stabcorrect, clubb_expldiff ! Stats enabled (T/F)      
-    logical :: clubb_use_sgv !PMA This flag controls new tuning and code changes
+    logical :: clubb_use_sgv !PMA This flag controls tuning for tpert and gustiness
 
     integer :: iunit, read_status
 
@@ -397,7 +397,7 @@ end subroutine clubb_init_cnst
     relvar_fix         = .false.   ! Initialize to false
     clubb_do_adv       = .false.   ! Initialize to false
     clubb_do_deep      = .false.   ! Initialize to false
-    use_sgv              = .false.
+    use_sgv            = .false.
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -1226,7 +1226,6 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: prer_evap
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
-
 !PMA
    real(r8)  relvarc(pcols,pver)
    real(r8)  stend(pcols,pver)
@@ -1253,9 +1252,9 @@ end subroutine clubb_init_cnst
    real(r8) :: vmag(pcols)
    real(r8) :: gust_fac(pcols)
    real(r8) :: umb(pcols), vmb(pcols),up2b(pcols),vp2b(pcols)
-   real(r8),parameter :: gust_facl = 1.2_r8
-   real(r8),parameter :: gust_faco = 0.9_r8
-   real(r8),parameter :: gust_facc = 1.5_r8
+   real(r8),parameter :: gust_facl = 1.2_r8 !gust fac for land
+   real(r8),parameter :: gust_faco = 0.9_r8 !gust fac for ocean
+   real(r8),parameter :: gust_facc = 1.5_r8 !gust fac for clubb
 
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
@@ -2506,33 +2505,33 @@ end subroutine clubb_init_cnst
     ktopi(:)        = pver
 
     if (use_sgv) then
-    do i=1,ncol
-      up2b(i)         = up2(i,pver)
-      vp2b(i)         = vp2(i,pver)
-      umb(i)          = abs(state1%u(i,pver))
-      vmb(i)          = abs(state1%v(i,pver))
-      prec_gust(i)     = max(0._r8,prec_dp(i)-snow_dp(i))*1.e3_r8
-      if (cam_in%landfrac(i).gt.0.95_r8) then
-        gust_fac(i)   = gust_facl
-      else
-        gust_fac(i)   = gust_faco
-      endif
-      vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
-      vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000) 
-      vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) / vmag(i))
-      vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
-      vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) / vmag(i))
-      vmag_gust(i)    = 1._r8 + vmag_gust_cl(i) + vmag_gust_dp(i)
-     do k=1,pver
-       if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
-         ktopi(i)=k
-         exit
-       end if
-     end do
-     tpert(i)=min(2._r8,sqrt(thlp2(i,ktopi(i))/max(state1%exner(i,ktopi(i)),1.e-3_r8)))
-    end do
-   end if
-
+       do i=1,ncol
+          up2b(i)          = up2(i,pver)
+          vp2b(i)          = vp2(i,pver)
+          umb(i)           = abs(state1%u(i,pver))
+          vmb(i)           = abs(state1%v(i,pver))
+          prec_gust(i)     = max(0._r8,prec_dp(i)-snow_dp(i))*1.e3_r8
+          if (cam_in%landfrac(i).gt.0.95_r8) then
+             gust_fac(i)   = gust_facl
+          else
+             gust_fac(i)   = gust_faco
+          endif
+          vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
+          vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000) 
+          vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) / vmag(i))
+          vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
+          vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) / vmag(i))
+          vmag_gust(i)    = 1._r8 + vmag_gust_cl(i) + vmag_gust_dp(i)
+          do k=1,pver
+             if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
+                ktopi(i) = k
+                exit
+             end if
+          end do
+          tpert(i) = min(2._r8,sqrt(thlp2(i,ktopi(i))/max(state1%exner(i,ktopi(i)),1.e-3_r8)))
+       end do
+    end if
+    
    call outfld('VMAGGUST', vmag_gust, pcols, lchnk)
    call outfld('VMAGDP', vmag_gust_dp, pcols, lchnk)
    call outfld('VMAGCL', vmag_gust_cl, pcols, lchnk)
@@ -2702,7 +2701,7 @@ end subroutine clubb_init_cnst
 
     call cnst_get_ind('Q',ixq)
     if (use_sgv) then
-    call cnst_get_ind('CLDLIQ',ixcldliq)
+       call cnst_get_ind('CLDLIQ',ixcldliq)
     endif
     
     lq(:) = .TRUE.
