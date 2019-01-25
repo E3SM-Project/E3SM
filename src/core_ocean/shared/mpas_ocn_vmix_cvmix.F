@@ -623,18 +623,6 @@ contains
      endif !kpp stage 1 -- boundary layer compute
 
      if (kpp_stage == 2) then
-            ! update Langmuir enhancement factor
-            ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
-            if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-               langmuirEnhancementFactor =  &
-                       cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
-                                               surfaceFrictionVelocity(iCell), &
-                                               boundaryLayerDepth(iCell), &
-                                               cvmix_global_params)
-            else
-               langmuirEnhancementFactor = 1.0_RKIND
-            end if
-
             ! copy data into cvmix_variables
             do k = 1, maxLevelCell(iCell) + 1
               cvmix_variables % Mdiff_iface(k) = vertViscTopOfCell(k, iCell)
@@ -650,8 +638,19 @@ contains
                           zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
                           OBL_depth = boundaryLayerDepth(iCell) )
 
+            ! update Langmuir enhancement factor
+            ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
+            if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+               langmuirEnhancementFactor =  &
+                       cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
+                                               surfaceFrictionVelocity(iCell), &
+                                               boundaryLayerDepth(iCell), &
+                                               cvmix_global_params)
+            else
+               langmuirEnhancementFactor = 1.0_RKIND
+            end if
 
-             !           call mpas_timer_start('cvmix coeffs kpp', .false.)
+!           call mpas_timer_start('cvmix coeffs kpp', .false.)
             call cvmix_coeffs_kpp(                                              &
                           Mdiff_out = cvmix_variables % Mdiff_iface(1:maxLevelCell(iCell)+1),       &
                           Tdiff_out = cvmix_variables % Tdiff_iface(1:maxLevelCell(iCell)+1),       &
@@ -1028,6 +1027,29 @@ contains
            call mpas_log_write( &
               "Unknown value for config_cvmix_kpp_matching., supported values are:" // &
               "         SimpleShapes or MatchBoth", &
+              MPAS_LOG_CRIT)
+           err = 1
+           return
+        endif
+
+        if (trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "NONE" .and. &
+            trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "LWF16" .and. &
+            trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "RWHGK16") then
+           call mpas_log_write( &
+              "Unknown value for config_cvmix_kpp_langmuir_mixing_opt, supported values are:" // &
+              "         NONE or LWF16 or RWHGK16", &
+              MPAS_LOG_CRIT)
+           err = 1
+           return
+        endif
+
+        if (trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "NONE" .and. &
+            trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "LWF16" .and. &
+            trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "LF17" .and. &
+            trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "RWHGK16") then
+           call mpas_log_write( &
+              "Unknown value for config_cvmix_kpp_langmuir_entrainment_opt, supported values are:" // &
+              "         NONE or LWF16 or LF17 or RWHGK16", &
               MPAS_LOG_CRIT)
            err = 1
            return
