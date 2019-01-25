@@ -1479,37 +1479,36 @@ module shr_nuopc_methods_mod
             fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 1) then
-          if (lrank == 0) then
-             ! no local data
+       if (lrank == 0) then
+          ! no local data
 
-          elseif (lrank == 1) then
-             if (size(dataPtr1d) > 0) then
-                write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
-             else
-                write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     " no data"
-             endif
-
-          elseif (lrank == 2) then
-             if (size(dataPtr2d) > 0) then
-                write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
-             else
-                write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     " no data"
-             endif
-
+       elseif (lrank == 1) then
+          if (size(dataPtr1d) > 0) then
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
           else
-             call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, line=__LINE__, &
-                  file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-             return
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  " no data"
           endif
 
-          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-       end if
+       elseif (lrank == 2) then
+          if (size(dataPtr2d) > 0) then
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
+          else
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  " no data"
+          endif
+
+       else
+          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, line=__LINE__, &
+               file=u_FILE_u, rc=dbrc)
+          rc = ESMF_FAILURE
+          return
+       endif
+
+       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+
     enddo
 
     deallocate(lfieldnamelist)
@@ -1580,9 +1579,7 @@ module shr_nuopc_methods_mod
        rc = ESMF_FAILURE
        return
     endif
-    if (dbug_flag > 1) then
-       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-    end if
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
 
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
