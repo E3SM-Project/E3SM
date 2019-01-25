@@ -43,7 +43,7 @@ module CanopyFluxesMod
   use GridcellType          , only : grc_pp 
   use TopounitDataType      , only : top_as, top_af  
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es               
+  use ColumnDataType        , only : col_es, col_ef               
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_es  
   !
@@ -341,7 +341,7 @@ contains
          smpso                => veg_vp%smpso                          , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
          smpsc                => veg_vp%smpsc                          , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal closure (mm)                    
 
-         htvp                 => energyflux_vars%htvp_col                  , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg] (constant)                      
+         htvp                 => col_ef%htvp                  , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg] (constant)                      
 
          sabv                 => solarabs_vars%sabv_patch                  , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by vegetation (W/m**2)                       
 

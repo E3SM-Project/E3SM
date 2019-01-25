@@ -21,7 +21,7 @@ module LakeHydrologyMod
   use decompMod            , only : bounds_type
   use TopounitDataType     , only : top_as, top_af    ! atmospheric state and flux variables
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es  
+  use ColumnDataType       , only : col_es, col_ef  
   use VegetationType       , only : veg_pp                
   use atm2lndType          , only : atm2lnd_type
   use AerosolType          , only : aerosol_type
@@ -199,7 +199,7 @@ contains
          qflx_top_soil        =>  waterflux_vars%qflx_top_soil_col      , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)
          qflx_sl_top_soil     =>  waterflux_vars%qflx_sl_top_soil_col   , & ! Output: [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
 
-         eflx_snomelt         =>  energyflux_vars%eflx_snomelt_col      , & ! Output: [real(r8) (:)   ]  snow melt heat flux (W/m**2)
+         eflx_snomelt         =>  col_ef%eflx_snomelt      , & ! Output: [real(r8) (:)   ]  snow melt heat flux (W/m**2)
          eflx_sh_tot          =>  energyflux_vars%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
          eflx_sh_grnd         =>  energyflux_vars%eflx_sh_grnd_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_soil_grnd       =>  energyflux_vars%eflx_soil_grnd_patch  , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]

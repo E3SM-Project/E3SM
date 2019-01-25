@@ -52,7 +52,7 @@ module clm_instMod
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es
   use ColumnType                 , only : col_pp
-  use ColumnDataType             , only : col_es
+  use ColumnDataType             , only : col_es, col_ef
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es
 
@@ -367,6 +367,8 @@ contains
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
     ! this write statement in place as a workaround for this problem.
     call energyflux_vars%init(bounds_proc, col_es%t_grnd(begc:endc))
+
+    call col_ef%Init(bounds_proc%begc_all, bounds_proc%endc_all)
 
     call aerosol_vars%Init(bounds_proc)
 

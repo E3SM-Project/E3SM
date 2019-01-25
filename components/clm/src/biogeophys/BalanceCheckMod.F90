@@ -22,8 +22,9 @@ module BalanceCheckMod
   use GridcellType       , only : grc_pp
   use TopounitDataType   , only : top_af ! atmospheric flux variables  
   use LandunitType       , only : lun_pp                
-  use ColumnType         , only : col_pp                
-  use VegetationType          , only : veg_pp                
+  use ColumnType         , only : col_pp
+  use ColumnDataType     , only : col_ef  
+  use VegetationType     , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -265,7 +266,7 @@ contains
           sabv                       =>    solarabs_vars%sabv_patch                   , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by vegetation (W/m**2)
           sabg                       =>    solarabs_vars%sabg_patch                   , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
           
-          errsoi_col                 =>    energyflux_vars%errsoi_col                 , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
+          errsoi_col                 =>    col_ef%errsoi                 , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
           errsol                     =>    energyflux_vars%errsol_patch               , & ! Output: [real(r8) (:)   ]  solar radiation conservation error (W/m**2)
           errseb                     =>    energyflux_vars%errseb_patch               , & ! Output: [real(r8) (:)   ]  surface energy conservation error (W/m**2)
           errlon                     =>    energyflux_vars%errlon_patch               , & ! Output: [real(r8) (:)   ]  longwave radiation conservation error (W/m**2)

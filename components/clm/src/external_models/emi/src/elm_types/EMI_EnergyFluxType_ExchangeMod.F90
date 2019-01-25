@@ -7,6 +7,7 @@ module EMI_EnergyFluxType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use EnergyFluxType                        , only : energyflux_type
+  use ColumnDataType                        , only : col_ef
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -54,11 +55,11 @@ contains
     integer                             :: count
 
     associate(& 
-         eflx_sabg_lyr    => energyflux_vars%eflx_sabg_lyr_col    , &
-         eflx_hs_soil     => energyflux_vars%eflx_hs_soil_col     , &
-         eflx_hs_top_snow => energyflux_vars%eflx_hs_top_snow_col , &
-         eflx_hs_h2osfc   => energyflux_vars%eflx_hs_h2osfc_col   , &
-         eflx_dhsdT       => energyflux_vars%eflx_dhsdT_col         &
+         eflx_sabg_lyr    => col_ef%eflx_sabg_lyr    , &
+         eflx_hs_soil     => col_ef%eflx_hs_soil     , &
+         eflx_hs_top_snow => col_ef%eflx_hs_top_snow , &
+         eflx_hs_h2osfc   => col_ef%eflx_hs_h2osfc   , &
+         eflx_dhsdT       => col_ef%eflx_dhsdT         &
          )
 
     count = 0
