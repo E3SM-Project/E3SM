@@ -35,6 +35,7 @@ module spmd_utils
    use shr_kind_mod,     only: r8 => shr_kind_r8
    use cam_abortutils,   only: endrun
    use shr_taskmap_mod,  only: shr_taskmap_write
+   use shr_sys_mod,      only: shr_sys_flush
    use perf_mod,         only: t_startf, t_stopf
 
 #if ( defined SPMD )
@@ -262,9 +263,10 @@ contains
        write(c_npes,'(i8)') npes
 
        if (masterproc) then
-          write(iulog,100) trim(adjustl(c_npes))
-100       format(/,a,' pes participating in computation of CAM instance')
-          call flush(iulog)
+          write(iulog,'(/,2A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of CAM instance'
+          call shr_sys_flush(iulog)
        endif
 
        call t_startf("shr_taskmap_write")
