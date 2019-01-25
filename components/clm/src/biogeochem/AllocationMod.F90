@@ -39,7 +39,8 @@ module AllocationMod
   !
   implicit none
   save
-  private
+  private :: update_stoichiometry_scalar
+  private :: update_competition_kinetic_pars
   ! pflotran
   private :: calc_nuptake_prof
   private :: calc_puptake_prof
@@ -4335,6 +4336,9 @@ contains
   use PlantMicKineticsMod, only : PlantMicKinetics_type
   use clm_varpar      , only: nlevdecomp
   implicit none
+  type(bounds_type)        , intent(in)    :: bounds
+  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns 
   type(cnstate_type), intent(in) :: cnstate_vars
   type(carbonstate_type), intent(in) :: carbonstate_vars
   type(carbonflux_type), intent(in) :: carbonflux_vars
@@ -4343,18 +4347,22 @@ contains
 
   associate(                                                 &
     ivt                  => veg_pp%itype                   , &
+    km_nit               => veg_vp%km_nit                  , &
+    km_den               => veg_vp%km_den                  , &
     vmax_plant_nh4       => veg_vp%vmax_plant_nh4          , &
     vmax_plant_no3       => veg_vp%vmax_plant_no3          , &
     vmax_plant_p         => veg_vp%vmax_plant_p            , &
     km_plant_nh4         => veg_vp%km_plant_nh4            , &
     km_plant_no3         => veg_vp%km_plant_no3            , &
     km_plant_p           => veg_vp%km_plant_p              , &
+    km_minsurf_p_vr      => veg_vp%km_minsurf_p_vr         , &
     decompmicc_patch_vr  => veg_vp%decompmicc_patch_vr     , &
     frootc               => carbonstate_vars%frootc_patch  , &
     t_scalar             => carbonflux_vars%t_scalar_col   , &
     froot_prof            => cnstate_vars%froot_prof_patch  , &
     cn_scalar            => cnstate_vars%cn_scalar         , &
     cp_scalar            => cnstate_vars%cp_scalar         , &
+    isoilorder                   => cnstate_vars%isoilorder, &
     plant_eff_ncompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch, &
     plant_eff_pcompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch, &
     plant_nh4_vmax_vr_patch => PlantMicKinetics_vars%plant_nh4_vmax_vr_patch, &
@@ -4367,6 +4375,7 @@ contains
     nit_eff_ncompet_b_vr_col => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
     den_eff_ncompet_b_vr_col => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
     km_nit_nh4_vr_col => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
+    km_den_no3_vr_col => PlantMicKinetics_vars%km_den_no3_vr_col, &
     km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col  &
   )
 
@@ -4425,7 +4434,10 @@ contains
 
   use PlantMicKineticsMod, only : PlantMicKinetics_type
   implicit none
-  type(cnstate_type), intent(in) :: cnstate_vars
+  type(bounds_type)        , intent(in)    :: bounds
+  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns 
+  type(cnstate_type), intent(inout) :: cnstate_vars
   type(carbonstate_type), intent(in) :: carbonstate_vars
   type(carbonflux_type), intent(in) :: carbonflux_vars
   type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
