@@ -297,227 +297,7 @@ contains
          avgflag='A', long_name='dynamic land cover change conversion energy flux', &
          ptr_lnd=this%eflx_dynbal_grc)
 
-    this%eflx_lwrad_net_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FIRA', units='W/m^2',  &
-         avgflag='A', long_name='net infrared (longwave) radiation', &
-         ptr_patch=this%eflx_lwrad_net_patch, c2l_scale_type='urbanf')
-
-    this%eflx_lwrad_net_r_patch(begp:endp) = spval 
-    call hist_addfld1d (fname='FIRA_R', units='W/m^2',  &
-         avgflag='A', long_name='Rural net infrared (longwave) radiation', &
-         ptr_patch=this%eflx_lwrad_net_r_patch, set_spec=spval)
-
-    this%eflx_lwrad_out_patch(begp:endp) = spval 
-    call hist_addfld1d (fname='FIRE', units='W/m^2',  &
-         avgflag='A', long_name='emitted infrared (longwave) radiation', &
-         ptr_patch=this%eflx_lwrad_out_patch, c2l_scale_type='urbanf')
-    ! Rename of FIRE for Urban intercomparision project
-    this%eflx_lwrad_out_patch(begp:endp) = spval 
-    call hist_addfld1d (fname='LWup', units='W/m^2',  &
-         avgflag='A', long_name='upwelling longwave radiation', &
-         ptr_patch=this%eflx_lwrad_out_patch, c2l_scale_type='urbanf', default='inactive')
-
-    this%eflx_lwrad_out_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FIRE_R', units='W/m^2',  &
-         avgflag='A', long_name='Rural emitted infrared (longwave) radiation', &
-         ptr_patch=this%eflx_lwrad_out_r_patch, set_spec=spval)
-
-    this%eflx_lh_vegt_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FCTR', units='W/m^2',  &
-         avgflag='A', long_name='canopy transpiration', &
-         ptr_patch=this%eflx_lh_vegt_patch, set_lake=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_lh_vege_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FCEV', units='W/m^2',  &
-         avgflag='A', long_name='canopy evaporation', &
-         ptr_patch=this%eflx_lh_vege_patch, set_lake=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_lh_grnd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FGEV', units='W/m^2',  &
-         avgflag='A', long_name='ground evaporation', &
-         ptr_patch=this%eflx_lh_grnd_patch, c2l_scale_type='urbanf') 
-
-    this%eflx_sh_tot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSH_NODYNLNDUSE', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat not including correction for land use change', &
-         ptr_patch=this%eflx_sh_tot_patch, c2l_scale_type='urbanf')
-
-    this%eflx_sh_tot_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSH_R', units='W/m^2',  &
-         avgflag='A', long_name='Rural sensible heat', &
-         ptr_patch=this%eflx_sh_tot_r_patch, set_spec=spval)
-
-    this%eflx_sh_tot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='Qh', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat', &
-         ptr_patch=this%eflx_sh_tot_patch, c2l_scale_type='urbanf', &
-         default = 'inactive')
-
-    this%eflx_lh_tot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='Qle', units='W/m^2',  &
-         avgflag='A', long_name='total evaporation', &
-         ptr_patch=this%eflx_lh_tot_patch, c2l_scale_type='urbanf', &
-         default = 'inactive')
-
-    this%eflx_lh_tot_patch(begp:endp) = spval
-    call hist_addfld1d (fname='EFLX_LH_TOT', units='W/m^2', &
-         avgflag='A', long_name='total latent heat flux [+ to atm]', &
-         ptr_patch=this%eflx_lh_tot_patch, c2l_scale_type='urbanf')
-
-    this%eflx_lh_tot_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='EFLX_LH_TOT_R', units='W/m^2',  &
-         avgflag='A', long_name='Rural total evaporation', &
-         ptr_patch=this%eflx_lh_tot_r_patch, set_spec=spval)
-
-    this%eflx_soil_grnd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='Qstor', units='W/m^2',  &
-         avgflag='A', long_name='storage heat flux (includes snowmelt)', &
-         ptr_patch=this%eflx_soil_grnd_patch, c2l_scale_type='urbanf', &
-         default = 'inactive')
-    this%eflx_sh_veg_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSH_V', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat from veg', &
-         ptr_patch=this%eflx_sh_veg_patch, set_lake=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_sh_grnd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSH_G', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat from ground', &
-         ptr_patch=this%eflx_sh_grnd_patch, c2l_scale_type='urbanf')
-
-    this%eflx_soil_grnd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FGR', units='W/m^2',  &
-         avgflag='A', long_name='heat flux into soil/snow including snow melt and lake / snow light transmission', &
-         ptr_patch=this%eflx_soil_grnd_patch, c2l_scale_type='urbanf')
-
-    this%eflx_soil_grnd_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FGR_R', units='W/m^2',  &
-         avgflag='A', long_name='Rural heat flux into soil/snow including snow melt and snow light transmission', &
-         ptr_patch=this%eflx_soil_grnd_r_patch, set_spec=spval)
-
-    this%eflx_lwrad_net_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FIRA_U', units='W/m^2',  &
-         avgflag='A', long_name='Urban net infrared (longwave) radiation', &
-         ptr_patch=this%eflx_lwrad_net_u_patch, c2l_scale_type='urbanf', set_nourb=spval)
-
-    this%eflx_soil_grnd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='EFLX_SOIL_GRND', units='W/m^2', &
-         avgflag='A', long_name='soil heat flux [+ into soil]', &
-         ptr_patch=this%eflx_soil_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-
-    this%eflx_lwrad_out_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FIRE_U', units='W/m^2',  &
-         avgflag='A', long_name='Urban emitted infrared (longwave) radiation', &
-         ptr_patch=this%eflx_lwrad_out_u_patch, c2l_scale_type='urbanf', set_nourb=spval)
-
-    this%eflx_sh_tot_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSH_U', units='W/m^2',  &
-         avgflag='A', long_name='Urban sensible heat', &
-         ptr_patch=this%eflx_sh_tot_u_patch, c2l_scale_type='urbanf', set_nourb=spval)
-
-    this%eflx_lh_tot_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='EFLX_LH_TOT_U', units='W/m^2',  &
-         avgflag='A', long_name='Urban total evaporation', &
-         ptr_patch=this%eflx_lh_tot_u_patch, c2l_scale_type='urbanf', set_nourb=spval)
-
-    this%eflx_soil_grnd_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FGR_U', units='W/m^2',  &
-         avgflag='A', long_name='Urban heat flux into soil/snow including snow melt', &
-         ptr_patch=this%eflx_soil_grnd_u_patch, c2l_scale_type='urbanf', set_nourb=spval)
-
-    this%netrad_patch(begp:endp) = spval
-    call hist_addfld1d (fname='Rnet', units='W/m^2',  &
-         avgflag='A', long_name='net radiation', &
-         ptr_patch=this%netrad_patch, c2l_scale_type='urbanf', &
-         default='inactive')
-
-    if (use_cn) then
-       this%dlrad_patch(begp:endp) = spval
-       call hist_addfld1d (fname='DLRAD', units='W/m^2', &
-            avgflag='A', long_name='downward longwave radiation below the canopy', &
-            ptr_patch=this%dlrad_patch, default='inactive', c2l_scale_type='urbanf')
-    end if 
-
-    if (use_cn) then
-       this%ulrad_patch(begp:endp) = spval
-       call hist_addfld1d (fname='ULRAD', units='W/m^2', &
-            avgflag='A', long_name='upward longwave radiation above the canopy', &
-            ptr_patch=this%ulrad_patch, default='inactive', c2l_scale_type='urbanf')
-    end if 
-
-    if (use_cn) then
-       this%cgrnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='CGRND', units='W/m^2/K', &
-            avgflag='A', long_name='deriv. of soil energy flux wrt to soil temp', &
-            ptr_patch=this%cgrnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if 
-
-    if (use_cn) then
-       this%cgrndl_patch(begp:endp) = spval
-       call hist_addfld1d (fname='CGRNDL', units='W/m^2/K', &
-            avgflag='A', long_name='deriv. of soil latent heat flux wrt soil temp', &
-            ptr_patch=this%cgrndl_patch, default='inactive', c2l_scale_type='urbanf')
-    end if 
-
-    if (use_cn) then
-       this%cgrnds_patch(begp:endp) = spval
-       call hist_addfld1d (fname='CGRNDS', units='W/m^2/K', &
-            avgflag='A', long_name='deriv. of soil sensible heat flux wrt soil temp', &
-            ptr_patch=this%cgrnds_patch, default='inactive', c2l_scale_type='urbanf')
-    end if 
-
-    if (use_cn) then
-       this%eflx_gnet_patch(begp:endp) = spval
-       call hist_addfld1d (fname='EFLX_GNET', units='W/m^2', &
-            avgflag='A', long_name='net heat flux into ground', &
-            ptr_patch=this%eflx_gnet_patch, default='inactive', c2l_scale_type='urbanf')
-    end if 
-
-    this%eflx_grnd_lake_patch(begp:endp) = spval
-    call hist_addfld1d (fname='EFLX_GRND_LAKE', units='W/m^2', &
-         avgflag='A', long_name='net heat flux into lake/snow surface, excluding light transmission', &
-         ptr_patch=this%eflx_grnd_lake_patch, set_nolake=spval)
-
-    this%dgnetdT_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DGNETDT', units='W/m^2/K', &
-         avgflag='A', long_name='derivative of net ground heat flux wrt soil temp', &
-         ptr_patch=this%dgnetdT_patch, default='inactive', c2l_scale_type='urbanf')
-
-    this%eflx_traffic_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TRAFFICFLUX', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat flux from urban traffic', &
-         ptr_patch=this%eflx_traffic_patch, set_nourb=0._r8, c2l_scale_type='urbanf', &
-         default='inactive')
-
-    this%eflx_wasteheat_patch(begp:endp) = spval
-    call hist_addfld1d (fname='WASTEHEAT', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat flux from heating/cooling sources of urban waste heat', &
-         ptr_patch=this%eflx_wasteheat_patch, set_nourb=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_heat_from_ac_patch(begp:endp) = spval
-    call hist_addfld1d (fname='HEAT_FROM_AC', units='W/m^2',  &
-         avgflag='A', long_name='sensible heat flux put into canyon due to heat removed from air conditioning', &
-         ptr_patch=this%eflx_heat_from_ac_patch, set_nourb=0._r8, c2l_scale_type='urbanf')
-
-    this%eflx_anthro_patch(begp:endp) = spval
-    call hist_addfld1d (fname='Qanth', units='W/m^2',  &
-         avgflag='A', long_name='anthropogenic heat flux', &
-         ptr_patch=this%eflx_anthro_patch, set_nourb=0._r8, c2l_scale_type='urbanf', &
-         default='inactive')
-
-    this%taux_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TAUX', units='kg/m/s^2',  &
-         avgflag='A', long_name='zonal surface stress', &
-         ptr_patch=this%taux_patch)
-    ! Rename of TAUX for Urban intercomparision project (when U=V)    
-    call hist_addfld1d (fname='Qtau', units='kg/m/s^2',  &  
-         avgflag='A', long_name='momentum flux', &
-         ptr_patch=this%taux_patch, default='inactive')
-
-    this%tauy_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TAUY', units='kg/m/s^2',  &
-         avgflag='A', long_name='meridional surface stress', &
-         ptr_patch=this%tauy_patch)
-
+    ! remember to move these into water flux
     this%btran_patch(begp:endp) = spval
     call hist_addfld1d (fname='BTRAN', units='unitless',  &
          avgflag='A', long_name='transpiration beta factor', &
@@ -530,15 +310,6 @@ contains
             ptr_patch=this%rresis_patch, default='inactive')
     end if
 
-    this%errseb_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ERRSEB',  units='W/m^2',  &
-         avgflag='A', long_name='surface energy conservation error', &
-         ptr_patch=this%errseb_patch)
-
-    this%errsol_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ERRSOL',  units='W/m^2',  &
-         avgflag='A', long_name='solar radiation conservation error', &
-         ptr_patch=this%errsol_patch, set_urb=spval)
 
   end subroutine InitHistory
 
@@ -571,20 +342,6 @@ contains
 
     associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
 
-      do p = bounds%begp, bounds%endp 
-         c = veg_pp%column(p)
-         l = veg_pp%landunit(p)
-
-         if (.not. lun_pp%urbpoi(l)) then ! non-urban
-            this%eflx_lwrad_net_u_patch(p) = spval
-            this%eflx_lwrad_out_u_patch(p) = spval
-            this%eflx_lh_tot_u_patch(p)    = spval
-            this%eflx_sh_tot_u_patch(p)    = spval
-            this%eflx_soil_grnd_u_patch(p) = spval
-         end if
-
-         this%eflx_lwrad_out_patch(p) = sb * (t_grnd_col(c))**4
-      end do
 
     end associate
 
@@ -595,10 +352,6 @@ contains
           this%eflx_traffic_lun(l)        = spval
           this%eflx_wasteheat_lun(l)      = spval
 
-          this%eflx_wasteheat_patch(p)    = 0._r8
-          this%eflx_heat_from_ac_patch(p) = 0._r8
-          this%eflx_traffic_patch(p)      = 0._r8
-          this%eflx_anthro_patch(p)       = 0._r8
        end if
     end do
 
@@ -634,11 +387,6 @@ contains
     integer :: j,c ! indices
     logical :: readvar      ! determine if variable is on initial file
     !-----------------------------------------------------------------------
-
-    call restartvar(ncid=ncid, flag=flag, varname='EFLX_LWRAD_OUT', xtype=ncd_double,  & 
-         dim1name='pft', &
-         long_name='emitted infrared (longwave) radiation', units='watt/m^2', &
-         interpinic_flag='interp', readvar=readvar, data=this%eflx_lwrad_out_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='btran2', xtype=ncd_double,  &
          dim1name='pft', &

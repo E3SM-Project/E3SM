@@ -31,7 +31,7 @@ module lnd2atmMod
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp     
-  use VegetationDataType   , only : veg_es
+  use VegetationDataType   , only : veg_es, veg_ef
 
   
   !
@@ -97,7 +97,7 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         energyflux_vars%eflx_lwrad_out_patch (bounds%begp:bounds%endp), &
+         veg_ef%eflx_lwrad_out (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
@@ -170,12 +170,12 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         energyflux_vars%taux_patch (bounds%begp:bounds%endp), &
+         veg_ef%taux (bounds%begp:bounds%endp), &
          lnd2atm_vars%taux_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         energyflux_vars%tauy_patch (bounds%begp:bounds%endp), &
+         veg_ef%tauy (bounds%begp:bounds%endp), &
          lnd2atm_vars%tauy_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
@@ -200,7 +200,7 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g( bounds, &
-         energyflux_vars%eflx_sh_tot_patch (bounds%begp:bounds%endp), &
+         veg_ef%eflx_sh_tot (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_sh_tot_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity',c2l_scale_type='urbanf',l2g_scale_type='unity')
     do g = bounds%begg, bounds%endg
@@ -209,7 +209,7 @@ contains
     enddo
 
     call p2g(bounds, &
-         energyflux_vars%eflx_lh_tot_patch (bounds%begp:bounds%endp), &
+         veg_ef%eflx_lh_tot (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_lh_tot_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 

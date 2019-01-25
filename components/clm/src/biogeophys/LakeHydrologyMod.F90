@@ -23,6 +23,7 @@ module LakeHydrologyMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef  
   use VegetationType       , only : veg_pp                
+  use VegetationDataType   , only : veg_ef
   use atm2lndType          , only : atm2lnd_type
   use AerosolType          , only : aerosol_type
   use EnergyFluxType       , only : energyflux_type
@@ -200,11 +201,11 @@ contains
          qflx_sl_top_soil     =>  waterflux_vars%qflx_sl_top_soil_col   , & ! Output: [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
 
          eflx_snomelt         =>  col_ef%eflx_snomelt      , & ! Output: [real(r8) (:)   ]  snow melt heat flux (W/m**2)
-         eflx_sh_tot          =>  energyflux_vars%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_grnd         =>  energyflux_vars%eflx_sh_grnd_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_soil_grnd       =>  energyflux_vars%eflx_soil_grnd_patch  , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]
-         eflx_gnet            =>  energyflux_vars%eflx_gnet_patch       , & ! Output: [reay(r8) (:)   ]  net heat flux into ground (W/m**2)      
-         eflx_grnd_lake       =>  energyflux_vars%eflx_grnd_lake_patch  , & ! Output: [real(r8) (:)   ]  net heat flux into lake / snow surface, excluding light transmission (W/m**2)
+         eflx_sh_tot          =>  veg_ef%eflx_sh_tot     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_grnd         =>  veg_ef%eflx_sh_grnd    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_soil_grnd       =>  veg_ef%eflx_soil_grnd  , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]
+         eflx_gnet            =>  veg_ef%eflx_gnet       , & ! Output: [reay(r8) (:)   ]  net heat flux into ground (W/m**2)      
+         eflx_grnd_lake       =>  veg_ef%eflx_grnd_lake  , & ! Output: [real(r8) (:)   ]  net heat flux into lake / snow surface, excluding light transmission (W/m**2)
 
          lake_icefrac         =>  lakestate_vars%lake_icefrac_col       , & ! Output: [real(r8) (:,:) ]  mass fraction of lake layer that is frozen
 

@@ -34,7 +34,7 @@ module CanopyTemperatureMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef                
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es
+  use VegetationDataType   , only : veg_es, veg_ef
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -160,16 +160,16 @@ contains
          qflx_tran_veg    =>    waterflux_vars%qflx_tran_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation transpiration (mm H2O/s) (+ = to atm)
 
          htvp             =>    col_ef%htvp              , & ! Output: [real(r8) (:)   ] latent heat of vapor of water (or sublimation) [j/kg]
-         cgrnd            =>    energyflux_vars%cgrnd_patch           , & ! Output: [real(r8) (:)   ] deriv. of soil energy flux wrt to soil temp [w/m2/k]
-         cgrnds           =>    energyflux_vars%cgrnds_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil sensible heat flux wrt soil temp [w/m2/k]
-         cgrndl           =>    energyflux_vars%cgrndl_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil latent heat flux wrt soil temp [w/m**2/k]
-         eflx_sh_tot      =>    energyflux_vars%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ] total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_tot_r    =>    energyflux_vars%eflx_sh_tot_r_patch   , & ! Output: [real(r8) (:)   ] rural total sensible heat flux (W/m**2) [+ to atm]
-         eflx_lh_tot_u    =>    energyflux_vars%eflx_lh_tot_u_patch   , & ! Output: [real(r8) (:)   ] urban total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lh_tot      =>    energyflux_vars%eflx_lh_tot_patch     , & ! Output: [real(r8) (:)   ] total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lh_tot_r    =>    energyflux_vars%eflx_lh_tot_r_patch   , & ! Output: [real(r8) (:)   ] rural total latent heat flux (W/m**2)  [+ to atm]
-         eflx_sh_tot_u    =>    energyflux_vars%eflx_sh_tot_u_patch   , & ! Output: [real(r8) (:)   ] urban total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_veg      =>    energyflux_vars%eflx_sh_veg_patch     , & ! Output: [real(r8) (:)   ] sensible heat flux from leaves (W/m**2) [+ to atm]
+         cgrnd            =>    veg_ef%cgrnd           , & ! Output: [real(r8) (:)   ] deriv. of soil energy flux wrt to soil temp [w/m2/k]
+         cgrnds           =>    veg_ef%cgrnds          , & ! Output: [real(r8) (:)   ] deriv. of soil sensible heat flux wrt soil temp [w/m2/k]
+         cgrndl           =>    veg_ef%cgrndl          , & ! Output: [real(r8) (:)   ] deriv. of soil latent heat flux wrt soil temp [w/m**2/k]
+         eflx_sh_tot      =>    veg_ef%eflx_sh_tot     , & ! Output: [real(r8) (:)   ] total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_tot_r    =>    veg_ef%eflx_sh_tot_r   , & ! Output: [real(r8) (:)   ] rural total sensible heat flux (W/m**2) [+ to atm]
+         eflx_lh_tot_u    =>    veg_ef%eflx_lh_tot_u   , & ! Output: [real(r8) (:)   ] urban total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot      =>    veg_ef%eflx_lh_tot     , & ! Output: [real(r8) (:)   ] total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot_r    =>    veg_ef%eflx_lh_tot_r   , & ! Output: [real(r8) (:)   ] rural total latent heat flux (W/m**2)  [+ to atm]
+         eflx_sh_tot_u    =>    veg_ef%eflx_sh_tot_u   , & ! Output: [real(r8) (:)   ] urban total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_veg      =>    veg_ef%eflx_sh_veg     , & ! Output: [real(r8) (:)   ] sensible heat flux from leaves (W/m**2) [+ to atm]
 
          forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch     , & ! Input:  [real(r8) (:)   ] observational height of temperature at pft level [m]
          forc_hgt_q_patch =>    frictionvel_vars%forc_hgt_q_patch     , & ! Input:  [real(r8) (:)   ] observational height of specific humidity at pft level [m]

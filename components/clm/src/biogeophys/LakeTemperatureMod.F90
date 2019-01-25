@@ -21,7 +21,8 @@ module LakeTemperatureMod
   use WaterstateType    , only : waterstate_type
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ef  
-  use VegetationType    , only : veg_pp                
+  use VegetationType    , only : veg_pp
+  use VegetationDataType, only : veg_ef  
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -257,10 +258,10 @@ contains
 
          grnd_ch4_cond   =>   ch4_vars%grnd_ch4_cond_col           , & ! Output: [real(r8) (:)   ]  tracer conductance for boundary layer [m/s] (only over lake points)
 
-         eflx_soil_grnd  =>   energyflux_vars%eflx_soil_grnd_patch , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]
-         eflx_sh_grnd    =>   energyflux_vars%eflx_sh_grnd_patch   , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_tot     =>   energyflux_vars%eflx_sh_tot_patch    , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
-         eflx_gnet       =>   energyflux_vars%eflx_gnet_patch      , & ! Output: [real(r8) ( :)  ]  net heat flux into ground (W/m**2) at the surface interface
+         eflx_soil_grnd  =>   veg_ef%eflx_soil_grnd , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]
+         eflx_sh_grnd    =>   veg_ef%eflx_sh_grnd   , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_sh_tot     =>   veg_ef%eflx_sh_tot    , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+         eflx_gnet       =>   veg_ef%eflx_gnet      , & ! Output: [real(r8) ( :)  ]  net heat flux into ground (W/m**2) at the surface interface
          errsoi          =>   col_ef%errsoi             & ! Output: [real(r8) (:)   ]  soil/lake energy conservation error (W/m**2)
          )
 

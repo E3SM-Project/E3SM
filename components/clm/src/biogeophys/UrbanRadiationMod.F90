@@ -28,7 +28,7 @@ module UrbanRadiationMod
   use ColumnType        , only : col_pp 
   use ColumnDataType    , only : col_es  
   use VegetationType    , only : veg_pp                
-  use VegetationDataType, only : veg_es
+  use VegetationDataType, only : veg_es, veg_ef
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -154,9 +154,9 @@ contains
          fsa                =>    solarabs_vars%fsa_patch                    , & ! Output: [real(r8) (:)   ]  solar radiation absorbed (total) (W/m**2)         
          fsa_u              =>    solarabs_vars%fsa_u_patch                  , & ! Output: [real(r8) (:)   ]  urban solar radiation absorbed (total) (W/m**2)   
 
-         eflx_lwrad_out     =>    energyflux_vars%eflx_lwrad_out_patch       , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
-         eflx_lwrad_net     =>    energyflux_vars%eflx_lwrad_net_patch       , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
-         eflx_lwrad_net_u   =>    energyflux_vars%eflx_lwrad_net_u_patch     , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_lwrad_out     =>    veg_ef%eflx_lwrad_out       , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
+         eflx_lwrad_net     =>    veg_ef%eflx_lwrad_net       , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
+         eflx_lwrad_net_u   =>    veg_ef%eflx_lwrad_net_u     , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
 
          begl               =>    bounds%begl                                , &
          endl               =>    bounds%endl                                  &
