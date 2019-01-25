@@ -338,12 +338,6 @@ contains
 
     ! Initialization of public data types
 
-    call temperature_vars%init(bounds_proc,      &
-         urbanparams_vars%em_roof(begl:endl),    &
-         urbanparams_vars%em_wall(begl:endl),    &
-         urbanparams_vars%em_improad(begl:endl), &
-         urbanparams_vars%em_perroad(begl:endl))
-
     call grc_es%Init(bounds_proc%begg_all, bounds_proc%endg_all)
     call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
