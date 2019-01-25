@@ -37,10 +37,10 @@ using DefaultDevice = Kokkos::Device<Kokkos::DefaultExecutionSpace, Kokkos::Defa
 using HostDevice = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::DefaultHostExecutionSpace::memory_space>;
 
 // Struct for getting useful Kokkos types based on the device
-template <typename D=DefaultDevice>
+template <typename DeviceType>
 struct KokkosTypes
 {
-  using Device = D;
+  using Device = DeviceType;
   using Layout = Kokkos::LayoutRight;
   using MemSpace = typename Device::memory_space;
   using ExeSpace = typename Device::execution_space;

@@ -16,12 +16,12 @@ namespace scream
 
 // A field should be composed of metadata info (the header) and a pointer to the view
 
-template<typename ScalarType, typename D=DefaultDevice>
+template<typename ScalarType, typename Device>
 class Field {
 private:
 public:
 
-  using device_type          = D;
+  using device_type          = Device;
   using view_type            = typename KokkosTypes<device_type>::template view<ScalarType*>;
   using value_type           = typename view_type::traits::value_type;
   using const_value_type     = typename view_type::traits::const_value_type;
@@ -78,8 +78,8 @@ protected:
 
 // ================================= IMPLEMENTATION ================================== //
 
-template<typename ScalarType, typename D>
-Field<ScalarType,D>::
+template<typename ScalarType, typename Device>
+Field<ScalarType,Device>::
 Field (const identifier_type& id)
  : m_header    (new header_type(id))
  , m_allocated (false)
@@ -88,15 +88,15 @@ Field (const identifier_type& id)
   m_header->get_alloc_properties().request_value_type_allocation<value_type>();
 }
 
-template<typename ScalarType, typename D>
+template<typename ScalarType, typename Device>
 template<typename SrcScalarType>
-Field<ScalarType,D>::
-Field (const Field<SrcScalarType,D>& src)
+Field<ScalarType,Device>::
+Field (const Field<SrcScalarType,Device>& src)
  : m_header    (src.get_header_ptr())
  , m_view      (src.get_view())
  , m_allocated (src.is_allocated())
 {
-  using src_field_type = Field<SrcScalarType,D>;
+  using src_field_type = Field<SrcScalarType,Device>;
 
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
@@ -109,11 +109,11 @@ Field (const Field<SrcScalarType,D>& src)
                 "Error! Cannot create a nonconst field from a const field.\n");
 }
 
-template<typename ScalarType, typename D>
+template<typename ScalarType, typename Device>
 template<typename SrcScalarType>
-Field<ScalarType,D>&
-Field<ScalarType,D>::
-operator= (const Field<SrcScalarType,D>& src) {
+Field<ScalarType,Device>&
+Field<ScalarType,Device>::
+operator= (const Field<SrcScalarType,Device>& src) {
 
   using src_field_type = decltype(src);
 #ifndef CUDA_BUILD // TODO Figure out why nvcc isn't like this bit of code.
@@ -136,10 +136,10 @@ operator= (const Field<SrcScalarType,D>& src) {
   return *this;
 }
 
-template<typename ScalarType, typename D>
+template<typename ScalarType, typename Device>
 template<typename DT>
-ko::Unmanaged<typename KokkosTypes<D>::template view<DT> >
-Field<ScalarType,D>::get_reshaped_view () const {
+ko::Unmanaged<typename KokkosTypes<Device>::template view<DT> >
+Field<ScalarType,Device>::get_reshaped_view () const {
   // The dst value types
   using DstValueType = typename util::ValueType<DT>::type;
 
@@ -158,7 +158,7 @@ Field<ScalarType,D>::get_reshaped_view () const {
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
-  using DstView = ko::Unmanaged<typename KokkosTypes<D>::template view<DT> >;
+  using DstView = ko::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
   typename DstView::traits::array_layout layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
@@ -181,8 +181,8 @@ Field<ScalarType,D>::get_reshaped_view () const {
   return DstView (reinterpret_cast<DstValueType*>(m_view.data()),layout);
 }
 
-template<typename ScalarType, typename D>
-void Field<ScalarType,D>::allocate_view ()
+template<typename ScalarType, typename Device>
+void Field<ScalarType,Device>::allocate_view ()
 {
   // Not sure if simply returning would be safe enough. Re-allocating
   // would definitely be error prone (someone may have already gotten

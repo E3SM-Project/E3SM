@@ -9,10 +9,10 @@ using namespace scream;
 
 struct UnitWrap {
 
-template <typename D=DefaultDevice>
+template <typename DeviceType>
 struct UnitTest {
 
-using Device     = D;
+using Device     = DeviceType;
 using MemberType = typename KokkosTypes<Device>::MemberType;
 using TeamPolicy = typename KokkosTypes<Device>::TeamPolicy;
 using ExeSpace   = typename KokkosTypes<Device>::ExeSpace;
@@ -303,7 +303,7 @@ static void unittest_workspace()
 namespace {
 
 TEST_CASE("workspace_manager", "[utils]") {
-  unit_test::UnitWrap::UnitTest<>::unittest_workspace();
+  unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::unittest_workspace();
 }
 
 #ifdef KOKKOS_ENABLE_CUDA

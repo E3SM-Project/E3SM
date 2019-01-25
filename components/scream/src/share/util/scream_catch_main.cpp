@@ -15,7 +15,7 @@ int main (int argc, char **argv) {
 
   // Run tests
   int result = Catch::Session().run(argc, argv);
-  
+
   // Finalize scream
   scream::finalize_scream_session();
 
