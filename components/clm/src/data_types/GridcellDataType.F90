@@ -38,10 +38,23 @@ module GridcellDataType
   end type gridcell_energy_state
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy flux information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_energy_flux
+    ! temperature variables
+    real(r8), pointer :: eflx_dynbal           (:)   ! dynamic land cover change conversion energy flux (W/m**2)
+
+  contains
+    procedure, public :: Init    => grc_ef_init
+    procedure, public :: Restart => grc_ef_restart
+    procedure, public :: Clean   => grc_ef_clean
+  end type gridcell_energy_flux
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es    ! gridcell energy state
-
+  type(gridcell_energy_flux)           , public, target :: grc_ef    ! gridcell energy flux
   !------------------------------------------------------------------------
 
 contains
@@ -95,6 +108,59 @@ contains
     deallocate(this%liquid_water_temp1)
     deallocate(this%liquid_water_temp2)
   end subroutine grc_es_clean
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell energy flux data structure
+  !------------------------------------------------------------------------
+  subroutine grc_ef_init(this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_energy_flux) :: this
+    integer, intent(in) :: begg,endg
+    !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_ef
+    !-----------------------------------------------------------------------
+    allocate(this%eflx_dynbal              (begg:endg))                  ; this%eflx_dynbal             (:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_ef
+    !-----------------------------------------------------------------------
+    this%eflx_dynbal(begg:endg) = spval 
+    call hist_addfld1d (fname='EFLX_DYNBAL',  units='W/m^2',  &
+         avgflag='A', long_name='dynamic land cover change conversion energy flux', &
+         ptr_lnd=this%eflx_dynbal)
+
+  end subroutine grc_ef_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_ef_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write gridcell energy flux information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(gridcell_energy_flux) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+  end subroutine grc_ef_restart
+
+  !------------------------------------------------------------------------
+  subroutine grc_ef_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_energy_flux) :: this
+    !------------------------------------------------------------------------
+    deallocate(this%eflx_dynbal)
+  end subroutine grc_ef_clean
   
 
 end module GridcellDataType

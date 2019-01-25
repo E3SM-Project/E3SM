@@ -48,9 +48,9 @@ module clm_instMod
   use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
-  use GridcellDataType           , only : grc_es
+  use GridcellDataType           , only : grc_es, grc_ef
   use LandunitType               , only : lun_pp
-  use LandunitDataType           , only : lun_es
+  use LandunitDataType           , only : lun_es, lun_ef
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es, col_ef
   use VegetationType             , only : veg_pp
@@ -362,6 +362,8 @@ contains
     ! this write statement in place as a workaround for this problem.
     call energyflux_vars%init(bounds_proc, col_es%t_grnd(begc:endc))
 
+    call grc_ef%Init(bounds_proc%begg_all, bounds_proc%endg_all)
+    call lun_ef%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_ef%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_ef%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 

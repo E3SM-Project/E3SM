@@ -25,7 +25,7 @@ module SoilTemperatureMod
   use TemperatureType   , only : temperature_type
   use TopounitDataType  , only : top_af
   use LandunitType      , only : lun_pp
-  use LandunitDataType  , only : lun_es  
+  use LandunitDataType  , only : lun_es, lun_ef  
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ef                
   use VegetationType    , only : veg_pp
@@ -1767,9 +1767,9 @@ end subroutine SolveTemperature
          htvp                    => col_ef%htvp                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
          cgrnd                   => veg_ef%cgrnd             , & ! Input:  [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
          dlrad                   => veg_ef%dlrad             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
-         eflx_traffic            => energyflux_vars%eflx_traffic_lun        , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
-         eflx_wasteheat          => energyflux_vars%eflx_wasteheat_lun      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
-         eflx_heat_from_ac       => energyflux_vars%eflx_heat_from_ac_lun   , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
+         eflx_traffic            => lun_ef%eflx_traffic        , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
+         eflx_wasteheat          => lun_ef%eflx_wasteheat      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_heat_from_ac       => lun_ef%eflx_heat_from_ac   , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
          eflx_sh_snow            => veg_ef%eflx_sh_snow      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
          eflx_sh_soil            => veg_ef%eflx_sh_soil      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
          eflx_sh_h2osfc          => veg_ef%eflx_sh_h2osfc    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from surface water (W/m**2) [+ to atm]

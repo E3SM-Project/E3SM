@@ -36,9 +36,24 @@ module LandunitDataType
   end type landunit_energy_state
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy flux information at the landunit level.
+  !-----------------------------------------------------------------------
+  type, public :: landunit_energy_flux
+    ! temperature variables
+    real(r8), pointer :: eflx_traffic      (:)   ! traffic sensible heat flux (W/m**2)
+    real(r8), pointer :: eflx_wasteheat    (:)   ! sensible heat flux from domestic heating/cooling sources of waste heat (W/m**2)
+    real(r8), pointer :: eflx_heat_from_ac (:)   ! sensible heat flux to be put back into canyon due to removal by AC (W/m**2)
+
+  contains
+    procedure, public :: Init    => lun_ef_init
+    procedure, public :: Clean   => lun_ef_clean
+  end type landunit_energy_flux
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of landunit-level data types
   !-----------------------------------------------------------------------
   type(landunit_energy_state)          , public, target :: lun_es    ! landunit energy state
+  type(landunit_energy_flux )          , public, target :: lun_ef    ! landunit energy flux
 
   !------------------------------------------------------------------------
 
@@ -121,6 +136,50 @@ contains
     deallocate(this%taf)
     
   end subroutine lun_es_clean
+
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean landunit energy flux data structure
+  !------------------------------------------------------------------------
+  subroutine lun_ef_init(this, begl, endl)
+    !
+    ! !ARGUMENTS:
+    class(landunit_energy_flux) :: this
+    integer, intent(in) :: begl,endl
+    !------------------------------------------------------------------------
+    ! !LOCAL VARIABLES:
+    integer :: l                        ! indices
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of lun_ef
+    !-----------------------------------------------------------------------
+    allocate( this%eflx_heat_from_ac   (begl:endl))             ; this%eflx_heat_from_ac   (:)   = nan
+    allocate( this%eflx_traffic        (begl:endl))             ; this%eflx_traffic        (:)   = nan
+    allocate( this%eflx_wasteheat      (begl:endl))             ; this%eflx_wasteheat      (:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! cold-start initial conditions for lun_ef
+    !-----------------------------------------------------------------------
+    do l = begl, endl 
+       if (lun_pp%urbpoi(l)) then
+          this%eflx_traffic(l)   = spval
+          this%eflx_wasteheat(l) = spval
+       end if
+    end do
+
+  end subroutine lun_ef_init
+
+  !------------------------------------------------------------------------
+  subroutine lun_ef_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(landunit_energy_flux) :: this
+    !------------------------------------------------------------------------
+    deallocate(this%eflx_heat_from_ac)
+    deallocate(this%eflx_traffic)
+    deallocate(this%eflx_wasteheat)
+    
+  end subroutine lun_ef_clean
+
   
 
 end module LandunitDataType

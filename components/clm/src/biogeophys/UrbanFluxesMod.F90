@@ -26,7 +26,7 @@ module UrbanFluxesMod
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_as  
   use LandunitType         , only : lun_pp 
-  use LandunitDataType     , only : lun_es  
+  use LandunitDataType     , only : lun_es, lun_ef  
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef  
   use VegetationType       , only : veg_pp                
@@ -248,9 +248,9 @@ contains
          eflx_sh_snow        =>   veg_ef%eflx_sh_snow        , & ! Output: [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]  
          eflx_sh_soil        =>   veg_ef%eflx_sh_soil        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]  
          eflx_sh_h2osfc      =>   veg_ef%eflx_sh_h2osfc      , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]  
-         eflx_traffic        =>   energyflux_vars%eflx_traffic_lun          , & ! Output: [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)               
-         eflx_wasteheat      =>   energyflux_vars%eflx_wasteheat_lun        , & ! Output: [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
-         eflx_heat_from_ac   =>   energyflux_vars%eflx_heat_from_ac_lun     , & ! Output: [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
+         eflx_traffic        =>   lun_ef%eflx_traffic          , & ! Output: [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)               
+         eflx_wasteheat      =>   lun_ef%eflx_wasteheat        , & ! Output: [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_heat_from_ac   =>   lun_ef%eflx_heat_from_ac     , & ! Output: [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
          taux                =>   veg_ef%taux                , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
          tauy                =>   veg_ef%tauy                , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)               
 
