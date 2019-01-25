@@ -63,47 +63,6 @@ def get_name_and_yrs(parameters, dataset, season):
     return name_yrs
 
 
-def _findfile(path_name, data_name, season):
-    """Locate file name based on data_name and season."""
-    dir_files = sorted(os.listdir(path_name))
-    for filename in dir_files:
-        if filename.startswith(data_name + '_' + season):
-            return os.path.join(path_name, filename)
-    # only ran on model data, because a shorter name is used
-    for filename in dir_files:
-        if filename.startswith(data_name) and season in filename:
-            return os.path.join(path_name, filename)
-    raise IOError("No file found for {} and {} in {}".format(data_name, season, path_name))
-
-
-def get_test_filename(parameters, season):
-    """Return the test file name based on
-    the season and other parameters"""
-    if hasattr(parameters, 'test_file'):
-        print(parameters.test_data_path)
-        print(parameters.test_file)
-        fnm = os.path.join(parameters.test_data_path, parameters.test_file)
-        if not os.path.exists(fnm):
-            raise IOError('File not found: {}'.format(fnm))
-    else:
-        fnm = _findfile(parameters.test_data_path,
-                        parameters.test_name, season)
-    return fnm
-
-
-def get_ref_filename(parameters, season):
-    """Return the reference file name based on
-    the season and other parameters"""
-    if hasattr(parameters, 'ref_file'):
-        fnm = os.path.join(parameters.reference_data_path, parameters.ref_file)
-        if not os.path.exists(fnm):
-            raise IOError('File not found: {}'.format(fnm))
-    else:
-        fnm = _findfile(parameters.reference_data_path,
-                        parameters.ref_name, season)
-    return fnm
-
-
 def convert_to_pressure_levels(mv, plevs, dataset, var, season):
     """
     Given either test or reference data with a z-axis,

@@ -10,7 +10,7 @@ import collections
 import traceback
 import cdms2
 import acme_diags.derivations.acme
-from . import general, climo
+from . import climo
 
 
 class Dataset():
@@ -94,12 +94,12 @@ class Dataset():
 
         elif self.ref:
             # Get the reference variable from climo files.
-            filename = general.get_ref_filename(self.parameters, season)
+            filename = self.get_ref_filename_climo(season)
             variables = self._get_climo_var(filename, *args, **kwargs)
 
         elif self.test:
             # Get the test variable from climo files.
-            filename = general.get_test_filename(self.parameters, season)
+            filename = self.get_test_filename_climo(season)
             variables = self._get_climo_var(filename, *args, **kwargs)
 
         else:
@@ -153,9 +153,9 @@ class Dataset():
             raise RuntimeError('Cannot get a global attribute from timeseries files.')
 
         if self.ref:
-            filename = general.get_ref_filename(self.parameters, season)
+            filename = self.get_ref_filename_climo(season)
         else:
-            filename = general.get_test_filename(self.parameters, season)
+            filename = self.get_test_filename_climo(season)
         
         with cdms2.open(filename) as f:
             return f.getglobal(attr)
@@ -284,6 +284,76 @@ class Dataset():
         return start_slice*12, end_slice*12
 
 
+    def get_test_filename_climo(self, season):
+        """
+        Return the path to the test file name based on
+        the season and other parameters.
+        For climo files only.
+        """
+        path = self.parameters.test_data_path
+        data_name = self.parameters.test_name
+
+        if hasattr(self.parameters, 'test_file'):
+            fnm = os.path.join(path, self.parameters.test_file)
+            if not os.path.exists(fnm):
+                raise IOError('File not found: {}'.format(fnm))
+            return fnm
+
+        return self._get_climo_filename(path, data_name, season)
+
+
+    def get_ref_filename_climo(self, season):
+        """
+        Return the path to the reference file name based on
+        the season and other parameters.
+        For climo files only.
+        """
+        path = self.parameters.reference_data_path
+        data_name = self.parameters.ref_name
+
+        if hasattr(self.parameters, 'ref_file'):
+            fnm = os.path.join(path, self.parameters.ref_file)
+            if not os.path.exists(fnm):
+                raise IOError('File not found: {}'.format(fnm))
+            return fnm
+
+        return self._get_climo_filename(path, data_name, season)
+
+
+    def _get_climo_filename(self, path, data_name, season):
+        """
+        For climo files, return the path of the file based on the parameters.
+        If the file isn't found, try looking for it in path/data_name/ dir as well.
+        """
+        fnm = self._find_climo_file(path, data_name, season)
+        if not os.path.exists(fnm):
+            # Try looking for the file nested in a folder, based on the test_name.
+            pth = os.path.join(path, data_name)
+            if os.path.exists(pth):
+                fnm = self._find_climo_file(pth, data_name, season)
+
+        if not os.path.exists(fnm):
+            raise IOError("No file found for {} and {} in {}".format(data_name, season, path))
+
+        return fnm
+
+
+    def _find_climo_file(self, path_name, data_name, season):
+        """
+        Locate climatology file name based on data_name and season.
+        """
+        dir_files = sorted(os.listdir(path_name))
+        for filename in dir_files:
+            if filename.startswith(data_name + '_' + season):
+                return os.path.join(path_name, filename)
+        # The below is only ran on model data, because a shorter name is passed into this software.
+        for filename in dir_files:
+            if filename.startswith(data_name) and season in filename:
+                return os.path.join(path_name, filename)
+        # No file found.
+        return ''
+
+
     def _get_climo_var(self, filename, extra_vars_only=False):
         """
         For a given season and climo input data,
@@ -291,7 +361,6 @@ class Dataset():
 
         If self.extra_vars is also defined, get them as well.
         """
-        
         vars_to_get = []
         if not extra_vars_only:
             vars_to_get.append(self.var)
