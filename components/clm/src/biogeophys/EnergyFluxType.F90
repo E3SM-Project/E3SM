@@ -291,18 +291,6 @@ contains
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
 
-
-    this%eflx_dynbal_grc(begg:endg) = spval 
-    call hist_addfld1d (fname='EFLX_DYNBAL',  units='W/m^2',  &
-         avgflag='A', long_name='dynamic land cover change conversion energy flux', &
-         ptr_lnd=this%eflx_dynbal_grc)
-
-    ! remember to move these into water flux
-    this%btran_patch(begp:endp) = spval
-    call hist_addfld1d (fname='BTRAN', units='unitless',  &
-         avgflag='A', long_name='transpiration beta factor', &
-         ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
-
     if (use_cn) then
        this%rresis_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='RRESIS', units='proportion', type2d='levgrnd', &
@@ -345,15 +333,6 @@ contains
 
     end associate
 
-    do p = bounds%begp, bounds%endp 
-       l = veg_pp%landunit(p)
-
-       if (.not. lun_pp%urbpoi(l)) then
-          this%eflx_traffic_lun(l)        = spval
-          this%eflx_wasteheat_lun(l)      = spval
-
-       end if
-    end do
 
     ! initialize rresis, for use in ecosystemdyn
     do p = bounds%begp,bounds%endp
