@@ -21,10 +21,12 @@
   * [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-aims4.html)
   * [Quick Start Guide for OLCF Rhea](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-rhea.html)
 * Examples:
-  * [Model Time-series vs Model Time-series](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/model_ts-vs-model_ts/model_ts-vs-model_ts.ipynb)
-  * [Model Climo vs Model Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/model-vs-model/model-vs-model.ipynb)
-  * [Model Climo vs Observation Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/model-vs-obs/model-vs-obs.ipynb)
-  * [Observation vs Observation Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/obs-vs-obs/obs-vs-obs.ipynb)
+  * [Model Time-series vs Model Time-series](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_ts-vs-model_ts.html)
+  * [Model Time-series vs Model Time-series with CMIP data](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_ts-vs-model_ts-CMIP.html)
+  * [Model Time-series vs Observation Time-series with CMIP data](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_ts-vs-obs_ts-CMIP.html)
+  * [Model Climo vs Model Climo Comparison](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_climo-vs-model_climo.html)
+  * [Model Climo vs Observation Climo Comparison](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_climo-vs-obs_climo.html)
+  * [Observation vs Observation Comparison](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/obs_climo-vs-obs_climo.html)
 
 ## Overview<a name="overview"></a>
 This diagnostics package is constructed for supporting the diagnostics task of DOE's [Energy Exascale Earth System Model (E3SM) project](https://climatemodeling.science.energy.gov/projects/accelerated-climate-modeling-energy). The goal of this work is to develop a comprehensive diagnostics package that:
