@@ -10,7 +10,7 @@ module VegetationDataType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb, crop_prog
-  use clm_varcon     , only : spval, ispval
+  use clm_varcon     , only : spval, ispval, sb
   use clm_varctl     , only : iulog, use_cn 
   use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio      , only : file_desc_t, ncd_double
@@ -19,6 +19,7 @@ module VegetationDataType
   use VegetationType , only : veg_pp
   use LandunitType   , only : lun_pp
   use GridcellType   , only : grc_pp
+  use ColumnDataType , only : col_es
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -115,10 +116,56 @@ module VegetationDataType
   ! Define the data structure that holds energy flux information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_energy_flux
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: eflx_sh_grnd      (:)   ! sensible heat flux from ground (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_veg       (:)   ! sensible heat flux from leaves (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_snow      (:)   ! sensible heat flux from snow (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_soil      (:)   ! sensible heat flux from soil  (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_h2osfc    (:)   ! sensible heat flux from surface water (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_tot       (:)   ! total sensible heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_tot_u     (:)   ! urban total sensible heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_tot_r     (:)   ! rural total sensible heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_tot       (:)   ! total latent heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_tot_u     (:)   ! urban total latent heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_tot_r     (:)   ! rural total latent heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_vegt      (:)   ! transpiration heat flux from veg (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_vege      (:)   ! evaporation heat flux from veg (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_grnd      (:)   ! evaporation heat flux from ground (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_soil_grnd    (:)   ! soil heat flux (W/m**2) [+ = into soil] 
+    real(r8), pointer :: eflx_soil_grnd_u  (:)   ! urban soil heat flux (W/m**2) [+ = into soil]
+    real(r8), pointer :: eflx_soil_grnd_r  (:)   ! rural soil heat flux (W/m**2) [+ = into soil]
+    real(r8), pointer :: eflx_lwrad_net    (:)   ! net infrared (longwave) rad (W/m**2) [+ = to atm]
+    real(r8), pointer :: eflx_lwrad_net_r  (:)   ! rural net infrared (longwave) rad (W/m**2) [+ = to atm]
+    real(r8), pointer :: eflx_lwrad_net_u  (:)   ! urban net infrared (longwave) rad (W/m**2) [+ = to atm]
+    real(r8), pointer :: eflx_lwrad_out    (:)   ! emitted infrared (longwave) radiation (W/m**2)
+    real(r8), pointer :: eflx_lwrad_out_r  (:)   ! rural emitted infrared (longwave) rad (W/m**2)
+    real(r8), pointer :: eflx_lwrad_out_u  (:)   ! urban emitted infrared (longwave) rad (W/m**2)
+    real(r8), pointer :: eflx_gnet         (:)   ! net heat flux into ground  (W/m**2)
+    real(r8), pointer :: eflx_grnd_lake    (:)   ! net heat flux into lake / snow surface, excluding light transmission (W/m**2)
+    real(r8), pointer :: eflx_anthro       (:)   ! total anthropogenic heat flux (W/m**2)
+    real(r8), pointer :: eflx_traffic      (:)   ! traffic sensible heat flux (W/m2)
+    real(r8), pointer :: eflx_wasteheat    (:)   ! sensible heat flux from domestic heating/cooling sources of waste heat (W/m**2)
+    real(r8), pointer :: eflx_heat_from_ac (:)   ! sensible heat flux put back into canyon due to removal by AC (W/m**2)
+    real(r8), pointer :: dlrad             (:)   ! downward longwave radiation below the canopy [W/m2]
+    real(r8), pointer :: ulrad             (:)   ! upward longwave radiation above the canopy [W/m2]
+    ! Wind Stress
+    real(r8), pointer :: taux              (:)   ! wind (shear) stress: e-w (kg/m/s**2)
+    real(r8), pointer :: tauy              (:)   ! wind (shear) stress: n-s (kg/m/s**2)
+    ! Derivatives of energy fluxes
+    real(r8), pointer :: dgnetdT           (:)   ! derivative of net ground heat flux wrt soil temp  (W/m**2 K)
+    real(r8), pointer :: netrad            (:)   ! col net radiation (W/m**2) [+ = to sfc]
+    real(r8), pointer :: cgrnd             (:)   ! col deriv. of soil energy flux wrt to soil temp [W/m2/k]
+    real(r8), pointer :: cgrndl            (:)   ! col deriv. of soil latent heat flux wrt soil temp  [W/m**2/k]
+    real(r8), pointer :: cgrnds            (:)   ! col deriv. of soil sensible heat flux wrt soil temp [W/m2/k]
+    ! Balance Checks
+    real(r8), pointer :: errsoi            (:)   ! soil/lake energy conservation error   (W/m**2)
+    real(r8), pointer :: errseb            (:)   ! surface energy conservation error     (W/m**2)
+    real(r8), pointer :: errsol            (:)   ! solar radiation conservation error    (W/m**2)
+    real(r8), pointer :: errlon            (:)   ! longwave radiation conservation error (W/m**2)
+
   contains
-    procedure, public :: Init  => init_veg_ef
-    procedure, public :: Clean => clean_veg_ef
+    procedure, public :: Init    => veg_ef_init
+    procedure, public :: Restart => veg_ef_restart
+    procedure, public :: Clean   => veg_ef_clean
   end type vegetation_energy_flux
   
   !-----------------------------------------------------------------------
@@ -349,9 +396,6 @@ module VegetationDataType
             avgflag='A', long_name='vegetation emissivity', &
             ptr_patch=this%emv, default='inactive')
     end if
-
-
-
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of veg_es
@@ -983,23 +1027,342 @@ module VegetationDataType
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation energy flux data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_ef(this, begp, endp)
+  subroutine veg_ef_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_energy_flux) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: l,c,p
     !------------------------------------------------------------------------
     
-  end subroutine init_veg_ef
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_ef
+    !-----------------------------------------------------------------------
+    allocate(this%eflx_sh_grnd        (begp:endp))   ; this%eflx_sh_grnd       (:)   = nan
+    allocate(this%eflx_sh_veg         (begp:endp))   ; this%eflx_sh_veg        (:)   = nan
+    allocate(this%eflx_sh_snow        (begp:endp))   ; this%eflx_sh_snow       (:)   = nan
+    allocate(this%eflx_sh_soil        (begp:endp))   ; this%eflx_sh_soil       (:)   = nan
+    allocate(this%eflx_sh_h2osfc      (begp:endp))   ; this%eflx_sh_h2osfc     (:)   = nan
+    allocate(this%eflx_sh_tot         (begp:endp))   ; this%eflx_sh_tot        (:)   = nan
+    allocate(this%eflx_sh_tot_u       (begp:endp))   ; this%eflx_sh_tot_u      (:)   = nan
+    allocate(this%eflx_sh_tot_r       (begp:endp))   ; this%eflx_sh_tot_r      (:)   = nan
+    allocate(this%eflx_lh_tot         (begp:endp))   ; this%eflx_lh_tot        (:)   = nan
+    allocate(this%eflx_lh_tot_u       (begp:endp))   ; this%eflx_lh_tot_u      (:)   = nan
+    allocate(this%eflx_lh_tot_r       (begp:endp))   ; this%eflx_lh_tot_r      (:)   = nan
+    allocate(this%eflx_lh_vegt        (begp:endp))   ; this%eflx_lh_vegt       (:)   = nan
+    allocate(this%eflx_lh_vege        (begp:endp))   ; this%eflx_lh_vege       (:)   = nan
+    allocate(this%eflx_lh_grnd        (begp:endp))   ; this%eflx_lh_grnd       (:)   = nan
+    allocate(this%eflx_soil_grnd      (begp:endp))   ; this%eflx_soil_grnd     (:)   = nan
+    allocate(this%eflx_soil_grnd_u    (begp:endp))   ; this%eflx_soil_grnd_u   (:)   = nan
+    allocate(this%eflx_soil_grnd_r    (begp:endp))   ; this%eflx_soil_grnd_r   (:)   = nan
+    allocate(this%eflx_lwrad_net      (begp:endp))   ; this%eflx_lwrad_net     (:)   = nan
+    allocate(this%eflx_lwrad_net_r    (begp:endp))   ; this%eflx_lwrad_net_r   (:)   = nan
+    allocate(this%eflx_lwrad_net_u    (begp:endp))   ; this%eflx_lwrad_net_u   (:)   = nan
+    allocate(this%eflx_lwrad_out      (begp:endp))   ; this%eflx_lwrad_out     (:)   = nan
+    allocate(this%eflx_lwrad_out_r    (begp:endp))   ; this%eflx_lwrad_out_r   (:)   = nan
+    allocate(this%eflx_lwrad_out_u    (begp:endp))   ; this%eflx_lwrad_out_u   (:)   = nan
+    allocate(this%eflx_gnet           (begp:endp))   ; this%eflx_gnet          (:)   = nan
+    allocate(this%eflx_grnd_lake      (begp:endp))   ; this%eflx_grnd_lake     (:)   = nan
+    allocate(this%eflx_anthro         (begp:endp))   ; this%eflx_anthro        (:)   = nan
+    allocate(this%eflx_traffic        (begp:endp))   ; this%eflx_traffic       (:)   = nan
+    allocate(this%eflx_wasteheat      (begp:endp))   ; this%eflx_wasteheat     (:)   = nan
+    allocate(this%eflx_heat_from_ac   (begp:endp))   ; this%eflx_heat_from_ac  (:)   = nan
+    allocate(this%dlrad               (begp:endp))   ; this%dlrad              (:)   = nan
+    allocate(this%ulrad               (begp:endp))   ; this%ulrad              (:)   = nan
+    allocate(this%taux                (begp:endp))   ; this%taux               (:)   = nan
+    allocate(this%tauy                (begp:endp))   ; this%tauy               (:)   = nan
+    allocate(this%dgnetdT             (begp:endp))   ; this%dgnetdT            (:)   = nan
+    allocate(this%netrad              (begp:endp))   ; this%netrad             (:)   = nan
+    allocate(this%cgrnd               (begp:endp))   ; this%cgrnd              (:)   = nan
+    allocate(this%cgrndl              (begp:endp))   ; this%cgrndl             (:)   = nan
+    allocate(this%cgrnds              (begp:endp))   ; this%cgrnds             (:)   = nan
+    allocate(this%errsoi              (begp:endp))   ; this%errsoi             (:)   = nan
+    allocate(this%errseb              (begp:endp))   ; this%errseb             (:)   = nan
+    allocate(this%errsol              (begp:endp))   ; this%errsol             (:)   = nan
+    allocate(this%errlon              (begp:endp))   ; this%errlon             (:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_ef
+    !-----------------------------------------------------------------------
+
+    this%eflx_lwrad_net(begp:endp) = spval
+    call hist_addfld1d (fname='FIRA', units='W/m^2',  &
+         avgflag='A', long_name='net infrared (longwave) radiation', &
+         ptr_patch=this%eflx_lwrad_net, c2l_scale_type='urbanf')
+
+    this%eflx_lwrad_net_r(begp:endp) = spval 
+    call hist_addfld1d (fname='FIRA_R', units='W/m^2',  &
+         avgflag='A', long_name='Rural net infrared (longwave) radiation', &
+         ptr_patch=this%eflx_lwrad_net_r, set_spec=spval)
+
+    this%eflx_lwrad_out(begp:endp) = spval 
+    call hist_addfld1d (fname='FIRE', units='W/m^2',  &
+         avgflag='A', long_name='emitted infrared (longwave) radiation', &
+         ptr_patch=this%eflx_lwrad_out, c2l_scale_type='urbanf')
+
+    this%eflx_lwrad_out(begp:endp) = spval 
+    call hist_addfld1d (fname='LWup', units='W/m^2',  &
+         avgflag='A', long_name='upwelling longwave radiation', &
+         ptr_patch=this%eflx_lwrad_out, c2l_scale_type='urbanf', default='inactive')
+
+    this%eflx_lwrad_out_r(begp:endp) = spval
+    call hist_addfld1d (fname='FIRE_R', units='W/m^2',  &
+         avgflag='A', long_name='Rural emitted infrared (longwave) radiation', &
+         ptr_patch=this%eflx_lwrad_out_r, set_spec=spval)
+
+    this%eflx_lh_vegt(begp:endp) = spval
+    call hist_addfld1d (fname='FCTR', units='W/m^2',  &
+         avgflag='A', long_name='canopy transpiration', &
+         ptr_patch=this%eflx_lh_vegt, set_lake=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_lh_vege(begp:endp) = spval
+    call hist_addfld1d (fname='FCEV', units='W/m^2',  &
+         avgflag='A', long_name='canopy evaporation', &
+         ptr_patch=this%eflx_lh_vege, set_lake=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_lh_grnd(begp:endp) = spval
+    call hist_addfld1d (fname='FGEV', units='W/m^2',  &
+         avgflag='A', long_name='ground evaporation', &
+         ptr_patch=this%eflx_lh_grnd, c2l_scale_type='urbanf') 
+
+    this%eflx_sh_tot(begp:endp) = spval
+    call hist_addfld1d (fname='FSH_NODYNLNDUSE', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat not including correction for land use change', &
+         ptr_patch=this%eflx_sh_tot, c2l_scale_type='urbanf')
+
+    this%eflx_sh_tot_r(begp:endp) = spval
+    call hist_addfld1d (fname='FSH_R', units='W/m^2',  &
+         avgflag='A', long_name='Rural sensible heat', &
+         ptr_patch=this%eflx_sh_tot_r, set_spec=spval)
+
+    this%eflx_sh_tot(begp:endp) = spval
+    call hist_addfld1d (fname='Qh', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat', &
+         ptr_patch=this%eflx_sh_tot, c2l_scale_type='urbanf', &
+         default = 'inactive')
+
+    this%eflx_lh_tot(begp:endp) = spval
+    call hist_addfld1d (fname='Qle', units='W/m^2',  &
+         avgflag='A', long_name='total evaporation', &
+         ptr_patch=this%eflx_lh_tot, c2l_scale_type='urbanf', &
+         default = 'inactive')
+
+    this%eflx_lh_tot(begp:endp) = spval
+    call hist_addfld1d (fname='EFLX_LH_TOT', units='W/m^2', &
+         avgflag='A', long_name='total latent heat flux [+ to atm]', &
+         ptr_patch=this%eflx_lh_tot, c2l_scale_type='urbanf')
+
+    this%eflx_lh_tot_r(begp:endp) = spval
+    call hist_addfld1d (fname='EFLX_LH_TOT_R', units='W/m^2',  &
+         avgflag='A', long_name='Rural total evaporation', &
+         ptr_patch=this%eflx_lh_tot_r, set_spec=spval)
+
+    this%eflx_soil_grnd(begp:endp) = spval
+    call hist_addfld1d (fname='Qstor', units='W/m^2',  &
+         avgflag='A', long_name='storage heat flux (includes snowmelt)', &
+         ptr_patch=this%eflx_soil_grnd, c2l_scale_type='urbanf', &
+         default = 'inactive')
+
+    this%eflx_sh_veg(begp:endp) = spval
+    call hist_addfld1d (fname='FSH_V', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat from veg', &
+         ptr_patch=this%eflx_sh_veg, set_lake=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_sh_grnd(begp:endp) = spval
+    call hist_addfld1d (fname='FSH_G', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat from ground', &
+         ptr_patch=this%eflx_sh_grnd, c2l_scale_type='urbanf')
+
+    this%eflx_soil_grnd(begp:endp) = spval
+    call hist_addfld1d (fname='FGR', units='W/m^2',  &
+         avgflag='A', long_name='heat flux into soil/snow including snow melt and lake / snow light transmission', &
+         ptr_patch=this%eflx_soil_grnd, c2l_scale_type='urbanf')
+
+    this%eflx_soil_grnd_r(begp:endp) = spval
+    call hist_addfld1d (fname='FGR_R', units='W/m^2',  &
+         avgflag='A', long_name='Rural heat flux into soil/snow including snow melt and snow light transmission', &
+         ptr_patch=this%eflx_soil_grnd_r, set_spec=spval)
+
+    this%eflx_lwrad_net_u(begp:endp) = spval
+    call hist_addfld1d (fname='FIRA_U', units='W/m^2',  &
+         avgflag='A', long_name='Urban net infrared (longwave) radiation', &
+         ptr_patch=this%eflx_lwrad_net_u, c2l_scale_type='urbanf', set_nourb=spval)
+
+    this%eflx_soil_grnd(begp:endp) = spval
+    call hist_addfld1d (fname='EFLX_SOIL_GRND', units='W/m^2', &
+         avgflag='A', long_name='soil heat flux [+ into soil]', &
+         ptr_patch=this%eflx_soil_grnd, default='inactive', c2l_scale_type='urbanf')
+
+    this%eflx_lwrad_out_u(begp:endp) = spval
+    call hist_addfld1d (fname='FIRE_U', units='W/m^2',  &
+         avgflag='A', long_name='Urban emitted infrared (longwave) radiation', &
+         ptr_patch=this%eflx_lwrad_out_u, c2l_scale_type='urbanf', set_nourb=spval)
+
+    this%eflx_sh_tot_u(begp:endp) = spval
+    call hist_addfld1d (fname='FSH_U', units='W/m^2',  &
+         avgflag='A', long_name='Urban sensible heat', &
+         ptr_patch=this%eflx_sh_tot_u, c2l_scale_type='urbanf', set_nourb=spval)
+
+    this%eflx_lh_tot_u(begp:endp) = spval
+    call hist_addfld1d (fname='EFLX_LH_TOT_U', units='W/m^2',  &
+         avgflag='A', long_name='Urban total evaporation', &
+         ptr_patch=this%eflx_lh_tot_u, c2l_scale_type='urbanf', set_nourb=spval)
+
+    this%eflx_soil_grnd_u(begp:endp) = spval
+    call hist_addfld1d (fname='FGR_U', units='W/m^2',  &
+         avgflag='A', long_name='Urban heat flux into soil/snow including snow melt', &
+         ptr_patch=this%eflx_soil_grnd_u, c2l_scale_type='urbanf', set_nourb=spval)
+
+    this%netrad(begp:endp) = spval
+    call hist_addfld1d (fname='Rnet', units='W/m^2',  &
+         avgflag='A', long_name='net radiation', &
+         ptr_patch=this%netrad, c2l_scale_type='urbanf', &
+         default='inactive')
+
+    if (use_cn) then
+       this%dlrad(begp:endp) = spval
+       call hist_addfld1d (fname='DLRAD', units='W/m^2', &
+            avgflag='A', long_name='downward longwave radiation below the canopy', &
+            ptr_patch=this%dlrad, default='inactive', c2l_scale_type='urbanf')
+
+       this%ulrad(begp:endp) = spval
+       call hist_addfld1d (fname='ULRAD', units='W/m^2', &
+            avgflag='A', long_name='upward longwave radiation above the canopy', &
+            ptr_patch=this%ulrad, default='inactive', c2l_scale_type='urbanf')
+
+       this%cgrnd(begp:endp) = spval
+       call hist_addfld1d (fname='CGRND', units='W/m^2/K', &
+            avgflag='A', long_name='deriv. of soil energy flux wrt to soil temp', &
+            ptr_patch=this%cgrnd, default='inactive', c2l_scale_type='urbanf')
+
+       this%cgrndl(begp:endp) = spval
+       call hist_addfld1d (fname='CGRNDL', units='W/m^2/K', &
+            avgflag='A', long_name='deriv. of soil latent heat flux wrt soil temp', &
+            ptr_patch=this%cgrndl, default='inactive', c2l_scale_type='urbanf')
+
+       this%cgrnds(begp:endp) = spval
+       call hist_addfld1d (fname='CGRNDS', units='W/m^2/K', &
+            avgflag='A', long_name='deriv. of soil sensible heat flux wrt soil temp', &
+            ptr_patch=this%cgrnds, default='inactive', c2l_scale_type='urbanf')
+
+       this%eflx_gnet(begp:endp) = spval
+       call hist_addfld1d (fname='EFLX_GNET', units='W/m^2', &
+            avgflag='A', long_name='net heat flux into ground', &
+            ptr_patch=this%eflx_gnet, default='inactive', c2l_scale_type='urbanf')
+    end if ! use_cn
+
+    this%eflx_grnd_lake(begp:endp) = spval
+    call hist_addfld1d (fname='EFLX_GRND_LAKE', units='W/m^2', &
+         avgflag='A', long_name='net heat flux into lake/snow surface, excluding light transmission', &
+         ptr_patch=this%eflx_grnd_lake, set_nolake=spval)
+
+    this%dgnetdT(begp:endp) = spval
+    call hist_addfld1d (fname='DGNETDT', units='W/m^2/K', &
+         avgflag='A', long_name='derivative of net ground heat flux wrt soil temp', &
+         ptr_patch=this%dgnetdT, default='inactive', c2l_scale_type='urbanf')
+
+    this%eflx_traffic(begp:endp) = spval
+    call hist_addfld1d (fname='TRAFFICFLUX', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat flux from urban traffic', &
+         ptr_patch=this%eflx_traffic, set_nourb=0._r8, c2l_scale_type='urbanf', &
+         default='inactive')
+
+    this%eflx_wasteheat(begp:endp) = spval
+    call hist_addfld1d (fname='WASTEHEAT', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat flux from heating/cooling sources of urban waste heat', &
+         ptr_patch=this%eflx_wasteheat, set_nourb=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_heat_from_ac(begp:endp) = spval
+    call hist_addfld1d (fname='HEAT_FROM_AC', units='W/m^2',  &
+         avgflag='A', long_name='sensible heat flux put into canyon due to heat removed from air conditioning', &
+         ptr_patch=this%eflx_heat_from_ac, set_nourb=0._r8, c2l_scale_type='urbanf')
+
+    this%eflx_anthro(begp:endp) = spval
+    call hist_addfld1d (fname='Qanth', units='W/m^2',  &
+         avgflag='A', long_name='anthropogenic heat flux', &
+         ptr_patch=this%eflx_anthro, set_nourb=0._r8, c2l_scale_type='urbanf', &
+         default='inactive')
+
+    this%taux(begp:endp) = spval
+    call hist_addfld1d (fname='TAUX', units='kg/m/s^2',  &
+         avgflag='A', long_name='zonal surface stress', &
+         ptr_patch=this%taux)
+
+    this%tauy(begp:endp) = spval
+    call hist_addfld1d (fname='TAUY', units='kg/m/s^2',  &
+         avgflag='A', long_name='meridional surface stress', &
+         ptr_patch=this%tauy)
+
+    this%errseb(begp:endp) = spval
+    call hist_addfld1d (fname='ERRSEB',  units='W/m^2',  &
+         avgflag='A', long_name='surface energy conservation error', &
+         ptr_patch=this%errseb)
+
+    this%errsol(begp:endp) = spval
+    call hist_addfld1d (fname='ERRSOL',  units='W/m^2',  &
+         avgflag='A', long_name='solar radiation conservation error', &
+         ptr_patch=this%errsol, set_urb=spval)
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_ef
+    !-----------------------------------------------------------------------
+    
+     do p = begp, endp 
+        c = veg_pp%column(p)
+        l = veg_pp%landunit(p)
+
+        if (.not. lun_pp%urbpoi(l)) then ! non-urban
+           this%eflx_lwrad_net_u(p)  = spval
+           this%eflx_lwrad_out_u(p)  = spval
+           this%eflx_lh_tot_u(p)     = spval
+           this%eflx_sh_tot_u(p)     = spval
+           this%eflx_soil_grnd_u(p)  = spval
+           this%eflx_wasteheat(p)    = 0._r8
+           this%eflx_heat_from_ac(p) = 0._r8
+           this%eflx_traffic(p)      = 0._r8
+           this%eflx_anthro(p)       = 0._r8
+        end if
+
+        this%eflx_lwrad_out(p) = sb * (col_es%t_grnd(c))**4
+     end do
+    
+  end subroutine veg_ef_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_ef(this)
+  subroutine veg_ef_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write vegetation energy flux information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vegetation_energy_flux) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='EFLX_LWRAD_OUT', xtype=ncd_double,  & 
+         dim1name='pft', &
+         long_name='emitted infrared (longwave) radiation', units='watt/m^2', &
+         interpinic_flag='interp', readvar=readvar, data=this%eflx_lwrad_out)
+
+  end subroutine veg_ef_restart
+
+  !------------------------------------------------------------------------
+  subroutine veg_ef_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_energy_flux) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_ef
+  end subroutine veg_ef_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation water flux data structure

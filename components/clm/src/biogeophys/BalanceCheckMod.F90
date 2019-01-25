@@ -24,7 +24,8 @@ module BalanceCheckMod
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp
   use ColumnDataType     , only : col_ef  
-  use VegetationType     , only : veg_pp                
+  use VegetationType     , only : veg_pp
+  use VegetationDataType , only : veg_ef
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -248,14 +249,14 @@ contains
           snow_sinks                 =>    waterflux_vars%snow_sinks_col              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
           qflx_lateral               =>    waterflux_vars%qflx_lateral_col            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
 
-          eflx_lwrad_out             =>    energyflux_vars%eflx_lwrad_out_patch       , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
-          eflx_lwrad_net             =>    energyflux_vars%eflx_lwrad_net_patch       , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
-          eflx_sh_tot                =>    energyflux_vars%eflx_sh_tot_patch          , & ! Input:  [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
-          eflx_lh_tot                =>    energyflux_vars%eflx_lh_tot_patch          , & ! Input:  [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]
-          eflx_soil_grnd             =>    energyflux_vars%eflx_soil_grnd_patch       , & ! Input:  [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil] 
-          eflx_wasteheat_patch       =>    energyflux_vars%eflx_wasteheat_patch       , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
-          eflx_heat_from_ac_patch    =>    energyflux_vars%eflx_heat_from_ac_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
-          eflx_traffic_patch         =>    energyflux_vars%eflx_traffic_patch         , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
+          eflx_lwrad_out             =>    veg_ef%eflx_lwrad_out       , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
+          eflx_lwrad_net             =>    veg_ef%eflx_lwrad_net       , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+          eflx_sh_tot                =>    veg_ef%eflx_sh_tot          , & ! Input:  [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+          eflx_lh_tot                =>    veg_ef%eflx_lh_tot          , & ! Input:  [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]
+          eflx_soil_grnd             =>    veg_ef%eflx_soil_grnd       , & ! Input:  [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]
+          eflx_wasteheat_patch       =>    veg_ef%eflx_wasteheat       , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+          eflx_heat_from_ac_patch    =>    veg_ef%eflx_heat_from_ac    , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
+          eflx_traffic_patch         =>    veg_ef%eflx_traffic         , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)
           eflx_dynbal                =>    energyflux_vars%eflx_dynbal_grc            , & ! Input:  [real(r8) (:)   ]  energy conversion flux due to dynamic land cover change(W/m**2) [+ to atm]
 
           sabg_soil                  =>    solarabs_vars%sabg_soil_patch              , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by soil (W/m**2)
@@ -267,9 +268,9 @@ contains
           sabg                       =>    solarabs_vars%sabg_patch                   , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
           
           errsoi_col                 =>    col_ef%errsoi                 , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
-          errsol                     =>    energyflux_vars%errsol_patch               , & ! Output: [real(r8) (:)   ]  solar radiation conservation error (W/m**2)
-          errseb                     =>    energyflux_vars%errseb_patch               , & ! Output: [real(r8) (:)   ]  surface energy conservation error (W/m**2)
-          errlon                     =>    energyflux_vars%errlon_patch               , & ! Output: [real(r8) (:)   ]  longwave radiation conservation error (W/m**2)
+          errsol                     =>    veg_ef%errsol               , & ! Output: [real(r8) (:)   ]  solar radiation conservation error (W/m**2)
+          errseb                     =>    veg_ef%errseb               , & ! Output: [real(r8) (:)   ]  surface energy conservation error (W/m**2)
+          errlon                     =>    veg_ef%errlon               , & ! Output: [real(r8) (:)   ]  longwave radiation conservation error (W/m**2)
 
           fabd                       =>    surfalb_vars%fabd_patch                    , & ! Input:  [real(r8) (:,:)]  flux absorbed by canopy per unit direct flux
           fabi                       =>    surfalb_vars%fabi_patch                    , & ! Input:  [real(r8) (:,:)]  flux absorbed by canopy per unit indirect flux
@@ -282,7 +283,7 @@ contains
           ftid                       =>    surfalb_vars%ftid_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit direct flux
           ftii                       =>    surfalb_vars%ftii_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit diffuse flux
 
-          netrad                     =>    energyflux_vars%netrad_patch                 & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
+          netrad                     =>    veg_ef%netrad                 & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
           )
 
        ! Get step size and time step

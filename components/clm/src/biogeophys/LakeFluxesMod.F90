@@ -22,7 +22,7 @@ module LakeFluxesMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es  
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es  
+  use VegetationDataType   , only : veg_es, veg_ef  
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -201,16 +201,16 @@ contains
 
          ram1             =>    frictionvel_vars%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
 
-         eflx_lwrad_out   =>    energyflux_vars%eflx_lwrad_out_patch   , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
-         eflx_lwrad_net   =>    energyflux_vars%eflx_lwrad_net_patch   , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
-         eflx_soil_grnd   =>    energyflux_vars%eflx_soil_grnd_patch   , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]           
-         eflx_lh_tot      =>    energyflux_vars%eflx_lh_tot_patch      , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]       
-         eflx_lh_grnd     =>    energyflux_vars%eflx_lh_grnd_patch     , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]  
-         eflx_sh_grnd     =>    energyflux_vars%eflx_sh_grnd_patch     , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_tot      =>    energyflux_vars%eflx_sh_tot_patch      , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]      
-         eflx_gnet        =>    energyflux_vars%eflx_gnet_patch        , & ! Output: [real(r8) (:)   ]  net heat flux into ground (W/m**2)                
-         taux             =>    energyflux_vars%taux_patch             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
-         tauy             =>    energyflux_vars%tauy_patch             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)              
+         eflx_lwrad_out   =>    veg_ef%eflx_lwrad_out   , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
+         eflx_lwrad_net   =>    veg_ef%eflx_lwrad_net   , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
+         eflx_soil_grnd   =>    veg_ef%eflx_soil_grnd   , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]           
+         eflx_lh_tot      =>    veg_ef%eflx_lh_tot      , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]       
+         eflx_lh_grnd     =>    veg_ef%eflx_lh_grnd     , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]  
+         eflx_sh_grnd     =>    veg_ef%eflx_sh_grnd     , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_sh_tot      =>    veg_ef%eflx_sh_tot      , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]      
+         eflx_gnet        =>    veg_ef%eflx_gnet        , & ! Output: [real(r8) (:)   ]  net heat flux into ground (W/m**2)                
+         taux             =>    veg_ef%taux             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
+         tauy             =>    veg_ef%tauy             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)              
 
          ks               =>    lakestate_vars%ks_col                  , & ! Output: [real(r8) (:)   ]  coefficient passed to LakeTemperature            
          ws               =>    lakestate_vars%ws_col                  , & ! Output: [real(r8) (:)   ]  surface friction velocity (m/s)                   

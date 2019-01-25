@@ -23,7 +23,8 @@ module SoilFluxesMod
   use LandunitType	   , only : lun_pp                
   use ColumnType	      , only : col_pp
   use ColumnDataType    , only : col_es, col_ef                
-  use VegetationType    , only : veg_pp                
+  use VegetationType    , only : veg_pp
+  use VegetationDataType, only : veg_ef  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -115,13 +116,13 @@ contains
 
          htvp                    => col_ef%htvp                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
          eflx_building_heat      => col_ef%eflx_building_heat  , & ! Input:  [real(r8) (:)   ]  heat flux from urban building interior to walls, roof
-         eflx_wasteheat_patch    => energyflux_vars%eflx_wasteheat_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
-         eflx_heat_from_ac_patch => energyflux_vars%eflx_heat_from_ac_patch , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
-         eflx_traffic_patch      => energyflux_vars%eflx_traffic_patch      , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
-         dlrad                   => energyflux_vars%dlrad_patch             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation below the canopy [W/m2]
-         ulrad                   => energyflux_vars%ulrad_patch             , & ! Input:  [real(r8) (:)   ]  upward longwave radiation above the canopy [W/m2]
-         cgrnds                  => energyflux_vars%cgrnds_patch            , & ! Input:  [real(r8) (:)   ]  deriv, of soil sensible heat flux wrt soil temp [w/m2/k]
-         cgrndl                  => energyflux_vars%cgrndl_patch            , & ! Input:  [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp [w/m**2/k]
+         eflx_wasteheat_patch    => veg_ef%eflx_wasteheat    , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+         eflx_heat_from_ac_patch => veg_ef%eflx_heat_from_ac , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
+         eflx_traffic_patch      => veg_ef%eflx_traffic      , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
+         dlrad                   => veg_ef%dlrad             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation below the canopy [W/m2]
+         ulrad                   => veg_ef%ulrad             , & ! Input:  [real(r8) (:)   ]  upward longwave radiation above the canopy [W/m2]
+         cgrnds                  => veg_ef%cgrnds            , & ! Input:  [real(r8) (:)   ]  deriv, of soil sensible heat flux wrt soil temp [w/m2/k]
+         cgrndl                  => veg_ef%cgrndl            , & ! Input:  [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp [w/m**2/k]
          
          qflx_evap_can           => waterflux_vars%qflx_evap_can_patch      , & ! Output: [real(r8) (:)   ]  evaporation from leaves and stems (mm H2O/s) (+ = to atm)
          qflx_evap_soi           => waterflux_vars%qflx_evap_soi_patch      , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
@@ -138,28 +139,28 @@ contains
          qflx_ev_soil            => waterflux_vars%qflx_ev_soil_patch       , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
          qflx_ev_h2osfc          => waterflux_vars%qflx_ev_h2osfc_patch     , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
          
-         eflx_sh_grnd            => energyflux_vars%eflx_sh_grnd_patch      , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_veg             => energyflux_vars%eflx_sh_veg_patch       , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]
-         eflx_soil_grnd          => energyflux_vars%eflx_soil_grnd_patch    , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil] 
-         eflx_soil_grnd_u        => energyflux_vars%eflx_soil_grnd_u_patch  , & ! Output: [real(r8) (:)   ]  urban soil heat flux (W/m**2) [+ = into soil]
-         eflx_soil_grnd_r        => energyflux_vars%eflx_soil_grnd_r_patch  , & ! Output: [real(r8) (:)   ]  rural soil heat flux (W/m**2) [+ = into soil]
-         eflx_sh_tot             => energyflux_vars%eflx_sh_tot_patch       , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_tot_u           => energyflux_vars%eflx_sh_tot_u_patch     , & ! Output: [real(r8) (:)   ]  urban total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_tot_r           => energyflux_vars%eflx_sh_tot_r_patch     , & ! Output: [real(r8) (:)   ]  rural total sensible heat flux (W/m**2) [+ to atm]
-         eflx_lh_tot             => energyflux_vars%eflx_lh_tot_patch       , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lh_tot_u           => energyflux_vars%eflx_lh_tot_u_patch     , & ! Output: [real(r8) (:)   ]  urban total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lh_tot_r           => energyflux_vars%eflx_lh_tot_r_patch     , & ! Output: [real(r8) (:)   ]  rural total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lwrad_out          => energyflux_vars%eflx_lwrad_out_patch    , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
-         eflx_lwrad_net          => energyflux_vars%eflx_lwrad_net_patch    , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
-         eflx_lwrad_net_r        => energyflux_vars%eflx_lwrad_net_r_patch  , & ! Output: [real(r8) (:)   ]  rural net infrared (longwave) rad (W/m**2) [+ = to atm]
-         eflx_lwrad_out_r        => energyflux_vars%eflx_lwrad_out_r_patch  , & ! Output: [real(r8) (:)   ]  rural emitted infrared (longwave) rad (W/m**2)
-         eflx_lwrad_net_u        => energyflux_vars%eflx_lwrad_net_u_patch  , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
-         eflx_lwrad_out_u        => energyflux_vars%eflx_lwrad_out_u_patch  , & ! Output: [real(r8) (:)   ]  urban emitted infrared (longwave) rad (W/m**2)
-         eflx_lh_vege            => energyflux_vars%eflx_lh_vege_patch      , & ! Output: [real(r8) (:)   ]  veg evaporation heat flux (W/m**2) [+ to atm]
-         eflx_lh_vegt            => energyflux_vars%eflx_lh_vegt_patch      , & ! Output: [real(r8) (:)   ]  veg transpiration heat flux (W/m**2) [+ to atm]
-         eflx_lh_grnd            => energyflux_vars%eflx_lh_grnd_patch      , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]
+         eflx_sh_grnd            => veg_ef%eflx_sh_grnd      , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_sh_veg             => veg_ef%eflx_sh_veg       , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]
+         eflx_soil_grnd          => veg_ef%eflx_soil_grnd    , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil] 
+         eflx_soil_grnd_u        => veg_ef%eflx_soil_grnd_u  , & ! Output: [real(r8) (:)   ]  urban soil heat flux (W/m**2) [+ = into soil]
+         eflx_soil_grnd_r        => veg_ef%eflx_soil_grnd_r  , & ! Output: [real(r8) (:)   ]  rural soil heat flux (W/m**2) [+ = into soil]
+         eflx_sh_tot             => veg_ef%eflx_sh_tot       , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_tot_u           => veg_ef%eflx_sh_tot_u     , & ! Output: [real(r8) (:)   ]  urban total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_tot_r           => veg_ef%eflx_sh_tot_r     , & ! Output: [real(r8) (:)   ]  rural total sensible heat flux (W/m**2) [+ to atm]
+         eflx_lh_tot             => veg_ef%eflx_lh_tot       , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot_u           => veg_ef%eflx_lh_tot_u     , & ! Output: [real(r8) (:)   ]  urban total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot_r           => veg_ef%eflx_lh_tot_r     , & ! Output: [real(r8) (:)   ]  rural total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lwrad_out          => veg_ef%eflx_lwrad_out    , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
+         eflx_lwrad_net          => veg_ef%eflx_lwrad_net    , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_lwrad_net_r        => veg_ef%eflx_lwrad_net_r  , & ! Output: [real(r8) (:)   ]  rural net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_lwrad_out_r        => veg_ef%eflx_lwrad_out_r  , & ! Output: [real(r8) (:)   ]  rural emitted infrared (longwave) rad (W/m**2)
+         eflx_lwrad_net_u        => veg_ef%eflx_lwrad_net_u  , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_lwrad_out_u        => veg_ef%eflx_lwrad_out_u  , & ! Output: [real(r8) (:)   ]  urban emitted infrared (longwave) rad (W/m**2)
+         eflx_lh_vege            => veg_ef%eflx_lh_vege      , & ! Output: [real(r8) (:)   ]  veg evaporation heat flux (W/m**2) [+ to atm]
+         eflx_lh_vegt            => veg_ef%eflx_lh_vegt      , & ! Output: [real(r8) (:)   ]  veg transpiration heat flux (W/m**2) [+ to atm]
+         eflx_lh_grnd            => veg_ef%eflx_lh_grnd      , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]
          errsoi_col              => col_ef%errsoi              , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
-         errsoi_patch            => energyflux_vars%errsoi_patch              & ! Output: [real(r8) (:)   ]  pft-level soil/lake energy conservation error (W/m**2)
+         errsoi_patch            => veg_ef%errsoi              & ! Output: [real(r8) (:)   ]  pft-level soil/lake energy conservation error (W/m**2)
          )
 
       ! Get step size

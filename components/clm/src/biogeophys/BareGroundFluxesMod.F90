@@ -22,7 +22,7 @@ module BareGroundFluxesMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es
+  use VegetationDataType   , only : veg_es, veg_ef
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -148,18 +148,18 @@ contains
 
          grnd_ch4_cond    =>    ch4_vars%grnd_ch4_cond_patch          , & ! Output: [real(r8) (:)   ]  tracer conductance for boundary layer [m/s]
 
-         eflx_sh_snow     =>    energyflux_vars%eflx_sh_snow_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
-         eflx_sh_soil     =>    energyflux_vars%eflx_sh_soil_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
-         eflx_sh_h2osfc   =>    energyflux_vars%eflx_sh_h2osfc_patch  , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
-         eflx_sh_grnd     =>    energyflux_vars%eflx_sh_grnd_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_tot      =>    energyflux_vars%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
-         taux             =>    energyflux_vars%taux_patch            , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)
-         tauy             =>    energyflux_vars%tauy_patch            , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)
-         dlrad            =>    energyflux_vars%dlrad_patch           , & ! Output: [real(r8) (:)   ]  downward longwave radiation below the canopy [W/m2]
-         ulrad            =>    energyflux_vars%ulrad_patch           , & ! Output: [real(r8) (:)   ]  upward longwave radiation above the canopy [W/m2]
-         cgrnds           =>    energyflux_vars%cgrnds_patch          , & ! Output: [real(r8) (:)   ]  deriv, of soil sensible heat flux wrt soil temp [w/m2/k]
-         cgrndl           =>    energyflux_vars%cgrndl_patch          , & ! Output: [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp [w/m**2/k]
-         cgrnd            =>    energyflux_vars%cgrnd_patch           , & ! Output: [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
+         eflx_sh_snow     =>    veg_ef%eflx_sh_snow    , & ! Output: [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
+         eflx_sh_soil     =>    veg_ef%eflx_sh_soil    , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
+         eflx_sh_h2osfc   =>    veg_ef%eflx_sh_h2osfc  , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
+         eflx_sh_grnd     =>    veg_ef%eflx_sh_grnd    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_sh_tot      =>    veg_ef%eflx_sh_tot     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+         taux             =>    veg_ef%taux            , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)
+         tauy             =>    veg_ef%tauy            , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)
+         dlrad            =>    veg_ef%dlrad           , & ! Output: [real(r8) (:)   ]  downward longwave radiation below the canopy [W/m2]
+         ulrad            =>    veg_ef%ulrad           , & ! Output: [real(r8) (:)   ]  upward longwave radiation above the canopy [W/m2]
+         cgrnds           =>    veg_ef%cgrnds          , & ! Output: [real(r8) (:)   ]  deriv, of soil sensible heat flux wrt soil temp [w/m2/k]
+         cgrndl           =>    veg_ef%cgrndl          , & ! Output: [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp [w/m**2/k]
+         cgrnd            =>    veg_ef%cgrnd           , & ! Output: [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
 
          t_ref2m          =>    veg_es%t_ref2m        , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
          t_ref2m_r        =>    veg_es%t_ref2m_r      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)
