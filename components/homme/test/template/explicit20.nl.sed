@@ -42,10 +42,12 @@ vfile_int     = "../vcoord/aspL20_int.isotherm.ascii"
 &analysis_nl
  output_timeunits=1
  output_frequency=1
- output_varnames1='area','corners','hypervis','cv_lat','cv_lon'
- output_type='netcdf'  
+ output_varnames1='area','corners','cv_lat','cv_lon'
+! output_varnames1='area','corners','hypervis','cv_lat','cv_lon'
+! output_type='netcdf'  
+! output_type='pnetcdf'  
 ! output_type='pnetcdf64'  ! needed for ne1024
-! output_type='netcdf4p'  ! needed for ne1024
+ output_type='netcdf4p'  ! needed for ne1024
 ! num_io_procs = 1
  io_stride = 8
 /
