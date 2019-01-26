@@ -21,7 +21,6 @@ program esmApp
   !-----------------------------------------------------------------------------
   ! Initialize ESMF
   !-----------------------------------------------------------------------------
-#define DEBUG
 #ifdef DEBUG
   call ESMF_Initialize(logkindflag=ESMF_LOGKIND_MULTI, logappendflag=.false., &
     defaultCalkind=ESMF_CALKIND_GREGORIAN, ioUnitLBound=5001, ioUnitUBound=5101, rc=rc)
