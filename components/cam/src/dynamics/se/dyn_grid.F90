@@ -37,6 +37,7 @@ module dyn_grid
   use shr_kind_mod,           only: r8 => shr_kind_r8
   use shr_const_mod,          only: SHR_CONST_PI
   use cam_grid_support,       only: iMap
+  use scamMod,                only: single_column
 
   implicit none
   private
@@ -619,6 +620,7 @@ end function get_block_owner_d
     type(horiz_coord_t), pointer :: lon_coord
     integer(iMap),       pointer :: grid_map(:,:)
     integer                :: i, j, mapind  ! Loop variables
+    real(r8) :: area_scm(1)
 
     !NB: These will change once a separate column-parameterization grid is supported.
     ! Note: not using get_horiz_grid_dim_d or get_horiz_grid_d since those
@@ -644,9 +646,20 @@ end function get_block_owner_d
 
     ! The native HOMME GLL grid
     call cam_grid_register('GLL', dyn_decomp, lat_coord, lon_coord,           &
-         grid_map, block_indexed=.false., unstruct=.true.)
-    call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
+         grid_map, block_indexed=.false., unstruct=.true.) 
+	 
+    if (.not. single_column) then 
+      call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
          'ncol', pearea, pemap)
+    else
+      ! if single column model, then this attribute has to be handled 
+      !  by assigning just the SCM point. Else, the model will bomb out
+      !  when writing the header information to history output
+      area_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
+      call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
+          'ncol', area_scm)
+    endif
+      
     call cam_grid_attribute_register('GLL', 'np', '', np)
     call cam_grid_attribute_register('GLL', 'ne', '', ne)
     nullify(grid_map) ! Map belongs to grid now

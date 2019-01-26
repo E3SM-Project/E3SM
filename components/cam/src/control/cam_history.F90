@@ -29,7 +29,6 @@ module cam_history
    use filenames,       only: interpret_filename_spec
    use filenames,       only: ncdata, bnd_topo
    use cam_abortutils,  only: endrun
-   use scamMod,         only: single_column
 
    use pio,          only: file_desc_t, var_desc_t, pio_setframe, pio_write,  &
                            pio_noerr, pio_bcast_error, pio_internal_error,    &
@@ -4114,7 +4113,6 @@ end subroutine print_active_fldlst
     ! Write time-invariant portion of history header
     !
     if(.not. is_satfile(t)) then
-      if (.not. single_column) then
       if(interpolate) then
         call cam_grid_write_var(tape(t)%File, interpolate_info(t)%grid_id)
       else if((.not. patch_output) .or. restart) then
@@ -4127,7 +4125,6 @@ end subroutine print_active_fldlst
           call tape(t)%patches(i)%write_vals(tape(t)%File)
         end do
       end if ! interpolate
-      end if
       if (allocated(lonvar)) then
         deallocate(lonvar)
       end if
