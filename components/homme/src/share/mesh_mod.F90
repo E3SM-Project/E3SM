@@ -644,7 +644,7 @@ contains
     implicit none
     integer            , intent(in)  :: element_nodes(:,:)
     integer,             intent(in)  :: face_numbers    (p_number_elements)
-    real,                intent(out) :: centroids       (p_number_elements,2)
+    real(kind=real_kind),intent(out) :: centroids       (p_number_elements,2)
     real(kind=real_kind)             :: coordinates(4,3) 
     real(kind=real_kind)             :: cube_coor  (4,2) 
     integer                          :: i, j, node_numbers(4)
@@ -682,9 +682,9 @@ contains
     type (GridVertex_t), intent(inout) :: GridVertex(:)
     integer            , intent(in)    :: element_nodes(:,:)
     
-    real                               :: centroids(p_number_elements,2)
+    real(kind=real_kind)               :: centroids(p_number_elements,2)
     integer                            :: face_numbers(p_number_elements)
-    real                               :: h
+    real(kind=real_kind)               :: h
     integer                            :: i, sfcidx(p_number_elements)
     
     if (SIZE(GridVertex) /= p_number_elements) then
@@ -719,7 +719,7 @@ contains
     use spacecurve_mod, only  : GenspaceCurve
 
     integer, intent(in) :: nelem, face_numbers(nelem)
-    real, intent(in) :: centroids(nelem,2), h
+    real(kind=real_kind), intent(in) :: centroids(nelem,2), h
     integer, intent(out) :: sfcidx(nelem)
     integer, allocatable :: Mesh2(:,:), Mesh2_map(:,:), sfcij(:,:)
     integer :: ne, ne2, sfc_index, i, j, i2, j2, face
@@ -803,7 +803,7 @@ contains
     use sort_mod, only : sortints
 
     integer, intent(in) :: nelem, face_numbers(nelem)
-    real, intent(in) :: centroids(nelem,2), h
+    real(kind=real_kind), intent(in) :: centroids(nelem,2), h
     integer, intent(out) :: sfcidx(nelem)
     real(kind=real_kind), parameter :: pi = 3.141592653589793116d0
     integer, parameter :: nfaces = 6
@@ -844,7 +844,7 @@ contains
 
   subroutine gen_mesh_data(nx, ny, centroids, h)
     integer, intent(in) :: nx, ny
-    real, intent(out) :: centroids(ny,nx,2), h
+    real(kind=real_kind), intent(out) :: centroids(ny,nx,2), h
     integer :: iy, ix, d, i, j, iy1, ix1
     real(kind=real_kind) :: dx, dy, xo, yo, x, y, r(2), pmin(2), pmax(2), x0, y0, x1, y1
     real(kind=real_kind), parameter :: pi = 3.141592653589793116d0, delta = 0.01d0
@@ -910,10 +910,10 @@ contains
 
   subroutine test_mesh_init_sfc_from_centroids(nx, ny)
     integer, intent(in) :: nx, ny
-    real, allocatable :: centroids(:,:)
+    real(kind=real_kind), allocatable :: centroids(:,:)
     integer, allocatable :: face_numbers(:), sfcidxo(:), sfcidxn(:)
     real(kind=real_kind) :: start, finish
-    real :: h
+    real(kind=real_kind) :: h
     integer :: i, nelem
 
     nelem = nx*ny
