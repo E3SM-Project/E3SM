@@ -1,4 +1,4 @@
-2module esmFldsExchange_mod
+module esmFldsExchange_mod
 
   !---------------------------------------------------------------------
   ! This is a mediator specific routine that determines ALL possible
