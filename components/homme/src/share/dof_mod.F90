@@ -115,9 +115,6 @@ contains
        call LongEdgeVunpackMIN(edge,ldofP(:,:,ie),1,kptr,elem(ie)%desc)
        elem(ie)%gdofP(:,:)=ldofP(:,:,ie)
     end do
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
     call FreeLongEdgeBuffer(edge)
        
   end subroutine global_dof
@@ -284,8 +281,7 @@ contains
      type (element_t) :: elem(:)
      integer, intent(out) :: GlobalUniqueColsP
 
-     integer(kind=int_kind), allocatable :: numElemP(:),numElem2P(:)
-     integer(kind=int_kind), allocatable :: numElemV(:),numElem2V(:)
+     integer(kind=int_kind), allocatable :: numElem2P(:)
      integer(kind=int_kind), allocatable :: gOffset(:)
     
      integer(kind=int_kind) :: ie,ig,nprocs,ierr
@@ -293,19 +289,18 @@ contains
      logical,parameter :: Debug = .FALSE.
 
      nprocs = par%nprocs
-     allocate(numElemP(nelem))
      allocate(numElem2P(nelem))
      allocate(gOffset(nelem))
-     numElemP=0;numElem2P=0;gOffset=0
+     gOffset=0
 
      do ie=1,nelemd
 	ig = elem(ie)%GlobalId
-	numElemP(ig) = elem(ie)%idxP%NumUniquePts
+	gOffset(ig) = elem(ie)%idxP%NumUniquePts
      enddo
 #ifdef _MPI
-     call MPI_Allreduce(numElemP,numElem2P,nelem,MPIinteger_t,MPI_SUM,par%comm,ierr) 
+     call MPI_Allreduce(gOffset,numElem2P,nelem,MPIinteger_t,MPI_SUM,par%comm,ierr) 
 #else
-     numElem2P=numElemP
+     numElem2P=gOffset
 #endif
 
      gOffset(1)=1
@@ -317,8 +312,9 @@ contains
         elem(ie)%idxP%UniquePtOffset=gOffset(ig)
      enddo
      GlobalUniqueColsP = gOffset(nelem)+numElem2P(nelem)-1
+     if (GlobalUniqueColsP<0) stop 'ERROR: GlobalUniqueColsP integer overflow'
 
-     deallocate(numElemP)
+
      deallocate(numElem2P)
      deallocate(gOffset)
   end subroutine SetElemOffset
@@ -408,6 +404,7 @@ contains
        fdofp=-fdofp_local
     end if
     
+    call FreeLongEdgeBuffer(edge)
 
 
   end subroutine CreateMetaData
