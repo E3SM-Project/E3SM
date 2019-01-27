@@ -557,9 +557,10 @@ module EcosystemDynBeTRMod
        !----------------------------------------------------------------
       call t_startf('betr type1 soil bgc')
       call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
+       num_soilc, filter_soilc, &
        carbonstate_vars, carbonflux_vars, &
        c13_carbonstate_vars, c14_carbonstate_vars,  &
-       nitrogenstate_vars,  phosphorusstate_vars)
+       nitrogenstate_vars,  phosphorusstate_vars,PlantMicKinetics_vars)
 
       call ep_betr%OutLoopSoilBGC(bounds, col, pft)
 
