@@ -1060,8 +1060,10 @@ contains
            if(ep_betr%do_bgc_type('type2_bgc'))then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
                filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
-               carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
-               PlantMicKinetics_vars)
+               carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, &
+               c13_carbonflux_vars, c14_carbonstate_vars, c14_carbonflux_vars, &
+               nitrogenstate_vars,  nitrogenflux_vars, phosphorusstate_vars, &
+               phosphorusflux_vars, PlantMicKinetics_vars)
            endif
            call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
          endif  !end use_betr
