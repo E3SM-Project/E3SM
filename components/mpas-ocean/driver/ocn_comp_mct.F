@@ -668,6 +668,54 @@ contains
     call mpas_add_clock_alarm(domain % clock, coupleAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
     call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
+    ! Build forcing arrays.
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+
+        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
+        call mpas_timer_start("land_ice_build_arrays", .false.)
+        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+                                                      forcingPool, scratchPool, statePool, dt, ierr)
+        call mpas_timer_stop("land_ice_build_arrays")
+
+        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+
+        block_ptr => block_ptr % next
+    end do
+
+    currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+    call mpas_log_write( 'Initial time '//trim(timeStamp))
+
+    ! read initial data required for variable shortwave
+    call mpas_timer_start('io_shortwave',.false.)
+    call ocn_get_shortWaveData(domain_ptr % streamManager, domain, domain % clock, .true.)
+    call mpas_timer_stop('io_shortwave')
+
+    ! read initial data required for ecosys forcing
+    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+    if (config_use_ecosysTracers) then
+        call mpas_timer_start('io_ecosys',.false.)
+        call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_ecosys')
+    endif
+
+    ! read initial data required for monthly surface salinity restoring
+    call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                 config_use_activeTracers_surface_restoring)
+    call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                 config_use_surface_salinity_monthly_restoring)
+    if (config_use_activeTracers_surface_restoring .and.  config_use_surface_salinity_monthly_restoring) then
+        call mpas_timer_start('io_monthly_surface_salinity',.false.)
+        call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_monthly_surface_salinity')
+    endif
+
     ! Setup clock for initial runs
     if ( runtype == 'initial' ) then
        ! Advance clock one coupling interval to be in sync with the coupler clock.
@@ -741,7 +789,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   get intial state from driver
+!   get initial state from driver
 !
 !-----------------------------------------------------------------------
 
@@ -751,54 +799,6 @@ contains
     call ocn_import_mct(x2o_o, errorCode)  
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
-    endif
-
-    ! Build forcing arrays.
-    block_ptr => domain % blocklist
-    do while(associated(block_ptr))
-        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-
-        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
-        call mpas_timer_start("land_ice_build_arrays", .false.)
-        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
-                                                      forcingPool, scratchPool, statePool, dt, ierr)
-        call mpas_timer_stop("land_ice_build_arrays")
-
-        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
-
-        block_ptr => block_ptr % next
-    end do
-
-    currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    call mpas_log_write( 'Initial time '//trim(timeStamp))
-
-    ! read initial data required for variable shortwave
-    call mpas_timer_start('io_shortwave',.false.)
-    call ocn_get_shortWaveData(domain_ptr % streamManager, domain, domain % clock, .true.)
-    call mpas_timer_stop('io_shortwave')
-
-    ! read initial data required for ecosys forcing
-    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
-    if (config_use_ecosysTracers) then
-        call mpas_timer_start('io_ecosys',.false.)
-        call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
-        call mpas_timer_stop('io_ecosys')
-    endif
-
-    ! read initial data required for monthly surface salinity restoring
-    call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
-                                                 config_use_activeTracers_surface_restoring)
-    call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
-                                                 config_use_surface_salinity_monthly_restoring)
-    if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
-        call mpas_timer_start('io_monthly_surface_salinity',.false.)
-        call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
-        call mpas_timer_stop('io_monthly_surface_salinity')
     endif
 
     itimestep = 0
@@ -938,16 +938,6 @@ contains
          call mpas_stream_mgr_read(domain_ptr % streamManager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain_ptr % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
-         itimestep = itimestep + 1
-         call mpas_advance_clock(domain_ptr % clock)
-
-         currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         ! write time stamp at every step
-         call mpas_dmpar_get_time(current_wallclock_time)
-         write (WCstring,'(F18.3)') current_wallclock_time
-         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
-
          ! Build forcing arrays.
          if (debugOn) call mpas_log_write('   Building forcing arrays')
          block_ptr => domain_ptr % blocklist
@@ -1005,6 +995,16 @@ contains
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished reading forcing streams')
          endif
+
+         itimestep = itimestep + 1
+         call mpas_advance_clock(domain_ptr % clock)
+
+         currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+         ! write time stamp at every step
+         call mpas_dmpar_get_time(current_wallclock_time)
+         write (WCstring,'(F18.3)') current_wallclock_time
+         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
