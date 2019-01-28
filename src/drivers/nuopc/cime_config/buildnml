@@ -357,7 +357,7 @@ def _create_runseq(case, coupling_times):
             if (comp_rof == 'srof' and comp_glc == "sglc"):
                 runseq_input = os.path.join(input_dir, 'nuopc_runseq_B')
 
-        elif (comp_atm == 'fv3gfs' and comp_ocn == "mom6" and comp_ice == 'cice'):
+        elif (comp_atm == 'fv3gfs' and comp_ocn == "mom" and comp_ice == 'cice'):
             # for NEMS fully coupled 
             runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS')
 
