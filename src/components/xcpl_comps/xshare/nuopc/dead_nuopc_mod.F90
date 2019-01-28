@@ -1,4 +1,3 @@
-
 module dead_nuopc_mod
 
   use ESMF                , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
@@ -382,7 +381,7 @@ contains
        gbuf(n,dead_grid_lat  ) = yc
        gbuf(n,dead_grid_index) = gindex(n)
        gbuf(n,dead_grid_area ) = area
-       gbuf(n,dead_grid_mask ) = 1
+       gbuf(n,dead_grid_mask ) = 0
        gbuf(n,dead_grid_frac ) = 1.0_R8
     enddo
 

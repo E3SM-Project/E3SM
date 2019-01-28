@@ -297,10 +297,10 @@ contains
        fillval, pre, tavg, use_float, file_ind, rc)
 
     ! !DESCRIPTION: Write FB to netcdf file
-
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
     use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+!    use ESMF                  , only : ESMF_VMGetCurrent, ESMF_VMGet
     use med_constants_mod     , only : R4, R8
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use pio                   , only : var_desc_t, io_desc_t, pio_offset_kind
@@ -311,7 +311,7 @@ contains
     use esmFlds               , only : shr_nuopc_fldList_GetMetadata
     use pio                   , only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
     use pio                   , only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
-
+    use pio                   , only : pio_syncfile
     ! input/output variables
     character(len=*),           intent(in) :: filename  ! file
     integer,                    intent(in) :: iam       ! local pet
@@ -332,6 +332,8 @@ contains
     type(ESMF_Field)              :: field
     type(ESMF_Mesh)               :: mesh
     type(ESMF_Distgrid)           :: distgrid
+    type(ESMF_VM)                 :: VM
+    integer                       :: mpicom
     integer                       :: rcode
     integer                       :: nf,ns,ng
     integer                       :: k
@@ -356,7 +358,7 @@ contains
     integer                       :: dimCount, tileCount
     integer, pointer              :: Dof(:)
     integer                       :: lfile_ind
-    real(r8), pointer             :: fldptr1(:)
+    real(r8), pointer             :: fldptr1(:), tmpfldptr(:)
     character(CL)                 :: tmpstr
     integer                       :: dbrc
     character(*),parameter :: subName = '(med_io_write_FB) '
@@ -366,6 +368,9 @@ contains
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
     endif
     rc = ESMF_Success
+
+!    call ESMF_VMGetCurrent(vm, rc=rc)
+!    call ESMF_VMGet(vm, mpiCommunicator=mpicom, rc=rc)
 
     lfillvalue = fillvalue
     if (present(fillval)) then
@@ -517,6 +522,9 @@ contains
        write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
        call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
        call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+
+!       call pio_writedof(lpre, (/lnx,lny/), int(dof,kind=PIO_OFFSET_KIND), mpicom)
+
        deallocate(dof)
 
        do k = 1,nf
@@ -524,7 +532,6 @@ contains
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(itemc)
@@ -534,10 +541,10 @@ contains
              !-------tcraig
           endif
        enddo
+       call pio_syncfile(io_file(lfile_ind))
 
        call pio_freedecomp(io_file(lfile_ind), iodesc)
-
-    end if
+    endif
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
@@ -608,7 +615,7 @@ contains
   !===============================================================================
   subroutine med_io_write_int1d(filename, iam, idata, dname, whead, wdata, file_ind)
 
-    use pio     , only : var_desc_t, pio_def_dim, pio_def_var 
+    use pio     , only : var_desc_t, pio_def_dim, pio_def_var
     use pio     , only : pio_put_att, pio_inq_varid, pio_put_var
     use pio     , only : pio_int, pio_def_var
     use esmFlds , only : shr_nuopc_fldList_GetMetadata
@@ -955,7 +962,7 @@ contains
   end subroutine med_io_write_time
 
   !===============================================================================
-  subroutine med_io_read_FB(filename, vm, iam, FB, pre, rc)
+  subroutine med_io_read_FB(filename, vm, iam, FB, pre, frame, rc)
 
     use med_constants_mod     , only : R8, CL
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
@@ -968,8 +975,8 @@ contains
     use pio                   , only : pio_noerr, pio_inq_varndims, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
     use pio                   , only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
     use pio                   , only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
-    use pio                   , only : pio_read_darray, pio_initdecomp
-
+    use pio                   , only : pio_read_darray, pio_initdecomp, pio_offset_kind
+    use pio                   , only : pio_setframe
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNameN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
@@ -981,8 +988,9 @@ contains
     character(len=*)          ,intent(in)  :: filename ! file
     type(ESMF_VM)                          :: vm
     integer                   ,intent(in)  :: iam
-    type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
+    type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be read
     character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
+    integer(kind=PIO_OFFSET_KIND),optional ,intent(in)  :: frame
     integer                   ,intent(out) :: rc
 
     ! local variables
@@ -1010,7 +1018,7 @@ contains
     integer, pointer    :: Dof(:)
     real(r8), pointer   :: fldptr1(:)
     character(CL)       :: tmpstr
-
+    integer(kind=Pio_Offset_Kind) :: lframe
     character(*),parameter :: subName = '(med_io_read_FB) '
     !-------------------------------------------------------------------------------
     rc = ESMF_Success
@@ -1021,7 +1029,11 @@ contains
     if (present(pre)) then
        lpre = trim(pre)
     endif
-
+    if (present(frame)) then
+       lframe = frame
+    else
+       lframe = 1
+    endif
     if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
        call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1124,7 +1136,7 @@ contains
              call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
              deallocate(dof)
           endif
-
+          call pio_setframe(pioid,varid,lframe)
           call pio_read_darray(pioid, varid, iodesc, fldptr1, rcode)
           rcode = pio_get_att(pioid,varid,"_FillValue",lfillvalue)
           if (rcode /= pio_noerr) then

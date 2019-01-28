@@ -695,8 +695,8 @@ module shr_reprosum_mod
             arr_gmax_exp(:) = -arr_gextremes(1:nflds,1)
             arr_gmin_exp(:) =  arr_gextremes(1:nflds,2)
 
-! if a field is identically zero or contains INFs or NaNs, arr_gmin_exp 
-!   still equals MAXEXPONENT and arr_gmax_exp still equals MINEXPONENT. 
+! if a field is identically zero or contains INFs or NaNs, arr_gmin_exp
+!   still equals MAXEXPONENT and arr_gmax_exp still equals MINEXPONENT.
 !   In this case, set arr_gmin_exp = arr_gmax_exp = MINEXPONENT
             do ifld=1,nflds
                arr_gmin_exp(ifld) = min(arr_gmax_exp(ifld),arr_gmin_exp(ifld))
@@ -892,7 +892,7 @@ module shr_reprosum_mod
                                             ! input array
 
       logical,  intent(in) :: skip_field(nflds)
-         ! flag indicating whether the sum for this field should be 
+         ! flag indicating whether the sum for this field should be
          ! computed or not (used to skip over fields containing
          ! NaN or INF summands)
 

@@ -276,11 +276,15 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args =  " --case %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs=r" % (testdir, cls._testroot)
+        args =  " --case %s --compset X --output-root %s --handle-preexisting-dirs=r --debug " % (testdir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args +  " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
             args = args +  " --mpilib %s"%TEST_MPILIB
+        if CIME.utils.get_cime_default_driver() == "nuopc":
+            args += " --res f19_g17 "
+        else:
+            args += " --res f19_g16 "
 
         cls._testdirs.append(testdir)
         run_cmd_assert_result(self, "./create_newcase %s"%(args), from_dir=SCRIPT_DIR)
@@ -361,11 +365,15 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls._testdirs.append(testdir)
 
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "..", "tests", "user_mods_test1")
-        args = " --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s --handle-preexisting-dirs=r"% (testdir, user_mods_dir, cls._testroot)
+        args = " --case %s --compset X --user-mods-dir %s --output-root %s --handle-preexisting-dirs=r"% (testdir, user_mods_dir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args + " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
             args = args +  " --mpilib %s"%TEST_MPILIB
+        if CIME.utils.get_cime_default_driver() == "nuopc":
+            args += " --res f19_g17 "
+        else:
+            args += " --res f19_g16 "
 
         run_cmd_assert_result(self, "%s/create_newcase %s "
                               % (SCRIPT_DIR, args),from_dir=SCRIPT_DIR)
@@ -540,11 +548,15 @@ class J_TestCreateNewcase(unittest.TestCase):
             shutil.rmtree(testdir)
 
         cls._testdirs.append(testdir)
-        args = " --case CreateNewcaseTest --script-root %s --compset X --res f19_g16 --output-root %s --handle-preexisting-dirs u" % (testdir, cls._testroot)
+        args = " --case CreateNewcaseTest --script-root %s --compset X --output-root %s --handle-preexisting-dirs u" % (testdir, cls._testroot)
         if TEST_COMPILER is not None:
             args += " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
             args +=  " --mpilib %s"%TEST_MPILIB
+        if CIME.utils.get_cime_default_driver() == "nuopc":
+            args += " --res f19_g17 "
+        else:
+            args += " --res f19_g16 "
 
         run_cmd_assert_result(self, "%s/create_newcase %s" % (SCRIPT_DIR, args), from_dir=SCRIPT_DIR)
         self.assertTrue(os.path.exists(testdir))
