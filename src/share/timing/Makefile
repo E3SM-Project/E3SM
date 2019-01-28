@@ -26,6 +26,11 @@ ifdef COMP_INTERFACE
     FFLAGS += $(ESMF_F90COMPILEPATHS)
   endif
 endif
+ifdef DEBUG
+  ifeq ("$(DEBUG)", "True")
+    CPPDEFS+=-DDEBUG
+  endif
+endif
 ifdef GPTL_CPPDEFS
   CPPDEFS+=$(GPTL_CPPDEFS) -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
 endif

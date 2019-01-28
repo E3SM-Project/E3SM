@@ -620,7 +620,7 @@ contains
              call ESMF_LogWrite(subname//':Fr_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
-          
+
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
              call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, stdname, shortname)
@@ -1385,6 +1385,7 @@ contains
     use esmFlds                 , only : fldListMed_ocnalb, fldListMed_aoflux
     use esmFlds                 , only : shr_nuopc_fldList_GetNumFlds
     use esmFlds                 , only : shr_nuopc_fldList_GetFldNames
+    use esmFlds                 , only : shr_nuopc_fldList_Document_Mapping
     use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
@@ -1628,8 +1629,8 @@ contains
       ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
       !---------------------------------------
 
-      if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
-          is_local%wrap%med_coupling_active(compatm,compocn)) then
+      if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
+           is_local%wrap%med_coupling_active(compatm,compocn)) then
 
          ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
          ! rather than NStateExp(n2), since the export state might only
@@ -1654,7 +1655,7 @@ contains
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             deallocate(fldnames)
          end if
-            
+
          ! Create field bundles for mediator ocean/atmosphere flux computation
 
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux)
@@ -1662,11 +1663,11 @@ contains
             allocate(fldnames(fieldCount))
             call shr_nuopc_fldList_getfldnames(fldListMed_aoflux%flds, fldnames, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1680,6 +1681,10 @@ contains
 
       call esmFldsExchange(gcomp, phase='initialize', rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+      if (mastertask) then
+         call shr_nuopc_fldList_Document_Mapping(logunit, is_local%wrap%med_coupling_active)
+      end if
 
       !---------------------------------------
       ! Initialize route handles and required normalization field bunds
@@ -2066,6 +2071,7 @@ contains
   subroutine med_finalize(gcomp, rc)
     use ESMF, only                  : ESMF_GridComp, ESMF_SUCCESS
     use med_internalstate_mod, only : logunit, mastertask
+    use med_phases_profile_mod, only : med_phases_profile_finalize
     use shr_nuopc_utils_mod, only   : shr_nuopc_memcheck
     use shr_file_mod, only          : shr_file_setlogunit
 
@@ -2076,7 +2082,8 @@ contains
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
-       write(logunit,*)' SUCCESSFUL TERMINATION '
+       write(logunit,*)' SUCCESSFUL TERMINATION OF CMEPS'
+       call med_phases_profile_finalize()
     end if
 
   end subroutine med_finalize

@@ -698,10 +698,8 @@ contains
        else
           ! Determine the normalization for the map
           mapnorm  = fldsSrc(n)%mapnorm(destcomp)
-          if ( trim(mapnorm) /= 'unset' .and. trim(mapnorm) /= 'one' .and. trim(mapnorm) /= 'none') then
 
-             write(6,*)'DEBUG: mapindex= ',mapindex
-             write(6,*)'DEBUG: mapnorm = ',trim(mapnorm)
+          if ( trim(mapnorm) /= 'unset' .and. trim(mapnorm) /= 'one' .and. trim(mapnorm) /= 'none') then
 
              ! Get field and pointer to source field data in FBSrc
              call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, field=srcfield, rc=rc)
@@ -825,6 +823,7 @@ contains
              mapindex = fldsSrc(n)%mapindex(destcomp)
 
              if (mapindex == mapnstod_consd) then
+
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

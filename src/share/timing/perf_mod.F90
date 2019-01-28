@@ -717,6 +717,9 @@ contains
 #ifdef NUOPC_INTERFACE
    cur_timing_depth = cur_timing_depth + 1
    if(cur_timing_depth > timer_depth_limit) return
+#ifdef DEBUG
+!   print *, 'start timer ',trim(event), cur_timing_depth, timer_depth_limit
+#endif
 #endif
 
 !$OMP MASTER

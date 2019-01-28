@@ -207,6 +207,7 @@
 	    MED med_phases_prep_ocn_merge
 	    MED med_phases_prep_ocn_accum_fast
             MED med_phases_history_write
+	    MED med_phases_profile
 	  @
           OCN -> MED :remapMethod=redist
           MED med_connectors_post_ocn2med
@@ -239,6 +240,7 @@
 	    MED med_phases_prep_ocn_merge
 	    MED med_phases_prep_ocn_accum_fast
             MED med_phases_history_write
+	    MED med_phases_profile
 	  @
           OCN -> MED :remapMethod=redist
           MED med_connectors_post_ocn2med
