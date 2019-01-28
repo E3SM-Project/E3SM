@@ -2118,6 +2118,82 @@ n    </desc>
   <!-- CLOCK Attributes            -->
   <!-- =========================== -->
 
+  <entry id="atm_cpl_dt" modify_via_xml="ATM_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      atm coupling interval in seconds
+      set via ATM_NCPL in env_run.xml.
+      ATM_NCPL is the number of times the atm is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, and has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
+  <entry id="lnd_cpl_dt" modify_via_xml="LND_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      lnd coupling interval in seconds
+      set via LND_NCPL in env_run.xml.
+      LND_NCPL is the number of times the lnd is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
+  <entry id="rof_cpl_dt" modify_via_xml="ROF_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      river runoff coupling interval in seconds
+      currently set by default to 10800 seconds.
+      default: 10800
+    </desc>
+  </entry>
+
+  <entry id="ice_cpl_dt" modify_via_xml="ICE_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      ice coupling interval in seconds
+      set via ICE_NCPL in env_run.xml.
+      ICE_NCPL is the number of times the ice is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
+  <entry id="ocn_cpl_dt" modify_via_xml="OCN_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      ocn coupling interval in seconds
+      set via OCN_NCPL in env_run.xml.
+      OCN_NCPL is the number of times the ocn is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
+  <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      glc coupling interval in seconds
+      set via GLC_NCPL in env_run.xml.
+      GLC_NCPL is the number of times the glc is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
   <entry id="glc_avg_period" modify_via_xml="GLC_AVG_PERIOD">
     <type>char</type>
     <category>time</category>
@@ -2137,6 +2213,36 @@ n    </desc>
       Setting glc_avg_period to 'glc_coupling_period' means that the averaging is
       done exactly when the GLC is called (governed by GLC_NCPL).
     </desc>
+  </entry>
+
+  <entry id="wav_cpl_dt" modify_via_xml="WAV_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      wav coupling interval in seconds
+      set via WAV_NCPL in env_run.xml.
+      WAV_NCPL is the number of times the wav is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
+  <entry id="esp_cpl_dt" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>CLOCK_attributes</group>
+    <desc>
+      esp run interval in seconds
+      esp_cpl_dt is the number of times the esp is run per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+      default value set by buildnml to be the pause interval if pause is active
+      otherwise, it is set to the shortest component coupling time
+    </desc>
+    <values>
+      <value>-999</value>
+    </values>
   </entry>
 
   <entry id="esp_run_on_pause" modify_via_xml="ESP_RUN_ON_PAUSE">

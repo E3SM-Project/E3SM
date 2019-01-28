@@ -680,9 +680,11 @@ class NamelistGenerator(object):
     def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
         """ Write only contents of nml group """
         self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
+
     def write_seq_maps(self, filename):
         """ Write mct out seq_maps.rc"""
         self._namelist.write(filename, groups=["seq_maps"], format_="rc")
+
     def write_modelio_file(self, filename):
         """ Write mct component modelio files"""
         self._namelist.write(filename, groups=["modelio", "pio_inparm"], format_="nml")
@@ -691,11 +693,12 @@ class NamelistGenerator(object):
     def write_nuopc_modelio_file(self, filename):
         """ Write nuopc component modelio files"""
         self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
-    def write_nuopc_config_file(self, filename, data_list_path=None):
+
+    def write_nuopc_config_file(self, filename, data_list_path=None, skip_comps=None):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
         groups = self._namelist.get_group_names()
-        self._namelist.write(filename, groups=groups, format_='nuopc', sorted_groups=False)
+        self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
         if data_list_path is not None:
             # append to input_data_list file
             self._write_input_files(data_list_path)
