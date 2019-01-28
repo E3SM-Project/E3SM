@@ -261,6 +261,7 @@
     <lname>AR97_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+
   <compset>
     <alias>FC4AQUAP</alias>
     <lname>2000_CAM4_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
@@ -336,12 +337,6 @@
 	<value  compset="GEOS_">GREGORIAN</value>
       </values>
     </entry>
-    
-    <entry id="USER_REQUESTED_WALLTIME"> 
-      <values>
-	<value  compset="AR97_CAM">0:30:00</value>
-      </values>
-    </entry>    
 
     <entry id="START_TOD"> 
       <values>
@@ -387,7 +382,7 @@
         <value compset="AR9[57]_CAM">262.5</value>
       </values>
     </entry>
-    
+
   </entries>
 
 </compsets>
