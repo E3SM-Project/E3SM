@@ -3758,12 +3758,14 @@
                                    fsloss,    fsnow,    &
                                    rhosnew,   rhosmax,  &
                                    windmin,   drhosdwind, &
-				   snowage_tau, &
-				   snowage_kappa, &
-				   snowage_drdt0, &
-				   idx_T_max, &
-				   idx_Tgrd_max, &
-				   idx_rhos_max)
+                                   snowage_tau, &
+                                   snowage_kappa, &
+                                   snowage_drdt0, &
+                                   idx_T_max, &
+                                   idx_Tgrd_max, &
+                                   idx_rhos_max, &
+                                   l_stop, &
+                                   stop_label)
 
       use ice_colpkg_tracers, only: tr_snow, tr_rsnw
       use ice_constants_colpkg, only: c0, puny, rhos
@@ -3774,9 +3776,9 @@
          nslyr, & ! number of snow layers
          nilyr, & ! number of ice  layers
          ncat, &  ! number of thickness categories
-	 idx_T_max, & ! dimensions of snow parameter matrix
-	 idx_Tgrd_max, &
-	 idx_rhos_max
+         idx_T_max, & ! dimensions of snow parameter matrix
+         idx_Tgrd_max, &
+         idx_rhos_max
 
       real (kind=dbl_kind), intent(in) :: &
          dt     , & ! time step
@@ -3787,7 +3789,7 @@
          rhosmax, & ! maximum snow density (kg/m^3)
          windmin, & ! minimum wind speed to compact snow (m/s)
          drhosdwind ! wind compaction factor (kg s/m^4)
-            
+
       real (kind=dbl_kind), dimension(:), intent(in) :: &
          aicen, & ! ice area fraction
          vicen, & ! ice volume (m)
@@ -3796,7 +3798,6 @@
          zSin1, & ! ice upper layer salinity
          alvl,  & ! level ice area tracer
          vlvl     ! level ice volume tracer
-	 
 
       real (kind=dbl_kind), intent(inout) :: &
          fresh    , & ! fresh water flux to ocean (kg/m^2/s)
@@ -3824,6 +3825,12 @@
          snowage_kappa, & ! 
          snowage_drdt0    ! (10^-6 m/hr)
 
+      logical (kind=log_kind), intent(inout) :: &
+         l_stop          ! if true, print diagnostics and abort model
+
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
+
       ! local temporary variables
 
       integer (kind=int_kind) :: n
@@ -3836,6 +3843,12 @@
       real (kind=dbl_kind) :: &
          vsno,  & ! snow volume (m)
          tmp1, tmp2
+
+      character(len=char_len_long) :: &
+           warning ! warning message
+
+      l_stop = .false.
+      stop_label = ''
 
       if (tr_snow) then
 
@@ -3880,8 +3893,12 @@
       enddo
       tmp2 = rhos*vsno + fresh*dt
       if (abs(tmp1-tmp2)>puny) then
-        print*,'tmp1 ne tmp2',tmp1, tmp2
-        stop
+        write(warning,*) ' '
+        call add_warning(warning)
+        write(warning,*)'tmp1 ne tmp2',tmp1, tmp2
+        call add_warning(warning)
+        stop_label ='snow redistribution error' 
+        l_stop = .true.
       endif
 
       endif ! tr_snow
@@ -3909,12 +3926,12 @@
                                       hsn,        zqsn,  &
                                       smice,      smliq, &
                                       rsnw_fall,  rsnw_tmax, &
-				      snowage_tau, &
-				      snowage_kappa, &
-				      snowage_drdt0, &
-				      idx_T_max, &
-				      idx_Tgrd_max, &
-				      idx_rhos_max)
+                                      snowage_tau, &
+                                      snowage_kappa, &
+                                      snowage_drdt0, &
+                                      idx_T_max, &
+                                      idx_Tgrd_max, &
+                                      idx_rhos_max)
       endif
 
       end subroutine colpkg_step_snow
@@ -4104,14 +4121,14 @@
            F_abs_chl_sp_in, &        
            F_abs_chl_phaeo_in, &
            ratio_C2N_proteins_in, &
-	   snwredist_in, &
-	   use_smliq_pnd_in, &
-	   rsnw_fall_in, &
-	   rsnw_tmax_in, &
-	   rhosnew_in, &
-	   rhosmax_in, &
-	   windmin_in, &
-	   drhosdwind_in)
+           snwredist_in, &
+           use_smliq_pnd_in, &
+           rsnw_fall_in, &
+           rsnw_tmax_in, &
+           rhosnew_in, &
+           rhosmax_in, &
+           windmin_in, &
+           drhosdwind_in)
            !restore_bgc_in)
 
         use ice_colpkg_shared, only: &
@@ -4296,14 +4313,14 @@
              F_abs_chl_sp       , & 
              F_abs_chl_phaeo    , & 
              ratio_C2N_proteins , &
-	     snwredist, &
-	     use_smliq_pnd, &
-	     rsnw_fall, &
-	     rsnw_tmax, &
-	     rhosnew, &
-	     rhosmax, &
-	     windmin, &
-	     drhosdwind
+             snwredist, &
+             use_smliq_pnd, &
+             rsnw_fall, &
+             rsnw_tmax, &
+             rhosnew, &
+             rhosmax, &
+             windmin, &
+             drhosdwind
             !restore_bgc
 
 !-----------------------------------------------------------------------
@@ -4813,14 +4830,14 @@
         F_abs_chl_sp       = F_abs_chl_sp_in
         F_abs_chl_phaeo    = F_abs_chl_phaeo_in
         ratio_C2N_proteins = ratio_C2N_proteins_in
-	snwredist = snwredist_in
-	use_smliq_pnd = use_smliq_pnd_in
-	rsnw_fall = rsnw_fall_in
-	rsnw_tmax = rsnw_tmax_in
-	rhosnew = rhosnew_in
-	rhosmax = rhosmax_in
-	windmin = windmin_in
-	drhosdwind = drhosdwind_in
+        snwredist = snwredist_in
+        use_smliq_pnd = use_smliq_pnd_in
+        rsnw_fall = rsnw_fall_in
+        rsnw_tmax = rsnw_tmax_in
+        rhosnew = rhosnew_in
+        rhosmax = rhosmax_in
+        windmin = windmin_in
+        drhosdwind = drhosdwind_in
 
       end subroutine colpkg_init_parameters
 

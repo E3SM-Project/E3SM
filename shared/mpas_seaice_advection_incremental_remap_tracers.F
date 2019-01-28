@@ -329,7 +329,7 @@ contains
     endif
 
     ! snow grain radius
-    if (pkgColumnTracerSnowDensityActive) then
+    if (pkgColumnTracerSnowGrainRadiusActive) then
        call add_tracer_to_tracer_linked_list(tracersHead, 'snowGrainRadius','snowVolumeCategory')
     endif
 
