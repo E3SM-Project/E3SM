@@ -2304,6 +2304,12 @@ Updraft velocity paramterization option for ice nucleation.
 Default: 1
 </entry>
 
+<entry id="microp_aero_wsubmin" type="real" category="microphysics"
+       group="microp_aero_nl" valid_values="" >
+Minimum subgrid vertical velocity
+Default: 0.2
+</entry>
+
 <entry id="use_hetfrz_classnuc" type="logical" category="microphys"
        group="phys_ctl_nl" valid_values="" >
 Switch to turn on heterogeneous freezing code.
@@ -2538,7 +2544,11 @@ Bottom layer adjustment for setting "launching" level(mx) (to be at maximum mois
 Default: set by build-namelist
 </entry>
 
-
+<entry id="zmconv_tp_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Tpert scale factor in ZM deep convection scheme.
+Default: 0.D0
+</entry>
 
 
 <!-- Cloud sedimentation -->
@@ -2874,6 +2884,12 @@ Default: .false.
 <entry id="clubb_stabcorrect" type="logical"  category="pblrad"
        group="clubbpbl_diff_nl" valid_values="" >
 CLUBB do explicit diffusion with a stability correction
+Default: .false.
+</entry>
+
+<entry id="clubb_use_sgv" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Enables subgrid features gustiness, tpert, and thv fix
 Default: .false.
 </entry>
 
