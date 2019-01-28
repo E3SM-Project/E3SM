@@ -37,7 +37,7 @@ public:
   void finalize ( /* inputs */ );
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const;
+  void register_fields (FieldRepository<Real, device_type>& field_repo) const;
 
   // Providing a list of required and computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_fields_to_import; }
@@ -46,14 +46,14 @@ public:
 protected:
 
   // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f);
-  void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& f);
+  void set_required_field_impl (const Field<const Real, device_type>& f);
+  void set_computed_field_impl (const Field<      Real, device_type>& f);
 
   std::set<FieldIdentifier> m_fields_to_export;
   std::set<FieldIdentifier> m_fields_to_import;
 
-  field_repo_type<HostMemSpace>   m_host_field_repo;
-  field_repo_type<ExecMemSpace>   m_device_field_repo;
+  field_repo_type<host_device_type> m_host_field_repo;
+  field_repo_type<device_type>      m_device_field_repo;
 
   Comm    m_comm;
 };

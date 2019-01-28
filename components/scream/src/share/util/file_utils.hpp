@@ -1,11 +1,11 @@
 #ifndef SCREAM_FILE_UTILS_HPP
-#define  SCREAM_FILE_UTILS_HPP
+#define SCREAM_FILE_UTILS_HPP
 
 #include <cstdio>
 #include <sstream>
 #include <memory>
 
-#include "share/error_defs.hpp"
+#include "share/scream_assert.hpp"
 
 namespace scream {
 namespace util {
@@ -16,13 +16,13 @@ using FILEPtr = std::unique_ptr<FILE, FILECloser>;
 template<typename T>
 void write (const T* v, size_t sz, const FILEPtr& fid) {
   size_t nwrite = fwrite(v, sizeof(T), sz, fid.get());
-  scream_throw_if(nwrite != sz, "write: nwrite = " << nwrite << " sz = " << sz);
+  scream_require_msg(nwrite == sz, "write: nwrite = " << nwrite << " sz = " << sz);
 }
 
 template<typename T>
 void read (T* v, size_t sz, const FILEPtr& fid) {
   size_t nread = fread(v, sizeof(T), sz, fid.get());
-  scream_throw_if(nread != sz, "read: nread = " << nread << " sz = " << sz);
+  scream_require_msg(nread == sz, "read: nread = " << nread << " sz = " << sz);
 }
 
 } // namespace util

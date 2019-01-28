@@ -2,7 +2,7 @@
 #define SCREAM_PARAMETER_LIST_HPP
 
 #include "util/scream_std_meta.hpp"
-#include "error_defs.hpp"
+#include "scream_assert.hpp"
 
 #include <map>
 

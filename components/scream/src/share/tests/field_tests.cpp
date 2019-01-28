@@ -36,6 +36,8 @@ TEST_CASE("field", "") {
   using namespace scream;
   using namespace scream::pack;
 
+  using Device = DefaultDevice;
+
   std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::Level};
   std::vector<int> dims = {2, 3, 12};
 
@@ -44,10 +46,10 @@ TEST_CASE("field", "") {
 
   // Check copy constructor
   SECTION ("copy ctor") {
-    Field<Real,HostMemSpace,MemoryManaged> f1 (fid);
+    Field<Real,Device> f1 (fid);
     f1.allocate_view();
 
-    Field<const Real,HostMemSpace,MemoryManaged> f2 = f1;
+    Field<const Real,Device> f2 = f1;
     REQUIRE(f2.get_header_ptr()==f1.get_header_ptr());
     REQUIRE(f2.get_view()==f1.get_view());
     REQUIRE(f2.is_allocated());
@@ -55,7 +57,7 @@ TEST_CASE("field", "") {
 
   // Check if we can extract a reshaped view
   SECTION ("reshape simple") {
-    Field<Real,HostMemSpace,MemoryManaged> f1 (fid);
+    Field<Real,Device> f1 (fid);
     f1.allocate_view();
 
     auto v1d = f1.get_view();
@@ -65,7 +67,7 @@ TEST_CASE("field", "") {
 
   // Check if we can request multiple value types
   SECTION ("reshape multiple value types") {
-    Field<Real,HostMemSpace,MemoryManaged> f1 (fid);
+    Field<Real,Device> f1 (fid);
     f1.get_header().get_alloc_properties().request_value_type_allocation<Pack<Real,8>>();
     f1.allocate_view();
 
@@ -91,6 +93,8 @@ TEST_CASE("field", "") {
 TEST_CASE("field_repo", "") {
   using namespace scream;
 
+  using Device = DefaultDevice;
+
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::Level};
 
@@ -103,7 +107,7 @@ TEST_CASE("field_repo", "") {
   fid1.set_dimensions(dims1);
   fid2.set_dimensions(dims2);
 
-  FieldRepository<Real,ExecMemSpace>  repo_dev;
+  FieldRepository<Real,Device>  repo_dev;
 
   repo_dev.registration_begins();
   repo_dev.register_field(fid1);

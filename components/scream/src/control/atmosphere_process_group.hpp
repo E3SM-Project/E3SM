@@ -38,7 +38,7 @@ public:
   // The type of the block (e.g., dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Group; }
 
-  // The name of the block 
+  // The name of the block
   std::string name () const { return m_group_name; }
 
   // The communicator associated with this atm process
@@ -50,7 +50,7 @@ public:
   void finalize   (/* what inputs? */);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const;
+  void register_fields (FieldRepository<Real, device_type>& field_repo) const;
 
   // The methods used to query the process for its inputs/outputs
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
@@ -59,8 +59,8 @@ public:
 protected:
 
   // The methods to set the fields in the process
-  void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f);
-  void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& f);
+  void set_required_field_impl (const Field<const Real, device_type>& f);
+  void set_computed_field_impl (const Field<      Real, device_type>& f);
 
 
   // The communicator that each process in this group uses

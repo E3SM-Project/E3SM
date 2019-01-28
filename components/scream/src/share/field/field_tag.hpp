@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_TAG_HPP
 #define SCREAM_FIELD_TAG_HPP
 
-#include <share/error_defs.hpp>
+#include <share/scream_assert.hpp>
 #include <string>
 
 namespace scream

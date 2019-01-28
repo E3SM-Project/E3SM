@@ -2,7 +2,7 @@
 
 #include <mpi.h>
 
-#include "error_defs.hpp"
+#include "scream_assert.hpp"
 #include "scream_session.hpp"
 
 namespace scream {
@@ -30,5 +30,5 @@ void runtime_abort(const std::string& message, int code) {
   }
 }
 
-} // namespace scream 
+} // namespace scream
 } // namespace error

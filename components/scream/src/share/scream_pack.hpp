@@ -4,15 +4,18 @@
 //TODO
 // - bounds checking define
 
-#include "util/math_utils.hpp"    // for min, max
-#include "scream_types.hpp"       // for Int
-#include "util/scream_utils.hpp"  // for TypeName
-#include "scream_macros.hpp"      // for vector annotations
+#include "scream_types.hpp"
+#include "util/scream_utils.hpp"
+#include "scream_macros.hpp"
 
 namespace scream {
 namespace pack {
 
-/* Pack is a vectorization pack, and Mask is a conditional mask for Pack::set
+/* API for using "packed" data in scream. Packs are just bundles of N
+   scalars wthin a single object. Using packed data makes it much easier
+   to get good vectorization with C++.
+
+   Pack is a vectorization pack, and Mask is a conditional mask for Pack::set
    constructed from operators among packs.
 
    If pack size (PACKN) is 1, then a Pack behaves as a scalar, and a Mask
@@ -23,26 +26,39 @@ namespace pack {
 
 template <int PACKN>
 struct Mask {
-  // One tends to think a short boolean type would be useful here, but that is
-  // bad for vectorization. int or long are best.
+  // One tends to think a short boolean type would be useful here (e.g., bool or
+  // char), but that is bad for vectorization. int or long are best.
   typedef long type;
 
+  // A tag for this struct for type checking.
   enum { masktag = true };
+  // Pack and Mask sizes are the same, n.
   enum { n = PACKN };
 
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask () {}
 
+  // Init all slots of the Mask to 'init'.
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask (const bool& init) {
-    // Intel 18 is having an issue with this loop.
+    //vector_simd // Intel 18 is having an issue with this loop.
     vector_disabled for (int i = 0; i < n; ++i) d[i] = init;
   }
 
+  // Set slot i to val.
   KOKKOS_FORCEINLINE_FUNCTION void set (const int& i, const bool& val) { d[i] = val; }
+  // Get slot i.
   KOKKOS_FORCEINLINE_FUNCTION bool operator[] (const int& i) const { return d[i]; }
 
+  // Is any slot true?
   KOKKOS_FORCEINLINE_FUNCTION bool any () const {
     bool b = false;
     vector_simd for (int i = 0; i < n; ++i) if (d[i]) b = true;
+    return b;
+  }
+
+  // Are all slots true?
+  KOKKOS_FORCEINLINE_FUNCTION bool all () const {
+    bool b = true;
+    vector_simd for (int i = 0; i < n; ++i) if ( ! d[i]) b = false;
     return b;
   }
 
@@ -50,11 +66,16 @@ private:
   type d[n];
 };
 
+// Use enable_if and masktag so that we can template on 'Mask' and yet not have
+// our operator overloads, in particular, be used for something other than the
+// Mask type.
 template <typename Mask>
 using OnlyMask = typename std::enable_if<Mask::masktag,Mask>::type;
 template <typename Mask, typename Return>
 using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
 
+// Codify how a user can construct their own loops conditioned on mask slot
+// values.
 #define scream_masked_loop(mask, s)                         \
   vector_simd for (int s = 0; s < mask.n; ++s) if (mask[s])
 
@@ -64,6 +85,7 @@ using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
 #define scream_masked_loop_no_vec(mask, s)                    \
   vector_novec for (int s = 0; s < mask.n; ++s) if (mask[s])
 
+// Implementation detail for generating binary ops for mask op mask.
 #define scream_mask_gen_bin_op_mm(op, impl)                   \
   template <typename Mask> KOKKOS_INLINE_FUNCTION             \
   OnlyMask<Mask> operator op (const Mask& a, const Mask& b) { \
@@ -76,6 +98,7 @@ using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
 scream_mask_gen_bin_op_mm(&&, &&)
 scream_mask_gen_bin_op_mm(||, ||)
 
+// Negate the mask.
 template <typename Mask> KOKKOS_INLINE_FUNCTION
 OnlyMask<Mask> operator ! (const Mask& m) {
   Mask nm(false);
@@ -83,6 +106,8 @@ OnlyMask<Mask> operator ! (const Mask& m) {
   return nm;
 }
 
+// Implementation detail for generating Pack assignment operators. _p means the
+// input is a Pack; _s means the input is a scalar.
 #define scream_pack_gen_assign_op_p(op)                   \
   KOKKOS_FORCEINLINE_FUNCTION                             \
   Pack& operator op (const Pack& a) {                     \
@@ -99,23 +124,31 @@ OnlyMask<Mask> operator ! (const Mask& m) {
   scream_pack_gen_assign_op_p(op)               \
   scream_pack_gen_assign_op_s(op)
 
+// The Pack type. Mask was defined first since it's used in Pack.
 template <typename SCALAR, int PACKN>
 struct Pack {
+  // Pack's tag for type checking.
   enum { packtag = true };
+  // Number of slots in the Pack.
   enum { n = PACKN };
 
-  typedef SCALAR scalar;
+  // A definitely non-const version of the input scalar type.
+  typedef typename std::remove_const<SCALAR>::type scalar;
 
   KOKKOS_FORCEINLINE_FUNCTION explicit Pack () {
 #ifndef KOKKOS_ENABLE_CUDA
+    // Quiet NaNs don't work on Cuda.
     vector_simd for (int i = 0; i < n; ++i)
       d[i] = std::numeric_limits<scalar>::quiet_NaN();
 #endif
   }
+
+  // Init all slots to scalar v.
   KOKKOS_FORCEINLINE_FUNCTION explicit Pack (const scalar& v) {
     vector_simd for (int i = 0; i < n; ++i) d[i] = v;
   }
 
+  // Init this Pack from another one.
   template <typename PackIn> KOKKOS_FORCEINLINE_FUNCTION explicit
   Pack (const PackIn& v, typename std::enable_if<PackIn::packtag>::type* = nullptr) {
     static_assert(static_cast<int>(PackIn::n) == static_cast<int>(n),
@@ -123,6 +156,8 @@ struct Pack {
     vector_simd for (int i = 0; i < n; ++i) d[i] = v[i];
   }
 
+  // Init this Pack from another one, but only where Mask is true; otherwise
+  // init to default value.
   template <typename PackIn> KOKKOS_FORCEINLINE_FUNCTION explicit
   Pack (const Mask<Pack::n>& m, const PackIn& p) {
     static_assert(static_cast<int>(PackIn::n) == static_cast<int>(n),
@@ -156,7 +191,7 @@ struct Pack {
                   "Pack::n must be the same.");
     vector_simd for (int i = 0; i < n; ++i) if (mask[i]) d[i] = p[i];
   }
-  
+
 private:
   scalar d[n];
 };

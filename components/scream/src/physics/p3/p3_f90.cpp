@@ -1,10 +1,8 @@
 #include "p3_f90.hpp"
 #include "p3_ic_cases.hpp"
 
-#include "share/error_defs.hpp"
+#include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
-#include "share/util/math_utils.hpp"
-
 
 using scream::Real;
 using scream::Int;
@@ -87,7 +85,7 @@ void p3_init () {
   static const char* dir = ".";
   Int info;
   p3_init_c(&dir, &info);
-  scream_throw_if(info != 0, "p3_init_c returned info " << info);
+  scream_require_msg(info == 0, "p3_init_c returned info " << info);
 }
 
 void p3_main (const FortranData& d) {
@@ -122,13 +120,6 @@ int test_FortranData () {
 
 int test_p3_init () {
   p3_init();
-  return 0;
-}
-
-int test_p3_main () {
-  FortranData d(11, 72);
-  d.dt = 0;
-  p3_main(d);
   return 0;
 }
 

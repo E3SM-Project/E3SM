@@ -19,12 +19,12 @@ namespace control {
 
 /*
  *  The driver for the atmosphere component.
- *  
+ *
  *  This class (AD) is responsible to keep track of the different atmosphere
  *  subcomponents (ASC) (parametrizations and dynamics). The AD is responsible for ensuring
  *  that all the ASCs required by the current test case are correctly initialized,
  *  that they are called in the correct order, and that they do not leak memory at the end.
- *  
+ *
  *  The AD is also responsible for handling the FieldManager(s) of the Atmosphere.
  *  It must keep track of the different fields, and of the ASCs that require
  *  each field, ensuring all dependencies are met (in a DAG fashion).
@@ -34,9 +34,11 @@ class AtmosphereDriver
 {
 public:
 
+  using device_type = DefaultDevice;
+
   // The initialization method should:
   //   1) create all the subcomponents needed, given the current simulation parameters
-  //   2) initialize all the subcomponents 
+  //   2) initialize all the subcomponents
   //   3) initialize the field manager(s)
   // The subcomponents are stored in the order requested by the user, so that when
   // going through the list, and calling their run method, they will be called in the
@@ -54,7 +56,7 @@ public:
 
 protected:
 
-  FieldRepository<Real,ExecMemSpace>          m_device_field_repo;
+  FieldRepository<Real,device_type>          m_device_field_repo;
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 
@@ -66,7 +68,7 @@ protected:
 
 int driver_stub();
 
-}  // namespace control 
+}  // namespace control
 }  // namespace scream
 
 #endif // SCREAM_ATMOSPHERE_DRIVER_HPP

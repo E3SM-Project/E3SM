@@ -4,7 +4,7 @@
 #include <string>
 #include <set>
 
-#include <share/error_defs.hpp>
+#include <share/scream_assert.hpp>
 #include <share/mpi/scream_comm.hpp>
 #include <share/field/field_identifier.hpp>
 #include <share/field/field_repository.hpp>
@@ -35,6 +35,9 @@ enum class AtmosphereProcessType {
 class AtmosphereProcess
 {
 public:
+  using device_type      = DefaultDevice; // may need to template class on this
+  using host_device_type = HostDevice;
+
   virtual ~AtmosphereProcess () = default;
 
   // The type of the block (e.g., dynamics or physics)
@@ -66,13 +69,13 @@ public:
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
   // template functio 'reinterpret_field' (see field.hpp for details).
-  void set_required_field (const Field<const Real, ExecMemSpace, MemoryManaged>& f) {
+  void set_required_field (const Field<const Real, device_type>& f) {
     error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
-  void set_computed_field (const Field<Real, ExecMemSpace, MemoryManaged>& f) {
+  void set_computed_field (const Field<Real, device_type>& f) {
     error::runtime_check(computes(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not compute this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
@@ -80,7 +83,7 @@ public:
   }
 
   // Register required/computed fields in the field repo
-  virtual void register_fields (FieldRepository<Real, ExecMemSpace>& field_repo) const = 0;
+  virtual void register_fields (FieldRepository<Real, device_type>& field_repo) const = 0;
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
@@ -92,8 +95,8 @@ public:
   bool computes (const FieldIdentifier& id) const { return get_computed_fields().find(id)!= get_computed_fields().end(); }
 
 protected:
-  virtual void set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& f) = 0;
-  virtual void set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& f) = 0;
+  virtual void set_required_field_impl (const Field<const Real, device_type>& f) = 0;
+  virtual void set_computed_field_impl (const Field<      Real, device_type>& f) = 0;
 };
 
 } // namespace scream

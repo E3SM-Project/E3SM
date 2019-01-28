@@ -28,11 +28,6 @@ TEST_CASE("p3_init", "p3") {
   REQUIRE(nerr == 0);
 }
 
-TEST_CASE("p3_main", "p3") {
-  int nerr = scream::p3::test_p3_main();
-  REQUIRE(nerr == 0);
-}
-
 TEST_CASE("p3_ic", "p3") {
   int nerr = scream::p3::test_p3_ic();
   REQUIRE(nerr == 0);

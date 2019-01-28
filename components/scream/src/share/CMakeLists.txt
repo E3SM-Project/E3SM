@@ -1,5 +1,5 @@
 set(SHARE_SRC
-  error_defs.cpp
+  scream_assert.cpp
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
@@ -7,13 +7,14 @@ set(SHARE_SRC
   scream_session.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
+  util/scream_arch.cpp
   util/array_io.cpp
   util/array_io_mod.f90
 )
 
 set(SHARE_HEADERS
   atmosphere_process.hpp
-  error_defs.hpp
+  scream_assert.hpp
   field/field.hpp
   field/field_alloc_prop.hpp
   field/field_identifier.hpp
@@ -28,6 +29,9 @@ set(SHARE_HEADERS
   util/file_utils.hpp
   util/math_utils.hpp
   util/scream_utils.hpp
+  util/scream_arch.hpp
+  util/scream_kokkos.hpp
+  scream_workspace.hpp
 )
 
 add_library(scream_share ${SHARE_SRC})

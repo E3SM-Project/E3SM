@@ -4,6 +4,14 @@
 #include <Kokkos_Core.hpp>
 
 #include "share/scream_config.hpp"
+#include "share/scream_kokkos_meta.hpp"
+
+/*
+ * Header contains globally useful types for Scream.
+ * The global Int and Real types are defined here along
+ * with a type dictionary for accessing commonly-used
+ * Kokkos types.
+ */
 
 namespace scream {
 
@@ -15,47 +23,59 @@ using Real = float;
 
 typedef int Int;
 
-// Detect ExecSpace using some ifdef logic. I put Serial here as a placeholder
-using ExecSpace = Kokkos::DefaultExecutionSpace;
-using HostSpace = Kokkos::HostSpace;
+#if defined KOKKOS_COMPILER_GNU
+// See https://github.com/kokkos/kokkos-kernels/issues/129
+# define ConstExceptGnu
+#else
+# define ConstExceptGnu const
+#endif
 
-// Memory spaces
-using ExecMemSpace = ExecSpace::memory_space;
-using HostMemSpace = HostSpace::memory_space;
+// The default device we use.
+using DefaultDevice = Kokkos::Device<Kokkos::DefaultExecutionSpace, Kokkos::DefaultExecutionSpace::memory_space>;
+
+// A device type to force host execution
+using HostDevice = Kokkos::Device<Kokkos::DefaultHostExecutionSpace, Kokkos::DefaultHostExecutionSpace::memory_space>;
+
+// Struct for getting useful Kokkos types based on the device
+template <typename DeviceType>
+struct KokkosTypes
+{
+  using Device = DeviceType;
+  using Layout = Kokkos::LayoutRight;
+  using MemSpace = typename Device::memory_space;
+  using ExeSpace = typename Device::execution_space;
+  using TeamPolicy = Kokkos::TeamPolicy<ExeSpace>;
+  using MemberType = typename TeamPolicy::member_type;
+
+  template <typename DataType>
+  using view = Kokkos::View<DataType, Layout, Device>;
+
+  template <typename Scalar>
+  using view_3d = view<Scalar***>;
+
+  template <typename Scalar>
+  using view_2d = view<Scalar**>;
+
+  template <typename Scalar>
+  using view_1d = view<Scalar*>;
+
+  template <typename Scalar, int X, int Y>
+  using view_2d_table = view<const Scalar[X][Y]>;
+
+  template <typename Scalar, int X>
+  using view_1d_table = view<const Scalar[X]>;
+
+  // Our workspace implementation makes this a useful type
+  template <typename Scalar, int N>
+  using view_1d_ptr_array = Kokkos::Array<ko::Unmanaged<view_1d<Scalar> >*, N>;
+
+  template <typename Scalar, int N>
+  using view_1d_ptr_carray = Kokkos::Array<const ko::Unmanaged<view_1d<Scalar> >*, N>;
+};
 
 // Memory traits
 using MemoryManaged   = Kokkos::MemoryTraits<Kokkos::Restrict>;
 using MemoryUnmanaged = Kokkos::MemoryTraits<Kokkos::Restrict | Kokkos::Unmanaged>;
-
-// A general view in Scream has layout right ('row-major'-like)
-template<typename DataType, typename... Properties>
-using ViewType = Kokkos::View<DataType, Kokkos::LayoutRight, Properties...>;
-
-// ======== Some particular view's aliases ========== //
-
-// Managed/Unmanaged view
-template <typename DataType, typename... Properties>
-using ViewManaged = ViewType<DataType, Properties..., MemoryManaged>;
-template <typename DataType, typename... Properties>
-using ViewUnmanaged = ViewType<DataType, Properties..., MemoryUnmanaged>;
-
-// Host/Deviceviews
-template <typename DataType, typename... Properties>
-using HostView = ViewType<DataType, HostMemSpace, Properties...>;
-template <typename DataType, typename... Properties>
-using ExecView = ViewType<DataType, ExecMemSpace, Properties...>;
-
-// Further specializations for execution space and managed/unmanaged memory
-template <typename DataType>
-using ExecViewManaged = ExecView<DataType, MemoryManaged>;
-template <typename DataType>
-using ExecViewUnmanaged = ExecView<DataType, MemoryUnmanaged>;
-
-// Further specializations for host space.
-template <typename DataType>
-using HostViewManaged = HostView<DataType, MemoryManaged>;
-template <typename DataType>
-using HostViewUnmanaged = HostView<DataType, MemoryUnmanaged>;
 
 namespace util {
 // Helper structure templated on a type T. It establishes

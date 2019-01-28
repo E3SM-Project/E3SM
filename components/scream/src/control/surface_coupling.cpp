@@ -30,15 +30,15 @@ void SurfaceCoupling::finalize ( /* inputs? */ ) {
   // clean up
 }
 
-void SurfaceCoupling::register_fields (FieldRepository<Real, ExecMemSpace>& /*field_repo*/) const {
+void SurfaceCoupling::register_fields (FieldRepository<Real, device_type>& /*field_repo*/) const {
   // register device fields in the repo
 }
 
-void SurfaceCoupling::set_required_field_impl (const Field<const Real, ExecMemSpace, MemoryManaged>& /*f*/) {
+void SurfaceCoupling::set_required_field_impl (const Field<const Real, device_type>& /*f*/) {
   /* impl */
 }
 
-void SurfaceCoupling::set_computed_field_impl (const Field<      Real, ExecMemSpace, MemoryManaged>& /*f*/) {
+void SurfaceCoupling::set_computed_field_impl (const Field<      Real, device_type>& /*f*/) {
   /* impl */
 }
 
