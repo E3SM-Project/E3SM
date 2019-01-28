@@ -4,7 +4,7 @@
 
 
 module semoab_mod    
-
+#ifdef HAVE_MOAB
   use kinds, only : real_kind, iulog, long_kind, int_kind
 !  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
 !       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
@@ -605,5 +605,5 @@ contains
 
     deallocate(valuesTag)
   end subroutine moab_export_data
-
+#endif
 end module semoab_mod
