@@ -445,9 +445,9 @@ contains
 
   subroutine init_column_snow(domain)
 
-    use cice_constants, only: &
-         cicePuny, &
-         ciceDensitySnow
+    use seaice_constants, only: &
+         seaicePuny, &
+         seaiceDensitySnow
 
     type(domain_type), intent(in) :: &
          domain
@@ -543,8 +543,8 @@ contains
                 do iCategory = 1, nCategories
                    if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
                       do iSnowLayer = 1, nSnowLayers
-                         snowIceMass(iSnowLayer,iCategory,iCell) = ciceDensitySnow
-                         snowDensity(iSnowLayer,iCategory,iCell) = ciceDensitySnow
+                         snowIceMass(iSnowLayer,iCategory,iCell) = seaiceDensitySnow
+                         snowDensity(iSnowLayer,iCategory,iCell) = seaiceDensitySnow
                          snowDensityViaContent(iCell) = snowDensityViaContent(iCell) &
                             + snowVolumeCategory(1,iCategory,iCell) * &
                             (snowIceMass(iSnowLayer,iCategory,iCell) + &
@@ -555,7 +555,7 @@ contains
                       enddo !iSnowLayer
                    endif !snowVolumeCategory
                 enddo !iCategory
-                if (snowVolumeCell(iCell) .gt.  cicePuny) then
+                if (snowVolumeCell(iCell) .gt.  seaicePuny) then
                    snowDensityViaContent(iCell) = snowDensityViaContent(iCell)/ &
                       (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))  !!!CHECK THIS!!!
                    snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell)/ &
@@ -2320,8 +2320,8 @@ contains
          colpkg_clear_warnings, &
          colpkg_get_warnings
 
-    use cice_constants, only: &
-         cicePuny
+    use seaice_constants, only: &
+         seaicePuny
 
     type(domain_type), intent(inout) :: domain
 
@@ -2482,6 +2482,9 @@ contains
 
           effectiveSnowDensityCategory(:,:) = 0.0_RKIND
           
+          abortFlag = .false.
+          abortMessage = ""
+
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
@@ -2522,10 +2525,12 @@ contains
                snowPropertyRate(:,:,:), &
                nSnowTemperatureIndex, &
                nSnowTemperatureGradIndex, &
-               nSnowDensityIndex)
+               nSnowDensityIndex, &
+               abortFlag, &
+               abortMessage)
 
           call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings)
+          call column_write_warnings(warnings, abortFlag)
 
           ! get category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -10835,6 +10840,14 @@ contains
     !-----------------------------------------------------------------------
     ! Parameters for snow
     !-----------------------------------------------------------------------
+
+    ! snwredist:
+    ! snow redistribution type
+    ! snwredist = config_snow_redistribution
+
+    ! use_smliq_pnd:
+    ! convert excess snow liquid to ponds
+    ! use_smliq_pnd = config_use_snow_liquid_ponds
 
     ! rsnw_fall:
     ! fallen snow grain radius (um)
