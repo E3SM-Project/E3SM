@@ -148,7 +148,7 @@ public:
 #ifdef KOKKOS_ENABLE_OPENMP
     return omp_get_thread_num() / _team_size;
 #else
-    return 1;
+    return 0;
 #endif
   }
 };
