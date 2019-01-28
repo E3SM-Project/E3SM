@@ -212,6 +212,11 @@ def run_diag(parameters):
             if parameters.debug:
                 sys.exit()
 
+    if not results:
+        msg = 'No parameters were able to be created. Please check your .py '
+        msg += 'file, and any .cfg files or command line args you\'re using.'
+        raise RuntimeError(msg)
+        
     return results
 
 
