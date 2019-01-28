@@ -191,7 +191,16 @@ class Dataset():
 
         file_name = timeseries_path.split('/')[-1]
         re_str = r'(?:{}_)(.*)(?:01_)'.format(var)
-        match = re.match(re_str, file_name).group(1)
+        matches = re.match(re_str, file_name)
+
+        if not matches:
+            msg = 'Error when extracting the start_yr from the file'
+            msg += ' for var ({}). We used a regex of {} on {},'
+            msg += ' but nothing was found.'
+            msg = msg.format(var, re_str, file_name)
+            raise RuntimeError(msg)
+
+        match = matches.group(1)
 
         if len(match) != 4:
             msg = 'Got an invalid value {} when '.format(match)
@@ -216,7 +225,16 @@ class Dataset():
 
         file_name = timeseries_path.split('/')[-1]
         re_str = r'(?:.*01_)(.*)(?:12.nc)'
-        match = re.match(re_str, file_name).group(1)
+        matches = re.match(re_str, file_name)
+        
+        if not matches:
+            msg = 'Error when extracting the end_yr from the file'
+            msg += ' for var ({}). We used a regex of {} on {},'
+            msg += ' but nothing was found.'
+            msg = msg.format(var, re_str, file_name)
+            raise RuntimeError(msg)
+
+        match = matches.group(1)
 
         if len(match) != 4:
             msg = 'Got an invalid value {} when '.format(match)
