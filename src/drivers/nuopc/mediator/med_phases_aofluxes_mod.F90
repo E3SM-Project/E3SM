@@ -301,7 +301,7 @@ contains
 
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
     use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
-    use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM 
+    use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM
     use ESMF                  , only : ESMF_Field, ESMF_FieldGet, ESMF_FieldBundle, ESMF_VMGet
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
@@ -450,7 +450,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        compute_atm_thbot = .false.
     else
-       allocate(aoflux%thbot(lsize)) 
+       allocate(aoflux%thbot(lsize))
        compute_atm_thbot = .true.
     end if
 
@@ -461,7 +461,7 @@ contains
        compute_atm_dens = .false.
     else
        compute_atm_dens = .true.
-       allocate(aoflux%dens(lsize)) 
+       allocate(aoflux%dens(lsize))
     end if
 
     ! if either density or potential temperature are computed, will need bottom level pressure
@@ -627,7 +627,7 @@ contains
     ! Update atmosphere/ocean surface fluxes
     !----------------------------------
 
-    if (associated(aoflux%prec_gust)) then 
+    if (associated(aoflux%prec_gust)) then
        do n = 1,lsize
          !aoflux%uGust(n) = 1.5_R8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
           aoflux%uGust(n) = 0.0_R8
@@ -637,14 +637,14 @@ contains
     if (compute_atm_thbot) then
        do n = 1,lsize
           if (aoflux%mask(n) /= 0._r8) then
-             aoflux%thbot(n) = aoflux%tbot(n)*((100000._R8/aoflux%pbot(n))**0.286_R8) 
+             aoflux%thbot(n) = aoflux%tbot(n)*((100000._R8/aoflux%pbot(n))**0.286_R8)
           end if
        end do
     end if
     if (compute_atm_dens) then
        do n = 1,lsize
           if (aoflux%mask(n) /= 0._r8) then
-             aoflux%dens(n) = aoflux%pbot(n)/(287.058_R8*(1._R8 + 0.608_R8*aoflux%shum(n))*aoflux%tbot(n)) 
+             aoflux%dens(n) = aoflux%pbot(n)/(287.058_R8*(1._R8 + 0.608_R8*aoflux%shum(n))*aoflux%tbot(n))
           end if
        end do
     end if

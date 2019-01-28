@@ -612,7 +612,7 @@ contains
              call ESMF_LogWrite(subname//':Fr_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
-          
+
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
              call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, stdname, shortname)
@@ -1671,7 +1671,7 @@ contains
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             deallocate(fldnames)
          end if
-            
+
          ! Create field bundles for mediator ocean/atmosphere flux computation
 
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux)
@@ -1679,11 +1679,11 @@ contains
             allocate(fldnames(fieldCount))
             call shr_nuopc_fldList_getfldnames(fldListMed_aoflux%flds, fldnames, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -2060,6 +2060,7 @@ contains
   subroutine med_finalize(gcomp, rc)
     use ESMF, only                  : ESMF_GridComp, ESMF_SUCCESS
     use med_internalstate_mod, only : logunit, mastertask
+    use med_phases_profile_mod, only : med_phases_profile_finalize
     use shr_nuopc_utils_mod, only   : shr_nuopc_memcheck
     use shr_file_mod, only          : shr_file_setlogunit
 
@@ -2070,7 +2071,8 @@ contains
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
-       write(logunit,*)' SUCCESSFUL TERMINATION '
+       write(logunit,*)' SUCCESSFUL TERMINATION OF CMEPS'
+       call med_phases_profile_finalize()
     end if
 
   end subroutine med_finalize

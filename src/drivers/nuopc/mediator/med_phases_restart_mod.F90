@@ -368,9 +368,7 @@ contains
     character(len=*), parameter :: subname='(med_phases_restart_read)'
     !---------------------------------------
     call t_startf('MED:'//subname)
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -414,10 +412,10 @@ contains
     if (dbug_flag > 1) then
        call ESMF_LogWrite(trim(subname)//": currtime = "//trim(currtimestr), ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-
-    call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+    if (iam==0) then
+       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    endif
     !---------------------------------------
     ! --- Restart File
     !---------------------------------------
@@ -487,9 +485,7 @@ contains
     !--- clean up
     !---------------------------------------
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_restart_read
