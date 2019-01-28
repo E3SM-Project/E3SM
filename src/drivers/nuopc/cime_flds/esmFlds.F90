@@ -40,7 +40,7 @@ module esmflds
   integer , public, parameter :: nmappers       = 9
 
   character(len=*) , public, parameter :: mapnames(nmappers) = & 
-       (/'bilnr','consf','consd','patch','fcopy','filer','nstod', 'nstod_consd', 'nstod_consf'/)
+       (/'bilnr', 'consf', 'consd', 'patch', 'fcopy', 'filer', 'nstod', 'nstod_consd', 'nstod_consf'/)
 
   !-----------------------------------------------
   ! Set coupling mode
@@ -61,6 +61,7 @@ module esmflds
   public :: shr_nuopc_fldList_GetNumFlds
   public :: shr_nuopc_fldList_GetFldInfo
   public :: shr_nuopc_fldList_Realize
+  public :: shr_nuopc_fldList_Document_Mapping
 
   !-----------------------------------------------
   ! Metadata array
@@ -773,5 +774,100 @@ contains
     end if
 
   end subroutine shr_nuopc_fldList_GetFldNames
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_Document_Mapping(logunit, med_coupling_active)
+
+    ! input/output variables
+    integer, intent(in)  :: logunit
+    logical, intent(in)  :: med_coupling_active(:,:) 
+
+    ! local variables
+    integer           :: nsrc,ndst,nf,nm,n
+    integer           :: mapindex
+    character(len=CS) :: mapnorm
+    character(len=CL) :: mapfile
+    character(len=CS) :: fldname
+    character(len=CS) :: stdname
+    character(len=CX) :: merge_fields
+    character(len=CX) :: merge_field
+    character(len=CS) :: merge_type
+    character(len=CS) :: merge_fracname
+    character(len=CS) :: string
+    character(len=CL) :: mrgstr
+    character(len=CL) :: cvalue
+    logical           :: init_mrgstr
+    character(len=*),parameter :: subname = '(shr_nuopc_fldList_Document_Mapping)'
+    !-----------------------------------------------------------
+
+    !---------------------------------------
+    ! Document mapping (also add albedo and aoflux) - move this routine to esmFlds.F90
+    !---------------------------------------
+
+    ! Loop over src components
+    do nsrc = 1,ncomps
+       ! Loop over all possible destination components for each src component
+       do ndst = 1,ncomps
+          if (nsrc /= ndst .and. med_coupling_active(nsrc,ndst)) then
+             ! Write all the mappings for fields from the src to the destination component
+             write(logunit,*)' '
+             do n = 1,size(fldListFr(nsrc)%flds)
+                mapindex = fldListFr(nsrc)%flds(n)%mapindex(ndst)
+                if ( mapindex /= mapunset) then
+                   fldname  = trim(fldListFr(nsrc)%flds(n)%stdname)
+                   mapnorm  = trim(fldListFr(nsrc)%flds(n)%mapnorm(ndst))
+                   mapfile  = trim(fldListFr(nsrc)%flds(n)%mapfile(ndst))
+
+                   if (trim(mapnorm) == 'unset') then
+                      cvalue = ' mapping '//trim(compname(nsrc))//'->'//trim(compname(ndst)) //' '//trim(fldname) // &
+                           ' via '// trim(mapnames(mapindex))
+                   else
+                      cvalue = ' mapping '//trim(compname(nsrc))//'->'//trim(compname(ndst)) //' '//trim(fldname) // &
+                           ' via '// trim(mapnames(mapindex)) // ' with '// trim(mapnorm) // ' normalization'
+                   end if
+                   write(logunit,100) trim(cvalue)
+                   if (trim(mapfile) /= 'unset' .and. trim(mapfile) /= 'idmap') then
+                      cvalue = ' and the mapping file '// trim(mapfile)
+                      write(logunit,101) trim(cvalue)
+                   end if
+                end if
+             end do
+
+          end if
+       end do
+    end do
+
+    ! ocn-> atm mappings for atm/ocn fluxes computed in mediator on the ocn grid
+    nsrc = compocn
+    ndst = compatm
+    if (med_coupling_active(nsrc,ndst)) then
+       do n = 1,size(fldListMed_aoflux%flds)
+          mapindex = fldlistMed_aoflux%flds(n)%mapindex(ndst)
+          if ( mapindex /= mapunset) then
+             fldname  = trim(fldlistMed_aoflux%flds(n)%stdname)
+             mapnorm  = trim(fldlistMed_aoflux%flds(n)%mapnorm(ndst))
+             mapfile  = trim(fldlistMed_aoflux%flds(n)%mapfile(ndst))
+
+             if (trim(mapnorm) == 'unset') then
+                cvalue = ' mapping '//trim(compname(nsrc))//'->'//trim(compname(ndst)) //' '//trim(fldname) // &
+                     ' via '// trim(mapnames(mapindex))
+             else
+                cvalue = ' mapping '//trim(compname(nsrc))//'->'//trim(compname(ndst)) //' '//trim(fldname) // &
+                     ' via '// trim(mapnames(mapindex)) // ' with '// trim(mapnorm) // ' normalization'
+             end if
+             write(logunit,100) trim(cvalue)
+             if (trim(mapfile) /= 'unset' .and. trim(mapfile) /= 'idmap') then
+                cvalue = ' and the mapping file '// trim(mapfile)
+                write(logunit,101) trim(cvalue)
+             end if
+          end if
+       end do
+    end if
+
+100 format(a)
+101 format(3x,a)
+
+  end subroutine shr_nuopc_fldList_Document_Mapping
 
 end module esmflds

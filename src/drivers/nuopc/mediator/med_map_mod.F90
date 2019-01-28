@@ -658,7 +658,7 @@ contains
           end if
        else if (mapindex == mapnstod_consf) then
           if (.not. ESMF_RouteHandleIsCreated(RouteHandles(mapconsf), rc=rc) .or. &
-               .not. ESMF_RouteHandleIsCreated(RouteHandles(mapnstod), rc=rc)) then
+              .not. ESMF_RouteHandleIsCreated(RouteHandles(mapnstod), rc=rc)) then
              call ESMF_LogWrite(trim(subname)//trim(lstring)//&
                   ": ERROR RH not available for "//mapnames(mapindex)//": fld="//trim(fldname), &
                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
@@ -696,7 +696,9 @@ contains
        else
           ! Determine the normalization for the map
           mapnorm  = fldsSrc(n)%mapnorm(destcomp)
+
           if ( trim(mapnorm) /= 'unset' .and. trim(mapnorm) /= 'one' .and. trim(mapnorm) /= 'none') then
+
              ! Get field and pointer to source field data in FBSrc
              call shr_nuopc_methods_FB_GetFldPtr(FBSrc, fldname, data_src, field=srcfield, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -738,6 +740,7 @@ contains
                 ! temp diagnostics
                 call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              else if (mapindex == mapnstod_consf) then
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
@@ -771,6 +774,7 @@ contains
                 endif
                 allocate(data_dsttmp(size(data_dst)))
              endif
+
              ! Copy data_dst to tmp location, regrid fraction from source
              data_dsttmp = data_dst
              data_dst = czero
@@ -815,6 +819,7 @@ contains
              mapindex = fldsSrc(n)%mapindex(destcomp)
 
              if (mapindex == mapnstod_consd) then
+
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -830,6 +835,7 @@ contains
                 ! temp diagnostics
                 call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              else if (mapindex == mapnstod_consf) then
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
