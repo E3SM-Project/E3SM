@@ -199,28 +199,28 @@ gridfile.variables['uReconstructX'][0,:] = 0.0
 gridfile.variables['uReconstructY'][0,:] = 0.0
 
 
-# Set basal traction coefficient, beta.
-# For now, assume a Weertman-type power law, tau_b = C * u^(1/m), where C = beta.
+# Set basal traction coefficient.  Now goes into field effectivePressure
+# For now, assume a Weertman-type power law, tau_b = C * u^(1/m), where C = effectivePressure.
 # Asay-Davis et al. (2016) specify C = 3.160 x 10^6 Pa m^{-1/3} s^{1/3} for power-law friction,
 #  with friction-law exponent m = 3.
 # Later, we could support a Tsai friction law.
 
-if 'beta' in gridfile.variables:
-   print 'beta already in gridfile'
-   kinbcmask = gridfile.variables['beta']
+if 'effectivePressure' in gridfile.variables:
+   print 'effectivePressure already in gridfile'
+   effectivePressure = gridfile.variables['effectivePressure']
 else:
-   print 'beta not in gridfile; create new variable'
+   print 'effectivePressure not in gridfile; create new variable'
    datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
-   beta = gridfile.createVariable('beta', datatype, ('Time','nCells'))
+   effectivePressure = gridfile.createVariable('effectivePressure', datatype, ('Time','nCells'))
 
-print "Defining beta"
-# For the Weertman power law, beta holds the 'C' coefficient.  The beta units in MPAS are a mess right now.  
-# In the MISMIP3D setup script, C = 10^7 Pa m^-1/3 s^1/3 translates to beta = 31880.
-# For MISMIP+, C = 3.160 x 10^6 Pa m^-1/3 s^1/3 translates to beta = 10002.
- 
+print "Defining effectivePressure"
+# For the Weertman power law, effectivePressure holds the 'C' coefficient.  The effectivePressure units in MPAS are a bit confusing.
+# In the MISMIP3D setup script, C = 10^7 Pa m^-1/3 s^1/3 translates to effectivePressure = 31880. (actually, 31651.755)
+# For MISMIP+, C = 3.160 x 10^6 Pa m^-1/3 s^1/3 translates to effectivePressure = 10002.
+
 C = 3.160e6   # Pa m^{-1/3} s^{1/3}
 C = C / seconds_per_year**(1.0/3.0)  # convert to MPAS units
-gridfile.variables['beta'][0,:] = C
+gridfile.variables['effectivePressure'][0,:] = C
 
 
 # Set up layerThicknessFractions

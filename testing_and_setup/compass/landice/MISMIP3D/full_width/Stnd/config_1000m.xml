@@ -59,7 +59,7 @@
                         <argument flag="-o">landice_grid.nc</argument>
                         <argument flag="-l">10</argument>
                         <argument flag="--diri"></argument>
-                        <argument flag="--beta"></argument>
+                        <argument flag="--effecpress"></argument>
                 </step>
 
                 <!-- Set up initial condition on to landice mesh -->
