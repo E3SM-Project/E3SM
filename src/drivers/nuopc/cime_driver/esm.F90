@@ -1380,6 +1380,7 @@ module ESM
 
           call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
 ! This code is not supported, we need an optional arg to NUOPC_DriverAddComp to include the
 ! per component thread count.  #3614572 in esmf_support
 !          call ESMF_GridCompSetVMMaxPEs(child, maxPeCountPerPet=nthrds, rc=rc)
