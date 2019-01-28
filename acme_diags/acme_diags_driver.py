@@ -188,6 +188,11 @@ def get_parameters(parser=ACMEParser()):
 
     parser.check_values_of_params(parameters)
 
+    if not parameters:
+        msg = 'No parameters were able to be created. Please check your .py '
+        msg += 'file, and any .cfg files or command line args you\'re using.'
+        raise RuntimeError(msg)
+
     return parameters
 
 
@@ -212,11 +217,6 @@ def run_diag(parameters):
             if parameters.debug:
                 sys.exit()
 
-    if not results:
-        msg = 'No parameters were able to be created. Please check your .py '
-        msg += 'file, and any .cfg files or command line args you\'re using.'
-        raise RuntimeError(msg)
-        
     return results
 
 
