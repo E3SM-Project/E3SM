@@ -236,11 +236,11 @@ contains
          
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          
-         frac_sno_eff            => waterstate_vars%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
-         frac_sno                => waterstate_vars%frac_sno_col            , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
-         snow_depth              => waterstate_vars%snow_depth_col          , & ! Input:  [real(r8) (:)   ]  snow height (m)                         
+         frac_sno_eff            => col_ws%frac_sno_eff        , & ! Input:  [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
+         frac_sno                => col_ws%frac_sno            , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         snow_depth              => col_ws%snow_depth          , & ! Input:  [real(r8) (:)   ]  snow height (m)                         
          h2osfc                  => col_ws%h2osfc              , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
-         frac_h2osfc             => waterstate_vars%frac_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_h2osfc             => col_ws%frac_h2osfc         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          
          qflx_evap_soi           => waterflux_vars%qflx_evap_soi_patch      , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
          qflx_tran_veg           => waterflux_vars%qflx_tran_veg_patch      , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
@@ -895,12 +895,12 @@ end subroutine SolveTemperature
          
          t_soisno     =>    col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          
-         frac_sno     =>    waterstate_vars%frac_sno_eff_col , & ! Input:  [real(r8) (:)   ]  fractional snow covered area            
+         frac_sno     =>    col_ws%frac_sno_eff , & ! Input:  [real(r8) (:)   ]  fractional snow covered area            
          h2osfc       =>    col_ws%h2osfc	     , & ! Input:  [real(r8) (:)   ]  surface (mm H2O)                        
-         h2osno       =>    waterstate_vars%h2osno_col	     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
+         h2osno       =>    col_ws%h2osno	     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_liq   =>    col_ws%h2osoi_liq   , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
          h2osoi_ice   =>    col_ws%h2osoi_ice   , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         bw           =>    waterstate_vars%bw_col	     , & ! Output: [real(r8) (:,:) ]  partial density of water in the snow pack (ice + liquid) [kg/m3] 
+         bw           =>    col_ws%bw	     , & ! Output: [real(r8) (:,:) ]  partial density of water in the snow pack (ice + liquid) [kg/m3] 
          
          tkmg         =>    soilstate_vars%tkmg_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, soil minerals  [W/m-K]
          tkdry        =>    soilstate_vars%tkdry_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, dry soil (W/m/Kelvin)
@@ -1111,13 +1111,13 @@ end subroutine SolveTemperature
          snl                       =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                    
          dz                        =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer thickness (m)                    
          
-         frac_sno                  =>    waterstate_vars%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-         frac_h2osfc               =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
-         h2osno                    =>    waterstate_vars%h2osno_col            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                     
+         frac_sno                  =>    col_ws%frac_sno_eff      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+         frac_h2osfc               =>    col_ws%frac_h2osfc       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
+         h2osno                    =>    col_ws%h2osno            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                     
          h2osoi_ice                =>    col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
          h2osfc                    =>    col_ws%h2osfc            , & ! Output: [real(r8) (:)   ] surface water (mm)                      
-         int_snow                  =>    waterstate_vars%int_snow_col          , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]               
-         snow_depth                =>    waterstate_vars%snow_depth_col        , & ! Output: [real(r8) (:)   ] snow height (m)                          
+         int_snow                  =>    col_ws%int_snow          , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]               
+         snow_depth                =>    col_ws%snow_depth        , & ! Output: [real(r8) (:)   ] snow height (m)                          
          
          qflx_h2osfc_to_ice        =>    waterflux_vars%qflx_h2osfc_to_ice_col , & ! Output: [real(r8) (:)   ] conversion of h2osfc to ice             
          
@@ -1347,11 +1347,11 @@ end subroutine SolveTemperature
          sucsat           =>    soilstate_vars%sucsat_col           , & ! Input:  [real(r8) (:,:) ] minimum soil suction (mm)              
          watsat           =>    soilstate_vars%watsat_col           , & ! Input:  [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
          
-         frac_sno_eff     =>    waterstate_vars%frac_sno_eff_col    , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
-         frac_sno         =>    waterstate_vars%frac_sno_col        , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-         frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col     , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
-         snow_depth       =>    waterstate_vars%snow_depth_col      , & ! Input:  [real(r8) (:)   ] snow height (m)                         
-         h2osno           =>    waterstate_vars%h2osno_col          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)                     
+         frac_sno_eff     =>    col_ws%frac_sno_eff    , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+         frac_sno         =>    col_ws%frac_sno        , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+         frac_h2osfc      =>    col_ws%frac_h2osfc     , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
+         snow_depth       =>    col_ws%snow_depth      , & ! Input:  [real(r8) (:)   ] snow height (m)                         
+         h2osno           =>    col_ws%h2osno          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)                     
          h2osoi_liq       =>    col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2) (new)             
          h2osoi_ice       =>    col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
          
@@ -1751,7 +1751,7 @@ end subroutine SolveTemperature
          
          frac_veg_nosno          => canopystate_vars%frac_veg_nosno_patch   , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          
-         frac_sno_eff            => waterstate_vars%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
+         frac_sno_eff            => col_ws%frac_sno_eff        , & ! Input:  [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
          
          qflx_ev_snow            => waterflux_vars%qflx_ev_snow_patch       , & ! Input:  [real(r8) (:)   ]  evaporation flux from snow (W/m**2) [+ to atm]
          qflx_ev_soil            => waterflux_vars%qflx_ev_soil_patch       , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
@@ -2108,8 +2108,8 @@ end subroutine SolveTemperature
     associate(                                              &
          t_soisno     => col_es%t_soisno    , & ! Input: [real(r8) (:,:) ]  soil temperature (Kelvin)      
          t_h2osfc     => col_es%t_h2osfc    , & ! Input: [real(r8) (:)   ]  surface water temperature               
-         frac_h2osfc  => waterstate_vars%frac_h2osfc_col  , & ! Input: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-         frac_sno_eff => waterstate_vars%frac_sno_eff_col , & ! Input: [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
+         frac_h2osfc  => col_ws%frac_h2osfc  , & ! Input: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_sno_eff => col_ws%frac_sno_eff , & ! Input: [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
          begc         => bounds%begc                      , & ! Input: [integer ] beginning column index
          endc         => bounds%endc                        & ! Input: [integer ] ending column index
          )
@@ -3217,8 +3217,8 @@ end subroutine SolveTemperature
 
     associate(                                              &
          z            => col_pp%z                            , & ! Input: [real(r8) (:,:) ]  layer thickness (m)
-         frac_h2osfc  => waterstate_vars%frac_h2osfc_col  , & ! Input: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-         frac_sno_eff => waterstate_vars%frac_sno_eff_col , & ! Input: [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         frac_h2osfc  => col_ws%frac_h2osfc  , & ! Input: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_sno_eff => col_ws%frac_sno_eff , & ! Input: [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          begc         => bounds%begc                      , & ! Input: [integer        ] beginning column index
          endc         => bounds%endc                        & ! Input: [integer        ] ending column index
          )

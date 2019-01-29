@@ -1354,7 +1354,7 @@ contains
          rootfr               =>   soilstate_vars%rootfr_patch               , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
          rootfr_col           =>   soilstate_vars%rootfr_col                 , & ! Output: [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd) (p2c)
 
-         frac_h2osfc          =>   waterstate_vars%frac_h2osfc_col           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_h2osfc          =>   col_ws%frac_h2osfc           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          qflx_surf            =>   waterflux_vars%qflx_surf_col              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
 
          conc_o2_sat          =>   ch4_vars%conc_o2_sat_col                  , & ! Input:  [real(r8) (:,:) ]  O2 conc  in each soil layer (mol/m3) (nlevsoi)  
@@ -2700,7 +2700,7 @@ contains
          watsat       =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
          h2osoi_vol   =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osfc       =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
-         frac_h2osfc  =>    waterstate_vars%frac_h2osfc_col         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_h2osfc  =>    col_ws%frac_h2osfc         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          )
 
       if (sat == 0) then                                   ! unsaturated
@@ -2895,12 +2895,12 @@ contains
          t_grnd        =>    col_es%t_grnd     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)                       
          t_h2osfc      =>    col_es%t_h2osfc   , & ! Input:  [real(r8) (:)   ]  surface water temperature               
 
-         frac_h2osfc   =>    waterstate_vars%frac_h2osfc_col , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-         snow_depth    =>    waterstate_vars%snow_depth_col  , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
+         frac_h2osfc   =>    col_ws%frac_h2osfc , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         snow_depth    =>    col_ws%snow_depth  , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
          h2osoi_vol    =>    col_ws%h2osoi_vol  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osoi_liq    =>    col_ws%h2osoi_liq  , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]   
          h2osoi_ice    =>    col_ws%h2osoi_ice  , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]       
-         h2osno        =>    waterstate_vars%h2osno_col      , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
+         h2osno        =>    col_ws%h2osno      , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
          h2osfc        =>    col_ws%h2osfc      , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
 
          c_atm         =>    ch4_vars%c_atm_grc              , & ! Input:  [real(r8) (:,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)         

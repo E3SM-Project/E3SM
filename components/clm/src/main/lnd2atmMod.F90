@@ -75,7 +75,7 @@ contains
     !------------------------------------------------------------------------
 
     call c2g(bounds, &
-         waterstate_vars%h2osno_col (bounds%begc:bounds%endc), &
+         col_ws%h2osno (bounds%begc:bounds%endc), &
          lnd2atm_vars%h2osno_grc    (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
@@ -323,7 +323,7 @@ contains
     ! TODO - this was in BalanceCheckMod - not sure where it belongs?
 
     call c2g( bounds, &
-         waterstate_vars%endwb_col(bounds%begc:bounds%endc), &
+         col_ws%endwb(bounds%begc:bounds%endc), &
          waterstate_vars%tws_grc  (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg

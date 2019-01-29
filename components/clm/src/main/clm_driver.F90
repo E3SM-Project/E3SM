@@ -824,7 +824,7 @@ contains
           l = col_pp%landunit(c)
           if (lun_pp%urbpoi(l)) then
              ! Urban landunit use Bonan 1996 (LSM Technical Note)
-             waterstate_vars%frac_sno_col(c) = min( waterstate_vars%snow_depth_col(c)/0.05_r8, 1._r8)
+             col_ws%frac_sno(c) = min( col_ws%snow_depth(c)/0.05_r8, 1._r8)
           end if
        end do
 
@@ -1511,12 +1511,12 @@ contains
     associate(                                                             & 
          snl                => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                    
         
-         h2osno             => waterstate_vars%h2osno_col                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
+         h2osno             => col_ws%h2osno                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_ice         => col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq         => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         do_capsnow         => waterstate_vars%do_capsnow_col            , & ! Output: [logical  (:)   ]  true => do snow capping                  
-         h2osno_old         => waterstate_vars%h2osno_old_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
-         frac_iceold        => waterstate_vars%frac_iceold_col           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
+         do_capsnow         => col_ws%do_capsnow            , & ! Output: [logical  (:)   ]  true => do snow capping                  
+         h2osno_old         => col_ws%h2osno_old            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
+         frac_iceold        => col_ws%frac_iceold           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
 
          elai               => canopystate_vars%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow    
          esai               => canopystate_vars%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow    
@@ -1637,7 +1637,7 @@ contains
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterstate_vars%h2ocan_patch(bounds%begp:bounds%endp), &
-         waterstate_vars%h2ocan_col(bounds%begc:bounds%endc))
+         col_ws%h2ocan(bounds%begc:bounds%endc))
 
     ! Averaging for patch evaporative flux variables
 

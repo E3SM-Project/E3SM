@@ -328,19 +328,10 @@ contains
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
 
-    this%h2osoi_liqice_10cm_col(begc:endc) = spval
-    call hist_addfld1d (fname='SOILWATER_10CM',  units='kg/m2', &
-         avgflag='A', long_name='soil liquid water + ice in top 10cm of soil (veg landunits only)', &
-         ptr_col=this%h2osoi_liqice_10cm_col, set_urb=spval, set_lake=spval, l2g_scale_type='veg')
-
     this%h2ocan_patch(begp:endp) = spval 
     call hist_addfld1d (fname='H2OCAN', units='mm',  &
          avgflag='A', long_name='intercepted water', &
          ptr_patch=this%h2ocan_patch, set_lake=0._r8)
-
-    call hist_addfld1d (fname='H2OSNO',  units='mm',  &
-         avgflag='A', long_name='snow depth (liquid water)', &
-         ptr_col=this%h2osno_col, c2l_scale_type='urbanf')
 
     this%liq1_grc(begg:endg) = spval
     call hist_addfld1d (fname='GC_LIQ1',  units='mm',  &
@@ -406,21 +397,6 @@ contains
 
     ! Fractions
 
-    this%frac_h2osfc_col(begc:endc) = spval
-    call hist_addfld1d (fname='FH2OSFC',  units='unitless',  &
-         avgflag='A', long_name='fraction of ground covered by surface water', &
-         ptr_col=this%frac_h2osfc_col)
-
-    this%frac_sno_col(begc:endc) = spval
-    call hist_addfld1d (fname='FSNO',  units='unitless',  &
-         avgflag='A', long_name='fraction of ground covered by snow', &
-         ptr_col=this%frac_sno_col, c2l_scale_type='urbanf')
-
-    this%frac_sno_eff_col(begc:endc) = spval
-    call hist_addfld1d (fname='FSNO_EFF',  units='unitless',  &
-         avgflag='A', long_name='effective fraction of ground covered by snow', &
-         ptr_col=this%frac_sno_eff_col, c2l_scale_type='urbanf')!, default='inactive')
-
     if (use_cn) then
        this%fwet_patch(begp:endp) = spval
        call hist_addfld1d (fname='FWET', units='proportion', &
@@ -435,68 +411,7 @@ contains
             ptr_patch=this%fdry_patch, default='inactive')
     end if
 
-    if (use_cn)then
-       this%frac_iceold_col(begc:endc,:) = spval
-       call hist_addfld2d (fname='FRAC_ICEOLD', units='proportion', type2d='levgrnd', &
-            avgflag='A', long_name='fraction of ice relative to the tot water', &
-            ptr_col=this%frac_iceold_col, default='inactive')
-    end if
-
     ! Snow properties - these will be vertically averaged over the snow profile
-
-    this%snow_depth_col(begc:endc) = spval
-    call hist_addfld1d (fname='SNOW_DEPTH',  units='m',  &
-         avgflag='A', long_name='snow height of snow covered area', &
-         ptr_col=this%snow_depth_col, c2l_scale_type='urbanf')!, default='inactive')
-
-    this%snowdp_col(begc:endc) = spval
-    call hist_addfld1d (fname='SNOWDP',  units='m',  &
-         avgflag='A', long_name='gridcell mean snow height', &
-         ptr_col=this%snowdp_col, c2l_scale_type='urbanf')
-
-    this%snowliq_col(begc:endc) = spval
-    call hist_addfld1d (fname='SNOWLIQ',  units='kg/m2',  &
-         avgflag='A', long_name='snow liquid water', &
-         ptr_col=this%snowliq_col)
-
-    this%snowice_col(begc:endc) = spval
-    call hist_addfld1d (fname='SNOWICE',  units='kg/m2', &
-         avgflag='A', long_name='snow ice', &
-         ptr_col=this%snowice_col)
-
-    this%int_snow_col(begc:endc) = spval
-    call hist_addfld1d (fname='INT_SNOW',  units='mm',  &
-         avgflag='A', long_name='accumulated swe (vegetated landunits only)', &
-         ptr_col=this%int_snow_col, l2g_scale_type='veg')
-
-    if (create_glacier_mec_landunit) then
-       this%snow_persistence_col(begc:endc) = spval
-       call hist_addfld1d (fname='SNOW_PERSISTENCE',  units='seconds',  &
-            avgflag='I', long_name='Length of time of continuous snow cover (nat. veg. landunits only)', &
-            ptr_col=this%snow_persistence_col, l2g_scale_type='natveg') 
-    end if
-
-    if (use_cn) then
-       this%wf_col(begc:endc) = spval
-       call hist_addfld1d (fname='WF', units='proportion', &
-            avgflag='A', long_name='soil water as frac. of whc for top 0.05 m', &
-            ptr_col=this%wf_col)
-    end if
-
-    this%h2osno_top_col(begc:endc) = spval
-    call hist_addfld1d (fname='H2OSNO_TOP', units='kg/m2', &
-         avgflag='A', long_name='mass of snow in top snow layer', &
-         ptr_col=this%h2osno_top_col, set_urb=spval)
-
-    this%snw_rds_top_col(begc:endc) = spval 
-    call hist_addfld1d (fname='SNORDSL', units='m^-6', &
-         avgflag='A', long_name='top snow layer effective grain radius', &
-         ptr_col=this%snw_rds_top_col, set_urb=spval, default='inactive')
-
-    this%sno_liq_top_col(begc:endc) = spval 
-    call hist_addfld1d (fname='SNOLIQFL', units='fraction', &
-         avgflag='A', long_name='top snow layer liquid water fraction (land)', &
-         ptr_col=this%sno_liq_top_col, set_urb=spval, default='inactive')
 
     ! We determine the fractional time (and fraction of the grid cell) over which each
     ! snow layer existed by running the snow averaging routine on a field whose value is 1
@@ -506,27 +421,6 @@ contains
          avgflag='A', long_name='Fraction of averaging period for which each snow layer existed', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_zero, default='inactive')
 
-    this%bw_col(begc:endc,-nlevsno+1:0) = spval
-    data2dptr => this%bw_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_BW', units='kg/m3', type2d='levsno', &
-         avgflag='A', long_name='Partial density of water in the snow pack (ice + liquid)', &
-         ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
-
-    this%snw_rds_col(begc:endc,-nlevsno+1:0) = spval
-    data2dptr => this%snw_rds_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_GS', units='Microns', type2d='levsno',  &
-         avgflag='A', long_name='Mean snow grain size', &
-         ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
-
-    this%errh2o_col(begc:endc) = spval
-    call hist_addfld1d (fname='ERRH2O', units='mm',  &
-         avgflag='A', long_name='total water conservation error', &
-         ptr_col=this%errh2o_col)
-
-    this%errh2osno_col(begc:endc) = spval
-    call hist_addfld1d (fname='ERRH2OSNO',  units='mm',  &
-         avgflag='A', long_name='imbalance in snow depth (liquid water)', &
-         ptr_col=this%errh2osno_col, c2l_scale_type='urbanf')
 
   end subroutine InitHistory
 
@@ -704,64 +598,15 @@ contains
 
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
-    call restartvar(ncid=ncid, flag=flag, varname='INT_SNOW', xtype=ncd_double,  & 
-         dim1name='column', &
-         long_name='accuumulated snow', units='mm', &
-         interpinic_flag='interp', readvar=readvar, data=this%int_snow_col)
-    if (flag=='read' .and. .not. readvar) then
-       this%int_snow_col(:) = 0.0_r8
-    end if
 
 
-    call restartvar(ncid=ncid, flag=flag, varname='H2OSNO', xtype=ncd_double,  &
-         dim1name='column', &
-         long_name='snow water', units='kg/m2', &
-         interpinic_flag='interp', readvar=readvar, data=this%h2osno_col)
     call restartvar(ncid=ncid, flag=flag, varname='H2OCAN', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='canopy water', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2ocan_patch)
 
-    call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &
-         dim1name='column', dim2name='levgrnd', switchdim=.true., &
-         long_name='soil pressure ', units='Pa', &
-         interpinic_flag='interp', readvar=readvar, data=this%soilp_col)
 
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='FH2OSFC', xtype=ncd_double,  &
-         dim1name='column',&
-         long_name='fraction of ground covered by h2osfc (0 to 1)', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frac_h2osfc_col)
-    if (flag == 'read' .and. .not. readvar) then
-       this%frac_h2osfc_col(bounds%begc:bounds%endc) = 0.0_r8
-    end if
-
-    call restartvar(ncid=ncid, flag=flag, varname='SNOW_DEPTH', xtype=ncd_double,  & 
-         dim1name='column', &
-         long_name='snow depth', units='m', &
-         interpinic_flag='interp', readvar=readvar, data=this%snow_depth_col) 
-
-    call restartvar(ncid=ncid, flag=flag, varname='SNOW_PERS', xtype=ncd_double,  & 
-         dim1name='column', &
-         long_name='continuous snow cover time', units='sec', &
-         interpinic_flag='interp', readvar=readvar, data=this%snow_persistence_col)    
-    if (flag=='read' .and. .not. readvar) then
-         this%snow_persistence_col(:) = 0.0_r8
-    end if
-
-    call restartvar(ncid=ncid, flag=flag, varname='frac_sno_eff', xtype=ncd_double,  & 
-         dim1name='column', &
-         long_name='fraction of ground covered by snow (0 to 1)',units='unitless', &
-         interpinic_flag='interp', readvar=readvar, data=this%frac_sno_eff_col)
-    if (flag == 'read' .and. .not. readvar) then
-       this%frac_sno_eff_col(bounds%begc:bounds%endc) = 0.0_r8
-    end if
-
-    call restartvar(ncid=ncid, flag=flag, varname='frac_sno', xtype=ncd_double,  & 
-         dim1name='column', &
-         long_name='fraction of ground covered by snow (0 to 1)',units='unitless',&
-         interpinic_flag='interp', readvar=readvar, data=this%frac_sno_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='FWET', xtype=ncd_double,  &
          dim1name='pft', &
@@ -769,50 +614,11 @@ contains
          interpinic_flag='interp', readvar=readvar, data=this%fwet_patch)
 
 
-    ! column type physical state variable - snw_rds
-    call restartvar(ncid=ncid, flag=flag, varname='snw_rds', xtype=ncd_double,  &
-         dim1name='column', dim2name='levsno', switchdim=.true., lowerb2=-nlevsno+1, upperb2=0, &
-         long_name='snow layer effective radius', units='um', &
-         interpinic_flag='interp', readvar=readvar, data=this%snw_rds_col)
-    if (flag == 'read' .and. .not. readvar) then
-
-       ! initial run, not restart: initialize snw_rds
-       if (masterproc) then
-          write(iulog,*) "SNICAR: This is an initial run (not a restart), and grain size/aerosol " // &
-               "mass data are not defined in initial condition file. Initialize snow " // &
-               "effective radius to fresh snow value, and snow/aerosol masses to zero."
-       endif
-
-       do c= bounds%begc, bounds%endc
-          if (col_pp%snl(c) < 0) then
-             this%snw_rds_col(c,col_pp%snl(c)+1:0) = snw_rds_min
-             this%snw_rds_col(c,-nlevsno+1:col_pp%snl(c)) = 0._r8
-             this%snw_rds_top_col(c) = snw_rds_min
-             this%sno_liq_top_col(c) = this%h2osoi_liq_col(c,col_pp%snl(c)+1) / &
-                                      (this%h2osoi_liq_col(c,col_pp%snl(c)+1)+this%h2osoi_ice_col(c,col_pp%snl(c)+1))
-          elseif (this%h2osno_col(c) > 0._r8) then
-             this%snw_rds_col(c,0) = snw_rds_min
-             this%snw_rds_col(c,-nlevsno+1:-1) = 0._r8
-             this%snw_rds_top_col(c) = spval
-             this%sno_liq_top_col(c) = spval
-          else
-             this%snw_rds_col(c,:) = 0._r8
-             this%snw_rds_top_col(c) = spval
-             this%sno_liq_top_col(c) = spval
-          endif
-       enddo
-    endif
 
     call restartvar(ncid=ncid, flag=flag, varname='qaf', xtype=ncd_double, dim1name='landunit',                       &
          long_name='urban canopy specific humidity', units='kg/kg',                                                   &
          interpinic_flag='interp', readvar=readvar, data=this%qaf_lun)
 
-    if (use_cn) then
-       call restartvar(ncid=ncid, flag=flag, varname='wf', xtype=ncd_double,  &
-            dim1name='column', &
-            long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%wf_col) 
-    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
          dim1name='gridcell', &

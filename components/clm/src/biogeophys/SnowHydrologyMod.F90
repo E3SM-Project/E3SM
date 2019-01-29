@@ -157,11 +157,11 @@ contains
          dz             => col_pp%dz                            , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
          snl            => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
 
-         do_capsnow     => waterstate_vars%do_capsnow_col    , & ! Input:  [logical  (:)   ] true => do snow capping                   
-         frac_sno_eff   => waterstate_vars%frac_sno_eff_col  , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
-         frac_sno       => waterstate_vars%frac_sno_col      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-         h2osno         => waterstate_vars%h2osno_col        , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                     
-         int_snow       => waterstate_vars%int_snow_col      , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]                
+         do_capsnow     => col_ws%do_capsnow    , & ! Input:  [logical  (:)   ] true => do snow capping                   
+         frac_sno_eff   => col_ws%frac_sno_eff  , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+         frac_sno       => col_ws%frac_sno      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+         h2osno         => col_ws%h2osno        , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                     
+         int_snow       => col_ws%int_snow      , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]                
          h2osoi_ice     => col_ws%h2osoi_ice    , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
          h2osoi_liq     => col_ws%h2osoi_liq    , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
 
@@ -570,11 +570,11 @@ contains
           t_soisno     => col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
           imelt        => col_ef%imelt       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
 
-          snow_depth   => waterstate_vars%snow_depth_col   , & ! Input:  [real(r8) (:)   ] snow height (m)                         
-          frac_sno     => waterstate_vars%frac_sno_eff_col , & ! Input:  [real(r8) (:)   ] snow covered fraction                    
-          swe_old      => waterstate_vars%swe_old_col      , & ! Input:  [real(r8) (:,:) ] initial swe values                     
-          int_snow     => waterstate_vars%int_snow_col     , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]                 
-          frac_iceold  => waterstate_vars%frac_iceold_col  , & ! Input:  [real(r8) (:,:) ] fraction of ice relative to the tot water
+          snow_depth   => col_ws%snow_depth   , & ! Input:  [real(r8) (:)   ] snow height (m)                         
+          frac_sno     => col_ws%frac_sno_eff , & ! Input:  [real(r8) (:)   ] snow covered fraction                    
+          swe_old      => col_ws%swe_old      , & ! Input:  [real(r8) (:,:) ] initial swe values                     
+          int_snow     => col_ws%int_snow     , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]                 
+          frac_iceold  => col_ws%frac_iceold  , & ! Input:  [real(r8) (:,:) ] fraction of ice relative to the tot water
           h2osoi_ice   => col_ws%h2osoi_ice   , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq   => col_ws%h2osoi_liq   , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
           
@@ -728,14 +728,14 @@ contains
           mss_dst3         => aerosol_vars%mss_dst3_col           , & ! Output: [real(r8) (:,:) ] dust species 3 mass in snow (col,lyr) [kg]
           mss_dst4         => aerosol_vars%mss_dst4_col           , & ! Output: [real(r8) (:,:) ] dust species 4 mass in snow (col,lyr) [kg]
 
-          frac_sno         => waterstate_vars%frac_sno_col        , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-          frac_sno_eff     => waterstate_vars%frac_sno_eff_col    , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-          snow_depth       => waterstate_vars%snow_depth_col      , & ! Input:  [real(r8) (:)   ] snow height (m)                          
-          int_snow         => waterstate_vars%int_snow_col        , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]                 
-          h2osno           => waterstate_vars%h2osno_col          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)                      
+          frac_sno         => col_ws%frac_sno        , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+          frac_sno_eff     => col_ws%frac_sno_eff    , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+          snow_depth       => col_ws%snow_depth      , & ! Input:  [real(r8) (:)   ] snow height (m)                          
+          int_snow         => col_ws%int_snow        , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]                 
+          h2osno           => col_ws%h2osno          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)                      
           h2osoi_ice       => col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq       => col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
-          snw_rds          => waterstate_vars%snw_rds_col         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
+          snw_rds          => col_ws%snw_rds         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
           mflx_snowlyr_col => waterflux_vars%mflx_snowlyr_col     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
           qflx_sl_top_soil => waterflux_vars%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
@@ -1099,8 +1099,8 @@ contains
 
           h2osoi_ice => col_ws%h2osoi_ice   , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
-          frac_sno   => waterstate_vars%frac_sno_eff_col , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-          snw_rds    => waterstate_vars%snw_rds_col      , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
+          frac_sno   => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+          snw_rds    => col_ws%snw_rds      , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
 
           mss_bcphi  => aerosol_vars%mss_bcphi_col       , & ! Output: [real(r8) (:,:) ] hydrophilic BC mass in snow (col,lyr) [kg]
           mss_bcpho  => aerosol_vars%mss_bcpho_col       , & ! Output: [real(r8) (:,:) ] hydrophobic BC mass in snow (col,lyr) [kg]

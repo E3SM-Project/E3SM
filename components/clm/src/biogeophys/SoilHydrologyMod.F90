@@ -322,12 +322,12 @@ contains
 
           t_soisno             =>    col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
-          frac_h2osfc          =>    waterstate_vars%frac_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-          frac_sno             =>    waterstate_vars%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
+          frac_h2osfc          =>    col_ws%frac_h2osfc         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+          frac_sno             =>    col_ws%frac_sno_eff        , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
           h2osoi_ice           =>    col_ws%h2osoi_ice          , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
           h2osoi_liq           =>    col_ws%h2osoi_liq          , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-          h2osno               =>    waterstate_vars%h2osno_col              , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
-          snow_depth           =>    waterstate_vars%snow_depth_col          , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
+          h2osno               =>    col_ws%h2osno              , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
+          snow_depth           =>    col_ws%snow_depth          , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
           h2osfc               =>    col_ws%h2osfc              , & ! Output: [real(r8) (:)   ]  surface water (mm)                                
 
           qflx_ev_soil         =>    waterflux_vars%qflx_ev_soil_col         , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]    
@@ -610,7 +610,7 @@ contains
           h2osoi_liq         =>    col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                            
           h2osoi_ice         =>    col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                                
           h2osoi_vol         =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-          frac_h2osfc        =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ]                                                    
+          frac_h2osfc        =>    col_ws%frac_h2osfc       , & ! Input:  [real(r8) (:)   ]                                                    
 
           qflx_dew_grnd      =>    waterflux_vars%qflx_dew_grnd_col      , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]      
           qflx_dew_snow      =>    waterflux_vars%qflx_dew_snow_col      , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]    

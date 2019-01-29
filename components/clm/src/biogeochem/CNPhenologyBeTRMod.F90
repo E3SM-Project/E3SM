@@ -30,7 +30,7 @@ module CNPhenologyBeTRMod
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es
+  use ColumnDataType      , only : col_es, col_ws
   use GridcellType        , only : grc_pp
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es
@@ -1904,7 +1904,7 @@ contains
          t_ref2m_min => veg_es%t_ref2m_min , & ! Input:  [real(r8) (:) ] daily minimum of average 2 m height surface air temperature (K)
          t_ref2m_max => veg_es%t_ref2m_max , & ! Input:  [real(r8) (:) ] daily maximum of average 2 m height surface air temperature (K)
 
-         snow_depth  => waterstate_vars%snow_depth_col     , & ! Input:  [real(r8) (:) ]  snow height (m)
+         snow_depth  => col_ws%snow_depth     , & ! Input:  [real(r8) (:) ]  snow height (m)
 
          hdidx       => cnstate_vars%hdidx_patch           , & ! Output: [real(r8) (:) ]  cold hardening index?
          cumvd       => cnstate_vars%cumvd_patch           , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?

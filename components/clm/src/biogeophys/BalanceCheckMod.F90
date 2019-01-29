@@ -77,14 +77,14 @@ contains
          zi                     =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
          h2ocan_patch           =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)       
          h2osfc                 =>    col_ws%h2osfc                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
-         h2osno                 =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
+         h2osno                 =>    col_ws%h2osno                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_ice             =>    col_ws%h2osoi_ice             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq             =>    col_ws%h2osoi_liq             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         total_plant_stored_h2o =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input: [real(r8) (:) dynamic water stored in plants
+         total_plant_stored_h2o =>    col_ws%total_plant_stored_h2o , & ! Input: [real(r8) (:) dynamic water stored in plants
          zwt                    =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)                   
          wa                     =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
-         h2ocan_col             =>    waterstate_vars%h2ocan_col                 , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O) (column level)    
-         begwb                  =>    waterstate_vars%begwb_col                    & ! Output: [real(r8) (:)   ]  water mass begining of the time step
+         h2ocan_col             =>    col_ws%h2ocan                 , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O) (column level)    
+         begwb                  =>    col_ws%begwb                    & ! Output: [real(r8) (:)   ]  water mass begining of the time step    
          )
 
       ! Determine beginning water balance for time step
@@ -206,16 +206,16 @@ contains
           forc_lwrad                 =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
           glc_dyn_runoff_routing     =>    glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
 
-          do_capsnow                 =>    waterstate_vars%do_capsnow_col             , & ! Input:  [logical (:)    ]  true => do snow capping                  
-          h2osno                     =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
-          h2osno_old                 =>    waterstate_vars%h2osno_old_col             , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O) at previous time step
-          frac_sno_eff               =>    waterstate_vars%frac_sno_eff_col           , & ! Input:  [real(r8) (:)   ]  effective snow fraction                 
-          frac_sno                   =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
-          begwb                      =>    waterstate_vars%begwb_col                  , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
-          errh2o                     =>    waterstate_vars%errh2o_col                 , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)       
-          errh2osno                  =>    waterstate_vars%errh2osno_col              , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
-          endwb                      =>    waterstate_vars%endwb_col                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
-          total_plant_stored_h2o_col =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
+          do_capsnow                 =>    col_ws%do_capsnow             , & ! Input:  [logical (:)    ]  true => do snow capping                  
+          h2osno                     =>    col_ws%h2osno                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
+          h2osno_old                 =>    col_ws%h2osno_old             , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O) at previous time step
+          frac_sno_eff               =>    col_ws%frac_sno_eff           , & ! Input:  [real(r8) (:)   ]  effective snow fraction                 
+          frac_sno                   =>    col_ws%frac_sno               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+          begwb                      =>    col_ws%begwb                  , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
+          errh2o                     =>    col_ws%errh2o                 , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)       
+          errh2osno                  =>    col_ws%errh2osno              , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
+          endwb                      =>    col_ws%endwb                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
+          total_plant_stored_h2o_col =>    col_ws%total_plant_stored_h2o , & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
           dwb                        =>    waterflux_vars%dwb_col                     , & ! Output: [real(r8) (:)   ]  change of water mass within the time step [kg/m2/s]
           qflx_rain_grnd_col         =>    waterflux_vars%qflx_rain_grnd_col          , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
           qflx_snow_grnd_col         =>    waterflux_vars%qflx_snow_grnd_col          , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]

@@ -803,8 +803,8 @@ contains
          z0m  => frictionvel_inst%z0m_patch  , & ! Output: [real(r8) (:)   ] momentum roughness length (m)      
          displa => canopystate_inst%displa_patch, &
          dleaf_patch => canopystate_inst%dleaf_patch, &
-         snow_depth => waterstate_inst%snow_depth_col, &
-         frac_sno_eff => waterstate_inst%frac_sno_eff_col, &
+         snow_depth => col_ws%snow_depth, &
+         frac_sno_eff => col_ws%frac_sno_eff, &
          frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch)
 
 
@@ -842,7 +842,7 @@ contains
        !pass the water storage in plants back to the HLM
           do s = 1, this%fates(nc)%nsites
              c = this%f2hmap(nc)%fcolumn(s)
-             waterstate_inst%total_plant_stored_h2o_col(c) = &
+             col_ws%total_plant_stored_h2o(c) = &
                   this%fates(nc)%bc_out(s)%plant_stored_h2o_si
           end do
        end if
@@ -1498,7 +1498,7 @@ contains
          bsw         => soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" 
          eff_porosity => soilstate_inst%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice       
          t_soisno     => col_es%t_soisno                    , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
-         h2osoi_liqvol => waterstate_inst%h2osoi_liqvol_col , & ! Input: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
+         h2osoi_liqvol => col_ws%h2osoi_liqvol , & ! Input: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
          btran       => energyflux_inst%btran_patch         , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1) 
          btran2       => energyflux_inst%btran2_patch       , & ! Output: [real(r8) (:)   ]  
          rresis      => energyflux_inst%rresis_patch        , & ! Output: [real(r8) (:,:) ]  root resistance by layer (0-1)  (nlevgrnd) 
@@ -2367,7 +2367,7 @@ contains
 !   
 !   do s = 1, this%fates(nc)%nsites
 !      c = this%f2hmap(nc)%fcolumn(s)
-!      waterstate_inst%total_plant_stored_h2o_col(c) = &
+!      col_ws%total_plant_stored_h2o(c) = &
 !            this%fates(nc)%bc_out(s)%plant_stored_h2o_si
 !   end do
 !   return
@@ -2453,7 +2453,7 @@ contains
 
    do s = 1, this%fates(nc)%nsites
       c = this%f2hmap(nc)%fcolumn(s)
-      waterstate_inst%total_plant_stored_h2o_col(c) = &
+      col_ws%total_plant_stored_h2o(c) = &
             this%fates(nc)%bc_out(s)%plant_stored_h2o_si
                
    end do

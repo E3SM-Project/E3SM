@@ -142,18 +142,18 @@ contains
          forc_t           =>    top_as%tbot                           , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
 
-         frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
-         frac_sno_eff     =>    waterstate_vars%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
-         frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+         frac_h2osfc      =>    col_ws%frac_h2osfc       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
+         frac_sno_eff     =>    col_ws%frac_sno_eff      , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+         frac_sno         =>    col_ws%frac_sno          , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
          h2osfc           =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ] surface water (mm)                      
-         h2osno           =>    waterstate_vars%h2osno_col            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                      
+         h2osno           =>    col_ws%h2osno            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                      
          h2osoi_ice       =>    col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
          h2osoi_liq       =>    col_ws%h2osoi_liq        , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
-         qg_snow          =>    waterstate_vars%qg_snow_col           , & ! Output: [real(r8) (:)   ] specific humidity at snow surface [kg/kg]
-         qg_soil          =>    waterstate_vars%qg_soil_col           , & ! Output: [real(r8) (:)   ] specific humidity at soil surface [kg/kg]
-         qg               =>    waterstate_vars%qg_col                , & ! Output: [real(r8) (:)   ] ground specific humidity [kg/kg]         
-         qg_h2osfc        =>    waterstate_vars%qg_h2osfc_col         , & ! Output: [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
-         dqgdT            =>    waterstate_vars%dqgdT_col             , & ! Output: [real(r8) (:)   ] d(qg)/dT                                 
+         qg_snow          =>    col_ws%qg_snow           , & ! Output: [real(r8) (:)   ] specific humidity at snow surface [kg/kg]
+         qg_soil          =>    col_ws%qg_soil           , & ! Output: [real(r8) (:)   ] specific humidity at soil surface [kg/kg]
+         qg               =>    col_ws%qg                , & ! Output: [real(r8) (:)   ] ground specific humidity [kg/kg]         
+         qg_h2osfc        =>    col_ws%qg_h2osfc         , & ! Output: [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
+         dqgdT            =>    col_ws%dqgdT             , & ! Output: [real(r8) (:)   ] d(qg)/dT                                 
 
          qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ] qflx_evap_soi + qflx_evap_can + qflx_tran_veg
          qflx_evap_veg    =>    waterflux_vars%qflx_evap_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation evaporation (mm H2O/s) (+ = to atm)

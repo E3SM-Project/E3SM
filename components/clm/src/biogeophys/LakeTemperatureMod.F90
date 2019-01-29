@@ -237,10 +237,10 @@ contains
          ws              =>   lakestate_vars%ws_col                , & ! Input:  [real(r8) (:)   ]  surface friction velocity (m/s)                   
          lake_raw       =>    lakestate_vars%lake_raw_col          , & ! Input:  [real(r8) (:)   ]  aerodynamic resistance for moisture (s/m)   
          
-         h2osno          =>   waterstate_vars%h2osno_col           , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
+         h2osno          =>   col_ws%h2osno           , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_liq      =>   col_ws%h2osoi_liq       , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]
          h2osoi_ice      =>   col_ws%h2osoi_ice       , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]
-         frac_iceold     =>   waterstate_vars%frac_iceold_col      , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
+         frac_iceold     =>   col_ws%frac_iceold      , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
 
          qflx_snofrz_col =>   waterflux_vars%qflx_snofrz_col       , & ! Output: [real(r8) (:)   ]  column-integrated snow freezing rate (kg m-2 s-1) [+]
 
@@ -1298,8 +1298,8 @@ contains
           dz              => col_pp%dz                             , & ! Input:  [real(r8)  (:,:) ] layer thickness (m)                   
           snl             => col_pp%snl                            , & ! Input:  [integer   (:)   ] number of snow layers                    
 
-          snow_depth      => waterstate_vars%snow_depth_col     , & ! Output: [real(r8)  (:)   ] snow height (m)                         
-          h2osno          => waterstate_vars%h2osno_col         , & ! Output: [real(r8)  (:)   ] snow water (mm H2O)                     
+          snow_depth      => col_ws%snow_depth     , & ! Output: [real(r8)  (:)   ] snow height (m)                         
+          h2osno          => col_ws%h2osno         , & ! Output: [real(r8)  (:)   ] snow water (mm H2O)                     
           h2osoi_liq      => col_ws%h2osoi_liq     , & ! Output: [real(r8)  (:,:) ] liquid water (kg/m2)                  
           h2osoi_ice      => col_ws%h2osoi_ice     , & ! Output: [real(r8)  (:,:) ] ice lens (kg/m2)                      
 

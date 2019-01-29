@@ -137,12 +137,12 @@ contains
          thm              =>    veg_es%thm              , & ! Input:  [real(r8) (:)   ]  intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
          t_h2osfc         =>    col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ]  surface water temperature
 
-         frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
-         qg_snow          =>    waterstate_vars%qg_snow_col           , & ! Input:  [real(r8) (:)   ]  specific humidity at snow surface [kg/kg]
-         qg_soil          =>    waterstate_vars%qg_soil_col           , & ! Input:  [real(r8) (:)   ]  specific humidity at soil surface [kg/kg]
-         qg_h2osfc        =>    waterstate_vars%qg_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
-         qg               =>    waterstate_vars%qg_col                , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface [kg/kg]
-         dqgdT            =>    waterstate_vars%dqgdT_col             , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"
+         frac_sno         =>    col_ws%frac_sno          , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         qg_snow          =>    col_ws%qg_snow           , & ! Input:  [real(r8) (:)   ]  specific humidity at snow surface [kg/kg]
+         qg_soil          =>    col_ws%qg_soil           , & ! Input:  [real(r8) (:)   ]  specific humidity at soil surface [kg/kg]
+         qg_h2osfc        =>    col_ws%qg_h2osfc         , & ! Input:  [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
+         qg               =>    col_ws%qg                , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface [kg/kg]
+         dqgdT            =>    col_ws%dqgdT             , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"
          h2osoi_ice       =>    col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
          h2osoi_liq       =>    col_ws%h2osoi_liq        , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
 

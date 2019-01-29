@@ -16,7 +16,8 @@ module VegStructUpdateMod
   use CNStateType          , only : cnstate_type
   use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
-  use VegetationType            , only : veg_pp
+  use ColumnDataType       , only : col_ws
+  use VegetationType       , only : veg_pp
   use CropType             , only : crop_type
   !
   implicit none
@@ -99,7 +100,7 @@ contains
          nind               =>  dgvs_vars%nind_patch              ,       & ! Input:  [real(r8) (:) ] number of individuals (#/m**2)                    
          fpcgrid            =>  dgvs_vars%fpcgrid_patch           ,       & ! Input:  [real(r8) (:) ] fractional area of pft (pft area/nat veg area)    
 
-         snow_depth         =>  waterstate_vars%snow_depth_col    ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
+         snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
 
          forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
 

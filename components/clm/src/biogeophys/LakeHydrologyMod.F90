@@ -33,6 +33,7 @@ module LakeHydrologyMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
+  use clm_varcon           , only : snw_rds_min  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -144,21 +145,21 @@ contains
          dTdz_top             =>  col_es%dTdz_top         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
          snot_top             =>  col_es%snot_top         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO
 
-         do_capsnow           =>  waterstate_vars%do_capsnow_col        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
-         begwb                =>  waterstate_vars%begwb_col             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
-         endwb                =>  waterstate_vars%endwb_col             , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
+         do_capsnow           =>  col_ws%do_capsnow        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
+         begwb                =>  col_ws%begwb             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
+         endwb                =>  col_ws%endwb             , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
          h2osoi_liq_depth_intg=> waterstate_vars%h2osoi_liq_depth_intg_col, & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
          h2osoi_ice_depth_intg=> waterstate_vars%h2osoi_ice_depth_intg_col, & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
-         snw_rds              =>  waterstate_vars%snw_rds_col           , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
-         snw_rds_top          =>  waterstate_vars%snw_rds_top_col       , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer [microns] 
-         h2osno_top           =>  waterstate_vars%h2osno_top_col        , & ! Output: [real(r8) (:)   ]  mass of snow in top layer [kg]    
-         sno_liq_top          =>  waterstate_vars%sno_liq_top_col       , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer [frc] 
-         frac_sno_eff         =>  waterstate_vars%frac_sno_eff_col      , & ! Output: [real(r8) (:)   ]  needed for snicar code                  
-         frac_iceold          =>  waterstate_vars%frac_iceold_col       , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-         snow_depth           =>  waterstate_vars%snow_depth_col        , & ! Output: [real(r8) (:)   ]  snow height (m)                         
-         h2osno               =>  waterstate_vars%h2osno_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
-         snowice              =>  waterstate_vars%snowice_col           , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
-         snowliq              =>  waterstate_vars%snowliq_col           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
+         snw_rds              =>  col_ws%snw_rds           , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
+         snw_rds_top          =>  col_ws%snw_rds_top       , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer [microns] 
+         h2osno_top           =>  col_ws%h2osno_top        , & ! Output: [real(r8) (:)   ]  mass of snow in top layer [kg]    
+         sno_liq_top          =>  col_ws%sno_liq_top       , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer [frc] 
+         frac_sno_eff         =>  col_ws%frac_sno_eff      , & ! Output: [real(r8) (:)   ]  needed for snicar code                  
+         frac_iceold          =>  col_ws%frac_iceold       , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
+         snow_depth           =>  col_ws%snow_depth        , & ! Output: [real(r8) (:)   ]  snow height (m)                         
+         h2osno               =>  col_ws%h2osno            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
+         snowice              =>  col_ws%snowice           , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
+         snowliq              =>  col_ws%snowliq           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
          h2osoi_ice           =>  col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq           =>  col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
          h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
@@ -299,7 +300,8 @@ contains
 
              ! intitialize SNICAR variables for fresh snow:
              call aerosol_vars%Reset(column=c)
-             call waterstate_vars%Reset(column=c)
+             ! call waterstate_vars%Reset(column=c)
+             col_ws%snw_rds(c,0) = snw_rds_min
 
          end if
 

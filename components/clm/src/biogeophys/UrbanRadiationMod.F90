@@ -26,7 +26,7 @@ module UrbanRadiationMod
   use TopounitDataType  , only : top_af
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp 
-  use ColumnDataType    , only : col_es  
+  use ColumnDataType    , only : col_es, col_ws  
   use VegetationType    , only : veg_pp                
   use VegetationDataType, only : veg_es, veg_ef
   !
@@ -126,7 +126,7 @@ contains
          forc_solar         =>    top_af%solar                               , & ! Input:  [real(r8) (:)   ]  incident solar radiation (W/m**2)                 
          forc_lwrad         =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
 
-         frac_sno           =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
+         frac_sno           =>    col_ws%frac_sno               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
 
          t_ref2m            =>    veg_es%t_ref2m             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
          t_grnd             =>    col_es%t_grnd                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            

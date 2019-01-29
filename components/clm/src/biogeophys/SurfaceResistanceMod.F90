@@ -127,12 +127,12 @@ contains
           watfc       =>    soilstate_vars%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
           watmin      =>    soilstate_vars%watmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
           sucmin      =>    soilstate_vars%sucmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
-          soilp_col   =>    waterstate_vars%soilp_col      , & ! Input:  [real(r8) (:,:)] soil water pressure (Pa)
+          soilp_col   =>    col_ws%soilp      , & ! Input:  [real(r8) (:,:)] soil water pressure (Pa)
           
           h2osoi_ice  =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
           h2osoi_liq  =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
-          frac_sno    =>    waterstate_vars%frac_sno_col   , & ! Input:  [real(r8) (:)] fraction of ground covered by snow (0 to 1)
-          frac_h2osfc =>    waterstate_vars%frac_h2osfc_col  & ! Input:  [real(r8) (:)]  fraction of ground covered by surface water (0 to 1)
+          frac_sno    =>    col_ws%frac_sno   , & ! Input:  [real(r8) (:)] fraction of ground covered by snow (0 to 1)
+          frac_h2osfc =>    col_ws%frac_h2osfc  & ! Input:  [real(r8) (:)]  fraction of ground covered by surface water (0 to 1)
           )
 
        do fc = 1,num_nolakec

@@ -26,7 +26,8 @@ module CanopyHydrologyMod
   use TopounitDataType, only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnType      , only : col_pp 
   use ColumnDataType  , only : col_es, col_ws  
-  use VegetationType  , only : veg_pp                
+  use VegetationType  , only : veg_pp  
+  use clm_varcon      , only : snw_rds_min  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -197,19 +198,19 @@ contains
           t_grnd               => col_es%t_grnd              , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
           t_soisno             => col_es%t_soisno            , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)  
 
-          do_capsnow           => waterstate_vars%do_capsnow_col           , & ! Output: [logical  (:)   ]  true => do snow capping                  
+          do_capsnow           => col_ws%do_capsnow           , & ! Output: [logical  (:)   ]  true => do snow capping                  
           h2ocan               => waterstate_vars%h2ocan_patch             , & ! Output: [real(r8) (:)   ]  total canopy water (mm H2O)             
           h2osfc               => col_ws%h2osfc               , & ! Output: [real(r8) (:)   ]  surface water (mm)                      
-          h2osno               => waterstate_vars%h2osno_col               , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
-          snow_depth           => waterstate_vars%snow_depth_col           , & ! Output: [real(r8) (:)   ]  snow height (m)                         
-          int_snow             => waterstate_vars%int_snow_col             , & ! Output: [real(r8) (:)   ]  integrated snowfall [mm]                
-          frac_sno_eff         => waterstate_vars%frac_sno_eff_col         , & ! Output: [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
-          frac_sno             => waterstate_vars%frac_sno_col             , & ! Output: [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
-          frac_h2osfc          => waterstate_vars%frac_h2osfc_col          , & ! Output: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-          frac_iceold          => waterstate_vars%frac_iceold_col          , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
+          h2osno               => col_ws%h2osno               , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
+          snow_depth           => col_ws%snow_depth           , & ! Output: [real(r8) (:)   ]  snow height (m)                         
+          int_snow             => col_ws%int_snow             , & ! Output: [real(r8) (:)   ]  integrated snowfall [mm]                
+          frac_sno_eff         => col_ws%frac_sno_eff         , & ! Output: [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
+          frac_sno             => col_ws%frac_sno             , & ! Output: [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+          frac_h2osfc          => col_ws%frac_h2osfc          , & ! Output: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+          frac_iceold          => col_ws%frac_iceold          , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
           h2osoi_ice           => col_ws%h2osoi_ice           , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
           h2osoi_liq           => col_ws%h2osoi_liq           , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
-          swe_old              => waterstate_vars%swe_old_col              , & ! Output: [real(r8) (:,:) ]  snow water before update              
+          swe_old              => col_ws%swe_old              , & ! Output: [real(r8) (:,:) ]  snow water before update              
 
           irrig_rate           => waterflux_vars%irrig_rate_patch          , & ! Input:  [real(r8) (:)   ]  current irrigation rate (applied if n_irrig_steps_left > 0) [mm/s]
           n_irrig_steps_left   => waterflux_vars%n_irrig_steps_left_patch  , & ! Output: [integer  (:)   ]  number of time steps for which we still need to irrigate today
@@ -559,7 +560,8 @@ contains
 
              ! intitialize SNICAR variables for fresh snow:
              call aerosol_vars%Reset(column=c)
-             call waterstate_vars%Reset(column=c)
+             ! call waterstate_vars%Reset(column=c)
+             col_ws%snw_rds(c,0) = snw_rds_min
           end if
 
           ! The change of ice partial density of surface node due to precipitation.
@@ -670,13 +672,13 @@ contains
      associate(                                              & 
           micro_sigma  => col_pp%micro_sigma                  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
 
-          h2osno       => waterstate_vars%h2osno_col       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
+          h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
           
           h2osoi_liq   => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]                  
           h2osfc       => col_ws%h2osfc       , & ! Output: [real(r8) (:)   ] surface water (mm)                                
-          frac_sno     => waterstate_vars%frac_sno_col     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)       
-          frac_sno_eff => waterstate_vars%frac_sno_eff_col , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)  
-          frac_h2osfc  => waterstate_vars%frac_h2osfc_col    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
+          frac_sno     => col_ws%frac_sno     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)       
+          frac_sno_eff => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)  
+          frac_h2osfc  => col_ws%frac_h2osfc    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
           )
 
        dtime=get_step_size()           
