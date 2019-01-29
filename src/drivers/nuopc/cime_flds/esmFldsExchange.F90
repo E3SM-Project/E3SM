@@ -1497,6 +1497,7 @@ contains
              call addmap(fldListFr(comprof)%flds, 'Flrr_flood'//iso(n), compocn, mapfiler, 'none', rof2ocn_fmap)
              call addmap(fldListFr(comprof)%flds, 'Forr_rofl' //iso(n), compocn, mapfiler, 'none', rof2ocn_liq_rmap)
              call addmrg(fldListTo(compocn)%flds, 'Foxx_rofl' //iso(n), &
+                  mrg_from1=comprof, mrg_fld1='Forr_rofl:Flrr_flood', mrg_type1='sum')
 
           ! liquid from just rof to ocn
           else if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofl'//iso(n), rc=rc) .and. &

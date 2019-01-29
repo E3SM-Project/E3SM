@@ -62,6 +62,7 @@ module esmflds
   public :: shr_nuopc_fldList_GetFldInfo
   public :: shr_nuopc_fldList_Realize
   public :: shr_nuopc_fldList_Document_Mapping
+  public :: shr_nuopc_fldList_Document_Merging
 
   !-----------------------------------------------
   ! Metadata array
@@ -77,7 +78,7 @@ module esmflds
   ! Types and instantiations that determine fields, mappings, mergings
   !-----------------------------------------------
 
-  type shr_nuopc_fldList_entry_type
+  type, public :: shr_nuopc_fldList_entry_type
      character(CS) :: stdname
      character(CS) :: shortname
 
@@ -87,21 +88,19 @@ module esmflds
      character(CX) :: mapfile(ncomps) = 'unset'
 
      ! Merging fldsTo data - for mediator export fields
-     character(CX) :: merge_fields(ncomps)    = 'unset'
+     character(CS) :: merge_fields(ncomps)    = 'unset'
      character(CS) :: merge_types(ncomps)     = 'unset'
      character(CS) :: merge_fracnames(ncomps) = 'unset'
   end type shr_nuopc_fldList_entry_type
-  public :: shr_nuopc_fldList_entry_type
 
   ! The above would be the field name to merge from
   ! e.g. for Sa_z in lnd
   !    merge_field(compatm) = 'Sa_z'
   !    merge_type(comptm) = 'copy'  (could also have 'copy_with_weighting')
 
-  type shr_nuopc_fldList_type
+  type, public :: shr_nuopc_fldList_type
      type (shr_nuopc_fldList_entry_type), pointer :: flds(:)
   end type shr_nuopc_fldList_type
-  public :: shr_nuopc_fldList_type
 
   interface shr_nuopc_fldList_GetFldInfo ; module procedure &
        shr_nuopc_fldList_GetFldInfo_general, &
@@ -869,5 +868,86 @@ contains
 101 format(3x,a)
 
   end subroutine shr_nuopc_fldList_Document_Mapping
+
+  !================================================================================
+
+  subroutine shr_nuopc_fldList_Document_Merging(logunit, med_coupling_active)
+
+    !---------------------------------------
+    ! Document merging to target destination fields 
+    !---------------------------------------
+
+    ! input/output variables
+    integer, intent(in)  :: logunit
+    logical, intent(in)  :: med_coupling_active(:,:) 
+
+    ! local variables
+    integer           :: nsrc,ndst,nf,n
+    character(len=CS) :: src_comp
+    character(len=CS) :: dst_field
+    character(len=CS) :: src_field
+    character(len=CS) :: merge_type
+    character(len=CS) :: merge_field
+    character(len=CS) :: merge_frac
+    character(len=CS) :: prefix
+    character(len=CS) :: string
+    character(len=CL) :: mrgstr
+    logical           :: init_mrgstr
+    character(len=*),parameter :: subname = '(shr_nuopc_fldList_Document_Mapping)'
+    !-----------------------------------------------------------
+
+    ! Loop over destination components
+    do ndst = 1,ncomps
+       prefix = '(merge_to_'//trim(compname(ndst))//')'
+
+       ! Loop over all flds in the destination component and determine merging data
+       do nf = 1,size(fldListTo(ndst)%flds)
+          write(logunit,*)' '
+          dst_field = fldListTo(ndst)%flds(nf)%stdname
+
+          ! Loop over all possible source components for destination component field
+          init_mrgstr = .true.
+          do nsrc = 1,ncomps
+             if (nsrc /= ndst .and. med_coupling_active(nsrc,ndst)) then
+                src_comp    = compname(nsrc)
+                merge_field = fldListTo(ndst)%flds(nf)%merge_fields(nsrc)
+                merge_type  = fldListTo(ndst)%flds(nf)%merge_types(nsrc)
+                merge_frac  = fldListTo(ndst)%flds(nf)%merge_fracnames(nsrc)
+
+                if (merge_type == 'merge' .or. merge_type == 'sum_with_weights') then
+                   string = trim(merge_frac)//'*'//trim(merge_field)//'('//trim(src_comp)//')'                
+                   if (init_mrgstr) then
+                      mrgstr = trim(prefix)//": "// trim(dst_field) //'('//trim(src_comp)//')'//' = '//trim(string)
+                      init_mrgstr = .false.
+                   else
+                      mrgstr = trim(mrgstr) //' + '//trim(string)
+                   end if
+                else if (merge_type == 'sum') then
+                   string = trim(merge_field)//'('//trim(src_comp)//')'
+                   if (init_mrgstr) then
+                      mrgstr = trim(prefix)//": "//trim(dst_field) //'('//trim(src_comp)//')'//' = '//trim(string)
+                      init_mrgstr = .false.
+                   else
+                      mrgstr = trim(mrgstr) //' + '//trim(string)
+                   end if
+                else
+                   if (merge_type == 'copy') then
+                      mrgstr = trim(prefix)//": " // trim(dst_field) //'('//trim(src_comp)//')'//' = '// &
+                           trim(merge_field)//'('//trim(src_comp)//')'
+                   else if (merge_type == 'copy_with_weights') then
+                      mrgstr = trim(prefix)//": "// trim(dst_field) //'('//trim(src_comp)//')'//' = '// &
+                           trim(merge_frac)//'*'//trim(merge_field)//'('//trim(src_comp)//')'
+                   end if
+                end if
+             end if
+          end do ! end loop over nsrc
+
+          ! Write out merging info for destination component field
+          write(logunit,'(a)') trim(mrgstr)
+
+       end do ! end loop over nf
+    end do  ! end loop over ndst
+
+  end subroutine shr_nuopc_fldList_Document_Merging
 
 end module esmflds

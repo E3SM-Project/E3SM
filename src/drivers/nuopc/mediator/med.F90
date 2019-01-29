@@ -1386,6 +1386,7 @@ contains
     use esmFlds                 , only : shr_nuopc_fldList_GetNumFlds
     use esmFlds                 , only : shr_nuopc_fldList_GetFldNames
     use esmFlds                 , only : shr_nuopc_fldList_Document_Mapping
+    use esmFlds                 , only : shr_nuopc_fldList_Document_Merging
     use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
@@ -1684,6 +1685,7 @@ contains
 
       if (mastertask) then
          call shr_nuopc_fldList_Document_Mapping(logunit, is_local%wrap%med_coupling_active)
+         call shr_nuopc_fldList_Document_Merging(logunit, is_local%wrap%med_coupling_active)
       end if
 
       !---------------------------------------

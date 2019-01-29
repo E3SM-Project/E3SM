@@ -519,14 +519,6 @@ def buildnml(case, caseroot, component):
     # copy nuopc.runconfig to rundir
     shutil.copy(os.path.join(confdir,"drv_in"), rundir)
     shutil.copy(os.path.join(confdir,"nuopc.runconfig"), rundir)
-<<<<<<< HEAD
-    shutil.copy(os.path.join(confdir,"nuopc.runseq"), rundir)
-
-    # copy fd.yaml to rundir
-    filename = os.path.join(os.path.dirname(fd_dir),"cime_flds","fd.yaml")
-    shutil.copy(filename, rundir)
-=======
->>>>>>> mvertens/runseq
 
     # copy drv_flds_in to rundir
     drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
