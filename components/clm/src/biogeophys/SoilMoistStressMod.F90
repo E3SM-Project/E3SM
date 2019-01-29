@@ -13,7 +13,7 @@ module SoilMoistStressMod
   ! during the long-term maintenance
   ! Created by Jinyun Tang, Feb., 2014 
   !
-  use ColumnDataType   , only : col_es
+  use ColumnDataType   , only : col_es, col_ws
   !
   implicit none
   save
@@ -373,7 +373,7 @@ contains
          btran2        => energyflux_vars%btran2_patch      , & ! Output: [real(r8) (:)   ]  integrated soil water stress square
          rresis        => energyflux_vars%rresis_patch      , & ! Output: [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)  (nlevgrnd)                          
 
-         h2osoi_vol    => waterstate_vars%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol    => col_ws%h2osoi_vol    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osoi_liqvol => waterstate_vars%h2osoi_liqvol_col   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
          ) 
 

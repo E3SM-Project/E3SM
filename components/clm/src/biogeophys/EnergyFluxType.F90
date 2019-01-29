@@ -291,6 +291,11 @@ contains
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
 
+    this%btran_patch(begp:endp) = spval
+    call hist_addfld1d (fname='BTRAN', units='unitless',  &
+         avgflag='A', long_name='transpiration beta factor', &
+         ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
+
     if (use_cn) then
        this%rresis_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='RRESIS', units='proportion', type2d='levgrnd', &

@@ -63,7 +63,8 @@ Module DryDepVelocity
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables  
-  use LandunitType         , only : lun_pp                
+  use LandunitType         , only : lun_pp
+  use ColumnDataType       , only : col_ws  
   use VegetationType       , only : veg_pp                
   !
   implicit none 
@@ -222,7 +223,7 @@ CONTAINS
          forc_psrf  =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] surface pressure (Pa)                              
          forc_rain  =>    top_af%rain                           , & ! Input:  [real(r8) (:)   ] rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                   
 
-         h2osoi_vol =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
+         h2osoi_vol =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
          snow_depth =>    waterstate_vars%snow_depth_col        , & ! Input:  [real(r8) (:)   ] snow height (m)                                   
 
          ram1       =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8) (:)   ] aerodynamical resistance                           

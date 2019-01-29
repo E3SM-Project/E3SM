@@ -27,7 +27,7 @@ module SoilTemperatureMod
   use LandunitType      , only : lun_pp
   use LandunitDataType  , only : lun_es, lun_ef  
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ef                
+  use ColumnDataType    , only : col_es, col_ef, col_ws                
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef                
   !
@@ -239,7 +239,7 @@ contains
          frac_sno_eff            => waterstate_vars%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  eff. fraction of ground covered by snow (0 to 1)
          frac_sno                => waterstate_vars%frac_sno_col            , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          snow_depth              => waterstate_vars%snow_depth_col          , & ! Input:  [real(r8) (:)   ]  snow height (m)                         
-         h2osfc                  => waterstate_vars%h2osfc_col              , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
+         h2osfc                  => col_ws%h2osfc              , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
          frac_h2osfc             => waterstate_vars%frac_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          
          qflx_evap_soi           => waterflux_vars%qflx_evap_soi_patch      , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
@@ -896,10 +896,10 @@ end subroutine SolveTemperature
          t_soisno     =>    col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)             
          
          frac_sno     =>    waterstate_vars%frac_sno_eff_col , & ! Input:  [real(r8) (:)   ]  fractional snow covered area            
-         h2osfc       =>    waterstate_vars%h2osfc_col	     , & ! Input:  [real(r8) (:)   ]  surface (mm H2O)                        
+         h2osfc       =>    col_ws%h2osfc	     , & ! Input:  [real(r8) (:)   ]  surface (mm H2O)                        
          h2osno       =>    waterstate_vars%h2osno_col	     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
-         h2osoi_liq   =>    waterstate_vars%h2osoi_liq_col   , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         h2osoi_ice   =>    waterstate_vars%h2osoi_ice_col   , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq   =>    col_ws%h2osoi_liq   , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_ice   =>    col_ws%h2osoi_ice   , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
          bw           =>    waterstate_vars%bw_col	     , & ! Output: [real(r8) (:,:) ]  partial density of water in the snow pack (ice + liquid) [kg/m3] 
          
          tkmg         =>    soilstate_vars%tkmg_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, soil minerals  [W/m-K]
@@ -1114,8 +1114,8 @@ end subroutine SolveTemperature
          frac_sno                  =>    waterstate_vars%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
          frac_h2osfc               =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
          h2osno                    =>    waterstate_vars%h2osno_col            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                     
-         h2osoi_ice                =>    waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
-         h2osfc                    =>    waterstate_vars%h2osfc_col            , & ! Output: [real(r8) (:)   ] surface water (mm)                      
+         h2osoi_ice                =>    col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
+         h2osfc                    =>    col_ws%h2osfc            , & ! Output: [real(r8) (:)   ] surface water (mm)                      
          int_snow                  =>    waterstate_vars%int_snow_col          , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]               
          snow_depth                =>    waterstate_vars%snow_depth_col        , & ! Output: [real(r8) (:)   ] snow height (m)                          
          
@@ -1352,8 +1352,8 @@ end subroutine SolveTemperature
          frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col     , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
          snow_depth       =>    waterstate_vars%snow_depth_col      , & ! Input:  [real(r8) (:)   ] snow height (m)                         
          h2osno           =>    waterstate_vars%h2osno_col          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)                     
-         h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2) (new)             
-         h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
+         h2osoi_liq       =>    col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2) (new)             
+         h2osoi_ice       =>    col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
          
          qflx_snow_melt   =>    waterflux_vars%qflx_snow_melt_col   , & ! Output: [real(r8) (:)   ] net snow melt                           
          qflx_snofrz_lyr  =>    waterflux_vars%qflx_snofrz_lyr_col  , & ! Output: [real(r8) (:,:) ] snow freezing rate (positive definite) (col,lyr) [kg m-2 s-1]

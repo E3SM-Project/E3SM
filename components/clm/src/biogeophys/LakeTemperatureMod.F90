@@ -20,7 +20,7 @@ module LakeTemperatureMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ef  
+  use ColumnDataType    , only : col_es, col_ef, col_ws  
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef  
   !    
@@ -238,8 +238,8 @@ contains
          lake_raw       =>    lakestate_vars%lake_raw_col          , & ! Input:  [real(r8) (:)   ]  aerodynamic resistance for moisture (s/m)   
          
          h2osno          =>   waterstate_vars%h2osno_col           , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
-         h2osoi_liq      =>   waterstate_vars%h2osoi_liq_col       , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]
-         h2osoi_ice      =>   waterstate_vars%h2osoi_ice_col       , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]
+         h2osoi_liq      =>   col_ws%h2osoi_liq       , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]
+         h2osoi_ice      =>   col_ws%h2osoi_ice       , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]
          frac_iceold     =>   waterstate_vars%frac_iceold_col      , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
 
          qflx_snofrz_col =>   waterflux_vars%qflx_snofrz_col       , & ! Output: [real(r8) (:)   ]  column-integrated snow freezing rate (kg m-2 s-1) [+]
@@ -1123,8 +1123,8 @@ contains
           tkdry       => soilstate_vars%tkdry_col       , & ! Input:  [real(r8) (:,:)]  thermal conductivity, dry soil (W/m/Kelvin)
           csol        => soilstate_vars%csol_col        , & ! Input:  [real(r8) (:,:)]  heat capacity, soil solids (J/m**3/Kelvin)
 
-          h2osoi_liq  => waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)]  liquid water (kg/m2)                  
-          h2osoi_ice  => waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)]  ice lens (kg/m2)                      
+          h2osoi_liq  => col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:)]  liquid water (kg/m2)                  
+          h2osoi_ice  => col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:)]  ice lens (kg/m2)                      
 
           t_soisno    => col_es%t_soisno    & ! Input:  [real(r8) (:,:)]  soil temperature (Kelvin)             
           )
@@ -1300,8 +1300,8 @@ contains
 
           snow_depth      => waterstate_vars%snow_depth_col     , & ! Output: [real(r8)  (:)   ] snow height (m)                         
           h2osno          => waterstate_vars%h2osno_col         , & ! Output: [real(r8)  (:)   ] snow water (mm H2O)                     
-          h2osoi_liq      => waterstate_vars%h2osoi_liq_col     , & ! Output: [real(r8)  (:,:) ] liquid water (kg/m2)                  
-          h2osoi_ice      => waterstate_vars%h2osoi_ice_col     , & ! Output: [real(r8)  (:,:) ] ice lens (kg/m2)                      
+          h2osoi_liq      => col_ws%h2osoi_liq     , & ! Output: [real(r8)  (:,:) ] liquid water (kg/m2)                  
+          h2osoi_ice      => col_ws%h2osoi_ice     , & ! Output: [real(r8)  (:,:) ] ice lens (kg/m2)                      
 
           lake_icefrac    => lakestate_vars%lake_icefrac_col    , & ! Input:  [real(r8)  (:,:) ] mass fraction of lake layer that is frozen
           

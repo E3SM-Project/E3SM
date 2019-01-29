@@ -31,7 +31,7 @@ module dynConsBiogeophysMod
   use subgridAveMod     , only : p2c, c2g
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use clm_varcon      , only : spval
-  use GridcellDataType, only : grc_es
+  use GridcellDataType, only : grc_es, grc_ef
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -164,7 +164,7 @@ contains
           delta_heat(g) = grc_es%heat2(g) - grc_es%heat1(g)
           waterflux_vars%qflx_liq_dynbal_grc (g) = delta_liq(g)/dtime
           waterflux_vars%qflx_ice_dynbal_grc (g) = delta_ice(g)/dtime
-          energyflux_vars%eflx_dynbal_grc    (g) = delta_heat(g)/dtime
+          grc_ef%eflx_dynbal    (g) = delta_heat(g)/dtime
        end do
     end if
 

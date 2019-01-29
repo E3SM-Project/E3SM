@@ -25,8 +25,8 @@ module CanopyHydrologyMod
   use WaterstateType  , only : waterstate_type
   use TopounitDataType, only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnType      , only : col_pp 
-  use ColumnDataType  , only : col_es  
-  use VegetationType       , only : veg_pp                
+  use ColumnDataType  , only : col_es, col_ws  
+  use VegetationType  , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -199,7 +199,7 @@ contains
 
           do_capsnow           => waterstate_vars%do_capsnow_col           , & ! Output: [logical  (:)   ]  true => do snow capping                  
           h2ocan               => waterstate_vars%h2ocan_patch             , & ! Output: [real(r8) (:)   ]  total canopy water (mm H2O)             
-          h2osfc               => waterstate_vars%h2osfc_col               , & ! Output: [real(r8) (:)   ]  surface water (mm)                      
+          h2osfc               => col_ws%h2osfc               , & ! Output: [real(r8) (:)   ]  surface water (mm)                      
           h2osno               => waterstate_vars%h2osno_col               , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
           snow_depth           => waterstate_vars%snow_depth_col           , & ! Output: [real(r8) (:)   ]  snow height (m)                         
           int_snow             => waterstate_vars%int_snow_col             , & ! Output: [real(r8) (:)   ]  integrated snowfall [mm]                
@@ -207,8 +207,8 @@ contains
           frac_sno             => waterstate_vars%frac_sno_col             , & ! Output: [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
           frac_h2osfc          => waterstate_vars%frac_h2osfc_col          , & ! Output: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
           frac_iceold          => waterstate_vars%frac_iceold_col          , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-          h2osoi_ice           => waterstate_vars%h2osoi_ice_col           , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
-          h2osoi_liq           => waterstate_vars%h2osoi_liq_col           , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
+          h2osoi_ice           => col_ws%h2osoi_ice           , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
+          h2osoi_liq           => col_ws%h2osoi_liq           , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
           swe_old              => waterstate_vars%swe_old_col              , & ! Output: [real(r8) (:,:) ]  snow water before update              
 
           irrig_rate           => waterflux_vars%irrig_rate_patch          , & ! Input:  [real(r8) (:)   ]  current irrigation rate (applied if n_irrig_steps_left > 0) [mm/s]
@@ -672,8 +672,8 @@ contains
 
           h2osno       => waterstate_vars%h2osno_col       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
           
-          h2osoi_liq   => waterstate_vars%h2osoi_liq_col   , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]                  
-          h2osfc       => waterstate_vars%h2osfc_col       , & ! Output: [real(r8) (:)   ] surface water (mm)                                
+          h2osoi_liq   => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]                  
+          h2osfc       => col_ws%h2osfc       , & ! Output: [real(r8) (:)   ] surface water (mm)                                
           frac_sno     => waterstate_vars%frac_sno_col     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)       
           frac_sno_eff => waterstate_vars%frac_sno_eff_col , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)  
           frac_h2osfc  => waterstate_vars%frac_h2osfc_col    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 

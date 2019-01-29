@@ -139,9 +139,9 @@ module WaterstateType
      procedure, private :: InitCold     
      procedure, public  :: save_h2osoi_old
   end type waterstate_type
-
   ! minimum allowed snow effective radius (also "fresh snow" value) [microns]
   real(r8), public, parameter :: snw_rds_min = 54.526_r8    
+
   !------------------------------------------------------------------------
 
 contains
@@ -328,31 +328,6 @@ contains
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
 
-    data2dptr => this%h2osoi_liq_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_LIQH2O', units='kg/m2', type2d='levsno',  &
-         avgflag='A', long_name='Snow liquid water content', &
-         ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
-
-    data2dptr => this%h2osoi_ice_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_ICE', units='kg/m2', type2d='levsno',  &
-         avgflag='A', long_name='Snow ice content', &
-         ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
-
-    this%h2osoi_vol_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='H2OSOI',  units='mm3/mm3', type2d='levgrnd', &
-         avgflag='A', long_name='volumetric soil water (vegetated landunits only)', &
-         ptr_col=this%h2osoi_vol_col, l2g_scale_type='veg')
-
-    this%h2osoi_liq_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='SOILLIQ',  units='kg/m2', type2d='levgrnd', &
-         avgflag='A', long_name='soil liquid water (vegetated landunits only)', &
-         ptr_col=this%h2osoi_liq_col, l2g_scale_type='veg')
-
-    this%h2osoi_ice_col(begc:endc,:) = spval
-    call hist_addfld2d (fname='SOILICE',  units='kg/m2', type2d='levgrnd', &
-         avgflag='A', long_name='soil ice (vegetated landunits only)', &
-         ptr_col=this%h2osoi_ice_col, l2g_scale_type='veg')
-
     this%h2osoi_liqice_10cm_col(begc:endc) = spval
     call hist_addfld1d (fname='SOILWATER_10CM',  units='kg/m2', &
          avgflag='A', long_name='soil liquid water + ice in top 10cm of soil (veg landunits only)', &
@@ -386,11 +361,6 @@ contains
     call hist_addfld1d (fname='GC_ICE2',  units='mm',  &  
          avgflag='A', long_name='post land cover change total ice content', &              
          ptr_lnd=this%ice2_grc, default='inactive')
-
-    this%h2osfc_col(begc:endc) = spval
-    call hist_addfld1d (fname='H2OSFC',  units='mm',  &
-         avgflag='A', long_name='surface water depth', &
-         ptr_col=this%h2osfc_col)
 
     this%tws_grc(begg:endg) = spval
     call hist_addfld1d (fname='TWS',  units='mm',  &
@@ -695,135 +665,6 @@ contains
          endif
       end do
 
-      !--------------------------------------------
-      ! Set soil water
-      !--------------------------------------------
-
-      ! volumetric water is set first and liquid content and ice lens are obtained
-      ! NOTE: h2osoi_vol, h2osoi_liq and h2osoi_ice only have valid values over soil
-      ! and urban pervious road (other urban columns have zero soil water)
-
-      this%h2osoi_vol_col(bounds%begc:bounds%endc,         1:) = spval
-      this%h2osoi_liq_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval
-      this%h2osoi_ice_col(bounds%begc:bounds%endc,-nlevsno+1:) = spval
-
-      do c = bounds%begc,bounds%endc
-         l = col_pp%landunit(c)
-         if (.not. lun_pp%lakpoi(l)) then  !not lake
-
-	    nlevbed = nlev2bed(c)
-            ! volumetric water
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-               nlevs = nlevgrnd
-               do j = 1, nlevs
-                  if (j > nlevbed) then
-                     this%h2osoi_vol_col(c,j) = 0.0_r8
-                  else
-		     if (use_fates_planthydro) then
-                              this%h2osoi_vol_col(c,j) = 0.70_r8*watsat_col(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
-                     else
-                              this%h2osoi_vol_col(c,j) = 0.15_r8
-                     endif
-                  endif
-               end do
-            else if (lun_pp%urbpoi(l)) then
-               if (col_pp%itype(c) == icol_road_perv) then
-                  nlevs = nlevgrnd
-                  do j = 1, nlevs
-                     if (j <= nlevbed) then
-                        this%h2osoi_vol_col(c,j) = 0.3_r8
-                     else
-                        this%h2osoi_vol_col(c,j) = 0.0_r8
-                     end if
-                  end do
-               else if (col_pp%itype(c) == icol_road_imperv) then
-                  nlevs = nlevgrnd
-                  do j = 1, nlevs
-                     this%h2osoi_vol_col(c,j) = 0.0_r8
-                  end do
-               else
-                  nlevs = nlevurb
-                  do j = 1, nlevs
-                     this%h2osoi_vol_col(c,j) = 0.0_r8
-                  end do
-               end if
-            else if (lun_pp%itype(l) == istwet) then
-               nlevs = nlevgrnd
-               do j = 1, nlevs
-                  if (j > nlevbed) then
-                     this%h2osoi_vol_col(c,j) = 0.0_r8
-                  else
-                     this%h2osoi_vol_col(c,j) = 1.0_r8
-                  endif
-               end do
-            else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
-               nlevs = nlevgrnd 
-               do j = 1, nlevs
-                  this%h2osoi_vol_col(c,j) = 1.0_r8
-               end do
-            endif
-            do j = 1, nlevs
-               this%h2osoi_vol_col(c,j) = min(this%h2osoi_vol_col(c,j), watsat_col(c,j))
-
-               if (t_soisno_col(c,j) <= SHR_CONST_TKFRZ) then
-                  this%h2osoi_ice_col(c,j) = col_pp%dz(c,j)*denice*this%h2osoi_vol_col(c,j)
-                  this%h2osoi_liq_col(c,j) = 0._r8
-               else
-                  this%h2osoi_ice_col(c,j) = 0._r8
-                  this%h2osoi_liq_col(c,j) = col_pp%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
-               endif
-            end do
-            do j = -nlevsno+1, 0
-               if (j > snl(c)) then
-                  this%h2osoi_ice_col(c,j) = col_pp%dz(c,j)*250._r8
-                  this%h2osoi_liq_col(c,j) = 0._r8
-               end if
-            end do
-         end if
-      end do
-
-      !--------------------------------------------
-      ! Set Lake water
-      !--------------------------------------------
-
-      do c = bounds%begc, bounds%endc
-         l = col_pp%landunit(c)
-
-         if (lun_pp%lakpoi(l)) then
-            do j = -nlevsno+1, 0
-               if (j > snl(c)) then
-                  this%h2osoi_ice_col(c,j) = col_pp%dz(c,j)*bdsno
-                  this%h2osoi_liq_col(c,j) = 0._r8
-               end if
-            end do
-            do j = 1,nlevgrnd
-               if (j <= nlevsoi) then ! soil
-                  this%h2osoi_vol_col(c,j) = watsat_col(c,j)
-                  this%h2osoi_liq_col(c,j) = spval
-                  this%h2osoi_ice_col(c,j) = spval
-               else                  ! bedrock
-                  this%h2osoi_vol_col(c,j) = 0._r8
-               end if
-            end do
-         end if
-      end do
-
-      !--------------------------------------------
-      ! For frozen layers !TODO - does the following make sense ???? it seems to overwrite everything
-      !--------------------------------------------
-
-      do c = bounds%begc, bounds%endc
-         do j = 1,nlevgrnd
-            if (t_soisno_col(c,j) <= tfrz) then
-               this%h2osoi_ice_col(c,j) = col_pp%dz(c,j)*denice*this%h2osoi_vol_col(c,j)
-               this%h2osoi_liq_col(c,j) = 0._r8
-            else
-               this%h2osoi_ice_col(c,j) = 0._r8
-               this%h2osoi_liq_col(c,j) = col_pp%dz(c,j)*denh2o*this%h2osoi_vol_col(c,j)
-            endif
-         end do
-      end do
-    call this%save_h2osoi_old(bounds)
     end associate
 
   end subroutine InitCold
@@ -871,29 +712,11 @@ contains
        this%int_snow_col(:) = 0.0_r8
     end if
 
-    call restartvar(ncid=ncid, flag=flag, varname='H2OSFC', xtype=ncd_double,  &
-         dim1name='column', &
-         long_name='surface water', units='kg/m2', &
-         interpinic_flag='interp', readvar=readvar, data=this%h2osfc_col)
-    if (flag=='read' .and. .not. readvar) then
-       this%h2osfc_col(bounds%begc:bounds%endc) = 0.0_r8
-    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='H2OSNO', xtype=ncd_double,  &
          dim1name='column', &
          long_name='snow water', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2osno_col)
-
-    call restartvar(ncid=ncid, flag=flag, varname='H2OSOI_LIQ', xtype=ncd_double,  &
-         dim1name='column', dim2name='levtot', switchdim=.true., &
-         long_name='liquid water', units='kg/m2', &
-         interpinic_flag='interp', readvar=readvar, data=this%h2osoi_liq_col)
-
-    call restartvar(ncid=ncid, flag=flag, varname='H2OSOI_ICE', xtype=ncd_double,   &
-         dim1name='column', dim2name='levtot', switchdim=.true., &
-         long_name='ice lens', units='kg/m2', &
-         interpinic_flag='interp', readvar=readvar, data=this%h2osoi_ice_col)
-         
     call restartvar(ncid=ncid, flag=flag, varname='H2OCAN', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='canopy water', units='kg/m2', &
@@ -904,67 +727,7 @@ contains
          long_name='soil pressure ', units='Pa', &
          interpinic_flag='interp', readvar=readvar, data=this%soilp_col)
 
-    ! Determine volumetric soil water (for read only)
-    if (flag == 'read' ) then
-       do c = bounds%begc, bounds%endc
-          l = col_pp%landunit(c)
-          if ( col_pp%itype(c) == icol_sunwall   .or. &
-               col_pp%itype(c) == icol_shadewall .or. &
-               col_pp%itype(c) == icol_roof )then
-             nlevs = nlevurb
-          else
-             nlevs = nlevgrnd
-          end if
-          if ( lun_pp%itype(l) /= istdlak ) then ! This calculation is now done for lakes in initLake.
-             do j = 1,nlevs
-                this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o) &
-                                         + this%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice)
-             end do
-          end if
-       end do
-    end if
 
-    ! If initial run -- ensure that water is properly bounded (read only)
-    if (flag == 'read' ) then
-       if ( is_first_step() .and. bound_h2osoi) then
-          do c = bounds%begc, bounds%endc
-             l = col_pp%landunit(c)
-             if ( col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. &
-                  col_pp%itype(c) == icol_roof )then
-                nlevs = nlevurb
-             else
-                nlevs = nlevgrnd
-             end if
-             do j = 1,nlevs
-                l = col_pp%landunit(c)
-                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-                   this%h2osoi_liq_col(c,j) = max(0._r8,this%h2osoi_liq_col(c,j))
-                   this%h2osoi_ice_col(c,j) = max(0._r8,this%h2osoi_ice_col(c,j))
-                   this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o) &
-                                       + this%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice)
-                   if (j == 1) then
-                      maxwatsat = (watsat_col(c,j)*col_pp%dz(c,j)*1000.0_r8 + pondmx) / (col_pp%dz(c,j)*1000.0_r8)
-                   else
-                      maxwatsat =  watsat_col(c,j)
-                   end if
-                   if (this%h2osoi_vol_col(c,j) > maxwatsat) then 
-                      excess = (this%h2osoi_vol_col(c,j) - maxwatsat)*col_pp%dz(c,j)*1000.0_r8
-                      totwat = this%h2osoi_liq_col(c,j) + this%h2osoi_ice_col(c,j)
-                      this%h2osoi_liq_col(c,j) = this%h2osoi_liq_col(c,j) - &
-                                           (this%h2osoi_liq_col(c,j)/totwat) * excess
-                      this%h2osoi_ice_col(c,j) = this%h2osoi_ice_col(c,j) - &
-                                           (this%h2osoi_ice_col(c,j)/totwat) * excess
-                   end if
-                   this%h2osoi_liq_col(c,j) = max(watmin,this%h2osoi_liq_col(c,j))
-                   this%h2osoi_ice_col(c,j) = max(watmin,this%h2osoi_ice_col(c,j))
-                   this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o) &
-                                             + this%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice)
-                end if
-             end do
-          end do
-       end if
-
-    endif   ! end if if-read flag
 
     call restartvar(ncid=ncid, flag=flag, varname='FH2OSFC', xtype=ncd_double,  &
          dim1name='column',&

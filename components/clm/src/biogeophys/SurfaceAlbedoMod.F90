@@ -26,7 +26,7 @@ module SurfaceAlbedoMod
   use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es  
+  use ColumnDataType    , only : col_es, col_ws  
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_es  
   !
@@ -288,8 +288,8 @@ contains
 
           frac_sno      =>    waterstate_vars%frac_sno_col        , & ! Input:  [real(r8)  (:)   ]  fraction of ground covered by snow (0 to 1)
           h2osno        =>    waterstate_vars%h2osno_col          , & ! Input:  [real(r8)  (:)   ]  snow water (mm H2O)                     
-          h2osoi_liq    =>    waterstate_vars%h2osoi_liq_col      , & ! Input:  [real(r8)  (:,:) ]  liquid water content (col,lyr) [kg/m2]
-          h2osoi_ice    =>    waterstate_vars%h2osoi_ice_col      , & ! Input:  [real(r8)  (:,:) ]  ice lens content (col,lyr) [kg/m2]    
+          h2osoi_liq    =>    col_ws%h2osoi_liq      , & ! Input:  [real(r8)  (:,:) ]  liquid water content (col,lyr) [kg/m2]
+          h2osoi_ice    =>    col_ws%h2osoi_ice      , & ! Input:  [real(r8)  (:,:) ]  ice lens content (col,lyr) [kg/m2]    
           snw_rds       =>    waterstate_vars%snw_rds_col         , & ! Input:  [real(r8)  (:,:) ]  snow grain radius (col,lyr) [microns] 
 
           mss_cnc_bcphi =>    aerosol_vars%mss_cnc_bcphi_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophilic BC (col,lyr) [kg/kg]
@@ -1002,7 +1002,7 @@ contains
 
           t_grnd       => col_es%t_grnd     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
 
-          h2osoi_vol   => waterstate_vars%h2osoi_vol_col  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+          h2osoi_vol   => col_ws%h2osoi_vol  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
 
           lake_icefrac => lakestate_vars%lake_icefrac_col , & ! Input:  [real(r8) (:,:) ]  mass fraction of lake layer that is frozen
           

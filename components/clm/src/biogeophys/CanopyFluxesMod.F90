@@ -43,7 +43,7 @@ module CanopyFluxesMod
   use GridcellType          , only : grc_pp 
   use TopounitDataType      , only : top_as, top_af  
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es, col_ef               
+  use ColumnDataType        , only : col_es, col_ef, col_ws               
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_es, veg_ef  
   !
@@ -397,9 +397,9 @@ contains
          qg_h2osfc            => waterstate_vars%qg_h2osfc_col             , & ! Input:  [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]                           
          qg                   => waterstate_vars%qg_col                    , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface [kg/kg]                           
          dqgdT                => waterstate_vars%dqgdT_col                 , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"                                        
-         h2osoi_ice           => waterstate_vars%h2osoi_ice_col            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                                    
-         h2osoi_vol           => waterstate_vars%h2osoi_vol_col            , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3] by F. Li and S. Levis
-         h2osoi_liq           => waterstate_vars%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                                                
+         h2osoi_ice           => col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                                    
+         h2osoi_vol           => col_ws%h2osoi_vol            , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3] by F. Li and S. Levis
+         h2osoi_liq           => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                                                
          h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col         , & ! Output: [real(r8) (:,:) ]  volumetric liquid water (v/v) 
 
          h2ocan               => waterstate_vars%h2ocan_patch              , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O)                                                 

@@ -21,7 +21,7 @@ module CNNitrifDenitrifMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ch4Mod              , only : ch4_type
   use ColumnType          , only : col_pp 
-  use ColumnDataType      , only : col_es  
+  use ColumnDataType      , only : col_es, col_ws  
   !
   implicit none
   save
@@ -165,8 +165,8 @@ contains
          sucsat                        =>    soilstate_vars%sucsat_col                           , & ! Input:  [real(r8) (:,:)  ]  minimum soil suction (mm)                       
          soilpsi                       =>    soilstate_vars%soilpsi_col                          , & ! Input:  [real(r8) (:,:)  ]  soil water potential in each soil layer (MPa)   
          
-         h2osoi_vol                    =>    waterstate_vars%h2osoi_vol_col                      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-         h2osoi_liq                    =>    waterstate_vars%h2osoi_liq_col                      , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+         h2osoi_vol                    =>    col_ws%h2osoi_vol                      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+         h2osoi_liq                    =>    col_ws%h2osoi_liq                      , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
          
          t_soisno                      =>    col_es%t_soisno                       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          

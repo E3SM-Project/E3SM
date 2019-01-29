@@ -28,7 +28,7 @@ module UrbanFluxesMod
   use LandunitType         , only : lun_pp 
   use LandunitDataType     , only : lun_es, lun_ef  
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ef  
+  use ColumnDataType       , only : col_es, col_ef, col_ws  
   use VegetationType       , only : veg_pp                
   use VegetationDataType   , only : veg_es, veg_ef  
   !
@@ -222,8 +222,8 @@ contains
          snow_depth          =>   waterstate_vars%snow_depth_col            , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
          dqgdT               =>   waterstate_vars%dqgdT_col                 , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"                    
          qg                  =>   waterstate_vars%qg_col                    , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface (kg/kg)       
-         h2osoi_ice          =>   waterstate_vars%h2osoi_ice_col            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
-         h2osoi_liq          =>   waterstate_vars%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
+         h2osoi_ice          =>   col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
+         h2osoi_liq          =>   col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
          h2osno              =>   waterstate_vars%h2osno_col                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
          qaf                 =>   waterstate_vars%qaf_lun                   , & ! Output: [real(r8) (:)   ]  urban canopy air specific humidity (kg/kg)        
          q_ref2m             =>   waterstate_vars%q_ref2m_patch             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      

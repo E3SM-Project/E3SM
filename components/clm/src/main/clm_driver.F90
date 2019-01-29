@@ -129,7 +129,7 @@ module clm_driver
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
-  use ColumnDataType         , only : col_es, col_ef  
+  use ColumnDataType         , only : col_es, col_ef, col_ws  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es
   use shr_sys_mod            , only : shr_sys_flush
@@ -1512,8 +1512,8 @@ contains
          snl                => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                    
         
          h2osno             => waterstate_vars%h2osno_col                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
-         h2osoi_ice         => waterstate_vars%h2osoi_ice_col            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq         => waterstate_vars%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_ice         => col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq         => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
          do_capsnow         => waterstate_vars%do_capsnow_col            , & ! Output: [logical  (:)   ]  true => do snow capping                  
          h2osno_old         => waterstate_vars%h2osno_old_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O) at previous time step
          frac_iceold        => waterstate_vars%frac_iceold_col           , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water

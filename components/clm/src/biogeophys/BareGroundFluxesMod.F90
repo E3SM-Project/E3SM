@@ -20,7 +20,7 @@ module BareGroundFluxesMod
   use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ef
+  use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef
   !
@@ -143,8 +143,8 @@ contains
          qg_h2osfc        =>    waterstate_vars%qg_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
          qg               =>    waterstate_vars%qg_col                , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface [kg/kg]
          dqgdT            =>    waterstate_vars%dqgdT_col             , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"
-         h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
-         h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osoi_ice       =>    col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq       =>    col_ws%h2osoi_liq        , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
 
          grnd_ch4_cond    =>    ch4_vars%grnd_ch4_cond_patch          , & ! Output: [real(r8) (:)   ]  tracer conductance for boundary layer [m/s]
 

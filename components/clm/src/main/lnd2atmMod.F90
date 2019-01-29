@@ -30,7 +30,9 @@ module lnd2atmMod
   use TemperatureType      , only : temperature_type
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp     
+  use GridcellType         , only : grc_pp
+  use GridcellDataType     , only : grc_ef
+  use ColumnDataType       , only : col_ws  
   use VegetationDataType   , only : veg_es, veg_ef
 
   
@@ -82,7 +84,7 @@ contains
     end do
 
     call c2g(bounds, nlevgrnd, &
-         waterstate_vars%h2osoi_vol_col (bounds%begc:bounds%endc, :), &
+         col_ws%h2osoi_vol (bounds%begc:bounds%endc, :), &
          lnd2atm_vars%h2osoi_vol_grc    (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
@@ -205,7 +207,7 @@ contains
          p2c_scale_type='unity',c2l_scale_type='urbanf',l2g_scale_type='unity')
     do g = bounds%begg, bounds%endg
        lnd2atm_vars%eflx_sh_tot_grc(g) =  lnd2atm_vars%eflx_sh_tot_grc(g) - &
-            energyflux_vars%eflx_dynbal_grc(g) 
+            grc_ef%eflx_dynbal(g) 
     enddo
 
     call p2g(bounds, &

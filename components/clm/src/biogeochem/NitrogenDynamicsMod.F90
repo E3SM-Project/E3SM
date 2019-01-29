@@ -22,9 +22,9 @@ module NitrogenDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es  
-  use VegetationType           , only : veg_pp
-  use VegetationPropertiesType      , only : veg_vp
+  use ColumnDataType      , only : col_es, col_ws  
+  use VegetationType      , only : veg_pp
+  use VegetationPropertiesType  , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -262,7 +262,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         h2osoi_liq          => waterstate_vars%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+         h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
          qflx_drain          => waterflux_vars%qflx_drain_col             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
          qflx_surf           => waterflux_vars%qflx_surf_col              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
@@ -662,7 +662,7 @@ contains
          pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
          benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
          t_soi10cm_col         => col_es%t_soi10cm       , &
-         h2osoi_vol            => waterstate_vars%h2osoi_vol_col       , &
+         h2osoi_vol            => col_ws%h2osoi_vol       , &
          t_scalar              => carbonflux_vars%t_scalar_col           &
          )
 

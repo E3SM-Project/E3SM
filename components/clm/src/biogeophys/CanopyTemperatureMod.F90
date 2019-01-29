@@ -32,7 +32,7 @@ module CanopyTemperatureMod
   use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ef                
+  use ColumnDataType       , only : col_es, col_ef, col_ws                
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef
   !
@@ -145,10 +145,10 @@ contains
          frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
          frac_sno_eff     =>    waterstate_vars%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
          frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-         h2osfc           =>    waterstate_vars%h2osfc_col            , & ! Input:  [real(r8) (:)   ] surface water (mm)                      
+         h2osfc           =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ] surface water (mm)                      
          h2osno           =>    waterstate_vars%h2osno_col            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                      
-         h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
-         h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
+         h2osoi_ice       =>    col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
+         h2osoi_liq       =>    col_ws%h2osoi_liq        , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
          qg_snow          =>    waterstate_vars%qg_snow_col           , & ! Output: [real(r8) (:)   ] specific humidity at snow surface [kg/kg]
          qg_soil          =>    waterstate_vars%qg_soil_col           , & ! Output: [real(r8) (:)   ] specific humidity at soil surface [kg/kg]
          qg               =>    waterstate_vars%qg_col                , & ! Output: [real(r8) (:)   ] ground specific humidity [kg/kg]         

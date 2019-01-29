@@ -20,7 +20,7 @@ module LakeFluxesMod
   use GridcellType         , only : grc_pp   
   use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es  
+  use ColumnDataType       , only : col_es, col_ws  
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef  
   !    
@@ -176,8 +176,8 @@ contains
          savedtke1        =>    lakestate_vars%savedtke1_col           , & ! Input:  [real(r8) (:)   ]  top level eddy conductivity from previous timestep (W/mK)
          lakefetch        =>    lakestate_vars%lakefetch_col           , & ! Input:  [real(r8) (:)   ]  lake fetch from surface data (m)                  
          
-         h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-         h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
+         h2osoi_liq       =>    col_ws%h2osoi_liq         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
+         h2osoi_ice       =>    col_ws%h2osoi_ice         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
 
          t_lake           =>    col_es%t_lake            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)                       
          t_soisno         =>    col_es%t_soisno          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)             
