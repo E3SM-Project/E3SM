@@ -48,13 +48,13 @@ module clm_instMod
   use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
-  use GridcellDataType           , only : grc_es, grc_ef
+  use GridcellDataType           , only : grc_es, grc_ef, grc_ws
   use LandunitType               , only : lun_pp
-  use LandunitDataType           , only : lun_es, lun_ef
+  use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es, col_ef, col_ws
   use VegetationType             , only : veg_pp
-  use VegetationDataType         , only : veg_es, veg_ef
+  use VegetationDataType         , only : veg_es, veg_ef, veg_ws
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -353,10 +353,13 @@ contains
          soilstate_vars%watsat_col(begc:endc, 1:), &
          col_es%t_soisno(begc:endc, -nlevsno+1:) )
 
+    call grc_ws%Init(bounds_proc%begg_all, bounds_proc%endg_all)
+    call lun_ws%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, &
          h2osno_col(begc:endc),                    &
          snow_depth_col(begc:endc),                &
          soilstate_vars%watsat_col(begc:endc, 1:))
+    call veg_ws%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
     call waterflux_vars%init(bounds_proc)
 

@@ -328,36 +328,6 @@ contains
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
 
-    this%h2ocan_patch(begp:endp) = spval 
-    call hist_addfld1d (fname='H2OCAN', units='mm',  &
-         avgflag='A', long_name='intercepted water', &
-         ptr_patch=this%h2ocan_patch, set_lake=0._r8)
-
-    this%liq1_grc(begg:endg) = spval
-    call hist_addfld1d (fname='GC_LIQ1',  units='mm',  &
-         avgflag='A', long_name='initial gridcell total liq content', &
-         ptr_lnd=this%liq1_grc)
-
-    this%liq2_grc(begg:endg) = spval
-    call hist_addfld1d (fname='GC_LIQ2',  units='mm',  &  
-         avgflag='A', long_name='post landuse change gridcell total liq content', &              
-         ptr_lnd=this%liq2_grc, default='inactive')     
-
-    this%ice1_grc(begg:endg) = spval
-    call hist_addfld1d (fname='GC_ICE1',  units='mm',  &  
-         avgflag='A', long_name='initial gridcell total ice content', &              
-         ptr_lnd=this%ice1_grc)     
-
-    this%ice2_grc(begg:endg) = spval
-    call hist_addfld1d (fname='GC_ICE2',  units='mm',  &  
-         avgflag='A', long_name='post land cover change total ice content', &              
-         ptr_lnd=this%ice2_grc, default='inactive')
-
-    this%tws_grc(begg:endg) = spval
-    call hist_addfld1d (fname='TWS',  units='mm',  &
-         avgflag='A', long_name='total water storage', &
-         ptr_lnd=this%tws_grc)
-
     this%tws_month_beg_grc(begg:endg) = spval
     call hist_addfld1d (fname='TWS_MONTH_BEGIN',  units='mm',  &
          avgflag='I', long_name='total water storage at the beginning of a month', &
@@ -367,50 +337,6 @@ contains
     call hist_addfld1d (fname='TWS_MONTH_END',  units='mm',  &
          avgflag='I', long_name='total water storage at the end of a month', &
          ptr_lnd=this%tws_month_end_grc)
-
-    ! Humidity
-
-    this%q_ref2m_patch(begp:endp) = spval
-    call hist_addfld1d (fname='Q2M', units='kg/kg',  &
-         avgflag='A', long_name='2m specific humidity', &
-         ptr_patch=this%q_ref2m_patch)
-
-    this%rh_ref2m_patch(begp:endp) = spval
-    call hist_addfld1d (fname='RH2M', units='%',  &
-         avgflag='A', long_name='2m relative humidity', &
-         ptr_patch=this%rh_ref2m_patch)
-
-    this%rh_ref2m_r_patch(begp:endp) = spval
-    call hist_addfld1d (fname='RH2M_R', units='%',  &
-         avgflag='A', long_name='Rural 2m specific humidity', &
-         ptr_patch=this%rh_ref2m_r_patch, set_spec=spval)
-
-    this%rh_ref2m_u_patch(begp:endp) = spval
-    call hist_addfld1d (fname='RH2M_U', units='%',  &
-         avgflag='A', long_name='Urban 2m relative humidity', &
-         ptr_patch=this%rh_ref2m_u_patch, set_nourb=spval)
-
-    this%rh_af_patch(begp:endp) = spval
-    call hist_addfld1d (fname='RHAF', units='fraction', &
-         avgflag='A', long_name='fractional humidity of canopy air', &
-         ptr_patch=this%rh_af_patch, set_spec=spval, default='inactive')
-
-    ! Fractions
-
-    if (use_cn) then
-       this%fwet_patch(begp:endp) = spval
-       call hist_addfld1d (fname='FWET', units='proportion', &
-            avgflag='A', long_name='fraction of canopy that is wet', &
-            ptr_patch=this%fwet_patch, default='inactive')
-    end if
-
-    if (use_cn) then
-       this%fdry_patch(begp:endp) = spval
-       call hist_addfld1d (fname='FDRY', units='proportion', &
-            avgflag='A', long_name='fraction of foliage that is green and dry', &
-            ptr_patch=this%fdry_patch, default='inactive')
-    end if
-
     ! Snow properties - these will be vertically averaged over the snow profile
 
     ! We determine the fractional time (and fraction of the grid cell) over which each
@@ -599,36 +525,10 @@ contains
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='H2OCAN', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='canopy water', units='kg/m2', &
-         interpinic_flag='interp', readvar=readvar, data=this%h2ocan_patch)
-
-
-
-
-    call restartvar(ncid=ncid, flag=flag, varname='FWET', xtype=ncd_double,  &
-         dim1name='pft', &
-         long_name='fraction of canopy that is wet (0 to 1)', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%fwet_patch)
-
-
-
-    call restartvar(ncid=ncid, flag=flag, varname='qaf', xtype=ncd_double, dim1name='landunit',                       &
-         long_name='urban canopy specific humidity', units='kg/kg',                                                   &
-         interpinic_flag='interp', readvar=readvar, data=this%qaf_lun)
-
-
     call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
          dim1name='gridcell', &
          long_name='surface watertotal water storage at the beginning of a month', units='mm', &
           interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
-
-    call restartvar(ncid=ncid, flag=flag, varname='ENDWB_COL', xtype=ncd_double, &
-         dim1name='column', long_name='col-level water mass end of the time step', &
-         units='mm', interpinic_flag='interp', readvar=readvar, data=this%endwb_col)
-
   end subroutine Restart
 
   !-----------------------------------------------------------------------

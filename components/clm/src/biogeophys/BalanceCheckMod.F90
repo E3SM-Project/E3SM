@@ -26,7 +26,7 @@ module BalanceCheckMod
   use ColumnType         , only : col_pp
   use ColumnDataType     , only : col_ef, col_ws  
   use VegetationType     , only : veg_pp
-  use VegetationDataType , only : veg_ef
+  use VegetationDataType , only : veg_ef, veg_ws
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -75,7 +75,7 @@ contains
 
     associate(                                                         & 
          zi                     =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
-         h2ocan_patch           =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)       
+         h2ocan_patch           =>    veg_ws%h2ocan               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)       
          h2osfc                 =>    col_ws%h2osfc                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
          h2osno                 =>    col_ws%h2osno                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
          h2osoi_ice             =>    col_ws%h2osoi_ice             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      

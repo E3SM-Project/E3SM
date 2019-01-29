@@ -28,7 +28,7 @@ module SurfaceAlbedoMod
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws  
   use VegetationType    , only : veg_pp
-  use VegetationDataType, only : veg_es  
+  use VegetationDataType, only : veg_es, veg_ws  
   !
   implicit none
   save
@@ -1165,7 +1165,7 @@ contains
 
           t_veg        =>    veg_es%t_veg        , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)         
 
-          fwet         =>    waterstate_vars%fwet_patch          , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is wet (0 to 1) 
+          fwet         =>    veg_ws%fwet          , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is wet (0 to 1) 
 
           elai         =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
           esai         =>    canopystate_vars%esai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow

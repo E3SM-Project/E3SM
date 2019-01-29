@@ -10,24 +10,25 @@ module CanopyHydrologyMod
   ! (4) snow layer initialization if the snow accumulation exceeds 10 mm.
   !
   ! !USES:
-  use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use shr_sys_mod     , only : shr_sys_flush
-  use decompMod       , only : bounds_type
-  use abortutils      , only : endrun
-  use clm_varctl      , only : iulog
-  use LandunitType    , only : lun_pp                
-  use atm2lndType     , only : atm2lnd_type
-  use AerosolType     , only : aerosol_type
-  use CanopyStateType , only : canopystate_type
-  use TemperatureType , only : temperature_type
-  use WaterfluxType   , only : waterflux_type
-  use WaterstateType  , only : waterstate_type
-  use TopounitDataType, only : top_as, top_af ! Atmospheric state and flux variables
-  use ColumnType      , only : col_pp 
-  use ColumnDataType  , only : col_es, col_ws  
-  use VegetationType  , only : veg_pp  
-  use clm_varcon      , only : snw_rds_min  
+  use shr_kind_mod      , only : r8 => shr_kind_r8
+  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use shr_sys_mod       , only : shr_sys_flush
+  use decompMod         , only : bounds_type
+  use abortutils        , only : endrun
+  use clm_varctl        , only : iulog
+  use LandunitType      , only : lun_pp                
+  use atm2lndType       , only : atm2lnd_type
+  use AerosolType       , only : aerosol_type
+  use CanopyStateType   , only : canopystate_type
+  use TemperatureType   , only : temperature_type
+  use WaterfluxType     , only : waterflux_type
+  use WaterstateType    , only : waterstate_type
+  use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
+  use ColumnType        , only : col_pp 
+  use ColumnDataType    , only : col_es, col_ws  
+  use VegetationType    , only : veg_pp
+  use VegetationDataType, only : veg_ws  
+  use clm_varcon        , only : snw_rds_min  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -199,7 +200,7 @@ contains
           t_soisno             => col_es%t_soisno            , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)  
 
           do_capsnow           => col_ws%do_capsnow           , & ! Output: [logical  (:)   ]  true => do snow capping                  
-          h2ocan               => waterstate_vars%h2ocan_patch             , & ! Output: [real(r8) (:)   ]  total canopy water (mm H2O)             
+          h2ocan               => veg_ws%h2ocan             , & ! Output: [real(r8) (:)   ]  total canopy water (mm H2O)             
           h2osfc               => col_ws%h2osfc               , & ! Output: [real(r8) (:)   ]  surface water (mm)                      
           h2osno               => col_ws%h2osno               , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
           snow_depth           => col_ws%snow_depth           , & ! Output: [real(r8) (:)   ]  snow height (m)                         
@@ -612,10 +613,10 @@ contains
           elai           => canopystate_vars%elai_patch           , & ! Input:  [real(r8) (:) ]  one-sided leaf area index with burying by snow
           esai           => canopystate_vars%esai_patch           , & ! Input:  [real(r8) (:) ]  one-sided stem area index with burying by snow
 
-          h2ocan         => waterstate_vars%h2ocan_patch          , & ! Input:  [real(r8) (:) ]  total canopy water (mm H2O)             
+          h2ocan         => veg_ws%h2ocan          , & ! Input:  [real(r8) (:) ]  total canopy water (mm H2O)             
           
-          fwet           => waterstate_vars%fwet_patch            , & ! Output: [real(r8) (:) ]  fraction of canopy that is wet (0 to 1) 
-          fdry           => waterstate_vars%fdry_patch              & ! Output: [real(r8) (:) ]  fraction of foliage that is green and dry [-] (new)
+          fwet           => veg_ws%fwet            , & ! Output: [real(r8) (:) ]  fraction of canopy that is wet (0 to 1) 
+          fdry           => veg_ws%fdry              & ! Output: [real(r8) (:) ]  fraction of foliage that is green and dry [-] (new)
           )
 
        do fp = 1,numf

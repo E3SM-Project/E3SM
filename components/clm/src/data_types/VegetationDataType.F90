@@ -76,10 +76,22 @@ module VegetationDataType
   ! Define the data structure that holds water state information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_water_state
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    ! Note: All units given as kg in this data type imply kg of H2O
+    real(r8), pointer :: h2ocan       (:) => null() ! canopy water (kg/m2)
+    real(r8), pointer :: q_ref2m      (:) => null() ! 2 m height surface specific humidity (kg H2O/kg moist air)
+    real(r8), pointer :: rh_ref2m     (:) => null() ! 2 m height surface relative humidity (%)
+    real(r8), pointer :: rh_ref2m_r   (:) => null() ! 2 m height surface relative humidity - rural (%)
+    real(r8), pointer :: rh_ref2m_u   (:) => null() ! 2 m height surface relative humidity - urban (%)
+    real(r8), pointer :: rh_af        (:) => null() ! fractional humidity of canopy air (dimensionless)
+    real(r8), pointer :: fwet         (:) => null() ! canopy fraction that is wet (0 to 1)
+    real(r8), pointer :: fdry         (:) => null() ! canopy fraction of foliage that is green and dry (0 to 1)
+    real(r8), pointer :: begwb        (:) => null() ! water mass begining of the time step
+    real(r8), pointer :: endwb        (:) => null() ! water mass end of the time step
+    real(r8), pointer :: errh2o       (:) => null() ! water conservation error (mm H2O)
   contains
-    procedure, public :: Init  => init_veg_ws
-    procedure, public :: Clean => clean_veg_ws
+    procedure, public :: Init    => veg_ws_init
+    procedure, public :: Restart => veg_ws_restart
+    procedure, public :: Clean   => veg_ws_clean
   end type vegetation_water_state
   
   !-----------------------------------------------------------------------
@@ -940,26 +952,131 @@ module VegetationDataType
     deallocate(rbufslp)
 
   end subroutine update_acc_vars_veg_es
+
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation water state data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_ws(this, begp, endp)
+  subroutine veg_ws_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_water_state) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer             :: p
     !------------------------------------------------------------------------
     
-  end subroutine init_veg_ws
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_ws
+    !-----------------------------------------------------------------------
+    allocate(this%h2ocan              (begp:endp))          ; this%h2ocan            (:) = nan
+    allocate(this%q_ref2m             (begp:endp))          ; this%q_ref2m           (:) = nan
+    allocate(this%rh_ref2m            (begp:endp))          ; this%rh_ref2m          (:) = nan
+    allocate(this%rh_ref2m_r          (begp:endp))          ; this%rh_ref2m_r        (:) = nan
+    allocate(this%rh_ref2m_u          (begp:endp))          ; this%rh_ref2m_u        (:) = nan
+    allocate(this%rh_af               (begp:endp))          ; this%rh_af             (:) = nan
+    allocate(this%fwet                (begp:endp))          ; this%fwet              (:) = nan
+    allocate(this%fdry                (begp:endp))          ; this%fdry              (:) = nan
+    allocate(this%begwb               (begp:endp))          ; this%begwb             (:) = nan
+    allocate(this%endwb               (begp:endp))          ; this%endwb             (:) = nan
+    allocate(this%errh2o              (begp:endp))          ; this%errh2o            (:) = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_ws
+    !-----------------------------------------------------------------------
+    this%h2ocan(begp:endp) = spval 
+    call hist_addfld1d (fname='H2OCAN', units='mm',  &
+         avgflag='A', long_name='intercepted water', &
+         ptr_patch=this%h2ocan, set_lake=0._r8)
+
+    this%q_ref2m(begp:endp) = spval
+    call hist_addfld1d (fname='Q2M', units='kg/kg',  &
+         avgflag='A', long_name='2m specific humidity', &
+         ptr_patch=this%q_ref2m)
+
+    this%rh_ref2m(begp:endp) = spval
+    call hist_addfld1d (fname='RH2M', units='%',  &
+         avgflag='A', long_name='2m relative humidity', &
+         ptr_patch=this%rh_ref2m)
+
+    this%rh_ref2m_r(begp:endp) = spval
+    call hist_addfld1d (fname='RH2M_R', units='%',  &
+         avgflag='A', long_name='Rural 2m specific humidity', &
+         ptr_patch=this%rh_ref2m_r, set_spec=spval)
+
+    this%rh_ref2m_u(begp:endp) = spval
+    call hist_addfld1d (fname='RH2M_U', units='%',  &
+         avgflag='A', long_name='Urban 2m relative humidity', &
+         ptr_patch=this%rh_ref2m_u, set_nourb=spval)
+
+    this%rh_af(begp:endp) = spval
+    call hist_addfld1d (fname='RHAF', units='fraction', &
+         avgflag='A', long_name='fractional humidity of canopy air', &
+         ptr_patch=this%rh_af, set_spec=spval, default='inactive')
+
+    if (use_cn) then
+       this%fwet(begp:endp) = spval
+       call hist_addfld1d (fname='FWET', units='proportion', &
+            avgflag='A', long_name='fraction of canopy that is wet', &
+            ptr_patch=this%fwet, default='inactive')
+    end if
+
+    if (use_cn) then
+       this%fdry(begp:endp) = spval
+       call hist_addfld1d (fname='FDRY', units='proportion', &
+            avgflag='A', long_name='fraction of foliage that is green and dry', &
+            ptr_patch=this%fdry, default='inactive')
+    end if
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_ws
+    !-----------------------------------------------------------------------
+    do p = begp,endp
+       this%h2ocan(begp:endp) = 0._r8
+       this%fwet(begp:endp)   = 0._r8
+       this%fdry(begp:endp)   = 0._r8
+    end do
+    
+  end subroutine veg_ws_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_ws(this)
+  subroutine veg_ws_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write vegetation water state information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vegetation_water_state)    :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar      ! determine if variable is on initial file
+    !------------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='H2OCAN', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='canopy water', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%h2ocan)
+
+    call restartvar(ncid=ncid, flag=flag, varname='FWET', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='fraction of canopy that is wet (0 to 1)', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fwet)
+   
+  end subroutine veg_ws_restart
+  
+  !------------------------------------------------------------------------
+  subroutine veg_ws_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_water_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_ws
+  end subroutine veg_ws_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation carbon state data structure

@@ -22,7 +22,7 @@ module BareGroundFluxesMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es, veg_ef
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -164,9 +164,9 @@ contains
          t_ref2m          =>    veg_es%t_ref2m        , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
          t_ref2m_r        =>    veg_es%t_ref2m_r      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface air temperature (Kelvin)
 
-         q_ref2m          =>    waterstate_vars%q_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
-         rh_ref2m_r       =>    waterstate_vars%rh_ref2m_r_patch      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)
-         rh_ref2m         =>    waterstate_vars%rh_ref2m_patch        , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
+         q_ref2m          =>    veg_ws%q_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
+         rh_ref2m_r       =>    veg_ws%rh_ref2m_r      , & ! Output: [real(r8) (:)   ]  Rural 2 m height surface relative humidity (%)
+         rh_ref2m         =>    veg_ws%rh_ref2m        , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
 
          z0mg_col         =>    frictionvel_vars%z0mg_col             , & ! Output: [real(r8) (:)   ]  roughness length, momentum [m]
          z0hg_col         =>    frictionvel_vars%z0hg_col             , & ! Output: [real(r8) (:)   ]  roughness length, sensible heat [m]

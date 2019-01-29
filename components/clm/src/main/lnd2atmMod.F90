@@ -31,9 +31,9 @@ module lnd2atmMod
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
-  use GridcellDataType     , only : grc_ef
+  use GridcellDataType     , only : grc_ef, grc_ws
   use ColumnDataType       , only : col_ws  
-  use VegetationDataType   , only : veg_es, veg_ef
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws
 
   
   !
@@ -162,7 +162,7 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         waterstate_vars%q_ref2m_patch (bounds%begp:bounds%endp), &
+         veg_ws%q_ref2m (bounds%begp:bounds%endp), &
          lnd2atm_vars%q_ref2m_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
@@ -324,10 +324,10 @@ contains
 
     call c2g( bounds, &
          col_ws%endwb(bounds%begc:bounds%endc), &
-         waterstate_vars%tws_grc  (bounds%begg:bounds%endg), &
+         grc_ws%tws  (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       waterstate_vars%tws_grc(g) = waterstate_vars%tws_grc(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
+       grc_ws%tws(g) = grc_ws%tws(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
     enddo
 
   end subroutine lnd2atm
