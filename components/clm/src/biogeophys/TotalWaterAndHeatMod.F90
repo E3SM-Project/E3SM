@@ -11,20 +11,21 @@ module TotalWaterAndHeatMod
   use decompMod          , only : bounds_type
   use clm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
   use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
-  use ColumnType         , only : col_pp
-  use ColumnDataType     , only : col_es, col_ws
-  use LandunitType       , only : lun_pp
   use subgridAveMod      , only : p2c
   use SoilHydrologyType  , only : soilhydrology_type
   use WaterstateType     , only : waterstate_type
   use UrbanParamsType    , only : urbanparams_type
   use SoilStateType      , only : soilstate_type
   use TemperatureType    , only : temperature_type
+  use LakeStateType      , only : lakestate_type
   use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
   use column_varcon      , only : icol_road_perv, icol_road_imperv
   use landunit_varcon    , only : istdlak, istsoil,istcrop,istwet,istice,istice_mec
+  use LandunitType       , only : lun_pp
+  use ColumnType         , only : col_pp
+  use ColumnDataType     , only : col_es, col_ws
   use VegetationType     , only : veg_pp
-  use LakeStateType      , only : lakestate_type
+  use VegetationDataType , only : veg_ws 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -204,7 +205,7 @@ contains
          
          h2osfc       =>    col_ws%h2osfc     , & ! Input:  [real(r8) (:)   ]  surface water (mm)
          h2osno       =>    col_ws%h2osno     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
-         h2ocan_patch =>    waterstate_inst%h2ocan_patch   , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
+         h2ocan_patch =>    veg_ws%h2ocan   , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
 !         snocan_patch =>    waterstate_inst%snocan_patch   , & ! Input:  [real(r8) (:)   ]  canopy snow water (mm H2O)
          h2osoi_ice   =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
          h2osoi_liq   =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
@@ -454,7 +455,7 @@ contains
          h2osoi_ice   => col_ws%h2osoi_ice, & ! frozen water (kg/m2)
          h2osno       => col_ws%h2osno, & ! snow water (mm H2O)
          h2osfc       => col_ws%h2osfc, & ! surface water (mm H2O)
-         h2ocan_patch => waterstate_inst%h2ocan_patch, & ! canopy water (mm H2O)
+         h2ocan_patch => veg_ws%h2ocan, & ! canopy water (mm H2O)
 !         snocan_patch => waterstate_inst%snocan_patch, & ! canopy snow water (mm H2O)
          total_plant_stored_h2o_col => col_ws%total_plant_stored_h2o, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
          wa           => soilhydrology_inst%wa_col & ! water in the unconfined aquifer (mm)

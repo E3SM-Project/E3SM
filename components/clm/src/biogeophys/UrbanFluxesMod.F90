@@ -26,11 +26,11 @@ module UrbanFluxesMod
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_as  
   use LandunitType         , only : lun_pp 
-  use LandunitDataType     , only : lun_es, lun_ef  
+  use LandunitDataType     , only : lun_es, lun_ef, lun_ws  
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef, col_ws  
   use VegetationType       , only : veg_pp                
-  use VegetationDataType   , only : veg_es, veg_ef  
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -225,10 +225,10 @@ contains
          h2osoi_ice          =>   col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
          h2osoi_liq          =>   col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
          h2osno              =>   col_ws%h2osno                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
-         qaf                 =>   waterstate_vars%qaf_lun                   , & ! Output: [real(r8) (:)   ]  urban canopy air specific humidity (kg/kg)        
-         q_ref2m             =>   waterstate_vars%q_ref2m_patch             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
-         rh_ref2m            =>   waterstate_vars%rh_ref2m_patch            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
-         rh_ref2m_u          =>   waterstate_vars%rh_ref2m_u_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
+         qaf                 =>   lun_ws%qaf                   , & ! Output: [real(r8) (:)   ]  urban canopy air specific humidity (kg/kg)        
+         q_ref2m             =>   veg_ws%q_ref2m             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
+         rh_ref2m            =>   veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
+         rh_ref2m_u          =>   veg_ws%rh_ref2m_u          , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
 
          forc_hgt_u_patch    =>   frictionvel_vars%forc_hgt_u_patch         , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft-level (m)     
          forc_hgt_t_patch    =>   frictionvel_vars%forc_hgt_t_patch         , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft-level (m)

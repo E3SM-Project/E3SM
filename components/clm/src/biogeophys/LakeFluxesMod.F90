@@ -22,7 +22,7 @@ module LakeFluxesMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ws  
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es, veg_ef  
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws  
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -186,8 +186,8 @@ contains
          forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch      , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft level [m]
          forc_hgt_q_patch =>    frictionvel_vars%forc_hgt_q_patch      , & ! Input:  [real(r8) (:)   ]  observational height of specific humidity at pft level [m]
 
-         q_ref2m          =>    waterstate_vars%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
-         rh_ref2m         =>    waterstate_vars%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
+         q_ref2m          =>    veg_ws%q_ref2m          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
+         rh_ref2m         =>    veg_ws%rh_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
          qflx_evap_soi    =>    waterflux_vars%qflx_evap_soi_patch     , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)          
          qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch     , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
 

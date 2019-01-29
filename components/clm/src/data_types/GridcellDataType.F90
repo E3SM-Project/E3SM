@@ -51,10 +51,28 @@ module GridcellDataType
   end type gridcell_energy_flux
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds water state information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_water_state
+    ! temperature variables
+    ! Note: All units given as kg in this data type imply kg of H2O
+    real(r8), pointer :: liq1               (:)   ! initial gridcell total h2o liq content (kg/m2)
+    real(r8), pointer :: liq2               (:)   ! post land cover change total liq content (kg/m2)
+    real(r8), pointer :: ice1               (:)   ! initial gridcell total h2o ice content (kg/m2)
+    real(r8), pointer :: ice2               (:)   ! post land cover change total ice content (kg/m2)
+    real(r8), pointer :: tws                (:)   ! total water storage (kg/m2)
+
+  contains
+    procedure, public :: Init    => grc_ws_init
+    procedure, public :: Clean   => grc_ws_clean
+  end type gridcell_water_state
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es    ! gridcell energy state
   type(gridcell_energy_flux)           , public, target :: grc_ef    ! gridcell energy flux
+  type(gridcell_water_state)           , public, target :: grc_ws    ! gridcell water state
   !------------------------------------------------------------------------
 
 contains
@@ -162,6 +180,67 @@ contains
     deallocate(this%eflx_dynbal)
   end subroutine grc_ef_clean
   
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell water state data structure
+  !------------------------------------------------------------------------
+  subroutine grc_ws_init(this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_water_state) :: this
+    integer, intent(in) :: begg,endg
+    !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_ws
+    !-----------------------------------------------------------------------
+    allocate(this%liq1       (begg:endg))           ; this%liq1      (:)   = nan
+    allocate(this%liq2       (begg:endg))           ; this%liq2      (:)   = nan
+    allocate(this%ice1       (begg:endg))           ; this%ice1      (:)   = nan
+    allocate(this%ice2       (begg:endg))           ; this%ice2      (:)   = nan
+    allocate(this%tws        (begg:endg))           ; this%tws       (:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_ws
+    !-----------------------------------------------------------------------
+    this%liq1(begg:endg) = spval
+    call hist_addfld1d (fname='GC_LIQ1',  units='mm',  &
+         avgflag='A', long_name='initial gridcell total liq content', &
+         ptr_lnd=this%liq1)
+
+    this%liq2(begg:endg) = spval
+    call hist_addfld1d (fname='GC_LIQ2',  units='mm',  &  
+         avgflag='A', long_name='post landuse change gridcell total liq content', &              
+         ptr_lnd=this%liq2, default='inactive')     
+
+    this%ice1(begg:endg) = spval
+    call hist_addfld1d (fname='GC_ICE1',  units='mm',  &  
+         avgflag='A', long_name='initial gridcell total ice content', &              
+         ptr_lnd=this%ice1)     
+
+    this%ice2(begg:endg) = spval
+    call hist_addfld1d (fname='GC_ICE2',  units='mm',  &  
+         avgflag='A', long_name='post land cover change total ice content', &              
+         ptr_lnd=this%ice2, default='inactive')
+
+    this%tws(begg:endg) = spval
+    call hist_addfld1d (fname='TWS',  units='mm',  &
+         avgflag='A', long_name='total water storage', &
+         ptr_lnd=this%tws)
+
+  end subroutine grc_ws_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_ws_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_water_state) :: this
+    !------------------------------------------------------------------------
+    deallocate(this%liq1)
+    deallocate(this%liq2)
+    deallocate(this%ice1)
+    deallocate(this%ice2)
+    deallocate(this%tws )
+  end subroutine grc_ws_clean
 
 end module GridcellDataType
 

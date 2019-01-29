@@ -743,6 +743,7 @@ contains
     call hist_addfld1d (fname='ERRH2OSNO',  units='mm',  &
          avgflag='A', long_name='imbalance in snow depth (liquid water)', &
          ptr_col=this%errh2osno, c2l_scale_type='urbanf')
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ws
     !-----------------------------------------------------------------------

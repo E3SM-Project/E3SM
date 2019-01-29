@@ -9,6 +9,8 @@ module clm_driver
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
+  use shr_sys_mod            , only : shr_sys_flush
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
   use clm_varpar             , only : nlevtrc_soil, nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
@@ -125,15 +127,14 @@ module clm_driver
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
+
   use GridcellType           , only : grc_pp
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : col_es, col_ef, col_ws  
   use VegetationType         , only : veg_pp
-  use VegetationDataType     , only : veg_es
-  use shr_sys_mod            , only : shr_sys_flush
-  use shr_log_mod            , only : errMsg => shr_log_errMsg
+  use VegetationDataType     , only : veg_es, veg_ws
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -1636,7 +1637,7 @@ contains
     ! Averaging for patch water state variables
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         waterstate_vars%h2ocan_patch(bounds%begp:bounds%endp), &
+         veg_ws%h2ocan(bounds%begp:bounds%endp), &
          col_ws%h2ocan(bounds%begc:bounds%endc))
 
     ! Averaging for patch evaporative flux variables

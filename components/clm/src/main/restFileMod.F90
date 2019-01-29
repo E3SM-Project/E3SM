@@ -58,9 +58,9 @@ module restFileMod
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
-  use LandunitDataType     , only : lun_es
+  use LandunitDataType     , only : lun_es, lun_ws
   use ColumnDataType       , only : col_es, col_ef, col_ws
-  use VegetationDataType   , only : veg_es, veg_ef
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -215,8 +215,12 @@ contains
     call waterstate_vars%restart (bounds, ncid, flag='define', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
     
+    call lun_ws%Restart (bounds, ncid, flag='define')
+
     call col_ws%Restart (bounds, ncid, flag='define', &
          watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))    
+
+    call veg_ws%Restart (bounds, ncid, flag='define')
 
     call aerosol_vars%restart (bounds, ncid,  flag='define', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
@@ -339,9 +343,13 @@ contains
     call waterstate_vars%restart (bounds, ncid, flag='write',  &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    call lun_ws%Restart (bounds, ncid, flag='write')
+
     call col_ws%Restart (bounds, ncid, flag='write', &
          watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
     
+    call veg_ws%Restart (bounds, ncid, flag='write')
+
     call aerosol_vars%restart (bounds, ncid,  flag='write', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
          h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) )
@@ -564,8 +572,12 @@ contains
     call waterstate_vars%restart (bounds, ncid,  flag='read', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    call lun_ws%Restart (bounds, ncid, flag='read')
+
     call col_ws%Restart (bounds, ncid, flag='read', &
          watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+
+    call veg_ws%Restart (bounds, ncid, flag='read')
 
     call aerosol_vars%restart (bounds, ncid, flag='read', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &

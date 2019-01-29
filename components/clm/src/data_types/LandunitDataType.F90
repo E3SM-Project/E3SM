@@ -26,8 +26,8 @@ module LandunitDataType
   !-----------------------------------------------------------------------
   type, public :: landunit_energy_state
     ! temperature variables
-    real(r8), pointer :: t_building           (:)   ! internal building temperature (K)
-    real(r8), pointer :: taf                  (:)   ! urban canopy air temperature (K)
+    real(r8), pointer :: t_building       (:)   ! internal building temperature (K)
+    real(r8), pointer :: taf              (:)   ! urban canopy air temperature (K)
 
   contains
     procedure, public :: Init    => lun_es_init
@@ -50,10 +50,24 @@ module LandunitDataType
   end type landunit_energy_flux
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds water state information at the landunit level.
+  !-----------------------------------------------------------------------
+  type, public :: landunit_water_state
+    ! temperature variables
+    real(r8), pointer :: qaf               (:)   ! urban canopy air specific humidity (kg H2O/kg moist air)
+
+  contains
+    procedure, public :: Init    => lun_ws_init
+    procedure, public :: Restart => lun_ws_restart
+    procedure, public :: Clean   => lun_ws_clean
+  end type landunit_water_state
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of landunit-level data types
   !-----------------------------------------------------------------------
   type(landunit_energy_state)          , public, target :: lun_es    ! landunit energy state
   type(landunit_energy_flux )          , public, target :: lun_ef    ! landunit energy flux
+  type(landunit_water_state )          , public, target :: lun_ws    ! landunit water state
 
   !------------------------------------------------------------------------
 
@@ -179,6 +193,75 @@ contains
     deallocate(this%eflx_wasteheat)
     
   end subroutine lun_ef_clean
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean landunit water state data structure
+  !------------------------------------------------------------------------
+  subroutine lun_ws_init(this, begl, endl)
+    !
+    ! !ARGUMENTS:
+    class(landunit_water_state) :: this
+    integer, intent(in) :: begl,endl
+    !------------------------------------------------------------------------
+    ! !LOCAL VARIABLES:
+    integer :: l                        ! indices
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of lun_ws
+    !-----------------------------------------------------------------------
+    allocate(this%qaf          (begl:endl))               ; this%qaf         (:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! cold-start initial conditions for lun_ws
+    !-----------------------------------------------------------------------
+    do l = begl, endl 
+       if (lun_pp%urbpoi(l)) then
+          if (use_vancouver) then
+             this%qaf(l) = 0.0111_r8
+          else if (use_mexicocity) then
+             this%qaf(l) = 0.00248_r8
+          else
+             this%qaf(l) = 1.e-4_r8 ! Arbitrary set since forc_q is not yet available
+          end if
+       end if
+    end do
+
+  end subroutine lun_ws_init
+
+  !------------------------------------------------------------------------
+  subroutine lun_ws_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write landunit water state information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(landunit_water_state)      :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='qaf', xtype=ncd_double, dim1name='landunit',                       &
+         long_name='urban canopy specific humidity', units='kg/kg',                                                   &
+         interpinic_flag='interp', readvar=readvar, data=this%qaf)
+
+  end subroutine lun_ws_restart
+
+  !------------------------------------------------------------------------
+  subroutine lun_ws_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(landunit_water_state) :: this
+    !------------------------------------------------------------------------
+    deallocate(this%qaf)
+    
+  end subroutine lun_ws_clean
+
 
   
 
