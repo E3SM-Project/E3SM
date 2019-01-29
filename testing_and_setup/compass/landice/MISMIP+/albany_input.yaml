@@ -17,8 +17,10 @@ ANONYMOUS:
         Type: Basal Friction
         Basal Friction Coefficient: 
           Type: Power Law
-          Given Field Variable Name: basal_friction
           Zero Beta On Floating Ice: true
+          Power Law Coefficient: 1.0
+          Power Exponent: 0.3333333333
+          Bed Roughness: 1.0
       BC 1: 
         Cubature Degree: 5
         Side Set Name: floatinglateralside
