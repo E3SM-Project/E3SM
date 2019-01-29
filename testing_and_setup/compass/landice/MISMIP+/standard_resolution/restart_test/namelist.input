@@ -12,9 +12,9 @@
 !     and the addition of 3 accounts for the culling of 4 vertical rows. 
 ! (4) nVertLevels does not matter, since it will be redefined later.
 ! (5) can set nproc = 1, since the mesh will need culling later to remove periodicity.
-   dc = 2309.401077,
-   nx = 284,
-   ny = 44,
+   dc = 4618.802154,
+   nx = 144,
+   ny = 24,
    nVertLevels = 1,
    nTracers = 1,
    nproc = 1
