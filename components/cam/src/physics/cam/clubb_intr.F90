@@ -1246,6 +1246,7 @@ end subroutine clubb_init_cnst
    real(r8), pointer :: tpert(:)
 
    real(r8) :: ugust  ! function: gustiness as a function of convective rainfall
+   real(r8) :: gfac
    real(r8) :: gprec
    real(r8) :: prec_gust(pcols)
    real(r8) :: vmag_gust_dp(pcols),vmag_gust_cl(pcols)
@@ -1259,7 +1260,7 @@ end subroutine clubb_init_cnst
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
-   ugust(gprec,gust_fac) = gust_fac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
+   ugust(gprec,gfac) = gfac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
   
 #endif
    det_s(:)   = 0.0_r8
