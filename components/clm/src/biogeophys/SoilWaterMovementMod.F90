@@ -916,14 +916,14 @@ contains
          rootr_pft                 =>    soilstate_vars%rootr_patch                 , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
 
          h2osoi_liq                =>    col_ws%h2osoi_liq             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         frac_h2osfc               =>    waterstate_vars%frac_h2osfc_col            , & ! Input:  [real(r8) (:)   ]
-         frac_sno                  =>    waterstate_vars%frac_sno_eff_col           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         frac_h2osfc               =>    col_ws%frac_h2osfc            , & ! Input:  [real(r8) (:)   ]
+         frac_sno                  =>    col_ws%frac_sno_eff           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          vsfm_fliq_col_1d          =>    waterstate_vars%vsfm_fliq_col_1d           , & ! Output: [real(r8) (:)   ]  1D fraction of liquid saturation for VSFM [-]
          vsfm_sat_col_1d           =>    waterstate_vars%vsfm_sat_col_1d            , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
          vsfm_mass_col_1d          =>    waterstate_vars%vsfm_mass_col_1d           , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
          vsfm_smpl_col_1d          =>    waterstate_vars%vsfm_smpl_col_1d           , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
          vsfm_soilp_col_1d         =>    waterstate_vars%vsfm_soilp_col_1d          , & ! Output: [real(r8) (:)   ]  1D soil water pressure from VSFM [Pa]
-         soilp_col                 =>    waterstate_vars%soilp_col                  , & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
+         soilp_col                 =>    col_ws%soilp                  , & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
          qflx_rootsoi_col          =>    waterflux_vars%qflx_rootsoi_col            , & ! Input:  [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
          qflx_deficit              =>    waterflux_vars%qflx_deficit_col            , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
          qflx_infl                 =>    waterflux_vars%qflx_infl_col               , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)

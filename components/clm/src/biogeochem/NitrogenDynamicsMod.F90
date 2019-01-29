@@ -509,7 +509,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                         & 
-         wf               =>  waterstate_vars%wf_col                 , & ! Input:  [real(r8) (:) ]  soil water as frac. of whc for top 0.5 m          
+         wf               =>  col_ws%wf                 , & ! Input:  [real(r8) (:) ]  soil water as frac. of whc for top 0.5 m          
 
          hui              =>  crop_vars%gddplant_patch               , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)                    
 

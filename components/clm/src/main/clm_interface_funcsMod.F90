@@ -360,8 +360,8 @@ contains
     associate ( &
       soilpsi               => soilstate_vars%soilpsi_col               , & !
       !
-      frac_sno_eff          => waterstate_vars%frac_sno_eff_col         , & !
-      frac_h2osfc           => waterstate_vars%frac_h2osfc_col          , & !
+      frac_sno_eff          => col_ws%frac_sno_eff         , & !
+      frac_h2osfc           => col_ws%frac_h2osfc          , & !
       h2osoi_vol            => col_ws%h2osoi_vol           , & ! [real(r8) (:,:)] volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
       h2osoi_liq            => col_ws%h2osoi_liq           , & ! [real(r8) (:,:)] liquid water (kg/m2) (-nlevsno+1:nlevgrnd)
       h2osoi_ice            => col_ws%h2osoi_ice           , & ! [real(r8) (:,:)] ice lens (kg/m2) (-nlevsno+1:nlevgrnd)

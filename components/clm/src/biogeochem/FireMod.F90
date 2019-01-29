@@ -46,7 +46,7 @@ module FireMod
   use GridcellType           , only : grc_pp
   use TopounitDataType       , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es  
+  use ColumnDataType         , only : col_es, col_ws  
   use VegetationType         , only : veg_pp                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
@@ -206,8 +206,8 @@ contains
          
          fsat               =>    soilhydrology_vars%fsat_col               , & ! Input:  [real(r8) (:)     ]  fractional area with water table at surface       
          
-         wf                 =>    waterstate_vars%wf_col                    , & ! Input:  [real(r8) (:)     ]  soil water as frac. of whc for top 0.05 m         
-         wf2                =>    waterstate_vars%wf2_col                   , & ! Input:  [real(r8) (:)     ]  soil water as frac. of whc for top 0.17 m         
+         wf                 =>    col_ws%wf                    , & ! Input:  [real(r8) (:)     ]  soil water as frac. of whc for top 0.05 m         
+         wf2                =>    col_ws%wf2                   , & ! Input:  [real(r8) (:)     ]  soil water as frac. of whc for top 0.17 m         
         
          lfpftd             =>    cnstate_vars%lfpftd_patch                 , & ! Input:  [real(r8) (:)     ]  decrease of pft weight (0-1) on the col. for dt
          cropf_col          =>    cnstate_vars%cropf_col                    , & ! Input:  [real(r8) (:)     ]  cropland fraction in veg column                   
