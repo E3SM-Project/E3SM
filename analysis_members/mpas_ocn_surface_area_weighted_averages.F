@@ -494,6 +494,9 @@ contains
       call mpas_deallocate_scratch_field(workSumField, .true.)
 
       ! deallocate buffers
+      deallocate(workBufferSum)
+      deallocate(workBufferMin)
+      deallocate(workBufferMax)
       deallocate(workBufferSumReduced)
       deallocate(workBufferMinReduced)
       deallocate(workBufferMaxReduced)
