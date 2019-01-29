@@ -13,11 +13,14 @@
 // The number of scalars in a scream::pack::Pack and Mask.
 #cmakedefine SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
 
-// The factor difference between a large and small pack
+// The number of scalars in a scream::pack::SmallPack and SmallMask.
 #cmakedefine SCREAM_SMALL_PACK_SIZE ${SCREAM_SMALL_PACK_SIZE}
 
 // Whether MPI errors should abort
 #cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
+
+// Whether MPI errors should abort
+#cmakedefine SCREAM_MIMIC_GPU
 
 // Whether this is a CUDA build
 #cmakedefine CUDA_BUILD

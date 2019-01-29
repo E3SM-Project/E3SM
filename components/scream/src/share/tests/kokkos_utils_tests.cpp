@@ -3,6 +3,8 @@
 #include "share/util/scream_kokkos_utils.hpp"
 #include "share/util/scream_arch.hpp"
 
+#include <thread>
+
 namespace {
 
 TEST_CASE("data_type", "[kokkos_utils]") {
@@ -49,8 +51,8 @@ TEST_CASE("team_policy", "[kokkos_utils]") {
       }
     }
     else {
-#if defined MIMIC_GPU && defined KOKKOS_ENABLE_OPENMP
-      if (omp_get_num_threads() > 1 && p.team_size() == 1) ++nerr;
+#if defined SCREAM_MIMIC_GPU && defined KOKKOS_ENABLE_OPENMP
+      REQUIRE((omp_get_num_threads() == 1 || p.team_size() > 1));
 #endif
     }
   }

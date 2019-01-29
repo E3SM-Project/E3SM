@@ -80,7 +80,7 @@ struct ExeSpaceUtils {
   using TeamPolicy = Kokkos::TeamPolicy<ExeSpace>;
 
   static TeamPolicy get_default_team_policy (Int ni, Int nk) {
-#ifdef MIMIC_GPU
+#ifdef SCREAM_MIMIC_GPU
     const int max_threads = ExeSpace::concurrency();
     const int team_size = max_threads < 7 ? max_threads : 7;
     return TeamPolicy(ni, team_size);
