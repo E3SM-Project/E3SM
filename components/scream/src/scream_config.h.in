@@ -19,7 +19,7 @@
 // Whether MPI errors should abort
 #cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
 
-// Whether MPI errors should abort
+// Mimic GPU to correctness-test inter-column parallelism on non-GPU platform
 #cmakedefine SCREAM_MIMIC_GPU
 
 // Whether this is a CUDA build

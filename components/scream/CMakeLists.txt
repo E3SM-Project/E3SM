@@ -29,7 +29,7 @@ include(CTest)
 
 # Scream configuration options
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE LOGICAL "Set to double precision (default True)")
-set(SCREAM_MIMIC_GPU FALSE CACHE LOGICAL "Mimic GPU to correctness test inter-column parallelism on non-GPU platform")
+set(SCREAM_MIMIC_GPU FALSE CACHE LOGICAL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_ENABLE_FPE FALSE CACHE LOGICAL "Enable floating point error exception")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE LOGICAL "If defined, scream::pack objects check indices against bounds")
 set(SCREAM_PACK_SIZE 16 CACHE INTEGER

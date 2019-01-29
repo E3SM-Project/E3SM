@@ -6,6 +6,7 @@
 #    - config_defs (optional): a list of additional defines for the compiler, default is nothing
 #    - mpi_ranks (optional): the number of mpi ranks for the test, if 2 values, it's a range, if 3, it's a range plus increment. default is np=1
 #    - threads (optional): the number of threads for the test, if 2 values, it's a range, if 3, it's a range plus an increment. default is 1 thread
+#      Note: One test will be created per combination of valid mpi-rank and thread value
 
 FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
   set(oneValueArgs CONFIG_DEFS)
