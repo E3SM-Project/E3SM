@@ -113,8 +113,6 @@ module ocn_time_integration_rk4
       real (kind=RKIND) :: coef
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfEdge, vertDiffTopOfCell
-      real (kind=RKIND), dimension(:), allocatable:: A,C,uTemp
-      real (kind=RKIND), dimension(:,:), allocatable:: tracersTemp
 
       ! Dimensions
       integer, pointer :: nCells, nEdges, nVertLevels, num_tracers
