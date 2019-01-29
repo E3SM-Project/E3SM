@@ -66,6 +66,15 @@ if (CUDA_BUILD)
   set (SCREAM_SMALL_PACK_SIZE 1)
 endif ()
 
+# Scream test configuration options
+if (CUDA_BUILD)
+  set(DEFAULT_MAX_THREADS 1)
+else()
+  set(DEFAULT_MAX_THREADS 16)
+endif()
+set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE INTEGER "Upper limit on threads for threaded tests")
+set(SCREAM_TEST_THREAD_INC 1 CACHE INTEGER "Thread count increment for threaded tests")
+
 # Set compiler-specific flags
 include(SetCompilerFlags)
 

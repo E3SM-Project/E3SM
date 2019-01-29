@@ -1,3 +1,5 @@
+include(CMakeParseArguments) # Needed for backwards compatibility
+
 # This function takes the following arguments:
 #    - target_name: the name of the executable
 #    - target_srcs: a list of src files for the executable
@@ -87,8 +89,8 @@ FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
   set(CURR_RANKS ${MPI_START_RANK})
   set(CURR_THREADS ${THREAD_START})
 
-  while (CURR_RANKS LESS_EQUAL ${MPI_END_RANK})
-    while (CURR_THREADS LESS_EQUAL ${THREAD_END})
+  while (NOT CURR_RANKS GREATER ${MPI_END_RANK})
+    while (NOT CURR_THREADS GREATER ${THREAD_END})
       # Create the test
       IF (${CURR_RANKS} GREATER 1)
         ADD_TEST(${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS} mpiexec -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${target_name})
