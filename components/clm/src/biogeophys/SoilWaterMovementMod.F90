@@ -7,7 +7,7 @@ module SoilWaterMovementMod
   ! created by Jinyun Tang, Mar 12, 2014
   ! added variable DTB option for Zeng-Decker, Michael A. Brunke, Aug. 25, 2016
   !
-  use ColumnDataType   , only : col_es
+  use ColumnDataType   , only : col_es, col_ws
   !
   implicit none
   save 
@@ -118,9 +118,9 @@ contains
       dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
       zwt                =>    soilhydrology_vars%zwt_col            , & ! Input:  [real(r8) (:)   ]  water table depth (m)
       nlev2bed           =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
-      h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-      h2osoi_vol         =>    waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-      h2osoi_liq         =>    waterstate_vars%h2osoi_liq_col          & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
+      h2osoi_ice         =>    col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
+      h2osoi_vol         =>    col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
+      h2osoi_liq         =>    col_ws%h2osoi_liq          & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
     )
 
     select case(soilroot_water_method)
@@ -373,9 +373,9 @@ contains
          hk_l              =>    soilstate_vars%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)                   
          rootr_pft         =>    soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
 
-         h2osoi_ice        =>    waterstate_vars%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)
-         h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         h2osoi_vol        =>    waterstate_vars%h2osoi_vol_col     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_ice        =>    col_ws%h2osoi_ice     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)
+         h2osoi_liq        =>    col_ws%h2osoi_liq     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osoi_vol        =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
          qflx_deficit      =>    waterflux_vars%qflx_deficit_col    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
          qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
@@ -915,7 +915,7 @@ contains
          rootr_col                 =>    soilstate_vars%rootr_col                   , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
          rootr_pft                 =>    soilstate_vars%rootr_patch                 , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
 
-         h2osoi_liq                =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osoi_liq                =>    col_ws%h2osoi_liq             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          frac_h2osfc               =>    waterstate_vars%frac_h2osfc_col            , & ! Input:  [real(r8) (:)   ]
          frac_sno                  =>    waterstate_vars%frac_sno_eff_col           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          vsfm_fliq_col_1d          =>    waterstate_vars%vsfm_fliq_col_1d           , & ! Output: [real(r8) (:)   ]  1D fraction of liquid saturation for VSFM [-]

@@ -59,7 +59,7 @@ module restFileMod
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
   use LandunitDataType     , only : lun_es
-  use ColumnDataType       , only : col_es, col_ef
+  use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationDataType   , only : veg_es, veg_ef
   !
   ! !PUBLIC TYPES:
@@ -213,11 +213,14 @@ contains
     call veg_es%Restart (bounds, ncid, flag='define')
 
     call waterstate_vars%restart (bounds, ncid, flag='define', &
-         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:)) 
+         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+    
+    call col_ws%Restart (bounds, ncid, flag='define', &
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))    
 
     call aerosol_vars%restart (bounds, ncid,  flag='define', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:))
+         h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:))
 
     call surfalb_vars%restart (bounds, ncid, flag='define', &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
@@ -327,18 +330,21 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='write')
     
-    call lun_es%restart (bounds, ncid, flag='write')
+    call lun_es%Restart (bounds, ncid, flag='write')
 
-    call col_es%restart (bounds, ncid, flag='write')
+    call col_es%Restart (bounds, ncid, flag='write')
 
-    call veg_es%restart (bounds, ncid, flag='write')
+    call veg_es%Restart (bounds, ncid, flag='write')
 
     call waterstate_vars%restart (bounds, ncid, flag='write',  &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    call col_ws%Restart (bounds, ncid, flag='write', &
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+    
     call aerosol_vars%restart (bounds, ncid,  flag='write', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) )
+         h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) )
 
     call surfalb_vars%restart (bounds, ncid, flag='write',  &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
@@ -549,18 +555,21 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='read')
     
-    call lun_es%restart (bounds, ncid, flag='read')
+    call lun_es%Restart (bounds, ncid, flag='read')
 
-    call col_es%restart (bounds, ncid, flag='read')
+    call col_es%Restart (bounds, ncid, flag='read')
 
-    call veg_es%restart (bounds, ncid, flag='read')
+    call veg_es%Restart (bounds, ncid, flag='read')
 
     call waterstate_vars%restart (bounds, ncid,  flag='read', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    call col_ws%Restart (bounds, ncid, flag='read', &
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+
     call aerosol_vars%restart (bounds, ncid, flag='read', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) ) 
+         h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) ) 
 
     call surfalb_vars%restart (bounds, ncid,  flag='read', &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &

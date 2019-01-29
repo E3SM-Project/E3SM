@@ -22,7 +22,7 @@ module SoilFluxesMod
   use TopounitDataType  , only : top_af
   use LandunitType	   , only : lun_pp                
   use ColumnType	      , only : col_pp
-  use ColumnDataType    , only : col_es, col_ef                
+  use ColumnDataType    , only : col_es, col_ef, col_ws                
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef  
   !
@@ -95,9 +95,9 @@ contains
          frac_sno                => waterstate_vars%frac_sno_col            , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          frac_h2osfc             => waterstate_vars%frac_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          do_capsnow              => waterstate_vars%do_capsnow_col          , & ! Input:  [logical  (:)   ]  true => do snow capping                  
-         h2osfc                  => waterstate_vars%h2osfc_col              , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
-         h2osoi_ice              => waterstate_vars%h2osoi_ice_col          , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) (new)                
-         h2osoi_liq              => waterstate_vars%h2osoi_liq_col          , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new)            
+         h2osfc                  => col_ws%h2osfc              , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
+         h2osoi_ice              => col_ws%h2osoi_ice          , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) (new)                
+         h2osoi_liq              => col_ws%h2osoi_liq          , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new)            
 
          sabg_soil               => solarabs_vars%sabg_soil_patch           , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by soil (W/m**2)
          sabg_snow               => solarabs_vars%sabg_snow_patch           , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by snow (W/m**2)

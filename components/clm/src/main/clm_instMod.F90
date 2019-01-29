@@ -52,7 +52,7 @@ module clm_instMod
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef
   use ColumnType                 , only : col_pp
-  use ColumnDataType             , only : col_es, col_ef
+  use ColumnDataType             , only : col_es, col_ef, col_ws
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef
 
@@ -353,6 +353,10 @@ contains
          soilstate_vars%watsat_col(begc:endc, 1:), &
          col_es%t_soisno(begc:endc, -nlevsno+1:) )
 
+    call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, &
+         h2osno_col(begc:endc),                    &
+         snow_depth_col(begc:endc),                &
+         soilstate_vars%watsat_col(begc:endc, 1:))
 
     call waterflux_vars%init(bounds_proc)
 

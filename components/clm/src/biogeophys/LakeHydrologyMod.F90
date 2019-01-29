@@ -21,7 +21,7 @@ module LakeHydrologyMod
   use decompMod            , only : bounds_type
   use TopounitDataType     , only : top_as, top_af    ! atmospheric state and flux variables
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ef  
+  use ColumnDataType       , only : col_es, col_ef, col_ws  
   use VegetationType       , only : veg_pp                
   use VegetationDataType   , only : veg_ef
   use atm2lndType          , only : atm2lnd_type
@@ -159,9 +159,9 @@ contains
          h2osno               =>  waterstate_vars%h2osno_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
          snowice              =>  waterstate_vars%snowice_col           , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
          snowliq              =>  waterstate_vars%snowliq_col           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
-         h2osoi_ice           =>  waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq           =>  waterstate_vars%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         h2osoi_vol           =>  waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+         h2osoi_ice           =>  col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq           =>  col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
 
          qflx_floodc          =>  waterflux_vars%qflx_floodc_col        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
          qflx_prec_grnd       =>  waterflux_vars%qflx_prec_grnd_patch   , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]

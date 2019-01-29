@@ -91,7 +91,7 @@ module CLMFatesInterfaceMod
    use GridcellType      , only : grc_pp
    use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
-   use ColumnDataType    , only : col_es
+   use ColumnDataType    , only : col_es, col_ws
    use VegetationDataType, only : veg_es  
    use LandunitType      , only : lun_pp
    
@@ -639,7 +639,7 @@ contains
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
-               waterstate_inst%h2osoi_vol_col(c,1:nlevsoil) 
+               col_ws%h2osoi_vol(c,1:nlevsoil) 
 
          this%fates(nc)%bc_in(s)%t_veg24_si = &
                veg_es%t_veg24(col_pp%pfti(c))
@@ -670,7 +670,7 @@ contains
             this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = spval !soilstate_inst%watres_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%sucsat_sisl(1:nlevsoil) = soilstate_inst%sucsat_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil)    = soilstate_inst%bsw_col(c,1:nlevsoil)
-            this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) =  waterstate_inst%h2osoi_liq_col(c,1:nlevsoil)
+            this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) =  col_ws%h2osoi_liq(c,1:nlevsoil)
          end if
          
 
@@ -1283,14 +1283,14 @@ contains
                       soilstate_inst%bsw_col(c,1:nlevsoil)
 
                  this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) = &
-                      waterstate_inst%h2osoi_liq_col(c,1:nlevsoil)
+                      col_ws%h2osoi_liq(c,1:nlevsoil)
 
                  this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil) = &
                        soilstate_inst%hksat_col(c,1:nlevsoil)
 
                  do j = 1, nlevsoil
                     vol_ice = min(soilstate_inst%watsat_col(c,j), &
-                          waterstate_inst%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice))
+                          col_ws%h2osoi_ice(c,j)/(col_pp%dz(c,j)*denice))
                     eff_porosity = max(0.01_r8,soilstate_inst%watsat_col(c,j)-vol_ice)
                     this%fates(nc)%bc_in(s)%eff_porosity_sl(j) = eff_porosity
                  end do
@@ -2444,7 +2444,7 @@ contains
       this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil)        = &
             soilstate_inst%bsw_col(c,1:nlevsoil)
       this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil)    = &
-            waterstate_inst%h2osoi_liq_col(c,1:nlevsoil)
+            col_ws%h2osoi_liq(c,1:nlevsoil)
       this%fates(nc)%bc_in(s)%eff_porosity_sl(1:nlevsoil) = &
             soilstate_inst%eff_porosity_col(c,1:nlevsoil)
 

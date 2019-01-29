@@ -23,7 +23,7 @@ module SnowSnicarMod
   use GridcellType    , only : grc_pp       
   use LandunitType    , only : lun_pp       
   use ColumnType      , only : col_pp
-  use ColumnDataType  , only : col_es  
+  use ColumnDataType  , only : col_es, col_ws  
   !
   implicit none
   save
@@ -1217,8 +1217,8 @@ contains
          do_capsnow         => waterstate_vars%do_capsnow_col     , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          frac_sno           => waterstate_vars%frac_sno_eff_col   , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
          h2osno             => waterstate_vars%h2osno_col         , & ! Input:  [real(r8) (:)   ]  snow water (col) [mm H2O]               
-         h2osoi_liq         => waterstate_vars%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water content (col,lyr) [kg m-2]
-         h2osoi_ice         => waterstate_vars%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice content (col,lyr) [kg m-2]        
+         h2osoi_liq         => col_ws%h2osoi_liq     , & ! Input:  [real(r8) (:,:) ]  liquid water content (col,lyr) [kg m-2]
+         h2osoi_ice         => col_ws%h2osoi_ice     , & ! Input:  [real(r8) (:,:) ]  ice content (col,lyr) [kg m-2]        
          snw_rds            => waterstate_vars%snw_rds_col        , & ! Output: [real(r8) (:,:) ]  effective grain radius (col,lyr) [microns, m-6]
          snw_rds_top        => waterstate_vars%snw_rds_top_col    , & ! Output: [real(r8) (:)   ]  effective grain radius, top layer (col) [microns, m-6]
          sno_liq_top        => waterstate_vars%sno_liq_top_col    , & ! Output: [real(r8) (:)   ]  liquid water fraction (mass) in top snow layer (col) [frc]

@@ -27,7 +27,8 @@ module PhosphorusDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use VegetationType           , only : veg_pp
+  use ColumnDataType      , only : col_ws
+  use VegetationType      , only : veg_pp
   use VegetationPropertiesType      , only : veg_vp
   use clm_varctl          , only : NFIX_PTASE_plant
 
@@ -392,7 +393,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-         h2osoi_liq          => waterstate_vars%h2osoi_liq_col            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+         h2osoi_liq          => col_ws%h2osoi_liq            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
          qflx_drain          => waterflux_vars%qflx_drain_col             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
          qflx_surf           => waterflux_vars%qflx_surf_col              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        

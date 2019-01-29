@@ -29,7 +29,7 @@ module clm_interface_funcsMod
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es, col_ef 
+  use ColumnDataType        , only : col_es, col_ef, col_ws 
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -362,9 +362,9 @@ contains
       !
       frac_sno_eff          => waterstate_vars%frac_sno_eff_col         , & !
       frac_h2osfc           => waterstate_vars%frac_h2osfc_col          , & !
-      h2osoi_vol            => waterstate_vars%h2osoi_vol_col           , & ! [real(r8) (:,:)] volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-      h2osoi_liq            => waterstate_vars%h2osoi_liq_col           , & ! [real(r8) (:,:)] liquid water (kg/m2) (-nlevsno+1:nlevgrnd)
-      h2osoi_ice            => waterstate_vars%h2osoi_ice_col           , & ! [real(r8) (:,:)] ice lens (kg/m2) (-nlevsno+1:nlevgrnd)
+      h2osoi_vol            => col_ws%h2osoi_vol           , & ! [real(r8) (:,:)] volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+      h2osoi_liq            => col_ws%h2osoi_liq           , & ! [real(r8) (:,:)] liquid water (kg/m2) (-nlevsno+1:nlevgrnd)
+      h2osoi_ice            => col_ws%h2osoi_ice           , & ! [real(r8) (:,:)] ice lens (kg/m2) (-nlevsno+1:nlevgrnd)
       !
       t_soisno              => col_es%t_soisno            , & ! [real(r8) (:,:)] snow-soil temperature (Kelvin) (-nlevsno+1:nlevgrnd)
       t_grnd                => col_es%t_grnd              , & ! [real(r8) (:)] ground (snow/soil1/surfwater-mixed) temperature (Kelvin)
@@ -770,9 +770,9 @@ contains
     associate ( &
          soilpsi_col    =>  soilstate_vars%soilpsi_col          , &
          !
-         h2osoi_liq_col =>  waterstate_vars%h2osoi_liq_col      , &
-         h2osoi_ice_col =>  waterstate_vars%h2osoi_ice_col      , &
-         h2osoi_vol_col =>  waterstate_vars%h2osoi_vol_col        &
+         h2osoi_liq_col =>  col_ws%h2osoi_liq      , &
+         h2osoi_ice_col =>  col_ws%h2osoi_ice      , &
+         h2osoi_vol_col =>  col_ws%h2osoi_vol        &
     )
 
     do fc = 1,num_soilc
@@ -1476,8 +1476,8 @@ contains
         sucsat                  => soilstate_vars%sucsat_col                    , & ! Input:  [real(r8) (:,:)  ]  minimum soil suction (mm)
         soilpsi                 => soilstate_vars%soilpsi_col                   , & ! Input:  [real(r8) (:,:)  ]  soil water potential in each soil layer (MPa)
 
-        h2osoi_vol              => waterstate_vars%h2osoi_vol_col               , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-        h2osoi_liq              => waterstate_vars%h2osoi_liq_col               , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+        h2osoi_vol              => col_ws%h2osoi_vol               , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+        h2osoi_liq              => col_ws%h2osoi_liq               , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
         t_soisno                => col_es%t_soisno                , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 

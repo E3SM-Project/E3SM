@@ -20,10 +20,11 @@ module BalanceCheckMod
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
   use GridcellType       , only : grc_pp
+  use GridcellDataType   , only : grc_ef
   use TopounitDataType   , only : top_af ! atmospheric flux variables  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp
-  use ColumnDataType     , only : col_ef  
+  use ColumnDataType     , only : col_ef, col_ws  
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_ef
   !
@@ -75,10 +76,10 @@ contains
     associate(                                                         & 
          zi                     =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m) 
          h2ocan_patch           =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)       
-         h2osfc                 =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
+         h2osfc                 =>    col_ws%h2osfc                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                      
          h2osno                 =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                     
-         h2osoi_ice             =>    waterstate_vars%h2osoi_ice_col             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq             =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_ice             =>    col_ws%h2osoi_ice             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq             =>    col_ws%h2osoi_liq             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
          total_plant_stored_h2o =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input: [real(r8) (:) dynamic water stored in plants
          zwt                    =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)                   
          wa                     =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
@@ -257,7 +258,7 @@ contains
           eflx_wasteheat_patch       =>    veg_ef%eflx_wasteheat       , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
           eflx_heat_from_ac_patch    =>    veg_ef%eflx_heat_from_ac    , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
           eflx_traffic_patch         =>    veg_ef%eflx_traffic         , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)
-          eflx_dynbal                =>    energyflux_vars%eflx_dynbal_grc            , & ! Input:  [real(r8) (:)   ]  energy conversion flux due to dynamic land cover change(W/m**2) [+ to atm]
+          eflx_dynbal                =>    grc_ef%eflx_dynbal          , & ! Input:  [real(r8) (:)   ]  energy conversion flux due to dynamic land cover change(W/m**2) [+ to atm]
 
           sabg_soil                  =>    solarabs_vars%sabg_soil_patch              , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by soil (W/m**2)
           sabg_snow                  =>    solarabs_vars%sabg_snow_patch              , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by snow (W/m**2)

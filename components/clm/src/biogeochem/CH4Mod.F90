@@ -38,7 +38,7 @@ module CH4Mod
   use TopounitDataType   , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp
-  use ColumnDataType     , only : col_es              
+  use ColumnDataType     , only : col_es, col_ws              
   use VegetationType     , only : veg_pp
   
   !
@@ -1967,7 +1967,7 @@ contains
 
          t_soisno       =>    col_es%t_soisno      , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
 
-         h2osoi_vol     =>    waterstate_vars%h2osoi_vol_col     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol     =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
          rr             =>    carbonflux_vars%rr_patch           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
          somhr          =>    carbonflux_vars%somhr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
@@ -2281,7 +2281,7 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                          & 
-         h2osoi_vol => waterstate_vars%h2osoi_vol_col , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol => col_ws%h2osoi_vol , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
          smp_l      => soilstate_vars%smp_l_col       , & ! Input:  [real(r8) (: ,:) ]  soil matrix potential [mm]                      
          watsat     => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)  
@@ -2465,7 +2465,7 @@ contains
          rootr         =>    soilstate_vars%rootr_patch          , & ! Input:  [real(r8) (:,:)  ]  effective fraction of roots in each soil layer  (nlevgrnd)
          rootfr        =>    soilstate_vars%rootfr_patch         , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi) 
 
-         h2osoi_vol    =>    waterstate_vars%h2osoi_vol_col      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol    =>    col_ws%h2osoi_vol      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
          qflx_tran_veg =>    waterflux_vars%qflx_tran_veg_patch  , & ! Input:  [real(r8) (:)    ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
 
@@ -2698,8 +2698,8 @@ contains
          t_soisno     =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
          lake_icefrac =>    lakestate_vars%lake_icefrac_col       , & ! Input:  [real(r8) (:,:) ]  mass fraction of lake layer that is frozen      
          watsat       =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-         h2osoi_vol   =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osfc       =>    waterstate_vars%h2osfc_col            , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
+         h2osoi_vol   =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osfc       =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
          frac_h2osfc  =>    waterstate_vars%frac_h2osfc_col         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          )
 
@@ -2897,11 +2897,11 @@ contains
 
          frac_h2osfc   =>    waterstate_vars%frac_h2osfc_col , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          snow_depth    =>    waterstate_vars%snow_depth_col  , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
-         h2osoi_vol    =>    waterstate_vars%h2osoi_vol_col  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osoi_liq    =>    waterstate_vars%h2osoi_liq_col  , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]   
-         h2osoi_ice    =>    waterstate_vars%h2osoi_ice_col  , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]       
+         h2osoi_vol    =>    col_ws%h2osoi_vol  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_liq    =>    col_ws%h2osoi_liq  , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]   
+         h2osoi_ice    =>    col_ws%h2osoi_ice  , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]       
          h2osno        =>    waterstate_vars%h2osno_col      , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
-         h2osfc        =>    waterstate_vars%h2osfc_col      , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
+         h2osfc        =>    col_ws%h2osfc      , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
 
          c_atm         =>    ch4_vars%c_atm_grc              , & ! Input:  [real(r8) (:,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)         
 
@@ -3600,7 +3600,7 @@ contains
 
     associate(                                          & 
          watsat     => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ] volumetric soil water at saturation (porosity)   
-         h2osoi_vol => waterstate_vars%h2osoi_vol_col , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol => col_ws%h2osoi_vol , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          t_soisno   => col_es%t_soisno    & ! Input:  [real(r8) (: ,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
          )
 

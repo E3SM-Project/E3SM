@@ -7,6 +7,7 @@ module EMI_WaterStateType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use WaterStateType                        , only : waterstate_type
+  use ColumnDataType                        , only : col_ws
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -55,8 +56,8 @@ contains
     integer                             :: count
 
     associate(& 
-         h2osoi_liq    => waterstate_vars%h2osoi_liq_col    , &
-         h2osoi_ice    => waterstate_vars%h2osoi_ice_col    , &
+         h2osoi_liq    => col_ws%h2osoi_liq    , &
+         h2osoi_ice    => col_ws%h2osoi_ice    , &
          soilp         => waterstate_vars%soilp_col         , &
          frac_h2osfc   => waterstate_vars%frac_h2osfc_col   , &
          finundated    => waterstate_vars%finundated_col    , &
@@ -289,8 +290,8 @@ contains
     integer                             :: count
 
     associate(& 
-         h2osoi_liq => waterstate_vars%h2osoi_liq_col , &
-         h2osoi_ice => waterstate_vars%h2osoi_ice_col , &
+         h2osoi_liq => col_ws%h2osoi_liq , &
+         h2osoi_ice => col_ws%h2osoi_ice , &
          soilp      => waterstate_vars%soilp_col        &
          )
 

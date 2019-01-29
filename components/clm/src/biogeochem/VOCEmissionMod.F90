@@ -30,6 +30,7 @@ module VOCEmissionMod
   use SolarAbsorbedType  , only : solarabs_type
   use TemperatureType    , only : temperature_type
   use TopounitDataType   , only : top_as, top_af
+  use ColumnDataType     , only : col_ws
   use VegetationType     , only : veg_pp                
   use VegetationDataType , only : veg_es  
   !
@@ -473,8 +474,8 @@ contains
          !sandfrac     => soilstate_vars%sandfrac_col           , & ! Input:  [real(r8) (:)   ]  fraction of soil that is sand                     
          !watsat       => soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity) (nlevgrnd)
          !sucsat       => soilstate_vars%sucsat_col             , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm) (nlevgrnd)            
-         !h2osoi_vol   => waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (m3/m3)                   
-         !h2osoi_ice   => waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ]  ice soil content (kg/m3)                        
+         !h2osoi_vol   => col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (m3/m3)                   
+         !h2osoi_ice   => col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ]  ice soil content (kg/m3)                        
          
          forc_solad    => top_af%solad                          , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (W/m**2)            
          forc_solai    => top_af%solai                          , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (W/m**2)            

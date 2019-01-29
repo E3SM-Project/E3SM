@@ -19,7 +19,7 @@ Module HydrologyNoDrainageMod
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es                
+  use ColumnDataType    , only : col_es, col_ws                
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -151,9 +151,9 @@ contains
          snowliq            => waterstate_vars%snowliq_col            , & ! Output: [real(r8) (:)   ]  average snow liquid water               
          snow_persistence   => waterstate_vars%snow_persistence_col   , & ! Output: [real(r8) (:)   ]  counter for length of time snow-covered
          h2osoi_liqice_10cm => waterstate_vars%h2osoi_liqice_10cm_col , & ! Output: [real(r8) (:)   ]  liquid water + ice lens in top 10cm of soil (kg/m2)
-         h2osoi_ice         => waterstate_vars%h2osoi_ice_col         , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq         => waterstate_vars%h2osoi_liq_col         , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         h2osoi_vol         => waterstate_vars%h2osoi_vol_col         , & ! Output: [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_ice         => col_ws%h2osoi_ice         , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq         => col_ws%h2osoi_liq         , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_vol         => col_ws%h2osoi_vol         , & ! Output: [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osno_top         => waterstate_vars%h2osno_top_col         , & ! Output: [real(r8) (:)   ]  mass of snow in top layer (col) [kg]    
          wf                 => waterstate_vars%wf_col                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
          wf2                => waterstate_vars%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 

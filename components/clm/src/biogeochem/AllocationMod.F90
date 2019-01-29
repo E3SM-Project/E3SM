@@ -27,8 +27,9 @@ module AllocationMod
   use CropType            , only : crop_type
   use VegetationPropertiesType      , only : veg_vp
   use LandunitType        , only : lun_pp                
-  use ColumnType          , only : col_pp                
-  use VegetationType           , only : veg_pp
+  use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_ws  
+  use VegetationType      , only : veg_pp
   ! bgc interface & pflotran module switches
   use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
@@ -1293,7 +1294,7 @@ contains
          potential_immob_p_vr         => phosphorusflux_vars%potential_immob_p_vr_col        , & ! Output: [real(r8) (:,:) ]
          actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col           , & ! Output: [real(r8) (:,:) ]
          bd                           => soilstate_vars%bd_col                               , &
-         h2osoi_vol                   => waterstate_vars%h2osoi_vol_col                      , &
+         h2osoi_vol                   => col_ws%h2osoi_vol                      , &
          pmnf_decomp_cascade          => nitrogenflux_vars%pmnf_decomp_cascade               , &
          pmpf_decomp_cascade          => phosphorusflux_vars%pmpf_decomp_cascade             , &
          leafc_storage                => carbonstate_vars%leafc_storage_patch                , &
