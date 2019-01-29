@@ -25,7 +25,7 @@ ANONYMOUS:
         Cubature Degree: 5
         Side Set Name: floatinglateralside
         Type: Lateral
-        Immersed Ratio: 8.8521e-01
+        Immersed Ratio: 0.893
     LandIce Viscosity: 
       Type: 'Glen''s Law'
       Flow Rate Type: Uniform
