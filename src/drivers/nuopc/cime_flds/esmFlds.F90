@@ -883,8 +883,9 @@ contains
 
     ! local variables
     integer           :: nsrc,ndst,nf,n
-    character(len=CS) :: src_comp
+    character(len=CS) :: dst_comp
     character(len=CS) :: dst_field
+    character(len=CS) :: src_comp
     character(len=CS) :: src_field
     character(len=CS) :: merge_type
     character(len=CS) :: merge_field
@@ -896,18 +897,21 @@ contains
     character(len=*),parameter :: subname = '(shr_nuopc_fldList_Document_Mapping)'
     !-----------------------------------------------------------
 
+    write(logunit,*)
+
     ! Loop over destination components
     do ndst = 1,ncomps
-       prefix = '(merge_to_'//trim(compname(ndst))//')'
+       dst_comp = trim(compname(ndst))
+       prefix = '(merge_to_'//trim(dst_comp)//')'
 
        ! Loop over all flds in the destination component and determine merging data
        do nf = 1,size(fldListTo(ndst)%flds)
-          write(logunit,*)' '
           dst_field = fldListTo(ndst)%flds(nf)%stdname
 
           ! Loop over all possible source components for destination component field
-          init_mrgstr = .true.
+          mrgstr = ' '
           do nsrc = 1,ncomps
+
              if (nsrc /= ndst .and. med_coupling_active(nsrc,ndst)) then
                 src_comp    = compname(nsrc)
                 merge_field = fldListTo(ndst)%flds(nf)%merge_fields(nsrc)
@@ -916,36 +920,35 @@ contains
 
                 if (merge_type == 'merge' .or. merge_type == 'sum_with_weights') then
                    string = trim(merge_frac)//'*'//trim(merge_field)//'('//trim(src_comp)//')'                
-                   if (init_mrgstr) then
-                      mrgstr = trim(prefix)//": "// trim(dst_field) //'('//trim(src_comp)//')'//' = '//trim(string)
-                      init_mrgstr = .false.
+                   if (mrgstr == ' ') then
+                      mrgstr = trim(prefix)//": "// trim(dst_field) //'('//trim(dst_comp)//')'//' = '//trim(string)
                    else
                       mrgstr = trim(mrgstr) //' + '//trim(string)
                    end if
                 else if (merge_type == 'sum') then
                    string = trim(merge_field)//'('//trim(src_comp)//')'
-                   if (init_mrgstr) then
-                      mrgstr = trim(prefix)//": "//trim(dst_field) //'('//trim(src_comp)//')'//' = '//trim(string)
-                      init_mrgstr = .false.
+                   if (mrgstr == ' ') then
+                      mrgstr = trim(prefix)//": "//trim(dst_field) //'('//trim(dst_comp)//')'//' = '//trim(string)
                    else
                       mrgstr = trim(mrgstr) //' + '//trim(string)
                    end if
                 else
                    if (merge_type == 'copy') then
-                      mrgstr = trim(prefix)//": " // trim(dst_field) //'('//trim(src_comp)//')'//' = '// &
+                      mrgstr = trim(prefix)//": " // trim(dst_field) //'('//trim(dst_comp)//')'//' = '// &
                            trim(merge_field)//'('//trim(src_comp)//')'
                    else if (merge_type == 'copy_with_weights') then
-                      mrgstr = trim(prefix)//": "// trim(dst_field) //'('//trim(src_comp)//')'//' = '// &
+                      mrgstr = trim(prefix)//": "// trim(dst_field) //'('//trim(dst_comp)//')'//' = '// &
                            trim(merge_frac)//'*'//trim(merge_field)//'('//trim(src_comp)//')'
                    end if
                 end if
              end if
+
           end do ! end loop over nsrc
-
-          ! Write out merging info for destination component field
-          write(logunit,'(a)') trim(mrgstr)
-
+          if (mrgstr /= ' ') then
+             write(logunit,'(a)') trim(mrgstr)
+          end if
        end do ! end loop over nf
+       !write(logunit,*)' '
     end do  ! end loop over ndst
 
   end subroutine shr_nuopc_fldList_Document_Merging

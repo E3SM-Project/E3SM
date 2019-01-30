@@ -11,6 +11,7 @@ module ESM
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use med_internalstate_mod , only : logunit, loglevel, mastertask
   use seq_comm_mct          , only : num_inst_total
+  use seq_comm_mct          , only : seq_comm_inst, seq_comm_name, seq_comm_suffix
   use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
 
   implicit none
@@ -955,7 +956,6 @@ module ESM
     use ESMF, only : ESMF_GridComp, ESMF_Config, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF, only : ESMF_LogFoundAllocError, ESMF_ConfigGetLen, ESMF_ConfigGetAttribute
     use NUOPC, only : NUOPC_CompAttributeAdd, NUOPC_CompAttributeGet, NUOPC_CompAttributeSet
-    use seq_comm_mct, only : seq_comm_inst, seq_comm_name, seq_comm_suffix
 
     ! input/output parameters
     type(ESMF_GridComp) , intent(inout) :: gcomp

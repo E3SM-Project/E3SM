@@ -1419,7 +1419,6 @@ contains
     use med_map_mod             , only : med_map_MapNorm_init, med_map_RouteHandles_init
     use med_io_mod              , only : med_io_init
 
-
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -1571,7 +1570,7 @@ contains
       is_local%wrap%conn_post_cnt(:) = 0
 
       !----------------------------------------------------------
-      ! Create various FBs, FBImp, FBExp, FBExpAccum
+      ! Create field bundles FBImp, FBExp, FBImpAccum, FBExpAccum
       !----------------------------------------------------------
 
       do n1 = 1,ncomps
@@ -1587,6 +1586,15 @@ contains
                  name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n1), flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(n1), &
+                 STflds=is_local%wrap%NStateImp(n1), &
+                 name='FBImp'//trim(compname(n1)), rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1,n1), value=czero, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            is_local%wrap%FBImpAccumCnt(n1) = 0
+
             call shr_nuopc_methods_FB_init(is_local%wrap%FBExp(n1), flds_scalar_name, &
                  STgeom=is_local%wrap%NStateExp(n1), &
                  STflds=is_local%wrap%NStateExp(n1), &
@@ -1600,30 +1608,42 @@ contains
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
             is_local%wrap%FBExpAccumCnt(n1) = 0
 
          endif
          if (mastertask) call shr_sys_flush(logunit)
 
-         ! These is FBImp mapped to different grids. FBImp(n1,n1) is handled above
+         ! The following are FBImp and FBImpAccum mapped to different grids.
+         ! FBImp(n1,n1) and FBImpAccum(n1,n1) are handled above
 
          do n2 = 1,ncomps
             if (n1 /= n2 .and. &
                  is_local%wrap%med_coupling_active(n1,n2) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc)) then
-               if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))//'_'//trim(compname(n2))
+
+               if (mastertask) write(logunit,*) subname,' initializing FBs for '//&
+                    trim(compname(n1))//'_'//trim(compname(n2))
 
                call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), flds_scalar_name, &
                     STgeom=is_local%wrap%NStateImp(n2), &
                     STflds=is_local%wrap%NStateImp(n1), &
                     name='FBImp'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            endif
-         enddo
 
-      enddo
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n2), flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(n2), &
+                    STflds=is_local%wrap%NStateImp(n1), &
+                    name='FBImpAccum'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1,n2), value=czero, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            endif
+         enddo ! loop over n2
+
+      enddo ! loop over n1
       if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
@@ -1921,6 +1941,7 @@ contains
     use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_clock_timeprint
     use shr_nuopc_time_mod    , only : shr_nuopc_time_set_component_stop_alarm
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -2071,11 +2092,11 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine med_finalize(gcomp, rc)
-    use ESMF, only                  : ESMF_GridComp, ESMF_SUCCESS
-    use med_internalstate_mod, only : logunit, mastertask
-    use med_phases_profile_mod, only : med_phases_profile_finalize
-    use shr_nuopc_utils_mod, only   : shr_nuopc_memcheck
-    use shr_file_mod, only          : shr_file_setlogunit
+    use ESMF                   , only : ESMF_GridComp, ESMF_SUCCESS
+    use med_internalstate_mod  , only : logunit, mastertask
+    use med_phases_profile_mod , only : med_phases_profile_finalize
+    use shr_nuopc_utils_mod    , only : shr_nuopc_memcheck
+    use shr_file_mod           , only : shr_file_setlogunit
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
