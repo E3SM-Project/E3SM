@@ -92,7 +92,7 @@ module CLMFatesInterfaceMod
    use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es, col_ws, col_wf
-   use VegetationDataType, only : veg_es  
+   use VegetationDataType, only : veg_es, veg_wf  
    use LandunitType      , only : lun_pp
    
    use landunit_varcon   , only : istsoil
@@ -2434,7 +2434,7 @@ contains
          p = ifp+col_pp%pfti(c)
          this%fates(nc)%bc_in(s)%swrad_net_pa(ifp) = solarabs_inst%fsa_patch(p)
          this%fates(nc)%bc_in(s)%lwrad_net_pa(ifp) = energyflux_inst%eflx_lwrad_net_patch(p)
-         this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = waterflux_inst%qflx_tran_veg_patch(p)
+         this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = veg_wf%qflx_tran_veg(p)
       end do
    end do
 

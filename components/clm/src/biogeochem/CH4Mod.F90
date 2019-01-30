@@ -40,6 +40,7 @@ module CH4Mod
   use ColumnType         , only : col_pp
   use ColumnDataType     , only : col_es, col_ws, col_wf              
   use VegetationType     , only : veg_pp
+  use VegetationDataType , only : veg_wf
   
   !
   implicit none
@@ -2467,7 +2468,7 @@ contains
 
          h2osoi_vol    =>    col_ws%h2osoi_vol      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         qflx_tran_veg =>    waterflux_vars%qflx_tran_veg_patch  , & ! Input:  [real(r8) (:)    ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
+         qflx_tran_veg =>    veg_wf%qflx_tran_veg  , & ! Input:  [real(r8) (:)    ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
 
          canopy_cond   =>    energyflux_vars%canopy_cond_patch   , & ! Input:  [real(r8) (:)    ]  tracer conductance for canopy [m/s]               
 

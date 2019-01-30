@@ -34,7 +34,7 @@ module CanopyTemperatureMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef, col_ws                
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es, veg_ef
+  use VegetationDataType   , only : veg_es, veg_ef, veg_wf
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -155,9 +155,9 @@ contains
          qg_h2osfc        =>    col_ws%qg_h2osfc         , & ! Output: [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
          dqgdT            =>    col_ws%dqgdT             , & ! Output: [real(r8) (:)   ] d(qg)/dT                                 
 
-         qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ] qflx_evap_soi + qflx_evap_can + qflx_tran_veg
-         qflx_evap_veg    =>    waterflux_vars%qflx_evap_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation evaporation (mm H2O/s) (+ = to atm)
-         qflx_tran_veg    =>    waterflux_vars%qflx_tran_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_evap_tot    =>    veg_wf%qflx_evap_tot    , & ! Output: [real(r8) (:)   ] qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+         qflx_evap_veg    =>    veg_wf%qflx_evap_veg    , & ! Output: [real(r8) (:)   ] vegetation evaporation (mm H2O/s) (+ = to atm)
+         qflx_tran_veg    =>    veg_wf%qflx_tran_veg    , & ! Output: [real(r8) (:)   ] vegetation transpiration (mm H2O/s) (+ = to atm)
 
          htvp             =>    col_ef%htvp              , & ! Output: [real(r8) (:)   ] latent heat of vapor of water (or sublimation) [j/kg]
          cgrnd            =>    veg_ef%cgrnd           , & ! Output: [real(r8) (:)   ] deriv. of soil energy flux wrt to soil temp [w/m2/k]

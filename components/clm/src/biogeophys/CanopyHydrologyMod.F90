@@ -27,7 +27,7 @@ module CanopyHydrologyMod
   use ColumnType        , only : col_pp 
   use ColumnDataType    , only : col_es, col_ws, col_wf  
   use VegetationType    , only : veg_pp
-  use VegetationDataType, only : veg_ws  
+  use VegetationDataType, only : veg_ws, veg_wf  
   use clm_varcon        , only : snw_rds_min  
   !
   ! !PUBLIC TYPES:
@@ -213,19 +213,19 @@ contains
           h2osoi_liq           => col_ws%h2osoi_liq           , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
           swe_old              => col_ws%swe_old              , & ! Output: [real(r8) (:,:) ]  snow water before update              
 
-          irrig_rate           => waterflux_vars%irrig_rate_patch          , & ! Input:  [real(r8) (:)   ]  current irrigation rate (applied if n_irrig_steps_left > 0) [mm/s]
-          n_irrig_steps_left   => waterflux_vars%n_irrig_steps_left_patch  , & ! Output: [integer  (:)   ]  number of time steps for which we still need to irrigate today
+          irrig_rate           => veg_wf%irrig_rate          , & ! Input:  [real(r8) (:)   ]  current irrigation rate (applied if n_irrig_steps_left > 0) [mm/s]
+          n_irrig_steps_left   => veg_wf%n_irrig_steps_left  , & ! Output: [integer  (:)   ]  number of time steps for which we still need to irrigate today
           qflx_floodc          => col_wf%qflx_floodc           , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
           qflx_snow_melt       => col_wf%qflx_snow_melt        , & ! Output: [real(r8) (:)   ]  snow melt from previous time step       
           qflx_snow_h2osfc     => col_wf%qflx_snow_h2osfc      , & ! Output: [real(r8) (:)   ]  snow falling on surface water (mm/s)     
-          qflx_snwcp_liq       => waterflux_vars%qflx_snwcp_liq_patch      , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
-          qflx_snwcp_ice       => waterflux_vars%qflx_snwcp_ice_patch      , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
+          qflx_snwcp_liq       => veg_wf%qflx_snwcp_liq      , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
+          qflx_snwcp_ice       => veg_wf%qflx_snwcp_ice      , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
           qflx_snow_grnd_col   => col_wf%qflx_snow_grnd        , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
-          qflx_snow_grnd_patch => waterflux_vars%qflx_snow_grnd_patch      , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
-          qflx_prec_intr       => waterflux_vars%qflx_prec_intr_patch      , & ! Output: [real(r8) (:)   ]  interception of precipitation [mm/s]    
-          qflx_prec_grnd       => waterflux_vars%qflx_prec_grnd_patch      , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
-          qflx_rain_grnd       => waterflux_vars%qflx_rain_grnd_patch      , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
-          qflx_irrig           => waterflux_vars%qflx_irrig_patch            & ! Output: [real(r8) (:)   ]  irrigation amount (mm/s)                
+          qflx_snow_grnd_patch => veg_wf%qflx_snow_grnd      , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
+          qflx_prec_intr       => veg_wf%qflx_prec_intr      , & ! Output: [real(r8) (:)   ]  interception of precipitation [mm/s]    
+          qflx_prec_grnd       => veg_wf%qflx_prec_grnd      , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+          qflx_rain_grnd       => veg_wf%qflx_rain_grnd      , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
+          qflx_irrig           => veg_wf%qflx_irrig            & ! Output: [real(r8) (:)   ]  irrigation amount (mm/s)                
           )
 
        ! Compute time step

@@ -261,6 +261,7 @@ module ColumnDataType
   contains
     procedure, public :: Init    => col_wf_init
     procedure, public :: Restart => col_wf_restart
+    procedure, public :: Reset   => col_wf_reset
     procedure, public :: Clean   => col_wf_clean
   end type column_water_flux
   
@@ -1630,6 +1631,30 @@ contains
 
   end subroutine col_wf_restart
   
+  !------------------------------------------------------------------------
+  subroutine col_wf_reset(this, bounds, numf, filter)
+    !
+    ! !DESCRIPTION:
+    ! Intitialize SNICAR variables for fresh snow column
+    !
+    ! !ARGUMENTS:
+    class(column_water_flux)           :: this
+    type(bounds_type)    , intent(in)  :: bounds
+    integer              , intent(in)  :: numf
+    integer              , intent(in)  :: filter(:)
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fc, c
+    !-----------------------------------------------------------------------
+    
+    do fc = 1, numf
+      c = filter(fc)
+      this%qflx_snow2topsoi     (c)   = 0._r8
+      this%qflx_h2osfc2topsoi   (c)   = 0._r8      
+    enddo  
+
+  end subroutine col_wf_reset    
+
   !------------------------------------------------------------------------
   subroutine col_wf_clean(this)
     !
