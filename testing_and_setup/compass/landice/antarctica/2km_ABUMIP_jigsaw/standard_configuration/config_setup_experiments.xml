@@ -10,7 +10,7 @@
         <add_executable source="interpolate_to_mpasli_grid" dest="interpolate_to_mpasli_grid.py"/>
         <add_executable source="define_cull_mask" dest="define_cullMask.py"/>
         <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
-        <!--        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/> -->
+        <!--        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/> -->
         <add_link source_path="script_test_dir" source="Antarctica-1km.BISICLES.CISM-style.nc" dest="ais_input_data.nc"/>
         <add_link source_path="script_test_dir" source="ais2km-MESH.msh" dest="."/>
 

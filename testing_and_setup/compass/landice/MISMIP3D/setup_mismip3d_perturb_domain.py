@@ -242,4 +242,4 @@ gridfile.close()
 
 print " ======="
 print 'Successfully added MISMIP3D perturbation initial conditions to: ', options.filename
-print "Please set up graph.info, albany_input.xml, namelist, and streams files as desired!  namelist and streams are set up by test case here: full_width/Stnd/P75"
+print "Please set up graph.info, albany_input.yaml, namelist, and streams files as desired!  namelist and streams are set up by test case here: full_width/Stnd/P75"

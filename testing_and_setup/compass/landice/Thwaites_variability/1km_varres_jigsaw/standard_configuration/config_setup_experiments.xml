@@ -12,14 +12,14 @@
         <add_executable source="interpolate_to_mpasli_grid" dest="interpolate_to_mpasli_grid.py"/>
         <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
         <add_executable source="mark_domain_boundaries_dirichlet" dest="mark_domain_boundaries_dirichlet.py"/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <!--        <add_link source_path="script_configuration_dir" source="ais14to4km.20160713.nc" dest="ais_input_data.nc"/>-->
       <add_link source_path="script_configuration_dir" source="ais30to1.20160713.nc" dest="ais_input_data.nc"/>
         <add_link source_path="script_configuration_dir" source="thwaites_minimal.geojson" dest="."/>
         <add_link source_path="script_configuration_dir" source="slurm.wolf.run" dest="."/>
         <add_link source_path="script_configuration_dir" source="finalize_thwaites_initial_conditions.py" dest="."/>
         <add_link source_path="script_test_dir" source="thwaites_jigsaw_mesh.msh" dest="."/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
 
 
         <namelist name="namelist.landice" mode="forward">

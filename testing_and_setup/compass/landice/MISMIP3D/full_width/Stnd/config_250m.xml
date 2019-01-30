@@ -11,7 +11,7 @@
         <add_link source_path="script_configuration_dir" source="cull_cells_for_MISMIP.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="setup_mismip3d_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="plot_GL_Stnd_MISMIP3D.py" dest="."/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_link source_path="script_test_dir" source="namelist.input.250m" dest="namelist.input"/>
         <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
 
@@ -59,7 +59,7 @@
                         <argument flag="-o">landice_grid.nc</argument>
                         <argument flag="-l">10</argument>
                         <argument flag="--diri"></argument>
-                        <argument flag="--beta"></argument>
+                        <argument flag="--effecpress"></argument>
                 </step>
 
                 <!-- Set up initial condition on to landice mesh -->

@@ -3,7 +3,7 @@
         <!-- add needed files/executables -->
         <add_link source="../setup_mesh/landice_grid.nc" dest="landice_grid.nc"/>
         <add_link source="../setup_mesh/culled_graph.info" dest="graph.info"/>
-        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_executable source="model" dest="landice_model"/>
         <add_executable source="metis" dest="metis"/>
         <!-- link in scripts that a user might want -->

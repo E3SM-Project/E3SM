@@ -1,0 +1,161 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Problem: 
+    Solution Method: Steady
+    Name: LandIce Stokes First Order 3D
+    Parameters: 
+      Number: 1
+      Parameter 0: 'Glen''s Law Homotopy Parameter'
+    Dirichlet BCs: 
+      DBC on NS dirichlet for DOF U1 prescribe Field: dirichlet_field
+    LandIce BCs: 
+      Number: 2
+      BC 0: 
+        Cubature Degree: 9
+        Side Set Name: basalside
+        Type: Basal Friction
+        Basal Friction Coefficient: 
+          Type: Power Law
+          Zero Beta On Floating Ice: true
+          Power Law Coefficient: 1.0
+          Power Exponent: 0.3333333333
+          Bed Roughness: 1.0
+      BC 1: 
+        Cubature Degree: 5
+        Side Set Name: floatinglateralside
+        Type: Lateral
+        Immersed Ratio: 0.893
+    LandIce Viscosity: 
+      Type: 'Glen''s Law'
+      Flow Rate Type: Uniform
+      'Glen''s Law Homotopy Parameter': 1.0
+      'Glen''s Law A': 3.1536e-06
+      'Glen''s Law n': 3.0
+    Body Force: 
+      Type: FO INTERP SURF GRAD
+  Discretization: 
+    Cubature Degree: 1
+  Piro: 
+    LOCA: 
+      Bifurcation: { }
+      Constraints: { }
+      Predictor: 
+        Method: Constant
+      Stepper: 
+        Initial Value: 2.0e-01
+        Continuation Parameter: 'Glen''s Law Homotopy Parameter'
+        Continuation Method: Natural
+        Max Steps: 100
+        Max Value: 1.0
+        Min Value: -3.0e-01
+      Step Size: 
+        Initial Step Size: 2.0e-01
+        Aggressiveness: 2.0
+    NOX: 
+      Status Tests: 
+        Test Type: Combo
+        Combo Type: OR
+        Number of Tests: 2
+        Test 0: 
+          Test Type: Combo
+          Combo Type: AND
+          Number of Tests: 2
+          Test 0: 
+            Test Type: NormF
+            Norm Type: Two Norm
+            Scale Type: Scaled
+            Tolerance: 1.0e-04
+          Test 1: 
+            Test Type: NormWRMS
+            Absolute Tolerance: 1.0e-04
+            Relative Tolerance: 1.0e-05
+        Test 1: 
+          Test Type: MaxIters
+          Maximum Iterations: 50
+      Direction: 
+        Method: Newton
+        Newton: 
+          Forcing Term Method: Constant
+          Linear Solver: 
+            Write Linear System: false
+          Stratimikos Linear Solver: 
+            NOX Stratimikos Options: { }
+            Stratimikos: 
+              Linear Solver Type: Belos
+              Linear Solver Types: 
+                AztecOO: 
+                  Forward Solve: 
+                    AztecOO Settings: 
+                      Aztec Solver: GMRES
+                      Convergence Test: r0
+                      Size of Krylov Subspace: 200
+                      Output Frequency: 20
+                    Max Iterations: 2000
+                    Tolerance: 1.0e-04
+                Belos: 
+                  Solver Type: Block GMRES
+                  Solver Types: 
+                    Block GMRES: 
+                      Convergence Tolerance: 1.0e-06
+                      Output Frequency: 1
+                      Output Style: 1
+                      Maximum Iterations: 200
+                      Block Size: 1
+                      Num Blocks: 200
+                      Flexible Gmres: false
+                      Verbosity: 33
+              Preconditioner Type: ML
+              Preconditioner Types: 
+                Ifpack: 
+                  Overlap: 1
+                  Prec Type: ILU
+                  Ifpack Settings: 
+                    'fact: level-of-fill': 0
+                ML: 
+                  Base Method Defaults: none
+                  ML Settings: 
+                    default values: SA
+                    ML output: 10
+                    'repartition: enable': 1
+                    'repartition: max min ratio': 1.327
+                    'repartition: min per proc': 600
+                    'repartition: Zoltan dimensions': 2
+                    'repartition: start level': 4
+                    'semicoarsen: number of levels': 2
+                    'semicoarsen: coarsen rate': 14
+                    'smoother: sweeps': 2
+                    'smoother: type': Gauss-Seidel
+                    'smoother: Chebyshev eig boost': 1.2
+                    'smoother: sweeps (level 0)': 1
+                    'smoother: type (level 0)': line Gauss-Seidel
+                    'smoother: damping factor': 1.0
+                    'smoother: pre or post': both
+                    'coarse: type': Gauss-Seidel
+                    'coarse: sweeps': 4
+                    'coarse: pre or post': pre
+                    max levels: 5
+          Rescue Bad Newton Solve: true
+      Line Search: 
+        Full Step: 
+          Full Step: 1.0e+00
+        Method: Backtrack
+        Backtrack: 
+          Max Iters: 5
+      Nonlinear Solver: Line Search Based
+      Printing: 
+        Output Precision: 3
+        Output Processor: 0
+        Output Information: 
+          Error: true
+          Warning: true
+          Outer Iteration: true
+          Parameters: false
+          Details: false
+          Linear Solver Details: true
+          Stepper Iteration: true
+          Stepper Details: true
+          Stepper Parameters: true
+      Solver Options: 
+        Status Test Check Type: Minimal
+...

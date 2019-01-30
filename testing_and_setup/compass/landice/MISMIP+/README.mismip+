@@ -33,7 +33,7 @@ Go to your MPAS-Code directory.  You should see a directory structure like this:
            |–– [dome, EISMINT2, greenland, MISMIP3d, etc.]
            |–– MISMIP+
                |–– README.mismip+
-               |–– albany_input.xml
+               |–– albany_input.yaml
                |–– cull_cells_for_MISMIP.py
                |–– mismip+PlotGL.py
                |–– mismip+WriteGL.py
@@ -150,7 +150,7 @@ Note 2: Each subdirectory will have links to the graph.info.part files in the pa
 
 Note 3: There is a namelist parameter called config_default_flowParamA.  
         However, this parameter does *not* determine the flow parameter for the higher-order model.
-        To change this parameter, open the file .../MPAS-Code/test_cases/ocean/landice/MISMIP+/albany_input.xml
+        To change this parameter, open the file .../MPAS-Code/test_cases/ocean/landice/MISMIP+/albany_input.yaml
         Scroll down to these lines:
 
              <!-- Note that because of the units used in Albany, the value for A in input file is 10^12 times the usual value in Pa^{-n} yr^{-1}. -->
@@ -161,7 +161,7 @@ Note 3: There is a namelist parameter called config_default_flowParamA.
 
 Note 4: The MISMIP+ protocols allow one of three kinds of basal sliding law. 
         MPAS LI uses a Weertman-type power law (Eq. 6 of Asay-Davis et al.).
-        This basal sliding law is set in albany_input.xml:
+        This basal sliding law is set in albany_input.yaml:
 
              <!-- power law basal friction law: -->
              <Parameter name="BetaXY" type="string" value="Power Law Scalar Field"/>
