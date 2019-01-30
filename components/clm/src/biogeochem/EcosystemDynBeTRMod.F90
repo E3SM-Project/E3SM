@@ -10,6 +10,7 @@ module EcosystemDynBeTRMod
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
   use clm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
+  use clm_varpar                , only : nlevsoi
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
@@ -556,6 +557,10 @@ module EcosystemDynBeTRMod
        !call decomposition method from betr
        !----------------------------------------------------------------
       call t_startf('betr type1 soil bgc')
+      call ep_betr%BeTRSetBiophysForcing(bounds, col, veg, 1, nlevsoi, &
+         waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
+         atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars)
+
       call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
        num_soilc, filter_soilc, &
        carbonstate_vars, carbonflux_vars, &

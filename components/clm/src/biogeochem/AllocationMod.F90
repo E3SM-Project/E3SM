@@ -4338,7 +4338,7 @@ contains
   implicit none
   type(bounds_type)        , intent(in)    :: bounds
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
-  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns 
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type), intent(in) :: cnstate_vars
   type(carbonstate_type), intent(in) :: carbonstate_vars
   type(carbonflux_type), intent(in) :: carbonflux_vars
@@ -4436,7 +4436,7 @@ contains
   implicit none
   type(bounds_type)        , intent(in)    :: bounds
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
-  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns 
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type), intent(inout) :: cnstate_vars
   type(carbonstate_type), intent(in) :: carbonstate_vars
   type(carbonflux_type), intent(in) :: carbonflux_vars
