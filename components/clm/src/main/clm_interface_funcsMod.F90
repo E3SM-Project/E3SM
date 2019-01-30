@@ -29,7 +29,7 @@ module clm_interface_funcsMod
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es, col_ef, col_ws 
+  use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf 
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -436,13 +436,13 @@ contains
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-      qflx_top_soil     => waterflux_vars%qflx_top_soil_col         , & ! [real(:,:)] net liq. water input into top of soil column (mmH2O/s)
-      qflx_evap_soil    => waterflux_vars%qflx_ev_soil_col          , & ! [real(:)] ! col soil surface evaporation (mm H2O/s) (+ = to atm)
-      qflx_evap_h2osfc  => waterflux_vars%qflx_ev_h2osfc_col        , & ! [real(:)] ! col water surface evaporation (mm H2O/s) (+ = to atm)
-      qflx_evap_snow    => waterflux_vars%qflx_ev_snow_col          , & ! [real(:)] ! col snow surface evaporation (mm H2O/s) (+ = to atm)
-      qflx_subl_snow    => waterflux_vars%qflx_sub_snow_col         , & ! [real(:)] ! col snow sublimation (mm H2O/s) (+ = to atm)
-      qflx_tran_veg     => waterflux_vars%qflx_tran_veg_col         , & ! [real(:)] ! col plant transpiration (mm H2O/s) (+ = to atm)
-      qflx_rootsoil     => waterflux_vars%qflx_rootsoi_col          , & ! [real(:,:)] ! col vertically-resolved root and soil water exchange [mm H2O/s] [+ into root]
+      qflx_top_soil     => col_wf%qflx_top_soil         , & ! [real(:,:)] net liq. water input into top of soil column (mmH2O/s)
+      qflx_evap_soil    => col_wf%qflx_ev_soil          , & ! [real(:)] ! col soil surface evaporation (mm H2O/s) (+ = to atm)
+      qflx_evap_h2osfc  => col_wf%qflx_ev_h2osfc        , & ! [real(:)] ! col water surface evaporation (mm H2O/s) (+ = to atm)
+      qflx_evap_snow    => col_wf%qflx_ev_snow          , & ! [real(:)] ! col snow surface evaporation (mm H2O/s) (+ = to atm)
+      qflx_subl_snow    => col_wf%qflx_sub_snow         , & ! [real(:)] ! col snow sublimation (mm H2O/s) (+ = to atm)
+      qflx_tran_veg     => col_wf%qflx_tran_veg         , & ! [real(:)] ! col plant transpiration (mm H2O/s) (+ = to atm)
+      qflx_rootsoil     => col_wf%qflx_rootsoi          , & ! [real(:,:)] ! col vertically-resolved root and soil water exchange [mm H2O/s] [+ into root]
       !
       htvp              => col_ef%htvp                 , & ! [real(:) ! latent heat of vapor of water (or sublimation) [j/kg]
       eflx_bot          => col_ef%eflx_bot             , & ! [real(:) ! col heat flux from beneath the soil or ice column (W/m**2)

@@ -27,7 +27,7 @@ module SnowHydrologyMod
   use WaterstateType  , only : waterstate_type
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp 
-  use ColumnDataType  , only : col_es, col_ef, col_ws  
+  use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -165,14 +165,14 @@ contains
          h2osoi_ice     => col_ws%h2osoi_ice    , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
          h2osoi_liq     => col_ws%h2osoi_liq    , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
 
-         qflx_snomelt   => waterflux_vars%qflx_snomelt_col   , & ! Input:  [real(r8) (:)   ] snow melt (mm H2O /s)                    
-         qflx_rain_grnd => waterflux_vars%qflx_rain_grnd_col , & ! Input:  [real(r8) (:)   ] rain on ground after interception (mm H2O/s) [+]
-         qflx_sub_snow  => waterflux_vars%qflx_sub_snow_col  , & ! Input:  [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s) [+]
-         qflx_dew_snow  => waterflux_vars%qflx_dew_snow_col  , & ! Input:  [real(r8) (:)   ] surface dew added to snow pack (mm H2O /s) [+]
-         qflx_evap_grnd => waterflux_vars%qflx_evap_grnd_col , & ! Input:  [real(r8) (:)   ] ground surface evaporation rate (mm H2O/s) [+]
-         qflx_dew_grnd  => waterflux_vars%qflx_dew_grnd_col  , & ! Input:  [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]
-         qflx_snow_melt => waterflux_vars%qflx_snow_melt_col , & ! Output: [real(r8) (:)   ] net snow melt                           
-         qflx_top_soil  => waterflux_vars%qflx_top_soil_col  , & ! Output: [real(r8) (:)   ] net water input into soil from top (mm/s)
+         qflx_snomelt   => col_wf%qflx_snomelt   , & ! Input:  [real(r8) (:)   ] snow melt (mm H2O /s)                    
+         qflx_rain_grnd => col_wf%qflx_rain_grnd , & ! Input:  [real(r8) (:)   ] rain on ground after interception (mm H2O/s) [+]
+         qflx_sub_snow  => col_wf%qflx_sub_snow  , & ! Input:  [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s) [+]
+         qflx_dew_snow  => col_wf%qflx_dew_snow  , & ! Input:  [real(r8) (:)   ] surface dew added to snow pack (mm H2O /s) [+]
+         qflx_evap_grnd => col_wf%qflx_evap_grnd , & ! Input:  [real(r8) (:)   ] ground surface evaporation rate (mm H2O/s) [+]
+         qflx_dew_grnd  => col_wf%qflx_dew_grnd  , & ! Input:  [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]
+         qflx_snow_melt => col_wf%qflx_snow_melt , & ! Output: [real(r8) (:)   ] net snow melt                           
+         qflx_top_soil  => col_wf%qflx_top_soil  , & ! Output: [real(r8) (:)   ] net water input into soil from top (mm/s)
 !         qflx_snofrz_lyr => cwf%qflx_snofrz_lyr     , & ! HW+++ snow freezing rate (col,lyr) [kg m-2 s-1]
 
          mflx_neg_snow_col_1d =>  waterflux_vars%mflx_neg_snow_col_1d , & ! Output:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
@@ -738,8 +738,8 @@ contains
           snw_rds          => col_ws%snw_rds         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
           mflx_snowlyr_col => waterflux_vars%mflx_snowlyr_col     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
-          qflx_sl_top_soil => waterflux_vars%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
-          qflx_snow2topsoi => waterflux_vars%qflx_snow2topsoi_col , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
+          qflx_sl_top_soil => col_wf%qflx_sl_top_soil , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+          qflx_snow2topsoi => col_wf%qflx_snow2topsoi , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
 
           snl              => col_pp%snl                             , & ! Output: [integer  (:)   ] number of snow layers                     
           dz               => col_pp%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)                        

@@ -132,7 +132,7 @@ module clm_driver
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
-  use ColumnDataType         , only : col_es, col_ef, col_ws  
+  use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws
 
@@ -1524,7 +1524,7 @@ contains
          frac_veg_nosno     => canopystate_vars%frac_veg_nosno_patch     , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch , & ! Output: [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
 
-         qflx_glcice        => waterflux_vars%qflx_glcice_col            , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) [+ = ice grows]
+         qflx_glcice        => col_wf%qflx_glcice            , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) [+ = ice grows]
 
          eflx_bot           => col_ef%eflx_bot              , & ! Output: [real(r8) (:)   ]  heat flux from beneath soil/ice column (W/m**2)
 
@@ -1644,37 +1644,37 @@ contains
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_ev_snow_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_ev_snow_col(bounds%begc:bounds%endc))
+         col_wf%qflx_ev_snow(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_ev_soil_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_ev_soil_col(bounds%begc:bounds%endc))
+         col_wf%qflx_ev_soil(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_ev_h2osfc_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_ev_h2osfc_col(bounds%begc:bounds%endc))
+         col_wf%qflx_ev_h2osfc(bounds%begc:bounds%endc))
 
     ! Averaging for patch water flux variables
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_evap_soi_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_evap_soi_col(bounds%begc:bounds%endc))
+         col_wf%qflx_evap_soi(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_evap_tot_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_evap_tot_col(bounds%begc:bounds%endc))
+         col_wf%qflx_evap_tot(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_rain_grnd_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_rain_grnd_col(bounds%begc:bounds%endc))
+         col_wf%qflx_rain_grnd(bounds%begc:bounds%endc))
     
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_snow_grnd_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_snow_grnd_col(bounds%begc:bounds%endc))
+         col_wf%qflx_snow_grnd(bounds%begc:bounds%endc))
     
     call p2c (bounds, num_allc, filter_allc, &
          waterflux_vars%qflx_snwcp_liq_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_snwcp_liq_col(bounds%begc:bounds%endc))
+         col_wf%qflx_snwcp_liq(bounds%begc:bounds%endc))
     !TODO - WJS has suggested that at this point qflx_snwcp_liq_patch should
     ! now be set to nan in order to ensure that this variable is not used
     ! for the remainder of the timestep - other variables where this should
@@ -1688,47 +1688,47 @@ contains
 
     call p2c (bounds, num_allc, filter_allc, &
          waterflux_vars%qflx_snwcp_ice_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_snwcp_ice_col(bounds%begc:bounds%endc))
+         col_wf%qflx_snwcp_ice(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_tran_veg_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_tran_veg_col(bounds%begc:bounds%endc))
+         col_wf%qflx_tran_veg(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_evap_grnd_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_evap_grnd_col(bounds%begc:bounds%endc))
+         col_wf%qflx_evap_grnd(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_allc, filter_allc, &
          waterflux_vars%qflx_evap_soi_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_evap_soi_col(bounds%begc:bounds%endc))
+         col_wf%qflx_evap_soi(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_prec_grnd_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_prec_grnd_col(bounds%begc:bounds%endc))
+         col_wf%qflx_prec_grnd(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_dew_grnd_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_dew_grnd_col(bounds%begc:bounds%endc))
+         col_wf%qflx_dew_grnd(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_sub_snow_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_sub_snow_col(bounds%begc:bounds%endc))
+         col_wf%qflx_sub_snow(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_dew_snow_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_dew_snow_col(bounds%begc:bounds%endc))
+         col_wf%qflx_dew_snow(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_irrig_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_irrig_col(bounds%begc:bounds%endc))
+         col_wf%qflx_irrig(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_tran_veg_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_tran_veg_col(bounds%begc:bounds%endc) )
+         col_wf%qflx_tran_veg(bounds%begc:bounds%endc) )
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_evap_veg_patch(bounds%begp:bounds%endp), &
-         waterflux_vars%qflx_evap_veg_col (bounds%begc:bounds%endc))
+         col_wf%qflx_evap_veg (bounds%begc:bounds%endc))
   end subroutine clm_drv_patch2col
 
   !------------------------------------------------------------------------

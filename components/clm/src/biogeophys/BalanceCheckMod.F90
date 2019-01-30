@@ -24,7 +24,7 @@ module BalanceCheckMod
   use TopounitDataType   , only : top_af ! atmospheric flux variables  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp
-  use ColumnDataType     , only : col_ef, col_ws  
+  use ColumnDataType     , only : col_ef, col_ws, col_wf  
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_ef, veg_ws
   !
@@ -216,39 +216,39 @@ contains
           errh2osno                  =>    col_ws%errh2osno              , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
           endwb                      =>    col_ws%endwb                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
           total_plant_stored_h2o_col =>    col_ws%total_plant_stored_h2o , & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
-          dwb                        =>    waterflux_vars%dwb_col                     , & ! Output: [real(r8) (:)   ]  change of water mass within the time step [kg/m2/s]
-          qflx_rain_grnd_col         =>    waterflux_vars%qflx_rain_grnd_col          , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
-          qflx_snow_grnd_col         =>    waterflux_vars%qflx_snow_grnd_col          , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
-          qflx_evap_soi              =>    waterflux_vars%qflx_evap_soi_col           , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
-          qflx_irrig                 =>    waterflux_vars%qflx_irrig_col              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
-          qflx_snwcp_ice             =>    waterflux_vars%qflx_snwcp_ice_col          , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
-          qflx_evap_tot              =>    waterflux_vars%qflx_evap_tot_col           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
-          qflx_dew_snow              =>    waterflux_vars%qflx_dew_snow_col           , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
-          qflx_sub_snow              =>    waterflux_vars%qflx_sub_snow_col           , & ! Input:  [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
-          qflx_evap_grnd             =>    waterflux_vars%qflx_evap_grnd_col          , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
-          qflx_dew_grnd              =>    waterflux_vars%qflx_dew_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
-          qflx_prec_grnd             =>    waterflux_vars%qflx_prec_grnd_col          , & ! Input:  [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
-          qflx_snwcp_liq             =>    waterflux_vars%qflx_snwcp_liq_col          , & ! Input:  [real(r8) (:)   ]  excess liquid water due to snow capping (mm H2O /s) [+]`
-          qflx_snow_h2osfc           =>    waterflux_vars%qflx_snow_h2osfc_col        , & ! Input:  [real(r8) (:)   ]  snow falling on surface water (mm/s)    
-          qflx_h2osfc_to_ice         =>    waterflux_vars%qflx_h2osfc_to_ice_col      , & ! Input:  [real(r8) (:)   ]  conversion of h2osfc to ice             
-          qflx_drain_perched         =>    waterflux_vars%qflx_drain_perched_col      , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
-          qflx_floodc                =>    waterflux_vars%qflx_floodc_col             , & ! Input:  [real(r8) (:)   ]  total runoff due to flooding            
-          qflx_h2osfc_surf           =>    waterflux_vars%qflx_h2osfc_surf_col        , & ! Input:  [real(r8) (:)   ]  surface water runoff (mm/s)              
-          qflx_snow_melt             =>    waterflux_vars%qflx_snow_melt_col          , & ! Input:  [real(r8) (:)   ]  snow melt (net)                         
-          qflx_surf                  =>    waterflux_vars%qflx_surf_col               , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)              
-          qflx_qrgwl                 =>    waterflux_vars%qflx_qrgwl_col              , & ! Input:  [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes  
-          qflx_drain                 =>    waterflux_vars%qflx_drain_col              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
-          qflx_runoff                =>    waterflux_vars%qflx_runoff_col             , & ! Input:  [real(r8) (:)   ]  total runoff (mm H2O /s)                
-          qflx_glcice                =>    waterflux_vars%qflx_glcice_col             , & ! Input:  [real(r8) (:)   ]  flux of new glacier ice (mm H2O /s) [+ if ice grows]
-          qflx_glcice_melt           =>    waterflux_vars%qflx_glcice_melt_col        , & ! Input:  [real(r8) (:)   ]  ice melt (mm H2O/s)              
-          qflx_glcice_frz            =>    waterflux_vars%qflx_glcice_frz_col         , & ! Input:  [real(r8) (:)   ]  ice growth (mm H2O/s) [+]               
-          qflx_top_soil              =>    waterflux_vars%qflx_top_soil_col           , & ! Input:  [real(r8) (:)   ]  net water input into soil from top (mm/s)
-          qflx_sl_top_soil           =>    waterflux_vars%qflx_sl_top_soil_col        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+          dwb                        =>    col_wf%dwb                     , & ! Output: [real(r8) (:)   ]  change of water mass within the time step [kg/m2/s]
+          qflx_rain_grnd_col         =>    col_wf%qflx_rain_grnd          , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
+          qflx_snow_grnd_col         =>    col_wf%qflx_snow_grnd          , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
+          qflx_evap_soi              =>    col_wf%qflx_evap_soi           , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+          qflx_irrig                 =>    col_wf%qflx_irrig              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
+          qflx_snwcp_ice             =>    col_wf%qflx_snwcp_ice          , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
+          qflx_evap_tot              =>    col_wf%qflx_evap_tot           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+          qflx_dew_snow              =>    col_wf%qflx_dew_snow           , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
+          qflx_sub_snow              =>    col_wf%qflx_sub_snow           , & ! Input:  [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
+          qflx_evap_grnd             =>    col_wf%qflx_evap_grnd          , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
+          qflx_dew_grnd              =>    col_wf%qflx_dew_grnd           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+          qflx_prec_grnd             =>    col_wf%qflx_prec_grnd          , & ! Input:  [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+          qflx_snwcp_liq             =>    col_wf%qflx_snwcp_liq          , & ! Input:  [real(r8) (:)   ]  excess liquid water due to snow capping (mm H2O /s) [+]`
+          qflx_snow_h2osfc           =>    col_wf%qflx_snow_h2osfc        , & ! Input:  [real(r8) (:)   ]  snow falling on surface water (mm/s)    
+          qflx_h2osfc_to_ice         =>    col_wf%qflx_h2osfc_to_ice      , & ! Input:  [real(r8) (:)   ]  conversion of h2osfc to ice             
+          qflx_drain_perched         =>    col_wf%qflx_drain_perched      , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
+          qflx_floodc                =>    col_wf%qflx_floodc             , & ! Input:  [real(r8) (:)   ]  total runoff due to flooding            
+          qflx_h2osfc_surf           =>    col_wf%qflx_h2osfc_surf        , & ! Input:  [real(r8) (:)   ]  surface water runoff (mm/s)              
+          qflx_snow_melt             =>    col_wf%qflx_snow_melt          , & ! Input:  [real(r8) (:)   ]  snow melt (net)                         
+          qflx_surf                  =>    col_wf%qflx_surf               , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)              
+          qflx_qrgwl                 =>    col_wf%qflx_qrgwl              , & ! Input:  [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes  
+          qflx_drain                 =>    col_wf%qflx_drain              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
+          qflx_runoff                =>    col_wf%qflx_runoff             , & ! Input:  [real(r8) (:)   ]  total runoff (mm H2O /s)                
+          qflx_glcice                =>    col_wf%qflx_glcice             , & ! Input:  [real(r8) (:)   ]  flux of new glacier ice (mm H2O /s) [+ if ice grows]
+          qflx_glcice_melt           =>    col_wf%qflx_glcice_melt        , & ! Input:  [real(r8) (:)   ]  ice melt (mm H2O/s)              
+          qflx_glcice_frz            =>    col_wf%qflx_glcice_frz         , & ! Input:  [real(r8) (:)   ]  ice growth (mm H2O/s) [+]               
+          qflx_top_soil              =>    col_wf%qflx_top_soil           , & ! Input:  [real(r8) (:)   ]  net water input into soil from top (mm/s)
+          qflx_sl_top_soil           =>    col_wf%qflx_sl_top_soil        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_liq_dynbal            =>    waterflux_vars%qflx_liq_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
           qflx_ice_dynbal            =>    waterflux_vars%qflx_ice_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
-          snow_sources               =>    waterflux_vars%snow_sources_col            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
-          snow_sinks                 =>    waterflux_vars%snow_sinks_col              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
-          qflx_lateral               =>    waterflux_vars%qflx_lateral_col            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
+          snow_sources               =>    col_wf%snow_sources            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
+          snow_sinks                 =>    col_wf%snow_sinks              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
+          qflx_lateral               =>    col_wf%qflx_lateral            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
 
           eflx_lwrad_out             =>    veg_ef%eflx_lwrad_out       , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
           eflx_lwrad_net             =>    veg_ef%eflx_lwrad_net       , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]

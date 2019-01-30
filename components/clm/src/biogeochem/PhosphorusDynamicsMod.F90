@@ -27,7 +27,7 @@ module PhosphorusDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_ws
+  use ColumnDataType      , only : col_ws, col_wf
   use VegetationType      , only : veg_pp
   use VegetationPropertiesType      , only : veg_vp
   use clm_varctl          , only : NFIX_PTASE_plant
@@ -395,8 +395,8 @@ contains
     associate(&
          h2osoi_liq          => col_ws%h2osoi_liq            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
-         qflx_drain          => waterflux_vars%qflx_drain_col             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
-         qflx_surf           => waterflux_vars%qflx_surf_col              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
+         qflx_surf           => col_wf%qflx_surf              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
 
          solutionp_vr            => phosphorusstate_vars%solutionp_vr_col           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N                          
          sminp_leached_vr    => phosphorusflux_vars%sminp_leached_vr_col     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)            
