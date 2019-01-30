@@ -91,7 +91,7 @@ module CLMFatesInterfaceMod
    use GridcellType      , only : grc_pp
    use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
-   use ColumnDataType    , only : col_es, col_ws
+   use ColumnDataType    , only : col_es, col_ws, col_wf
    use VegetationDataType, only : veg_es  
    use LandunitType      , only : lun_pp
    
@@ -2341,7 +2341,7 @@ contains
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
        nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-       waterflux_inst%qflx_rootsoi_col(c,1:nlevsoil) = &
+       col_wf%qflx_rootsoi(c,1:nlevsoil) = &
             this%fates(nc)%bc_out(s)%qflx_soil2root_sisl(1:nlevsoil)
     end do
     

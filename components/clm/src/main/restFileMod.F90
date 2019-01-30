@@ -59,7 +59,7 @@ module restFileMod
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
   use LandunitDataType     , only : lun_es, lun_ws
-  use ColumnDataType       , only : col_es, col_ef, col_ws
+  use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws
   !
   ! !PUBLIC TYPES:
@@ -206,6 +206,8 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='define')
     
+    call col_wf%Restart (bounds, ncid, flag='define')
+    
     call lun_es%Restart (bounds, ncid, flag='define')
 
     call col_es%Restart (bounds, ncid, flag='define')
@@ -334,6 +336,8 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='write')
     
+    call col_wf%Restart (bounds, ncid, flag='write')
+
     call lun_es%Restart (bounds, ncid, flag='write')
 
     call col_es%Restart (bounds, ncid, flag='write')
@@ -563,6 +567,8 @@ contains
 
     call waterflux_vars%restart (bounds, ncid, flag='read')
     
+    call col_wf%Restart (bounds, ncid, flag='read')
+
     call lun_es%Restart (bounds, ncid, flag='read')
 
     call col_es%Restart (bounds, ncid, flag='read')

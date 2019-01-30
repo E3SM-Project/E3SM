@@ -7,6 +7,7 @@ module EMI_WaterFluxType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use WaterFluxType                         , only : waterflux_type
+  use ColumnDataType                        , only : col_wf
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -62,20 +63,20 @@ contains
          mflx_snowlyr_disp    => waterflux_vars%mflx_snowlyr_disp_col    , &
          mflx_snowlyr         => waterflux_vars%mflx_snowlyr_col         , &
          mflx_drain           => waterflux_vars%mflx_drain_col           , &
-         qflx_infl            => waterflux_vars%qflx_infl_col            , &
-         qflx_totdrain        => waterflux_vars%qflx_totdrain_col        , &
-         qflx_gross_evap_soil => waterflux_vars%qflx_gross_evap_soil_col , &
-         qflx_gross_infl_soil => waterflux_vars%qflx_gross_infl_soil_col , &
-         qflx_surf            => waterflux_vars%qflx_surf_col            , &
-         qflx_dew_grnd        => waterflux_vars%qflx_dew_grnd_col        , &
-         qflx_dew_snow        => waterflux_vars%qflx_dew_snow_col        , &
-         qflx_h2osfc2topsoi   => waterflux_vars%qflx_h2osfc2topsoi_col   , &
-         qflx_sub_snow        => waterflux_vars%qflx_sub_snow_col        , &
-         qflx_snow2topsoi     => waterflux_vars%qflx_snow2topsoi_col     , &
-         qflx_rootsoi         => waterflux_vars%qflx_rootsoi_col         , &
-         qflx_adv             => waterflux_vars%qflx_adv_col             , &
-         qflx_drain_vr        => waterflux_vars%qflx_drain_vr_col        , &
-         qflx_tran_veg        => waterflux_vars%qflx_tran_veg_col        , &
+         qflx_infl            => col_wf%qflx_infl            , &
+         qflx_totdrain        => col_wf%qflx_totdrain        , &
+         qflx_gross_evap_soil => col_wf%qflx_gross_evap_soil , &
+         qflx_gross_infl_soil => col_wf%qflx_gross_infl_soil , &
+         qflx_surf            => col_wf%qflx_surf            , &
+         qflx_dew_grnd        => col_wf%qflx_dew_grnd        , &
+         qflx_dew_snow        => col_wf%qflx_dew_snow        , &
+         qflx_h2osfc2topsoi   => col_wf%qflx_h2osfc2topsoi   , &
+         qflx_sub_snow        => col_wf%qflx_sub_snow        , &
+         qflx_snow2topsoi     => col_wf%qflx_snow2topsoi     , &
+         qflx_rootsoi         => col_wf%qflx_rootsoi         , &
+         qflx_adv             => col_wf%qflx_adv             , &
+         qflx_drain_vr        => col_wf%qflx_drain_vr        , &
+         qflx_tran_veg        => col_wf%qflx_tran_veg        , &
          qflx_rootsoi_frac  => waterflux_vars%qflx_rootsoi_frac_patch    &
          )
 

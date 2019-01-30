@@ -23,7 +23,7 @@ module SnowSnicarMod
   use GridcellType    , only : grc_pp       
   use LandunitType    , only : lun_pp       
   use ColumnType      , only : col_pp
-  use ColumnDataType  , only : col_es, col_ws  
+  use ColumnDataType  , only : col_es, col_ws, col_wf  
   !
   implicit none
   save
@@ -1210,9 +1210,9 @@ contains
          snl                => col_pp%snl                            , & ! Input:  [integer  (:)   ]  negative number of snow layers (col) [nbr]
          dz                 => col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (col,lyr) [m]         
 
-         qflx_snow_grnd_col => waterflux_vars%qflx_snow_grnd_col  , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (col) [kg m-2 s-1]
-         qflx_snwcp_ice     => waterflux_vars%qflx_snwcp_ice_col  , & ! Input:  [real(r8) (:)   ]  excess precipitation due to snow capping [kg m-2 s-1]
-         qflx_snofrz_lyr    => waterflux_vars%qflx_snofrz_lyr_col , & ! Input:  [real(r8) (:,:) ]  snow freezing rate (col,lyr) [kg m-2 s-1]
+         qflx_snow_grnd_col => col_wf%qflx_snow_grnd  , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (col) [kg m-2 s-1]
+         qflx_snwcp_ice     => col_wf%qflx_snwcp_ice  , & ! Input:  [real(r8) (:)   ]  excess precipitation due to snow capping [kg m-2 s-1]
+         qflx_snofrz_lyr    => col_wf%qflx_snofrz_lyr , & ! Input:  [real(r8) (:,:) ]  snow freezing rate (col,lyr) [kg m-2 s-1]
 
          do_capsnow         => col_ws%do_capsnow     , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          frac_sno           => col_ws%frac_sno_eff   , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)

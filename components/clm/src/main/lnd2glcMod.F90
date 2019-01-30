@@ -29,7 +29,7 @@ module lnd2glcMod
   use TemperatureType , only : temperature_type
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp
-  use ColumnDataType  , only : col_es  
+  use ColumnDataType  , only : col_es, col_wf  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -219,7 +219,7 @@ contains
       this%tsrf_grc(g,n) = col_es%t_soisno(c,1)
       this%topo_grc(g,n) = col_pp%glc_topo(c)
       if (.not. init) then
-         this%qice_grc(g,n) = waterflux_vars%qflx_glcice_col(c) * flux_normalization
+         this%qice_grc(g,n) = col_wf%qflx_glcice(c) * flux_normalization
 
          ! Check for bad values of qice
          if ( abs(this%qice_grc(g,n)) > 1.0_r8) then

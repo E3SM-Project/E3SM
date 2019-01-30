@@ -52,7 +52,7 @@ module clm_instMod
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
-  use ColumnDataType             , only : col_es, col_ef, col_ws
+  use ColumnDataType             , only : col_es, col_ef, col_ws, col_wf
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws
 
@@ -362,6 +362,8 @@ contains
     call veg_ws%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
     call waterflux_vars%init(bounds_proc)
+
+    call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all)
 
     call chemstate_vars%Init(bounds_proc)
     ! WJS (6-24-14): Without the following write statement, the assertion in

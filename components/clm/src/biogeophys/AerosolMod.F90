@@ -11,7 +11,7 @@ module AerosolMod
   use WaterstateType   , only : waterstate_type
   use AerosolType      , only : aerosol_type
   use ColumnType       , only : col_pp
-  use ColumnDataType   , only : col_ws  
+  use ColumnDataType   , only : col_ws, col_wf  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -62,7 +62,7 @@ contains
          do_capsnow    => col_ws%do_capsnow    , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          h2osoi_ice    => col_ws%h2osoi_ice    , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq    => col_ws%h2osoi_liq    , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         qflx_snwcp_ice=> waterflux_vars%qflx_snwcp_ice_col , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]          
+         qflx_snwcp_ice=> col_wf%qflx_snwcp_ice , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]          
 
          h2osno_top    => col_ws%h2osno_top    , & ! Output: [real(r8) (:)   |  top-layer mass of snow  [kg]
          snw_rds       => col_ws%snw_rds       , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 

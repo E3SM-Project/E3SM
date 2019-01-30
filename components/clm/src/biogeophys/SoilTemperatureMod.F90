@@ -27,7 +27,7 @@ module SoilTemperatureMod
   use LandunitType      , only : lun_pp
   use LandunitDataType  , only : lun_es, lun_ef  
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ef, col_ws                
+  use ColumnDataType    , only : col_es, col_ef, col_ws, col_wf                
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef                
   !
@@ -1119,7 +1119,7 @@ end subroutine SolveTemperature
          int_snow                  =>    col_ws%int_snow          , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]               
          snow_depth                =>    col_ws%snow_depth        , & ! Output: [real(r8) (:)   ] snow height (m)                          
          
-         qflx_h2osfc_to_ice        =>    waterflux_vars%qflx_h2osfc_to_ice_col , & ! Output: [real(r8) (:)   ] conversion of h2osfc to ice             
+         qflx_h2osfc_to_ice        =>    col_wf%qflx_h2osfc_to_ice , & ! Output: [real(r8) (:)   ] conversion of h2osfc to ice             
          
          eflx_h2osfc_to_snow_col   =>    col_ef%eflx_h2osfc_to_snow  , & ! Output: [real(r8) (:)   ] col snow melt to h2osfc heat flux (W/m**2)
 
@@ -1355,12 +1355,12 @@ end subroutine SolveTemperature
          h2osoi_liq       =>    col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2) (new)             
          h2osoi_ice       =>    col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2) (new)                 
          
-         qflx_snow_melt   =>    waterflux_vars%qflx_snow_melt_col   , & ! Output: [real(r8) (:)   ] net snow melt                           
-         qflx_snofrz_lyr  =>    waterflux_vars%qflx_snofrz_lyr_col  , & ! Output: [real(r8) (:,:) ] snow freezing rate (positive definite) (col,lyr) [kg m-2 s-1]
-         qflx_snofrz_col  =>    waterflux_vars%qflx_snofrz_col      , & ! Output: [real(r8) (:)   ] column-integrated snow freezing rate (positive definite) [kg m-2 s-1]
-         qflx_glcice      =>    waterflux_vars%qflx_glcice_col      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
-         qflx_glcice_melt =>    waterflux_vars%qflx_glcice_melt_col , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)  
-         qflx_snomelt     =>    waterflux_vars%qflx_snomelt_col     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)                   
+         qflx_snow_melt   =>    col_wf%qflx_snow_melt   , & ! Output: [real(r8) (:)   ] net snow melt                           
+         qflx_snofrz_lyr  =>    col_wf%qflx_snofrz_lyr  , & ! Output: [real(r8) (:,:) ] snow freezing rate (positive definite) (col,lyr) [kg m-2 s-1]
+         qflx_snofrz_col  =>    col_wf%qflx_snofrz      , & ! Output: [real(r8) (:)   ] column-integrated snow freezing rate (positive definite) [kg m-2 s-1]
+         qflx_glcice      =>    col_wf%qflx_glcice      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
+         qflx_glcice_melt =>    col_wf%qflx_glcice_melt , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)  
+         qflx_snomelt     =>    col_wf%qflx_snomelt     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)                   
          
          eflx_snomelt     =>    col_ef%eflx_snomelt    , & ! Output: [real(r8) (:)   ] snow melt heat flux (W/m**2)             
          eflx_snomelt_r   =>    col_ef%eflx_snomelt_r  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)       
