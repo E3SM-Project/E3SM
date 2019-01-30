@@ -53,7 +53,9 @@ contains
     !-------------------------------------------------------------------------------
 
     call t_startf('MED:'//subname)
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
 
@@ -93,7 +95,9 @@ contains
     endif
 
     call t_stopf('MED:'//subname)
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
 
   end subroutine med_phases_prep_ocn_map
 
@@ -168,7 +172,9 @@ contains
     !---------------------------------------
 
     call t_startf('MED:'//subname)
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
 
@@ -501,10 +507,8 @@ contains
        !--- diagnose output
        !---------------------------------------
 
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! TODO (mvertens, 2018-12-16): document above custom calculation
 
@@ -515,7 +519,9 @@ contains
        first_call = .false.
     endif
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_merge
@@ -553,7 +559,7 @@ contains
     !---------------------------------------
     call t_startf('MED:'//subname)
 
-    if (dbug_flag > 5) then
+    if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
@@ -575,25 +581,6 @@ contains
     if (ncnt > 0) then
 
        !---------------------------------------
-       !--- Get the current time from the clock
-       !---------------------------------------
-
-       call ESMF_GridCompGet(gcomp, clock=clock)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_ClockGet(clock,currtime=time,rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_TimeGet(time,timestring=timestr)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       if (dbug_flag > 1) then
-          call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
-#if DEBUG
-       if (mastertask) then
-          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-#endif
-       !---------------------------------------
        !--- ocean accumulator
        !---------------------------------------
 
@@ -602,18 +589,18 @@ contains
 
        is_local%wrap%FBExpAccumCnt(compocn) = is_local%wrap%FBExpAccumCnt(compocn) + 1
 
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-               string=trim(subname)//' FBaccOcn_AFaccum ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+            string=trim(subname)//' FBExpAccum accumulation ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
        !--- clean up
        !---------------------------------------
     endif
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_ocn_accum_fast
@@ -653,7 +640,7 @@ contains
     !---------------------------------------
     call t_startf('MED:'//subname)
 
-    if (dbug_flag > 5) then
+    if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
     rc = ESMF_SUCCESS
@@ -678,21 +665,17 @@ contains
        !--- average ocn accumulator
        !---------------------------------------
 
-       if (dbug_flag > 5) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-               string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
             is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 5) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-               string=trim(subname)//' FBaccO_avg ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+            string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
        !--- copy to FBExp(compocn)
@@ -710,15 +693,9 @@ contains
        call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 5) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-               string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-
     end if
 
-    if (dbug_flag > 5) then
+    if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     end if
     call t_stopf('MED:'//subname)
