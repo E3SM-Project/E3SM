@@ -100,6 +100,7 @@ module seq_hist_mod
   logical     :: histavg_wav            ! .true.  => write wav fields to average history file
   logical     :: histavg_xao            ! .true.  => write flux xao fields to average history file
 
+  logical     :: single_column
 
   !--- domain equivalent 2d grid size ---
   integer(IN) :: atm_nx, atm_ny         ! nx,ny of 2d grid, if known
@@ -201,6 +202,7 @@ contains
          glc_nx=glc_nx, glc_ny=glc_ny,        &
          wav_nx=wav_nx, wav_ny=wav_ny,        &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
+         single_column=single_column,         &
          case_name=case_name,                 &
          model_doi_url=model_doi_url)
 
@@ -252,13 +254,17 @@ contains
              gsmap => component_get_gsmap_cx(atm(1))
              dom   => component_get_dom_cx(atm(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, gsmap, fractions_ax, 'fractions_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='fraca')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='fraca', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, atm, 'x2c', 'x2a_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='x2a')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='x2a', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, atm, 'c2x', 'a2x_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='a2x')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='a2x', &
+                  scolumn=single_column)
              !call seq_io_write(hist_file, gsmap, l2x_ax, 'l2x_ax',  &
              !    nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='l2x_ax')
              !call seq_io_write(hist_file, gsmap, o2x_ax, 'o2x_ax',  &
