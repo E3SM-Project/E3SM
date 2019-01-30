@@ -33,7 +33,7 @@ module lnd2atmMod
   use GridcellType         , only : grc_pp
   use GridcellDataType     , only : grc_ef, grc_ws
   use ColumnDataType       , only : col_ws, col_wf  
-  use VegetationDataType   , only : veg_es, veg_ef, veg_ws
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
 
   
   !
@@ -182,7 +182,7 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         waterflux_vars%qflx_evap_tot_patch (bounds%begp:bounds%endp), &
+         veg_wf%qflx_evap_tot (bounds%begp:bounds%endp), &
          lnd2atm_vars%qflx_evap_tot_grc     (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 

@@ -7,7 +7,8 @@ module SoilWaterMovementMod
   ! created by Jinyun Tang, Mar 12, 2014
   ! added variable DTB option for Zeng-Decker, Michael A. Brunke, Aug. 25, 2016
   !
-  use ColumnDataType   , only : col_es, col_ws, col_wf
+  use ColumnDataType    , only : col_es, col_ws, col_wf
+  use VegetationDataType, only : veg_wf
   !
   implicit none
   save 
@@ -1085,11 +1086,11 @@ contains
           nlev2bed            =>    col_pp%nlevbed                     , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
           qflx_rootsoi_col    => col_wf%qflx_rootsoi    , & ! Output: [real(r8) (:,:) ]  
                                                                         ! vegetation/soil water exchange (m H2O/s) (+ = to atm)
-          qflx_tran_veg_patch => waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  
+          qflx_tran_veg_patch => veg_wf%qflx_tran_veg , & ! Input:  [real(r8) (:)   ]  
                                                                         ! vegetation transpiration (mm H2O/s) (+ = to atm) 
           qflx_tran_veg_col   => col_wf%qflx_tran_veg   , & ! Input:  [real(r8) (:)   ]  
                                                                         ! vegetation transpiration (mm H2O/s) (+ = to atm)
-          qflx_rootsoi_frac_patch  =>    waterflux_vars%qflx_rootsoi_frac_patch    , & ! Output: [real(r8) (:,:) ]  vegetation/soil water exchange (m H2O/s) (+ = to atm)
+          qflx_rootsoi_frac_patch  =>    veg_wf%qflx_rootsoi_frac    , & ! Output: [real(r8) (:,:) ]  vegetation/soil water exchange (m H2O/s) (+ = to atm)
           rootr_patch         => soilstate_vars%rootr_patch         , & ! Input: [real(r8) (:,:) ]
                                                                         ! effective fraction of roots in each soil layer  
           rootr_col           => soilstate_vars%rootr_col             & ! Output: [real(r8) (:,:) ]  

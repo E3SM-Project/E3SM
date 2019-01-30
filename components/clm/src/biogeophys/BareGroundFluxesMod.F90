@@ -22,7 +22,7 @@ module BareGroundFluxesMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es, veg_ef, veg_ws
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -173,11 +173,11 @@ contains
          z0qg_col         =>    frictionvel_vars%z0qg_col             , & ! Output: [real(r8) (:)   ]  roughness length, latent heat [m]
          ram1             =>    frictionvel_vars%ram1_patch           , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
 
-         qflx_ev_snow     =>    waterflux_vars%qflx_ev_snow_patch     , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (W/m**2) [+ to atm]
-         qflx_ev_soil     =>    waterflux_vars%qflx_ev_soil_patch     , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
-         qflx_ev_h2osfc   =>    waterflux_vars%qflx_ev_h2osfc_patch   , & ! Output: [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]
-         qflx_evap_soi    =>    waterflux_vars%qflx_evap_soi_patch    , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
-         qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+         qflx_ev_snow     =>    veg_wf%qflx_ev_snow     , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (W/m**2) [+ to atm]
+         qflx_ev_soil     =>    veg_wf%qflx_ev_soil     , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
+         qflx_ev_h2osfc   =>    veg_wf%qflx_ev_h2osfc   , & ! Output: [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]
+         qflx_evap_soi    =>    veg_wf%qflx_evap_soi    , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+         qflx_evap_tot    =>    veg_wf%qflx_evap_tot    , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
          begp             =>    bounds%begp                           , &
          endp             =>    bounds%endp                             &
          )

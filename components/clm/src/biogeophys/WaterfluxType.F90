@@ -342,103 +342,12 @@ contains
          ptr_lnd=this%qflx_ice_dynbal_grc)
 
 
-    this%qflx_irrig_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QIRRIG', units='mm/s', &
-         avgflag='A', long_name='water added through irrigation', &
-         ptr_patch=this%qflx_irrig_patch)
-
-    this%qflx_prec_intr_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QINTR', units='mm/s',  &
-         avgflag='A', long_name='interception', &
-         ptr_patch=this%qflx_prec_intr_patch, set_lake=0._r8)
-
-    this%qflx_prec_grnd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QDRIP', units='mm/s',  &
-         avgflag='A', long_name='throughfall', &
-         ptr_patch=this%qflx_prec_grnd_patch, c2l_scale_type='urbanf')
-
-    this%qflx_evap_soi_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QSOIL', units='mm/s',  &
-         avgflag='A', long_name= 'Ground evaporation (soil/snow evaporation + soil/snow sublimation - dew)', &
-         ptr_patch=this%qflx_evap_soi_patch, c2l_scale_type='urbanf')
-
-    this%qflx_evap_can_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QVEGE', units='mm/s',  &
-         avgflag='A', long_name='canopy evaporation', &
-         ptr_patch=this%qflx_evap_can_patch, set_lake=0._r8, c2l_scale_type='urbanf')
-
-    this%qflx_tran_veg_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QVEGT', units='mm/s',  &
-         avgflag='A', long_name='canopy transpiration', &
-         ptr_patch=this%qflx_tran_veg_patch, set_lake=0._r8, c2l_scale_type='urbanf')
-
-    this%qflx_snwcp_liq_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QSNWCPLIQ', units='mm H2O/s', &
-         avgflag='A', long_name='excess rainfall due to snow capping', &
-         ptr_patch=this%qflx_snwcp_liq_patch, c2l_scale_type='urbanf', default='inactive')
-
     ! Use qflx_snwcp_ice_col rather than qflx_snwcp_ice_patch, because the column version 
     ! is the final version, which includes some  additional corrections beyond the patch-level version
     this%qflx_snwcp_ice_patch(begp:endp) = spval
     call hist_addfld1d (fname='QSNWCPICE_NODYNLNDUSE', units='mm H2O/s', &
          avgflag='A', long_name='excess snowfall due to snow capping not including correction for land use change', &
          ptr_col=this%qflx_snwcp_ice_col, c2l_scale_type='urbanf')
-
-    if (use_cn) then
-       this%qflx_rain_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_RAIN_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='rain on ground after interception', &
-            ptr_patch=this%qflx_rain_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_snow_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_SNOW_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='snow on ground after interception', &
-            ptr_patch=this%qflx_snow_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_evap_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_EVAP_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='ground surface evaporation', &
-            ptr_patch=this%qflx_evap_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_evap_veg_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_EVAP_VEG', units='mm H2O/s', &
-            avgflag='A', long_name='vegetation evaporation', &
-            ptr_patch=this%qflx_evap_veg_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_evap_tot_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_EVAP_TOT', units='mm H2O/s', &
-            avgflag='A', long_name='qflx_evap_soi + qflx_evap_can + qflx_tran_veg', &
-            ptr_patch=this%qflx_evap_tot_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_dew_grnd_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_DEW_GRND', units='mm H2O/s', &
-            avgflag='A', long_name='ground surface dew formation', &
-            ptr_patch=this%qflx_dew_grnd_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_sub_snow_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_SUB_SNOW', units='mm H2O/s', &
-            avgflag='A', long_name='sublimation rate from snow pack', &
-            ptr_patch=this%qflx_sub_snow_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
-
-    if (use_cn) then
-       this%qflx_dew_snow_patch(begp:endp) = spval
-       call hist_addfld1d (fname='QFLX_DEW_SNOW', units='mm H2O/s', &
-            avgflag='A', long_name='surface dew added to snow pacK', &
-            ptr_patch=this%qflx_dew_snow_patch, default='inactive', c2l_scale_type='urbanf')
-    end if
 
   end subroutine InitHistory
 
@@ -514,50 +423,6 @@ contains
     logical :: do_io
     !-----------------------------------------------------------------------
 
-    ! Get expected total number of points, for later error checks
-    call get_proc_global(np=nump_global)
-
-    do_io = .true.
-    readvar = .false.
-    if (flag == 'read') then
-       ! On a read, confirm that this variable has the expected size; if not, don't read
-       ! it (instead give it a default value). This is needed to support older initial
-       ! conditions for which this variable had a different size.
-       call ncd_inqvdlen(ncid, 'n_irrig_steps_left', 1, dimlen, err_code)
-       if (dimlen /= nump_global) then
-          do_io = .false.
-       end if
-    end if
-    if (do_io) then
-       call restartvar(ncid=ncid, flag=flag, varname='n_irrig_steps_left', xtype=ncd_int,  &
-            dim1name='pft', &
-            long_name='number of irrigation time steps left', units='#', &
-            interpinic_flag='interp', readvar=readvar, data=this%n_irrig_steps_left_patch)
-    end if
-    if (flag=='read' .and. .not. readvar) then
-       this%n_irrig_steps_left_patch = 0
-    end if
-
-    do_io = .true.
-    readvar = .false.
-    if (flag == 'read') then
-       ! On a read, confirm that this variable has the expected size; if not, don't read
-       ! it (instead give it a default value). This is needed to support older initial
-       ! conditions for which this variable had a different size.
-       call ncd_inqvdlen(ncid, 'irrig_rate', 1, dimlen, err_code)
-       if (dimlen /= nump_global) then
-          do_io = .false.
-       end if
-    end if
-    if (do_io) then
-       call restartvar(ncid=ncid, flag=flag, varname='irrig_rate', xtype=ncd_double,  &
-            dim1name='pft', &
-            long_name='irrigation rate', units='mm/s', &
-            interpinic_flag='interp', readvar=readvar, data=this%irrig_rate_patch)
-    end if
-    if (flag=='read' .and. .not. readvar) then
-       this%irrig_rate_patch = 0.0_r8
-    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='MFLX_SNOW_LYR', xtype=ncd_double,  &
          dim1name='column', &

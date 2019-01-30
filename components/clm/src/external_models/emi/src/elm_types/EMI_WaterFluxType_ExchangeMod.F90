@@ -8,6 +8,7 @@ module EMI_WaterFluxType_ExchangeMod
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use WaterFluxType                         , only : waterflux_type
   use ColumnDataType                        , only : col_wf
+  use VegetationDataType                    , only : veg_wf
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -77,7 +78,7 @@ contains
          qflx_adv             => col_wf%qflx_adv             , &
          qflx_drain_vr        => col_wf%qflx_drain_vr        , &
          qflx_tran_veg        => col_wf%qflx_tran_veg        , &
-         qflx_rootsoi_frac  => waterflux_vars%qflx_rootsoi_frac_patch    &
+         qflx_rootsoi_frac    => veg_wf%qflx_rootsoi_frac    &
          )
 
     count = 0

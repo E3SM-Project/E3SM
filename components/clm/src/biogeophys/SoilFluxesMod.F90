@@ -24,7 +24,7 @@ module SoilFluxesMod
   use ColumnType	      , only : col_pp
   use ColumnDataType    , only : col_es, col_ef, col_ws                
   use VegetationType    , only : veg_pp
-  use VegetationDataType, only : veg_ef  
+  use VegetationDataType, only : veg_ef, veg_wf  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -124,20 +124,20 @@ contains
          cgrnds                  => veg_ef%cgrnds            , & ! Input:  [real(r8) (:)   ]  deriv, of soil sensible heat flux wrt soil temp [w/m2/k]
          cgrndl                  => veg_ef%cgrndl            , & ! Input:  [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp [w/m**2/k]
          
-         qflx_evap_can           => waterflux_vars%qflx_evap_can_patch      , & ! Output: [real(r8) (:)   ]  evaporation from leaves and stems (mm H2O/s) (+ = to atm)
-         qflx_evap_soi           => waterflux_vars%qflx_evap_soi_patch      , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
-         qflx_evap_veg           => waterflux_vars%qflx_evap_veg_patch      , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)
-         qflx_tran_veg           => waterflux_vars%qflx_tran_veg_patch      , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
-         qflx_snwcp_liq          => waterflux_vars%qflx_snwcp_liq_patch     , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s)
-         qflx_snwcp_ice          => waterflux_vars%qflx_snwcp_ice_patch     , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s)
-         qflx_evap_tot           => waterflux_vars%qflx_evap_tot_patch      , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_veg + qflx_tran_veg
-         qflx_evap_grnd          => waterflux_vars%qflx_evap_grnd_patch     , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
-         qflx_sub_snow           => waterflux_vars%qflx_sub_snow_patch      , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
-         qflx_dew_snow           => waterflux_vars%qflx_dew_snow_patch      , & ! Output: [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
-         qflx_dew_grnd           => waterflux_vars%qflx_dew_grnd_patch      , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
-         qflx_ev_snow            => waterflux_vars%qflx_ev_snow_patch       , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (W/m**2) [+ to atm]
-         qflx_ev_soil            => waterflux_vars%qflx_ev_soil_patch       , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
-         qflx_ev_h2osfc          => waterflux_vars%qflx_ev_h2osfc_patch     , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
+         qflx_evap_can           => veg_wf%qflx_evap_can      , & ! Output: [real(r8) (:)   ]  evaporation from leaves and stems (mm H2O/s) (+ = to atm)
+         qflx_evap_soi           => veg_wf%qflx_evap_soi      , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+         qflx_evap_veg           => veg_wf%qflx_evap_veg      , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)
+         qflx_tran_veg           => veg_wf%qflx_tran_veg      , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_snwcp_liq          => veg_wf%qflx_snwcp_liq     , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s)
+         qflx_snwcp_ice          => veg_wf%qflx_snwcp_ice     , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s)
+         qflx_evap_tot           => veg_wf%qflx_evap_tot      , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_veg + qflx_tran_veg
+         qflx_evap_grnd          => veg_wf%qflx_evap_grnd     , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
+         qflx_sub_snow           => veg_wf%qflx_sub_snow      , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
+         qflx_dew_snow           => veg_wf%qflx_dew_snow      , & ! Output: [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
+         qflx_dew_grnd           => veg_wf%qflx_dew_grnd      , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+         qflx_ev_snow            => veg_wf%qflx_ev_snow       , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (W/m**2) [+ to atm]
+         qflx_ev_soil            => veg_wf%qflx_ev_soil       , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
+         qflx_ev_h2osfc          => veg_wf%qflx_ev_h2osfc     , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
          
          eflx_sh_grnd            => veg_ef%eflx_sh_grnd      , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
          eflx_sh_veg             => veg_ef%eflx_sh_veg       , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]

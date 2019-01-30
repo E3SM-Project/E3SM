@@ -11,10 +11,11 @@ module VegetationDataType
   use abortutils     , only : endrun
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb, crop_prog
   use clm_varcon     , only : spval, ispval, sb
+  use landunit_varcon, only : istsoil, istcrop
   use clm_varctl     , only : iulog, use_cn 
   use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
-  use ncdio_pio      , only : file_desc_t, ncd_double
-  use decompMod      , only : bounds_type
+  use ncdio_pio      , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
+  use decompMod      , only : bounds_type, get_proc_global
   use restUtilMod
   use VegetationType , only : veg_pp
   use LandunitType   , only : lun_pp
@@ -31,39 +32,39 @@ module VegetationDataType
   !-----------------------------------------------------------------------
   type, public :: vegetation_energy_state
     ! temperature variables
-    real(r8), pointer :: t_veg              (:)   ! vegetation temperature (K)
-    real(r8), pointer :: t_ref2m            (:)   ! 2 m height surface air temperature (K)
-    real(r8), pointer :: t_ref2m_r          (:)   ! rural 2 m height surface air temperature (K)
-    real(r8), pointer :: t_ref2m_u          (:)   ! urban 2 m height surface air temperature (K)
+    real(r8), pointer :: t_veg              (:) => null() ! vegetation temperature (K)
+    real(r8), pointer :: t_ref2m            (:) => null() ! 2 m height surface air temperature (K)
+    real(r8), pointer :: t_ref2m_r          (:) => null() ! rural 2 m height surface air temperature (K)
+    real(r8), pointer :: t_ref2m_u          (:) => null() ! urban 2 m height surface air temperature (K)
     ! temperature summary and accumulator variables
-    real(r8), pointer :: t_a10              (:)   ! 10-day running mean of the 2 m temperature (K)
-    real(r8), pointer :: t_a10min           (:)   ! 10-day running mean of min 2-m temperature
-    real(r8), pointer :: t_a5min            (:)   ! 5-day running mean of min 2-m temperature
-    real(r8), pointer :: t_ref2m_min        (:)   ! daily minimum of average 2 m height surface air temperature (K)
-    real(r8), pointer :: t_ref2m_min_r      (:)   ! daily minimum of average 2 m height surface air temperature - rural(K)
-    real(r8), pointer :: t_ref2m_min_u      (:)   ! daily minimum of average 2 m height surface air temperature - urban (K)
-    real(r8), pointer :: t_ref2m_max        (:)   ! daily maximum of average 2 m height surface air temperature (K)
-    real(r8), pointer :: t_ref2m_max_r      (:)   ! daily maximum of average 2 m height surface air temperature - rural(K)
-    real(r8), pointer :: t_ref2m_max_u      (:)   ! daily maximum of average 2 m height surface air temperature - urban (K)
-    real(r8), pointer :: t_ref2m_min_inst   (:)   ! instantaneous daily min of average 2 m height surface air temp (K)
-    real(r8), pointer :: t_ref2m_min_inst_r (:)   ! instantaneous daily min of average 2 m height surface air temp - rural (K)
-    real(r8), pointer :: t_ref2m_min_inst_u (:)   ! instantaneous daily min of average 2 m height surface air temp - urban (K)
-    real(r8), pointer :: t_ref2m_max_inst   (:)   ! instantaneous daily max of average 2 m height surface air temp (K)
-    real(r8), pointer :: t_ref2m_max_inst_r (:)   ! instantaneous daily max of average 2 m height surface air temp - rural (K)
-    real(r8), pointer :: t_ref2m_max_inst_u (:)   ! instantaneous daily max of average 2 m height surface air temp - urban (K)
-    real(r8), pointer :: t_veg24            (:)   ! 24hr average vegetation temperature (K)
-    real(r8), pointer :: t_veg240           (:)   ! 240hr average vegetation temperature (K)
-    real(r8), pointer :: gdd0               (:)   ! growing degree-days base  0C from planting  (ddays)
-    real(r8), pointer :: gdd8               (:)   ! growing degree-days base  8C from planting  (ddays)
-    real(r8), pointer :: gdd10              (:)   ! growing degree-days base 10C from planting  (ddays)
-    real(r8), pointer :: gdd020             (:)   ! 20-year average of gdd0                     (ddays)
-    real(r8), pointer :: gdd820             (:)   ! 20-year average of gdd8                     (ddays)
-    real(r8), pointer :: gdd1020            (:)   ! 20-year average of gdd10                    (ddays)
+    real(r8), pointer :: t_a10              (:) => null() ! 10-day running mean of the 2 m temperature (K)
+    real(r8), pointer :: t_a10min           (:) => null() ! 10-day running mean of min 2-m temperature
+    real(r8), pointer :: t_a5min            (:) => null() ! 5-day running mean of min 2-m temperature
+    real(r8), pointer :: t_ref2m_min        (:) => null() ! daily minimum of average 2 m height surface air temperature (K)
+    real(r8), pointer :: t_ref2m_min_r      (:) => null() ! daily minimum of average 2 m height surface air temperature - rural(K)
+    real(r8), pointer :: t_ref2m_min_u      (:) => null() ! daily minimum of average 2 m height surface air temperature - urban (K)
+    real(r8), pointer :: t_ref2m_max        (:) => null() ! daily maximum of average 2 m height surface air temperature (K)
+    real(r8), pointer :: t_ref2m_max_r      (:) => null() ! daily maximum of average 2 m height surface air temperature - rural(K)
+    real(r8), pointer :: t_ref2m_max_u      (:) => null() ! daily maximum of average 2 m height surface air temperature - urban (K)
+    real(r8), pointer :: t_ref2m_min_inst   (:) => null() ! instantaneous daily min of average 2 m height surface air temp (K)
+    real(r8), pointer :: t_ref2m_min_inst_r (:) => null() ! instantaneous daily min of average 2 m height surface air temp - rural (K)
+    real(r8), pointer :: t_ref2m_min_inst_u (:) => null() ! instantaneous daily min of average 2 m height surface air temp - urban (K)
+    real(r8), pointer :: t_ref2m_max_inst   (:) => null() ! instantaneous daily max of average 2 m height surface air temp (K)
+    real(r8), pointer :: t_ref2m_max_inst_r (:) => null() ! instantaneous daily max of average 2 m height surface air temp - rural (K)
+    real(r8), pointer :: t_ref2m_max_inst_u (:) => null() ! instantaneous daily max of average 2 m height surface air temp - urban (K)
+    real(r8), pointer :: t_veg24            (:) => null() ! 24hr average vegetation temperature (K)
+    real(r8), pointer :: t_veg240           (:) => null() ! 240hr average vegetation temperature (K)
+    real(r8), pointer :: gdd0               (:) => null() ! growing degree-days base  0C from planting  (ddays)
+    real(r8), pointer :: gdd8               (:) => null() ! growing degree-days base  8C from planting  (ddays)
+    real(r8), pointer :: gdd10              (:) => null() ! growing degree-days base 10C from planting  (ddays)
+    real(r8), pointer :: gdd020             (:) => null() ! 20-year average of gdd0                     (ddays)
+    real(r8), pointer :: gdd820             (:) => null() ! 20-year average of gdd8                     (ddays)
+    real(r8), pointer :: gdd1020            (:) => null() ! 20-year average of gdd10                    (ddays)
     ! temperature-related variables
-    real(r8), pointer :: thm                (:)   ! intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
-    real(r8), pointer :: emv                (:)   ! vegetation emissivity (unitless)
-    
-  contains
+    real(r8), pointer :: thm                (:) => null() ! intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
+    real(r8), pointer :: emv                (:) => null() ! vegetation emissivity (unitless)
+
+    contains
     procedure, public :: Init    => veg_es_init
     procedure, public :: Restart => veg_es_restart
     procedure, public :: Clean   => veg_es_clean
@@ -100,8 +101,8 @@ module VegetationDataType
   type, public :: vegetation_carbon_state
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_veg_cs
-    procedure, public :: Clean => clean_veg_cs
+    procedure, public :: Init  => veg_cs_init
+    procedure, public :: Clean => veg_cs_init
   end type vegetation_carbon_state
   
   !-----------------------------------------------------------------------
@@ -110,8 +111,8 @@ module VegetationDataType
   type, public :: vegetation_nitrogen_state
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_veg_ns
-    procedure, public :: Clean => clean_veg_ns
+    procedure, public :: Init  => veg_ns_init
+    procedure, public :: Clean => veg_ns_clean
   end type vegetation_nitrogen_state
   
   !-----------------------------------------------------------------------
@@ -120,59 +121,59 @@ module VegetationDataType
   type, public :: vegetation_phosphorus_state
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_veg_ps
-    procedure, public :: Clean => clean_veg_ps
+    procedure, public :: Init  => veg_ps_init
+    procedure, public :: Clean => veg_ps_clean
   end type vegetation_phosphorus_state
 
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy flux information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_energy_flux
-    real(r8), pointer :: eflx_sh_grnd      (:)   ! sensible heat flux from ground (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_veg       (:)   ! sensible heat flux from leaves (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_snow      (:)   ! sensible heat flux from snow (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_soil      (:)   ! sensible heat flux from soil  (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_h2osfc    (:)   ! sensible heat flux from surface water (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_tot       (:)   ! total sensible heat flux (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_tot_u     (:)   ! urban total sensible heat flux (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_sh_tot_r     (:)   ! rural total sensible heat flux (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_lh_tot       (:)   ! total latent heat flux (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_lh_tot_u     (:)   ! urban total latent heat flux (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_lh_tot_r     (:)   ! rural total latent heat flux (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_lh_vegt      (:)   ! transpiration heat flux from veg (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_lh_vege      (:)   ! evaporation heat flux from veg (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_lh_grnd      (:)   ! evaporation heat flux from ground (W/m**2) [+ to atm]
-    real(r8), pointer :: eflx_soil_grnd    (:)   ! soil heat flux (W/m**2) [+ = into soil] 
-    real(r8), pointer :: eflx_soil_grnd_u  (:)   ! urban soil heat flux (W/m**2) [+ = into soil]
-    real(r8), pointer :: eflx_soil_grnd_r  (:)   ! rural soil heat flux (W/m**2) [+ = into soil]
-    real(r8), pointer :: eflx_lwrad_net    (:)   ! net infrared (longwave) rad (W/m**2) [+ = to atm]
-    real(r8), pointer :: eflx_lwrad_net_r  (:)   ! rural net infrared (longwave) rad (W/m**2) [+ = to atm]
-    real(r8), pointer :: eflx_lwrad_net_u  (:)   ! urban net infrared (longwave) rad (W/m**2) [+ = to atm]
-    real(r8), pointer :: eflx_lwrad_out    (:)   ! emitted infrared (longwave) radiation (W/m**2)
-    real(r8), pointer :: eflx_lwrad_out_r  (:)   ! rural emitted infrared (longwave) rad (W/m**2)
-    real(r8), pointer :: eflx_lwrad_out_u  (:)   ! urban emitted infrared (longwave) rad (W/m**2)
-    real(r8), pointer :: eflx_gnet         (:)   ! net heat flux into ground  (W/m**2)
-    real(r8), pointer :: eflx_grnd_lake    (:)   ! net heat flux into lake / snow surface, excluding light transmission (W/m**2)
-    real(r8), pointer :: eflx_anthro       (:)   ! total anthropogenic heat flux (W/m**2)
-    real(r8), pointer :: eflx_traffic      (:)   ! traffic sensible heat flux (W/m2)
-    real(r8), pointer :: eflx_wasteheat    (:)   ! sensible heat flux from domestic heating/cooling sources of waste heat (W/m**2)
-    real(r8), pointer :: eflx_heat_from_ac (:)   ! sensible heat flux put back into canyon due to removal by AC (W/m**2)
-    real(r8), pointer :: dlrad             (:)   ! downward longwave radiation below the canopy [W/m2]
-    real(r8), pointer :: ulrad             (:)   ! upward longwave radiation above the canopy [W/m2]
+    real(r8), pointer :: eflx_sh_grnd      (:) => null() ! sensible heat flux from ground (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_veg       (:) => null() ! sensible heat flux from leaves (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_snow      (:) => null() ! sensible heat flux from snow (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_soil      (:) => null() ! sensible heat flux from soil  (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_h2osfc    (:) => null() ! sensible heat flux from surface water (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_tot       (:) => null() ! total sensible heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_tot_u     (:) => null() ! urban total sensible heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_sh_tot_r     (:) => null() ! rural total sensible heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_tot       (:) => null() ! total latent heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_tot_u     (:) => null() ! urban total latent heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_tot_r     (:) => null() ! rural total latent heat flux (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_vegt      (:) => null() ! transpiration heat flux from veg (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_vege      (:) => null() ! evaporation heat flux from veg (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_lh_grnd      (:) => null() ! evaporation heat flux from ground (W/m**2) [+ to atm]
+    real(r8), pointer :: eflx_soil_grnd    (:) => null() ! soil heat flux (W/m**2) [+ = into soil] 
+    real(r8), pointer :: eflx_soil_grnd_u  (:) => null() ! urban soil heat flux (W/m**2) [+ = into soil]
+    real(r8), pointer :: eflx_soil_grnd_r  (:) => null() ! rural soil heat flux (W/m**2) [+ = into soil]
+    real(r8), pointer :: eflx_lwrad_net    (:) => null() ! net infrared (longwave) rad (W/m**2) [+ = to atm]
+    real(r8), pointer :: eflx_lwrad_net_r  (:) => null() ! rural net infrared (longwave) rad (W/m**2) [+ = to atm]
+    real(r8), pointer :: eflx_lwrad_net_u  (:) => null() ! urban net infrared (longwave) rad (W/m**2) [+ = to atm]
+    real(r8), pointer :: eflx_lwrad_out    (:) => null() ! emitted infrared (longwave) radiation (W/m**2)
+    real(r8), pointer :: eflx_lwrad_out_r  (:) => null() ! rural emitted infrared (longwave) rad (W/m**2)
+    real(r8), pointer :: eflx_lwrad_out_u  (:) => null() ! urban emitted infrared (longwave) rad (W/m**2)
+    real(r8), pointer :: eflx_gnet         (:) => null() ! net heat flux into ground  (W/m**2)
+    real(r8), pointer :: eflx_grnd_lake    (:) => null() ! net heat flux into lake / snow surface, excluding light transmission (W/m**2)
+    real(r8), pointer :: eflx_anthro       (:) => null() ! total anthropogenic heat flux (W/m**2)
+    real(r8), pointer :: eflx_traffic      (:) => null() ! traffic sensible heat flux (W/m2)
+    real(r8), pointer :: eflx_wasteheat    (:) => null() ! sensible heat flux from domestic heating/cooling sources of waste heat (W/m**2)
+    real(r8), pointer :: eflx_heat_from_ac (:) => null() ! sensible heat flux put back into canyon due to removal by AC (W/m**2)
+    real(r8), pointer :: dlrad             (:) => null() ! downward longwave radiation below the canopy [W/m2]
+    real(r8), pointer :: ulrad             (:) => null() ! upward longwave radiation above the canopy [W/m2]
     ! Wind Stress
-    real(r8), pointer :: taux              (:)   ! wind (shear) stress: e-w (kg/m/s**2)
-    real(r8), pointer :: tauy              (:)   ! wind (shear) stress: n-s (kg/m/s**2)
+    real(r8), pointer :: taux              (:) => null() ! wind (shear) stress: e-w (kg/m/s**2)
+    real(r8), pointer :: tauy              (:) => null() ! wind (shear) stress: n-s (kg/m/s**2)
     ! Derivatives of energy fluxes
-    real(r8), pointer :: dgnetdT           (:)   ! derivative of net ground heat flux wrt soil temp  (W/m**2 K)
-    real(r8), pointer :: netrad            (:)   ! col net radiation (W/m**2) [+ = to sfc]
-    real(r8), pointer :: cgrnd             (:)   ! col deriv. of soil energy flux wrt to soil temp [W/m2/k]
-    real(r8), pointer :: cgrndl            (:)   ! col deriv. of soil latent heat flux wrt soil temp  [W/m**2/k]
-    real(r8), pointer :: cgrnds            (:)   ! col deriv. of soil sensible heat flux wrt soil temp [W/m2/k]
+    real(r8), pointer :: dgnetdT           (:) => null() ! derivative of net ground heat flux wrt soil temp  (W/m**2 K)
+    real(r8), pointer :: netrad            (:) => null() ! col net radiation (W/m**2) [+ = to sfc]
+    real(r8), pointer :: cgrnd             (:) => null() ! col deriv. of soil energy flux wrt to soil temp [W/m2/k]
+    real(r8), pointer :: cgrndl            (:) => null() ! col deriv. of soil latent heat flux wrt soil temp  [W/m**2/k]
+    real(r8), pointer :: cgrnds            (:) => null() ! col deriv. of soil sensible heat flux wrt soil temp [W/m2/k]
     ! Balance Checks
-    real(r8), pointer :: errsoi            (:)   ! soil/lake energy conservation error   (W/m**2)
-    real(r8), pointer :: errseb            (:)   ! surface energy conservation error     (W/m**2)
-    real(r8), pointer :: errsol            (:)   ! solar radiation conservation error    (W/m**2)
-    real(r8), pointer :: errlon            (:)   ! longwave radiation conservation error (W/m**2)
+    real(r8), pointer :: errsoi            (:) => null() ! soil/lake energy conservation error   (W/m**2)
+    real(r8), pointer :: errseb            (:) => null() ! surface energy conservation error     (W/m**2)
+    real(r8), pointer :: errsol            (:) => null() ! solar radiation conservation error    (W/m**2)
+    real(r8), pointer :: errlon            (:) => null() ! longwave radiation conservation error (W/m**2)
 
   contains
     procedure, public :: Init    => veg_ef_init
@@ -184,10 +185,33 @@ module VegetationDataType
   ! Define the data structure that holds water flux information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_water_flux
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: qflx_prec_grnd     (:)   => null() ! water onto ground including canopy runoff [kg/(m2 s)]
+    real(r8), pointer :: qflx_rain_grnd     (:)   => null() ! rain on ground after interception (mm H2O/s) [+]
+    real(r8), pointer :: qflx_snow_grnd     (:)   => null() ! snow on ground after interception (mm H2O/s) [+]
+    real(r8), pointer :: qflx_sub_snow      (:)   => null() ! sublimation rate from snow pack (mm H2O /s) [+]
+    real(r8), pointer :: qflx_evap_soi      (:)   => null() ! soil evaporation (mm H2O/s) (+ = to atm)
+    real(r8), pointer :: qflx_evap_veg      (:)   => null() ! vegetation evaporation (mm H2O/s) (+ = to atm)
+    real(r8), pointer :: qflx_evap_can      (:)   => null() ! evaporation from leaves and stems (mm H2O/s) (+ = to atm)
+    real(r8), pointer :: qflx_evap_tot      (:)   => null() ! pft_qflx_evap_soi + pft_qflx_evap_veg + qflx_tran_veg
+    real(r8), pointer :: qflx_evap_grnd     (:)   => null() ! ground surface evaporation rate (mm H2O/s) [+]
+    real(r8), pointer :: qflx_snwcp_liq     (:)   => null() ! excess rainfall due to snow capping (mm H2O /s)
+    real(r8), pointer :: qflx_snwcp_ice     (:)   => null() ! excess snowfall due to snow capping (mm H2O /s)
+    real(r8), pointer :: qflx_tran_veg      (:)   => null() ! vegetation transpiration (mm H2O/s) (+ = to atm)
+    real(r8), pointer :: qflx_dew_snow      (:)   => null() ! surface dew added to snow pack (mm H2O /s) [+]
+    real(r8), pointer :: qflx_dew_grnd      (:)   => null() ! ground surface dew formation (mm H2O /s) [+]
+    real(r8), pointer :: qflx_prec_intr     (:)   => null() ! interception of precipitation [mm/s]
+    real(r8), pointer :: qflx_ev_snow       (:)   => null() ! evaporation heat flux from snow       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
+    real(r8), pointer :: qflx_ev_soil       (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
+    real(r8), pointer :: qflx_ev_h2osfc     (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
+    real(r8), pointer :: qflx_rootsoi_frac  (:,:) => null() !  
+    real(r8), pointer :: qflx_irrig         (:)   => null() ! irrigation flux (mm H2O/s)
+    real(r8), pointer :: irrig_rate         (:)   => null() ! current irrigation rate [mm/s]
+    integer , pointer :: n_irrig_steps_left (:)   => null() ! number of time steps for which we still need to irrigate today (if 0, ignore)
+
   contains
-    procedure, public :: Init  => init_veg_wf
-    procedure, public :: Clean => clean_veg_wf
+    procedure, public :: Init    => veg_wf_init
+    procedure, public :: Restart => veg_wf_restart
+    procedure, public :: Clean   => veg_wf_clean
   end type vegetation_water_flux
   
   !-----------------------------------------------------------------------
@@ -196,8 +220,8 @@ module VegetationDataType
   type, public :: vegetation_carbon_flux
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_veg_cf
-    procedure, public :: Clean => clean_veg_cf
+    procedure, public :: Init  => veg_cf_init
+    procedure, public :: Clean => veg_cf_clean
   end type vegetation_carbon_flux
   
   !-----------------------------------------------------------------------
@@ -206,8 +230,8 @@ module VegetationDataType
   type, public :: vegetation_nitrogen_flux
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_veg_nf
-    procedure, public :: Clean => clean_veg_nf
+    procedure, public :: Init  => veg_nf_init
+    procedure, public :: Clean => veg_nf_clean
   end type vegetation_nitrogen_flux
   
   !-----------------------------------------------------------------------
@@ -216,8 +240,8 @@ module VegetationDataType
   type, public :: vegetation_phosphorus_flux
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_veg_pf
-    procedure, public :: Clean => clean_veg_pf
+    procedure, public :: Init  => veg_pf_init
+    procedure, public :: Clean => veg_pf_clean
   end type vegetation_phosphorus_flux
 
    
@@ -250,10 +274,10 @@ module VegetationDataType
     ! !ARGUMENTS:
     class(vegetation_energy_state) :: this
     integer, intent(in) :: begp,endp
-    !------------------------------------------------------------------------
     !
     ! !LOCAL VARIABLES:
     integer           :: p,c,l,j                        ! indices
+    !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_es
@@ -1081,65 +1105,76 @@ module VegetationDataType
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation carbon state data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_cs(this, begp, endp)
+  subroutine veg_cs_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_carbon_state) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: p,c,l,j                        ! indices
     !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_cs
+    !-----------------------------------------------------------------------
+    allocate(this%xxx              (begp:endp))                   ; this%xxx              (:)   = nan
     
-  end subroutine init_veg_cs
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_cs
+    !-----------------------------------------------------------------------
+  end subroutine veg_cs_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_cs(this)
+  subroutine veg_cs_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_carbon_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_cs
+  end subroutine veg_cs_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation nitrogen state data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_ns(this, begp, endp)
+  subroutine veg_ns_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_nitrogen_state) :: this
     integer, intent(in) :: begp,endp
     !------------------------------------------------------------------------
     
-  end subroutine init_veg_ns
+  end subroutine veg_ns_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_ns(this)
+  subroutine veg_ns_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_nitrogen_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_ns
+  end subroutine veg_ns_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation phosphorus state data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_ps(this, begp, endp)
+  subroutine veg_ps_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_phosphorus_state) :: this
     integer, intent(in) :: begp,endp
     !------------------------------------------------------------------------
     
-  end subroutine init_veg_ps
+  end subroutine veg_ps_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_ps(this)
+  subroutine veg_ps_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_phosphorus_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_ps
+  end subroutine veg_ps_clean
 
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation energy flux data structure
@@ -1484,86 +1519,340 @@ module VegetationDataType
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation water flux data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_wf(this, begp, endp)
+  subroutine veg_wf_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_water_flux) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: p,l                        ! indices
     !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_wf
+    !-----------------------------------------------------------------------
+    allocate(this%qflx_prec_grnd         (begp:endp))             ; this%qflx_prec_grnd       (:)   = nan
+    allocate(this%qflx_rain_grnd         (begp:endp))             ; this%qflx_rain_grnd       (:)   = nan
+    allocate(this%qflx_snow_grnd         (begp:endp))             ; this%qflx_snow_grnd       (:)   = nan
+    allocate(this%qflx_sub_snow          (begp:endp))             ; this%qflx_sub_snow        (:)   = 0._r8
+    allocate(this%qflx_evap_soi          (begp:endp))             ; this%qflx_evap_soi        (:)   = nan
+    allocate(this%qflx_evap_veg          (begp:endp))             ; this%qflx_evap_veg        (:)   = nan
+    allocate(this%qflx_evap_can          (begp:endp))             ; this%qflx_evap_can        (:)   = nan
+    allocate(this%qflx_evap_tot          (begp:endp))             ; this%qflx_evap_tot        (:)   = nan
+    allocate(this%qflx_evap_grnd         (begp:endp))             ; this%qflx_evap_grnd       (:)   = nan
+    allocate(this%qflx_snwcp_liq         (begp:endp))             ; this%qflx_snwcp_liq       (:)   = nan
+    allocate(this%qflx_snwcp_ice         (begp:endp))             ; this%qflx_snwcp_ice       (:)   = nan
+    allocate(this%qflx_tran_veg          (begp:endp))             ; this%qflx_tran_veg        (:)   = nan
+    allocate(this%qflx_dew_snow          (begp:endp))             ; this%qflx_dew_snow        (:)   = nan
+    allocate(this%qflx_dew_grnd          (begp:endp))             ; this%qflx_dew_grnd        (:)   = nan
+    allocate(this%qflx_prec_intr         (begp:endp))             ; this%qflx_prec_intr       (:)   = nan
+    allocate(this%qflx_ev_snow           (begp:endp))             ; this%qflx_ev_snow         (:)   = nan
+    allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = nan
+    allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = nan
+    allocate(this%qflx_rootsoi_frac      (begp:endp,1:nlevgrnd))  ; this%qflx_rootsoi_frac    (:,:) = nan
+    allocate(this%qflx_irrig             (begp:endp))             ; this%qflx_irrig           (:)   = nan
+    allocate(this%irrig_rate             (begp:endp))             ; this%irrig_rate           (:)   = nan
+    allocate(this%n_irrig_steps_left     (begp:endp))             ; this%n_irrig_steps_left   (:)   = 0
     
-  end subroutine init_veg_wf
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_wf
+    !-----------------------------------------------------------------------
+    this%qflx_irrig(begp:endp) = spval
+    call hist_addfld1d (fname='QIRRIG', units='mm/s', &
+         avgflag='A', long_name='water added through irrigation', &
+         ptr_patch=this%qflx_irrig)
+
+    this%qflx_prec_intr(begp:endp) = spval
+    call hist_addfld1d (fname='QINTR', units='mm/s',  &
+         avgflag='A', long_name='interception', &
+         ptr_patch=this%qflx_prec_intr, set_lake=0._r8)
+
+    this%qflx_prec_grnd(begp:endp) = spval
+    call hist_addfld1d (fname='QDRIP', units='mm/s',  &
+         avgflag='A', long_name='throughfall', &
+         ptr_patch=this%qflx_prec_grnd, c2l_scale_type='urbanf')
+
+    this%qflx_evap_soi(begp:endp) = spval
+    call hist_addfld1d (fname='QSOIL', units='mm/s',  &
+         avgflag='A', long_name= 'Ground evaporation (soil/snow evaporation + soil/snow sublimation - dew)', &
+         ptr_patch=this%qflx_evap_soi, c2l_scale_type='urbanf')
+
+    this%qflx_evap_can(begp:endp) = spval
+    call hist_addfld1d (fname='QVEGE', units='mm/s',  &
+         avgflag='A', long_name='canopy evaporation', &
+         ptr_patch=this%qflx_evap_can, set_lake=0._r8, c2l_scale_type='urbanf')
+
+    this%qflx_tran_veg(begp:endp) = spval
+    call hist_addfld1d (fname='QVEGT', units='mm/s',  &
+         avgflag='A', long_name='canopy transpiration', &
+         ptr_patch=this%qflx_tran_veg, set_lake=0._r8, c2l_scale_type='urbanf')
+
+    this%qflx_snwcp_liq(begp:endp) = spval
+    call hist_addfld1d (fname='QSNWCPLIQ', units='mm H2O/s', &
+         avgflag='A', long_name='excess rainfall due to snow capping', &
+         ptr_patch=this%qflx_snwcp_liq, c2l_scale_type='urbanf', default='inactive')
+
+    if (use_cn) then
+       this%qflx_rain_grnd(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_RAIN_GRND', units='mm H2O/s', &
+            avgflag='A', long_name='rain on ground after interception', &
+            ptr_patch=this%qflx_rain_grnd, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_snow_grnd(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_SNOW_GRND', units='mm H2O/s', &
+            avgflag='A', long_name='snow on ground after interception', &
+            ptr_patch=this%qflx_snow_grnd, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_evap_grnd(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_EVAP_GRND', units='mm H2O/s', &
+            avgflag='A', long_name='ground surface evaporation', &
+            ptr_patch=this%qflx_evap_grnd, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_evap_veg(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_EVAP_VEG', units='mm H2O/s', &
+            avgflag='A', long_name='vegetation evaporation', &
+            ptr_patch=this%qflx_evap_veg, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_evap_tot(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_EVAP_TOT', units='mm H2O/s', &
+            avgflag='A', long_name='qflx_evap_soi + qflx_evap_can + qflx_tran_veg', &
+            ptr_patch=this%qflx_evap_tot, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_dew_grnd(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_DEW_GRND', units='mm H2O/s', &
+            avgflag='A', long_name='ground surface dew formation', &
+            ptr_patch=this%qflx_dew_grnd, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_sub_snow(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_SUB_SNOW', units='mm H2O/s', &
+            avgflag='A', long_name='sublimation rate from snow pack', &
+            ptr_patch=this%qflx_sub_snow, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    if (use_cn) then
+       this%qflx_dew_snow(begp:endp) = spval
+       call hist_addfld1d (fname='QFLX_DEW_SNOW', units='mm H2O/s', &
+            avgflag='A', long_name='surface dew added to snow pacK', &
+            ptr_patch=this%qflx_dew_snow, default='inactive', c2l_scale_type='urbanf')
+    end if
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_wf
+    !-----------------------------------------------------------------------
+    this%qflx_evap_grnd(begp:endp) = 0.0_r8
+    this%qflx_dew_grnd (begp:endp) = 0.0_r8
+    this%qflx_dew_snow (begp:endp) = 0.0_r8
+
+    do p = begp, endp
+       l = veg_pp%landunit(p)
+       
+       if (lun_pp%itype(l)==istsoil) then
+          this%n_irrig_steps_left(p) = 0
+          this%irrig_rate(p)         = 0.0_r8
+       end if
+    end do
+    
+  end subroutine veg_wf_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_wf(this)
+  subroutine veg_wf_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write vegetation water flux information to/from restart file.
+    !
+    ! !ARGUMENTS:
+    class(vegetation_water_flux)     :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar      ! determine if variable is on initial file
+    integer :: dimlen       ! dimension length
+    integer :: nump_global  ! total number of pfts, globally
+    integer :: err_code     ! error code
+    logical :: do_io
+    !-----------------------------------------------------------------------
+
+    ! Get expected total number of points, for later error checks
+    call get_proc_global(np=nump_global)
+
+    do_io = .true.
+    readvar = .false.
+    if (flag == 'read') then
+       ! On a read, confirm that this variable has the expected size; if not, don't read
+       ! it (instead give it a default value). This is needed to support older initial
+       ! conditions for which this variable had a different size.
+       call ncd_inqvdlen(ncid, 'n_irrig_steps_left', 1, dimlen, err_code)
+       if (dimlen /= nump_global) then
+          do_io = .false.
+       end if
+    end if
+    if (do_io) then
+       call restartvar(ncid=ncid, flag=flag, varname='n_irrig_steps_left', xtype=ncd_int,  &
+            dim1name='pft', &
+            long_name='number of irrigation time steps left', units='#', &
+            interpinic_flag='interp', readvar=readvar, data=this%n_irrig_steps_left)
+    end if
+    if (flag=='read' .and. .not. readvar) then
+       this%n_irrig_steps_left = 0
+    end if
+
+    do_io = .true.
+    readvar = .false.
+    if (flag == 'read') then
+       ! On a read, confirm that this variable has the expected size; if not, don't read
+       ! it (instead give it a default value). This is needed to support older initial
+       ! conditions for which this variable had a different size.
+       call ncd_inqvdlen(ncid, 'irrig_rate', 1, dimlen, err_code)
+       if (dimlen /= nump_global) then
+          do_io = .false.
+       end if
+    end if
+    if (do_io) then
+       call restartvar(ncid=ncid, flag=flag, varname='irrig_rate', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='irrigation rate', units='mm/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%irrig_rate)
+    end if
+    if (flag=='read' .and. .not. readvar) then
+       this%irrig_rate = 0.0_r8
+    end if
+
+  end subroutine veg_wf_restart
+
+  !------------------------------------------------------------------------
+  subroutine veg_wf_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_water_flux) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_wf
+  end subroutine veg_wf_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation carbon flux data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_cf(this, begp, endp)
+  subroutine veg_cf_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_carbon_flux) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: p,c,l,j                        ! indices
     !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_cf
+    !-----------------------------------------------------------------------
+    allocate(this%xxx              (begp:endp))                   ; this%xxx              (:)   = nan
     
-  end subroutine init_veg_cf
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_cf
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_cf
+    !-----------------------------------------------------------------------
+    
+  end subroutine veg_cf_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_cf(this)
+  subroutine veg_cf_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_carbon_flux) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_cf
+  end subroutine veg_cf_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation nitrogen flux data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_nf(this, begp, endp)
+  subroutine veg_nf_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_nitrogen_flux) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: p,c,l,j                        ! indices
     !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_nf
+    !-----------------------------------------------------------------------
+    allocate(this%xxx              (begp:endp))                   ; this%xxx              (:)   = nan
     
-  end subroutine init_veg_nf
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_nf
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_nf
+    !-----------------------------------------------------------------------
+    
+  end subroutine veg_nf_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_nf(this)
+  subroutine veg_nf_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_nitrogen_flux) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_veg_nf
+  end subroutine veg_nf_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation phosphorus flux data structure
   !------------------------------------------------------------------------
-  subroutine init_veg_pf(this, begp, endp)
+  subroutine veg_pf_init(this, begp, endp)
     !
     ! !ARGUMENTS:
     class(vegetation_phosphorus_flux) :: this
     integer, intent(in) :: begp,endp
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: p,c,l,j                        ! indices
+    !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_pf
+    !-----------------------------------------------------------------------
+    allocate(this%xxx              (begp:endp))                   ; this%xxx              (:)   = nan
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_pf
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_pf
     !------------------------------------------------------------------------
     
-  end subroutine init_veg_pf
+  end subroutine veg_pf_init
     
   !------------------------------------------------------------------------
-  subroutine clean_veg_pf(this)
+  subroutine veg_pf_clean(this)
     !
     ! !ARGUMENTS:
     class(vegetation_phosphorus_flux) :: this
-    !------------------------------------------------------------------------
-    
-  end subroutine clean_veg_pf
+    !-----------------------------------------------------------------------
+   
+  end subroutine veg_pf_clean
   
     !------------------------------------------------------------------------
     
