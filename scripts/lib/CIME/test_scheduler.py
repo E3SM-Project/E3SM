@@ -606,8 +606,12 @@ class TestScheduler(object):
                     #  (SCM) mode
                     envtest.set_test_parameter("PTS_MODE", "TRUE")
 
-                    # For PTS_MODE, compile with mpi-serial
-                    envtest.set_test_parameter("MPILIB", "mpi-serial")
+                    # For PTS_MODE, set all tasks and threads to 1
+                    comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
+
+                    for comp in comps:
+                        envtest.set_test_parameter("NTASKS_"+comp, "1")
+                        envtest.set_test_parameter("NTHRDS_"+comp, "1")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
