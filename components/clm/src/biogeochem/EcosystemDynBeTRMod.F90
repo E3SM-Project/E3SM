@@ -557,7 +557,7 @@ module EcosystemDynBeTRMod
        !call decomposition method from betr
        !----------------------------------------------------------------
       call t_startf('betr type1 soil bgc')
-      call ep_betr%BeTRSetBiophysForcing(bounds, col, veg, 1, nlevsoi, &
+      call ep_betr%BeTRSetBiophysForcing(bounds, col, pft, 1, nlevsoi, &
          waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
          atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars)
 
