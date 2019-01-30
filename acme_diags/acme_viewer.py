@@ -266,7 +266,7 @@ def _create_csv_from_dict_taylor_diag(output_dir, season, test_name, run_type, r
     #print keys_control_runs
    
     # generate taylor diagram plot if there is metrics saved for any variable within the list.
-    marker = ['o', 'd', '+', 's', '>', '<', 'v' , '^'] 
+    marker = ['o', 'd', '+', 's', '>', '<', 'v' , '^', 'x', 'h', 'X', 'H'] 
     color = ['k', 'r', 'g', 'y', 'm']
  
     if row_count > 0:
