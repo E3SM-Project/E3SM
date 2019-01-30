@@ -190,7 +190,7 @@ fig = plt.figure(1, facecolor='w')
 nrow=4
 ncol=2
 
-xtickSpacing = 20.0
+xtickSpacing = 50.0
 
 # melt forcing
 axMeanMelt = fig.add_subplot(nrow, ncol, 1)
@@ -483,19 +483,24 @@ plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # VAF diff
-ax3VAFdiff = fig3.add_subplot(nrow, ncol, 3, sharex=ax3MeanMelt)
-plt.xlabel('Year')
+#fig9 = plt.figure(9, facecolor='w')
+ax3VAFdiff = fig3.add_subplot(nrow, ncol, 4, sharex=ax3MeanMelt)
+#ax3VAFdiff = fig9.add_subplot(1, 1, 1)
+plt.xlabel('Year', axes=ax3VAFdiff)
 #plt.ylabel('VAF difference (%)')
-plt.ylabel('VAF difference (Gt)')
-plt.xticks(np.arange(30)*xtickSpacing)
+#plt.ylabel('VAF difference (Gt)')
+plt.ylabel('SLR difference (mm)', axes=ax3VAFdiff)
+#plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
+#plt.xlim((0.0,500.0))
 
 # VAF rate
-ax3VAFrate = fig3.add_subplot(nrow, ncol, 4, sharex=ax3MeanMelt)
-plt.xlabel('Year')
+ax3VAFrate = fig3.add_subplot(nrow, ncol, 3, sharex=ax3MeanMelt)
+#plt.xlabel('Year')
 plt.ylabel('VAF rate (Gt/yr)')
 plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
+
 
 
 # define colors to use
@@ -555,7 +560,8 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
       yrsGroup = thisRun.resampYrs  # (only need this once)
       meltGroup[runNumber, :] = thisRun.resampMelt
       VAFgroup[runNumber, :] = thisRun.VAFsmooth
-      VAFdiffGroup[runNumber, :] = thisRun.VAFsmooth - steadyVAF # this version plots difference from control
+      #VAFdiffGroup[runNumber, :] = thisRun.VAFsmooth - steadyVAF # this version plots difference from control
+      VAFdiffGroup[runNumber, :] = GTtoSL(thisRun.VAFsmooth-steadyVAF)  # this version plots difference from control as SLR
     #  VAFdiffGroup[runNumber, :] = (thisRun.VAFsmooth - steadyVAF)/(steadyVAF-steadyVAF[0])*100.0 # this version plots difference from control as %
       VAFrateGroup[runNumber, :] = thisRun.VAFsmoothrate
       meltOnVAFGroup[runNumber, :] = thisRun.meltOnVAFeven 
@@ -665,13 +671,13 @@ axSLR.set_ylim(GTtoSL(y1) - GTtoSL(runData['steady'].VAFsmooth[0]), GTtoSL(y2) -
 axSLR.set_ylabel('S.L. equiv. (mm)')
 axSLR.set_xlim(x1, x2)
 
-axSLR=ax3VAFdiff.twinx()
-y1, y2=ax3VAFdiff.get_ylim()
-x1, x2=ax3VAFdiff.get_xlim()
-axSLR.set_ylim(GTtoSL(y1) , GTtoSL(y2) )
-#axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
-axSLR.set_ylabel('S.L. equiv. (mm)')
-axSLR.set_xlim(x1, x2)
+#axSLR=ax3VAFdiff.twinx()
+#y1, y2=ax3VAFdiff.get_ylim()
+#x1, x2=ax3VAFdiff.get_xlim()
+#axSLR.set_ylim(GTtoSL(y1) , GTtoSL(y2) )
+##axSLR.set_yticks( range(int(GTtoSL(y1)), int(GTtoSL(y2))) )
+#axSLR.set_ylabel('S.L. equiv. (mm)')
+#axSLR.set_xlim(x1, x2)
 
 
 
