@@ -1,7 +1,3 @@
-#ifdef FPE
-# include <xmmintrin.h>
-#endif
-
 #ifdef _OPENMP
 # include <omp.h>
 #endif
@@ -11,6 +7,10 @@
 #include "share/util/scream_arch.hpp"
 #include "share/scream_types.hpp"
 #include "share/scream_config.hpp"
+
+#ifdef SCREAM_FPE
+# include <xmmintrin.h>
+#endif
 
 /*
  * Implementations of scream_arch.hpp functions.
