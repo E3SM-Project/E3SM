@@ -609,9 +609,9 @@ class TestScheduler(object):
                     # For PTS_MODE, set all tasks and threads to 1
                     comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
 
-                    for c in range(0,len(comps)):
-                        envtest.set_test_parameter("NTASKS_"+comps[c], "1")
-                        envtest.set_test_parameter("NTHRDS_"+comps[c], "1")
+                    for comp in comps:
+                        envtest.set_test_parameter("NTASKS_"+comp, "1")
+                        envtest.set_test_parameter("NTHRDS_"+comp, "1")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
