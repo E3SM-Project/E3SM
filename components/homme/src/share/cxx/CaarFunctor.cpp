@@ -31,7 +31,7 @@ CaarFunctor::CaarFunctor()
   SphereOperators&  sphere_ops = Context::singleton().get<SphereOperators>();
   const int         rsplit     = Context::singleton().get<SimulationParams>().rsplit;
 
-  sphere_ops.setup(elements,ref_FE);
+  sphere_ops.setup(elements.m_geometry,ref_FE);
 
   // Build functor impl
   m_caar_impl.reset(new CaarFunctorImpl(elements,tracers,ref_FE,hvcoord,sphere_ops,rsplit));

@@ -262,10 +262,14 @@ void init_functors_c ()
   // *copied it*, and initialized the copy. The second call to get,
   // sees that there is *already* an object of type FunctorName in the
   // Context, and therefore does *not* create a FunctorName object.
-  // A solution would be to make the second call could as the first one (with an
-  // init call right after). However, we can also initialize all functors here
-  // once and for all, so that the user does not have to initialize them when
-  // calling them.
+  // A solution would be to use a reference in the first call, or to always
+  // use the get method with the initialization arguments. However, if the functor
+  // is already init-ed, what do we do? Ignore: there's the risk that the user thinks
+  // that the functor was created with the inputs he/she provided Throw: we create
+  // the headache of first finding out if a functor already exists, and, if not,
+  // create it and init it.
+  // It is way easier to create all functors here once and for all,
+  // so that the user does not have to initialize them when calling them.
 
   auto& elems   = Context::singleton().get<Elements>();
   auto& tracers = Context::singleton().get<Tracers>();
@@ -281,7 +285,7 @@ void init_functors_c ()
   Errors::runtime_check(params.params_set, "Error! You must initialize the SimulationParams structure before initializing the functors.\n", -1);
 
   // First, sphere operators
-  auto& sph_op = Context::singleton().get<SphereOperators>(elems,ref_FE);
+  auto& sph_op = Context::singleton().get<SphereOperators>(elems.m_geometry,ref_FE);
   auto& caar   = Context::singleton().get<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
   auto& esf    = Context::singleton().get<EulerStepFunctor>();
   auto& hvf    = Context::singleton().get<HyperviscosityFunctor>();
