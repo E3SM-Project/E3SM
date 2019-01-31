@@ -2876,12 +2876,12 @@
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,csc190</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/gpfs/alpine/proj-shared/$PROJECT/$ENV{USER}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/gpfs/alpine/world-shared/cli115/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/world-shared/cli115/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/gpfs/alpine/proj-shared/$PROJECT/$ENV{USER}/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/gpfs/alpine/world-shared/$PROJECT/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/gpfs/alpine/world-shared/csc190/e3sm/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/gpfs/alpine/cli115/world-shared/e3sm/tools/cprnc.summit/cprnc</CCSM_CPRNC>
     <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
@@ -2923,7 +2923,7 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
-        <command name="load">pgi/18.3</command>
+        <command name="load">pgi/18.10</command>
       </modules>
       <modules compiler="ibm">
         <command name="load">xl/16.1.1-1</command>
@@ -2940,19 +2940,19 @@
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.2.0.10-20181214</command>
-        <command name="load">parallel-netcdf/1.8.0</command>
-        <command name="load">hdf5/1.10.3</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
-        <command name="load">parallel-netcdf/1.8.0</command>
-        <command name="load">hdf5/1.10.0-patch1</command>
+        <command name="load">spectrum-mpi/10.2.0.10-20181214</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.0-20180508</command>
-        <command name="load">parallel-netcdf/1.8.0</command>
-        <command name="load">hdf5/1.10.0-patch1</command>
+        <command name="load">spectrum-mpi/10.2.0.10-20181214</command>
       </modules>
+
+      <modules>
+         <command name="load">parallel-netcdf/1.8.0</command>
+         <command name="load">hdf5/1.10.3</command>
+       </modules>
+
     </module_system>
     <!-- Ref: https://www.olcf.ornl.gov/for-users/system-user-guides/summit/ -->
     <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
