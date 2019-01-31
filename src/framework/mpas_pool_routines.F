@@ -3271,7 +3271,7 @@ module mpas_pool_routines
       info % isActive = .false.
 
       endl = len_trim(key)
-      call pool_hash(hash, key, endl)
+      call pool_hash(hash, key)
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5703,7 +5703,7 @@ module mpas_pool_routines
       integer :: hash, oldLevel
       type (mpas_pool_member_type), pointer :: ptr
 
-      call pool_hash(hash, trim(newmem % key), newmem % keylen)
+      call pool_hash(hash, trim(newmem % key))
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5762,7 +5762,7 @@ module mpas_pool_routines
       nullify(pool_get_member)
 
       endl = len_trim(key)
-      call pool_hash(hash, key, endl)
+      call pool_hash(hash, key)
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5797,7 +5797,7 @@ module mpas_pool_routines
       threadNum = mpas_threading_get_thread_num()
 
       endl = len_trim(key)
-      call pool_hash(hash, key, endl)
+      call pool_hash(hash, key)
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5991,6 +5991,31 @@ module mpas_pool_routines
       end if
 
    end function pool_get_member_decomp_type!}}}
+
+   subroutine pool_hash(hash, key)!{{{
+
+      use iso_c_binding, only : c_int, c_char
+      use mpas_c_interfacing, only : mpas_f_to_c_string
+
+      implicit none
+
+      interface
+        subroutine c_pool_hash(hash, key) bind(c)
+           use iso_c_binding, only : c_int, c_char
+           integer (c_int), intent(inout) :: hash
+           character (c_char), dimension(*), intent(in) :: key
+        end subroutine c_pool_hash
+      end interface
+
+      integer (c_int), intent(inout) :: hash
+      character(len=*), intent(in) :: key
+
+      character(kind=c_char), dimension(StrKIND+1) :: c_key
+
+      call mpas_f_to_c_string(key, c_key)
+      call c_pool_hash(hash, c_key)
+
+   end subroutine pool_hash!}}}
 
 
 end module mpas_pool_routines
