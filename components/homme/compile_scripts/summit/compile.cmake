@@ -21,7 +21,7 @@ cmake                                                                           
   -C $HOMME_ROOT/cmake/machineFiles/darwin.cmake                                 \
   -DCMAKE_Fortran_COMPILER=mpif90                                                \
   -DCMAKE_C_COMPILER=mpicc                                                       \
-  -DOPT_FLAGS="-O3"                                                              \
+  -DOPT_FLAGS="-O2"                                                              \
   -DOPENACC_Fortran_FLAGS="-ta=nvidia,cc70,ptxinfo -Minfo=accel"                 \
   -DDEBUG_FLAGS=" "                                                              \
   -DPREQX_NP=4                                                                   \
