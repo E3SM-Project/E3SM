@@ -112,8 +112,9 @@ module med_fraction_mod
   !
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod , only : R8
-  use esmFlds           , only : ncomps
+  use med_constants_mod, only : R8
+  use med_constants_mod, only : dbug_flag => med_constants_dbug_flag
+  use esmFlds          , only : ncomps
 
   implicit none
   private
@@ -129,7 +130,7 @@ module med_fraction_mod
   character(len=5),parameter,dimension(3) :: fraclist_i = (/'afrac','ifrac','ofrac'/)
   character(len=5),parameter,dimension(3) :: fraclist_l = (/'afrac','lfrac','lfrin'/)
   character(len=5),parameter,dimension(2) :: fraclist_g = (/'gfrac','lfrac'/)
-  character(len=5),parameter,dimension(2) :: fraclist_r = (/'lfrac','rfrac'/)
+  character(len=5),parameter,dimension(2) :: fraclist_r = (/'rfrac','lfrac'/)
   character(len=5),parameter,dimension(1) :: fraclist_w = (/'wfrac'/)
 
   !--- standard ---
@@ -187,6 +188,7 @@ contains
 
     ! local variables
     type(InternalState)        :: is_local
+    type(ESMF_FieldBundle)     :: FBtemp
     real(R8), pointer          :: frac(:)
     real(R8), pointer          :: ofrac(:)
     real(R8), pointer          :: lfrac(:)
@@ -207,7 +209,9 @@ contains
     !---------------------------------------
     call t_startf('MED:'//subname)
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
 
     ! Get the internal state from Component.
@@ -237,9 +241,7 @@ contains
        ! Note - must use import state here - since export state might not
        ! contain anything other than scalar data if the component is not prognostic
        do n1 = 1,ncomps
-          if (is_local%wrap%comp_present(n1) .and. &
-               ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
-               ESMF_StateIsCreated(is_local%wrap%NStateExp(n1),rc=rc)) then
+          if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
 
              call shr_nuopc_methods_FB_init(is_local%wrap%FBfrac(n1), flds_scalar_name, &
                   STgeom=is_local%wrap%NStateImp(n1), fieldNameList=fraclist(:,n1), &
@@ -291,28 +293,12 @@ contains
     end if
 
     !---------------------------------------
-    ! Set 'gfrac' for FBFrac(compglc)
-    !---------------------------------------
-
-    if (is_local%wrap%comp_present(compglc)) then
-       ! If 'gfrac' and 'frac' exists, then copy 'frac' to 'gfrac'
-       if ( shr_nuopc_methods_FB_FldChk(is_local%wrap%FBfrac(compglc)        , 'gfrac', rc=rc) .and. &
-            shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compglc, compglc), 'frac' , rc=rc)) then
-
-          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc)       , 'gfrac', gfrac, rc=rc)
-          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compglc,compglc), 'frac' , frac, rc=rc)
-
-          gfrac(:) = frac(:)
-       endif
-    endif
-
-    !---------------------------------------
     ! Set 'lfrin' for FBFrac(complnd) and FBFrac(compatm)
     !---------------------------------------
 
-    if (is_local%wrap%comp_present(complnd)) then
+    ! The following is just an initial "guess", updated later
 
-       ! The following is just an initial "guess", updated later
+    if (is_local%wrap%comp_present(complnd)) then
 
        ! Set 'lfrin' for FBFrac(complnd)
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(complnd,complnd) , 'Sl_lfrin' , Sl_lfrin, rc=rc)
@@ -322,26 +308,55 @@ contains
        lfrin(:) = Sl_lfrin(:)
 
        ! Set 'lfrin for FBFrac(compatm)
-       if (is_local%wrap%med_coupling_active(complnd,compatm)) then
+       if (is_local%wrap%comp_present(compatm) .and. (is_local%wrap%med_coupling_active(compatm,complnd))) then
+          ! Note - need to do the following if compatm->complnd is active, even if complnd->compatm is not active
+
+          ! Create a temporary field bundle if one does not exists
+          if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,compatm))) then
+             call shr_nuopc_methods_FB_init(FBout=FBtemp, &
+                  flds_scalar_name=flds_scalar_name, &
+                  FBgeom=is_local%wrap%FBImp(compatm,compatm), &
+                  fieldNameList=(/'Fldtemp'/), name='FBtemp', rc=rc)
+             if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
+          end if
+
+          ! Determine map type
           if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapfcopy), rc=rc)) then
              maptype = mapfcopy
           else
              maptype = mapconsf
-             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,maptype), rc=rc)) then
+          end if
+
+          ! Create route handle from lnd->atm if necessary
+          if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compatm,maptype), rc=rc)) then
+             if (ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,compatm))) then
+                call med_map_Fractions_init( gcomp, complnd, compatm, &
+                  FBSrc=is_local%wrap%FBImp(complnd,complnd), &
+                  FBDst=is_local%wrap%FBImp(complnd,compatm), &
+                  RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             else
                 call med_map_Fractions_init( gcomp, complnd, compatm, &
                      FBSrc=is_local%wrap%FBImp(complnd,complnd), &
-                     FBDst=is_local%wrap%FBImp(complnd,compatm), &
+                     FBDst=FBtemp, &
                      RouteHandle=is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
           end if
+
+          ! Regrid 'lfrin' from FBFrac(complnd) -> FBFrac(compatm)
           call shr_nuopc_methods_FB_FieldRegrid(&
                is_local%wrap%FBfrac(complnd), 'lfrin', &
                is_local%wrap%FBfrac(compatm), 'lfrin', &
                is_local%wrap%RH(complnd,compatm,maptype), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
 
+          ! Destroy temporary field bundle if created
+          if (ESMF_FieldBundleIsCreated(FBTemp)) then
+             call ESMF_FieldBundleDestroy(FBtemp, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+       end if
     end if
 
     !---------------------------------------
@@ -380,15 +395,14 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
        endif
-
     endif
 
     !---------------------------------------
     ! Set 'ofrac' in FBFrac(compocn) and FBFrac(compatm)
     !---------------------------------------
 
-    ! Set 'ofrac' in FBFrac(compatm)
-    if (is_local%wrap%med_coupling_active(compocn,compatm)) then
+    if (is_local%wrap%comp_present(compocn)) then
+
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compocn,compocn) , 'So_omask', So_omask, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac', ofrac, rc=rc)
@@ -396,19 +410,22 @@ contains
 
        ofrac(:) = So_omask(:)
 
-       if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)) then
-          call med_map_Fractions_init( gcomp, compocn, compatm, &
-               FBSrc=is_local%wrap%FBImp(compocn,compocn), &
-               FBDst=is_local%wrap%FBImp(compocn,compatm), &
-               RouteHandle=is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
+       if (is_local%wrap%med_coupling_active(compocn,compatm)) then
+          if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)) then
+             call med_map_Fractions_init( gcomp, compocn, compatm, &
+                  FBSrc=is_local%wrap%FBImp(compocn,compocn), &
+                  FBDst=is_local%wrap%FBImp(compocn,compatm), &
+                  RouteHandle=is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+          call shr_nuopc_methods_FB_FieldRegrid(&
+               is_local%wrap%FBfrac(compocn), 'ofrac', &
+               is_local%wrap%FBfrac(compatm), 'ofrac', &
+               is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-       call shr_nuopc_methods_FB_FieldRegrid(&
-            is_local%wrap%FBfrac(compocn), 'ofrac', &
-            is_local%wrap%FBfrac(compatm), 'ofrac', &
-            is_local%wrap%RH(compocn,compatm,mapconsf), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
+
 
     !---------------------------------------
     ! Set 'lfrac' in FBFrac(compatm) and correct 'ofrac' in FBFrac(compatm)
@@ -420,8 +437,10 @@ contains
     ! try to preserve "all ocean" cells.
 
     if (is_local%wrap%comp_present(compatm)) then
+
        if (is_local%wrap%comp_present(compocn) .or. is_local%wrap%comp_present(compice)) then
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', lfrac, rc=rc)
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
 
           if (.not. is_local%wrap%comp_present(complnd)) then
              lfrac(:) = 0.0_R8
@@ -429,7 +448,6 @@ contains
                 ofrac(:) = 1.0_R8
              end if
           else
-             call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
              do n = 1,size(lfrac)
                 lfrac(n) = 1.0_R8 - ofrac(n)
                 if (abs(lfrac(n)) < eps_fraclim) then
@@ -443,9 +461,9 @@ contains
 
        else if (is_local%wrap%comp_present(complnd)) then
 
-          ! If the atmosphere is absent, then simply set lfrac=lfrin on atm grid
-          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', lfrac, rc=rc)
+          ! If the ocean or ice are absent, then simply set 'lfrac' to 'lfrin' for FBFrac(compatm)
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrin', lfrin, rc=rc)
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'lfrac', lfrac, rc=rc)
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compatm), 'ofrac', ofrac, rc=rc)
           do n = 1,size(lfrac)
              lfrac(n) = lfrin(n)
@@ -462,13 +480,14 @@ contains
     end if
 
     !---------------------------------------
-    ! Set 'lfrac' in FBFrac(complnd), FBFrac(comprof) and FBFrac(compglc)
+    ! Set 'lfrac' in FBFrac(complnd)
     !---------------------------------------
 
     if (is_local%wrap%comp_present(complnd)) then
 
        ! Set 'lfrac' in FBFrac(complnd)
        if (is_local%wrap%comp_present(compatm)) then
+          ! If atm -> lnd coupling is active - map 'lfrac' from FBFrac(compatm) to FBFrac(complnd)
           if (is_local%wrap%med_coupling_active(compatm,complnd)) then
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,complnd,mapconsf), rc=rc)) then
                 call med_map_Fractions_init( gcomp, compatm, complnd, &
@@ -484,6 +503,7 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end if
        else
+          ! If the atm ->lnd coupling is not active - simply set 'lfrac' to 'lfrin' 
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(complnd), 'lfrin', lfrin, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(complnd), 'lfrac', lfrac, rc=rc)
@@ -491,41 +511,15 @@ contains
           lfrac(:) = lfrin(:)
        endif
 
-       ! Set 'lfrac' in FBFrac(comprof)
-       if (is_local%wrap%comp_present(comprof)) then
-          if (is_local%wrap%med_coupling_active(complnd,comprof)) then
-             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)) then
-                call med_map_Fractions_init( gcomp, complnd, comprof, &
-                     FBSrc=is_local%wrap%FBImp(complnd,complnd), &
-                     FBDst=is_local%wrap%FBImp(complnd,comprof), &
-                     RouteHandle=is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             end if
-             call shr_nuopc_methods_FB_FieldRegrid(&
-                  is_local%wrap%FBfrac(complnd), 'lfrac', &
-                  is_local%wrap%FBfrac(comprof), 'lfrac', &
-                  is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          endif
-       end if
-
-       ! Set 'lfrac' in FBFrac(compglc)
-       if (is_local%wrap%comp_present(compglc)) then
-          ! TODO: l2g_consf does not exist yet
-          ! call shr_nuopc_methods_FB_FieldRegrid(&
-          !      is_local%wrap%FBfrac(complnd), 'lfrac', &
-          !      is_local%wrap%FBfrac(compglc), 'lfrac', &
-          !      is_local%wrap%RH(complnd,compglc,mapconsf), rc=rc)
-          ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-
     endif
 
     !---------------------------------------
-    ! Set 'rfrac' for FBFrac(comprof)
+    ! Set 'rfrac' and 'lfrac' for FBFrac(comprof)
     !---------------------------------------
 
     if (is_local%wrap%comp_present(comprof)) then
+
+       ! Set 'rfrac' in FBFrac(comprof)
        if ( shr_nuopc_methods_FB_FldChk(is_local%wrap%FBfrac(comprof)        , 'rfrac', rc=rc) .and. &
             shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(comprof, comprof), 'frac' , rc=rc)) then
           call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(comprof)       , 'rfrac', rfrac, rc=rc)
@@ -537,6 +531,57 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           rfrac(:) = 1.0_R8
        endif
+
+       ! Set 'lfrac' in FBFrac(comprof)
+       if (is_local%wrap%comp_present(complnd)) then
+          if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)) then
+             call med_map_Fractions_init( gcomp, complnd, comprof, &
+                  FBSrc=is_local%wrap%FBImp(complnd,complnd), &
+                  FBDst=is_local%wrap%FBImp(complnd,comprof), &
+                  RouteHandle=is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+          call shr_nuopc_methods_FB_FieldRegrid(&
+               is_local%wrap%FBfrac(complnd), 'lfrac', &
+               is_local%wrap%FBfrac(comprof), 'lfrac', &
+               is_local%wrap%RH(complnd,comprof,mapconsf), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+    endif
+
+    !---------------------------------------
+    ! Set 'gfrac' and 'lfrac' for FBFrac(compglc)
+    !---------------------------------------
+
+    if (is_local%wrap%comp_present(compglc)) then
+       ! Set 'gfrac' in FBFrac(compglc)
+       if ( shr_nuopc_methods_FB_FldChk(is_local%wrap%FBfrac(compglc)        , 'gfrac', rc=rc) .and. &
+            shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compglc, compglc), 'frac' , rc=rc)) then
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc)       , 'gfrac', gfrac, rc=rc)
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(compglc,compglc), 'frac' , frac, rc=rc)
+          gfrac(:) = frac(:)
+       else
+          ! Set 'gfrac' in FBfrac(compglc) to 1.
+          call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compglc), 'gfrac', gfrac, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          gfrac(:) = 1.0_R8
+       endif
+
+       ! Set 'lfrac' in FBFrac(compglc)
+       if (is_local%wrap%comp_present(complnd)) then
+          if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(complnd,compglc,mapconsf), rc=rc)) then
+             call med_map_Fractions_init( gcomp, complnd, compglc, &
+                  FBSrc=is_local%wrap%FBImp(complnd,complnd), &
+                  FBDst=is_local%wrap%FBImp(complnd,compglc), &
+                  RouteHandle=is_local%wrap%RH(complnd,compglc,mapconsf), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+          call shr_nuopc_methods_FB_FieldRegrid(&
+               is_local%wrap%FBfrac(complnd), 'lfrac', &
+               is_local%wrap%FBfrac(compglc), 'lfrac', &
+               is_local%wrap%RH(complnd,compglc,mapconsf), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
     endif
 
     !---------------------------------------
@@ -544,15 +589,26 @@ contains
     !---------------------------------------
 
     if (is_local%wrap%comp_present(compwav)) then
-
        ! Set 'wfrac' in FBfrac(compwav) to 1.
        call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBfrac(compwav), 'wfrac', wfrac, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        wfrac(:) = 1.0_R8
-
     endif
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    !---------------------------------------
+    ! Diagnostic output
+    !---------------------------------------
+
+    do n = 1,ncomps
+       if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), trim(subname) // trim(compname(n)), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       endif
+    enddo
+
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
 
     call t_stopf('MED:'//subname)
 
@@ -596,7 +652,9 @@ contains
     !---------------------------------------
     call t_startf('MED:'//subname)
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
 
     ! Get the internal state from Component.
@@ -770,7 +828,10 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
     enddo
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+
+    if (dbug_flag > 20) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
 
     call t_stopf('MED:'//subname)
 

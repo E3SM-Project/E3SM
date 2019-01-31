@@ -214,6 +214,10 @@ contains
                string=trim(compname(complnd))//'2'//trim(compname(comprof)), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,comprof), &
+               string=trim(subname)//' FBImpAccum(complnd,comprof) after avg ', rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+
           ! Reset the irrig_flux_field with the map_lnd2rof_irrig calculation below if appropriate
           if ( NUOPC_IsConnected(is_local%wrap%NStateImp(complnd), fieldname=trim(irrig_flux_field))) then
              call med_phases_prep_rof_irrig( gcomp, rc=rc )
