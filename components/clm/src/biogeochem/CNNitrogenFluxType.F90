@@ -3147,35 +3147,10 @@ contains
 
        ! vertically integrate decomposing N cascade fluxes and
        !soil mineral N fluxes associated with decomposition cascade
-
-       do k = 1, ndecomp_cascade_transitions
-          do j = 1,nlev
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-
-                this%decomp_cascade_ntransfer_col(c,k) = &
-                     this%decomp_cascade_ntransfer_col(c,k) + &
-                     this%decomp_cascade_ntransfer_vr_col(c,j,k) * dzsoi_decomp(j)
-
-                this%decomp_cascade_sminn_flux_col(c,k) = &
-                     this%decomp_cascade_sminn_flux_col(c,k) + &
-                     this%decomp_cascade_sminn_flux_vr_col(c,j,k) * dzsoi_decomp(j)
-             end do
-          end do
-       end do
-
+       if ( .not. is_active_betr_bgc) then
+         call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+       endif
        if (.not. use_nitrif_denitrif) then
-          ! vertically integrate each denitrification flux
-          do l = 1, ndecomp_cascade_transitions
-             do j = 1, nlev
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%sminn_to_denit_decomp_cascade_col(c,l) = &
-                        this%sminn_to_denit_decomp_cascade_col(c,l) + &
-                        this%sminn_to_denit_decomp_cascade_vr_col(c,j,l) * dzsoi_decomp(j)
-                end do
-             end do
-          end do
 
           ! vertically integrate bulk denitrification and  leaching flux
           do j = 1, nlev
@@ -3191,15 +3166,6 @@ contains
              end do
           end do
 
-          ! total N denitrification (DENIT)
-          do l = 1, ndecomp_cascade_transitions
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%denit_col(c) = &
-                     this%denit_col(c) + &
-                     this%sminn_to_denit_decomp_cascade_col(c,l)
-             end do
-          end do
 
           do fc = 1,num_soilc
              c = filter_soilc(fc)

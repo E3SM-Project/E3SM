@@ -2371,6 +2371,7 @@ contains
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only: npcropmin
+    use tracer_varcon    , only : is_active_betr_bgc
     ! pflotran
 !    use clm_varctl    , only: use_pflotran, pf_cmode
     !
@@ -2520,20 +2521,9 @@ contains
     !----------------------------------------------------------------
     if (.not.(use_pflotran .and. pf_cmode)) then
     ! vertically integrate decomposing P cascade fluxes and soil mineral P fluxes associated with decomposition cascade
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-
-             this%decomp_cascade_ptransfer_col(c,k) = &
-                  this%decomp_cascade_ptransfer_col(c,k) + &
-                  this%decomp_cascade_ptransfer_vr_col(c,j,k) * dzsoi_decomp(j)
-
-             this%decomp_cascade_sminp_flux_col(c,k) = &
-                  this%decomp_cascade_sminp_flux_col(c,k) + &
-                  this%decomp_cascade_sminp_flux_vr_col(c,j,k) * dzsoi_decomp(j)
-          end do
-       end do
+      if ( .not. is_active_betr_bgc) then
+        call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      endif
     end do
     end if !if (.not.(use_pflotran .and. pf_cmode))
     !-----------------------------------------------------------------

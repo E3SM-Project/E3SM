@@ -5286,7 +5286,7 @@ contains
     if ( .not. is_active_betr_bgc) then
        call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-       if(.not. (use_pflotran .and. pf_cmode))) then
+       if(.not. (use_pflotran .and. pf_cmode)) then
           ! total heterotrophic respiration (HR)
           do fc = 1,num_soilc
             c = filter_soilc(fc)
