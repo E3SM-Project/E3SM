@@ -1,4 +1,5 @@
 #include "p3_ic_cases.hpp"
+#include "p3_constants.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_assert.hpp"
 
@@ -46,14 +47,10 @@ FortranData::Ptr make_mixed () {
   // To get potential temperature, start by making absolute temperature vary
   // between 150K at top of atmos and 300k at surface, then convert to potential
   // temp.
-  static constexpr double
-    Rd = 287,      // gas constant for dry air, J/kg/K
-    cp = 1004,     // heat constant of air at constant pressure, J/kg
-    p0 = 100000;   // reference pressure, Pa
   FortranData::Array1 T("T", nk);
   for (k = 0; k < nk; ++k) {
     T(k) = 150 + 150/double(nk)*k;
-    d.th(0,k) = T(k)*std::pow(Real(p0/d.pres(0,k)), Real(Rd/cp));
+    d.th(0,k) = T(k)*std::pow(Real(Constants<double>::P0/d.pres(0,k)), Real(Constants<double>::RD/Constants<double>::CP));
   }
 
   // The next section modifies inout variables to satisfy weird conditions
@@ -61,7 +58,7 @@ FortranData::Ptr make_mixed () {
   d.qitot(0,nk-1) = 1e-9;
   d.qv(0,nk-1) = 5e-2; // also needs to be supersaturated to avoid getting set
                        // to 0 earlier.
-  
+
   // make lowest-level qc and qr>0 to trigger surface rain and drizzle
   // calculation.
   d.qr(0,nk-1) = 1e-6;
@@ -96,7 +93,7 @@ FortranData::Ptr make_mixed () {
       d.pres(0,nk-1) + 0.5*(d.pres(0,nk-1) - d.pres(0,nk-2))/(1 - 0) :
       0.5*(d.pres(0,k) + d.pres(0,k+1));
     const auto dpres = phi - plo;
-    d.dzq(0,k) = Rd*T(k)/(g*d.pres(0,k))*dpres;
+    d.dzq(0,k) = Constants<double>::RD*T(k)/(g*d.pres(0,k))*dpres;
   }
 
   return dp;

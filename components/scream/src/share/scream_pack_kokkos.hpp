@@ -100,6 +100,7 @@ template <typename T>
 using BigPack = Pack<T, SCREAM_PACK_SIZE>;
 template <typename T>
 using SmallPack = Pack<T, SCREAM_SMALL_PACK_SIZE>;
+using IntSmallPack = SmallPack<Int>;
 
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<SmallPack<T>**, Parms...> >
