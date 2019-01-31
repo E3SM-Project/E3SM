@@ -65,6 +65,10 @@ ENDIF ()
 
 # C++ Flags
 
+IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -restrict")
+ENDIF()
+
 STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
 IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
   ADD_DEFINITIONS(-DVTUNE_PROFILE)
@@ -151,6 +155,9 @@ ELSE ()
   IF (DEBUG_FFLAGS)
     SET (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${DEBUG_FFLAGS}")
   ELSE ()
+    IF ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Intel")
+      SET(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -no-vec")
+    ENDIF()
     SET (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -g")
   ENDIF ()
 
@@ -163,6 +170,9 @@ ELSE ()
   IF (DEBUG_CXXFLAGS)
     SET (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DEBUG_CXXFLAGS}")
   ELSE ()
+    IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -no-vec")
+    ENDIF()
     SET (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
   ENDIF ()
 
@@ -197,13 +207,20 @@ ENDIF()
 ##############################################################################
 # Intel Phi (MIC) specific flags - only supporting the Intel compiler
 ##############################################################################
-OPTION(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" FALSE)
+
+# If kokkos thinks the archicture is KNL, we should probably have enable-phi on by default.
+if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "KNL")
+  set(ENABLE_INTEL_PHI_DEFAULT TRUE)
+else()
+  set(ENABLE_INTEL_PHI_DEFAULT FALSE)
+endif()
+
+OPTION(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" ${ENABLE_INTEL_PHI_DEFAULT})
 
 IF (ENABLE_INTEL_PHI)
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
     MESSAGE(FATAL_ERROR "Intel Phi acceleration only supported through the Intel compiler")
   ELSE ()
-    STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
     SET(INTEL_PHI_FLAGS "-xMIC-AVX512")
     SET(AVX_VERSION "512")
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${INTEL_PHI_FLAGS}")
@@ -226,6 +243,9 @@ ENDIF ()
 ##############################################################################
 # Compiler FLAGS for AVX1 and AVX2 (CXX compiler only)
 ##############################################################################
+
+# NOTE: This won't work on batch machines where the architecture of the
+# interactive node is different than the compute nodes.
 IF (NOT DEFINED AVX_VERSION)
   INCLUDE(FindAVX)
   FindAVX()
