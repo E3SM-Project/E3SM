@@ -2524,7 +2524,6 @@ contains
       if ( .not. is_active_betr_bgc) then
         call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
       endif
-    end do
     end if !if (.not.(use_pflotran .and. pf_cmode))
     !-----------------------------------------------------------------
 
