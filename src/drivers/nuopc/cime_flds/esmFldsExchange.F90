@@ -1550,7 +1550,7 @@ contains
     ! to ocn: Stokes drift v component from wave
     ! to ocn: Stokes drift depth from wave
     !-----------------------------
-    allocate(flds(5))
+    allocate(flds(4))
     flds = (/'Sw_lamult', 'Sw_ustokes', 'Sw_vstokes', 'Sw_hstokes'/)
 
     do n = 1,size(flds)
@@ -1568,6 +1568,7 @@ contains
        end if
     end do
     deallocate(flds)
+
 
     !=====================================================================
     ! FIELDS TO ICE (compice)
@@ -2084,7 +2085,6 @@ contains
     !       call addfld(fldListTo(compatm)%flds, trim(fldname), mrg_from1=complnd, mrg_fld1=trim(fldname), mrg_type1='copy')
     !    enddo
     ! endif
-
 
   end subroutine esmFldsExchange
 

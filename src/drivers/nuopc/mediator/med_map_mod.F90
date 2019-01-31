@@ -103,7 +103,7 @@ contains
     logical                 :: mapexists = .false.
     real(R8)      , pointer :: factorList(:)
     character(CL) , pointer :: fldnames(:)
-    integer(ESMF_KIND_I4), pointer :: unmappedDstList(:)
+    !integer(ESMF_KIND_I4), pointer :: unmappedDstList(:)
     character(len=128)      :: logMsg
     integer                 :: dbrc
     type(ESMF_PoleMethod_Flag), parameter :: polemethod=ESMF_POLEMETHOD_ALLAVG
@@ -250,7 +250,7 @@ contains
                                  factorList=factorList, &
                                  ignoreDegenerate=.true., &
                                  unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
-                                 unmappedDstList=unmappedDstList, &
+                                 !unmappedDstList=unmappedDstList, &
                                  rc=rc)
                          else if ((mapindex == mapconsd .or. mapindex == mapnstod_consd) .and. &
                             .not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(n1,n2,mapconsd))) then
@@ -264,7 +264,7 @@ contains
                                  factorList=factorList, &
                                  ignoreDegenerate=.true., &
                                  unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
-                                 unmappedDstList=unmappedDstList, &
+                                 !unmappedDstList=unmappedDstList, &
                                  rc=rc)
                          else if (mapindex == mappatch) then
                             call ESMF_FieldRegridStore(fldsrc, flddst, &
@@ -297,10 +297,10 @@ contains
                             call NUOPC_Write(factorList, "array_med_"//trim(string)//"_consf.nc", rc)
                             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                          end if
-                         if (associated(unmappedDstList)) then
-                            write(logMsg,*) trim(subname),trim(string),'     number of unmapped dest points = ', size(unmappedDstList)
-                            call ESMF_LogWrite(trim(logMsg), ESMF_LOGMSG_INFO, rc=dbrc)
-                         end if
+                         !if (associated(unmappedDstList)) then
+                         !   write(logMsg,*) trim(subname),trim(string),'     number of unmapped dest points = ', size(unmappedDstList)
+                         !   call ESMF_LogWrite(trim(logMsg), ESMF_LOGMSG_INFO, rc=dbrc)
+                         !end if
                       end if
                       if (rhprint_flag .and. mapindex /= mapnstod_consd .and. mapindex /= mapnstod_consf) then
                          call ESMF_LogWrite(trim(subname)//trim(string)//": printing  RH for "//trim(mapname), &
