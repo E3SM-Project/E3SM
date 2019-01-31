@@ -207,7 +207,15 @@ ENDIF()
 ##############################################################################
 # Intel Phi (MIC) specific flags - only supporting the Intel compiler
 ##############################################################################
-OPTION(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" FALSE)
+
+# If kokkos thinks the archicture is KNL, we should probably have enable-phi on by default.
+if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "KNL")
+  set(ENABLE_INTEL_PHI_DEFAULT TRUE)
+else()
+  set(ENABLE_INTEL_PHI_DEFAULT FALSE)
+endif()
+
+OPTION(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" ${ENABLE_INTEL_PHI_DEFAULT})
 
 IF (ENABLE_INTEL_PHI)
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
@@ -235,6 +243,9 @@ ENDIF ()
 ##############################################################################
 # Compiler FLAGS for AVX1 and AVX2 (CXX compiler only)
 ##############################################################################
+
+# NOTE: This won't work on batch machines where the architecture of the
+# interactive node is different than the compute nodes.
 IF (NOT DEFINED AVX_VERSION)
   INCLUDE(FindAVX)
   FindAVX()
