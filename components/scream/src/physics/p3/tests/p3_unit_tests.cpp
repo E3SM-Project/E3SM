@@ -238,9 +238,9 @@ struct TestTable3 {
     check_growth("mu_r", slopes[1]/slopes[0]);
 
     // Study the lamr direction.
-    N = 1000;
+    N = 4000;
     for (Int refine = 0; refine < nslopes; ++refine) {
-      N *= 10;
+      N *= 2;
       const Scalar delta = 1.0/N;
 
       // Compute the slope magnitude at a specific (mu_r, lamr) in the lamr
@@ -450,13 +450,13 @@ TEST_CASE("p3_tables", "[p3_functions]")
   using Globals = scream::p3::Globals<Real>;
   for (size_t i = 0; i < Globals::VN_TABLE.size(); ++i) {
     for (size_t j = 0; j < Globals::VN_TABLE[0].size(); ++j) {
-      Globals::VN_TABLE[i][j] = i + j;
-      Globals::VM_TABLE[i][j] = i * j;
+      Globals::VN_TABLE[i][j] = 1 + i + j;
+      Globals::VM_TABLE[i][j] = 1 + i * j;
     }
   }
 
   for (size_t i = 0; i < Globals::MU_R_TABLE.size(); ++i) {
-    Globals::MU_R_TABLE[i] = i;
+    Globals::MU_R_TABLE[i] = 1 + i;
   }
   UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3::run();
 }

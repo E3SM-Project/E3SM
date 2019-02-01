@@ -99,7 +99,7 @@ void set_min_max (const Integer& lim0, const Integer& lim1,
   max = util::max(lim0, lim1) / vector_size;
 }
 
-template <typename Real>
+template <typename Real> KOKKOS_INLINE_FUNCTION
 Real reldif (const Real& a, const Real& b) {
   return std::abs(b - a)/std::abs(a);
 }
