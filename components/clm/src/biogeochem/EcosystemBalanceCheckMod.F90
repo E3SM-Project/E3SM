@@ -17,8 +17,6 @@ module EcosystemBalanceCheckMod
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use ColumnType          , only : col_pp                
-  use GridcellType        , only : grc_pp
   use clm_varpar          , only : nlevdecomp
   use clm_varcon          , only : dzsoi_decomp
   use clm_varctl          , only : nu_com
@@ -35,9 +33,12 @@ module EcosystemBalanceCheckMod
   use clm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl          , only : forest_fert_exp
-  use VegetationType      , only : veg_pp
   use pftvarcon           , only: noveg
   use clm_varctl          , only : NFIX_PTASE_plant
+  use GridcellType        , only : grc_pp
+  use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_cs  
+  use VegetationType      , only : veg_pp
 
   !
   implicit none
@@ -273,7 +274,7 @@ contains
             write(iulog,*)'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
             write(iulog,*)'leach                 = ',som_c_leached(c)*dt
             write(iulog,*)'begcb                 = ',col_begcb(c)
-            write(iulog,*)'endcb                 = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
+            write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
             write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
             if (use_pflotran .and. pf_cmode) then

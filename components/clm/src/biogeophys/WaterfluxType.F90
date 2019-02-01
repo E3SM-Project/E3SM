@@ -128,11 +128,6 @@ module WaterfluxType
      real(r8), pointer :: mflx_drain_col           (:,:) ! drainage from groundwater table (kg H2O /s)
      real(r8), pointer :: mflx_recharge_col        (:)   ! recharge from soil column to unconfined aquifer (kg H2O /s)
 
-     ! Objects that help convert once-per-year dynamic land cover changes into fluxes
-     ! that are dribbled throughout the year
-     type(annual_flux_dribbler_type) :: qflx_liq_dynbal_dribbler
-     type(annual_flux_dribbler_type) :: qflx_ice_dynbal_dribbler
-
    contains
  
      procedure, public  :: Init
@@ -294,16 +289,6 @@ contains
     allocate(this%mflx_sub_snow_col      (begc:endc))                ; this%mflx_sub_snow_col        (:)   = nan
     allocate(this%mflx_recharge_col      (begc:endc))                ; this%mflx_recharge_col        (:)   = nan
 
-    this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
-         bounds = bounds, &
-         name = 'qflx_liq_dynbal', &
-         units = 'mm H2O')
-
-    this%qflx_ice_dynbal_dribbler = annual_flux_dribbler_gridcell( &
-         bounds = bounds, &
-         name = 'qflx_ice_dynbal', &
-         units = 'mm H2O')
-
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -330,16 +315,6 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
-
-    this%qflx_liq_dynbal_grc(begg:endg) = spval
-    call hist_addfld1d (fname='QFLX_LIQ_DYNBAL',  units='mm/s',  &  
-         avgflag='A', long_name='liq dynamic land cover change conversion runoff flux', &              
-         ptr_lnd=this%qflx_liq_dynbal_grc)     
-
-    this%qflx_ice_dynbal_grc(begg:endg) = spval
-    call hist_addfld1d (fname='QFLX_ICE_DYNBAL',  units='mm/s',  &
-         avgflag='A', long_name='ice dynamic land cover change conversion runoff flux', &                                   
-         ptr_lnd=this%qflx_ice_dynbal_grc)
 
 
     ! Use qflx_snwcp_ice_col rather than qflx_snwcp_ice_patch, because the column version 
@@ -423,15 +398,6 @@ contains
     logical :: do_io
     !-----------------------------------------------------------------------
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='MFLX_SNOW_LYR', xtype=ncd_double,  &
-         dim1name='column', &
-         long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
-         interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
-
-
-    call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
-    call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
 
   end subroutine Restart
 

@@ -31,7 +31,7 @@ module lnd2atmMod
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
-  use GridcellDataType     , only : grc_ef, grc_ws
+  use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
 
@@ -281,7 +281,7 @@ contains
          lnd2atm_vars%qflx_rofliq_grc   (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       lnd2atm_vars%qflx_rofliq_grc(g) = lnd2atm_vars%qflx_rofliq_grc(g) - waterflux_vars%qflx_liq_dynbal_grc(g)
+       lnd2atm_vars%qflx_rofliq_grc(g) = lnd2atm_vars%qflx_rofliq_grc(g) - grc_wf%qflx_liq_dynbal(g)
     enddo
 
     call c2g( bounds, &
@@ -314,7 +314,7 @@ contains
          lnd2atm_vars%qflx_rofice_grc     (bounds%begg:bounds%endg),  & 
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       lnd2atm_vars%qflx_rofice_grc(g) = lnd2atm_vars%qflx_rofice_grc(g) - waterflux_vars%qflx_ice_dynbal_grc(g)          
+       lnd2atm_vars%qflx_rofice_grc(g) = lnd2atm_vars%qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)          
     enddo
 
     ! calculate total water storage for history files

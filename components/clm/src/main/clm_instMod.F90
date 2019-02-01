@@ -48,11 +48,12 @@ module clm_instMod
   use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
-  use GridcellDataType           , only : grc_es, grc_ef, grc_ws
+  use GridcellDataType           , only : grc_es, grc_ef, grc_ws, grc_wf
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es, col_ef, col_ws, col_wf
+  use ColumnDataType             , only : col_cs, c13_col_cs, c14_col_cs
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
 
@@ -155,13 +156,18 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call carbonstate_vars%Init(bounds_proc, carbon_type='c12', ratio=1._r8)
+       call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
        if (use_c13) then
           call c13_carbonstate_vars%Init(bounds_proc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=carbonstate_vars)
+          call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
+               c12_carbonstate_vars=col_cs)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%Init(bounds_proc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=carbonstate_vars)
+          call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
+               c12_carbonstate_vars=col_cs)
        end if
 
        ! Note - always initialize the memory for the c13_carbonflux_vars and
@@ -184,9 +190,9 @@ contains
             carbonstate_vars%frootc_patch(begp:endp),                 &
             carbonstate_vars%frootc_storage_patch(begp:endp),         &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
-            carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
-            carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
-            carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
+            col_cs%decomp_cpools_vr(begc:endc, 1:, 1:), &
+            col_cs%decomp_cpools(begc:endc, 1:),        &
+            col_cs%decomp_cpools_1m(begc:endc, 1:))
 
        call nitrogenflux_vars%Init(bounds_proc)
 
@@ -196,9 +202,9 @@ contains
             carbonstate_vars%frootc_patch(begp:endp),                 &
             carbonstate_vars%frootc_storage_patch(begp:endp),         &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
-            carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
-            carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
-            carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
+            col_cs%decomp_cpools_vr(begc:endc, 1:, 1:), &
+            col_cs%decomp_cpools(begc:endc, 1:),        &
+            col_cs%decomp_cpools_1m(begc:endc, 1:))
 
        call phosphorusflux_vars%Init(bounds_proc)
 
@@ -363,6 +369,7 @@ contains
 
     call waterflux_vars%init(bounds_proc)
 
+    call grc_wf%Init(bounds_proc%begg_all, bounds_proc%endg_all, bounds_proc)
     call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_wf%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 

@@ -5,24 +5,34 @@ module ColumnDataType
   ! Column data type allocation and initialization
   ! -------------------------------------------------------- 
   !
-  use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use shr_const_mod  , only : SHR_CONST_TKFRZ
-  use clm_varpar     , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
-  use clm_varcon     , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
-  use clm_varcon     , only : watmin, bdsno
-  use clm_varctl     , only : use_fates_planthydro, create_glacier_mec_landunit
-  use clm_varctl     , only : bound_h2osoi, use_cn, iulog
+  use shr_kind_mod    , only : r8 => shr_kind_r8
+  use shr_infnan_mod  , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
+  use shr_const_mod   , only : SHR_CONST_TKFRZ
+  use shr_const_mod   , only : SHR_CONST_PDB
+  use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use abortutils      , only : endrun
+  use clm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
+  use clm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use clm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
+  use clm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
+  use clm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
+  use clm_varcon      , only : c13ratio, c14ratio, secspday
+  use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
+  use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
+  use clm_time_manager, only : is_restart, get_nstep
   use clm_time_manager, only : is_first_step
-  use landunit_varcon, only : istice, istwet, istsoil, istdlak, istcrop, istice_mec  
-  use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
-  use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
-  use ncdio_pio      , only : file_desc_t, ncd_double
-  use decompMod      , only : bounds_type
+  use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec  
+  use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
+  use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
+  use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
+  use decompMod       , only : bounds_type
   use spmdMod         , only : masterproc
   use restUtilMod
-  use ColumnType     , only : col_pp
-  use LandunitType   , only : lun_pp
+  use CNStateType     , only: cnstate_type
+  use CNDecompCascadeConType , only : decomp_cascade_con
+  use ColumnType      , only : col_pp
+  use LandunitType    , only : lun_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -129,10 +139,54 @@ module ColumnDataType
   ! Define the data structure that holds carbon state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_carbon_state
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: rootc                (:)    => null() ! (gC/m2) root carbon at column level (fire)
+    real(r8), pointer :: totvegc              (:)    => null() ! (gC/m2) column-level totvegc (fire)
+    real(r8), pointer :: leafc                (:)    => null() ! (gC/m2) column-level leafc (fire)
+    real(r8), pointer :: deadstemc            (:)    => null() ! (gC/m2) column-level deadstemc (fire)
+    real(r8), pointer :: fuelc                (:)    => null() ! fuel avalability factor for Reg.C (0-1)
+    real(r8), pointer :: fuelc_crop           (:)    => null() ! fuel avalability factor for Reg.A (0-1)
+    real(r8), pointer :: decomp_cpools_vr     (:,:,:)=> null() ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+    real(r8), pointer :: ctrunc_vr            (:,:)  => null() ! (gC/m3) vertically-resolved column-level sink for C truncation
+    real(r8), pointer :: frootc               (:)    => null() ! (gC/m2) column-level C pool for fine root
+    real(r8), pointer :: seedc                (:)    => null() ! (gC/m2) column-level pool for seeding new Patches
+    real(r8), pointer :: prod1c               (:)    => null() ! (gC/m2) crop product C pool, 1-year lifespan
+    real(r8), pointer :: prod10c              (:)    => null() ! (gC/m2) wood product C pool, 10-year lifespan
+    real(r8), pointer :: prod100c             (:)    => null() ! (gC/m2) wood product C pool, 100-year lifespan
+    real(r8), pointer :: totprodc             (:)    => null() ! (gC/m2) total wood product C
+    real(r8), pointer :: dyn_cbal_adjustments (:)    => null() ! (gC/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: totvegcc             (:)    => null() ! (gC/m2) total vegetation carbon, excluding cpool averaged to column (p2c)
+    real(r8), pointer :: totpftc              (:)    => null() ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
+    real(r8), pointer :: decomp_cpools_1m     (:,:)  => null() ! (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
+    real(r8), pointer :: decomp_cpools        (:,:)  => null() ! (gC/m2)  decomposing (litter, cwd, soil) c pools
+    real(r8), pointer :: cwdc                 (:)    => null() ! (gC/m2) Diagnostic: coarse woody debris C
+    real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
+    real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
+    real(r8), pointer :: totsomc              (:)    => null() ! (gC/m2) total soil organic matter carbon
+    real(r8), pointer :: totlitc_1m           (:)    => null() ! (gC/m2) total litter carbon to 1 meter
+    real(r8), pointer :: totsomc_1m           (:)    => null() ! (gC/m2) total soil organic matter carbon to 1 meter
+    real(r8), pointer :: totecosysc           (:)    => null() ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
+    real(r8), pointer :: totcolc              (:)    => null() ! (gC/m2) total column carbon, incl veg and cpool
+    real(r8), pointer :: totabgc              (:)    => null() ! (gC/m2) total column above ground carbon, excluding som 
+    real(r8), pointer :: totblgc              (:)    => null() ! (gc/m2) total column non veg carbon
+    real(r8), pointer :: totvegc_abg          (:)    => null() ! (gC/m2) total above vegetation carbon, excluding cpool averaged to column (p2c)
+    real(r8), pointer :: begcb                (:)    => null() ! (gC/m2) carbon mass, beginning of time step 
+    real(r8), pointer :: endcb                (:)    => null() ! (gc/m2) carbon mass, end of time step 
+    real(r8), pointer :: errcb                (:)    => null() ! (gC/m2) carbon balance error for the timestep 
+    real(r8), pointer :: totpftc_beg          (:)    => null() 
+    real(r8), pointer :: cwdc_beg             (:)    => null() 
+    real(r8), pointer :: totlitc_beg          (:)    => null() 
+    real(r8), pointer :: totsomc_beg          (:)    => null() 
+    real(r8), pointer :: totpftc_end          (:)    => null() 
+    real(r8), pointer :: cwdc_end             (:)    => null() 
+    real(r8), pointer :: totlitc_end          (:)    => null() 
+    real(r8), pointer :: totsomc_end          (:)    => null() 
+    real(r8), pointer :: decomp_som2c_vr      (:,:)  => null() 
+
   contains
-    procedure, public :: Init  => init_col_cs
-    procedure, public :: Clean => clean_col_cs
+    procedure, public :: Init    => col_cs_init
+    procedure, public :: Restart => col_cs_restart
+    procedure, public :: Summary => col_cs_summary
+    procedure, public :: Clean   => col_cs_clean
   end type column_carbon_state
   
   !-----------------------------------------------------------------------
@@ -141,8 +195,8 @@ module ColumnDataType
   type, public :: column_nitrogen_state
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_col_ns
-    procedure, public :: Clean => clean_col_ns
+    procedure, public :: Init  => col_ns_init
+    procedure, public :: Clean => col_ns_clean
   end type column_nitrogen_state
   
   !-----------------------------------------------------------------------
@@ -151,8 +205,8 @@ module ColumnDataType
   type, public :: column_phosphorus_state
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_col_ps
-    procedure, public :: Clean => clean_col_ps
+    procedure, public :: Init  => col_ps_init
+    procedure, public :: Clean => col_ps_clean
   end type column_phosphorus_state
 
   !-----------------------------------------------------------------------
@@ -257,6 +311,22 @@ module ColumnDataType
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
     real(r8), pointer :: qflx_irrig           (:)   => null() ! irrigation flux (mm H2O/s)
+    real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
+    real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
+    real(r8), pointer :: mflx_et_1d           (:)   => null() ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
+    real(r8), pointer :: mflx_drain_1d        (:)   => null() ! drainage from groundwater table (kg H2O /s)
+    real(r8), pointer :: mflx_drain_perched_1d(:)   => null() ! drainage from perched water table (kg H2O /s)
+    real(r8), pointer :: mflx_snowlyr_1d      (:)   => null() ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    real(r8), pointer :: mflx_sub_snow_1d     (:)   => null() ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+    real(r8), pointer :: mflx_neg_snow_1d     (:)   => null() ! mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
+    real(r8), pointer :: mflx_snowlyr         (:)   => null() ! mass flux to top soil layer due to disappearance of snow (kg H2O /s). This is for restart
+    real(r8), pointer :: mflx_infl            (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
+    real(r8), pointer :: mflx_dew             (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
+    real(r8), pointer :: mflx_snowlyr_disp    (:)   => null() ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    real(r8), pointer :: mflx_sub_snow        (:)   => null() ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+    real(r8), pointer :: mflx_et              (:,:) => null() ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
+    real(r8), pointer :: mflx_drain           (:,:) => null() ! drainage from groundwater table (kg H2O /s)
+    real(r8), pointer :: mflx_recharge        (:)   => null() ! recharge from soil column to unconfined aquifer (kg H2O /s)
 
   contains
     procedure, public :: Init    => col_wf_init
@@ -299,16 +369,18 @@ module ColumnDataType
   !-----------------------------------------------------------------------
   ! declare the public instances of column-level data types
   !-----------------------------------------------------------------------
-  type(column_energy_state)          , public, target :: col_es    ! column energy state
-  type(column_water_state)           , public, target :: col_ws    ! column water state
-  type(column_carbon_state)          , public, target :: col_cs    ! column carbon state
-  type(column_nitrogen_state)        , public, target :: col_ns    ! column nitrogen state
-  type(column_phosphorus_state)      , public, target :: col_ps    ! column phosphorus state
-  type(column_energy_flux)           , public, target :: col_ef    ! column energy flux
-  type(column_water_flux)            , public, target :: col_wf    ! column water flux
-  type(column_carbon_flux)           , public, target :: col_cf    ! column carbon flux
-  type(column_nitrogen_flux)         , public, target :: col_nf    ! column nitrogen flux
-  type(column_phosphorus_flux)       , public, target :: col_pf    ! column phosphorus flux
+  type(column_energy_state)          , public, target :: col_es     ! column energy state
+  type(column_water_state)           , public, target :: col_ws     ! column water state
+  type(column_carbon_state)          , public, target :: col_cs     ! column carbon state
+  type(column_carbon_state)          , public, target :: c13_col_cs ! column carbon state (C13)
+  type(column_carbon_state)          , public, target :: c14_col_cs ! column carbon state (C14)
+  type(column_nitrogen_state)        , public, target :: col_ns     ! column nitrogen state
+  type(column_phosphorus_state)      , public, target :: col_ps     ! column phosphorus state
+  type(column_energy_flux)           , public, target :: col_ef     ! column energy flux
+  type(column_water_flux)            , public, target :: col_wf     ! column water flux
+  type(column_carbon_flux)           , public, target :: col_cf     ! column carbon flux
+  type(column_nitrogen_flux)         , public, target :: col_nf     ! column nitrogen flux
+  type(column_phosphorus_flux)       , public, target :: col_pf     ! column phosphorus flux
 
   !------------------------------------------------------------------------
 
@@ -1178,65 +1250,896 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column carbon state data structure
   !------------------------------------------------------------------------
-  subroutine init_col_cs(this, begc, endc)
+  subroutine col_cs_init(this, begc, endc, carbon_type, ratio, c12_carbonstate_vars)
     !
     ! !ARGUMENTS:
-    class(column_carbon_state) :: this
-    integer, intent(in) :: begc,endc
+    class(column_carbon_state)    :: this
+    integer          , intent(in) :: begc,endc
+    character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
+    real(r8)         , intent(in) :: ratio
+    type(column_carbon_state), optional, intent(in) :: c12_carbonstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: c,l,j,k
+    character(24)     :: fieldname
+    character(100)    :: longname
+    real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
+    real(r8), pointer :: data2dptr(:,:) ! temp. pointer for slicing larger arrays
+    integer :: fc                                        ! filter index
+    integer :: num_special_col                           ! number of good values in special_col filter
+    integer :: special_col(endc-begc+1)    ! special landunit filter - columns
     !------------------------------------------------------------------------
     
-  end subroutine init_col_cs
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_cs
+    !-----------------------------------------------------------------------
+    allocate(this%rootc                (begc:endc))     ; this%rootc                (:)     = nan
+    allocate(this%totvegc              (begc:endc))     ; this%totvegc              (:)     = nan
+    allocate(this%leafc                (begc:endc))     ; this%leafc                (:)     = nan
+    allocate(this%deadstemc            (begc:endc))     ; this%deadstemc            (:)     = nan
+    allocate(this%fuelc                (begc:endc))     ; this%fuelc                (:)     = nan
+    allocate(this%fuelc_crop           (begc:endc))     ; this%fuelc_crop           (:)     = nan
+    allocate(this%frootc               (begc:endc))     ; this%frootc               (:)     = nan
+    allocate(this%seedc                (begc:endc))     ; this%seedc                (:)     = nan
+    allocate(this%prod1c               (begc:endc))     ; this%prod1c               (:)     = nan
+    allocate(this%prod10c              (begc:endc))     ; this%prod10c              (:)     = nan
+    allocate(this%prod100c             (begc:endc))     ; this%prod100c             (:)     = nan
+    allocate(this%totprodc             (begc:endc))     ; this%totprodc             (:)     = nan
+    allocate(this%dyn_cbal_adjustments (begc:endc))     ; this%dyn_cbal_adjustments (:)     = nan
+    allocate(this%totvegcc             (begc:endc))     ; this%totvegcc             (:)     = nan
+    allocate(this%totpftc              (begc:endc))     ; this%totpftc              (:)     = nan
+    allocate(this%cwdc                 (begc:endc))     ; this%cwdc                 (:)     = nan
+    allocate(this%ctrunc               (begc:endc))     ; this%ctrunc               (:)     = nan
+    allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = nan
+    allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = nan
+    allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = nan
+    allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = nan
+    allocate(this%totecosysc           (begc:endc))     ; this%totecosysc           (:)     = nan
+    allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = nan
+    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
+    allocate(this%totblgc              (begc:endc))     ; this%totblgc              (:)     = nan
+    allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = nan
+    allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = nan
+    allocate(this%endcb                (begc:endc))     ; this%endcb                (:)     = nan
+    allocate(this%errcb                (begc:endc))     ; this%errcb                (:)     = nan
+    allocate(this%totpftc_beg          (begc:endc))     ; this%totpftc_beg          (:)     = nan
+    allocate(this%cwdc_beg             (begc:endc))     ; this%cwdc_beg             (:)     = nan
+    allocate(this%totlitc_beg          (begc:endc))     ; this%totlitc_beg          (:)     = nan
+    allocate(this%totsomc_beg          (begc:endc))     ; this%totsomc_beg          (:)     = nan
+    allocate(this%totpftc_end          (begc:endc))     ; this%totpftc_end          (:)     = nan
+    allocate(this%cwdc_end             (begc:endc))     ; this%cwdc_end             (:)     = nan
+    allocate(this%totlitc_end          (begc:endc))     ; this%totlitc_end          (:)     = nan
+    allocate(this%totsomc_end          (begc:endc))     ; this%totsomc_end          (:)     = nan
+    allocate(this%decomp_cpools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_vr (:,:,:) = nan
+    allocate(this%ctrunc_vr        (begc:endc,1:nlevdecomp_full))                 ; this%ctrunc_vr        (:,:)   = nan
+    allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = nan
+    allocate(this%decomp_cpools_1m (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools_1m (:,:)   = nan
+    allocate(this%decomp_cpools    (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools    (:,:)   = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_cs
+    !-----------------------------------------------------------------------
+    if ( use_fates ) then
+       if (carbon_type == 'c12') then
+          if ( nlevdecomp_full > 1 ) then
+             this%totlitc_1m(begc:endc) = spval
+             call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
+                  avgflag='A', long_name='total litter carbon to 1 meter depth', &
+                  ptr_col=this%totlitc_1m)
+             
+             this%totsomc_1m(begc:endc) = spval
+             call hist_addfld1d (fname='TOTSOMC_1m', units='gC/m^2', &
+                  avgflag='A', long_name='total soil organic matter carbon to 1 meter depth', &
+                  ptr_col=this%totsomc_1m)
+          end if
+
+          this%totlitc(begc:endc) = spval
+          call hist_addfld1d (fname='TOTLITC', units='gC/m^2', &
+               avgflag='A', long_name='total litter carbon', &
+               ptr_col=this%totlitc)
+          
+          this%totsomc(begc:endc) = spval
+          call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
+               avgflag='A', long_name='total soil organic matter carbon', &
+               ptr_col=this%totsomc)
+
+       end if ! c12
+    
+    else if (carbon_type == 'c12') then
+       this%decomp_cpools(begc:endc,:) = spval
+       do l  = 1, ndecomp_pools
+          if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
+          if ( nlevdecomp_full > 1 ) then
+             data2dptr => this%decomp_cpools_vr(:,:,l)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
+             longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
+
+             call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
+                   avgflag='A', long_name=longname, &
+                   ptr_col=data2dptr)
+          endif
+
+          data1dptr => this%decomp_cpools(:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
+          call hist_addfld1d (fname=fieldname, units='gC/m^2', &
+                avgflag='A', long_name=longname, &
+                ptr_col=data1dptr)
+
+          if ( nlevdecomp_full > 1 ) then
+             data1dptr => this%decomp_cpools_1m(:,l)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
+             longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
+             call hist_addfld1d (fname=fieldname, units='gC/m^2', &
+                   avgflag='A', long_name=longname, &
+                   ptr_col=data1dptr, default = 'inactive')
+          endif
+       end do
+       if ( nlevdecomp_full > 1 ) then
+
+          this%totlitc_1m(begc:endc) = spval
+          call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
+                avgflag='A', long_name='total litter carbon to 1 meter depth', &
+                ptr_col=this%totlitc_1m)
+
+          this%totsomc_1m(begc:endc) = spval
+          call hist_addfld1d (fname='TOTSOMC_1m', units='gC/m^2', &
+                avgflag='A', long_name='total soil organic matter carbon to 1 meter depth', &
+                ptr_col=this%totsomc_1m)
+       end if
+
+       this%totlitc(begc:endc) = spval
+       call hist_addfld1d (fname='LITTERC', units='gC/m^2', &
+             avgflag='A', long_name='litter C', &
+             ptr_col=this%totlitc)
+       call hist_addfld1d (fname='TOTLITC', units='gC/m^2', &
+             avgflag='A', long_name='total litter carbon', &
+             ptr_col=this%totlitc)
+
+       this%totsomc(begc:endc) = spval
+       call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
+             avgflag='A', long_name='total soil organic matter carbon', &
+             ptr_col=this%totsomc)
+
+    else if ( carbon_type == 'c13' ) then
+       this%decomp_cpools_vr(begc:endc,:,:) = spval
+       do l = 1, ndecomp_pools
+          if ( nlevdecomp_full > 1 ) then
+             data2dptr => this%decomp_cpools_vr(:,:,l)
+             fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
+             longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
+             call hist_addfld2d (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
+                   avgflag='A', long_name=longname, &
+                   ptr_col=data2dptr)
+          endif
+
+          data1dptr => this%decomp_cpools(:,l)
+          fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
+          longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
+          call hist_addfld1d (fname=fieldname, units='gC13/m^2', &
+                avgflag='A', long_name=longname, &
+                ptr_col=data1dptr)
+       end do
+       this%totlitc(begc:endc) = spval
+       call hist_addfld1d (fname='C13_TOTLITC', units='gC13/m^2', &
+             avgflag='A', long_name='C13 total litter carbon', &
+             ptr_col=this%totlitc)
+
+       this%totsomc(begc:endc) = spval
+       call hist_addfld1d (fname='C13_TOTSOMC', units='gC13/m^2', &
+             avgflag='A', long_name='C13 total soil organic matter carbon', &
+             ptr_col=this%totsomc)
+
+       if ( nlevdecomp_full > 1 ) then
+          this%totlitc_1m(begc:endc) = spval
+          call hist_addfld1d (fname='C13_TOTLITC_1m', units='gC13/m^2', &
+                avgflag='A', long_name='C13 total litter carbon to 1 meter', &
+                ptr_col=this%totlitc_1m)
+
+          this%totsomc_1m(begc:endc) = spval
+          call hist_addfld1d (fname='C13_TOTSOMC_1m', units='gC13/m^2', &
+                avgflag='A', long_name='C13 total soil organic matter carbon to 1 meter', &
+                ptr_col=this%totsomc_1m)
+       endif
+    
+    else if ( carbon_type == 'c14' ) then
+       this%decomp_cpools_vr(begc:endc,:,:) = spval
+       do l = 1, ndecomp_pools
+          if ( nlevdecomp_full > 1 ) then
+             data2dptr => this%decomp_cpools_vr(:,:,l)
+             fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
+             longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
+             call hist_addfld2d (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
+                   avgflag='A', long_name=longname, ptr_col=data2dptr)
+          endif
+
+          data1dptr => this%decomp_cpools(:,l)
+          fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
+          longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
+          call hist_addfld1d (fname=fieldname, units='gC14/m^2', &
+                avgflag='A', long_name=longname, ptr_col=data1dptr)
+
+          if ( nlevdecomp_full > 1 ) then
+             data1dptr => this%decomp_cpools_1m(:,l)
+             fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
+             longname =  'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
+             call hist_addfld1d (fname=fieldname, units='gC/m^2', &
+                   avgflag='A', long_name=longname, ptr_col=data1dptr, default='inactive')
+          endif
+       end do
+       this%totlitc(begc:endc) = spval
+       call hist_addfld1d (fname='C14_TOTLITC', units='gC14/m^2', &
+             avgflag='A', long_name='C14 total litter carbon', &
+             ptr_col=this%totlitc)
+
+       this%totsomc(begc:endc) = spval
+       call hist_addfld1d (fname='C14_TOTSOMC', units='gC14/m^2', &
+             avgflag='A', long_name='C14 total soil organic matter carbon', &
+             ptr_col=this%totsomc)
+
+       if ( nlevdecomp_full > 1 ) then       
+          this%totlitc_1m(begc:endc) = spval
+          call hist_addfld1d (fname='C14_TOTLITC_1m', units='gC14/m^2', &
+                avgflag='A', long_name='C14 total litter carbon to 1 meter', &
+                ptr_col=this%totlitc_1m)
+
+          this%totsomc_1m(begc:endc) = spval
+          call hist_addfld1d (fname='C14_TOTSOMC_1m', units='gC14/m^2', &
+                avgflag='A', long_name='C14 total soil organic matter carbon to 1 meter', &
+                ptr_col=this%totsomc_1m)
+       endif
+    endif ! use_fates, or c12, or c13, or c14
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_cs
+    !-----------------------------------------------------------------------
+
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (.not. present(c12_carbonstate_vars)) then ! initializing a c12 type
+             do j = 1, nlevdecomp
+                do k = 1, ndecomp_pools
+                   if (zsoi(j) < 0.3 ) then  !! only initialize upper soil column
+                      this%decomp_cpools_vr(c,j,k) = decomp_cascade_con%initial_stock(k)
+                   else
+                      this%decomp_cpools_vr(c,j,k) = 0._r8
+                   endif
+                end do
+                this%ctrunc_vr(c,j) = 0._r8
+             end do
+             if ( nlevdecomp > 1 ) then
+                do j = nlevdecomp+1, nlevdecomp_full
+                   do k = 1, ndecomp_pools
+                      this%decomp_cpools_vr(c,j,k) = 0._r8
+                   end do
+                   this%ctrunc_vr(c,j) = 0._r8
+                end do
+             end if
+             this%decomp_cpools(c,1:ndecomp_pools)    = decomp_cascade_con%initial_stock(1:ndecomp_pools)
+             this%decomp_cpools_1m(c,1:ndecomp_pools) = decomp_cascade_con%initial_stock(1:ndecomp_pools)
+
+          else ! initializing a c13 or c14 type, using input c12 data and a ratio
+             do j = 1, nlevdecomp
+                do k = 1, ndecomp_pools
+                   this%decomp_cpools_vr(c,j,k) = c12_carbonstate_vars%decomp_cpools_vr(c,j,k) * ratio
+                end do
+                this%ctrunc_vr(c,j) = c12_carbonstate_vars%ctrunc_vr(c,j) * ratio
+             end do
+             if ( nlevdecomp > 1 ) then
+                do j = nlevdecomp+1, nlevdecomp_full
+                   do k = 1, ndecomp_pools
+                      this%decomp_cpools_vr(c,j,k) = 0._r8
+                   end do
+                   this%ctrunc_vr(c,j) = 0._r8
+                end do
+             end if
+             this%cwdc(c) = c12_carbonstate_vars%cwdc(c) * ratio
+             do k = 1, ndecomp_pools
+                this%decomp_cpools(c,k)    = c12_carbonstate_vars%decomp_cpools(c,k) * ratio
+                this%decomp_cpools_1m(c,k) = c12_carbonstate_vars%decomp_cpools_1m(c,k) * ratio
+             end do
+
+          endif ! C12 or C13/14 initialization
+
+          this%cwdc(c)       = 0._r8
+          this%ctrunc(c)     = 0._r8
+          this%totlitc(c)    = 0._r8
+          this%totsomc(c)    = 0._r8
+          this%totlitc_1m(c) = 0._r8
+          this%totsomc_1m(c) = 0._r8
+          this%totecosysc(c) = 0._r8
+          this%totcolc(c)    = 0._r8
+
+          ! dynamic landcover state variables
+          this%seedc(c)      = 0._r8
+          this%prod10c(c)    = 0._r8
+          this%prod100c(c)   = 0._r8
+          this%prod1c(c)     = 0._r8
+          this%totprodc(c)   = 0._r8
+       end if !  landunit istsoil or istcrop
+
+    end do ! columns loop
+
+    ! now loop through special filters and explicitly set the variables that
+    ! have to be in place for biogeophysics
+    num_special_col = 0
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
+    do fc = 1,num_special_col
+       c = special_col(fc)
+
+       this%seedc(c)      = 0._r8
+       this%prod1c(c)     = 0._r8
+       this%prod10c(c)    = 0._r8
+       this%prod100c(c)   = 0._r8
+       this%totprodc(c)   = 0._r8
+       this%cwdc(c)       = 0._r8
+       this%ctrunc(c)     = 0._r8
+       this%totlitc(c)    = 0._r8
+       this%totsomc(c)    = 0._r8
+       this%totecosysc(c) = 0._r8
+       this%totcolc(c)    = 0._r8
+       this%rootc(c)      = 0._r8
+       this%totvegc(c)    = 0._r8
+       this%leafc(c)      = 0._r8
+       this%deadstemc(c)  = 0._r8
+       this%fuelc(c)      = 0._r8
+       this%fuelc_crop(c) = 0._r8
+       this%totlitc_1m(c) = 0._r8
+       this%totsomc_1m(c) = 0._r8
+    end do
+
+    do j = 1,nlevdecomp_full
+       do fc = 1,num_special_col
+          c = special_col(fc) 
+          this%ctrunc_vr(c,j) = 0._r8
+       end do
+    end do
+
+    do k = 1, ndecomp_pools
+       do fc = 1,num_special_col
+          c = special_col(fc) 
+          this%decomp_cpools(c,k) = 0._r8
+          this%decomp_cpools_1m(c,k) = 0._r8
+       end do
+    end do
+
+    do j = 1,nlevdecomp_full
+       do k = 1, ndecomp_pools
+          do fc = 1,num_special_col
+             c = special_col(fc) 
+             this%decomp_cpools_vr(c,j,k) = 0._r8
+          end do
+       end do
+    end do
+          
+  end subroutine col_cs_init
     
   !------------------------------------------------------------------------
-  subroutine clean_col_cs(this)
+  subroutine col_cs_restart ( this,  bounds, ncid, flag, carbon_type, c12_carbonstate_vars, cnstate_vars)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write column carbon state information to/from restart file.
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_state)       :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    character(len=3) , intent(in)    :: carbon_type ! 'c12' or 'c13' or 'c14'
+    type (column_carbon_state) , intent(in), optional :: c12_carbonstate_vars 
+    type (cnstate_type)        , intent(in)           :: cnstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    logical            :: readvar    ! determine if variable is on initial file
+    real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    character(len=128) :: varname    ! temporary
+    integer            :: i,j,k,l,c  ! indices
+    real(r8)           :: c3_del13c  ! typical del13C for C3 photosynthesis (permil, relative to PDB)
+    real(r8)           :: c4_del13c  ! typical del13C for C4 photosynthesis (permil, relative to PDB)
+    real(r8)           :: c3_r1      ! isotope ratio (13c/12c) for C3 photosynthesis
+    real(r8)           :: c4_r1      ! isotope ratio (13c/12c) for C4 photosynthesis
+    real(r8)           :: c3_r2      ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
+    real(r8)           :: c4_r2      ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
+    real(r8)           :: m          ! multiplier for the exit_spinup code
+    integer            :: idata
+    logical            :: exit_spinup  = .false.
+    logical            :: enter_spinup = .false.
+    ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
+    integer            :: restart_file_spinup_state 
+    ! flags for comparing the model and restart decomposition cascades
+    integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    !-----------------------------------------------------------------------
+
+    if (carbon_type == 'c13' .or. carbon_type == 'c14') then
+       if (.not. present(c12_carbonstate_vars)) then
+          call endrun(msg=' ERROR: for C14 must pass in c12_carbonstate_vars as argument' //&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end if
+
+    if (carbon_type == 'c12') then
+       do k = 1, ndecomp_pools
+          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c'
+          if (use_vertsoilc) then
+             ptr2d => this%decomp_cpools_vr(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%decomp_cpools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+       end do
+
+       if (use_vertsoilc) then
+          ptr2d => this%ctrunc_vr
+          call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc_vr', xtype=ncd_double,  &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       else
+          ptr1d => this%ctrunc_vr(:,1) ! nlevdecomp = 1; so treat as 1D variable
+          call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc', xtype=ncd_double,  &
+               dim1name='column', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+
+       call restartvar(ncid=ncid, flag=flag, varname='totlitc', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%totlitc) 
+
+       call restartvar(ncid=ncid, flag=flag, varname='totsomc', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%totsomc) 
+    end if ! C12
+    
+    if ( carbon_type == 'c13' ) then
+       ! set some constants for C13 ratios
+       c3_del13c = -28._r8
+       c4_del13c = -13._r8
+       c3_r1 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
+       c3_r2 = c3_r1/(1._r8 + c3_r1)
+       c4_r1 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
+       c4_r2 = c4_r1/(1._r8 + c4_r1)
+       do k = 1, ndecomp_pools
+          varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_13'
+          if (use_vertsoilc) then
+             ptr2d => this%decomp_cpools_vr(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%decomp_cpools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+             write(iulog,*) 'initializing this%decomp_cpools_vr with atmospheric c13 value for: '//varname
+             do i = bounds%begc,bounds%endc
+                do j = 1, nlevdecomp
+                   if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
+                        .not. isnan(this%decomp_cpools_vr(i,j,k)) ) then
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                   endif
+                end do
+             end do
+          end if
+       end do ! ndecomp_pools
+
+       if (use_vertsoilc) then
+          ptr2d => this%ctrunc_vr
+          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c13_vr", xtype=ncd_double,  &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       else
+          ptr1d => this%ctrunc_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c13", xtype=ncd_double,  &
+               dim1name='column', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       end if
+
+       call restartvar(ncid=ncid, flag=flag, varname='totlitc_13', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%totlitc) 
+       if (flag=='read' .and. .not. readvar) then
+          if (c12_carbonstate_vars%totlitc(i) /= spval .and. &
+               .not. isnan( c12_carbonstate_vars%totlitc(i) ) ) then
+             this%totlitc(i) = c12_carbonstate_vars%totlitc(i) * c3_r2
+          end if
+       end if
+    end if ! C13
+
+    if ( carbon_type == 'c14' ) then
+       do k = 1, ndecomp_pools
+          varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_14'
+          if (use_vertsoilc) then
+             ptr2d => this%decomp_cpools_vr(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%decomp_cpools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', &
+                  long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+             write(iulog,*) 'initializing this%decomp_cpools_vr with atmospheric c14 value for: '//trim(varname)
+             do i = bounds%begc,bounds%endc
+                do j = 1, nlevdecomp
+                   if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
+                        .not. isnan(c12_carbonstate_vars%decomp_cpools_vr(i,j,k)) ) then
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                   endif
+                end do
+             end do
+          end if
+       end do
+
+       if (use_vertsoilc) then 
+          ptr2d => this%ctrunc_vr
+          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c14_vr", xtype=ncd_double,  &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       else
+          ptr1d => this%ctrunc_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c14", xtype=ncd_double,  &
+               dim1name='column', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       end if
+       
+       call restartvar(ncid=ncid, flag=flag, varname='totlitc_14', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%totlitc) 
+       if (flag=='read' .and. .not. readvar) then
+          write(iulog,*) 'initializing this%totlitc with atmospheric c14 value'
+          if (c12_carbonstate_vars%totlitc(i) /= spval .and. &
+               .not. isnan(c12_carbonstate_vars%totlitc(i)) ) then
+             this%totlitc(i) = c12_carbonstate_vars%totlitc(i) * c14ratio
+          endif
+       end if
+    end if ! C14
+ 
+    !--------------------------------
+    ! Spinup state
+    !--------------------------------
+
+    if (carbon_type == 'c12'  .or. carbon_type == 'c14') then
+        if (flag == 'write') then
+           idata = spinup_state
+        end if
+        if (carbon_type == 'c12' .or. (carbon_type == 'c14' .and. flag == 'read')) then
+           call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
+                long_name='Spinup state of the model that wrote this restart file: ' &
+                // ' 0 = normal model mode, 1 = AD spinup', units='', &
+                interpinic_flag='copy', readvar=readvar,  data=idata)
+        end if
+
+        if (flag == 'read') then
+           if (readvar) then
+              restart_file_spinup_state = idata
+           else
+              ! assume, for sake of backwards compatibility, that if spinup_state is not in 
+              ! the restart file then current model state is the same as prior model state
+              restart_file_spinup_state = spinup_state
+              if ( masterproc ) then
+                 write(iulog,*) ' CNRest: WARNING!  Restart file does not contain info ' &
+                      // ' on spinup state used to generate the restart file. '
+                 write(iulog,*) '   Assuming the same as current setting: ', spinup_state
+              end if
+           end if
+        end if
+
+        ! now compare the model and restart file spinup states, and either take the 
+        ! model into spinup mode or out of it if they are not identical
+        ! taking model out of spinup mode requires multiplying each decomposing pool 
+        ! by the associated AD factor.
+        ! putting model into spinup mode requires dividing each decomposing pool 
+        ! by the associated AD factor.
+        ! only allow this to occur on first timestep of model run.
+        
+        if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
+           if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
+              if ( masterproc ) write(iulog,*) ' CNRest: taking SOM pools out of AD spinup mode'
+              exit_spinup = .true.
+           else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
+              if ( masterproc ) write(iulog,*) ' CNRest: taking SOM pools into AD spinup mode'
+              enter_spinup = .true.
+           else
+              call endrun(msg=' CNRest: error in entering/exiting spinup.  spinup_state ' &
+                   // ' != restart_file_spinup_state, but do not know what to do'//&
+                   errMsg(__FILE__, __LINE__))
+           end if
+           if (get_nstep() >= 2) then
+              call endrun(msg=' CNRest: error in entering/exiting spinup - should occur only when nstep = 1'//&
+                   errMsg(__FILE__, __LINE__))
+           endif
+           do k = 1, ndecomp_pools
+              do c = bounds%begc, bounds%endc
+                 do j = 1, nlevdecomp
+                    if ( exit_spinup ) then
+                       m = decomp_cascade_con%spinup_factor(k)
+                       if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c,j)
+                    else if ( enter_spinup ) then 
+                       m = 1. / decomp_cascade_con%spinup_factor(k)
+                       if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
+                    end if
+                    this%decomp_cpools_vr(c,j,k) = this%decomp_cpools_vr(c,j,k) * m
+                 end do ! nlevdecomp
+              end do ! columns
+           end do ! ndecomp_pools
+        end if ! read
+     end if ! c12 or c14 (PET: why not c13?) 
+   
+  end subroutine col_cs_restart
+
+  !-----------------------------------------------------------------------
+  subroutine col_cs_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    !
+    ! !DESCRIPTION:
+    ! Column-level carbon state summary calculations
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fp,fc           ! lake filter indices
+    real(r8) :: maxdepth        ! depth to integrate soil variables
+    integer  :: nlev
+    real(r8) :: cropseedc_deficit_col(bounds%begc:bounds%endc)
+    !-----------------------------------------------------------------------
+
+    if (use_fates) return
+
+    nlev = nlevdecomp
+    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+    ! vertically integrate each of the decomposing C pools
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_cpools(c,l) = 0._r8
+       end do
+    end do
+    
+    do l = 1, ndecomp_pools
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_cpools(c,l) = &
+                  this%decomp_cpools(c,l) + &
+                  this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
+    if ( nlevdecomp > 1) then
+       ! vertically integrate each of the decomposing C pools to 1 meter
+       maxdepth = 1._r8
+       do l = 1, ndecomp_pools
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_cpools_1m(c,l) = 0._r8
+          end do
+       end do
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp
+             if ( zisoi(j) <= maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_cpools_1m(c,l) = &
+                        this%decomp_cpools_1m(c,l) + &
+                        this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+                end do
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_cpools_1m(c,l) = &
+                        this%decomp_cpools_1m(c,l) + &
+                        this%decomp_cpools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+                end do
+             endif
+          end do
+       end do
+       
+       ! total litter carbon in the top meter (TOTLITC_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totlitc_1m(c)         = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totlitc_1m(c) = &
+                     this%totlitc_1m(c) + &
+                     this%decomp_cpools_1m(c,l)
+             end do
+          endif
+       end do
+       
+       ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totsomc_1m(c) = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_soil(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totsomc_1m(c) = &
+                     this%totsomc_1m(c) + &
+                     this%decomp_cpools_1m(c,l)
+             end do
+          end if
+       end do
+    end if ! nlevdecomp>1
+       
+    ! total litter carbon (TOTLITC)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlitc(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_litter(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totlitc(c) = &
+                  this%totlitc(c) + &
+                  this%decomp_cpools(c,l)
+          end do
+       endif
+    end do
+
+    ! total soil organic matter carbon (TOTSOMC)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totsomc(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_soil(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totsomc(c) = &
+                  this%totsomc(c) + &
+                  this%decomp_cpools(c,l)
+          end do
+       end if
+    end do
+
+    ! coarse woody debris carbon
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%cwdc(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_cwd(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%cwdc(c) = &
+                  this%cwdc(c) + &
+                  this%decomp_cpools(c,l)
+          end do
+       end if
+    end do
+
+    ! truncation carbon
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%ctrunc(c) = 0._r8
+    end do
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%ctrunc(c) = &
+               this%ctrunc(c) + &
+               this%ctrunc_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+
+  end subroutine col_cs_summary 
+
+  !------------------------------------------------------------------------
+  subroutine col_cs_clean(this)
     !
     ! !ARGUMENTS:
     class(column_carbon_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_col_cs
+  end subroutine col_cs_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column nitrogen state data structure
   !------------------------------------------------------------------------
-  subroutine init_col_ns(this, begc, endc)
+  subroutine col_ns_init(this, begc, endc)
     !
     ! !ARGUMENTS:
     class(column_nitrogen_state) :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
     
-  end subroutine init_col_ns
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_ns
+    !-----------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_ns
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_ns
+    !-----------------------------------------------------------------------
+  end subroutine col_ns_init
     
   !------------------------------------------------------------------------
-  subroutine clean_col_ns(this)
+  subroutine col_ns_clean(this)
     !
     ! !ARGUMENTS:
     class(column_nitrogen_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_col_ns
+  end subroutine col_ns_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column phosphorus state data structure
   !------------------------------------------------------------------------
-  subroutine init_col_ps(this, begc, endc)
+  subroutine col_ps_init(this, begc, endc)
     !
     ! !ARGUMENTS:
     class(column_phosphorus_state) :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
     
-  end subroutine init_col_ps
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_ps
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_ps
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_ps
+    !-----------------------------------------------------------------------
+  end subroutine col_ps_init
     
   !------------------------------------------------------------------------
-  subroutine clean_col_ps(this)
+  subroutine col_ps_clean(this)
     !
     ! !ARGUMENTS:
     class(column_phosphorus_state) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_col_ps
+  end subroutine col_ps_clean
 
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column energy flux data structure
@@ -1395,6 +2298,7 @@ contains
     integer, intent(in) :: begc,endc
     ! !LOCAL VARIABLES:
     integer  :: l,c
+    integer  :: ncells
     !-----------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -1455,6 +2359,27 @@ contains
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = nan
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = nan
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = nan
+    
+    !VSFM variables
+    ncells = endc - begc + 1
+    allocate(this%mflx_infl_1d           (ncells))                ; this%mflx_infl_1d                    (:)   = nan
+    allocate(this%mflx_dew_1d            (ncells))                ; this%mflx_dew_1d                     (:)   = nan
+    allocate(this%mflx_snowlyr_1d        (ncells))                ; this%mflx_snowlyr_1d                 (:)   = nan
+    allocate(this%mflx_sub_snow_1d       (ncells))                ; this%mflx_sub_snow_1d                (:)   = nan
+    allocate(this%mflx_neg_snow_1d       (ncells))                ; this%mflx_neg_snow_1d                (:)   = nan
+    ncells = (endc - begc + 1)*nlevgrnd
+    allocate(this%mflx_et_1d             (ncells))                ; this%mflx_et_1d                      (:)   = nan
+    allocate(this%mflx_drain_1d          (ncells))                ; this%mflx_drain_1d                   (:)   = nan
+    allocate(this%mflx_drain_perched_1d  (ncells))                ; this%mflx_drain_perched_1d           (:)   = nan
+
+    allocate(this%mflx_snowlyr           (begc:endc))             ; this%mflx_snowlyr                    (:)   = 0._r8
+    allocate(this%mflx_infl              (begc:endc))             ; this%mflx_infl                       (:)   = nan
+    allocate(this%mflx_dew               (begc:endc))             ; this%mflx_dew                        (:)   = nan
+    allocate(this%mflx_snowlyr_disp      (begc:endc))             ; this%mflx_snowlyr_disp               (:)   = nan
+    allocate(this%mflx_sub_snow          (begc:endc))             ; this%mflx_sub_snow                   (:)   = nan
+    allocate(this%mflx_et                (begc:endc,1:nlevgrnd))  ; this%mflx_et                         (:,:) = nan
+    allocate(this%mflx_drain             (begc:endc,1:nlevgrnd))  ; this%mflx_drain                      (:,:) = nan
+    allocate(this%mflx_recharge          (begc:endc))             ; this%mflx_recharge                   (:)   = nan
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_wf
@@ -1628,6 +2553,11 @@ contains
        ! initial run, not restart: initialize qflx_snow_melt to zero
        this%qflx_snow_melt(bounds%begc:bounds%endc) = 0._r8
     endif
+
+    call restartvar(ncid=ncid, flag=flag, varname='MFLX_SNOW_LYR', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr)
 
   end subroutine col_wf_restart
   

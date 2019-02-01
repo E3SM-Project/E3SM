@@ -6,15 +6,17 @@ module PrecisionControlMod
   ! 
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use abortutils          , only : endrun
+  use clm_varctl          , only : nu_com
   use clm_varpar          , only : ndecomp_pools
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use VegetationType           , only : veg_pp
   use ColumnType          , only : col_pp
-  use clm_varctl          , only : nu_com
-  use abortutils          , only : endrun
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
+  use VegetationType      , only : veg_pp
+
   !
   implicit none
   save
@@ -70,8 +72,8 @@ contains
     real(r8):: cp_eca
     !-----------------------------------------------------------------------
 
-    ! carbonstate_vars%ctrunc_vr_col                 Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
-    ! carbonstate_vars%decomp_cpools_vr_col          Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+    ! col_cs%ctrunc_vr                 Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
+    ! col_cs%decomp_cpools_vr          Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
     ! carbonstate_vars%cpool_patch                   Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool            
     ! carbonstate_vars%deadcrootc_patch              Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C                        
     ! carbonstate_vars%deadcrootc_storage_patch      Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C storage                
@@ -99,8 +101,8 @@ contains
     ! carbonstate_vars%grainc_storage_patch          Output:  [real(r8) (:)     ]  (gC/m2) grain C storage                           
     ! carbonstate_vars%grainc_xfer_patch             Output:  [real(r8) (:)     ]  (gC/m2) grain C transfer                          
     
-    ! c13_carbonstate_vars%ctrunc_vr_col             Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
-    ! c13_carbonstate_vars%decomp_cpools_vr_col      Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+    ! c13_col_cs%ctrunc_vr             Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
+    ! c13_col_cs%decomp_cpools_vr      Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
     ! c13_carbonstate_vars%cpool_patch               Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool            
     ! c13_carbonstate_vars%deadcrootc_patch          Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C                        
     ! c13_carbonstate_vars%deadcrootc_storage_patch  Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C storage                
@@ -124,8 +126,8 @@ contains
     ! c13_carbonstate_vars%livestemc_xfer_patch      Output:  [real(r8) (:)     ]  (gC/m2) live stem C transfer                      
     ! c13_carbonstate_vars%ctrunc_patch              Output:  [real(r8) (:)     ]  (gC/m2) patch-level sink for C truncation           
     
-    ! c14_carbonstate_vars%ctrunc_vr_col             Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
-    ! c14_carbonstate_vars%decomp_cpools_vr_col      Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+    ! c14_col_cs%ctrunc_vr             Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
+    ! c14_col_cs%decomp_cpools_vr      Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
     ! c14_carbonstate_vars%cpool_patch               Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool            
     ! c14_carbonstate_vars%deadcrootc_patch          Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C                        
     ! c14_carbonstate_vars%deadcrootc_storage_patch  Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C storage                
@@ -179,11 +181,14 @@ contains
     ! nitrogenstate_vars%smin_no3_vr_col             Output:  [real(r8) (:,:)   ]  (gN/m3) soil mineral NO3                        
     
     associate(&
-         cs    => carbonstate_vars     , &
-         ns    => nitrogenstate_vars   , &
-         ps    => phosphorusstate_vars , &
-         c13cs => c13_carbonstate_vars , &
-         c14cs => c14_carbonstate_vars , &
+         cs      => carbonstate_vars     , &
+         csv2    => col_cs               , &
+         ns      => nitrogenstate_vars   , &
+         ps      => phosphorusstate_vars , &
+         c13cs   => c13_carbonstate_vars , &
+         c13csv2 => c13_col_cs           , &
+         c14cs   => c14_carbonstate_vars , &
+         c14csv2 => c14_col_cs           , &
          floating_cn_ratio_decomp_pools   =>    decomp_cascade_con%floating_cn_ratio_decomp_pools , &
          floating_cp_ratio_decomp_pools   =>    decomp_cascade_con%floating_cp_ratio_decomp_pools , &
          initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                 &
@@ -697,20 +702,20 @@ contains
                ! all decomposing pools C and N
                do k = 1, ndecomp_pools
 
-                  if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
-                     cc = cc + cs%decomp_cpools_vr_col(c,j,k)
-                     cs%decomp_cpools_vr_col(c,j,k) = 0._r8
+                  if (abs(csv2%decomp_cpools_vr(c,j,k)) < ccrit) then
+                     cc = cc + csv2%decomp_cpools_vr(c,j,k)
+                     csv2%decomp_cpools_vr(c,j,k) = 0._r8
                      if (.not.use_fates) then
                         cn = cn + ns%decomp_npools_vr_col(c,j,k)
                         ns%decomp_npools_vr_col(c,j,k) = 0._r8
                      endif
                      if ( use_c13 ) then
-                        cc13 = cc13 + c13cs%decomp_cpools_vr_col(c,j,k)
-                        c13cs%decomp_cpools_vr_col(c,j,k) = 0._r8
+                        cc13 = cc13 + c13csv2%decomp_cpools_vr(c,j,k)
+                        c13csv2%decomp_cpools_vr(c,j,k) = 0._r8
                      endif
                      if ( use_c14 ) then
-                        cc14 = cc14 + c14cs%decomp_cpools_vr_col(c,j,k)
-                        c14cs%decomp_cpools_vr_col(c,j,k) = 0._r8
+                        cc14 = cc14 + c14csv2%decomp_cpools_vr(c,j,k)
+                        c14csv2%decomp_cpools_vr(c,j,k) = 0._r8
                      endif
                   end if
 
@@ -719,15 +724,15 @@ contains
                ! not doing precision control on soil mineral N, since it will
                ! be getting the N truncation flux anyway.
 
-               cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
+               csv2%ctrunc_vr(c,j) = csv2%ctrunc_vr(c,j) + cc
                if (.not.use_fates) then
                   ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
                endif
                if ( use_c13 ) then
-                  c13cs%ctrunc_vr_col(c,j) = c13cs%ctrunc_vr_col(c,j) + cc13
+                  c13csv2%ctrunc_vr(c,j) = c13csv2%ctrunc_vr(c,j) + cc13
                endif
                if ( use_c14 ) then
-                  c14cs%ctrunc_vr_col(c,j) = c14cs%ctrunc_vr_col(c,j) + cc14
+                  c14csv2%ctrunc_vr(c,j) = c14csv2%ctrunc_vr(c,j) + cc14
                endif
             end do
 
@@ -764,7 +769,7 @@ contains
             !   do j = 1,nlevdecomp_full
             !      cp_eca = 0.0_r8
             !      do l = 1,ndecomp_pools
-            !         if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
+            !         if (abs(csv2%decomp_cpools_vr(c,j,k)) < ccrit) then
             !            if (.not.use_fates) then
             !               cp_eca = cp_eca + ps%decomp_ppools_vr_col(c,j,k)
             !               ps%decomp_ppools_vr_col(c,j,k) = 0._r8
@@ -781,11 +786,11 @@ contains
                do j = 1,nlevdecomp_full
                   cn_eca = 0.0_r8
                   do l = 1,ndecomp_pools
-                     if ( cs%decomp_cpools_vr_col(c,j,l) > 0.0_r8 .and.  &
-                          abs(cs%decomp_cpools_vr_col(c,j,l) / ns%decomp_npools_vr_col(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
+                     if ( csv2%decomp_cpools_vr(c,j,l) > 0.0_r8 .and.  &
+                          abs(csv2%decomp_cpools_vr(c,j,l) / ns%decomp_npools_vr_col(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
                           .and. (.not. floating_cn_ratio_decomp_pools(l)) ) then
-                        cn_eca = cn_eca - ( cs%decomp_cpools_vr_col(c,j,l) / initial_cn_ratio(l) - ns%decomp_npools_vr_col(c,j,l) )
-                        ns%decomp_npools_vr_col(c,j,l) = cs%decomp_cpools_vr_col(c,j,l) / initial_cn_ratio(l)
+                        cn_eca = cn_eca - ( csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l) - ns%decomp_npools_vr_col(c,j,l) )
+                        ns%decomp_npools_vr_col(c,j,l) = csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l)
                      end if
                   end do
                   ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn_eca

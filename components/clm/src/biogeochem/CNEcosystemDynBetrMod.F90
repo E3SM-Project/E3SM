@@ -39,6 +39,7 @@ module CNEcosystemDynBetrMod
   use PhosphorusFluxType        , only : phosphorusflux_type
   use PhosphorusStateType       , only : phosphorusstate_type
   use dynSubgridControlMod      , only : get_do_harvest
+  use ColumnDataType            , only : col_cs, c13_col_cs, c14_col_cs
 
   implicit none
 
@@ -306,18 +307,18 @@ module CNEcosystemDynBetrMod
        call t_startf('CNUpdate0')
        call CarbonStateUpdate0(&
             num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars)
+            carbonflux_vars, carbonstate_vars, col_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate0(&
                num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
        end if
 
        if ( use_c14 ) then
           call CarbonStateUpdate0(&
                num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
        end if
        call t_stopf('CNUpdate0')
 
@@ -331,26 +332,26 @@ module CNEcosystemDynBetrMod
           call CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
-               isotope='c13')
+               isotope='c13', isocol_cs=c13_col_cs)
        end if
 
        if ( use_c14 ) then
           call CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
-               isotope='c14')
+               isotope='c14', isocol_cs=c14_col_cs)
        end if
 
        call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, carbonflux_vars, carbonstate_vars, col_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
        end if
 
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -378,26 +379,26 @@ module CNEcosystemDynBetrMod
           call CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
-               isotope='c13')
+               isotope='c13', isocol_cs=c13_col_cs)
        end if
 
        if ( use_c14 ) then
           call CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
-               isotope='c14')
+               isotope='c14', isocol_cs=c14_col_cs)
        end if
 
        call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars)
+            carbonflux_vars, carbonstate_vars, col_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
        end if
        call NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
@@ -415,24 +416,24 @@ module CNEcosystemDynBetrMod
           call CarbonIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
-               isotope='c13')
+               isotope='c13', isocol_cs=c13_col_cs)
        end if
        if ( use_c14 ) then
           call CarbonIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
-               isotope='c14')
+               isotope='c14', isocol_cs=c14_col_cs)
        end if
 
        call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars)
+            carbonflux_vars, carbonstate_vars, col_cs)
        if ( use_c13 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
        end if
 
        call NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -469,25 +470,25 @@ module CNEcosystemDynBetrMod
           call CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
-               isotope='c13')
+               isotope='c13', isocol_cs=c13_col_cs)
        end if
        if ( use_c14 ) then
           call CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
-               isotope='c14')
+               isotope='c14', isocol_cs=c14_col_cs)
        end if
 
        call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars)
+            carbonflux_vars, carbonstate_vars, col_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
        end if
 
 

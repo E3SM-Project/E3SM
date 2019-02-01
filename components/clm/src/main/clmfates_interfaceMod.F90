@@ -91,7 +91,7 @@ module CLMFatesInterfaceMod
    use GridcellType      , only : grc_pp
    use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
-   use ColumnDataType    , only : col_es, col_ws, col_wf
+   use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs
    use VegetationDataType, only : veg_es, veg_wf  
    use LandunitType      , only : lun_pp
    
@@ -1914,8 +1914,8 @@ contains
 
     associate(& 
         hr            => carbonflux_inst%hr_col,      & ! (gC/m2/s) total heterotrophic respiration
-        totsomc       => carbonstate_inst%totsomc_col, & ! (gC/m2) total soil organic matter carbon
-        totlitc       => carbonstate_inst%totlitc_col)   ! (gC/m2) total litter carbon in BGC pools
+        totsomc       => col_cs%totsomc, & ! (gC/m2) total soil organic matter carbon
+        totlitc       => col_cs%totlitc)   ! (gC/m2) total litter carbon in BGC pools
       
       nc = bounds_clump%clump_index
       

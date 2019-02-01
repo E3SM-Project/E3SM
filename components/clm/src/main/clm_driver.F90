@@ -132,7 +132,8 @@ module clm_driver
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
-  use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf  
+  use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
+  use ColumnDataType         , only : col_cs  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws, veg_wf
 
@@ -339,6 +340,10 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
 
+          call col_cs%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
           call nitrogenstate_vars%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
@@ -390,6 +395,10 @@ contains
                 call get_clump_bounds(nc, bounds_clump)
 
                 call carbonstate_vars%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     filter(nc)%num_soilp, filter(nc)%soilp)
+
+                call col_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp)
 
@@ -451,6 +460,10 @@ contains
        if (use_cn) then
           call t_startf('begcnpbal')
           call carbonstate_vars%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp)
+
+          call col_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
 

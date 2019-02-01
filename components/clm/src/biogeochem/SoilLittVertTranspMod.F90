@@ -19,6 +19,7 @@ module SoilLittVertTranspMod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
   use clm_varctl             , only : nu_com
+  use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   !
   implicit none
   save
@@ -239,7 +240,7 @@ contains
 
          select case (i_type)
          case (1)  ! C
-            conc_ptr          => carbonstate_vars%decomp_cpools_vr_col
+            conc_ptr          => col_cs%decomp_cpools_vr
             source            => carbonflux_vars%decomp_cpools_sourcesink_col
             trcr_tendency_ptr => carbonflux_vars%decomp_cpools_transport_tendency_col
          case (2)  ! N
@@ -253,19 +254,19 @@ contains
          case (4)
             if ( use_c13 ) then
                ! C13
-               conc_ptr          => c13_carbonstate_vars%decomp_cpools_vr_col
+               conc_ptr          => c13_col_cs%decomp_cpools_vr
                source            => c13_carbonflux_vars%decomp_cpools_sourcesink_col
                trcr_tendency_ptr => c13_carbonflux_vars%decomp_cpools_transport_tendency_col
             else
                ! C14
-               conc_ptr          => c14_carbonstate_vars%decomp_cpools_vr_col
+               conc_ptr          => c14_col_cs%decomp_cpools_vr
                source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
                trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
             endif
          case (5)
             if ( use_c14 .and. use_c13 ) then
                ! C14
-               conc_ptr          => c14_carbonstate_vars%decomp_cpools_vr_col
+               conc_ptr          => c14_col_cs%decomp_cpools_vr
                source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
                trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
             else

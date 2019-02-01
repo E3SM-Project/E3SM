@@ -329,32 +329,9 @@ contains
     ! have all the required information.
 
     if ( use_fates ) then
-       if (carbon_type == 'c12') then
-          if ( nlevdecomp_full > 1 ) then
-             this%totlitc_1m_col(begc:endc) = spval
-             call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
-                  avgflag='A', long_name='total litter carbon to 1 meter depth', &
-                  ptr_col=this%totlitc_1m_col)
-             
-             this%totsomc_1m_col(begc:endc) = spval
-             call hist_addfld1d (fname='TOTSOMC_1m', units='gC/m^2', &
-                  avgflag='A', long_name='total soil organic matter carbon to 1 meter depth', &
-                  ptr_col=this%totsomc_1m_col)
-          end if
-
-          this%totlitc_col(begc:endc) = spval
-          call hist_addfld1d (fname='TOTLITC', units='gC/m^2', &
-               avgflag='A', long_name='total litter carbon', &
-               ptr_col=this%totlitc_col)
-          
-          this%totsomc_col(begc:endc) = spval
-          call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
-               avgflag='A', long_name='total soil organic matter carbon', &
-               ptr_col=this%totsomc_col)
-
-       end if
        return
     end if
+
     !-------------------------------
     ! C12 state variables
     !-------------------------------
@@ -822,48 +799,6 @@ contains
 
 
        !those variables are now ouput in betr
-       this%decomp_cpools_col(begc:endc,:) = spval
-       do l  = 1, ndecomp_pools
-          if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
-          if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr_col(:,:,l)
-             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
-             longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
-
-             call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
-                   avgflag='A', long_name=longname, &
-                   ptr_col=data2dptr)
-          endif
-
-          data1dptr => this%decomp_cpools_col(:,l)
-          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
-          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
-          call hist_addfld1d (fname=fieldname, units='gC/m^2', &
-                avgflag='A', long_name=longname, &
-                ptr_col=data1dptr)
-
-          if ( nlevdecomp_full > 1 ) then
-             data1dptr => this%decomp_cpools_1m_col(:,l)
-             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
-             longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
-             call hist_addfld1d (fname=fieldname, units='gC/m^2', &
-                   avgflag='A', long_name=longname, &
-                   ptr_col=data1dptr, default = 'inactive')
-          endif
-       end do
-
-       if ( nlevdecomp_full > 1 ) then
-
-          this%totlitc_1m_col(begc:endc) = spval
-          call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
-                avgflag='A', long_name='total litter carbon to 1 meter depth', &
-                ptr_col=this%totlitc_1m_col)
-
-          this%totsomc_1m_col(begc:endc) = spval
-          call hist_addfld1d (fname='TOTSOMC_1m', units='gC/m^2', &
-                avgflag='A', long_name='total soil organic matter carbon to 1 meter depth', &
-                ptr_col=this%totsomc_1m_col)
-       end if
 
 
        this%ctrunc_col(begc:endc) = spval
@@ -875,19 +810,6 @@ contains
        call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
              avgflag='A', long_name='pool for seeding new Patches', &
              ptr_col=this%seedc_col, default='inactive')
-
-       this%totlitc_col(begc:endc) = spval
-       call hist_addfld1d (fname='LITTERC', units='gC/m^2', &
-             avgflag='A', long_name='litter C', &
-             ptr_col=this%totlitc_col)
-       call hist_addfld1d (fname='TOTLITC', units='gC/m^2', &
-             avgflag='A', long_name='total litter carbon', &
-             ptr_col=this%totlitc_col)
-
-       this%totsomc_col(begc:endc) = spval
-       call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
-             avgflag='A', long_name='total soil organic matter carbon', &
-             ptr_col=this%totsomc_col)
 
        call hist_addfld1d (fname='SOILC', units='gC/m^2', &
              avgflag='A', long_name='soil C', &
@@ -934,28 +856,8 @@ contains
     ! C13 state variables - column
     !-------------------------------
 
+
     if ( carbon_type == 'c13' ) then
-
-
-       this%decomp_cpools_vr_col(begc:endc,:,:) = spval
-       do l = 1, ndecomp_pools
-          if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr_col(:,:,l)
-             fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
-             longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
-             call hist_addfld2d (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
-                   avgflag='A', long_name=longname, &
-                   ptr_col=data2dptr)
-          endif
-
-          data1dptr => this%decomp_cpools_col(:,l)
-          fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
-          longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
-          call hist_addfld1d (fname=fieldname, units='gC13/m^2', &
-                avgflag='A', long_name=longname, &
-                ptr_col=data1dptr)
-       end do
-
        this%seedc_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
              avgflag='A', long_name='C13 pool for seeding new Patches', &
@@ -966,27 +868,6 @@ contains
              avgflag='A', long_name='C13 column-level sink for C truncation', &
              ptr_col=this%ctrunc_col)
 
-       this%totlitc_col(begc:endc) = spval
-       call hist_addfld1d (fname='C13_TOTLITC', units='gC13/m^2', &
-             avgflag='A', long_name='C13 total litter carbon', &
-             ptr_col=this%totlitc_col)
-
-       this%totsomc_col(begc:endc) = spval
-       call hist_addfld1d (fname='C13_TOTSOMC', units='gC13/m^2', &
-             avgflag='A', long_name='C13 total soil organic matter carbon', &
-             ptr_col=this%totsomc_col)
-
-       if ( nlevdecomp_full > 1 ) then
-          this%totlitc_1m_col(begc:endc) = spval
-          call hist_addfld1d (fname='C13_TOTLITC_1m', units='gC13/m^2', &
-                avgflag='A', long_name='C13 total litter carbon to 1 meter', &
-                ptr_col=this%totlitc_1m_col)
-
-          this%totsomc_1m_col(begc:endc) = spval
-          call hist_addfld1d (fname='C13_TOTSOMC_1m', units='gC13/m^2', &
-                avgflag='A', long_name='C13 total soil organic matter carbon to 1 meter', &
-                ptr_col=this%totsomc_1m_col)
-       endif
 
        this%totecosysc_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_TOTECOSYSC', units='gC13/m^2', &
@@ -1037,32 +918,6 @@ contains
     !-------------------------------
 
     if ( carbon_type == 'c14' ) then
-
-       this%decomp_cpools_vr_col(begc:endc,:,:) = spval
-       do l = 1, ndecomp_pools
-          if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr_col(:,:,l)
-             fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
-             longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
-             call hist_addfld2d (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
-                   avgflag='A', long_name=longname, ptr_col=data2dptr)
-          endif
-
-          data1dptr => this%decomp_cpools_col(:,l)
-          fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
-          longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
-          call hist_addfld1d (fname=fieldname, units='gC14/m^2', &
-                avgflag='A', long_name=longname, ptr_col=data1dptr)
-
-          if ( nlevdecomp_full > 1 ) then
-             data1dptr => this%decomp_cpools_1m_col(:,l)
-             fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
-             longname =  'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
-             call hist_addfld1d (fname=fieldname, units='gC/m^2', &
-                   avgflag='A', long_name=longname, ptr_col=data1dptr, default='inactive')
-          endif
-       end do
-
        this%seedc_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_SEEDC', units='gC14/m^2', &
              avgflag='A', long_name='C14 pool for seeding new Patches', &
@@ -1072,28 +927,6 @@ contains
        call hist_addfld1d (fname='C14_COL_CTRUNC', units='gC14/m^2', &
              avgflag='A', long_name='C14 column-level sink for C truncation', &
              ptr_col=this%ctrunc_col)
-
-       this%totlitc_col(begc:endc) = spval
-       call hist_addfld1d (fname='C14_TOTLITC', units='gC14/m^2', &
-             avgflag='A', long_name='C14 total litter carbon', &
-             ptr_col=this%totlitc_col)
-
-       this%totsomc_col(begc:endc) = spval
-       call hist_addfld1d (fname='C14_TOTSOMC', units='gC14/m^2', &
-             avgflag='A', long_name='C14 total soil organic matter carbon', &
-             ptr_col=this%totsomc_col)
-
-       if ( nlevdecomp_full > 1 ) then       
-          this%totlitc_1m_col(begc:endc) = spval
-          call hist_addfld1d (fname='C14_TOTLITC_1m', units='gC14/m^2', &
-                avgflag='A', long_name='C14 total litter carbon to 1 meter', &
-                ptr_col=this%totlitc_1m_col)
-
-          this%totsomc_1m_col(begc:endc) = spval
-          call hist_addfld1d (fname='C14_TOTSOMC_1m', units='gC14/m^2', &
-                avgflag='A', long_name='C14 total soil organic matter carbon to 1 meter', &
-                ptr_col=this%totsomc_1m_col)
-       endif
 
        this%totecosysc_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_TOTECOSYSC', units='gC14/m^2', &
@@ -1319,52 +1152,6 @@ contains
        l = col_pp%landunit(c)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
-          if (.not. present(c12_carbonstate_vars)) then !c12
-
-             do j = 1, nlevdecomp
-                do k = 1, ndecomp_pools
-                   if (zsoi(j) < 0.3 ) then  !! only initialize upper soil column
-                      this%decomp_cpools_vr_col(c,j,k) = decomp_cascade_con%initial_stock(k)
-                   else
-                      this%decomp_cpools_vr_col(c,j,k) = 0._r8
-                   endif
-                end do
-                this%ctrunc_vr_col(c,j) = 0._r8
-             end do
-             if ( nlevdecomp > 1 ) then
-                do j = nlevdecomp+1, nlevdecomp_full
-                   do k = 1, ndecomp_pools
-                      this%decomp_cpools_vr_col(c,j,k) = 0._r8
-                   end do
-                   this%ctrunc_vr_col(c,j) = 0._r8
-                end do
-             end if
-             this%decomp_cpools_col(c,1:ndecomp_pools)    = decomp_cascade_con%initial_stock(1:ndecomp_pools)
-             this%decomp_cpools_1m_col(c,1:ndecomp_pools) = decomp_cascade_con%initial_stock(1:ndecomp_pools)
-
-          else
-
-             do j = 1, nlevdecomp
-                do k = 1, ndecomp_pools
-                   this%decomp_cpools_vr_col(c,j,k) = c12_carbonstate_vars%decomp_cpools_vr_col(c,j,k) * ratio
-                end do
-                this%ctrunc_vr_col(c,j) = c12_carbonstate_vars%ctrunc_vr_col(c,j) * ratio
-             end do
-             if ( nlevdecomp > 1 ) then
-                do j = nlevdecomp+1, nlevdecomp_full
-                   do k = 1, ndecomp_pools
-                      this%decomp_cpools_vr_col(c,j,k) = 0._r8
-                   end do
-                   this%ctrunc_vr_col(c,j) = 0._r8
-                end do
-             end if
-             this%cwdc_col(c) = c12_carbonstate_vars%cwdc_col(c) * ratio
-             do k = 1, ndecomp_pools
-                this%decomp_cpools_col(c,k)    = c12_carbonstate_vars%decomp_cpools_col(c,k) * ratio
-                this%decomp_cpools_1m_col(c,k) = c12_carbonstate_vars%decomp_cpools_1m_col(c,k) * ratio
-             end do
-
-          endif
 
           this%cwdc_col(c)       = 0._r8
           this%ctrunc_col(c)     = 0._r8
@@ -2429,27 +2216,6 @@ contains
     ! column carbon state variables
     !--------------------------------
 
-    if (carbon_type == 'c12') then
-       do k = 1, ndecomp_pools
-          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c'
-          if (use_vertsoilc) then
-             ptr2d => this%decomp_cpools_vr_col(:,:,k)
-             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
-                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
-                  long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
-          else
-             ptr1d => this%decomp_cpools_vr_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
-             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-                  dim1name='column', long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          end if
-          if (flag=='read' .and. .not. readvar) then
-             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-                  errMsg(__FILE__, __LINE__))
-          end if
-       end do
-    end if
     if(is_active_betr_bgc)then
       if (carbon_type == 'c12') then
         call restartvar(ncid=ncid, flag=flag, varname='totblgc', xtype=ncd_double,  &
@@ -2461,25 +2227,8 @@ contains
            interpinic_flag='interp', readvar=readvar, data=this%cwdc_col)
       endif
     endif
-    if (carbon_type == 'c12') then
-       if (use_vertsoilc) then
-          ptr2d => this%ctrunc_vr_col
-          call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc_vr', xtype=ncd_double,  &
-               dim1name='column', dim2name='levgrnd', switchdim=.true., &
-               long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp', readvar=readvar, data=ptr2d)
-       else
-          ptr1d => this%ctrunc_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
-          call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc', xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       end if
-       if (flag=='read' .and. .not. readvar) then
-          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-    end if
 
+    
     if (carbon_type == 'c12') then
        call restartvar(ncid=ncid, flag=flag, varname='seedc', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
@@ -2487,9 +2236,6 @@ contains
     end if
 
     if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='totlitc', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlitc_col) 
     end if
 
     if (carbon_type == 'c12') then
@@ -2517,43 +2263,12 @@ contains
     end if
 
     if (carbon_type == 'c12') then
-       call restartvar(ncid=ncid, flag=flag, varname='totsomc', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totsomc_col) 
     end if
 
     !--------------------------------
     ! C13 column carbon state variables
     !--------------------------------
 
-    if ( carbon_type == 'c13' ) then
-       do k = 1, ndecomp_pools
-          varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_13'
-          if (use_vertsoilc) then
-             ptr2d => this%decomp_cpools_vr_col(:,:,k)
-             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
-                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
-                  long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
-          else
-             ptr1d => this%decomp_cpools_vr_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
-             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-                  dim1name='column', long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          end if
-          if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%decomp_cpools_vr_col with atmospheric c13 value for: '//varname
-             do i = bounds%begc,bounds%endc
-                do j = 1, nlevdecomp
-                   if (c12_carbonstate_vars%decomp_cpools_vr_col(i,j,k) /= spval .and. &
-                        .not. isnan(this%decomp_cpools_vr_col(i,j,k)) ) then
-                         this%decomp_cpools_vr_col(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr_col(i,j,k) * c3_r2
-                   endif
-                end do
-             end do
-          end if
-       end do
-    end if
 
     if (carbon_type == 'c13') then
        call restartvar(ncid=ncid, flag=flag, varname='seedc_13', xtype=ncd_double,  &
@@ -2568,30 +2283,9 @@ contains
     end if
 
     if (carbon_type == 'c13') then
-       if (use_vertsoilc) then
-          ptr2d => this%ctrunc_vr_col
-          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c13_vr", xtype=ncd_double,  &
-               dim1name='column', dim2name='levgrnd', switchdim=.true., &
-               long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp', readvar=readvar, data=ptr2d)
-       else
-          ptr1d => this%ctrunc_vr_col(:,1)
-          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c13", xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       end if
     end if
 
     if (carbon_type == 'c13') then
-       call restartvar(ncid=ncid, flag=flag, varname='totlitc_13', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlitc_col) 
-       if (flag=='read' .and. .not. readvar) then
-          if (c12_carbonstate_vars%totlitc_col(i) /= spval .and. &
-               .not. isnan( c12_carbonstate_vars%totlitc_col(i) ) ) then
-             this%totlitc_col(i) = c12_carbonstate_vars%totlitc_col(i) * c3_r2
-          end if
-       end if
     end if
 
     if (carbon_type == 'c13') then
@@ -2646,35 +2340,6 @@ contains
     ! C14 column carbon state variables
     !--------------------------------
 
-    if ( carbon_type == 'c14' ) then
-       do k = 1, ndecomp_pools
-          varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_14'
-          if (use_vertsoilc) then
-             ptr2d => this%decomp_cpools_vr_col(:,:,k)
-             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
-                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
-                  long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
-          else
-             ptr1d => this%decomp_cpools_vr_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
-             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-                  dim1name='column', &
-                  long_name='',  units='', fill_value=spval, &
-                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          end if
-          if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%decomp_cpools_vr_col with atmospheric c14 value for: '//trim(varname)
-             do i = bounds%begc,bounds%endc
-                do j = 1, nlevdecomp
-                   if (c12_carbonstate_vars%decomp_cpools_vr_col(i,j,k) /= spval .and. &
-                        .not. isnan(c12_carbonstate_vars%decomp_cpools_vr_col(i,j,k)) ) then
-                         this%decomp_cpools_vr_col(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr_col(i,j,k) * c3_r2
-                   endif
-                end do
-             end do
-          end if
-       end do
-    end if
 
     if ( carbon_type == 'c14' ) then
        call restartvar(ncid=ncid, flag=flag, varname='seedc_14', xtype=ncd_double,  &
@@ -2693,31 +2358,9 @@ contains
     end if
 
     if ( carbon_type == 'c14' ) then
-       if (use_vertsoilc) then 
-          ptr2d => this%ctrunc_vr_col
-          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c14_vr", xtype=ncd_double,  &
-               dim1name='column', dim2name='levgrnd', switchdim=.true., &
-               long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp', readvar=readvar, data=ptr2d)
-       else
-          ptr1d => this%ctrunc_vr_col(:,1)
-          call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c14", xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       end if
     end if
 
     if ( carbon_type == 'c14' ) then
-       call restartvar(ncid=ncid, flag=flag, varname='totlitc_14', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlitc_col) 
-       if (flag=='read' .and. .not. readvar) then
-          write(iulog,*) 'initializing this%totlitc_col with atmospheric c14 value'
-          if (c12_carbonstate_vars%totlitc_col(i) /= spval .and. &
-               .not. isnan(c12_carbonstate_vars%totlitc_col(i)) ) then
-             this%totlitc_col(i) = c12_carbonstate_vars%totlitc_col(i) * c14ratio
-          endif
-       end if
     end if
 
     if ( carbon_type == 'c14' ) then
@@ -2780,11 +2423,13 @@ contains
         if (flag == 'write') then
            idata = spinup_state
         end if
-        if (carbon_type == 'c12' .or. (carbon_type == 'c14' .and. flag == 'read')) then
-        call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
-             long_name='Spinup state of the model that wrote this restart file: ' &
-             // ' 0 = normal model mode, 1 = AD spinup', units='', &
-             interpinic_flag='copy', readvar=readvar,  data=idata)
+        ! Until I get veg carbon state implemented, still need this code
+        ! but took out the write spinup_state since that is happening in col_cs_restartr now
+        if (flag == 'read') then
+           call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
+                long_name='Spinup state of the model that wrote this restart file: ' &
+                // ' 0 = normal model mode, 1 = AD spinup', units='', &
+                interpinic_flag='copy', readvar=readvar,  data=idata)
         end if
 
         if (flag == 'read') then
@@ -2826,20 +2471,6 @@ contains
               call endrun(msg=' CNRest: error in entering/exiting spinup - should occur only when nstep = 1'//&
                    errMsg(__FILE__, __LINE__))
            endif
-           do k = 1, ndecomp_pools
-              do c = bounds%begc, bounds%endc
-                 do j = 1, nlevdecomp
-		    if ( exit_spinup ) then
-		       m = decomp_cascade_con%spinup_factor(k)
-                       if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c,j)
-                    else if ( enter_spinup ) then 
-		       m = 1. / decomp_cascade_con%spinup_factor(k)
-		       if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
-		    end if
-                    this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
-                 end do
-              end do
-           end do
            do i = bounds%begp, bounds%endp
               if (exit_spinup) then 
                  m_veg = spinup_mortality_factor

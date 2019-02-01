@@ -46,7 +46,7 @@ module FireMod
   use GridcellType           , only : grc_pp
   use TopounitDataType       , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es, col_ws  
+  use ColumnDataType         , only : col_es, col_ws, col_cs  
   use VegetationType         , only : veg_pp                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
@@ -247,8 +247,8 @@ contains
          leafc_storage      =>    carbonstate_vars%leafc_storage_patch      , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C storage                            
          leafc_xfer         =>    carbonstate_vars%leafc_xfer_patch         , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C transfer                           
          deadstemc          =>    carbonstate_vars%deadstemc_patch          , & ! Input:[real(r8) (:)       ]  (gC/m2) dead stem C             
-         totlitc            =>    carbonstate_vars%totlitc_col              , & ! Input:  [real(r8) (:)     ]  (gC/m2) total lit C (column-level mean)           
-         decomp_cpools_vr   =>    carbonstate_vars%decomp_cpools_vr_col     , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
+         totlitc            =>    col_cs%totlitc              , & ! Input:  [real(r8) (:)     ]  (gC/m2) total lit C (column-level mean)           
+         decomp_cpools_vr   =>    col_cs%decomp_cpools_vr     , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
          rootc_col          =>    carbonstate_vars%rootc_col                , & ! Output: [real(r8) (:)     ]  root carbon                                       
          totvegc_col        =>    carbonstate_vars%totvegc_col              , & ! Output: [real(r8) (:)     ]  totvegc at column level                           
          leafc_col          =>    carbonstate_vars%leafc_col                , & ! Output: [real(r8) (:)     ]  leaf carbon at column level                       
@@ -788,8 +788,8 @@ contains
         trotr2_col                          =>    cnstate_vars%trotr2_col                                     , & ! Input:  [real(r8) (:)     ]  pft weight of BDT on the gridcell (0-1)           
         dtrotr_col                          =>    cnstate_vars%dtrotr_col                                     , & ! Input:  [real(r8) (:)     ]  ann. decreased frac. coverage of BET+BDT (0-1) on GC
         
-        decomp_cpools_vr                    =>    carbonstate_vars%decomp_cpools_vr_col                       , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
-        totsomc                             =>    carbonstate_vars%totsomc_col                                , & ! Input:  [real(r8) (:)     ]  (gC/m2) total soil organic matter C
+        decomp_cpools_vr                    =>    col_cs%decomp_cpools_vr                       , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
+        totsomc                             =>    col_cs%totsomc                                , & ! Input:  [real(r8) (:)     ]  (gC/m2) total soil organic matter C
         leafcmax                            =>    carbonstate_vars%leafcmax_patch                             , & ! Output: [real(r8) (:)     ]  (gC/m2) ann max leaf C                            
         leafc                               =>    carbonstate_vars%leafc_patch                                , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C                                    
         leafc_storage                       =>    carbonstate_vars%leafc_storage_patch                        , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C storage                            

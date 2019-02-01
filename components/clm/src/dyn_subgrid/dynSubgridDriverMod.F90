@@ -38,6 +38,7 @@ module dynSubgridDriverMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
+  use ColumnDataType      , only : col_cs
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -314,7 +315,7 @@ contains
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               carbonflux_vars, carbonstate_vars)
+               carbonflux_vars, carbonstate_vars, col_cs)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &

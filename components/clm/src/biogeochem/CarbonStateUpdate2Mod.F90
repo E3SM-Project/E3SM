@@ -12,11 +12,12 @@ module CarbonStateUpdate2Mod
   use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
-  use VegetationType        , only : veg_pp
   use pftvarcon        , only : npcropmin
   use clm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp   
   use tracer_varcon    , only : is_active_betr_bgc
+  use ColumnDataType   , only : column_carbon_state
+  use VegetationType        , only : veg_pp
   !
   implicit none
   save
@@ -31,7 +32,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars)
+       carbonflux_vars, carbonstate_vars, col_csv2)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -45,6 +46,7 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(column_carbon_state),intent(inout):: col_csv2
     !
     ! !LOCAL VARIABLES:
     integer  :: c ,p,j ! indices
@@ -54,7 +56,8 @@ contains
     
     associate(                   & 
          cf => carbonflux_vars , &
-         cs => carbonstate_vars  &
+         cs => carbonstate_vars, &
+         csv2 => col_csv2        &
          )
 
       ! set time steps
@@ -69,14 +72,14 @@ contains
                c = filter_soilc(fc)               
 
                ! column gap mortality fluxes
-               cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                    cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                    cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                    cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                    cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_met_lit) = &
+                    csv2%decomp_cpools_vr(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_cel_lit) = &
+                    csv2%decomp_cpools_vr(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_lig_lit) = &
+                    csv2%decomp_cpools_vr(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_cwd) = &
+                    csv2%decomp_cpools_vr(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
             end do
          end do
@@ -120,7 +123,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars)
+       carbonflux_vars, carbonstate_vars, col_csv2)
     !
     ! !DESCRIPTION:
     ! Update all the prognostic carbon state
@@ -134,6 +137,7 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(column_carbon_state),intent(inout):: col_csv2
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k,l ! indices
@@ -144,7 +148,8 @@ contains
     associate(                   & 
          ivt => veg_pp%itype      , & ! Input:  [integer (:)]  pft vegetation type
          cf => carbonflux_vars , &
-         cs => carbonstate_vars  &
+         cs => carbonstate_vars, &
+         csv2 => col_csv2        &
          )
      
       ! set time steps
@@ -159,14 +164,14 @@ contains
                c = filter_soilc(fc)
 
                ! column harvest fluxes
-               cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                    cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                    cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                    cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                    cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+               csv2%decomp_cpools_vr(c,j,i_met_lit) = &
+                    csv2%decomp_cpools_vr(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_cel_lit) = &
+                    csv2%decomp_cpools_vr(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_lig_lit) = &
+                    csv2%decomp_cpools_vr(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+               csv2%decomp_cpools_vr(c,j,i_cwd) = &
+                    csv2%decomp_cpools_vr(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
 
                ! wood to product pools - states updated in WoodProducts()
             end do

@@ -35,6 +35,7 @@ module SoilLittDecompMod
   use WaterStateType         , only : waterstate_type
   use CH4Mod                 , only : ch4_type
   use cropType               , only : crop_type
+  use ColumnDataType         , only : col_cs
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
@@ -174,7 +175,7 @@ contains
          decomp_npools_vr                 =>    nitrogenstate_vars%decomp_npools_vr_col                , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
          decomp_ppools_vr                 =>    phosphorusstate_vars%decomp_ppools_vr_col              , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
-         decomp_cpools_vr                 =>    carbonstate_vars%decomp_cpools_vr_col                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+         decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
 
          w_scalar                         =>    carbonflux_vars%w_scalar_col                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
          

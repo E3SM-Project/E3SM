@@ -22,6 +22,7 @@ module CarbonStateUpdate1Mod
   use CropType               , only : crop_type
   use decompMod              , only : bounds_type
   use clm_varcon             , only : dzsoi_decomp
+  use ColumnDataType         , only : column_carbon_state
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode, use_fates
   !
@@ -39,7 +40,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       carbonflux_vars, carbonstate_vars)
+       carbonflux_vars, carbonstate_vars, col_csv2)
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
@@ -50,6 +51,7 @@ contains
     integer                , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
     type(carbonflux_type)  , intent(in)    :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(column_carbon_state),intent(inout):: col_csv2
     !
     ! !LOCAL VARIABLES:
     integer  :: c   ! column index
@@ -63,7 +65,8 @@ contains
 
     associate( &
          cf => carbonflux_vars  , &
-         cs => carbonstate_vars   &
+         cs => carbonstate_vars , &
+         csv2 => col_csv2         &
          )
 
       dt = real( get_step_size(), r8 )
@@ -80,13 +83,13 @@ contains
             do fc = 1, num_soilc_with_inactive
                c = filter_soilc_with_inactive(fc)
 
-               cs%decomp_cpools_vr_col(c,j,i_met_lit) = cs%decomp_cpools_vr_col(c,j,i_met_lit) + &
+               csv2%decomp_cpools_vr(c,j,i_met_lit) = csv2%decomp_cpools_vr(c,j,i_met_lit) + &
                     cf%dwt_frootc_to_litr_met_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = cs%decomp_cpools_vr_col(c,j,i_cel_lit) + &
+               csv2%decomp_cpools_vr(c,j,i_cel_lit) = csv2%decomp_cpools_vr(c,j,i_cel_lit) + &
                     cf%dwt_frootc_to_litr_cel_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) + &
+               csv2%decomp_cpools_vr(c,j,i_lig_lit) = csv2%decomp_cpools_vr(c,j,i_lig_lit) + &
                     cf%dwt_frootc_to_litr_lig_c_col(c,j) * dt
-               cs%decomp_cpools_vr_col(c,j,i_cwd) = cs%decomp_cpools_vr_col(c,j,i_cwd) + &
+               csv2%decomp_cpools_vr(c,j,i_cwd) = csv2%decomp_cpools_vr(c,j,i_cwd) + &
                     ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) * dt
 
             end do
@@ -100,7 +103,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdate0(&
        num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars)
+       carbonflux_vars, carbonstate_vars, col_csv2)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state
@@ -111,6 +114,7 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(carbonflux_type)  , intent(in)    :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(column_carbon_state),intent(inout):: col_csv2
     !
     ! !LOCAL VARIABLES:
     integer :: p  ! indices
@@ -120,7 +124,8 @@ contains
 
     associate(                                                          & 
          cf                => carbonflux_vars                         , &
-         cs                => carbonstate_vars                          &
+         cs                => carbonstate_vars                        , &
+         csv2              => col_csv2                                  &
          )
 
       ! set time steps
@@ -142,7 +147,7 @@ contains
   subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       crop_vars, carbonflux_vars, carbonstate_vars)
+       crop_vars, carbonflux_vars, carbonstate_vars, col_csv2)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -160,6 +165,7 @@ contains
     type(crop_type)        , intent(inout) :: crop_vars
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(column_carbon_state),intent(inout):: col_csv2
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l ! indices
@@ -177,7 +183,8 @@ contains
          harvdate                      =>    crop_vars%harvdate_patch                         , & ! Input:  [integer  (:)     ]  harvest date                                       
          
          cf => carbonflux_vars  , &
-         cs => carbonstate_vars   &
+         cs => carbonstate_vars , &
+         csv2 => col_csv2         &
 
          )
 
@@ -189,7 +196,7 @@ contains
       if(.not.use_fates) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            cs%decomp_som2c_vr_col(c,1:nlevdecomp) = cs%decomp_cpools_vr_col(c,1:nlevdecomp,6)
+            cs%decomp_som2c_vr_col(c,1:nlevdecomp) = csv2%decomp_cpools_vr(c,1:nlevdecomp,6)
          end do
       end if
 

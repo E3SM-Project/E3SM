@@ -28,7 +28,7 @@ module dynConsBiogeophysMod
   use subgridAveMod     , only : p2c, c2g
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use clm_varcon        , only : spval
-  use GridcellDataType  , only : grc_es, grc_ef, grc_ws
+  use GridcellDataType  , only : grc_es, grc_ef, grc_ws, grc_wf
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType    , only : veg_pp                
@@ -162,8 +162,8 @@ contains
           delta_liq(g)  = grc_ws%liq2(g) - grc_ws%liq1(g)
           delta_ice(g)  = grc_ws%ice2(g) - grc_ws%ice1(g)
           delta_heat(g) = grc_es%heat2(g) - grc_es%heat1(g)
-          waterflux_vars%qflx_liq_dynbal_grc (g) = delta_liq(g)/dtime
-          waterflux_vars%qflx_ice_dynbal_grc (g) = delta_ice(g)/dtime
+          grc_wf%qflx_liq_dynbal (g) = delta_liq(g)/dtime
+          grc_wf%qflx_ice_dynbal (g) = delta_ice(g)/dtime
           grc_ef%eflx_dynbal    (g) = delta_heat(g)/dtime
        end do
     end if
@@ -175,15 +175,15 @@ contains
     !     liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
     !     delta_heat = delta_heat(bounds%begg:bounds%endg))
 
-    !call waterflux_vars%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
+    !call grc_wf%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
     !     delta_liq(begg:endg))
-    !call waterflux_vars%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
-    !     waterflux_vars%qflx_liq_dynbal_grc(begg:endg))
+    !call grc_wf%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
+    !     grc_wf%qflx_liq_dynbal(begg:endg))
 
-    !call waterflux_vars%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
+    !call grc_wf%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
     !     delta_ice(begg:endg))
-    !call waterflux_vars%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
-    !     waterflux_vars%qflx_ice_dynbal_grc(begg:endg))
+    !call grc_wf%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
+    !     grc_wf%qflx_ice_dynbal(begg:endg))
 
     !call energyflux_vars%eflx_dynbal_dribbler%set_curr_delta(bounds, &
     !     delta_heat(begg:endg))
