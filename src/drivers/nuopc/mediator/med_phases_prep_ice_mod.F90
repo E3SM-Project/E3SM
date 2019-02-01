@@ -203,7 +203,11 @@ module med_phases_prep_ice_mod
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        do n = 1,size(temperature)
-          pot_temp(n) = temperature(n) * (100000._R8/pressure(n))**0.286_R8 ! Potential temperature (K)
+          if (pressure(n) /= 0._R8) then
+             pot_temp(n) = temperature(n) * (100000._R8/pressure(n))**0.286_R8 ! Potential temperature (K)
+          else
+             pot_temp(n) = 0._R8
+          end if
        end do
     end if
 
