@@ -8,16 +8,15 @@
 #    
 #  ne4  ultra-low-res for testing
 #  ne30 (1 degree) 
-#  ne120 (1/4 degree)
+#  ne256   15 days, 2h, 512 nodes
+#  ne1024  15 days, 32h, 2048 nodes
 #
 #
-#
-#SBATCH --job-name nggpsbench
+#SBATCH --job-name nhbench
 #SBATCH -N 512
 #SBATCH -C knl
+#SBATCH -q debug
 #SBATCH --time=0:30:00
-#XSBATCH --account=FY150001
-#XSBATCH -p ec
 #
 #  set paths to source code, build directory and run directory
 #
@@ -31,6 +30,7 @@ set MACH = $HOMME/cmake/machineFiles/cori-knl.cmake
 # use 4 nodes
 #set namelist = nggps-tiny.nl ; set name = tiny      
 #set namelist = nggps-nh-ne256.nl  ; set name = nh-ne265
+#set namelist = nggps-nh-ne256-io.nl  ; set name = nh-ne265
 set namelist = nggps-nh-ne1024.nl ; set name = nh-ne1024
 
 # good Edison nodes:  64  128  256 512 1024 2048  4096  5462
@@ -130,6 +130,7 @@ endif
 #  Run the code
 #
 mkdir -p $run/movies
+mkdir -p $run/restart
 cd $run
 
 

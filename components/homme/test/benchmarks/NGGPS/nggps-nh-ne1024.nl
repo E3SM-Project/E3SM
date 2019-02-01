@@ -8,13 +8,14 @@ rotate_grid = 0
 ne=1024
 qsize = 10
 ! tstep=9  200 steps = 30min  (Bechmark reports 30min time)
-nmax = 90
-statefreq=360
+nmax = 200
+statefreq=200
 disable_diagnostics = .true.
 theta_hydrostatic_mode=.false.
+theta_advect_form = 1
 runtype       = 0
 tstep=9
-rsplit=3
+rsplit=8
 qsplit = 1
 tstep_type = 7
 integration   = "explicit"
@@ -52,9 +53,9 @@ profile_single_file		= .true.
  output_frequency=0,0
  output_start_time=0,0
  output_end_time=30000,30000
- output_varnames1='ps','zeta','dp3d'
+ output_varnames1='ps','zeta'
  output_varnames2='Q','Q2','Q3','Q4','Q5'
  io_stride=8
- output_type = 'netcdf' 
+ output_type = 'pnetcdf64' 
 /
 
