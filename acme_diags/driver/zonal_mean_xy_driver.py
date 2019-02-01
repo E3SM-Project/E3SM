@@ -17,10 +17,20 @@ def regrid_to_lower_res_1d(mv1, mv2):
 
     if mv1 is None or mv2 is None:
         return None
-    missing = mv1.get_fill_value()
+    # missing = mv1.get_fill_value()
+    # latitude needs to be in ascending
     axis1 = mv1.getAxisList()[0]
     axis2 = mv2.getAxisList()[0]
+    if axis1[-1] < axis1[0]:
+        mv1 = mv1[::-1]
+    if axis2[-1] < axis2[0]:
+        mv2 = mv2[::-1]
+    axis1 = mv1.getAxisList()[0]
+    axis2 = mv2.getAxisList()[0]
+
+
     if len(axis1) <= len(axis2):
+        missing = mv2.get_fill_value()
         mv1_reg = mv1
         b0 = numpy.interp(axis1[:], axis2[:], mv2[:],
                           left=missing, right=missing)
@@ -29,6 +39,7 @@ def regrid_to_lower_res_1d(mv1, mv2):
         mv2_reg = cdms2.createVariable(b0, mask=[True if bb == missing or bb_mask != 0.0 else False for (
             bb, bb_mask) in zip(b0[:], b0_mask[:])], axes=[axis1])
     else:
+        missing = mv1.get_fill_value()
         a0 = numpy.interp(axis2[:], axis1[:], mv1[:],
                           left=missing, right=missing)
         a0_mask = numpy.interp(
