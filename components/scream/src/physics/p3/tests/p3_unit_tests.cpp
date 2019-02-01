@@ -4,7 +4,7 @@
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_kokkos.hpp"
 #include "share/scream_pack.hpp"
-#include "p3_functions.hpp"
+#include "physics/p3/p3_functions.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
 
 #include <thread>
@@ -23,7 +23,7 @@ using namespace scream::p3;
 struct UnitWrap {
 
 template <typename D=DefaultDevice>
-struct UnitTest {
+struct UnitTest : public KokkosTypes<D> {
 
 using Device     = D;
 using MemberType = typename KokkosTypes<Device>::MemberType;
@@ -119,7 +119,6 @@ static void unittest_find_top_bottom()
   }
 }
 
-#if 0
 // Derive rough bounds on table domain:
 //
 // First, mu_r is in [0,9].
@@ -176,10 +175,7 @@ struct TestTable3 {
     return val;
   }
 
-  static int run () {
-    Int nerr = 0;
-    return nerr; // TODO: remove once we can test this code without needing micro-app
-
+  static void run () {
     // This test doesn't use mu_r_table, as that is not a table3 type. It
     // doesn't matter whether we use vm_table or vn_table, as the table values
     // don't matter in what we are testing; we are testing interpolation
@@ -236,7 +232,7 @@ struct TestTable3 {
         << slopes[0] << " and " << slopes[1]
         << ", which grows by factor " << growth
         << ". Near 1 is good; near 10 is bad.\n";
-        ++nerr;
+        REQUIRE(false);
       }
     };
     check_growth("mu_r", slopes[1]/slopes[0]);
@@ -268,8 +264,6 @@ struct TestTable3 {
       slopes[refine] = max_slope;
     }
     check_growth("lamr", slopes[1]/slopes[0]);
-
-    return nerr;
   }
 };
 
@@ -285,7 +279,7 @@ struct TestTable3 {
 // profile should be nontrivial. Also, it is initialized so the first and last
 // cells in the domain are 0. This lets us check the restricted-domain usage of
 // the upwind routine in the first time step.
-static int unittest_upwind () {
+static void unittest_upwind () {
   static const Int nfield = 2;
 
   using Functions = scream::p3::Functions<Real, Device>;
@@ -337,10 +331,10 @@ static int unittest_upwind () {
             } else {
               r[i](k) = 1; // Evolve the background density field.
             }
-            micro_kassert((V[i](k) >= 0).all());
-            micro_kassert((V[i](k) <= max_speed || (range >= nk)).all());
+            scream_kassert((V[i](k) >= 0).all());
+            scream_kassert((V[i](k) <= max_speed || (range >= nk)).all());
           }
-          micro_kassert((V[0](k) == V[1](k)).all());
+          scream_kassert((V[0](k) == V[1](k)).all());
         };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npack), set_fields);
         team.team_barrier();
@@ -435,13 +429,11 @@ static int unittest_upwind () {
                                 step, lnerr);
         nerr += lnerr;
         Kokkos::fence();
+        REQUIRE(nerr == 0);
       }
     }
   }
-
-  return nerr;
 }
-#endif
 
 };
 };
@@ -451,9 +443,8 @@ TEST_CASE("p3_find", "[p3_functions]")
   UnitWrap::UnitTest<scream::DefaultDevice>::unittest_find_top_bottom();
 }
 
-} // namespace
-
-#if 0
+TEST_CASE("p3_tables", "[p3_functions]")
+{
   // Populate tables with contrived values, don't need realistic values
   // for unit testing
   using Globals = scream::p3::Globals<Real>;
@@ -463,37 +454,16 @@ TEST_CASE("p3_find", "[p3_functions]")
       Globals::VM_TABLE[i][j] = i * j;
     }
   }
+
   for (size_t i = 0; i < Globals::MU_R_TABLE.size(); ++i) {
     Globals::MU_R_TABLE[i] = i;
   }
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3::run();
+}
 
-  int out = 0; // running error count
+TEST_CASE("p3_upwind", "[p3_functions]")
+{
+  UnitWrap::UnitTest<scream::DefaultDevice>::unittest_upwind();
+}
 
-  const auto wrap_test = [&] (const std::string& name, const Int& ne) {
-    if (ne) std::cout << name << " failed with nerr " << ne << "\n";
-    out += ne;
-  };
-
-  // NOTE: Kokkos does not tolerate changing num_threads post-kokkos-initialization
-  for (int nt = lower; nt <= upper; nt+=increment) { // #threads sweep
-#ifdef KOKKOS_ENABLE_OPENMP
-    omp_set_num_threads(nt);
-#endif
-    Kokkos::initialize(argc, argv); {
-      // thread-insensitive tests
-      if (brief && nt == upper) {
-        wrap_test("table3", UnitTest<>::TestTable3::run());
-      }
-
-      // thread-sensitive tests
-      {
-        wrap_test("upwind", UnitTest<>::unittest_upwind());
-        wrap_test("find_top/bottom", UnitTest<>::unittest_find_top_bottom(nt));
-      }
-    } Kokkos::finalize();
-  }
-
-  if (out != 0) std::cout << "Some tests failed" << std::endl;
-
-  return out != 0 ? -1 : 0;
-#endif
+} // namespace

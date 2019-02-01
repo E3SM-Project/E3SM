@@ -4,8 +4,8 @@
 #include "share/scream_types.hpp"
 #include "share/scream_assert.hpp"
 
-#include "p3_f90.hpp"
-#include "p3_ic_cases.hpp"
+#include "physics/p3/p3_f90.hpp"
+#include "physics/p3/p3_ic_cases.hpp"
 
 #include <vector>
 
