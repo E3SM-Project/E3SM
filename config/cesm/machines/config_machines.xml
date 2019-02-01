@@ -1967,8 +1967,12 @@ This allows using a different mpirun command to launch unit tests
     <MPILIBS>impi,mvapich2</MPILIBS>
     <PROJECT>TG-ATM180016</PROJECT>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
+    <!--
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    -->
+    <DIN_LOC_ROOT>/work/06242/tg855414/stampede2/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/work/06242/tg855414/stampede2/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/scratch/projects/xsede/CESM//cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -2027,12 +2031,14 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMFMKFILE">/work/02503/edwardsj/stampede2/esmf_8.0.0bs27/lib/libg/Linux.intel.64.mvapich2.default/esmf.mk</env>
      </environment_variables>
     <environment_variables comp_interface="nuopc" mpilib="impi">
-      <env name="ESMFMKFILE">/work/02503/edwardsj/stampede2/esmf_8.0.0bs27/lib/libg/Linux.intel.64.intelmpi.default/esmf.mk</env>
+      <!-- <env name="ESMFMKFILE">/work/02503/edwardsj/stampede2/esmf_8.0.0bs27/lib/libg/Linux.intel.64.intelmpi.default/esmf.mk</env> -->
+      <env name="ESMFMKFILE">/work/06242/tg855414/stampede2/ESMF-INSTALL/8.0.0bs28/lib/libO/Linux.intel.64.intelmpi.default/esmf.mk</env>
      </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/work/02503/edwardsj/stampede2/FV3GFS/benchmark-20181016/</env>
+      <!-- <env name="UGCSINPUTPATH">/work/02503/edwardsj/stampede2/FV3GFS/benchmark-20181016/</env> -->
+      <env name="UGCSINPUTPATH">/work/06242/tg855414/stampede2/FV3GFS/benchmark-20181016</env>
     </environment_variables>
   </machine>
 
@@ -2117,7 +2123,7 @@ This allows using a different mpirun command to launch unit tests
     <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>mpirun</executable>
+      <executable>mpirun -l</executable>
       <arguments>
 	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
@@ -2132,15 +2138,20 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
       <modules compiler="intel">
-	<command name="purge"/>
-	<command name="load">intel</command>
-	<command name="load">impi/5.1.1.109</command>
-	<command name="load">netcdf/4.3.0</command>
-	<command name="load">pnetcdf</command>
-	<command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
-	<command name="load">esmf/8.0.0bs15</command>
+        <command name="purge"/>
+        <command name="load">intel/15.1.133</command>
+        <command name="load">impi/5.1.1.109</command>
+        <command name="load">netcdf/4.3.0</command>
+        <command name="load">pnetcdf</command>
+        <command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
+        <command name="load">esmf/8.0.0bs28g</command>
       </modules>
     </module_system>
+    <environment_variables comp_interface="nuopc">     
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+      <env name="UGCSINPUTPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/benchmark-20181016</env>
+    </environment_variables>   
   </machine>
 
   <machine MACH="theta">
