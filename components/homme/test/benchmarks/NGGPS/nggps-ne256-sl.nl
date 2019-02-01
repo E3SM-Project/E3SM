@@ -16,11 +16,9 @@ restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = 0
 theta_hydrostatic_mode=.true.
+theta_advect_form = 1
 tstep=40
-
-!rsplit=3
-!qsplit = 1
-
+semi_lagrange_nearest_point_lev=100
 cubed_sphere_map=2
 rsplit = 1
 qsplit = 8
