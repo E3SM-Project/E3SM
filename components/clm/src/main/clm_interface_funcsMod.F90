@@ -30,6 +30,7 @@ module clm_interface_funcsMod
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf 
+  use ColumnDataType        , only : col_cs
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -521,7 +522,7 @@ contains
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr=> carbonstate_vars%decomp_cpools_vr_col     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+       decomp_cpools_vr=> col_cs%decomp_cpools_vr     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
        decomp_npools_vr=> nitrogenstate_vars%decomp_npools_vr_col   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
        decomp_ppools_vr=> phosphorusstate_vars%decomp_ppools_vr_col , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
        smin_no3_vr     => nitrogenstate_vars%smin_no3_vr_col        , & ! (gN/m3) vertically-resolved soil mineral NO3
@@ -897,7 +898,7 @@ contains
 !------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr             => carbonstate_vars%decomp_cpools_vr_col           , &
+       decomp_cpools_vr             => col_cs%decomp_cpools_vr           , &
        decomp_npools_vr             => nitrogenstate_vars%decomp_npools_vr_col         , &
        decomp_ppools_vr             => phosphorusstate_vars%decomp_ppools_vr_col         &
     )
@@ -1448,7 +1449,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-        decomp_cpools_vr        => carbonstate_vars%decomp_cpools_vr_col        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+        decomp_cpools_vr        => col_cs%decomp_cpools_vr        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
         decomp_npools_vr        => nitrogenstate_vars%decomp_npools_vr_col      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
         decomp_ppools_vr        => phosphorusstate_vars%decomp_ppools_vr_col    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 

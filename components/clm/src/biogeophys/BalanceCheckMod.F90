@@ -20,7 +20,7 @@ module BalanceCheckMod
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
   use GridcellType       , only : grc_pp
-  use GridcellDataType   , only : grc_ef
+  use GridcellDataType   , only : grc_ef, grc_wf
   use TopounitDataType   , only : top_af ! atmospheric flux variables  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp
@@ -244,8 +244,8 @@ contains
           qflx_glcice_frz            =>    col_wf%qflx_glcice_frz         , & ! Input:  [real(r8) (:)   ]  ice growth (mm H2O/s) [+]               
           qflx_top_soil              =>    col_wf%qflx_top_soil           , & ! Input:  [real(r8) (:)   ]  net water input into soil from top (mm/s)
           qflx_sl_top_soil           =>    col_wf%qflx_sl_top_soil        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
-          qflx_liq_dynbal            =>    waterflux_vars%qflx_liq_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
-          qflx_ice_dynbal            =>    waterflux_vars%qflx_ice_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
+          qflx_liq_dynbal            =>    grc_wf%qflx_liq_dynbal         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
+          qflx_ice_dynbal            =>    grc_wf%qflx_ice_dynbal         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
           snow_sources               =>    col_wf%snow_sources            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
           snow_sinks                 =>    col_wf%snow_sinks              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
           qflx_lateral               =>    col_wf%qflx_lateral            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)

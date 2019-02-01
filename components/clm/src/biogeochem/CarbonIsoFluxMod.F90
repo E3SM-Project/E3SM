@@ -14,7 +14,8 @@ module CarbonIsoFluxMod
   use CNCarbonFluxType       , only : carbonflux_type
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use ColumnType             , only : col_pp                
+  use ColumnType             , only : col_pp 
+  use ColumnDataType         , only : column_carbon_state, col_cs  
   use VegetationType              , only : veg_pp                
   !
   implicit none
@@ -39,7 +40,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic flux
@@ -57,6 +58,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    type(column_carbon_state),intent(in)   :: isocol_cs
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi,l,fc,cc,j
@@ -379,11 +381,11 @@ contains
             cc = filter_soilc(fc)
             do j = 1, nlevdecomp
                do l = 1, ndecomp_cascade_transitions
-                  if ( carbonstate_vars%decomp_cpools_vr_col(cc,j,cascade_donor_pool(l)) /= 0._r8) then
+                  if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
                      isotopeflux_vars%decomp_cascade_hr_vr_col(cc,j,l)  =  &
                           carbonflux_vars%decomp_cascade_hr_vr_col(cc,j,l) * &
-                          (isotopestate_vars%decomp_cpools_vr_col(cc,j,cascade_donor_pool(l)) &
-                         / carbonstate_vars%decomp_cpools_vr_col(cc,j,cascade_donor_pool(l))) * 1._r8
+                          (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
+                         / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
                   else
                      isotopeflux_vars%decomp_cascade_hr_vr_col(cc,j,l) = 0._r8
                   end if
@@ -395,11 +397,11 @@ contains
             cc = filter_soilc(fc)
             do j = 1, nlevdecomp
                do l = 1, ndecomp_cascade_transitions
-                  if ( carbonstate_vars%decomp_cpools_vr_col(cc,j,cascade_donor_pool(l)) /= 0._r8) then
+                  if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
                      isotopeflux_vars%decomp_cascade_ctransfer_vr_col(cc,j,l)  =  &
                           carbonflux_vars%decomp_cascade_ctransfer_vr_col(cc,j,l) * &
-                          (isotopestate_vars%decomp_cpools_vr_col(cc,j,cascade_donor_pool(l)) &
-                          / carbonstate_vars%decomp_cpools_vr_col(cc,j,cascade_donor_pool(l))) * 1._r8
+                          (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
+                          / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
                   else
                      isotopeflux_vars%decomp_cascade_ctransfer_vr_col(cc,j,l) = 0._r8
                   end if
@@ -414,7 +416,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
@@ -431,6 +433,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    type(column_carbon_state),intent(in)   :: isocol_cs
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi
@@ -553,7 +556,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2h(num_soilc , filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
     !
     ! !DESCRIPTION:
     ! set the carbon isotopic fluxes for harvest mortality
@@ -569,6 +572,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    type(column_carbon_state),intent(in)   :: isocol_cs
     !-----------------------------------------------------------------------
 
     ! patch-level gap mortality fluxes
@@ -698,7 +702,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
@@ -715,6 +719,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
+    type(column_carbon_state),intent(in)   :: isocol_cs
     !
     ! !LOCAL VARIABLES:
     integer :: pi,pp,l,fc,cc,j
@@ -881,10 +886,10 @@ contains
             cc = filter_soilc(fc)
             do j = 1, nlevdecomp
                do l = 1, ndecomp_pools
-                  if ( carbonstate_vars%decomp_cpools_vr_col(cc,j,l) /= 0._r8) then
+                  if ( col_cs%decomp_cpools_vr(cc,j,l) /= 0._r8) then
                      isotopeflux_vars%m_decomp_cpools_to_fire_vr_col(cc,j,l)  =  &
                           carbonflux_vars%m_decomp_cpools_to_fire_vr_col(cc,j,l) * &
-                          (isotopestate_vars%decomp_cpools_vr_col(cc,j,l) / carbonstate_vars%decomp_cpools_vr_col(cc,j,l)) * 1._r8
+                          (isocol_cs%decomp_cpools_vr(cc,j,l) / col_cs%decomp_cpools_vr(cc,j,l)) * 1._r8
                   else
                      isotopeflux_vars%m_decomp_cpools_to_fire_vr_col(cc,j,l) = 0._r8
                   end if

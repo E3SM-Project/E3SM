@@ -57,13 +57,13 @@ contains
     integer                             :: count
 
     associate(& 
-         mflx_infl            => waterflux_vars%mflx_infl_col            , &
-         mflx_et              => waterflux_vars%mflx_et_col              , &
-         mflx_dew             => waterflux_vars%mflx_dew_col             , &
-         mflx_sub_snow        => waterflux_vars%mflx_sub_snow_col        , &
-         mflx_snowlyr_disp    => waterflux_vars%mflx_snowlyr_disp_col    , &
-         mflx_snowlyr         => waterflux_vars%mflx_snowlyr_col         , &
-         mflx_drain           => waterflux_vars%mflx_drain_col           , &
+         mflx_infl            => col_wf%mflx_infl            , &
+         mflx_et              => col_wf%mflx_et              , &
+         mflx_dew             => col_wf%mflx_dew             , &
+         mflx_sub_snow        => col_wf%mflx_sub_snow        , &
+         mflx_snowlyr_disp    => col_wf%mflx_snowlyr_disp    , &
+         mflx_snowlyr         => col_wf%mflx_snowlyr         , &
+         mflx_drain           => col_wf%mflx_drain           , &
          qflx_infl            => col_wf%qflx_infl            , &
          qflx_totdrain        => col_wf%qflx_totdrain        , &
          qflx_gross_evap_soil => col_wf%qflx_gross_evap_soil , &

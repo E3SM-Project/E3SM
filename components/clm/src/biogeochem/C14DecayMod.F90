@@ -13,6 +13,7 @@ module C14DecayMod
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
   use clm_varctl             , only : nu_com
+  use ColumnDataType         , only : c14_col_cs
   !
   implicit none
   save
@@ -63,7 +64,7 @@ contains
     associate(                                                                    & 
          spinup_factor      =>    decomp_cascade_con%spinup_factor              , & ! Input:   [real(r8) (:)     ]  factor for AD spinup associated with each pool
 
-         decomp_cpools_vr   =>    c14_carbonstate_vars%decomp_cpools_vr_col     , & ! Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+         decomp_cpools_vr   =>    c14_col_cs%decomp_cpools_vr     , & ! Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
          seedc              =>    c14_carbonstate_vars%seedc_col                , & ! Output:  [real(r8) (:)     ]                                          
          cpool              =>    c14_carbonstate_vars%cpool_patch              , & ! Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool  
          xsmrpool           =>    c14_carbonstate_vars%xsmrpool_patch           , & ! Output:  [real(r8) (:)     ]  (gC/m2) execss maint resp C pool        

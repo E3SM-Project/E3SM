@@ -5,17 +5,18 @@ module GridcellDataType
   ! Gridcell data type allocation and initialization
   ! -------------------------------------------------------- 
   !
-  use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb
-  use clm_varcon     , only : spval, ispval
-  use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
-  use ncdio_pio      , only : file_desc_t, ncd_double
-  use decompMod      , only : bounds_type
+  use shr_kind_mod      , only : r8 => shr_kind_r8
+  use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
+  use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
+  use clm_varcon        , only : spval, ispval
+  use histFileMod       , only : hist_addfld1d, hist_addfld2d, no_snow_normal
+  use ncdio_pio         , only : file_desc_t, ncd_double
+  use decompMod         , only : bounds_type
   use restUtilMod
-  use ColumnType     , only : col_pp
-  use LandunitType   , only : lun_pp
-  use GridcellType   , only : grc_pp
+  use AnnualFluxDribbler, only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
+  use ColumnType        , only : col_pp
+  use LandunitType      , only : lun_pp
+  use GridcellType      , only : grc_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -68,11 +69,32 @@ module GridcellDataType
   end type gridcell_water_state
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds energy flux information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_water_flux
+    ! temperature variables
+    ! Dynamic land cover change
+    real(r8), pointer :: qflx_liq_dynbal      (:)   ! liq dynamic land cover change conversion runoff flux
+    real(r8), pointer :: qflx_ice_dynbal      (:)   ! ice dynamic land cover change conversion runoff flux
+
+    ! Objects that help convert once-per-year dynamic land cover changes into fluxes
+    ! that are dribbled throughout the year
+    type(annual_flux_dribbler_type) :: qflx_liq_dynbal_dribbler
+    type(annual_flux_dribbler_type) :: qflx_ice_dynbal_dribbler
+
+  contains
+    procedure, public :: Init    => grc_wf_init
+    procedure, public :: Restart => grc_wf_restart
+    procedure, public :: Clean   => grc_wf_clean
+  end type gridcell_water_flux
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es    ! gridcell energy state
   type(gridcell_energy_flux)           , public, target :: grc_ef    ! gridcell energy flux
   type(gridcell_water_state)           , public, target :: grc_ws    ! gridcell water state
+  type(gridcell_water_flux)            , public, target :: grc_wf    ! gridcell water flux
   !------------------------------------------------------------------------
 
 contains
@@ -242,6 +264,81 @@ contains
     deallocate(this%tws )
   end subroutine grc_ws_clean
 
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell water flux data structure
+  !------------------------------------------------------------------------
+  subroutine grc_wf_init(this, begg, endg, bounds)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_water_flux) :: this
+    integer, intent(in) :: begg,endg
+    type(bounds_type)    , intent(in)  :: bounds
+    !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_wf
+    !-----------------------------------------------------------------------
+    allocate(this%qflx_liq_dynbal      (begg:endg))              ; this%qflx_liq_dynbal      (:)   = nan
+    allocate(this%qflx_ice_dynbal      (begg:endg))              ; this%qflx_ice_dynbal      (:)   = nan
+
+    this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
+         bounds = bounds, &
+         name = 'qflx_liq_dynbal', &
+         units = 'mm H2O')
+
+    this%qflx_ice_dynbal_dribbler = annual_flux_dribbler_gridcell( &
+         bounds = bounds, &
+         name = 'qflx_ice_dynbal', &
+         units = 'mm H2O')
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_wf
+    !-----------------------------------------------------------------------
+    this%qflx_liq_dynbal(begg:endg) = spval
+    call hist_addfld1d (fname='QFLX_LIQ_DYNBAL',  units='mm/s',  &  
+         avgflag='A', long_name='liq dynamic land cover change conversion runoff flux', &              
+         ptr_lnd=this%qflx_liq_dynbal)     
+
+    this%qflx_ice_dynbal(begg:endg) = spval
+    call hist_addfld1d (fname='QFLX_ICE_DYNBAL',  units='mm/s',  &
+         avgflag='A', long_name='ice dynamic land cover change conversion runoff flux', &                                   
+         ptr_lnd=this%qflx_ice_dynbal)
+  
+  end subroutine grc_wf_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_wf_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write gridcell water flux information to/from restart file.
+    !
+    ! !ARGUMENTS:
+    class(gridcell_water_flux) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+    call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
+    call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
+
+  end subroutine grc_wf_restart
+
+  !------------------------------------------------------------------------
+  subroutine grc_wf_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_water_flux) :: this
+    !------------------------------------------------------------------------
+    deallocate(this%qflx_liq_dynbal)
+    deallocate(this%qflx_ice_dynbal)
+
+    end subroutine grc_wf_clean
+
+  
 end module GridcellDataType
 
   

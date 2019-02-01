@@ -1633,7 +1633,7 @@ contains
           qflx_rsub_sat      =>    col_wf%qflx_rsub_sat      , & ! Output: [real(r8) (:)   ] soil saturation excess [mm h2o/s]
           qflx_drain_perched =>    col_wf%qflx_drain_perched , & ! Output: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)
 
-          mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
+          mflx_drain_perched_col_1d =>    col_wf%mflx_drain_perched_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
 
           h2osoi_liq         =>    col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
           h2osoi_ice         =>    col_ws%h2osoi_ice          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)

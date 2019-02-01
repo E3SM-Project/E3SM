@@ -933,15 +933,14 @@ contains
          qflx_sub_snow             =>    col_wf%qflx_sub_snow           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
          qflx_drain                =>    col_wf%qflx_drain              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
 
-         mflx_infl_col             =>    waterflux_vars%mflx_infl_col               , & ! Output: [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
-         mflx_dew_col              =>    waterflux_vars%mflx_dew_col                , & ! Output: [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
-         mflx_snowlyr_disp_col     =>    waterflux_vars%mflx_snowlyr_disp_col       , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-         mflx_sub_snow_col         =>    waterflux_vars%mflx_sub_snow_col           , & ! Output: [real(r8) (:)   ]  mass flux from top soil layer due to sublimation of snow (kg H2O /s)
-         mflx_et_col               =>    waterflux_vars%mflx_et_col                 , & ! Output: [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
-         mflx_drain_col            =>    waterflux_vars%mflx_drain_col              , & ! Output: [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
-
-         mflx_snowlyr_col          =>    waterflux_vars%mflx_snowlyr_col            , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-         mflx_neg_snow_col_1d      =>    waterflux_vars%mflx_neg_snow_col_1d        , & ! Input:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
+         mflx_infl_col             =>    col_wf%mflx_infl               , & ! Output: [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
+         mflx_dew_col              =>    col_wf%mflx_dew                , & ! Output: [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
+         mflx_snowlyr_disp_col     =>    col_wf%mflx_snowlyr_disp       , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+         mflx_sub_snow_col         =>    col_wf%mflx_sub_snow           , & ! Output: [real(r8) (:)   ]  mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+         mflx_et_col               =>    col_wf%mflx_et                 , & ! Output: [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
+         mflx_drain_col            =>    col_wf%mflx_drain              , & ! Output: [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
+         mflx_snowlyr_col          =>    col_wf%mflx_snowlyr            , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+         mflx_neg_snow_col_1d      =>    col_wf%mflx_neg_snow_1d        , & ! Input:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
 
          t_soisno                  =>    col_es%t_soisno                & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          )
