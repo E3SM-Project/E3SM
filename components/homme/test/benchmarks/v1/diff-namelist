@@ -1,6 +1,7 @@
 
-file1=inpu.nl
-file2=v1-ne120-thetal-h-euler.nl
+file1=v1-ne120-sl.nl
+file2=v1-ne120.nl
+#file2=v1-ne120-thetal-h-sl.nl
 
 
 echo "Comparing namelists ${file1}, ${file2}"
