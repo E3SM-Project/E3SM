@@ -18,6 +18,7 @@ module CarbonStateUpdate2Mod
   use tracer_varcon    , only : is_active_betr_bgc
   use ColumnDataType   , only : column_carbon_state
   use VegetationType        , only : veg_pp
+  use VegetationDataType     , only : vegetation_carbon_state
   !
   implicit none
   save
@@ -32,7 +33,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars, col_csv2)
+       carbonflux_vars, carbonstate_vars, col_csv2, veg_csv2)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -47,6 +48,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     type(column_carbon_state),intent(inout):: col_csv2
+    type(vegetation_carbon_state),intent(inout) :: veg_csv2
     !
     ! !LOCAL VARIABLES:
     integer  :: c ,p,j ! indices
@@ -57,7 +59,8 @@ contains
     associate(                   & 
          cf => carbonflux_vars , &
          cs => carbonstate_vars, &
-         csv2 => col_csv2        &
+         csv2 => col_csv2      , &
+         vcsv2 => veg_csv2       &
          )
 
       ! set time steps
@@ -123,7 +126,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars, col_csv2)
+       carbonflux_vars, carbonstate_vars, col_csv2, veg_csv2)
     !
     ! !DESCRIPTION:
     ! Update all the prognostic carbon state
@@ -138,6 +141,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     type(column_carbon_state),intent(inout):: col_csv2
+    type(vegetation_carbon_state),intent(inout) :: veg_csv2
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k,l ! indices
@@ -149,7 +153,8 @@ contains
          ivt => veg_pp%itype      , & ! Input:  [integer (:)]  pft vegetation type
          cf => carbonflux_vars , &
          cs => carbonstate_vars, &
-         csv2 => col_csv2        &
+         csv2 => col_csv2      , &
+         vcsv2 => veg_csv2       &
          )
      
       ! set time steps

@@ -40,6 +40,7 @@ module CNEcosystemDynBetrMod
   use PhosphorusStateType       , only : phosphorusstate_type
   use dynSubgridControlMod      , only : get_do_harvest
   use ColumnDataType            , only : col_cs, c13_col_cs, c14_col_cs
+  use VegetationDataType        , only : veg_cs, c13_veg_cs, c14_veg_cs
 
   implicit none
 
@@ -307,18 +308,18 @@ module CNEcosystemDynBetrMod
        call t_startf('CNUpdate0')
        call CarbonStateUpdate0(&
             num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars, col_cs)
+            carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate0(&
                num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs)
        end if
 
        if ( use_c14 ) then
           call CarbonStateUpdate0(&
                num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs)
        end if
        call t_stopf('CNUpdate0')
 
@@ -343,15 +344,15 @@ module CNEcosystemDynBetrMod
        end if
 
        call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars, col_cs)
+            crop_vars, carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs)
        end if
 
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -390,15 +391,15 @@ module CNEcosystemDynBetrMod
        end if
 
        call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars, col_cs)
+            carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs)
        end if
        call NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
@@ -426,14 +427,14 @@ module CNEcosystemDynBetrMod
        end if
 
        call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars, col_cs)
+            carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
        if ( use_c13 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs)
        end if
 
        call NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -480,15 +481,15 @@ module CNEcosystemDynBetrMod
        end if
 
        call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars, col_cs)
+            carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
 
        if ( use_c13 ) then
           call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs)
+               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs)
+               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs)
        end if
 
 

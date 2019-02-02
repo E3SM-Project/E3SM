@@ -136,6 +136,7 @@ module clm_driver
   use ColumnDataType         , only : col_cs  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws, veg_wf
+  use VegetationDataType     , only : veg_cs   
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -340,9 +341,12 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
 
-          call col_cs%Summary(bounds_clump, &
+          call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+
+          call col_cs%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
 
           call nitrogenstate_vars%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -398,9 +402,12 @@ contains
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp)
 
-                call col_cs%Summary(bounds_clump, &
+                call veg_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp)
+                     filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+
+                call col_cs%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
 
                 call nitrogenstate_vars%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -463,9 +470,12 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
 
-          call col_cs%Summary(bounds_clump, &
+          call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+
+          call col_cs%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
 
           call nitrogenstate_vars%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &

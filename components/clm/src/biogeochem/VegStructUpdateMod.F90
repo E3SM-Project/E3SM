@@ -104,7 +104,7 @@ contains
 
          forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
 
-         leafc              =>  carbonstate_vars%leafc_patch      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
+         leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
          deadstemc          =>  carbonstate_vars%deadstemc_patch  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
 
          farea_burned       =>  cnstate_vars%farea_burned_col     ,       & ! Input:  [real(r8) (:) ] F. Li and S. Levis                                 

@@ -13,6 +13,7 @@ module CarbonStateUpdate3Mod
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
   use ColumnDataType   , only : column_carbon_state
+  use VegetationDataType     , only : vegetation_carbon_state
   ! bgc interface & pflotran:
   use clm_varctl       , only : use_pflotran, pf_cmode
   !
@@ -28,7 +29,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars, col_csv2)
+       carbonflux_vars, carbonstate_vars, col_csv2, veg_csv2)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -44,6 +45,7 @@ contains
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     type(column_carbon_state),intent(inout):: col_csv2
+    type(vegetation_carbon_state),intent(inout) :: veg_csv2
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k ! indices
@@ -54,7 +56,8 @@ contains
     associate(                   & 
          cf => carbonflux_vars , &
          cs => carbonstate_vars , &
-         csv2 => col_csv2         &
+         csv2 => col_csv2       , &
+         vcsv2 => veg_csv2        &
          )
 
       ! set time steps

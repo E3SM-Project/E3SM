@@ -16,7 +16,8 @@ module CarbonIsoFluxMod
   use CNStateType            , only : cnstate_type
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : column_carbon_state, col_cs  
-  use VegetationType              , only : veg_pp                
+  use VegetationType         , only : veg_pp                
+  use VegetationDataType     , only : vegetation_carbon_state, veg_cs  
   !
   implicit none
   save
@@ -40,7 +41,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic flux
@@ -59,6 +60,7 @@ contains
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
+    type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi,l,fc,cc,j
@@ -416,7 +418,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
@@ -434,6 +436,7 @@ contains
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
+    type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi
@@ -556,7 +559,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2h(num_soilc , filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
     !
     ! !DESCRIPTION:
     ! set the carbon isotopic fluxes for harvest mortality
@@ -573,6 +576,7 @@ contains
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
+    type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     !-----------------------------------------------------------------------
 
     ! patch-level gap mortality fluxes
@@ -702,7 +706,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
@@ -720,6 +724,7 @@ contains
     type(carbonstate_type) , intent(in)    :: isotopestate_vars
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
+    type(vegetation_carbon_state),intent(in)   :: isoveg_cs
     !
     ! !LOCAL VARIABLES:
     integer :: pi,pp,l,fc,cc,j
