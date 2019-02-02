@@ -270,14 +270,14 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
 
       !
-      ! set pointers for viscosity/diffusivity and intialize to zero
+      ! set pointers for viscosity/diffusivity and initialize to zero
       !
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
 
 
       !
-      ! set pointers for nonlocal flux and intialize to zero
+      ! set pointers for nonlocal flux and initialize to zero
       !
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
@@ -295,7 +295,7 @@ contains
       nCells = nCellsArray( 3 )
 
       !
-      ! start by adding the mininum background values to the visocity/diffusivity arrays
+      ! start by adding the mininum background values to the viscocity/diffusivity arrays
       !
       if (cvmixBackgroundOn) then
          !$omp do schedule(runtime)

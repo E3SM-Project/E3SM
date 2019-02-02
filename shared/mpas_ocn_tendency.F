@@ -152,10 +152,10 @@ contains
 
       call mpas_timer_start("ocn_tend_thick")
 
-      ! Build suface mass flux array from bulk
+      ! Build surface mass flux array from bulk
       call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)
 
-      ! Build suface thickness flux array from land ice
+      ! Build surface thickness flux array from land ice
       call ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
 
       !
@@ -292,10 +292,10 @@ contains
 
       call mpas_timer_start("ocn_tend_vel")
 
-      ! Build bulk forcing suface stress
+      ! Build bulk forcing surface stress
       call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
 
-      ! Add top drag to suface stress
+      ! Add top drag to surface stress
       call ocn_surface_land_ice_fluxes_vel(meshPool, diagnosticsPool, surfaceStress, surfaceStressMagnitude, err)
 
       !
