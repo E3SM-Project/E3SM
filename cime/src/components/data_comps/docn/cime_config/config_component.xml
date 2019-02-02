@@ -162,6 +162,7 @@
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2012_c130411.nc</value>
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_1850_2012_c130411.nc</value>
       <value compset="1850_" grid=".+"								>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_pi_c101029.nc</value>
+      <value compset="1850S_" grid=".+"								>$DIN_LOC_ROOT/atm/cam/sst/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c190125.nc</value>
       <value compset="1850_" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_pi_c101028.nc</value>

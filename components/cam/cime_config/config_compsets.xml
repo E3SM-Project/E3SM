@@ -82,6 +82,11 @@
   </compset>
 
   <compset>
+    <alias>F1850SC5-CMIP6</alias>
+    <lname>1850S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F1950C5-CMIP6-LR</alias>
     <lname>1950_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
