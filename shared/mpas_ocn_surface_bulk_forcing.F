@@ -195,7 +195,7 @@ contains
       nEdges = nEdgesArray( 4 )
       nCells = nCellsArray( 3 )
 
-      ! Convert CESM wind stress to MPAS-O wind stress
+      ! Convert coupled climate model wind stress to MPAS-O wind stress
       !$omp do schedule(runtime) private(cell1, cell2, zonalAverage, meridionalAverage)
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
