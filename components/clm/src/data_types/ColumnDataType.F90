@@ -139,6 +139,7 @@ module ColumnDataType
   ! Define the data structure that holds carbon state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_carbon_state
+    integer :: species  ! c12, c13, c14
     real(r8), pointer :: rootc                (:)    => null() ! (gC/m2) root carbon at column level (fire)
     real(r8), pointer :: totvegc              (:)    => null() ! (gC/m2) column-level totvegc (fire)
     real(r8), pointer :: leafc                (:)    => null() ! (gC/m2) column-level leafc (fire)
@@ -180,7 +181,8 @@ module ColumnDataType
     real(r8), pointer :: cwdc_end             (:)    => null() 
     real(r8), pointer :: totlitc_end          (:)    => null() 
     real(r8), pointer :: totsomc_end          (:)    => null() 
-    real(r8), pointer :: decomp_som2c_vr      (:,:)  => null() 
+    real(r8), pointer :: decomp_som2c_vr      (:,:)  => null()
+    real(r8), pointer :: cropseed_deficit     (:)    => null()    
 
   contains
     procedure, public :: Init    => col_cs_init
@@ -1310,6 +1312,7 @@ contains
     allocate(this%cwdc_end             (begc:endc))     ; this%cwdc_end             (:)     = nan
     allocate(this%totlitc_end          (begc:endc))     ; this%totlitc_end          (:)     = nan
     allocate(this%totsomc_end          (begc:endc))     ; this%totsomc_end          (:)     = nan
+    allocate(this%cropseed_deficit     (begc:endc))     ; this%cropseed_deficit     (:)     = nan
     allocate(this%decomp_cpools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_vr (:,:,:) = nan
     allocate(this%ctrunc_vr        (begc:endc,1:nlevdecomp_full))                 ; this%ctrunc_vr        (:,:)   = nan
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = nan
@@ -1550,6 +1553,7 @@ contains
           this%totsomc_1m(c) = 0._r8
           this%totecosysc(c) = 0._r8
           this%totcolc(c)    = 0._r8
+          this%cropseedc_deficit(c) = 0._r8
 
           ! dynamic landcover state variables
           this%seedc(c)      = 0._r8
@@ -1557,6 +1561,7 @@ contains
           this%prod100c(c)   = 0._r8
           this%prod1c(c)     = 0._r8
           this%totprodc(c)   = 0._r8
+
        end if !  landunit istsoil or istcrop
 
     end do ! columns loop
@@ -1848,7 +1853,7 @@ contains
               ! the restart file then current model state is the same as prior model state
               restart_file_spinup_state = spinup_state
               if ( masterproc ) then
-                 write(iulog,*) ' CNRest: WARNING!  Restart file does not contain info ' &
+                 write(iulog,*) ' col_cs_restart: WARNING!  Restart file does not contain info ' &
                       // ' on spinup state used to generate the restart file. '
                  write(iulog,*) '   Assuming the same as current setting: ', spinup_state
               end if
@@ -1865,18 +1870,18 @@ contains
         
         if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
            if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
-              if ( masterproc ) write(iulog,*) ' CNRest: taking SOM pools out of AD spinup mode'
+              if ( masterproc ) write(iulog,*) ' col_cs_restart: taking SOM pools out of AD spinup mode'
               exit_spinup = .true.
            else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
-              if ( masterproc ) write(iulog,*) ' CNRest: taking SOM pools into AD spinup mode'
+              if ( masterproc ) write(iulog,*) ' col_cs_restart: taking SOM pools into AD spinup mode'
               enter_spinup = .true.
            else
-              call endrun(msg=' CNRest: error in entering/exiting spinup.  spinup_state ' &
+              call endrun(msg=' col_cs_restart: error in entering/exiting spinup.  spinup_state ' &
                    // ' != restart_file_spinup_state, but do not know what to do'//&
                    errMsg(__FILE__, __LINE__))
            end if
            if (get_nstep() >= 2) then
-              call endrun(msg=' CNRest: error in entering/exiting spinup - should occur only when nstep = 1'//&
+              call endrun(msg=' col_cs_restart: error in entering/exiting spinup - should occur only when nstep = 1'//&
                    errMsg(__FILE__, __LINE__))
            endif
            do k = 1, ndecomp_pools

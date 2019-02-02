@@ -56,6 +56,7 @@ module clm_instMod
   use ColumnDataType             , only : col_cs, c13_col_cs, c14_col_cs
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
+  use VegetationDataType         , only : veg_cs, c13_veg_cs, c14_veg_cs
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -157,17 +158,20 @@ contains
 
        call carbonstate_vars%Init(bounds_proc, carbon_type='c12', ratio=1._r8)
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
+       call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
        if (use_c13) then
           call c13_carbonstate_vars%Init(bounds_proc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=carbonstate_vars)
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
+          call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%Init(bounds_proc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=carbonstate_vars)
           call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
+          call c14_veg_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio)
        end if
 
        ! Note - always initialize the memory for the c13_carbonflux_vars and

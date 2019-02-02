@@ -63,6 +63,7 @@ module restFileMod
   use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  use VegetationDataType   , only : veg_cs, c13_veg_cs, c14_veg_cs
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -250,17 +251,23 @@ contains
                cnstate_vars=cnstate_vars)
        call col_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
                cnstate_vars=cnstate_vars)
+       call veg_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
                c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
           call c13_col_cs%Restart(bounds, ncid, flag='define', carbon_type='c13', &
                c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c13_veg_cs%Restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
                c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
           call c14_col_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
                c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='define')
@@ -280,17 +287,23 @@ contains
                cnstate_vars=cnstate_vars)
        call col_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
                cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
                c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
           call c13_col_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
                c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
                c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
           call c14_col_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
                c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='define')
 
@@ -394,12 +407,17 @@ contains
             carbon_type='c12', cnstate_vars=cnstate_vars)
        call col_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
 	            cnstate_vars=cnstate_vars)
           call c13_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
 	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
@@ -408,6 +426,9 @@ contains
 	            cnstate_vars=cnstate_vars )
           call c14_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
+          call c14_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
 	            cnstate_vars=cnstate_vars )
        end if
 
@@ -428,12 +449,17 @@ contains
             carbon_type='c12', cnstate_vars=cnstate_vars)
        call col_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
 	            cnstate_vars=cnstate_vars)
           call c13_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
 	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
@@ -442,6 +468,9 @@ contains
 	            cnstate_vars=cnstate_vars )
           call col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
+          call veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
 	            cnstate_vars=cnstate_vars )
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='write')
@@ -645,12 +674,17 @@ contains
             carbon_type='c12', cnstate_vars=cnstate_vars)
        call col_cs%restart(bounds, ncid, flag='read', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='read', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
 	            cnstate_vars=cnstate_vars)
           call c13_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
 	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
@@ -659,6 +693,9 @@ contains
 	            cnstate_vars=cnstate_vars)
           call c14_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
 	            cnstate_vars=cnstate_vars)
        end if
 
@@ -679,12 +716,17 @@ contains
              carbon_type='c12', cnstate_vars=cnstate_vars)
        call col_cs%restart(bounds, ncid, flag='read', &
              carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='read', &
+             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
                 c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
                 cnstate_vars=cnstate_vars)
           call c13_col_cs%restart(bounds, ncid, flag='read', &
                 c12_carbonstate_vars=col_cs, carbon_type='c13', &
+                cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='read', &
+                c12_veg_cs=veg_cs, carbon_type='c13', &
                 cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
@@ -693,6 +735,9 @@ contains
 	            cnstate_vars=cnstate_vars)
           call c14_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
 	            cnstate_vars=cnstate_vars)
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='read')

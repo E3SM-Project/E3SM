@@ -16,6 +16,7 @@ module PrecisionControlMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
 
   !
   implicit none
@@ -183,12 +184,15 @@ contains
     associate(&
          cs      => carbonstate_vars     , &
          csv2    => col_cs               , &
+         vcsv2   => veg_cs               , &
          ns      => nitrogenstate_vars   , &
          ps      => phosphorusstate_vars , &
          c13cs   => c13_carbonstate_vars , &
          c13csv2 => c13_col_cs           , &
+         c13vcsv2=> c13_veg_cs           , &
          c14cs   => c14_carbonstate_vars , &
          c14csv2 => c14_col_cs           , &
+         c14vcsv2=> c14_veg_cs           , &
          floating_cn_ratio_decomp_pools   =>    decomp_cascade_con%floating_cn_ratio_decomp_pools , &
          floating_cp_ratio_decomp_pools   =>    decomp_cascade_con%floating_cp_ratio_decomp_pools , &
          initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                 &
