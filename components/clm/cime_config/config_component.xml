@@ -71,6 +71,7 @@
       <value compset="PDAY.*_CLM"       >1850-2100_rcp4.5_transient</value> 
       <!-- CMIP6 DECK compsets and related BGC compsets -->
       <value compset="1850_CAM5%CMIP6_CLM">1850_CMIP6_control</value>
+      <value compset="1850S_CAM5%CMIP6_CLM">1850_SCMIP6_control</value>
       <value compset="1850_CAM5%CMIP6_CLM45.*_BGC%BCRC">1850_CMIP6bgc_control</value>
       <value compset="20TR_CAM5%CMIP6_CLM">20thC_CMIP6_transient</value>
       <value compset="20TR_CAM5%CMIP6_CLM45.*_BGC%BCRC">20thC_CMIP6bgc_transient</value> 
