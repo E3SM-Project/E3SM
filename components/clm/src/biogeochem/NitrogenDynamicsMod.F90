@@ -24,6 +24,7 @@ module NitrogenDynamicsMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_wf  
   use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_cs  
   use VegetationPropertiesType  , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
@@ -655,7 +656,7 @@ contains
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
          km_nfix               => veg_vp%km_nfix                   , &
-         frootc                => carbonstate_vars%frootc_patch        , &
+         frootc                => veg_cs%frootc        , &
          nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          nfix_to_plantn        => nitrogenflux_vars%nfix_to_plantn_patch , &
          nfix_to_ecosysn       => nitrogenflux_vars%nfix_to_ecosysn_col, &

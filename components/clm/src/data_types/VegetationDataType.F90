@@ -9,23 +9,28 @@ module VegetationDataType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use shr_const_mod  , only : SHR_CONST_PDB
   use shr_log_mod    , only : errMsg => shr_log_errMsg
+  use spmdMod        , only : masterproc
   use abortutils     , only : endrun
+  use clm_time_manager , only : is_restart, get_nstep
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb, crop_prog
   use clm_varcon     , only : spval, ispval, sb
   use clm_varcon     , only : c13ratio, c14ratio
   use landunit_varcon, only : istsoil, istcrop
-  use pftvarcon      , only : npcropmin
-  use clm_varctl     , only : iulog, use_cn 
+  use pftvarcon      , only : npcropmin, noveg
+  use clm_varctl     , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
+  use clm_varctl     , only : nu_com
   use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio      , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod      , only : bounds_type, get_proc_global
   use subgridAveMod  , only : p2c
   use restUtilMod
+  use CNStateType     , only: cnstate_type
   use VegetationType            , only : veg_pp
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp
   use GridcellType              , only : grc_pp
   use ColumnDataType            , only : col_es
+  use ColumnDataType            , only : column_carbon_state
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -104,7 +109,7 @@ module VegetationDataType
   ! Define the data structure that holds carbon state information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_carbon_state
-    integer           :: species                => null() ! c12, c13, c14
+    integer           :: species                          ! c12, c13, c14
     real(r8), pointer :: leafc              (:) => null() ! (gC/m2) leaf C
     real(r8), pointer :: leafc_storage      (:) => null() ! (gC/m2) leaf C storage
     real(r8), pointer :: leafc_xfer         (:) => null() ! (gC/m2) leaf C transfer
@@ -137,6 +142,7 @@ module VegetationDataType
     real(r8), pointer :: dispvegc           (:) => null() ! (gC/m2) displayed veg carbon, excluding storage and cpool
     real(r8), pointer :: storvegc           (:) => null() ! (gC/m2) stored vegetation carbon, excluding cpool
     real(r8), pointer :: totvegc            (:) => null() ! (gC/m2) total vegetation carbon, excluding cpool
+    real(r8), pointer :: totpftc            (:) => null() ! (gC/m2) total patch-level carbon, including cpool
     real(r8), pointer :: totvegc_abg        (:) => null() ! (gC/m2) total above vegetation carbon, excluding cpool
     real(r8), pointer :: begcb              (:) => null() ! patch carbon mass, beginning of time step (gC/m**2)
     real(r8), pointer :: endcb              (:) => null() ! patch carbon mass, end of time step (gC/m**2)
@@ -145,6 +151,7 @@ module VegetationDataType
     procedure, public :: Init     => veg_cs_init
     procedure, public :: Restart  => veg_cs_restart
     procedure, public :: Summary  => veg_cs_summary
+    procedure, public :: ZeroDwt  => veg_cs_zerodwt
     procedure, public :: Clean    => veg_cs_clean
   end type vegetation_carbon_state
   
@@ -1517,6 +1524,17 @@ module VegetationDataType
              avgflag='A', long_name='C13 total patch-level carbon, including cpool', &
              ptr_patch=this%totpftc)
 
+       if (use_crop) then
+          this%grainc(begp:endp) = spval
+          call hist_addfld1d (fname='C13_GRAINC', units='gC/m^2', &
+               avgflag='A', long_name='C13 grain C (does not equal yield)', &
+               ptr_patch=this%grainc)
+
+          this%cropseedc_deficit(begp:endp) = spval
+          call hist_addfld1d (fname='C13_CROPSEEDC_DEFICIT', units='gC/m^2', &
+               avgflag='A', long_name='C13 C used for crop seed that needs to be repaid', &
+               ptr_patch=this%cropseedc_deficit)
+       end if
        ! end of c13 block
 
     else if ( carbon_type == 'c14' ) then
@@ -1656,6 +1674,17 @@ module VegetationDataType
              avgflag='A', long_name='C14 total patch-level carbon, including cpool', &
              ptr_patch=this%totpftc)
     
+       if (use_crop) then
+          this%grainc(begp:endp) = spval
+          call hist_addfld1d (fname='C14_GRAINC', units='gC/m^2', &
+               avgflag='A', long_name='C14 grain C (does not equal yield)', &
+               ptr_patch=this%grainc)
+          
+          this%cropseedc_deficit(begp:endp) = spval
+          call hist_addfld1d (fname='C14_CROPSEEDC_DEFICIT', units='gC/m^2', &
+               avgflag='A', long_name='C14 C used for crop seed that needs to be repaid', &
+               ptr_patch=this%cropseedc_deficit)
+       end if
        ! end of c14 block
     
     endif  ! fates or c12 or c13 or c14
@@ -1667,119 +1696,119 @@ module VegetationDataType
     if ( .not. use_fates ) then
        do p = begp,endp
 
-          this%leafcmax_patch(p) = 0._r8
+          this%leafcmax(p) = 0._r8
 
           l = veg_pp%landunit(p)
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              if (veg_pp%itype(p) == noveg) then
-                this%leafc_patch(p)         = 0._r8
-                this%leafc_storage_patch(p) = 0._r8
+                this%leafc(p)         = 0._r8
+                this%leafc_storage(p) = 0._r8
              else
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                   this%leafc_patch(p)         = 1._r8 * ratio
-                   this%leafc_storage_patch(p) = 0._r8
+                   this%leafc(p)         = 1._r8 * ratio
+                   this%leafc_storage(p) = 0._r8
                 else if (veg_pp%itype(p) >= npcropmin) then ! prognostic crop types
-                   this%leafc_patch(p) = 0._r8
-                   this%leafc_storage_patch(p) = 0._r8
+                   this%leafc(p) = 0._r8
+                   this%leafc_storage(p) = 0._r8
                 else
-                   this%leafc_patch(p) = 0._r8
-                   this%leafc_storage_patch(p) = 1._r8 * ratio
+                   this%leafc(p) = 0._r8
+                   this%leafc_storage(p) = 1._r8 * ratio
                 end if
              end if
-             this%leafc_xfer_patch(p) = 0._r8
+             this%leafc_xfer(p) = 0._r8
 
-             this%frootc_patch(p)            = 0._r8 
-             this%frootc_storage_patch(p)    = 0._r8 
-             this%frootc_xfer_patch(p)       = 0._r8 
+             this%frootc(p)            = 0._r8 
+             this%frootc_storage(p)    = 0._r8 
+             this%frootc_xfer(p)       = 0._r8 
 
-             this%livestemc_patch(p)         = 0._r8 
-             this%livestemc_storage_patch(p) = 0._r8 
-             this%livestemc_xfer_patch(p)    = 0._r8 
+             this%livestemc(p)         = 0._r8 
+             this%livestemc_storage(p) = 0._r8 
+             this%livestemc_xfer(p)    = 0._r8 
 
              if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
-                this%deadstemc_patch(p) = 0.1_r8 * ratio
+                this%deadstemc(p) = 0.1_r8 * ratio
              else
-                this%deadstemc_patch(p) = 0._r8 
+                this%deadstemc(p) = 0._r8 
              end if
-             this%deadstemc_storage_patch(p)  = 0._r8 
-             this%deadstemc_xfer_patch(p)     = 0._r8
+             this%deadstemc_storage(p)  = 0._r8 
+             this%deadstemc_xfer(p)     = 0._r8
 
              if (nu_com .ne. 'RD') then
                 ! ECA competition calculate root NP uptake as a function of fine root biomass
                 ! better to initialize root CNP pools with a non-zero value
                 if (veg_pp%itype(p) .ne. noveg) then
                    if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                      this%leafc_patch(p) = 20._r8 * ratio
-                      this%leafc_storage_patch(p) = 0._r8
-                      this%frootc_patch(p) = 20._r8 * ratio
-                      this%frootc_storage_patch(p) = 0._r8
+                      this%leafc(p) = 20._r8 * ratio
+                      this%leafc_storage(p) = 0._r8
+                      this%frootc(p) = 20._r8 * ratio
+                      this%frootc_storage(p) = 0._r8
                    else
-                      this%leafc_patch(p) = 0._r8 
-                      this%leafc_storage_patch(p) = 20._r8 * ratio
-                      this%frootc_patch(p) = 0._r8
-                      this%frootc_storage_patch(p) = 20._r8 * ratio
+                      this%leafc(p) = 0._r8 
+                      this%leafc_storage(p) = 20._r8 * ratio
+                      this%frootc(p) = 0._r8
+                      this%frootc_storage(p) = 20._r8 * ratio
                    end if
                 end if
              end if
 
-             this%livecrootc_patch(p)         = 0._r8 
-             this%livecrootc_storage_patch(p) = 0._r8 
-             this%livecrootc_xfer_patch(p)    = 0._r8 
+             this%livecrootc(p)         = 0._r8 
+             this%livecrootc_storage(p) = 0._r8 
+             this%livecrootc_xfer(p)    = 0._r8 
 
-             this%deadcrootc_patch(p)         = 0._r8 
-             this%deadcrootc_storage_patch(p) = 0._r8 
-             this%deadcrootc_xfer_patch(p)    = 0._r8 
+             this%deadcrootc(p)         = 0._r8 
+             this%deadcrootc_storage(p) = 0._r8 
+             this%deadcrootc_xfer(p)    = 0._r8 
 
-             this%gresp_storage_patch(p)      = 0._r8 
-             this%gresp_xfer_patch(p)         = 0._r8 
+             this%gresp_storage(p)      = 0._r8 
+             this%gresp_xfer(p)         = 0._r8 
 
-             this%cpool_patch(p)              = 0._r8 
-             this%xsmrpool_patch(p)           = 0._r8 
-             this%ctrunc_patch(p)             = 0._r8 
-             this%dispvegc_patch(p)           = 0._r8 
-             this%storvegc_patch(p)           = 0._r8 
-             this%totpftc_patch(p)            = 0._r8 
-             this%woodc_patch(p)              = 0._r8
+             this%cpool(p)              = 0._r8 
+             this%xsmrpool(p)           = 0._r8 
+             this%ctrunc(p)             = 0._r8 
+             this%dispvegc(p)           = 0._r8 
+             this%storvegc(p)           = 0._r8 
+             this%totpftc(p)            = 0._r8 
+             this%woodc(p)              = 0._r8
 
              if ( crop_prog )then
-                this%grainc_patch(p)            = 0._r8 
-                this%grainc_storage_patch(p)    = 0._r8 
-                this%grainc_xfer_patch(p)       = 0._r8 
-                this%cropseedc_deficit_patch(p) = 0._r8
+                this%grainc(p)            = 0._r8 
+                this%grainc_storage(p)    = 0._r8 
+                this%grainc_xfer(p)       = 0._r8 
+                this%cropseedc_deficit(p) = 0._r8
              end if
 
              ! calculate totvegc explicitly so that it is available for the isotope 
              ! code on the first time step.
 
-             this%totvegc_patch(p) = &
-                  this%leafc_patch(p)              + &
-                  this%leafc_storage_patch(p)      + &
-                  this%leafc_xfer_patch(p)         + &
-                  this%frootc_patch(p)             + &
-                  this%frootc_storage_patch(p)     + &
-                  this%frootc_xfer_patch(p)        + &
-                  this%livestemc_patch(p)          + &
-                  this%livestemc_storage_patch(p)  + &
-                  this%livestemc_xfer_patch(p)     + &
-                  this%deadstemc_patch(p)          + &
-                  this%deadstemc_storage_patch(p)  + &
-                  this%deadstemc_xfer_patch(p)     + &
-                  this%livecrootc_patch(p)         + &
-                  this%livecrootc_storage_patch(p) + &
-                  this%livecrootc_xfer_patch(p)    + &
-                  this%deadcrootc_patch(p)         + &
-                  this%deadcrootc_storage_patch(p) + &
-                  this%deadcrootc_xfer_patch(p)    + &
-                  this%gresp_storage_patch(p)      + &
-                  this%gresp_xfer_patch(p)         + &
-                  this%cpool_patch(p)
+             this%totvegc(p) = &
+                  this%leafc(p)              + &
+                  this%leafc_storage(p)      + &
+                  this%leafc_xfer(p)         + &
+                  this%frootc(p)             + &
+                  this%frootc_storage(p)     + &
+                  this%frootc_xfer(p)        + &
+                  this%livestemc(p)          + &
+                  this%livestemc_storage(p)  + &
+                  this%livestemc_xfer(p)     + &
+                  this%deadstemc(p)          + &
+                  this%deadstemc_storage(p)  + &
+                  this%deadstemc_xfer(p)     + &
+                  this%livecrootc(p)         + &
+                  this%livecrootc_storage(p) + &
+                  this%livecrootc_xfer(p)    + &
+                  this%deadcrootc(p)         + &
+                  this%deadcrootc_storage(p) + &
+                  this%deadcrootc_xfer(p)    + &
+                  this%gresp_storage(p)      + &
+                  this%gresp_xfer(p)         + &
+                  this%cpool(p)
 
              if ( crop_prog )then
-                this%totvegc_patch(p) =  this%totvegc_patch(p) + &
-                     this%grainc_patch(p)                            + &
-                     this%grainc_storage_patch(p)                    + &
-                     this%grainc_xfer_patch(p)
+                this%totvegc(p) =  this%totvegc(p) + &
+                     this%grainc(p)                            + &
+                     this%grainc_storage(p)                    + &
+                     this%grainc_xfer(p)
              end if
           endif ! is soil or crop
        end do ! begp:endp
@@ -2386,7 +2415,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%leafc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%leafc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%leafc(i) /= spval .and. &
                      .not. isnan(this%leafc(i)) ) then
@@ -2399,7 +2428,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%leafc_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%leafc_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%leafc_storage(i) /= spval .and. &
                      .not. isnan(this%leafc_storage(i)) ) then
@@ -2412,7 +2441,7 @@ module VegetationDataType
                dim1name='pft',    long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%leafc_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%leafc_xfer_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%leafc_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%leafc_xfer(i) /= spval .and. .not. isnan(this%leafc_xfer(i)) ) then
                    this%leafc_xfer(i) = c12_veg_cs%leafc_xfer(i) * c14ratio
@@ -2424,7 +2453,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%frootc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%frootc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%frootc(i) /= spval .and. &
                      .not. isnan(this%frootc(i)) ) then
@@ -2437,7 +2466,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%frootc_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%frootc_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%frootc_storage(i) /= spval .and. &
                      .not. isnan(this%frootc_storage(i)) ) then
@@ -2450,7 +2479,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%frootc_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%frootc_xfer_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%frootc_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%frootc_xfer(i) /= spval .and. &
                      .not. isnan(this%frootc_xfer(i)) ) then
@@ -2463,7 +2492,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%livestemc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%livestemc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%livestemc(i) /= spval .and. .not. isnan(this%livestemc(i)) ) then
                    this%livestemc(i) = c12_veg_cs%livestemc(i) * c14ratio
@@ -2475,7 +2504,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%livestemc_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%livestemc_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%livestemc_storage(i) /= spval .and. .not. isnan(this%livestemc_storage(i)) ) then
                    this%livestemc_storage(i) = c12_veg_cs%livestemc_storage(i) * c14ratio
@@ -2487,7 +2516,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livestemc_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%livestemc_xfer_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%livestemc_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%livestemc_xfer(i) /= spval .and. .not. isnan(this%livestemc_xfer(i)) ) then
                    this%livestemc_xfer(i) = c12_veg_cs%livestemc_xfer(i) * c14ratio
@@ -2499,7 +2528,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%deadstemc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%deadstemc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%deadstemc(i) /= spval .and. .not. isnan(this%deadstemc(i)) ) then
                    this%deadstemc(i) = c12_veg_cs%deadstemc(i) * c14ratio
@@ -2511,7 +2540,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%deadstemc_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%deadstemc_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%deadstemc_storage(i) /= spval .and. .not. isnan(this%deadstemc_storage(i)) ) then
                    this%deadstemc_storage(i) = c12_veg_cs%deadstemc_storage(i) * c14ratio
@@ -2523,7 +2552,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadstemc_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%deadstemc_xfer_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%deadstemc_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%deadstemc_xfer(i) /= spval .and. .not. isnan(this%deadstemc_xfer(i)) ) then
                    this%deadstemc_xfer(i) = c12_veg_cs%deadstemc_xfer(i) * c14ratio
@@ -2535,7 +2564,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%livecrootc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%livecrootc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%livecrootc(i) /= spval .and. .not. isnan(this%livecrootc(i)) ) then
                    this%livecrootc(i) = c12_veg_cs%livecrootc(i) * c14ratio
@@ -2547,7 +2576,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%livecrootc_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%livecrootc_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%livecrootc_storage(i) /= spval .and. .not. isnan(this%livecrootc_storage(i)) ) then
                    this%livecrootc_storage(i) = c12_veg_cs%livecrootc_storage(i) * c14ratio
@@ -2559,7 +2588,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%livecrootc_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%livecrootc_xfer_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%livecrootc_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%livecrootc_xfer(i) /= spval .and. .not. isnan(this%livecrootc_xfer(i)) ) then
                    this%livecrootc_xfer(i) = c12_veg_cs%livecrootc_xfer(i) * c14ratio
@@ -2571,7 +2600,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%deadcrootc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%deadcrootc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%deadcrootc(i) /= spval .and. .not. isnan(this%deadcrootc(i)) ) then
                    this%deadcrootc(i) = c12_veg_cs%deadcrootc(i) * c14ratio
@@ -2583,7 +2612,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%deadcrootc_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%deadcrootc_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%deadcrootc_storage(i) /= spval .and. .not. isnan(this%deadcrootc_storage(i)) ) then
                    this%deadcrootc_storage(i) = c12_veg_cs%deadcrootc_storage(i) * c14ratio
@@ -2595,7 +2624,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%deadcrootc_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog) 'initializing this%deadcrootc_xfer_patch with atmospheric c14 value'
+             write(iulog) 'initializing this%deadcrootc_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%deadcrootc_xfer(i) /= spval .and. .not. isnan(this%deadcrootc_xfer(i)) ) then
                    this%deadcrootc_xfer(i) = c12_veg_cs%deadcrootc_xfer(i) * c14ratio
@@ -2607,7 +2636,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_storage) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%gresp_storage_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%gresp_storage with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%gresp_storage(i) /= spval .and. .not. isnan(this%gresp_storage(i)) ) then
                    this%gresp_storage(i) = c12_veg_cs%gresp_storage(i) * c14ratio
@@ -2619,7 +2648,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%gresp_xfer) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%gresp_xfer_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%gresp_xfer with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%gresp_xfer(i) /= spval .and. .not. isnan(this%gresp_xfer(i)) ) then
                    this%gresp_xfer(i) = c12_veg_cs%gresp_xfer(i) * c14ratio
@@ -2631,7 +2660,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%cpool) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%cpool_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%cpool with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%cpool(i) /= spval .and. .not. isnan(this%cpool(i)) ) then
                    this%cpool(i) = c12_veg_cs%cpool(i) * c14ratio
@@ -2643,7 +2672,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%xsmrpool) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%xsmrpool_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%xsmrpool with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%xsmrpool(i) /= spval .and. .not. isnan(this%xsmrpool(i)) ) then
                    this%xsmrpool(i) = c12_veg_cs%xsmrpool(i) * c14ratio
@@ -2655,7 +2684,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%ctrunc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%ctrunc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%ctrunc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%ctrunc(i) /= spval .and. .not. isnan(this%ctrunc(i)) ) then
                    this%ctrunc(i) = c12_veg_cs%ctrunc(i) * c14ratio
@@ -2667,7 +2696,7 @@ module VegetationDataType
                dim1name='pft', long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=this%totvegc) 
           if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%totvegc_patch with atmospheric c14 value'
+             write(iulog,*) 'initializing this%totvegc with atmospheric c14 value'
              do i = bounds%begp,bounds%endp
                 if (this%totvegc(i) /= spval .and. .not. isnan(this%totvegc(i)) ) then
                    this%totvegc(i) = c12_veg_cs%totvegc(i) * c14ratio
@@ -2748,7 +2777,7 @@ module VegetationDataType
     ! Column-level carbon state summary calculations
     !
     ! !ARGUMENTS:
-    class(column_carbon_state)                :: this
+    class(vegetation_carbon_state)                :: this
     type(bounds_type)         , intent(in)    :: bounds          
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -2761,7 +2790,6 @@ module VegetationDataType
     integer  :: c,p             ! indices
     integer  :: fp              ! filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
-    real(r8) :: cropseedc_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
     if (use_fates) return
@@ -2855,6 +2883,27 @@ module VegetationDataType
 
   end subroutine veg_cs_summary
     
+  !-----------------------------------------------------------------------
+  subroutine veg_cs_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(vegetation_carbon_state) :: this
+    type(bounds_type), intent(in)  :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p          ! indices
+    !-----------------------------------------------------------------------
+
+    do p = bounds%begp,bounds%endp
+       this%dispvegc(p)   = 0._r8
+       this%storvegc(p)   = 0._r8
+       this%totpftc(p)    = 0._r8
+    end do
+
+  end subroutine veg_cs_zerodwt
   !------------------------------------------------------------------------
   subroutine veg_cs_clean(this)
     !

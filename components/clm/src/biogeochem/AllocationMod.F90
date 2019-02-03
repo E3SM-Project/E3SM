@@ -30,6 +30,7 @@ module AllocationMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_ws  
   use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_cs  
   ! bgc interface & pflotran module switches
   use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
@@ -446,10 +447,10 @@ contains
          hui                          => crop_vars%gddplant_patch                              , & ! Input:  [real(r8) (:)   ]  =gdd since planting (gddplant)          
          leafout                      => crop_vars%gddtsoi_patch                               , & ! Input:  [real(r8) (:)   ]  =gdd from top soil layer temperature    
 
-         xsmrpool                     => carbonstate_vars%xsmrpool_patch                       , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool  
-         leafc                        => carbonstate_vars%leafc_patch                          , & ! Input:  [real(r8) (:)   ]                                          
-         frootc                       => carbonstate_vars%frootc_patch                         , & ! Input:  [real(r8) (:)   ]                                          
-         livestemc                    => carbonstate_vars%livestemc_patch                      , & ! Input:  [real(r8) (:)   ]                                          
+         xsmrpool                     => veg_cs%xsmrpool                       , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool  
+         leafc                        => veg_cs%leafc                          , & ! Input:  [real(r8) (:)   ]                                          
+         frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]                                          
+         livestemc                    => veg_cs%livestemc                      , & ! Input:  [real(r8) (:)   ]                                          
          plant_ndemand_col            => nitrogenflux_vars%plant_ndemand_col                 , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_col            => phosphorusflux_vars%plant_pdemand_col               , & ! Output:  [real(r8) (:,:) ]
          plant_ndemand_vr_col         => nitrogenflux_vars%plant_ndemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
@@ -1238,8 +1239,8 @@ contains
          actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col                , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
 
-         frootc                       => carbonstate_vars%frootc_patch                         , & ! Input:  [real(r8) (:)   ]                                          
-         leafc                        => carbonstate_vars%leafc_patch                          , & ! Input:  [real(r8) (:)   ]                                          
+         frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]                                          
+         leafc                        => veg_cs%leafc                          , & ! Input:  [real(r8) (:)   ]                                          
 
          frootcn                      => veg_vp%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
          leafcn                       => veg_vp%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
@@ -1297,8 +1298,8 @@ contains
          h2osoi_vol                   => col_ws%h2osoi_vol                      , &
          pmnf_decomp_cascade          => nitrogenflux_vars%pmnf_decomp_cascade               , &
          pmpf_decomp_cascade          => phosphorusflux_vars%pmpf_decomp_cascade             , &
-         leafc_storage                => carbonstate_vars%leafc_storage_patch                , &
-         leafc_xfer                   => carbonstate_vars%leafc_xfer_patch                   , &
+         leafc_storage                => veg_cs%leafc_storage                , &
+         leafc_xfer                   => veg_cs%leafc_xfer                   , &
          leafn_storage                => nitrogenstate_vars%leafn_storage_patch              , &
          leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch                 , &
          leafp_storage                => phosphorusstate_vars%leafp_storage_patch            , &
@@ -3021,7 +3022,7 @@ contains
 
          laisun                       => canopystate_vars%laisun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index        
          laisha                       => canopystate_vars%laisha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index        
-         leafc                        => carbonstate_vars%leafc_patch                          , &
+         leafc                        => veg_cs%leafc                          , &
          leafn                        => nitrogenstate_vars%leafn_patch                        , &
          leafp                        => phosphorusstate_vars%leafp_patch                      , &
          supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col          , &
@@ -3029,8 +3030,8 @@ contains
          ! for debug
          plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux                 , &
          plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux               , &
-         leafc_storage                => carbonstate_vars%leafc_storage_patch                  , &
-         leafc_xfer                   => carbonstate_vars%leafc_xfer_patch                     , &
+         leafc_storage                => veg_cs%leafc_storage                  , &
+         leafc_xfer                   => veg_cs%leafc_xfer                     , &
          leafn_storage                => nitrogenstate_vars%leafn_storage_patch                , &
          leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch                   , &
          leafp_storage                => phosphorusstate_vars%leafp_storage_patch              , &
@@ -3051,7 +3052,7 @@ contains
          livestem_mr                  => carbonflux_vars%livestem_mr_patch                     , & 
          livecroot_mr                 => carbonflux_vars%livecroot_mr_patch                    , &
          grain_mr                     => carbonflux_vars%grain_mr_patch                        , & 
-         xsmrpool                     => carbonstate_vars%xsmrpool_patch                       , &
+         xsmrpool                     => veg_cs%xsmrpool                       , &
          xsmrpool_recover             => carbonflux_vars%xsmrpool_recover_patch                , & 
          leaf_curmr                   => carbonflux_vars%leaf_curmr_patch                      , &
          froot_curmr                  => carbonflux_vars%froot_curmr_patch                     , &

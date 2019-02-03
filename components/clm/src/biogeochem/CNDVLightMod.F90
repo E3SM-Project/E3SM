@@ -15,6 +15,7 @@ module CNDVLightMod
   use CNDVType          , only : dgvs_type
   use CNCarbonStateType , only : carbonstate_type
   use VegetationType         , only : veg_pp                
+  use VegetationDataType  , only : veg_cs  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -76,8 +77,8 @@ contains
          woody         =>    veg_vp%woody                 , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
          tree          =>    veg_vp%tree                  , & ! Input:  [integer  (:) ]  ecophys const - tree pft or not                    
          
-         deadstemc     =>    carbonstate_vars%deadstemc_patch , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
-         leafcmax      =>    carbonstate_vars%leafcmax_patch  , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C storage                            
+         deadstemc     =>    veg_cs%deadstemc , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
+         leafcmax      =>    veg_cs%leafcmax  , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C storage                            
 
          crownarea     =>    dgvs_vars%crownarea_patch        , & ! Output: [real(r8) (:) ]  area that each individual tree takes up (m^2)     
          nind          =>    dgvs_vars%nind_patch             , & ! Output: [real(r8) (:) ]  number of individuals                             

@@ -17,6 +17,7 @@ module CNDVDriverMod
   use clm_varcon        , only : grlnd
   use LandunitType      , only : lun_pp                
   use VegetationType         , only : veg_pp                
+  use VegetationDataType  , only : veg_cs  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -67,7 +68,7 @@ contains
          t_mo_min    => atm2lnd_vars%t_mo_min_patch     , & ! Output: [real(r8) (:) ]  annual min of t_mo (Kelvin)                       
 
          agdd        => dgvs_vars%agdd_patch            , & ! Input:  [real(r8) (:) ]  accumulated growing degree days above 5           
-         leafcmax    => carbonstate_vars%leafcmax_patch   & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C 
+         leafcmax    => veg_cs%leafcmax   & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C 
          )
 
       ! *************************************************************************
@@ -110,7 +111,7 @@ contains
       ! Reset dgvm variables needed in next yr (too few to keep subr. dvreset)
 
       do p = bounds%begp,bounds%endp
-         carbonstate_vars%leafcmax_patch(p) = 0._r8
+         veg_cs%leafcmax(p) = 0._r8
          atm2lnd_vars%t_mo_min_patch(p) = 1.0e+36_r8
       end do
 

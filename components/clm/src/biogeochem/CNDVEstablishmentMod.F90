@@ -15,6 +15,7 @@ module CNDVEstablishmentMod
   use CNCarbonFluxType  , only : carbonflux_type
   use LandunitType      , only : lun_pp                
   use VegetationType         , only : veg_pp                
+  use VegetationDataType  , only : veg_cs  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -122,8 +123,8 @@ contains
          greffic        =>    dgvs_vars%greffic_patch              , & ! Output: [real(r8) (:) ]  lpj's growth efficiency                           
          heatstress     =>    dgvs_vars%heatstress_patch           , & ! Output: [real(r8) (:) ]                                                    
 
-         deadstemc      =>    carbonstate_vars%deadstemc_patch     , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
-         leafcmax       =>    carbonstate_vars%leafcmax_patch        & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C                            
+         deadstemc      =>    veg_cs%deadstemc     , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
+         leafcmax       =>    veg_cs%leafcmax        & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C                            
          )
 
       ! **********************************************************************

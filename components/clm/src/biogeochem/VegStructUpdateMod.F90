@@ -16,9 +16,10 @@ module VegStructUpdateMod
   use CNStateType          , only : cnstate_type
   use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
+  use CropType             , only : crop_type
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
-  use CropType             , only : crop_type
+  use VegetationDataType   , only : veg_cs  
   !
   implicit none
   save
@@ -105,7 +106,7 @@ contains
          forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
 
          leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
-         deadstemc          =>  carbonstate_vars%deadstemc_patch  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
+         deadstemc          =>  veg_cs%deadstemc  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
 
          farea_burned       =>  cnstate_vars%farea_burned_col     ,       & ! Input:  [real(r8) (:) ] F. Li and S. Levis                                 
          harvdate           =>  crop_vars%harvdate_patch          ,       & ! Input:  [integer  (:) ] harvest date                                       
