@@ -393,7 +393,7 @@ class EnvBatch(EnvBase):
                     if " " in val:
                         try:
                             rval = eval(val)
-                        except:
+                        except Exception:
                             rval = val
                     else:
                         rval = val
@@ -435,7 +435,7 @@ class EnvBatch(EnvBase):
                 else:
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
-            except:
+            except Exception:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
 
             if prereq:
@@ -575,7 +575,11 @@ class EnvBatch(EnvBase):
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-                getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                try:
+                    getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                except Exception as e:
+                    # We don't want exception from the run phases getting into submit phase
+                    logger.warning("Exception from {}: {}".format(function_name, str(e)))
 
             return
 

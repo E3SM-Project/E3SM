@@ -512,7 +512,6 @@ contains
     use esmFlds               , only : esmFlds_Init
     use esmFlds               , only : ncomps, compmed, compatm, compocn
     use esmFlds               , only : compice, complnd, comprof, compwav, compglc, compname
-    use esmFlds               , only : fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
     use esmFlds               , only : fldListFr, fldListTo
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
     use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
@@ -1666,35 +1665,41 @@ contains
          ! contain control data and no grid information if if the target
          ! component (n2) is not prognostic only receives control data back
 
-         ! Create field bundles for ocean albedo computation
+         ! Create field bundles for mediator ocean albedo computation
 
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb_o)
-         allocate(fldnames(fieldCount))
-         call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb_o%flds, fldnames)
-
-         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
-            STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
-            STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         deallocate(fldnames)
-
-         ! Create field bundles for ocean/atmosphere flux computation
+         if (fieldCount > 0) then
+            allocate(fldnames(fieldCount))
+            call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb_o%flds, fldnames, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            deallocate(fldnames)
+         end if
+            
+         ! Create field bundles for mediator ocean/atmosphere flux computation
 
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux_o)
-         allocate(fldnames(fieldCount))
-         call shr_nuopc_fldList_getfldnames(fldListMed_aoflux_a%flds, fldnames)
-
-         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
-            STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
-            STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         deallocate(fldnames)
+         if (fieldCount > 0) then
+            allocate(fldnames(fieldCount))
+            call shr_nuopc_fldList_getfldnames(fldListMed_aoflux_a%flds, fldnames, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            deallocate(fldnames)
+         end if
       end if
 
       !----------------------------------------------------------

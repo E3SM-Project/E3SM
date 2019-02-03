@@ -9,17 +9,18 @@ fi
 
 module reset
 module unload netcdf
-module swap intel gnu/6.1.0
-module load git/2.3.0
-module load cmake/3.0.2
-module load netcdf-mpi/4.4.1
-module load pnetcdf/1.7.0
+module swap intel pgi/17.9
+module swap mpt mpt/2.18
+module load git/2.10.2
+module load cmake/3.12.1
+module load netcdf-mpi/4.6.1
+module load pnetcdf/1.11.0
 
 export CC=mpicc
 export FC=mpif90
-
-export PIO_DASHBOARD_ROOT=`pwd`/dashboard
-export PIO_COMPILER_ID=GNU-`$CC --version | head -n 1 | tail -n 1 | cut -d' ' -f3`
+export MPI_TYPE_DEPTH=24
+export PIO_DASHBOARD_ROOT=/glade/u/home/jedwards/sandboxes/dashboard
+export PIO_COMPILER_ID=PGI-`$CC --version | head -n 2 | tail -n 1 | cut -d' ' -f2`
 
 if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then
   mkdir "$PIO_DASHBOARD_ROOT"

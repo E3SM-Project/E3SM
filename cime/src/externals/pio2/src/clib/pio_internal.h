@@ -145,7 +145,7 @@ extern "C" {
     int pio_get_file(int ncid, file_desc_t **filep);
     int pio_delete_file_from_list(int ncid);
     void pio_add_to_file_list(file_desc_t *file);
-    
+
     /* List operations for var_desc_t list. */
     int add_to_varlist(int varid, int rec_var, int pio_type, int pio_type_size,
                        MPI_Datatype mpi_type, int mpi_type_size, var_desc_t **varlist);
@@ -312,7 +312,7 @@ extern "C" {
 
     int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf);
     int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf);
-    int find_var_fillvalue(file_desc_t *file, int varid, var_desc_t *vdesc);    
+    int find_var_fillvalue(file_desc_t *file, int varid, var_desc_t *vdesc);
 
     /* Read atts with type conversion. */
     int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void *ip);
@@ -361,6 +361,7 @@ extern "C" {
     int determine_procs(int num_io_procs, int component_count, int *num_procs_per_comp,
                         int **proc_list, int **my_proc_list);
 
+    int pio_sorted_copy(const void *array, void *tmparray, io_desc_t *iodesc, int nvars, int direction);
 #if defined(__cplusplus)
 }
 #endif

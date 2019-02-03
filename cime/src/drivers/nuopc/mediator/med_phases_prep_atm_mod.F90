@@ -1,57 +1,66 @@
 module med_phases_prep_atm_mod
-  use shr_nuopc_utils_mod, only : shr_nuopc_memcheck
+
+  !-----------------------------------------------------------------------------
+  ! Mediator Phase
+  !-----------------------------------------------------------------------------
+
   implicit none
   private
-  character(*)      , parameter :: u_FILE_u  = __FILE__
 
-  !-----------------------------------------------------------------------------
-  ! Mediator Phases
-  !-----------------------------------------------------------------------------
   public  :: med_phases_prep_atm
 
+  character(*)      , parameter :: u_FILE_u  = &
+       __FILE__
+
 !-----------------------------------------------------------------------------
-  contains
+contains
 !-----------------------------------------------------------------------------
 
     subroutine med_phases_prep_atm(gcomp, rc)
-      use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-      use ESMF, only : ESMF_FieldBundleGet, ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
-      use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_ClockPrint
-      use med_constants_mod, only : R8
-      use esmFlds                 , only : compatm, compocn, compice, ncomps, compname
-      use esmFlds                 , only : fldListFr, fldListTo
-      use esmFlds                 , only : fldListMed_aoflux_a, fldListMed_aoflux_o
-      use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-      use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_init
-      use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_reset
-      use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-      use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_GetFldPtr
-      use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
-      use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
-      use med_merge_mod           , only : med_merge_auto
-      use med_map_mod             , only : med_map_FB_Regrid_Norm
-      use med_phases_ocnalb_mod   , only : med_phases_ocnalb_mapo2a
-      use med_internalstate_mod   , only : InternalState, mastertask
-      use perf_mod                , only : t_startf, t_stopf
-      type(ESMF_GridComp)  :: gcomp
-      integer, intent(out) :: rc
 
       ! Prepares the ATM import Fields.
 
-      ! local variables
-      type(ESMF_Clock)            :: clock
-      type(ESMF_Time)             :: time
-      character(len=64)           :: timestr
-      type(InternalState)         :: is_local
-      real(R8), pointer :: dataPtr1(:),dataPtr2(:)
-      real(R8), pointer :: ocnwgt(:),icewgt(:)
-      integer                     :: mapindex
-      integer                     :: i, j, n, n1, ncnt, lsize
-      logical,save                :: first_call = .true.
-      character(len=*),parameter  :: subname='(med_phases_prep_atm)'
-      integer                       :: dbrc
+      use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+      use ESMF                  , only : ESMF_FieldBundleGet, ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
+      use ESMF                  , only : ESMF_FieldBundleIsCreated
+      use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_ClockPrint
+      use med_constants_mod     , only : R8
+      use esmFlds               , only : compatm, compocn, compice, ncomps, compname
+      use esmFlds               , only : fldListFr, fldListTo
+      use esmFlds               , only : fldListMed_aoflux_a, fldListMed_aoflux_o
+      use esmFlds               , only : fldListMed_ocnalb_o
+      use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
+      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
+      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+      use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
+      use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+      use med_merge_mod         , only : med_merge_auto
+      use med_map_mod           , only : med_map_FB_Regrid_Norm
+      use med_phases_ocnalb_mod , only : med_phases_ocnalb_mapo2a
+      use med_internalstate_mod , only : InternalState, mastertask
+      use perf_mod              , only : t_startf, t_stopf
 
+      ! input/output variables
+      type(ESMF_GridComp)  :: gcomp
+      integer, intent(out) :: rc
+
+      ! local variables
+      type(ESMF_Clock)           :: clock
+      type(ESMF_Time)            :: time
+      character(len=64)          :: timestr
+      type(InternalState)        :: is_local
+      real(R8), pointer          :: dataPtr1(:),dataPtr2(:)
+      integer                    :: i, j, n, n1, ncnt
+      logical                    :: compute_ocnalb
+      logical                    :: compute_aoflux
+      logical,save               :: first_call = .true.
+      integer                    :: dbrc
+      character(len=*),parameter :: subname='(med_phases_prep_atm)'
       !-------------------------------------------------------------------------------
+
       call t_startf('MED:'//subname)
       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
       call shr_nuopc_memcheck(subname, 3, mastertask)
@@ -85,19 +94,17 @@ module med_phases_prep_atm_mod
          !---------------------------------------
          call ESMF_GridCompGet(gcomp, clock=clock)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
          call ESMF_ClockGet(clock,currtime=time,rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
          call ESMF_TimeGet(time,timestring=timestr)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
          if (dbug_flag > 1) then
-            call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-         endif
-
-         if (mastertask) then
-            call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) then
+               call ESMF_ClockPrint(clock, options="currTime", &
+                    preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            end if
          end if
 
          !---------------------------------------
@@ -118,9 +125,17 @@ module med_phases_prep_atm_mod
          enddo
 
          !---------------------------------------
-         !--- map ocean albedos from ocn to atm grid
+         !--- determine if mediator computes ocean albedos and atm/ocn fluxes
          !---------------------------------------
-         if (is_local%wrap%med_coupling_active(compocn,compatm)) then
+         compute_ocnalb = (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o, rc=rc))
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         compute_aoflux = (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc))
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+         !---------------------------------------
+         !--- map ocean albedos from ocn to atm grid if appropriate
+         !---------------------------------------
+         if (.not. compute_ocnalb .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
             call med_phases_ocnalb_mapo2a(gcomp, rc)
          end if
 
@@ -129,7 +144,7 @@ module med_phases_prep_atm_mod
          !---------------------------------------
          ! TODO: should only do this if the fluxes are computed on the ocean grid
 
-         if (is_local%wrap%med_coupling_active(compocn,compatm)) then
+         if (.not. compute_aoflux .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
             call med_map_FB_Regrid_Norm(&
                  fldListMed_aoflux_o%flds, compocn, compatm, &
                  is_local%wrap%FBMed_aoflux_o, &
@@ -144,23 +159,26 @@ module med_phases_prep_atm_mod
          !---------------------------------------
          !--- merge all fields to atm
          !---------------------------------------
-         call med_merge_auto(trim(compname(compatm)), &
-              is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
-              is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-              FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
-              document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         if (dbug_flag > 1) then
-            call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
+         if (compute_ocnalb .and. compute_aoflux) then
+            call med_merge_auto(trim(compname(compatm)), &
+                 is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
+                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
+                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         endif
+         else
+            call med_merge_auto(trim(compname(compatm)), &
+                 is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
+                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
+                 FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
+                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         end if
+
          !---------------------------------------
          !--- custom calculations
          !---------------------------------------
 
          ! set fractions to send back to atm
-
          if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compatm), 'So_ofrac', rc=rc)) then
             call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'So_ofrac', dataptr1, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -188,25 +206,9 @@ module med_phases_prep_atm_mod
                dataptr1(n) = dataptr2(n)
             end do
          end if
-#if (1 == 0)
-         !---  ocn and ice fraction for merges
-         call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compice,compatm), 'Si_ifrac', icewgt, rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-         allocate(ocnwgt(lbound(icewgt,1):ubound(icewgt,1), lbound(icewgt,2):ubound(icewgt,2)))
-         do j=lbound(icewgt,2),ubound(icewgt,2)
-            do i=lbound(icewgt,1),ubound(icewgt,1)
-               !TODO: the sizes here are inconsistent with the declarations
-               ocnwgt(i,j) = 1.0_R8 - icewgt(i,j)
-            enddo
-         enddo
-         !--- merges
-         call shr_nuopc_methods_FB_FieldMerge(is_local%wrap%FBExp(compatm)  ,'surface_temperature' ,         &
-              FBinA=is_local%wrap%FBImp(compocn,compatm) ,fnameA='sea_surface_temperature', wgtA=ocnwgt,     &
-              FBinB=is_local%wrap%FBImp(compice,compatm) ,fnameB='sea_ice_temperature'    , wgtB=icewgt, rc=rc)
+         call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         deallocate(ocnwgt)
-#endif
 
          !---------------------------------------
          !--- update local scalar data
@@ -220,6 +222,7 @@ module med_phases_prep_atm_mod
 
          first_call = .false.
       endif
+
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
       call t_stopf('MED:'//subname)
 

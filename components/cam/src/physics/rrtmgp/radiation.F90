@@ -475,8 +475,10 @@ contains
       ! impossible from this initialization routine because I do not thing the
       ! rad_cnst objects are setup yet.
       call set_available_gases(active_gases, available_gases)
+      print *, 'Load RRTMGP coefficients from file...'
       call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+      print *, 'Done loading RRTMGP coefficients.'
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -578,13 +580,13 @@ contains
       call add_default('TOT_ICLD_VISTAU', 1, ' ')
 
       ! Band-by-band cloud optical properties
-      call addfld('CLOUD_TAU_SW', (/'lev','swband'/), 'I', '1', &
+      call addfld('CLOUD_TAU_SW', (/'lev   ','swband'/), 'I', '1', &
                   'Cloud shortwave extinction optical depth', sampling_seq='rad_lwsw') 
-      call addfld('CLOUD_SSA_SW', (/'lev','swband'/), 'I', '1', &
+      call addfld('CLOUD_SSA_SW', (/'lev   ','swband'/), 'I', '1', &
                   'Cloud shortwave single scattering albedo', sampling_seq='rad_lwsw') 
-      call addfld('CLOUD_G_SW', (/'lev','swband'/), 'I', '1', &
+      call addfld('CLOUD_G_SW', (/'lev   ','swband'/), 'I', '1', &
                   'Cloud shortwave assymmetry parameter', sampling_seq='rad_lwsw') 
-      call addfld('CLOUD_TAU_LW', (/'lev','lwband'/), 'I', '1', &
+      call addfld('CLOUD_TAU_LW', (/'lev   ','lwband'/), 'I', '1', &
                   'Cloud longwave absorption optical depth', sampling_seq='rad_lwsw') 
 
       ! Band-by-band shortwave albedos
@@ -974,8 +976,6 @@ contains
           endif
        end if
 
-#else
-      write(iulog,*) subname // ': PERGRO not implemented for RRTMGP, doing nothing.'
 #endif /* DO_PERGRO_MODS */
 
    end subroutine perturbation_growth_init
@@ -1343,6 +1343,14 @@ contains
       nday = count(day_indices(1:ncol) > 0)
       nnight = count(night_indices(1:ncol) > 0)
 
+      ! If no daytime columns in this chunk, then we return zeros
+      if (nday == 0) then
+         call reset_fluxes(fluxes_allsky)
+         call reset_fluxes(fluxes_clrsky)
+         qrs(1:ncol,1:pver) = 0
+         qrsc(1:ncol,1:pver) = 0
+         return
+      end if
 
       ! Populate RRTMGP input variables. Use the day_indices index array to
       ! map CAM variables on all columns to the daytime-only arrays, and take

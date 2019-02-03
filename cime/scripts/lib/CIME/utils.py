@@ -106,16 +106,24 @@ class EnvironmentContext(object):
             else:
                 del os.environ[k]
 
-def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
+# This should be the go-to exception for CIME use. It's a subclass
+# of SystemExit in order suppress tracebacks, which users generally
+# hate seeing. It's a subclass of Exception because we want it to be
+# "catchable". If you are debugging CIME and want to see the stacktrace,
+# run your CIME command with the --debug flag.
+class CIMEError(SystemExit, Exception):
+    pass
+
+def expect(condition, error_msg, exc_type=CIMEError, error_prefix="ERROR:"):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
 
     >>> expect(True, "error1")
-    >>> expect(False, "error2")
+    >>> expect(False, "error2") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: error2
+    CIMEError: ERROR: error2
     """
     # Without this line we get a futurewarning on the use of condition below
     warnings.filterwarnings("ignore")
@@ -128,7 +136,6 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         except UnicodeEncodeError:
             msg = (error_prefix + " " + error_msg).encode('utf-8')
         raise exc_type(msg)
-
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -151,11 +158,15 @@ def check_name(fullname, additional_chars=None, fullpath=False):
     False
     >>> check_name("mycase*mods")
     False
+    >>> check_name("/some/full/path/name/")
+    False
     """
 
     chars = '+*?<>/{}[\]~`@:' # pylint: disable=anomalous-backslash-in-string
     if additional_chars is not None:
         chars += additional_chars
+    if fullname.endswith('/'):
+        return False
     if fullpath:
         _, name = os.path.split(fullname)
     else:
@@ -362,7 +373,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         except (SyntaxError, AttributeError) as _:
             pass # Need to try to run as shell command
 
-        except:
+        except Exception:
             if logfile:
                 with open(logfile, "a") as log_fd:
                     log_fd.write(str(sys.exc_info()[1]))
@@ -482,10 +493,10 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
 
     >>> run_cmd_no_fail('echo foo') == 'foo'
     True
-    >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS
+    >>> run_cmd_no_fail('echo THE ERROR >&2; false') # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
+    CIMEError: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
 
     >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
     True
@@ -567,14 +578,14 @@ def parse_test_name(test_name):
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
-    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
-    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods')
+    CIMEError: ERROR: Expected 4th item of 'SMS.f19_g16.2000_DATM%QI.A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods' ('A_XLND_SICE_SOCN_XROF_XGLC_SWAV') to be in form machine_compiler
+    >>> parse_test_name('SMS.f19_g16.2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV.mach-ine_compiler.test-mods') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV
+    CIMEError: ERROR: Invalid compset name 2000_DATM%QI/A_XLND_SICE_SOCN_XROF_XGLC_SWAV
     """
     rv = [None] * 7
     num_dots = test_name.count(".")
@@ -1089,7 +1100,7 @@ def convert_to_type(value, type_str, vid=""):
         elif type_str == "integer":
             try:
                 value = int(eval(value))
-            except:
+            except Exception:
                 expect(False, "Entry {} was listed as type int but value '{}' is not valid int".format(vid, value))
 
         elif type_str == "logical":
@@ -1100,7 +1111,7 @@ def convert_to_type(value, type_str, vid=""):
         elif type_str == "real":
             try:
                 value = float(value)
-            except:
+            except Exception:
                 expect(False, "Entry {} was listed as type real but value '{}' is not valid real".format(vid, value))
 
         else:
@@ -1121,7 +1132,7 @@ def convert_to_unknown_type(value):
         # Attempt to convert to integer
         try:
             value = int(eval(value))
-        except:
+        except Exception:
             pass
         else:
             return value
@@ -1129,7 +1140,7 @@ def convert_to_unknown_type(value):
         # Attempt to convert to float
         try:
             value = float(value)
-        except:
+        except Exception:
             pass
         else:
             return value
@@ -1623,7 +1634,7 @@ def is_python_executable(filepath):
         with open(filepath, "rt") as f:
             try:
                 first_line = f.readline()
-            except:
+            except Exception:
                 pass
 
         return first_line is not None and first_line.startswith("#!") and "python" in first_line
@@ -1678,7 +1689,7 @@ def run_and_log_case_status(func, phase, caseroot='.', custom_success_msg_functo
     rv = None
     try:
         rv = func()
-    except:
+    except BaseException:
         e = sys.exc_info()[1]
         append_case_status(phase, CASE_FAILURE, msg=("\n{}".format(e)), caseroot=caseroot)
         raise

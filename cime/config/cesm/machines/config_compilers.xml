@@ -72,7 +72,15 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
+    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
+    <append MODEL="fv3gfs"> -DSPMD </append>
   </CPPDEFS>
+  <INCLDIR>
+        <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
+  </INCLDIR>
+  <FFLAGS>
+    <append MODEL="fv3gfs"> $(FC_AUTO_R8) </append>
+  </FFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
 
@@ -237,7 +245,7 @@ using a fortran linker.
     <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
-    <base> -fixed -132 </base>
+    <base> -fixed  </base>
   </FIXEDFLAGS>
   <FREEFLAGS>
     <base> -free </base>

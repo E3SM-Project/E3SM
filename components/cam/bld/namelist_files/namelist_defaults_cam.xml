@@ -468,8 +468,8 @@
 <liqopticsfile rad="rrtmgp">atm/cam/physprops/F_nwvl200_mu20_lam50_res64_t298_c080428.nc</liqopticsfile>
 
 <!-- Gas absorption coefficients for RRTMGP -->
-<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_c180724.nc</rrtmgp_coefficients_file_lw>
-<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_c180724.nc</rrtmgp_coefficients_file_sw>
+<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_c181004.nc</rrtmgp_coefficients_file_lw>
+<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_c181004.nc</rrtmgp_coefficients_file_sw>
 
 <!-- CAM-RT absorptivity/emissivity lookup table -->
 <absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>
@@ -916,7 +916,7 @@
 <clubb_tk2                                        > 238.15D0  </clubb_tk2>
 <clubb_wpxp_L_thresh                              > 60.0D0   </clubb_wpxp_L_thresh>
 <relvar_fix                                       > .false.  </relvar_fix>      
-
+<clubb_use_sgv                                    > .false. </clubb_use_sgv>
 
 
 <!-- CLUBB_history -->
@@ -1314,6 +1314,7 @@
 <zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
 <zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
+<zmconv_tp_fac                                                        >0.D0 </zmconv_tp_fac>
 
 <!-- Cloud sedimentation -->
 

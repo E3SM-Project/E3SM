@@ -97,8 +97,10 @@ using MPIView = typename std::conditional<std::is_same<MPIMemSpace,ExecMemSpace>
 template <typename DataType, typename... Properties>
 using MPIView = ExecView<DataType,Properties...>;
 # else
+/// A Cuda 9.1.85 (and probably other 9.1.* versions) parse bug requires us to
+/// spell out this type rather than rely on our layers of abstraction.
 template <typename DataType, typename... Properties>
-using MPIView = typename ExecView<DataType,Properties...>::HostMirror>::type;
+using MPIView = typename Kokkos::View<DataType, Kokkos::LayoutRight, ExecMemSpace, Properties...>::HostMirror;
 # endif
 #endif
 

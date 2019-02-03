@@ -28,6 +28,7 @@ from CIME.XML.standard_module_setup import *
 from collections import OrderedDict
 
 import os, itertools
+from CIME import expected_fails
 
 TEST_STATUS_FILENAME = "TestStatus"
 
@@ -44,6 +45,10 @@ NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 
 # Special strings that can appear in comments, indicating particular types of failures
 TEST_NO_BASELINES_COMMENT = "BFAIL" # Implies baseline directory is missing in the baseline comparison phase
+# The expected and unexpected failure comments aren't used directly in this module, but
+# are included here for symmetry, so other modules can access them from here.
+TEST_EXPECTED_FAILURE_COMMENT = expected_fails.EXPECTED_FAILURE_COMMENT
+TEST_UNEXPECTED_FAILURE_COMMENT_START = expected_fails.UNEXPECTED_FAILURE_COMMENT_START
 
 # The valid phases
 CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
@@ -227,28 +232,39 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self, prefix='', skip_passes=False, skip_phase_list=None):
+    def phase_statuses_dump(self, prefix='', skip_passes=False, skip_phase_list=None, xfails=None):
         """
         Args:
             prefix: string printed at the start of each line
             skip_passes: if True, do not output lines that have a PASS status
             skip_phase_list: list of phases (from the phases given by
                 ALL_PHASES) for which we skip output
+            xfails: object of type ExpectedFails, giving expected failures for this test
         """
         if skip_phase_list is None:
             skip_phase_list = []
+        if xfails is None:
+            xfails = expected_fails.ExpectedFails()
         result = ""
         if self._phase_statuses:
             for phase, data in self._phase_statuses.items():
                 if phase in skip_phase_list:
                     continue
                 status, comments = data
-                if skip_passes and status == TEST_PASS_STATUS:
-                    continue
-                if not comments:
-                    result += "{}{} {} {}\n".format(prefix, status, self._test_name, phase)
-                else:
-                    result += "{}{} {} {} {}\n".format(prefix, status, self._test_name, phase, comments)
+                xfail_comment = xfails.expected_fails_comment(phase, status)
+                if skip_passes:
+                    if status == TEST_PASS_STATUS and not xfail_comment:
+                        # Note that we still print the result of a PASSing test if there
+                        # is a comment related to the expected failure status. Typically
+                        # this will indicate that this is an unexpected PASS (and so
+                        # should be removed from the expected fails list).
+                        continue
+                result += "{}{} {} {}".format(prefix, status, self._test_name, phase)
+                if comments:
+                    result += " {}".format(comments)
+                if xfail_comment:
+                    result += " {}".format(xfail_comment)
+                result += "\n"
 
         return result
 

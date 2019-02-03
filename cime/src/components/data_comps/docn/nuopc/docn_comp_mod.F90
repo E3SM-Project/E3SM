@@ -14,7 +14,7 @@ module docn_comp_mod
   use mct_mod               , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
-  use med_constants_mod     , only : R8, CS, CXX
+  use med_constants_mod     , only : R8, CS, CXX, CL
   use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
   use shr_const_mod         , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
   use shr_const_mod         , only : shr_const_zsrflyr, shr_const_pi
@@ -595,7 +595,7 @@ contains
     integer           :: nu     ! unit number
     character(len=18) :: date_str
     character(len=CS) :: fldname
-
+    character(len=CL) :: local_case_name
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
@@ -622,7 +622,11 @@ contains
 
     call t_startf('DOCN_RUN')
     call t_barrierf('docn_BARRIER',mpicom)
-
+    if(present(case_name)) then
+       local_case_name = case_name
+    else
+       local_case_name = " "
+    endif
     !--------------------
     ! ADVANCE OCN
     !--------------------

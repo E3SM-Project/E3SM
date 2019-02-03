@@ -20,7 +20,7 @@ module glc_comp_mct
   use seq_cdata_mod
   use seq_infodata_mod
   use seq_timemgr_mod
-  use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name
+  use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
   use shr_file_mod
   use shr_cal_mod,       only : shr_cal_date2ymd
   use shr_sys_mod
@@ -153,6 +153,8 @@ contains
                                       averagePool
 
     logical :: exists
+    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
+    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
     integer(kind=c_int) :: c_comm
@@ -289,20 +291,42 @@ contains
 
     ! Identify SMP nodes and process/SMP mapping for this instance
     ! (Assume that processor names are SMP node names on SMP clusters.)
-    call MPI_comm_size(mpicom_g,npes,ierr)
-    write(c_npes,'(i8)') npes
-
     inst_index = seq_comm_inst(glcID)
     write(c_inst_index,'(i8)') inst_index
 
-    if (iam==0) then
-       write(glcLogUnit,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
-100    format(/,a,' pes participating in computation of MPAS-ALBANY-LANDICE instance #',a)
-       call flush(glcLogUnit)
+    if (info_taskmap_comp > 0) then
+
+       no_taskmap_output = .false.
+
+       if (info_taskmap_comp == 1) then
+          verbose_taskmap_output = .false.
+       else
+          verbose_taskmap_output = .true.
+       endif
+
+       call MPI_comm_size(mpicom_g,npes,ierr)
+       write(c_npes,'(i8)') npes
+
+       if (iam==0) then
+          write(glcLogUnit,'(/,3A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of MPAS-ALBANY-LANDICE instance #', &
+             trim(adjustl(c_inst_index))
+          call shr_sys_flush(glcLogUnit)
+       endif
+
+    else
+
+       no_taskmap_output = .true.
+       verbose_taskmap_output = .false.
+
     endif
 
     call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(glcLogUnit, mpicom_g, 'GLC #'//trim(adjustl(c_inst_index)))
+    call shr_taskmap_write(glcLogUnit, mpicom_g,                 &
+                           'GLC #'//trim(adjustl(c_inst_index)), &
+                           verbose=verbose_taskmap_output,       &
+                           no_output=no_taskmap_output           )
     call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MALI core and domain types

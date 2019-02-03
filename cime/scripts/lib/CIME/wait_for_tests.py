@@ -7,7 +7,7 @@ import logging
 import xml.etree.ElementTree as xmlet
 
 import CIME.utils
-from CIME.utils import expect, Timeout, run_cmd_no_fail, safe_copy
+from CIME.utils import expect, Timeout, run_cmd_no_fail, safe_copy, CIMEError
 from CIME.XML.machines import Machines
 from CIME.test_status import *
 
@@ -189,7 +189,7 @@ def create_cdash_xml_fakes(results, cdash_build_name, cdash_build_group, utc_tim
     first_result_case = os.path.dirname(list(results.items())[0][1][0])
     try:
         srcroot = run_cmd_no_fail("./xmlquery --value CIMEROOT", from_dir=first_result_case)
-    except:
+    except CIMEError:
         # Use repo containing this script as last resort
         srcroot = CIME.utils.get_cime_root()
 
@@ -355,7 +355,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
     try:
         fd = open(test_log_path, "w")
         fd.close()
-    except:
+    except (IOError, OSError):
         test_log_path = "/dev/null"
 
     prior_ts = None
@@ -414,7 +414,7 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
             if (test_status == prior_status):
                 logging.warning("Test name '{}' was found in both '{}' and '{}'".format(test_name, test_path, prior_path))
             else:
-                raise SystemExit("Test name '{}' was found in both '{}' and '{}' with different results".format(test_name, test_path, prior_path))
+                raise CIMEError("Test name '{}' was found in both '{}' and '{}' with different results".format(test_name, test_path, prior_path))
 
         test_results[test_name] = (test_path, test_status)
         completed_test_paths.append(test_path)

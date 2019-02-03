@@ -57,6 +57,7 @@ end setvalues
   fnames =  systemfunc(\
 ; "ls ~/scratch1/topodata/USGS-gtopo30_ne120np4_latlon.nc; "\
  "ls ~/scratch1/topodata/USGS-gtopo30_ne30np4_latlon.nc; "\
++"ls ~/scratch1/topodata/fv0.9x1.25-default-PHIS-new-SGH-SGH30.nc; "\
 +"ls ~/scratch1/topodata/USGS-gtopo30_ne30np4_*_latlon.nc; "\
 );
 

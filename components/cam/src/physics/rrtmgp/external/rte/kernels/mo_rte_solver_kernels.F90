@@ -403,9 +403,11 @@ contains
       !   is of order epsilon (smallest difference from 1. in working precision)
       !   Thanks to Peter Blossey
       !
-      fact = merge((1._wp - trans(icol,ilay))/tau(icol,ilay) - trans(icol,ilay), &
-                   tau(icol, ilay) * ( 0.5_wp - 1._wp/3._wp*tau(icol, ilay)   ), &
-                   tau(icol, ilay) > tau_thresh)
+      if (tau(icol,ilay) > tau_thresh) then
+         fact = (1._wp - trans(icol,ilay))/tau(icol,ilay) - trans(icol,ilay)
+      else
+         fact = tau(icol, ilay) * ( 0.5_wp - 1._wp/3._wp*tau(icol, ilay) )
+      end if
       !
       ! Equation below is developed in Clough et al., 1992, doi:10.1029/92JD01419, Eq 13
       !
