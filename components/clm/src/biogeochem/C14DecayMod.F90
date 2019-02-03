@@ -66,7 +66,7 @@ contains
          spinup_factor      =>    decomp_cascade_con%spinup_factor              , & ! Input:   [real(r8) (:)     ]  factor for AD spinup associated with each pool
 
          decomp_cpools_vr   =>    c14_col_cs%decomp_cpools_vr     , & ! Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-         seedc              =>    c14_carbonstate_vars%seedc_col                , & ! Output:  [real(r8) (:)     ]                                          
+         seedc              =>    c14_col_cs%seedc                , & ! Output:  [real(r8) (:)     ]                                          
          cpool              =>    c14_veg_cs%cpool              , & ! Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool  
          xsmrpool           =>    c14_veg_cs%xsmrpool           , & ! Output:  [real(r8) (:)     ]  (gC/m2) execss maint resp C pool        
          deadcrootc         =>    c14_veg_cs%deadcrootc         , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C              

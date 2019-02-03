@@ -83,8 +83,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                        & 
-         totcolc   =>  carbonstate_vars%totcolc_col , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
-         col_begcb =>  carbonstate_vars%begcb_col     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         totcolc   =>  col_cs%totcolc , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         col_begcb =>  col_cs%begcb     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
 
       ! calculate beginning column-level carbon balance, for mass conservation check
@@ -197,7 +197,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                           &
-         totcolc                   =>    carbonstate_vars%totcolc_col                  , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         totcolc                   =>    col_cs%totcolc                  , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
          gpp                       =>    carbonflux_vars%gpp_col                       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production
          er                        =>    carbonflux_vars%er_col                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          col_fire_closs            =>    carbonflux_vars%fire_closs_col                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
@@ -207,9 +207,9 @@ contains
          col_decompc_delta         =>    carbonflux_vars%externalc_to_decomp_delta_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          hrv_deadstemc_to_prod10c  =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemc_to_prod100c =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
-         col_begcb                 =>    carbonstate_vars%begcb_col                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         col_endcb                 =>    carbonstate_vars%endcb_col                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         col_errcb                 =>    carbonstate_vars%errcb_col                      & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
+         col_errcb                 =>    col_cs%errcb                      & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
          )
 
       ! set time steps
@@ -669,7 +669,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         totcolc               =>  carbonstate_vars%totcolc_col           , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         totcolc               =>  col_cs%totcolc           , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
          begcb_grc             =>  carbonstate_vars%begcb_grc               & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
 
@@ -764,7 +764,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
-         totcolc                   =>    carbonstate_vars%totcolc_col              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         totcolc                   =>    col_cs%totcolc              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
          dwt_prod10c_gain_grc      =>    carbonflux_vars%dwt_prod10c_gain_grc      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_prod100c_gain_grc     =>    carbonflux_vars%dwt_prod100c_gain_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_cflux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)

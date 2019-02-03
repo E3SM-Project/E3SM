@@ -41,7 +41,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CarbonStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       carbonflux_vars, carbonstate_vars, col_csv2)
+       carbonflux_vars, carbonstate_vars, col_cs)
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
@@ -51,8 +51,7 @@ contains
     integer                , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
     type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(column_carbon_state),intent(inout):: col_csv2
+    type(column_carbon_state),intent(inout):: col_cs
     !
     ! !LOCAL VARIABLES:
     integer  :: c   ! column index
@@ -66,8 +65,7 @@ contains
 
     associate( &
          cf => carbonflux_vars  , &
-         cs => carbonstate_vars , &
-         csv2 => col_csv2         &
+         cs => col_cs             &
          )
 
       dt = real( get_step_size(), r8 )
@@ -75,7 +73,7 @@ contains
       if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
-            cs%seedc_grc(g) = cs%seedc_grc(g) &
+            cs%seedc(g) = cs%seedc(g) &
                  - cf%dwt_seedc_to_leaf_grc(g)     * dt &
                  - cf%dwt_seedc_to_deadstem_grc(g) * dt
          end do
@@ -84,13 +82,13 @@ contains
             do fc = 1, num_soilc_with_inactive
                c = filter_soilc_with_inactive(fc)
 
-               csv2%decomp_cpools_vr(c,j,i_met_lit) = csv2%decomp_cpools_vr(c,j,i_met_lit) + &
+               cs%decomp_cpools_vr(c,j,i_met_lit) = cs%decomp_cpools_vr(c,j,i_met_lit) + &
                     cf%dwt_frootc_to_litr_met_c_col(c,j) * dt
-               csv2%decomp_cpools_vr(c,j,i_cel_lit) = csv2%decomp_cpools_vr(c,j,i_cel_lit) + &
+               cs%decomp_cpools_vr(c,j,i_cel_lit) = cs%decomp_cpools_vr(c,j,i_cel_lit) + &
                     cf%dwt_frootc_to_litr_cel_c_col(c,j) * dt
-               csv2%decomp_cpools_vr(c,j,i_lig_lit) = csv2%decomp_cpools_vr(c,j,i_lig_lit) + &
+               cs%decomp_cpools_vr(c,j,i_lig_lit) = cs%decomp_cpools_vr(c,j,i_lig_lit) + &
                     cf%dwt_frootc_to_litr_lig_c_col(c,j) * dt
-               csv2%decomp_cpools_vr(c,j,i_cwd) = csv2%decomp_cpools_vr(c,j,i_cwd) + &
+               cs%decomp_cpools_vr(c,j,i_cwd) = cs%decomp_cpools_vr(c,j,i_cwd) + &
                     ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) * dt
 
             end do
@@ -201,7 +199,7 @@ contains
       if(.not.use_fates) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            cs%decomp_som2c_vr_col(c,1:nlevdecomp) = csv2%decomp_cpools_vr(c,1:nlevdecomp,6)
+            csv2%decomp_som2c_vr(c,1:nlevdecomp) = csv2%decomp_cpools_vr(c,1:nlevdecomp,6)
          end do
       end if
 

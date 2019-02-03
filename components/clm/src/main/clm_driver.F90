@@ -133,10 +133,10 @@ module clm_driver
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
-  use ColumnDataType         , only : col_cs  
+  use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws, veg_wf
-  use VegetationDataType     , only : veg_cs   
+  use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs   
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -378,7 +378,8 @@ contains
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars,   &
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars,            &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,         &
+       veg_cs, c13_veg_cs, c14_veg_cs,         &
+       col_cs, c13_col_cs, c14_col_cs,         &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
