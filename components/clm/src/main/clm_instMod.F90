@@ -189,11 +189,11 @@ contains
 
     if (use_cn) then
        call nitrogenstate_vars%Init(bounds_proc,                      &
-            carbonstate_vars%leafc_patch(begp:endp),                  &
-            carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%frootc_patch(begp:endp),                 &
-            carbonstate_vars%frootc_storage_patch(begp:endp),         &
-            carbonstate_vars%deadstemc_patch(begp:endp),              &
+            veg_cs%leafc(begp:endp),                  &
+            veg_cs%leafc_storage(begp:endp),          &
+            veg_cs%frootc(begp:endp),                 &
+            veg_cs%frootc_storage(begp:endp),         &
+            veg_cs%deadstemc(begp:endp),              &
             col_cs%decomp_cpools_vr(begc:endc, 1:, 1:), &
             col_cs%decomp_cpools(begc:endc, 1:),        &
             col_cs%decomp_cpools_1m(begc:endc, 1:))
@@ -201,11 +201,11 @@ contains
        call nitrogenflux_vars%Init(bounds_proc)
 
        call phosphorusstate_vars%Init(bounds_proc,                    &
-            carbonstate_vars%leafc_patch(begp:endp),                  &
-            carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%frootc_patch(begp:endp),                 &
-            carbonstate_vars%frootc_storage_patch(begp:endp),         &
-            carbonstate_vars%deadstemc_patch(begp:endp),              &
+            veg_cs%leafc(begp:endp),                  &
+            veg_cs%leafc_storage(begp:endp),          &
+            veg_cs%frootc(begp:endp),                 &
+            veg_cs%frootc_storage(begp:endp),         &
+            veg_cs%deadstemc(begp:endp),              &
             col_cs%decomp_cpools_vr(begc:endc, 1:, 1:), &
             col_cs%decomp_cpools(begc:endc, 1:),        &
             col_cs%decomp_cpools_1m(begc:endc, 1:))

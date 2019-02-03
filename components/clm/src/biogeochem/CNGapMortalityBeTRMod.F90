@@ -19,6 +19,7 @@ module CNGapMortalityBeTRMod
   use ColumnType          , only : col_pp
   use VegetationPropertiesType      , only : veg_vp
   use VegetationType      , only : veg_pp  
+  use VegetationDataType  , only : veg_cs  
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -172,34 +173,34 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         carbonflux_vars%m_leafc_to_litter_patch(p)               = carbonstate_vars%leafc_patch(p)               * m
-         carbonflux_vars%m_frootc_to_litter_patch(p)              = carbonstate_vars%frootc_patch(p)              * m
-         carbonflux_vars%m_livestemc_to_litter_patch(p)           = carbonstate_vars%livestemc_patch(p)           * m
-         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = carbonstate_vars%deadstemc_patch(p)           * m
-         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = carbonstate_vars%livecrootc_patch(p)          * m
-         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = carbonstate_vars%deadcrootc_patch(p)          * m
+         carbonflux_vars%m_leafc_to_litter_patch(p)               = veg_cs%leafc(p)               * m
+         carbonflux_vars%m_frootc_to_litter_patch(p)              = veg_cs%frootc(p)              * m
+         carbonflux_vars%m_livestemc_to_litter_patch(p)           = veg_cs%livestemc(p)           * m
+         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = veg_cs%deadstemc(p)           * m
+         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = veg_cs%livecrootc(p)          * m
+         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = veg_cs%deadcrootc(p)          * m
          if (spinup_state >= 1) then
-           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstemc_patch(p)*m * spinup_mortality_factor
-           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcrootc_patch(p)*m * spinup_mortality_factor
+           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = veg_cs%deadstemc(p)*m * spinup_mortality_factor
+           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = veg_cs%deadcrootc(p)*m * spinup_mortality_factor
          end if
 
          ! storage pools
-         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = carbonstate_vars%leafc_storage_patch(p)       * m
-         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = carbonstate_vars%frootc_storage_patch(p)      * m
-         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = carbonstate_vars%livestemc_storage_patch(p)   * m
-         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = carbonstate_vars%deadstemc_storage_patch(p)   * m
-         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = carbonstate_vars%livecrootc_storage_patch(p)  * m
-         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = carbonstate_vars%deadcrootc_storage_patch(p)  * m
-         carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = carbonstate_vars%gresp_storage_patch(p)       * m
+         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = veg_cs%leafc_storage(p)       * m
+         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = veg_cs%frootc_storage(p)      * m
+         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = veg_cs%livestemc_storage(p)   * m
+         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = veg_cs%deadstemc_storage(p)   * m
+         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = veg_cs%livecrootc_storage(p)  * m
+         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = veg_cs%deadcrootc_storage(p)  * m
+         carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = veg_cs%gresp_storage(p)       * m
 
          ! transfer pools
-         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = carbonstate_vars%leafc_xfer_patch(p)          * m
-         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = carbonstate_vars%frootc_xfer_patch(p)         * m
-         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = carbonstate_vars%livestemc_xfer_patch(p)      * m
-         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = carbonstate_vars%deadstemc_xfer_patch(p)      * m
-         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = carbonstate_vars%livecrootc_xfer_patch(p)     * m
-         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = carbonstate_vars%deadcrootc_xfer_patch(p)     * m
-         carbonflux_vars%m_gresp_xfer_to_litter_patch(p)          = carbonstate_vars%gresp_xfer_patch(p)          * m
+         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = veg_cs%leafc_xfer(p)          * m
+         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = veg_cs%frootc_xfer(p)         * m
+         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = veg_cs%livestemc_xfer(p)      * m
+         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = veg_cs%deadstemc_xfer(p)      * m
+         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = veg_cs%livecrootc_xfer(p)     * m
+         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = veg_cs%deadcrootc_xfer(p)     * m
+         carbonflux_vars%m_gresp_xfer_to_litter_patch(p)          = veg_cs%gresp_xfer(p)          * m
 
          !------------------------------------------------------
          ! patch-level gap mortality nitrogen fluxes
@@ -301,7 +302,7 @@ contains
          ! added by F. Li and S. Levis
          if (use_cndv) then
             if (woody(ivt(p)) == 1._r8)then
-               if (carbonstate_vars%livestemc_patch(p) + carbonstate_vars%deadstemc_patch(p)> 0._r8)then
+               if (veg_cs%livestemc(p) + veg_cs%deadstemc(p)> 0._r8)then
                   nind(p)=nind(p)*(1._r8-m)
                else
                   nind(p) = 0._r8

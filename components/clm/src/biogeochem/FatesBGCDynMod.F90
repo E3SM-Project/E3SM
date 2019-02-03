@@ -12,6 +12,7 @@ module FatesBGCDynMod
    use shr_log_mod , only : errMsg => shr_log_errMsg
    use abortutils  , only : endrun
    use ColumnDataType, only : col_cs
+   use VegetationDataType, only : veg_cs
    
    implicit none
 
@@ -244,7 +245,7 @@ contains
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
     call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars, col_cs)
+            crop_vars, carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
 
     call t_stopf('BNGCUpdate1')
 

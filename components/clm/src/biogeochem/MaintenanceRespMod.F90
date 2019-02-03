@@ -24,7 +24,7 @@ module MaintenanceRespMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnDataType      , only : col_es
   use VegetationType      , only : veg_pp                
-  use VegetationDataType  , only : veg_es
+  use VegetationDataType  , only : veg_es, veg_cs
   !
   implicit none
   save
@@ -123,7 +123,7 @@ contains
          lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
          lmrsha         =>    photosyns_vars%lmrsha_patch           , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
 
-         cpool          =>    carbonstate_vars%cpool_patch          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
+         cpool          =>    veg_cs%cpool          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
 
          leaf_mr        =>    carbonflux_vars%leaf_mr_patch         , & ! Output: [real(r8) (:)   ]                                                    
          froot_mr       =>    carbonflux_vars%froot_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    

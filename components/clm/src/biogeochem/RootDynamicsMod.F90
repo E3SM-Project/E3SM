@@ -24,7 +24,7 @@ module RootDynamicsMod
   use CropType            , only : crop_type
   use SimpleMathMod       , only : array_normalization
   use RootBiophysMod      , only : init_vegrootfr
-  use VegetationDataType  , only : veg_ef
+  use VegetationDataType  , only : veg_ef, veg_cs
 
   ! !PUBLIC TYPES:
   implicit none
@@ -105,11 +105,11 @@ contains
          soilpsi                => soilstate_vars%soilpsi_col                  , & ! Input  :  soil water potential in each soil layer (MPa)
          rresis                 => energyflux_vars%rresis_patch                , & ! Input  :  [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)
          sminn_vr               => nitrogenstate_vars%sminn_vr_col             , & ! Iniput :  [real(r8) (:,:)]  (gN/m3) soil mineral N
-         frootc                 => carbonstate_vars%frootc_patch               , & ! Input  :  [real(r8) (:)]  (gC/m2) fine root C
+         frootc                 => veg_cs%frootc               , & ! Input  :  [real(r8) (:)]  (gC/m2) fine root C
          hui                    => crop_vars%gddplant_patch                    , & ! Input  :  [real(r8) (:)]  =gdd since planting (gddplant)
          huigrain               => cnstate_vars%huigrain_patch                 , & ! Input  :  [real(r8) (:)]  same to reach vegetative maturity
-         livecrootc             => carbonstate_vars%livecrootc_patch           , & !
-         deadcrootc             => carbonstate_vars%deadcrootc_patch           , &
+         livecrootc             => veg_cs%livecrootc           , & !
+         deadcrootc             => veg_cs%deadcrootc           , &
          cpool_to_livecrootc    => carbonflux_vars%cpool_to_livecrootc_patch   , & ! Input  :  [real(r8) (:)] allocation to coarse root C (gC/m2/s)
          cpool_to_livecrootc_storage => carbonflux_vars%cpool_to_livecrootc_storage_patch, & ! Input:  [real(r8) (:)] allocation to coarse root C storage (gC/m2/s)
          cpool_to_deadcrootc    => carbonflux_vars%cpool_to_deadcrootc_patch   , & ! Input  :  [real(r8) (:)] allocation to dead coarse root C (gC/m2/s)

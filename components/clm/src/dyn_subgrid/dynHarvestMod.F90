@@ -25,11 +25,12 @@ module dynHarvestMod
   use CNNitrogenFluxType    , only : nitrogenflux_type
    use VegetationPropertiesType        , only : veg_vp
   use clm_varcon            , only : grlnd
-  use ColumnType            , only : col_pp                
-  use VegetationType             , only : veg_pp                
-
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
+  use ColumnType            , only : col_pp                
+  use VegetationType        , only : veg_pp                
+  use VegetationDataType    , only : veg_cs  
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -211,28 +212,28 @@ contains
    pgridcell                           =>    veg_pp%gridcell                                , & ! Input:  [integer (:)]  pft-level index into gridcell-level quantities     
    ivt                                 =>    veg_pp%itype                                   , & ! Input:  [integer (:)]  pft vegetation type                                
 
-   leafc                               =>    carbonstate_vars%leafc_patch                                   , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C                                    
-   frootc                              =>    carbonstate_vars%frootc_patch                                  , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C                               
-   livestemc                           =>    carbonstate_vars%livestemc_patch                               , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C                               
-   deadstemc                           =>    carbonstate_vars%deadstemc_patch                               , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C                               
-   livecrootc                          =>    carbonstate_vars%livecrootc_patch                              , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C                        
-   deadcrootc                          =>    carbonstate_vars%deadcrootc_patch                              , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C                        
-   xsmrpool                            =>    carbonstate_vars%xsmrpool_patch                                , & ! Input:  [real(r8) (:)]  (gC/m2) abstract C pool to meet excess MR demand  
-   leafc_storage                       =>    carbonstate_vars%leafc_storage_patch                           , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C storage                            
-   frootc_storage                      =>    carbonstate_vars%frootc_storage_patch                          , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C storage                       
-   livestemc_storage                   =>    carbonstate_vars%livestemc_storage_patch                       , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C storage                       
-   deadstemc_storage                   =>    carbonstate_vars%deadstemc_storage_patch                       , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C storage                       
-   livecrootc_storage                  =>    carbonstate_vars%livecrootc_storage_patch                      , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C storage                
-   deadcrootc_storage                  =>    carbonstate_vars%deadcrootc_storage_patch                      , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C storage                
-   gresp_storage                       =>    carbonstate_vars%gresp_storage_patch                           , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration storage                
-   leafc_xfer                          =>    carbonstate_vars%leafc_xfer_patch                              , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C transfer                           
-   frootc_xfer                         =>    carbonstate_vars%frootc_xfer_patch                             , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C transfer                      
-   livestemc_xfer                      =>    carbonstate_vars%livestemc_xfer_patch                          , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C transfer                      
-   deadstemc_xfer                      =>    carbonstate_vars%deadstemc_xfer_patch                          , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C transfer                      
-   livecrootc_xfer                     =>    carbonstate_vars%livecrootc_xfer_patch                         , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C transfer               
-   deadcrootc_xfer                     =>    carbonstate_vars%deadcrootc_xfer_patch                         , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C transfer               
-   gresp_xfer                          =>    carbonstate_vars%gresp_xfer_patch                              , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration transfer               
-   cpool                               =>    carbonstate_vars%cpool_patch                                   , & ! Input:  [real(r8) (:)]  (gC/m2) Plant C storage
+   leafc                               =>    veg_cs%leafc                                   , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C                                    
+   frootc                              =>    veg_cs%frootc                                  , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C                               
+   livestemc                           =>    veg_cs%livestemc                               , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C                               
+   deadstemc                           =>    veg_cs%deadstemc                               , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C                               
+   livecrootc                          =>    veg_cs%livecrootc                              , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C                        
+   deadcrootc                          =>    veg_cs%deadcrootc                              , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C                        
+   xsmrpool                            =>    veg_cs%xsmrpool                                , & ! Input:  [real(r8) (:)]  (gC/m2) abstract C pool to meet excess MR demand  
+   leafc_storage                       =>    veg_cs%leafc_storage                           , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C storage                            
+   frootc_storage                      =>    veg_cs%frootc_storage                          , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C storage                       
+   livestemc_storage                   =>    veg_cs%livestemc_storage                       , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C storage                       
+   deadstemc_storage                   =>    veg_cs%deadstemc_storage                       , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C storage                       
+   livecrootc_storage                  =>    veg_cs%livecrootc_storage                      , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C storage                
+   deadcrootc_storage                  =>    veg_cs%deadcrootc_storage                      , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C storage                
+   gresp_storage                       =>    veg_cs%gresp_storage                           , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration storage                
+   leafc_xfer                          =>    veg_cs%leafc_xfer                              , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C transfer                           
+   frootc_xfer                         =>    veg_cs%frootc_xfer                             , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C transfer                      
+   livestemc_xfer                      =>    veg_cs%livestemc_xfer                          , & ! Input:  [real(r8) (:)]  (gC/m2) live stem C transfer                      
+   deadstemc_xfer                      =>    veg_cs%deadstemc_xfer                          , & ! Input:  [real(r8) (:)]  (gC/m2) dead stem C transfer                      
+   livecrootc_xfer                     =>    veg_cs%livecrootc_xfer                         , & ! Input:  [real(r8) (:)]  (gC/m2) live coarse root C transfer               
+   deadcrootc_xfer                     =>    veg_cs%deadcrootc_xfer                         , & ! Input:  [real(r8) (:)]  (gC/m2) dead coarse root C transfer               
+   gresp_xfer                          =>    veg_cs%gresp_xfer                              , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration transfer               
+   cpool                               =>    veg_cs%cpool                                   , & ! Input:  [real(r8) (:)]  (gC/m2) Plant C storage
 
    leafn                               =>    nitrogenstate_vars%leafn_patch                                   , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N                                    
    frootn                              =>    nitrogenstate_vars%frootn_patch                                  , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N                               
