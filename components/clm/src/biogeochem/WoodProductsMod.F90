@@ -17,6 +17,8 @@ module WoodProductsMod
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  
+  use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
 
   !
   implicit none
@@ -74,17 +76,17 @@ contains
        c = filter_soilc(fc)
 
        ! calculate fluxes (1/sec)
-       cf%prod10c_loss_col(c)    = cs%prod10c_col(c)    * kprod10
-       cf%prod100c_loss_col(c)   = cs%prod100c_col(c)   * kprod100
+       cf%prod10c_loss_col(c)    = col_cs%prod10c(c)    * kprod10
+       cf%prod100c_loss_col(c)   = col_cs%prod100c(c)   * kprod100
 
        if ( use_c13 ) then
-          c13_cf%prod10c_loss_col(c)  = c13_cs%prod10c_col(c)  * kprod10
-          c13_cf%prod100c_loss_col(c) = c13_cs%prod100c_col(c) * kprod100
+          c13_cf%prod10c_loss_col(c)  = c13_col_cs%prod10c(c)  * kprod10
+          c13_cf%prod100c_loss_col(c) = c13_col_cs%prod100c(c) * kprod100
        endif
 
        if ( use_c14 ) then
-          c14_cf%prod10c_loss_col(c)  = c14_cs%prod10c_col(c)  * kprod10
-          c14_cf%prod100c_loss_col(c) = c14_cs%prod100c_col(c) * kprod100
+          c14_cf%prod10c_loss_col(c)  = c14_col_cs%prod10c(c)  * kprod10
+          c14_cf%prod100c_loss_col(c) = c14_col_cs%prod100c(c) * kprod100
        endif
 
        nf%prod10n_loss_col(c)    = ns%prod10n_col(c)    * kprod10
@@ -101,36 +103,36 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
-       cs%prod10c_col(c)    = cs%prod10c_col(c)             &
+       col_cs%prod10c(c)    = col_cs%prod10c(c)             &
             + cf%dwt_prod10c_gain_col(c)*dt                 & ! from landcover change
             + cf%hrv_deadstemc_to_prod10c_col(c)*dt         & ! from harvest
             - cf%prod10c_loss_col(c)*dt                       ! from decomposition
 
-       cs%prod100c_col(c)   = cs%prod100c_col(c)            &
+       col_cs%prod100c(c)   = col_cs%prod100c(c)            &
             + cf%dwt_prod100c_gain_col(c)*dt                & ! from landcover change
             + cf%hrv_deadstemc_to_prod100c_col(c)*dt        & ! from harvest
             - cf%prod100c_loss_col(c)*dt                      ! from decomposition
 
 
        if ( use_c13 ) then
-          c13_cs%prod10c_col(c)  = c13_cs%prod10c_col(c)    &
+          c13_col_cs%prod10c(c)  = c13_col_cs%prod10c(c)    &
                + c13_cf%dwt_prod10c_gain_col(c) *dt         & ! from landcover change
                + c13_cf%hrv_deadstemc_to_prod10c_col(c)*dt  & ! from harvest
                - c13_cf%prod10c_loss_col(c)*dt                ! from decomposition
 
-          c13_cs%prod100c_col(c) = c13_cs%prod100c_col(c)   &
+          c13_col_cs%prod100c(c) = c13_col_cs%prod100c(c)   &
                + c13_cf%dwt_prod100c_gain_col(c)*dt         & ! from landcover change
                + c13_cf%hrv_deadstemc_to_prod100c_col(c)*dt & ! from harvest
                - c13_cf%prod100c_loss_col(c)*dt               ! from decomposition
        endif
 
        if ( use_c14 ) then
-          c14_cs%prod10c_col(c)  = c14_cs%prod10c_col(c)    &
+          c14_col_cs%prod10c(c)  = c14_col_cs%prod10c(c)    &
                + c14_cf%dwt_prod10c_gain_col(c) *dt         & ! from landcover change
                + c14_cf%hrv_deadstemc_to_prod10c_col(c)*dt  & ! from harvest
                - c14_cf%prod10c_loss_col(c)*dt                ! from decomposition
 
-          c14_cs%prod100c_col(c) = c14_cs%prod100c_col(c)   &
+          c14_col_cs%prod100c(c) = c14_col_cs%prod100c(c)   &
                + c14_cf%dwt_prod100c_gain_col(c)*dt         & ! from landcover change
                + c14_cf%hrv_deadstemc_to_prod100c_col(c)*dt & ! from harvest
                - c14_cf%prod100c_loss_col(c)*dt               ! from decomposition

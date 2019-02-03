@@ -49,6 +49,7 @@ module clm_instMod
   use SoilorderConType           , only : soilordercon         ! Constants
 
   use GridcellDataType           , only : grc_es, grc_ef, grc_ws, grc_wf
+  use GridcellDataType           , only : grc_cs
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
@@ -141,10 +142,12 @@ contains
     integer               :: begp, endp
     integer               :: begc, endc
     integer               :: begl, endl
+    integer               :: begg, endg
 
     begp = bounds_proc%begp; endp = bounds_proc%endp
     begc = bounds_proc%begc; endc = bounds_proc%endc
     begl = bounds_proc%begl; endl = bounds_proc%endl
+    begg = bounds_proc%begg; endg = bounds_proc%endg
 
 
     if (use_voc ) then
@@ -157,6 +160,7 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call carbonstate_vars%Init(bounds_proc, carbon_type='c12', ratio=1._r8)
+       call grc_cs%Init(begg, endg)
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
        call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
        if (use_c13) then

@@ -156,7 +156,6 @@ module ColumnDataType
     real(r8), pointer :: prod100c             (:)    => null() ! (gC/m2) wood product C pool, 100-year lifespan
     real(r8), pointer :: totprodc             (:)    => null() ! (gC/m2) total wood product C
     real(r8), pointer :: dyn_cbal_adjustments (:)    => null() ! (gC/m2) adjustments to each column made in this timestep via dynamic column area adjustments
-    real(r8), pointer :: totvegcc             (:)    => null() ! (gC/m2) total vegetation carbon, excluding cpool averaged to column (p2c)
     real(r8), pointer :: totpftc              (:)    => null() ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
     real(r8), pointer :: decomp_cpools_1m     (:,:)  => null() ! (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
     real(r8), pointer :: decomp_cpools        (:,:)  => null() ! (gC/m2)  decomposing (litter, cwd, soil) c pools
@@ -1289,7 +1288,6 @@ contains
     allocate(this%prod100c             (begc:endc))     ; this%prod100c             (:)     = nan
     allocate(this%totprodc             (begc:endc))     ; this%totprodc             (:)     = nan
     allocate(this%dyn_cbal_adjustments (begc:endc))     ; this%dyn_cbal_adjustments (:)     = nan
-    allocate(this%totvegcc             (begc:endc))     ; this%totvegcc             (:)     = nan
     allocate(this%totpftc              (begc:endc))     ; this%totpftc              (:)     = nan
     allocate(this%cwdc                 (begc:endc))     ; this%cwdc                 (:)     = nan
     allocate(this%ctrunc               (begc:endc))     ; this%ctrunc               (:)     = nan

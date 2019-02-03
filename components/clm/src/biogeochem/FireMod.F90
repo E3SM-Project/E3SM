@@ -250,12 +250,12 @@ contains
          deadstemc          =>    veg_cs%deadstemc          , & ! Input:[real(r8) (:)       ]  (gC/m2) dead stem C             
          totlitc            =>    col_cs%totlitc              , & ! Input:  [real(r8) (:)     ]  (gC/m2) total lit C (column-level mean)           
          decomp_cpools_vr   =>    col_cs%decomp_cpools_vr     , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
-         rootc_col          =>    carbonstate_vars%rootc_col                , & ! Output: [real(r8) (:)     ]  root carbon                                       
-         totvegc_col        =>    carbonstate_vars%totvegc_col              , & ! Output: [real(r8) (:)     ]  totvegc at column level                           
-         leafc_col          =>    carbonstate_vars%leafc_col                , & ! Output: [real(r8) (:)     ]  leaf carbon at column level                       
-         deadstemc_col      =>    carbonstate_vars%deadstemc_col            , & ! Output: [real(r8) (:)     ] dead stem carbon at column level
-         fuelc              =>    carbonstate_vars%fuelc_col                , & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.C                 
-         fuelc_crop         =>    carbonstate_vars%fuelc_crop_col             & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.A                 
+         rootc_col          =>    col_cs%rootc                , & ! Output: [real(r8) (:)     ]  root carbon                                       
+         totvegc_col        =>    col_cs%totvegc              , & ! Output: [real(r8) (:)     ]  totvegc at column level                           
+         leafc_col          =>    col_cs%leafc                , & ! Output: [real(r8) (:)     ]  leaf carbon at column level                       
+         deadstemc_col      =>    col_cs%deadstemc            , & ! Output: [real(r8) (:)     ] dead stem carbon at column level
+         fuelc              =>    col_cs%fuelc                , & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.C                 
+         fuelc_crop         =>    col_cs%fuelc_crop             & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.A                 
          )
  
       transient_landcover = run_has_transient_landcover()

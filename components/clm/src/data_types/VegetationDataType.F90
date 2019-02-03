@@ -18,13 +18,14 @@ module VegetationDataType
   use landunit_varcon, only : istsoil, istcrop
   use pftvarcon      , only : npcropmin, noveg
   use clm_varctl     , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
-  use clm_varctl     , only : nu_com
+  use clm_varctl     , only : nu_com, use_crop
   use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio      , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod      , only : bounds_type, get_proc_global
   use subgridAveMod  , only : p2c
   use restUtilMod
   use CNStateType     , only: cnstate_type
+  use CNSpeciesMod              , only : species_from_string
   use VegetationType            , only : veg_pp
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp
@@ -1692,6 +1693,8 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of veg_cs
     !-----------------------------------------------------------------------
+
+    this%species = species_from_string(carbon_type)
 
     if ( .not. use_fates ) then
        do p = begp,endp

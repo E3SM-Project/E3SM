@@ -9,6 +9,7 @@ module GridcellDataType
   use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use clm_varcon        , only : spval, ispval
+  use clm_varctl        , only : use_fates
   use histFileMod       , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio         , only : file_desc_t, ncd_double
   use decompMod         , only : bounds_type
@@ -42,7 +43,6 @@ module GridcellDataType
   ! Define the data structure that holds energy flux information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_energy_flux
-    ! temperature variables
     real(r8), pointer :: eflx_dynbal           (:)   ! dynamic land cover change conversion energy flux (W/m**2)
 
   contains
@@ -55,7 +55,6 @@ module GridcellDataType
   ! Define the data structure that holds water state information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_water_state
-    ! temperature variables
     ! Note: All units given as kg in this data type imply kg of H2O
     real(r8), pointer :: liq1               (:)   ! initial gridcell total h2o liq content (kg/m2)
     real(r8), pointer :: liq2               (:)   ! post land cover change total liq content (kg/m2)
@@ -72,7 +71,6 @@ module GridcellDataType
   ! Define the data structure that holds energy flux information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_water_flux
-    ! temperature variables
     ! Dynamic land cover change
     real(r8), pointer :: qflx_liq_dynbal      (:)   ! liq dynamic land cover change conversion runoff flux
     real(r8), pointer :: qflx_ice_dynbal      (:)   ! ice dynamic land cover change conversion runoff flux
@@ -89,12 +87,27 @@ module GridcellDataType
   end type gridcell_water_flux
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds carbon state information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_carbon_state
+    real(r8), pointer :: seedc          (:) => null()   ! (gC/m2) pool for seeding new PFTs via dynamic landcover
+    real(r8), pointer :: begcb          (:) => null()   ! carbon mass, beginning of time step (gC/m**2)
+    real(r8), pointer :: endcb          (:) => null()   ! carbon mass, end of time step (gC/m**2)
+    real(r8), pointer :: errcb          (:) => null()   ! carbon balance error for the timestep (gC/m**2)
+
+  contains
+    procedure, public :: Init    => grc_cs_init
+    procedure, public :: Clean   => grc_cs_clean
+  end type gridcell_carbon_state
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es    ! gridcell energy state
   type(gridcell_energy_flux)           , public, target :: grc_ef    ! gridcell energy flux
   type(gridcell_water_state)           , public, target :: grc_ws    ! gridcell water state
   type(gridcell_water_flux)            , public, target :: grc_wf    ! gridcell water flux
+  type(gridcell_carbon_state)          , public, target :: grc_cs    ! gridcell carbon state
   !------------------------------------------------------------------------
 
 contains
@@ -336,9 +349,62 @@ contains
     deallocate(this%qflx_liq_dynbal)
     deallocate(this%qflx_ice_dynbal)
 
-    end subroutine grc_wf_clean
+  end subroutine grc_wf_clean
 
-  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell carbon state data structure
+  !------------------------------------------------------------------------
+  subroutine grc_cs_init(this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_carbon_state) :: this
+    integer, intent(in) :: begg,endg
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g
+    !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_cs
+    !-----------------------------------------------------------------------
+    allocate(this%seedc   (begg:endg)) ;    this%seedc   (:) = nan
+    allocate(this%begcb   (begg:endg));     this%begcb   (:) = nan
+    allocate(this%endcb   (begg:endg));     this%endcb   (:) = nan
+    allocate(this%errcb   (begg:endg));     this%errcb   (:) = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_cs
+    !-----------------------------------------------------------------------
+    if (.not. use_fates) then
+       this%seedc(begg:endg) = spval
+       call hist_addfld1d (fname='SEEDC_GRC', units='gC/m^2', &
+            avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
+            ptr_gcell=this%seedc)
+    end if
+    
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of grc_cs
+    !-----------------------------------------------------------------------
+    do g = begg, endg
+       this%seedc(g) = 0._r8
+    end do
+    
+  end subroutine grc_cs_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_cs_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_carbon_state) :: this
+    !------------------------------------------------------------------------
+    deallocate(this%seedc)
+    deallocate(this%begcb)
+    deallocate(this%endcb)
+    deallocate(this%errcb)
+
+  end subroutine grc_cs_clean
+
+
 end module GridcellDataType
 
   

@@ -38,7 +38,9 @@ module dynSubgridDriverMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
-  use ColumnDataType      , only : col_cs
+
+  use ColumnDataType      , only : column_carbon_state
+  use VegetationDataType  , only : vegetation_carbon_state
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -151,7 +153,8 @@ contains
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars, &
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars, &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+       veg_cs, c13_veg_cs, c14_veg_cs, &
+       col_cs, c13_col_cs, c14_col_cs, &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,&
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
@@ -197,9 +200,12 @@ contains
     type(photosyns_type)     , intent(inout) :: photosyns_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+    type(vegetation_carbon_state), intent(inout) :: veg_cs
+    type(vegetation_carbon_state), intent(inout) :: c13_veg_cs
+    type(vegetation_carbon_state), intent(inout) :: c14_veg_cs
+    type(column_carbon_state), intent(inout) :: col_cs
+    type(column_carbon_state), intent(inout) :: c13_col_cs
+    type(column_carbon_state), intent(inout) :: c14_col_cs
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
@@ -308,14 +314,14 @@ contains
                prior_weights, &
                patch_state_updater, &
                canopystate_vars, photosyns_vars, cnstate_vars, &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+               veg_cs, c13_veg_cs, c14_veg_cs, &
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars,&
+               nitrogenstate_vars, nitrogenflux_vars, &
                phosphorusstate_vars,phosphorusflux_vars)
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               carbonflux_vars, carbonstate_vars, col_cs)
+               carbonflux_vars, col_cs)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
@@ -326,7 +332,7 @@ contains
                phosphorusflux_vars, phosphorusstate_vars)
 
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+               col_cs, c13_col_cs, c14_col_cs, &
                nitrogenstate_vars, phosphorusstate_vars )
        end if
 
