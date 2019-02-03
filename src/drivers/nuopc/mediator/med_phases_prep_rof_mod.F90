@@ -87,11 +87,14 @@ contains
     !--- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
 
-    ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
-    ! fieldCount is 0 and not 1 here
-
-    call ESMF_FieldBundleGet(is_local%wrap%FBImp(complnd,complnd), fieldCount=ncnt, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,complnd))) then
+       ncnt = 0
+    else 
+       ! The scalar field has been removed from all mediator field bundles - so check if the fieldCount is
+       ! 0 and not 1 here
+       call ESMF_FieldBundleGet(is_local%wrap%FBImp(complnd,complnd), fieldCount=ncnt, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     if (ncnt == 0) then
        call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &

@@ -10,7 +10,7 @@ module ESM
   use shr_kind_mod          , only : SHR_KIND_R8, SHR_KIND_CS, SHR_KIND_CL
   use shr_log_mod           , only : shr_log_Unit, shr_log_Level
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
-  use med_internalstate_mod , only : logunit, loglevel, mastertask
+  use med_internalstate_mod , only : logunit, loglevel, mastertask, med_id
 
   implicit none
   private
@@ -1338,6 +1338,7 @@ contains
        comps(i+1) = i+1
 
        if (trim(compLabels(i)) .eq. 'MED') then
+          med_id = i + 1
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        elseif(trim(compLabels(i)) .eq. 'ATM') then

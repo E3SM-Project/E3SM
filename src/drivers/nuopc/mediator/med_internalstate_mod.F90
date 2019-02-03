@@ -4,16 +4,17 @@ module med_internalstate_mod
   ! Mediator Internal State Datatype.
   !-----------------------------------------------------------------------------
 
-  use ESMF                  , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
-  use ESMF                  , only : ESMF_VM
-  use esmFlds               , only : ncomps, nmappers
+  use ESMF    , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
+  use ESMF    , only : ESMF_VM
+  use esmFlds , only : ncomps, nmappers
 
   implicit none
   private
 
-  integer, public :: logunit  ! logunit for mediator log output
-  integer, public :: loglevel ! loglevel for mediator log output
+  integer, public :: logunit            ! logunit for mediator log output
+  integer, public :: loglevel           ! loglevel for mediator log output
   logical, public :: mastertask=.false. ! is this the mastertask
+  integer, public :: med_id             ! needed currently in med_io_mod and set in esm.F90
 
   ! Active coupling definitions
   ! This defines the med_mapping_allowed is a starting point for what is
