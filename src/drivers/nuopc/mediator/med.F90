@@ -2052,14 +2052,14 @@ contains
                   opt_n = 1, alarmname = 'alarm_glc_avg', rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          else if (trim(glc_avg_period) == 'year') then
+          else if (trim(glc_avg_period) == 'yearly') then
              call shr_nuopc_time_alarmInit(mediatorclock, glc_avg_alarm, 'nyears', &
                   opt_n = 1, alarmname = 'alarm_glc_avg', rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
           else
             call ESMF_LogWrite(trim(subname)//&
-                 ": ERROR glc_avg_period = "//trim(glc_avg_period)//"not supported", &
+                 ": ERROR glc_avg_period = "//trim(glc_avg_period)//" not supported", &
                  ESMF_LOGMSG_INFO, rc=rc)
             rc = ESMF_FAILURE
             RETURN
