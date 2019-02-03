@@ -859,16 +859,13 @@ contains
 
              else
 
-                write(6,*)'DEBUG: fldname= ', trim(fldname)
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapindex), rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                write(6,*)'DEBUG: here4'
                 
              end if
 
              ! obtain unity normalization factor and multiply interpolated field by reciprocal of normalization factor
              if (trim(mapnorm) == 'one') then
-                write(6,*)'DEBUG: here5'
                 call shr_nuopc_methods_FB_GetFldPtr(FBNormOne(mapindex), 'one', data_norm, rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -888,11 +885,9 @@ contains
        end if ! mapindex is not mapfcopy and field exists
 
        !if (dbug_flag > 1) then
-       write(6,*)'DEBUG: here6'
        call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, &
             string=trim(subname) //' FBImp('//trim(compname(srccomp))//','//trim(compname(destcomp))//') ', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       write(6,*)'DEBUG: here7'
        !end if
 
     end do  ! loop over fields

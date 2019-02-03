@@ -5,8 +5,6 @@ module med_infodata_mod
   ! !USES:
 
   use med_constants_mod , only: CL, R8
-  use seq_comm_mct      , only: num_inst_atm, num_inst_lnd, num_inst_rof
-  use seq_comm_mct      , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
   use esmFlds           , only: ncomps
 
   implicit none
@@ -18,27 +16,12 @@ module med_infodata_mod
 
   ! !PUBLIC MEMBER FUNCTIONS
 
-  public :: med_infodata_init1           ! Initialize before clocks are initialized
-  public :: med_infodata_init2           ! Init after clocks are initialized
   public :: med_infodata_GetData         ! Get values from infodata object
   public :: med_infodata_CopyStateToInfodata
   public :: med_infodata_CopyInfodataToState
 
   ! !PUBLIC DATA MEMBERS:
   public :: med_infodata                  ! instance of infodata datatype
-
-  ! Type to hold pause/resume signaling information
-  type seq_pause_resume_type
-     private
-     character(CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
-     character(CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
-     character(CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
-     character(CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
-     character(CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
-     character(CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
-     character(CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
-     character(CL) :: cpl_resume = ' '               ! cpl resume file
-  end type seq_pause_resume_type
 
   ! InputInfo derived type
   type med_infodata_type
@@ -60,7 +43,6 @@ module med_infodata_mod
      ! Set via components and may be time varying
      real(R8) :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
      real(R8) :: precip_fact =  1.0_R8 ! precip factor
-     type(seq_pause_resume_type), pointer :: pause_resume => NULL()
 
      ! Set by mediator and may be time varying
      logical  :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
@@ -78,41 +60,6 @@ module med_infodata_mod
 CONTAINS
 !===============================================================================
 
-  subroutine med_infodata_init1(infodata)
-
-    ! !DESCRIPTION:
-    ! Initialize pause_resume
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    type(med_infodata_type), intent(INOUT) :: infodata  ! infodata object
-
-    !----- local -----
-    character(len=*),    parameter :: subname = '(med_infodata_Init1) '
-    !-------------------------------------------------------------------------------
-
-    if (associated(infodata%pause_resume)) then
-       deallocate(infodata%pause_resume)
-    end if
-    nullify(infodata%pause_resume)
-
-  end subroutine med_infodata_init1
-
-  !===============================================================================
-  subroutine med_infodata_init2(infodata)
-
-    ! !DESCRIPTION: re-initialize pause-resume depending on the time manager setup
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    type(med_infodata_type), intent(INOUT) :: infodata  ! infodata object
-    !----------------------------------------------------------
-
-    ! TODO: this must be re-implemented for nuopc
-    !| If pause/resume is active, initialize the resume data
-    allocate(infodata%pause_resume)
-
-  end subroutine med_infodata_init2
-
-  !================================================================================
   subroutine med_infodata_CopyStateToInfodata(State, infodata, type, vm, rc)
 
     use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag

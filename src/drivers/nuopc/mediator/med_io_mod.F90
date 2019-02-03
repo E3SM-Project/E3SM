@@ -60,6 +60,7 @@ module med_io_mod
 !=================================================================================
 contains
 !=================================================================================
+
   logical function med_io_file_exists(vm, iam, filename)
     use ESMF, only : ESMF_VMBroadCast
     type(ESMF_VM)                :: vm
@@ -79,9 +80,15 @@ contains
 
   end function med_io_file_exists
 
+  !===============================================================================
   subroutine med_io_init()
-    use seq_comm_mct          , only : CPLID
+
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
+
+    ! Hardwire CPLID FOR NOW 
+    ! TODO (mvertens, 2019-02-01): is this the right long-term solution? 
+    integer :: CPLID = 2
+
     io_subsystem => shr_pio_getiosys(CPLID)
     pio_iotype   =  shr_pio_getiotype(CPLID)
     pio_ioformat =  shr_pio_getioformat(CPLID)
@@ -90,12 +97,16 @@ contains
 
   !===============================================================================
   subroutine med_io_wopen(filename, vm, iam, clobber, file_ind, model_doi_url)
+
     ! !DESCRIPTION: open netcdf file
-    use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
-    use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
-    use pio, only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
-    use shr_sys_mod, only : shr_sys_abort
-    use med_internalstate_mod, only : logunit
+
+    use pio                   , only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio                   , only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef
+    use PIO                   , only : pio_put_att, pio_redef, pio_get_att
+    use pio                   , only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
+    use shr_sys_mod           , only : shr_sys_abort
+    use med_internalstate_mod , only : logunit
+
     ! input/output arguments
     character(*),            intent(in) :: filename
     type(ESMF_VM)                       :: vm
@@ -184,9 +195,11 @@ contains
 
   !===============================================================================
   subroutine med_io_close(filename, iam, file_ind)
+
     use pio, only: pio_file_is_open, pio_closefile
     use med_internalstate_mod, only : logunit
     use shr_sys_mod, only : shr_sys_abort
+
     ! !DESCRIPTION: close netcdf file
 
     ! input/output variables
