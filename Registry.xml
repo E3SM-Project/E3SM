@@ -758,6 +758,30 @@
 			description="Number of days to ramp up time varying forcing"
 			possible_values="Any positive real number"
 		/>
+		<nml_option name="config_use_time_varying_land_ice_forcing" type="logical" default_value=".false." units="unitless"
+			description="If true calculate input forcing fields."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Forcing time to use at the simulation start time"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Reference time for the forcing"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_cycle_start" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Start time for the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
+			description="Duration of the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_interval" type="character" default_value="01:00:00" units="unitless"
+			description="Time between forcing inputs"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
 		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
@@ -1306,6 +1330,7 @@
 	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
+		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
@@ -1712,6 +1737,17 @@
 			<var name="atmosPressure"/>
 			<var name="windSpeedU"/>
 			<var name="windSpeedV"/>
+		</stream>
+		<stream name="land_ice_forcing"
+				type="input"
+				filename_template="land_ice_forcing.nc"
+				filename_interval="none"
+				input_interval="none"
+				packages="timeVaryingLandIceForcingPKG"
+				immutable="true">
+			<var name="landIcePressureForcing"/>
+			<var name="landIceFractionForcing"/>
+			<var name="landIceDraftForcing"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
@@ -3124,6 +3160,18 @@
 		<var name="atmosPressure" type="real" dimensions="nCells Time" units="Pa"
 			description="Pressure at the sea surface due to the atmosphere."
 			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="landIceFractionForcing" type="real" dimensions="nCells Time" units="unitless"
+			description="The fraction of each cell covered by land ice"
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIcePressureForcing" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure defined at the sea surface due to land ice."
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIceDraftForcing" type="real" dimensions="nCells Time" units="m"
+			description="The elevation of the interface between land ice and the ocean."
+			packages="timeVaryingLandIceForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
