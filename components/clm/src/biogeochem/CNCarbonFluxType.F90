@@ -5155,15 +5155,6 @@ contains
        end do
 
 
-       ! total heterotrophic respiration (HR)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%hr_col(c) = &
-               this%lithr_col(c) + &
-               this%somhr_col(c)
-       end do
-
-
     elseif (is_active_betr_bgc) then
 
        do fc = 1, num_soilc
@@ -5240,6 +5231,16 @@ contains
     !----------------------------------------------------------------
     if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
         call CSummary_interface(this, bounds, num_soilc, filter_soilc)
+    endif
+    if(.not. (use_pflotran .and. pf_cmode))then
+       ! total heterotrophic respiration (HR)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%hr_col(c) = &
+               this%lithr_col(c) + &
+               this%somhr_col(c)
+       end do
+
     end if
     ! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------
