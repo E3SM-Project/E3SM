@@ -37,7 +37,7 @@ void Functions<S,D>
   const auto dum1_gte = qr_gt_small && ! dum1_lt;
   if (dum1_gte.any()) {
     scream_masked_loop(dum1_gte, s) {
-      const auto inv_dum3 = Constants<Scalar>::THRD*0.1;
+      const auto inv_dum3 = Constants<Scalar>::THIRD*0.1;
       auto rdumii = (dum1[s]*1.e+6-195.)*inv_dum3 + 20.;
       rdumii = util::max<Scalar>(rdumii, 20.);
       rdumii = util::min<Scalar>(rdumii,300.);

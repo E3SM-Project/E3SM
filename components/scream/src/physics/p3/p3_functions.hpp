@@ -25,8 +25,10 @@ struct Functions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S> using BigPack = scream::pack::BigPack<S>;
-  template <typename S> using SmallPack = scream::pack::SmallPack<S>;
+  template <typename S>
+  using BigPack = scream::pack::BigPack<S>;
+  template <typename S>
+  using SmallPack = scream::pack::SmallPack<S>;
   using IntSmallPack = scream::pack::IntSmallPack;
 
   using Pack = BigPack<Scalar>;
@@ -88,6 +90,7 @@ struct Functions
   // k_top]. Velocity V is input, and flux is workspace and need not be
   // initialized. On input, r contains mixing ratio data at the time step start;
   // on output, it contains mixing ratio data at the time step end.
+  // kdir = 1 -> vertical columns are processed from bottom to top, opposite for kdir = -1
   //
   // A subtlety is that this procedure does not do exact upwind of a mixing
   // ratio. That is because the background density rho is assumed to be static;
