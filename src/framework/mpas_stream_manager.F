@@ -104,6 +104,11 @@ module mpas_stream_manager
 
         implicit none
 
+        interface
+          subroutine seed_random() bind(c)
+          end subroutine seed_random
+        end interface
+
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_init'
 
         type (MPAS_streamManager_type), pointer :: manager
@@ -4148,7 +4153,18 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine build_stream(stream, direction, allFields, allPackages, timeLevelIn, mgLevelIn, ierr) !{{{
 
+        use iso_c_binding, only : c_int, c_char
+        use mpas_c_interfacing, only : mpas_c_to_f_string
+
         implicit none
+
+        interface
+          subroutine gen_random(len, id) bind(c)
+             use iso_c_binding, only : c_int, c_char
+             integer (c_int), intent(in), value :: len
+             character (c_char), dimension(*), intent(inout) :: id
+          end subroutine gen_random
+        end interface
 
         type (MPAS_stream_list_type), intent(inout) :: stream
         integer, intent(in) :: direction
@@ -4184,8 +4200,9 @@ module mpas_stream_manager
 
         integer :: local_ierr
 
-        integer, parameter :: idLength = 10
-        character (len=idLength) :: file_id
+        integer (c_int), parameter :: idLength = 10
+        character(len=idLength) :: f_file_id
+        character(kind=c_char), dimension(idLength+1) :: c_file_id
 
         character (len=StrKIND), pointer :: packages
         logical :: active_field
@@ -4228,8 +4245,9 @@ module mpas_stream_manager
             !
             ! Generate file_id and write to stream
             !
-            call gen_random(idLength, file_id)
-            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, syncVal=.true., ierr=local_ierr)
+            call gen_random(idLength, c_file_id)
+            call mpas_c_to_f_string(c_file_id, f_file_id)
+            call mpas_writeStreamAtt(stream % stream, 'file_id', f_file_id, syncVal=.true., ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
