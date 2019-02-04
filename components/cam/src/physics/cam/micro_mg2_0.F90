@@ -909,7 +909,7 @@ subroutine micro_mg_tend ( &
   dv = 8.794E-5_r8 * t**1.81_r8 / p
   mu = 1.496E-6_r8 * t**1.5_r8 / (t + 120._r8)
   sc = mu/(rho*dv)
-
+  
   ! air density adjustment for fallspeed parameters
   ! includes air density correction factor to the
   ! power of 0.54 following Heymsfield and Bansemer 2007
@@ -1316,7 +1316,6 @@ subroutine micro_mg_tend ( &
      ! autoconversion of cloud liquid water to rain
      ! formula from Khrouditnov and Kogan (2000), modified for sub-grid distribution of qc
      ! minimum qc of 1 x 10^-8 prevents floating point error
-
      call kk2000_liq_autoconversion(microp_uniform, qcic(:,k), &
           ncic(:,k), rho(:,k), relvar(:,k),mg_prc_coeff_fix,prc_coef1,prc_exp,prc_exp1, prc(:,k), nprc(:,k), nprc1(:,k))
 
@@ -1744,8 +1743,11 @@ subroutine micro_mg_tend ( &
            dum = ((-mnuccc(i,k)-mnucct(i,k)-mnudep(i,k)-msacwi(i,k))*lcldm(i,k)+(prci(i,k)+ &
                 prai(i,k))*icldm(i,k)-mnuccri(i,k)*precip_frac(i,k) &
                 -ice_sublim(i,k)-vap_dep(i,k)-berg(i,k)-mnuccd(i,k))*deltat
+!HHLEE 20190107
+!           if (dum.gt.qi(i,k)) then
+            if (dum.gt.qi(i,k) .and. &
+                       ((prci(i,k)+prai(i,k))*icldm(i,k)-ice_sublim(i,k)).gt.qsmall) then
 
-           if (dum.gt.qi(i,k)) then
               ratio = (qi(i,k)/deltat+vap_dep(i,k)+berg(i,k)+mnuccd(i,k)+ &
                    (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+ &
                    mnuccri(i,k)*precip_frac(i,k))/ &

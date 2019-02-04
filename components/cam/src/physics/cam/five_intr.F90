@@ -1,4 +1,4 @@
-module five_intr
+NUMmodule five_intr
 
 !-------------------------------------------
 ! Module to interface FIVE with E3SM physics packages
@@ -229,23 +229,23 @@ module five_intr
     !  the reference and base pressure will be the same
     !  i.e. ps0 = 1.0e5_r8
     
-    ailev_five(:pverp_five) = ps0*(hyai_five(:pverp_five) + hybi_five(:pverp_five)) 
+    ailev_five(:pverp_five) = 0.01_r8*ps0*(hyai_five(:pverp_five) + hybi_five(:pverp_five)) 
     
     ! Now define five_mid layers
     do k=1,pver_five
       alev_five(k) = (ailev_five(k)+ailev_five(k+1))/2.0_r8
     enddo      
 	
-    write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k        
+    write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k       
     
     ! Now add vertical coordinate to the history output field
     call add_vert_coord('lev_five', pver_five,                               &
-         'FIVE hybrid level at midpoints (1000*(A+B))', 'hPa', alev_five*0.01_r8, &
+         'FIVE hybrid level at midpoints (1000*(A+B))', 'hPa', alev_five, &
          positive='down',                                                    &
          standard_name='atmosphere_hybrid_sigma_pressure_coordinate')    
  
     call add_vert_coord('ilev_five', pverp_five,                               &
-         'FIVE hybrid level at interfaces (1000*(A+B))', 'hPa', ailev_five*0.01_r8, &
+         'FIVE hybrid level at interfaces (1000*(A+B))', 'hPa', ailev_five, &
          positive='down',                                                    &
          standard_name='atmosphere_hybrid_sigma_pressure_coordinate')	
     
@@ -433,6 +433,8 @@ module five_intr
     real(r8) :: zi_five(pcols,pverp_five)
     
     real(r8) :: psr
+! HHLEE 20190117
+    real(r8) :: five_water, e3sm_water, ratio, diff    
         
     ncol = state%ncol
     
@@ -471,6 +473,11 @@ module five_intr
       call compute_five_heights(pmid_five(i,:),pint_five(i,:),t_five(i,:),&
              q_five(i,:,1),q_five(i,:,2),pdel_five(i,:),pver_five,p0,&
 	     zm_five(i,:),zi_five(i,:))
+    enddo
+    
+    do i=1,ncol
+      call linear_interp(state%pmid(i,:),pmid_five(i,:),state%zm(i,:),zm_five(i,:),pver,pver_five)
+      call linear_interp(state%pint(i,:),pint_five(i,:),state%zi(i,:),zi_five(i,:),pverp,pverp_five)
     enddo
   
     ! First compute a mass weighted average of the five variables onto the 
@@ -514,6 +521,9 @@ module five_intr
         
       enddo
     enddo
+    
+!    write(*,*) 'ZM_E3SM', state%zm(1,:)
+!    write(*,*) 'ZM_FIVE', zm_five(1,:)
 
     ! Now interpolate this tendency to the higher resolution FIVE grid, 
     !   using the interpolation method of Sheng and Zwiers (1998), 
@@ -531,7 +541,7 @@ module five_intr
 	     
       do p=1,pcnst
         call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
-             rho_e3sm(i,:),rho_five(i,:),q_five_tend_low(i,:,p),q_five_tend(i,:,p))     
+             rho_e3sm(i,:),rho_five(i,:),q_five_tend_low(i,:,p),q_five_tend(i,:,p))     	     
       enddo	     	             	
       
     enddo      	     
@@ -546,11 +556,38 @@ module five_intr
        
         do p=1,pcnst
           q_five(i,k,p) = q_five(i,k,p) + dtime * q_five_tend(i,k,p)
+! HHLEE 20190117
+          q_five(i,k,p) = max(q_five(i,k,p),0._r8)	  
         enddo
        
       enddo
     enddo    
-		
+! HHLEE 20190117 
+! water adjustment. This adjustment can solve the conservation issue in clubb.
+    do i = 1, ncol 
+       do p = 1, pcnst
+            five_water = 0._r8
+            e3sm_water = 0._r8 
+            five_water = sum(q_five(i,:,p)*pdel_five(i,:)/gravit)
+            e3sm_water = sum(state%q(i,:,p)*state%pdel(i,:)/gravit)
+
+            if (five_water .gt. 0._r8) then
+               ratio = e3sm_water/five_water
+               q_five(i,:,p) = ratio * q_five(i,:,p)
+            end if
+
+            five_water = sum(q_five(i,:,p)*pdel_five(i,:)/gravit)
+            if (five_water .ne. e3sm_water) then
+               diff = five_water - e3sm_water
+               do k = 1, pver_five
+                  ratio = (q_five(i,k,p)*pdel_five(i,k)/gravit)/five_water
+                  q_five(i,k,p) = q_five(i,k,p) - diff*ratio
+               end do
+            end if
+
+       end do
+    end do    
+    	
     return
 		
    end subroutine five_syncronize_e3sm
@@ -708,7 +745,7 @@ module five_intr
       rho_host_avg(k) = rho_host_avg(k)/dz_host(k)
       
       ! Compute the mass weighted vertical average
-      var_host(k) = var_host(k)/(rho_host_avg(k)*dz_host(k))
+      var_host(k) = var_host(k)/(rho_host(k)*dz_host(k))
       
     enddo
     
@@ -844,10 +881,11 @@ module five_intr
       rho_zs(k) = rho_five_in(pver_five-k+1)
     enddo  
     
+    !+ PAB look at
     zi1 = pver-five_bot_k+1
     zi2 = pver-five_top_k+1
     
-    dz=zi(2)
+    dz=0.5_r8*(zm(1)+zm(2))
     
     ! define adz and adzw
     do k=2,pver
@@ -857,7 +895,7 @@ module five_intr
     
     adz(1) = 1._r8
     do k=2,pver-1
-      adz(k) = 0.5*(zm(k+1)-zm(k-1))/dz
+      adz(k) = 0.5_r8*(zm(k+1)-zm(k-1))/dz
     enddo
     adz(pver) = adzw(pver)
     

@@ -13,7 +13,6 @@ module clubb_intr
   !                                                                                                      !
   !---------------------------Code history-------------------------------------------------------------- !
   ! Authors:  P. Bogenschutz, C. Craig, A. Gettelman                                                     ! 
-  ! Comment test                                                                                                     ! 
   !----------------------------------------------------------------------------------------------------- !
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
@@ -1579,6 +1578,7 @@ end subroutine clubb_init_cnst
    ! Syncronize FIVE variables to E3SM state
    !  This is a crucial component to using FIVE within E3SM
    call five_syncronize_e3sm(state1,dtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
+   write(*,*) 'QFIVE ', q_five(:,:,:)
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
