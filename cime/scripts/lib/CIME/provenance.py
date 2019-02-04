@@ -25,7 +25,7 @@ def _get_batch_job_id_for_syslog(case):
             return os.environ["COBALT_JOBID"]
         elif mach in ['summit']:
             return os.environ["LSB_JOBID"]
-    except:
+    except KeyError:
         pass
 
     return None
@@ -268,7 +268,7 @@ def _save_prerun_timing_e3sm(case, lid):
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.{}".format(lid))
             os.mkdir(archive_checkpoints)
             touch("{}/e3sm.log.{}".format(rundir, lid))
-            syslog_jobid = run_cmd_no_fail("./mach_syslog {:d} {} {} {} {}/timing/checkpoints {} >& /dev/null & echo $!".format(sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
+            syslog_jobid = run_cmd_no_fail("./mach_syslog {si} {jobid} {lid} {rundir} {rundir}/timing/checkpoints {ac} >& /dev/null & echo $!".format(si=sample_interval, jobid=job_id, lid=lid, rundir=rundir, ac=archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
                 fd.write("{}\n".format(syslog_jobid))
@@ -435,7 +435,7 @@ def get_recommended_test_time_based_on_past(baseline_root, test, raw=False):
                     best_walltime += _GLOBAL_WIGGLE
 
                 return convert_to_babylonian_time(best_walltime)
-        except:
+        except Exception:
             # We NEVER want a failure here to kill the run
             logger.warning("Failed to read test time: {}".format(sys.exc_info()[1]))
 
@@ -451,6 +451,6 @@ def save_test_time(baseline_root, test, time_seconds):
             the_path = os.path.join(the_dir, _WALLTIME_FILE_NAME)
             with open(the_path, "a") as fd:
                 fd.write("{}\n".format(int(time_seconds)))
-        except:
+        except Exception:
             # We NEVER want a failure here to kill the run
             logger.warning("Failed to store test time: {}".format(sys.exc_info()[1]))

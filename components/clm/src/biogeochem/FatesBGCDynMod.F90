@@ -38,11 +38,11 @@ contains
       use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
       use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
       use clm_varctl             , only : use_century_decomp
-      use CNDecompCascadeBGCMod  , only : decomp_rate_constants_bgc
-      use CNDecompCascadeCNMod   , only : decomp_rate_constants_cn
-      use CNCStateUpdate1Mod     , only : CStateUpdate1
-      use CNSoilLittVertTranspMod, only : CNSoilLittVertTransp
-      use CNPrecisionControlMod  , only : CNPrecisionControl
+      use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
+      use DecompCascadeCNMod   , only : decomp_rate_constants_cn
+      use CarbonStateUpdate1Mod     , only : CarbonStateUpdate1
+      use SoilLittVertTranspMod, only : SoilLittVertTransp
+      use PrecisionControlMod    , only : PrecisionControl
       use CNCarbonFluxType       , only : carbonflux_type
       use CNCarbonStateType      , only : carbonstate_type
       use CNStateType            , only : cnstate_type
@@ -51,7 +51,7 @@ contains
       use TemperatureType        , only : temperature_type
       use CNNitrogenFluxType     , only : nitrogenflux_type
       use CNNitrogenStateType    , only : nitrogenstate_type
-      use ch4Mod                 , only : ch4_type
+      use CH4Mod                 , only : ch4_type
       use PhosphorusStateType    , only : phosphorusstate_type
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con
@@ -144,11 +144,11 @@ contains
     ! --------------------------------------------------
 
     ! call t_startf('CNDeposition')
-    ! call CNNDeposition(bounds, &
+    ! call NitrogenDeposition(bounds, &
     !      atm2lnd_inst, soilbiogeochem_nitrogenflux_inst)
     ! call t_stopf('CNDeposition')
     ! if (crop_prog) then
-    !    call CNNFert(bounds, num_soilc,filter_soilc, &
+    !    call NitrogenFert(bounds, num_soilc,filter_soilc, &
     !         cnveg_nitrogenflux_inst, soilbiogeochem_nitrogenflux_inst)
 
     !    call  CNSoyfix (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -207,7 +207,7 @@ contains
     !--------------------------------------------
 
     ! Calculation of actual immobilization and decomp rates, following
-    ! resolution of plant/heterotroph  competition for mineral N (previously inlined in CNDecompAllocation in CNDecompMod)
+    ! resolution of plant/heterotroph  competition for mineral N (previously inlined in SoilLittDecompAllocation in SoilLittDecompMod)
     !  call SoilBiogeochemDecomp() in CLM
     call t_startf('SoilBiogeochemDecomp')
 
@@ -242,7 +242,7 @@ contains
 
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
-    call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             crop_vars, carbonflux_vars, carbonstate_vars)
 
     call t_stopf('BNGCUpdate1')
@@ -253,7 +253,7 @@ contains
 
     call t_startf('SoilBiogeochemLittVertTransp')
 
-    call CNSoilLittVertTransp(bounds, &
+    call SoilLittVertTransp(bounds, &
           num_soilc, filter_soilc, &
           canopystate_vars, cnstate_vars,                               &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
@@ -269,7 +269,7 @@ contains
     ! Added some new logical filters to prevent
     ! above ground precision control calculations with use_fates, as well
     ! bypass on nitrogen calculations
-    call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
           carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,       &
           nitrogenstate_vars,phosphorusstate_vars)
 

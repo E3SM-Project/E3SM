@@ -73,15 +73,19 @@ contains
 
     type(element_t), intent(in) :: elem(:)
     integer, intent(in) :: gcols, nz
-    integer, intent(out) :: compdof(:)
-    integer :: k, i, ie, icnt
+    integer*8, intent(out) :: compdof(:)
+    integer :: k, i, ie
+    integer*8 :: icnt,gcols8
 
     icnt=0
     do k=1,nz
        do ie=1,nelemd
           do i=1,elem(ie)%idxp%NumUniquePts
              icnt=icnt+1
-             compDOF(icnt)=elem(ie)%idxp%UniquePtOffset+i-1+(k-1)*GCols
+             if (icnt < 0 ) call abortmp('ERROR: UniquePts integer overflow')
+             Gcols8=Gcols ! force I*8 calcluation
+             compDOF(icnt)=elem(ie)%idxp%UniquePtOffset+i-1+(k-1)*GCols8
+             if (compDOF(icnt) < 0 ) call abortmp('ERROR: compDOF integer overflow')
           end do
        end do
     end do
@@ -104,17 +108,17 @@ contains
     integer :: ie, v1(4), i, ios, istartP
     integer,dimension(maxdims) :: dimsize
     integer :: st, en, icnt, kmax,kmax2
-    integer :: j,jj,cc,ii,k, iorank,base, global_nsub
+    integer :: j,cc,k, iorank, global_nsub
+    integer*8 :: ii,jj,base
     integer(kind=nfsizekind) :: start(2), count(2)
-    integer, allocatable :: compDOF(:)
-    integer, allocatable :: dof(:)
+    integer*8, allocatable :: compDOF(:)
     type(io_desc_t) :: iodescv, iodescvp1
     integer,allocatable  :: subelement_corners(:,:)
     real(kind=real_kind),allocatable  :: var1(:,:),var2(:,:)
     character(len=varname_len), pointer :: output_varnames(:)
 
     real (kind=real_kind) :: vartmp(np,np,nlev)
-    real (kind=real_kind),allocatable :: var3d(:,:)
+    real (kind=real_kind),allocatable :: var3d(:,:),var2d(:)
 
 
 #ifdef _MPI
@@ -143,10 +147,12 @@ contains
     ! Create the DOF arrays for GLL points
     iorank=pio_iotask_rank(pio_subsystem)
 
+    if (par%masterproc) print *,'compDOF for 2d'
     call getDOF(elem, GlobalUniqueCols, 1, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&
          compDOF(1:nxyp),IOdesc2D)
 
+    if (par%masterproc) print *,'compDOF for 3d'
     call getDOF(elem, GlobalUniqueCols, nlev, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
          compDOF,IOdesc3D)
@@ -181,23 +187,25 @@ contains
 
 
 ! the GLL based element subgrid
-    allocate(dof((np-1)*(np-1)*nelemd*nlev))
+    if (par%masterproc) print *,'compDOF for subcell '
+    allocate(compdof((np-1)*(np-1)*nelemd*nlev))
     jj=0
     do cc=0,nlev-1
        do ie=1,nelemd
-          base = ((elem(ie)%globalid-1)+cc*nelem)*(np-1)*(np-1)
+          base = (INT(elem(ie)%globalid-1,8)+INT(cc,8)*nelem)*(np-1)*(np-1)
           ii=0
           do j=1,np-1
              do i=1,np-1
                 ii=ii+1
                 jj=jj+1
-                dof(jj) = base+ii
+                compdof(jj) = base+ii
+                if (compdof(jj)<0) call abortmp('ERROR: compDOF subcell integer overflow')
              end do
           end do
        end do
     end do
-    call pio_initdecomp(pio_subsystem, pio_int, (/global_nsub,nlev/), dof, iodesc3d_subelem)
-    deallocate(dof)
+    call pio_initdecomp(pio_subsystem, pio_int, (/global_nsub,nlev/), compdof, iodesc3d_subelem)
+    deallocate(compdof)
 
 
     if (par%masterproc) print *,'registering NETCDF variables'
@@ -210,6 +218,9 @@ contains
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+#ifdef _PRIM
+    call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+#endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
@@ -346,6 +357,19 @@ contains
              deallocate(var3d)
           end if
 
+          if(nf_selectedvar('geos', output_varnames)) then
+             allocate(var2d(nxyp))
+             if (par%masterproc) print *,'writing geos...'
+             st=1
+             do ie=1,nelemd
+                en=st+elem(ie)%idxp%NumUniquePts-1
+                call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
+                st=en+1
+             enddo
+             call nf_put_var(ncdf(ios),var2d,start,count,name='geos')
+             deallocate(var2d)
+          endif
+
 
           if (par%masterproc) print *,'done writing coordinates ios=',ios
        end if
@@ -387,9 +411,11 @@ contains
 
   subroutine prim_movie_output(elem, tl, hvcoord, par)
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
+    use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
     use element_ops, only : get_field
+
 
     type (element_t)    :: elem(:)
 
@@ -458,17 +484,6 @@ contains
                 call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='hypervis')
              endif
 
-
-             if(nf_selectedvar('geos', output_varnames)) then
-                if (par%masterproc) print *,'writing geos...'
-                st=1
-                do ie=1,nelemd
-                   en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
-                   st=en+1
-                enddo
-                call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='geos')
-             endif
 
              if(nf_selectedvar('area', output_varnames)) then
                 st=1
@@ -613,9 +628,29 @@ contains
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='omega')
              end if
+
+
+             if(nf_selectedvar('dp3d', output_varnames)) then
+                st=1
+                do ie=1,nelemd
+                   do k=1,nlev
+                      ke(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,n0) !reutilize ke
+                   enddo
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call UniquePoints(elem(ie)%idxp,nlev,ke, var3d(st:en,:))
+                   st=en+1
+                end do
+                call nf_put_var(ncdf(ios),var3d,start, count, name='dp3d')
+             end if
+
+
+             if (par%masterproc) print *,'writing time...'
              call nf_put_var(ncdf(ios),real(dayspersec*time_at(tl%nstep),kind=real_kind),&
                   start(3:3),count(3:3),name='time')
              call nf_advance_frame(ncdf(ios))
+             call pio_syncfile(ncdf(ios)%fileid)
+             if (par%masterproc) print *,'finished I/O sync'
           end if
        end if
     end do

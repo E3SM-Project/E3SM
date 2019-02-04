@@ -6,13 +6,15 @@ module docn_comp_mod
   ! !USES:
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use NUOPC                 , only : NUOPC_Advertise
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
+  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use ESMF                  , only : ESMF_State, ESMF_LOGMSG_INFO, ESMF_LogWrite
   use perf_mod              , only : t_startf, t_stopf
   use perf_mod              , only : t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_rearr, mct_gsmap_lsize, mct_rearr_init, mct_gsmap, mct_ggrid
+  use mct_mod               , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean, mct_aVect
-  use med_constants_mod     , only : IN, R8, I8, CS, CL, CXX
+  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
+  use med_constants_mod     , only : R8, CS, CXX, CL
   use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
   use shr_const_mod         , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
   use shr_const_mod         , only : shr_const_zsrflyr, shr_const_pi
@@ -21,17 +23,20 @@ module docn_comp_mod
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
   use shr_frz_mod           , only : shr_frz_freezetemp
+  use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod       , only : shr_strdata_init_model_domain
+  use shr_strdata_mod       , only : shr_strdata_init_streams
+  use shr_strdata_mod       , only : shr_strdata_init_mapping
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod        , only : shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid, shr_dmodel_translateAV
+  use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
-  use docn_shr_mod          , only : decomp         ! namelist input
   use docn_shr_mod          , only : rest_file      ! namelist input
   use docn_shr_mod          , only : rest_file_strm ! namelist input
   use docn_shr_mod          , only : nullstr
@@ -54,6 +59,9 @@ module docn_comp_mod
   ! Private data
   !--------------------------------------------------------------------------
 
+  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
+  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
+
   real(R8),parameter         :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
   real(R8),parameter         :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
   real(R8),parameter         :: TkFrz   = shr_const_TkFrz       ! freezing point, fresh water (Kelvin)
@@ -61,32 +69,30 @@ module docn_comp_mod
   real(R8),parameter         :: latice  = shr_const_latice      ! latent heat of fusion
   real(R8),parameter         :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
-  integer(IN)                :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp ! field indices
-  integer(IN)                :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)                :: kh,kqbot
-  integer(IN)                :: index_lat, index_lon
-  integer(IN)                :: kmask, kfrac ! frac and mask field indices of docn domain
-  integer(IN)                :: ksomask      ! So_omask field index
+  integer                    :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp ! field indices
+  integer                    :: kswnet,klwup,klwdn
+  integer                    :: ksen,klat,kmelth,ksnow,krofi
+  integer                    :: kh,kqbot
+  integer                    :: kmask, kfrac                    ! frac and mask field indices of docn domain
+  integer                    :: ksomask                         ! So_omask field index
 
-  type(mct_rearr)            :: rearr
-  type(mct_avect)            :: avstrm             ! av of data created from all stream input
-  character(len=CS), pointer :: avifld(:)          ! names of fields in input streams
-  character(len=CS), pointer :: avofld(:)          ! local names of fields in input streams for import/export
-  character(len=CS), pointer :: stifld(:)          ! names of fields in input streams
-  character(len=CS), pointer :: stofld(:)          ! local names of fields in input streams for calculations
-  character(CXX)             :: flds_strm = ''     ! set in docn_comp_init
-  character(len=CXX)         :: flds_o2x_mod       ! set in docn_comp_advertise
-  character(len=CXX)         :: flds_x2o_mod       ! set in docn_comp_advertise
-  logical                    :: ocn_prognostic_mod ! set in docn_comp_advertise
+  type(mct_avect)            :: avstrm                          ! av of data created from all stream input
+  character(len=CS), pointer :: avifld(:)                       ! names of fields in input streams
+  character(len=CS), pointer :: avofld(:)                       ! local names of fields in input streams for import/export
+  character(len=CS), pointer :: stifld(:)                       ! names of fields in input streams
+  character(len=CS), pointer :: stofld(:)                       ! local names of fields in input streams for calculations
+  character(CXX)             :: flds_strm = ''                  ! set in docn_comp_init
+  character(len=CXX)         :: flds_o2x_mod                    ! set in docn_comp_advertise
+  character(len=CXX)         :: flds_x2o_mod                    ! set in docn_comp_advertise
+  logical                    :: ocn_prognostic_mod              ! set in docn_comp_advertise
 
-  real(R8), pointer          :: somtp(:)           ! SOM ocean temperature
-  real(R8), pointer          :: tfreeze(:)         ! SOM ocean freezing temperature
-  integer(IN), pointer       :: imask(:)           ! integer ocean mask
-  real(R8), pointer          :: xc(:), yc(:) ! arrays of model latitudes and longitudes
+  integer , pointer          :: imask(:)                        ! integer ocean mask
+  real(R8), pointer          :: xc(:), yc(:)                    ! arrays of model latitudes and longitudes
+  real(R8), pointer          :: somtp(:)                        ! SOM ocean temperature
+  real(R8), pointer          :: tfreeze(:)                      ! SOM ocean freezing temperature
 
   logical                    :: firstcall = .true.              ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ocn'         ! name of ocean ropinter file
-  integer(IN)                :: dbug = 10                        ! debug level (higher is more)
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -229,26 +235,24 @@ contains
   !===============================================================================
 
   subroutine docn_comp_init(x2o, o2x, &
-       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt)
+       SDOCN, mpicom, compid, my_task, master_task, &
+       inst_suffix, logunit, read_restart, &
+       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh)
+
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! --- input/output arguments ---
     type(mct_aVect)        , intent(inout) :: x2o, o2x       ! input/output attribute vectors
     type(shr_strdata_type) , intent(inout) :: SDOCN          ! model shr_strdata instance (output)
-    type(mct_gsMap)        , pointer       :: gsMap          ! model global seg map (output)
-    type(mct_gGrid)        , pointer       :: ggrid          ! model ggrid (output)
-    integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
-    integer(IN)            , intent(in)    :: compid         ! mct comp id
-    integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task    ! task number of master task
+    integer                , intent(in)    :: mpicom         ! mpi communicator
+    integer                , intent(in)    :: compid         ! mct comp id
+    integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task    ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie. "lnd_0001")
-    integer(IN)            , intent(in)    :: logunit        ! logging unit number
+    integer                , intent(in)    :: logunit        ! logging unit number
     logical                , intent(in)    :: read_restart   ! start from restart
     logical                , intent(in)    :: scmMode        ! single column mode
     real(R8)               , intent(in)    :: scmLat         ! single column lat
@@ -257,22 +261,34 @@ contains
     integer                , intent(in)    :: current_ymd    ! model date
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt        ! model time step
+    type(ESMF_Mesh)        , intent(in)    :: mesh           ! ESMF docn mesh
 
     !--- local variables ---
-    integer(IN)   :: n,k      ! generic counters
-    integer(IN)   :: lsize    ! local size
-    integer(IN)   :: kfld     ! fld index
-    integer(IN)   :: cnt      ! counter
-    logical       :: exists   ! file existance
-    logical       :: exists1  ! file existance
-    integer(IN)   :: nu       ! unit number
+    integer                        :: n,k      ! generic counters
+    integer                        :: lsize    ! local size
+    integer                        :: kfld     ! fld index
+    integer                        :: cnt      ! counter
+    logical                        :: exists   ! file existance
+    logical                        :: exists1  ! file existance
+    integer                        :: nu       ! unit number
+    type(ESMF_DistGrid)            :: distGrid
+    integer, allocatable, target   :: gindex(:)
+    integer                        :: rc
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
-    character(*), parameter :: F05   = "('(docn_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F06   = "('(docn_comp_init) ',a,f10.4)"
-    character(*), parameter :: subName = "(docn_comp_init) "
+    integer                        :: dimCount
+    integer                        :: tileCount
+    integer                        :: deCount
+    integer                        :: gsize
+    integer, allocatable           :: elementCountPTile(:)
+    integer, allocatable           :: indexCountPDE(:,:)
+    integer                        :: spatialDim
+    integer                        :: numOwnedElements
+    real(R8), pointer              :: ownedElemCoords(:)
+    integer                        :: klat, klon
+    character(*), parameter        :: F00   = "('(docn_comp_init) ',8a)"
+    character(*), parameter        :: F05   = "('(docn_comp_init) ',a,2f10.4)"
+    character(*), parameter        :: F06   = "('(docn_comp_init) ',a,f10.4)"
+    character(*), parameter        :: subName = "(docn_comp_init) "
     !-------------------------------------------------------------------------------
 
     call t_startf('DOCN_INIT')
@@ -284,80 +300,122 @@ contains
     call shr_strdata_pioinit(SDOCN, COMPID)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDOCN
+    ! Create a data model global seqmap
     !----------------------------------------------------------------------------
 
     call t_startf('docn_strdata_init')
 
-    ! NOTE: shr_strdata_init calls shr_dmodel_readgrid which reads the data model
-    ! grid and from that computes SDOCN%gsmap and SDOCN%ggrid. DOCN%gsmap is created
-    ! using the decomp '2d1d' (1d decomp of 2d grid)
+    if (my_task == master_task) write(logunit,F00) ' initialize DOCN gsmap'
+
+    ! obtain the distgrid from the mesh that was read in
+    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determin local size on my processor
+    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global index space for my processor
+    allocate(gindex(lsize))
+    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! determine global size of distgrid
+    call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    allocate(elementCountPTile(tileCount))
+    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    gsize = 0
+    do n = 1,size(elementCountPTile)
+       gsize = gsize + elementCountPTile(n)
+    end do
+    deallocate(elementCountPTile)
+
+    ! create the data model gsmap given the local size, global size and gindex
+    call mct_gsMap_init( SDOCN%gsmap, gindex, mpicom, compid, lsize, gsize)
+    deallocate(gindex)
+
+    !----------------------------------------------------------------------------
+    ! Initialize SDOCN model domain attributes
+    !----------------------------------------------------------------------------
+
+    ! The call to shr_strdata_init_model_domain creates the SDOCN%gsmap which
+    ! is a '2d1d' decommp (1d decomp of 2d grid) and also create SDOCN%grid
+
+    SDOCN%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
     if (scmmode) then
-       if (my_task == master_task) &
-            write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
-       call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
+       if (my_task == master_task) write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
+       call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, &
+            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDOCN%gsmap)
+    else if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+       call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, &
+            reset_domain_mask=.true., gsmap=SDOCN%gsmap)
     else
-       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-          ! Special logic for either prescribed or som aquaplanet - overwrite and
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
-       else
-          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
-       end if
-    endif
+       call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, gsmap=SDOCN%gsmap)
+    end if
 
     if (my_task == master_task) then
        call shr_strdata_print(SDOCN,'SDOCN data')
     endif
 
-    call t_stopf('docn_strdata_init')
+    ! obtain mesh lats and lons
+    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(ownedElemCoords(spatialDim*numOwnedElements))
+    allocate(xc(numOwnedElements), yc(numOwnedElements))
+    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (numOwnedElements /= lsize) then
+       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
+    end if
+    do n = 1,lsize
+       xc(n) = ownedElemCoords(2*n-1)
+       yc(n) = ownedElemCoords(2*n)
+    end do
+
+    ! error check that mesh lats and lons correspond to those on the input domain file
+    klon = mct_aVect_indexRA(SDOCN%grid%data,'lon')
+    do n = 1, lsize
+       if (abs( SDOCN%grid%data%rattr(klon,n) - xc(n)) > 1.e-4) then
+          write(6,*)'ERROR: DOCN lon diff = ',abs(SDOCN%grid%data%rattr(klon,n) -  xc(n)),' too large'
+          call shr_sys_abort()
+       end if
+       !SDOCN%grid%data%rattr(klon,n) = xc(n) ! overwrite ggrid with mesh data
+       xc(n) = SDOCN%grid%data%rattr(klon,n)  ! overwrite mesh data with ggrid data
+    end do
+    klat = mct_aVect_indexRA(SDOCN%grid%data,'lat')
+    do n = 1, lsize
+       if (abs( SDOCN%grid%data%rattr(klat,n) -  yc(n)) > 1.e-4) then
+          write(6,*)'ERROR: DOCN lat diff = ',abs(SDOCN%grid%data%rattr(klat,n) -  yc(n)),' too large'
+          call shr_sys_abort()
+       end if
+       !SDOCN%grid%data%rattr(klat,n) = yc(n)
+       yc(n) = SDOCN%grid%data%rattr(klat,n)
+    end do
+
+    ! determine module mask array (imask)
+    allocate(imask(lsize))
+    kmask = mct_aVect_indexRA(SDOCN%grid%data,'mask')
+    imask(:) = nint(SDOCN%grid%data%rAttr(kmask,:))
 
     !----------------------------------------------------------------------------
-    ! Initialize data model MCT global seg map, 1d decomp
+    ! Initialize the SDOCN streams and mapping of streams to model domain
     !----------------------------------------------------------------------------
 
-    call t_startf('docn_initgsmaps')
-    if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
-
-    ! create a data model global seqmap (gsmap) given the data model global grid sizes
-    ! NOTE: gsmap is initialized using the decomp read in from the docn_in namelist
-    ! (which by default is "1d")
-    call shr_dmodel_gsmapcreate(gsmap, SDOCN%nxg*SDOCN%nyg, compid, mpicom, decomp)
-    lsize = mct_gsmap_lsize(gsmap, mpicom)
-
-    ! create a rearranger from the data model SDOCN%gsmap to gsmap
-    call mct_rearr_init(SDOCN%gsmap, gsmap, mpicom, rearr)
-    call t_stopf('docn_initgsmaps')
+    call shr_strdata_init_streams(SDOCN, compid, mpicom, my_task)
+    call shr_strdata_init_mapping(SDOCN, compid, mpicom, my_task)
 
     !----------------------------------------------------------------------------
-    ! Initialize data model MCT domain
-    !----------------------------------------------------------------------------
-
-    call t_startf('docn_initmctdom')
-    if (my_task == master_task) write(logunit,F00) 'copy domains'
-
-    call shr_dmodel_rearrGGrid(SDOCN%grid, ggrid, gsmap, rearr, mpicom)
-    call t_stopf('docn_initmctdom')
-
-    !----------------------------------------------------------------------------
-    ! Allocate memory for module variables
+    ! Allocate module arrays
     !----------------------------------------------------------------------------
 
     allocate(somtp(lsize))
     allocate(tfreeze(lsize))
 
-    allocate(imask(lsize))
-    kmask = mct_aVect_indexRA(ggrid%data,'mask')
-    imask(:) = nint(ggrid%data%rAttr(kmask,:))
-
-    allocate(xc(lsize))
-    index_lon = mct_aVect_indexRA(ggrid%data,'lon')
-    xc(:) = ggrid%data%rAttr(index_lon,:)
-
-    allocate(yc(lsize))
-    index_lat = mct_aVect_indexRA(ggrid%data,'lat')
-    yc(:) = ggrid%data%rAttr(index_lat,:)
+    call t_stopf('docn_strdata_init')
 
     !----------------------------------------------------------------------------
     ! Initialize attribute vectors
@@ -369,8 +427,8 @@ contains
     call mct_aVect_init(o2x, rList=flds_o2x_mod, lsize=lsize)
     call mct_aVect_zero(o2x)
 
-    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-    o2x%rAttr(ksomask,:) = ggrid%data%rAttr(kfrac,:)
+    kfrac = mct_aVect_indexRA(SDOCN%grid%data,'frac')
+    o2x%rAttr(ksomask,:) = SDOCN%grid%data%rAttr(kfrac,:)
 
     if (ocn_prognostic_mod) then
        call mct_aVect_init(x2o, rList=flds_x2o_mod, lsize=lsize)
@@ -454,7 +512,7 @@ contains
           if (exists1) then
              if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
              call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
-                  trim(rest_file), mpicom, gsmap=gsmap, rf1=somtp, rf1n='somtp', &
+                  trim(rest_file), mpicom, gsmap=SDOCN%gsmap, rf1=somtp, rf1n='somtp', &
                   io_format=SDOCN%io_format)
           else
              if (my_task == master_task) then
@@ -481,8 +539,6 @@ contains
          x2o=x2o, &
          o2x=o2x, &
          SDOCN=SDOCN, &
-         gsmap=gsmap, &
-         ggrid=ggrid, &
          mpicom=mpicom, &
          compid=compid, &
          my_task=my_task, &
@@ -501,12 +557,6 @@ contains
 
     call t_adj_detailf(-2)
 
-    if (dbug > 1 .and. my_task == master_task) then
-       do n = 1,lsize
-          write(logunit,F06)'n,ofrac = ',mct_aVect_indexRA(ggrid%data,'frac')
-       end do
-    end if
-
     call t_stopf('DOCN_INIT')
 
   end subroutine docn_comp_init
@@ -514,7 +564,7 @@ contains
   !===============================================================================
 
   subroutine docn_comp_run(x2o, o2x, &
-       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       SDOCN, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, modeldt, case_name)
 
@@ -525,29 +575,27 @@ contains
     type(mct_aVect)        , intent(inout) :: x2o
     type(mct_aVect)        , intent(inout) :: o2x
     type(shr_strdata_type) , intent(inout) :: SDOCN
-    type(mct_gsMap)        , pointer       :: gsMap
-    type(mct_gGrid)        , pointer       :: ggrid
-    integer(IN)            , intent(in)    :: mpicom        ! mpi communicator
-    integer(IN)            , intent(in)    :: compid        ! mct comp id
-    integer(IN)            , intent(in)    :: my_task       ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task   ! task number of master task
+    integer                , intent(in)    :: mpicom        ! mpi communicator
+    integer                , intent(in)    :: compid        ! mct comp id
+    integer                , intent(in)    :: my_task       ! my task in mpi communicator mpicom
+    integer                , intent(in)    :: master_task   ! task number of master task
     character(len=*)       , intent(in)    :: inst_suffix   ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit       ! logging unit number
+    integer                , intent(in)    :: logunit       ! logging unit number
     logical                , intent(in)    :: read_restart  ! start from restart
     logical                , intent(in)    :: write_restart ! restart alarm is on
-    integer(IN)            , intent(in)    :: target_ymd    ! model date
-    integer(IN)            , intent(in)    :: target_tod    ! model sec into model date
+    integer                , intent(in)    :: target_ymd    ! model date
+    integer                , intent(in)    :: target_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt
     character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer(IN)       :: n,nfld ! indices
-    integer(IN)       :: lsize  ! size of attr vect
+    integer           :: n,nfld ! indices
+    integer           :: lsize  ! size of attr vect
     real(R8)          :: dt     ! timestep
-    integer(IN)       :: nu     ! unit number
+    integer           :: nu     ! unit number
     character(len=18) :: date_str
     character(len=CS) :: fldname
-
+    character(len=CL) :: local_case_name
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
@@ -562,7 +610,7 @@ contains
     ! Debug input
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
+    if (debug_import > 0 .and. my_task == master_task .and. ocn_prognostic_mod) then
        do nfld = 1, mct_aVect_nRAttr(x2o)
           call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(x2o)
@@ -574,7 +622,11 @@ contains
 
     call t_startf('DOCN_RUN')
     call t_barrierf('docn_BARRIER',mpicom)
-
+    if(present(case_name)) then
+       local_case_name = case_name
+    else
+       local_case_name = " "
+    endif
     !--------------------
     ! ADVANCE OCN
     !--------------------
@@ -586,7 +638,7 @@ contains
     lsize = mct_avect_lsize(o2x)
     do n = 1,lsize
        if (ksomask /= 0) then
-          o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          o2x%rAttr(ksomask, n) = SDOCN%grid%data%rAttr(kfrac,n)
        end if
        o2x%rAttr(kt   ,n) = TkFrz
        o2x%rAttr(ks   ,n) = ocnsalt
@@ -611,7 +663,7 @@ contains
     call t_barrierf('docn_scatter_BARRIER', mpicom)
     call t_startf('docn_scatter')
     do n = 1, SDOCN%nstreams
-       call shr_dmodel_translateAV(SDOCN%avs(n), o2x, avifld, avofld, rearr)
+       call shr_dmodel_translateAV(SDOCN%avs(n), o2x, avifld, avofld)
     enddo
     call t_stopf('docn_scatter')
 
@@ -652,7 +704,7 @@ contains
        do n = 1,lsize
           o2x%rAttr(kt,n) = o2x%rAttr(kt,n) + TkFrz
           if (ksomask /= 0) then
-             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+             o2x%rAttr(ksomask, n) = SDOCN%grid%data%rAttr(kfrac,n)
           end if
        enddo
 
@@ -689,7 +741,7 @@ contains
     case('SOM')
        lsize = mct_avect_lsize(o2x)
        do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld,rearr)
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld)
        enddo
        if (firstcall) then
           do n = 1,lsize
@@ -726,7 +778,7 @@ contains
     case('SOM_AQUAP')
        lsize = mct_avect_lsize(o2x)
        do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld,rearr)
+          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld)
        enddo
        if (firstcall) then
           do n = 1,lsize
@@ -764,7 +816,7 @@ contains
     ! Debug output
     !--------------------
 
-    if (dbug > 1 .and. my_task == master_task) then
+    if (debug_export > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(o2x)
           call shr_string_listGetName(trim(flds_o2x_mod), nfld, fldname)
           do n = 1, mct_aVect_lsize(o2x)
@@ -800,7 +852,7 @@ contains
              write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
           end if
           call shr_pcdf_readwrite('write', SDOCN%pio_subsystem, SDOCN%io_type,&
-               trim(rest_file), mpicom, gsmap, clobber=.true., rf1=somtp,rf1n='somtp')
+               trim(rest_file), mpicom, SDOCN%gsmap, clobber=.true., rf1=somtp,rf1n='somtp')
        endif
        if (my_task == master_task) then
           write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
@@ -808,14 +860,6 @@ contains
        call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
        call t_stopf('docn_restart')
     endif
-
-    !----------------------------------------------------------------------------
-    ! Log output for model date
-    !----------------------------------------------------------------------------
-
-    if (my_task == master_task) then
-       write(logunit,*) ' docn: model date ', target_ymd,target_tod
-    end if
 
     firstcall = .false.
 
@@ -830,8 +874,8 @@ contains
 
     real(R8)     , intent(in)    :: xc(:)  !degrees
     real(R8)     , intent(in)    :: yc(:)  !degrees
-    integer(IN)  , intent(in)    :: lsize
-    integer(IN)  , intent(in)    :: sst_option
+    integer      , intent(in)    :: lsize
+    integer      , intent(in)    :: sst_option
     real(R8)     , intent(inout) :: sst(:)
 
     ! local

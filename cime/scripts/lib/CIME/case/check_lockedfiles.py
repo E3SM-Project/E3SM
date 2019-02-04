@@ -53,16 +53,16 @@ def check_lockedfile(self, filebase):
         objname = filebase.split('.')[0]
         if objname == "env_build":
             f1obj = self.get_env('build')
-            f2obj = EnvBuild(caseroot, lfile)
+            f2obj = EnvBuild(caseroot, lfile, read_only=True)
         elif objname == "env_mach_pes":
             f1obj = self.get_env('mach_pes')
-            f2obj = EnvMachPes(caseroot, lfile, components=components)
+            f2obj = EnvMachPes(caseroot, lfile, components=components, read_only=True)
         elif objname == "env_case":
             f1obj = self.get_env('case')
-            f2obj = EnvCase(caseroot, lfile)
+            f2obj = EnvCase(caseroot, lfile, read_only=True)
         elif objname == "env_batch":
             f1obj = self.get_env('batch')
-            f2obj = EnvBatch(caseroot, lfile)
+            f2obj = EnvBatch(caseroot, lfile, read_only=True)
         else:
             logging.warning("Locked XML file '{}' is not current being handled".format(filebase))
             return
@@ -92,7 +92,7 @@ def check_lockedfile(self, filebase):
                                          "case.build --clean-all and rebuilding")
                     else:
                         self.set_value("BUILD_STATUS", 1)
-                    f2obj.set_value("BUILD_COMPLETE", False)
+
             elif objname == "env_batch":
                 expect(False, "Batch configuration has changed, please run case.setup --reset")
             else:

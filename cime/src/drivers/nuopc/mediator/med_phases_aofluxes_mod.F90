@@ -102,7 +102,7 @@ contains
     use shr_nuopc_scalars_mod , only : flds_scalar_num
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldlist_getfldnames
+    use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
     type(ESMF_GridComp)               :: gcomp
@@ -113,12 +113,12 @@ contains
     character(3)        :: aoflux_grid
     character(len=256)  :: cvalue
     type(InternalState) :: is_local
-    integer             :: nflds
     integer             :: localPet
     type(ESMF_VM)       :: vm
     integer             :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes_init)'
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -172,6 +172,7 @@ contains
        return
 
     end if
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_aofluxes_init
 
@@ -189,7 +190,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use med_constants_mod     , only : CL
-
+    use perf_mod              , only : t_startf, t_stopf
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -203,6 +204,7 @@ contains
     integer                 :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -287,6 +289,7 @@ contains
        return
 
     end if
+    call t_stopf('MED:'//subname)
 
   end subroutine med_phases_aofluxes_run
 
@@ -303,7 +306,7 @@ contains
     use med_constants_mod     , only : CL, CX
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-
+    use perf_mod              , only : t_startf, t_stopf
     !-----------------------------------------------------------------------
     ! Initialize pointers to the module variables
     !-----------------------------------------------------------------------
@@ -340,6 +343,7 @@ contains
     character(len=CX)        :: tmpstr
 
     !-----------------------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -514,6 +518,7 @@ contains
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
+    call t_stopf('MED:'//subname)
 
   end subroutine med_aofluxes_init
 
@@ -528,7 +533,7 @@ contains
     use shr_const_mod         , only : shr_const_spval
     use shr_flux_mod          , only : shr_flux_atmocn, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-
+    use perf_mod              , only : t_startf, t_stopf
     !-----------------------------------------------------------------------
     ! Determine atm/ocn fluxes eother on atm or on ocean grid
     ! The module arrays are set via pointers the the mediator internal states
@@ -560,6 +565,7 @@ contains
     character(*),parameter  :: F02 = "('(med_aofluxes_run) ',a,i4,2x,i4)"
     character(*),parameter  :: subName = '(med_fluxes_run) '
     !-----------------------------------------------------------------------
+    call t_startf('MED:'//subname)
 
     call ESMF_GridCompGet(gcomp, clock=Eclock, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -670,6 +676,7 @@ contains
           aoflux%u10(n) = sqrt(aoflux%duu10n(n))
        end if
     enddo
+    call t_stopf('MED:'//subname)
 
   end subroutine med_aofluxes_run
 

@@ -52,6 +52,7 @@ module zm_conv
    logical  :: zmconv_trigmem        = .false.    
    integer  :: zmconv_cape_cin       = unset_int
    integer  :: zmconv_mx_bot_lyr_adj = unset_int
+   real(r8) :: zmconv_tp_fac         = unset_r8
 
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
@@ -88,6 +89,8 @@ module zm_conv
    
    integer  limcnv       ! top interface level limit for convection
 
+   real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert 
+
 contains
 
 subroutine zmconv_readnl(nlfile)
@@ -104,7 +107,7 @@ subroutine zmconv_readnl(nlfile)
 
    namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
            zmconv_dmpdz, zmconv_alfa, zmconv_trigmem, zmconv_tiedke_add,     &
-           zmconv_cape_cin, zmconv_mx_bot_lyr_adj
+           zmconv_cape_cin, zmconv_mx_bot_lyr_adj, zmconv_tp_fac
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -131,6 +134,7 @@ subroutine zmconv_readnl(nlfile)
       num_cin        = zmconv_cape_cin
       mx_bot_lyr_adj = zmconv_mx_bot_lyr_adj
       dmpdz          = zmconv_dmpdz
+      tp_fac         = zmconv_tp_fac
       
       if ( zmconv_alfa /= unset_r8 ) then
            alfa_scalar = zmconv_alfa
@@ -753,7 +757,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
                maxg    ,j0      ,jd      ,rl      ,lengath , &
                rgas    ,grav    ,cpres   ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,limcnv  , &
-               landfracg, hu_nm1g )   !songxl 2014-05-20
+               landfracg, hu_nm1g, tpert)   !songxl 2014-05-20
+                                            !PMA adds tpert to the calculation
 !
 ! convert detrainment from units of "1/m" to "1/mb".
 !
@@ -2116,7 +2121,7 @@ subroutine cldprp(lchnk   , &
 !<songxl 2014-05-20-------
 !                  pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac)
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac,  &
-                  hu_nm1  )
+                  hu_nm1, tpert  )
 !>songxl 2014-05-20-------
 !----------------------------------------------------------------------- 
 ! 
@@ -2170,6 +2175,7 @@ subroutine cldprp(lchnk   , &
    integer, intent(in) :: msg                    ! missing moisture vals (always 0)
    real(r8), intent(in) :: rl                    ! latent heat of vap
    real(r8), intent(in) :: shat(pcols,pver)      ! interface values of dry stat energy
+   real(r8), intent(in) :: tpert(pcols)
 !
 ! output
 !
@@ -2395,8 +2401,8 @@ subroutine cldprp(lchnk   , &
    do k = msg + 1,pver
       do i = 1,il2g
          if (k >= jt(i) .and. k <= jb(i)) then
-            hu(i,k) = hmn(i,mx(i)) + cp*tiedke_add
-            su(i,k) = s(i,mx(i)) + tiedke_add
+            hu(i,k) = hmn(i,mx(i)) + cp*(tiedke_add+tp_fac*tpert(i)) !PMA
+            su(i,k) = s(i,mx(i)) + tiedke_add+tp_fac*tpert(i)
          end if
       end do
    end do
@@ -3669,7 +3675,7 @@ do k = pver, msg+1, -1
 
          tp(i,k)    = tmix(i,k)
          qstp(i,k)  = q(i,k) 
-         tpv(i,k)   =  (tp(i,k) + tpert(i)) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+qstp(i,k))
+         tpv(i,k)   =  (tp(i,k) + tp_fac*tpert(i)) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+qstp(i,k))
          
       end if
 
@@ -3729,7 +3735,7 @@ do k = pver, msg+1, -1
             qstp(i,k) = new_q
          end if
 
-         tpv(i,k) = (tp(i,k)+tpert(i))* (1._r8+1.608_r8*qstp(i,k)) / (1._r8+ new_q) 
+         tpv(i,k) = (tp(i,k)+tp_fac*tpert(i))* (1._r8+1.608_r8*qstp(i,k)) / (1._r8+ new_q) 
 
       end if ! k < klaunch
       

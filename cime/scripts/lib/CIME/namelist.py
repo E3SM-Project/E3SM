@@ -620,24 +620,24 @@ def literal_to_python_value(literal, type_=None):
     True
     >>> literal_to_python_value("Fortune")
     False
-    >>> literal_to_python_value("bacon")
+    >>> literal_to_python_value("bacon") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: 'bacon' is not a valid literal for any Fortran type.
+    CIMEError: ERROR: 'bacon' is not a valid literal for any Fortran type.
     >>> literal_to_python_value("1", type_="real")
     1.0
-    >>> literal_to_python_value("bacon", type_="logical")
+    >>> literal_to_python_value("bacon", type_="logical") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: 'bacon' is not a valid literal of type 'logical'.
-    >>> literal_to_python_value("1", type_="booga")
+    CIMEError: ERROR: 'bacon' is not a valid literal of type 'logical'.
+    >>> literal_to_python_value("1", type_="booga") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: Invalid Fortran type for a namelist: 'booga'
-    >>> literal_to_python_value("2*1")
+    CIMEError: ERROR: Invalid Fortran type for a namelist: 'booga'
+    >>> literal_to_python_value("2*1") # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
     ...
-    SystemExit: ERROR: Cannot use repetition syntax in literal_to_python_value
+    CIMEError: ERROR: Cannot use repetition syntax in literal_to_python_value
     >>> literal_to_python_value("")
     >>> literal_to_python_value("-1.D+10")
     -10000000000.0
@@ -858,15 +858,13 @@ def shouldRaise(eclass, method, *args, **kw):
     """
     try:
         method(*args, **kw)
-    except:
+    except BaseException:
         e = sys.exc_info()[1]
         if not isinstance(e, eclass):
             raise
         return
     raise Exception("Expected exception %s not raised" %
                     str(eclass))
-
-
 
 class Namelist(object):
 
@@ -965,10 +963,10 @@ class Namelist(object):
         not require a `group_name`, and it requires that the `variable_name` be
         unique across all groups.
 
-        >>> parse(text='&foo bar=1 / &bazz bar=1 /').get_value('bar')  # doctest: +ELLIPSIS
+        >>> parse(text='&foo bar=1 / &bazz bar=1 /').get_value('bar')  # doctest: +ELLIPSIS +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Namelist.get_value: Variable {} is present in multiple groups: ...
+        CIMEError: ERROR: Namelist.get_value: Variable {} is present in multiple groups: ...
         >>> parse(text='&foo bar=1 / &bazz /').get_value('Bar')
         ['1']
         >>> parse(text='&foo bar(2)=1 / &bazz /').get_value('Bar(2)')
@@ -1217,7 +1215,6 @@ class Namelist(object):
 
     def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt):
         """Unwrapped version of `write` assuming that a file object is input."""
-
         if groups is None:
             groups = self._groups.keys()
 
@@ -1286,7 +1283,10 @@ class Namelist(object):
                                     if skip_comp in run_entry:
                                         print_entry = False
                                         logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                                    if skip_comp.lower().strip() in run_entry:
+                                    elif "_"+skip_comp.lower().strip() in run_entry:
+                                        print_entry = False
+                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
+                                    elif "2"+skip_comp.lower().strip() in run_entry:
                                         print_entry = False
                                         logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
                             if print_entry:
@@ -2060,10 +2060,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         ('foo', ['2'], False)
         >>> _NamelistParser("foo=1,2")._parse_name_and_values(allow_eof_end=True)
         ('foo', ['1', '2'], False)
-        >>> _NamelistParser("foo(1:2)=1,2,3 ")._parse_name_and_values(allow_eof_end=True)
+        >>> _NamelistParser("foo(1:2)=1,2,3 ")._parse_name_and_values(allow_eof_end=True) # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Too many values for array foo(1:2)
+        CIMEError: ERROR: Too many values for array foo(1:2)
         >>> _NamelistParser("foo=1,")._parse_name_and_values(allow_eof_end=True)
         ('foo', ['1', ''], False)
         >>> _NamelistParser("foo+=1")._parse_name_and_values(allow_eof_end=True)

@@ -214,7 +214,7 @@ sub XML_Footer {
 my $pwd = `pwd`;
 chomp( $pwd );
 my @megcmpds  =  $definition->get_valid_values( "megan_cmpds", 'noquotes'=>1 );
-my @filenames = ( "$pwd/histFldsMod.F90", "$pwd/../biogeochem/CNFireMod.F90" );
+my @filenames = ( "$pwd/histFldsMod.F90", "$pwd/../biogeochem/FireMod.F90" );
 
 #
 # Loop over all files that have hist_addfld calls in them

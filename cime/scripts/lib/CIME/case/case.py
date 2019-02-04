@@ -67,7 +67,7 @@ class Case(object):
     are listed in the following imports
     """
     from CIME.case.case_setup import case_setup
-    from CIME.case.case_clone import create_clone
+    from CIME.case.case_clone import create_clone, _copy_user_modified_to_clone
     from CIME.case.case_test  import case_test
     from CIME.case.case_submit import check_DA_settings, check_case, submit
     from CIME.case.case_st_archive import case_st_archive, restore_from_archive, \
@@ -194,18 +194,21 @@ class Case(object):
         return False
 
     def read_xml(self):
+        for env_file in self._files:
+            expect(not env_file.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file.filename))
+
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None, read_only=self._force_read_only))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
-        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(self._caseroot))
-        self._env_generic_files.append(EnvArchive(self._caseroot))
+        self._env_generic_files.append(EnvMachSpecific(self._caseroot, read_only=self._force_read_only))
+        self._env_generic_files.append(EnvArchive(self._caseroot, read_only=self._force_read_only))
         self._files = self._env_entryid_files + self._env_generic_files
 
     def get_case_root(self):
@@ -238,6 +241,12 @@ class Case(object):
         newcase.set_value("CASEROOT",newcaseroot)
         newcase.set_value("CONTINUE_RUN","FALSE")
         newcase.set_value("RESUBMIT",0)
+
+        # Important, and subtle: Writability should NOT be copied because
+        # this allows the copy to be modified without needing a "with" statement
+        # which opens the door to tricky errors such as unflushed writes.
+        newcase._read_only_mode = True # pylint: disable=protected-access
+
         return newcase
 
     def flush(self, flushall=False):
@@ -369,6 +378,9 @@ class Case(object):
         is returned unless return_file is True, in which case (resolved_value, filename)
         is returned where filename is the name of the modified file.
         """
+        expect(not self._read_only_mode, "Cannot modify case, read_only. "
+               "Case must be opened with read_only=False and can only be modified within a context manager")
+
         if item == "CASEROOT":
             self._caseroot = value
         result = None
@@ -390,6 +402,9 @@ class Case(object):
         """
         Update or create a valid_values entry for item and populate it
         """
+        expect(not self._read_only_mode, "Cannot modify case, read_only. "
+               "Case must be opened with read_only=False and can only be modified within a context manager")
+
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_valid_values(item, valid_values)
@@ -472,9 +487,7 @@ class Case(object):
         progcomps = {}
         spec = {}
         primary_component = None
-
         for comp in self._component_classes:
-
             if comp == "CPL":
                 continue
             spec[comp] = self.get_value("COMP_{}".format(comp))
@@ -565,7 +578,7 @@ class Case(object):
                 continue
             else:
                 element_component = element.split('%')[0].lower()
-                if "ww" not in element_component:
+                if "ww" not in element_component and "fv3" not in element_component:
                     element_component = re.sub(r'[0-9]*',"",element_component)
                 components.append(element_component)
         return components
@@ -668,7 +681,7 @@ class Case(object):
         expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
             new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
-            self.update_env(new_mach_pes_obj, "mach_pes")
+            self.update_env(new_mach_pes_obj, "mach_pes", blow_away=True)
             return new_mach_pes_obj.get_value("TOTALPES")
 
         pesobj = Pes(self._pesfile)
@@ -782,7 +795,7 @@ class Case(object):
         #--------------------------------------------
         grids = Grids(gridfile)
 
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname, driver=driver)
 
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
@@ -802,7 +815,7 @@ class Case(object):
 
         self.clean_up_lookups(allow_undefined=True)
 
-        self.get_compset_var_settings()
+        self.get_compset_var_settings(files)
 
         self.clean_up_lookups(allow_undefined=True)
 
@@ -885,19 +898,16 @@ class Case(object):
         self.set_value("REALUSER", os.environ["USER"])
 
         # Set project id
+        if project is None:
+            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
-            self.set_value("CHARGE_ACCOUNT", project)
-        else:
-            project = get_project(machobj)
-            if project is not None:
-                self.set_value("PROJECT", project)
-            elif machobj.get_value("PROJECT_REQUIRED"):
-                expect(project is not None, "PROJECT_REQUIRED is true but no project found")
-            # Get charge_account id if it exists
-            charge_account = get_charge_account(machobj)
-            if charge_account is not None:
-                self.set_value("CHARGE_ACCOUNT", charge_account)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
+        # Get charge_account id if it exists
+        charge_account = get_charge_account(machobj, project)
+        if charge_account is not None:
+            self.set_value("CHARGE_ACCOUNT", charge_account)
 
         # Resolve the CIME_OUTPUT_ROOT variable, other than this
         # we don't want to resolve variables until we need them
@@ -973,8 +983,10 @@ class Case(object):
         if input_dir is not None:
             self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
-    def get_compset_var_settings(self):
-        compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
+    def get_compset_var_settings(self, files):
+        infile=files.get_value("COMPSETS_SPEC_FILE",
+                              attribute={"component":self._primary_component})
+        compset_obj = Compsets(infile=infile, files=files)
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
         for name, value in matches:
             if len(value) > 0:
@@ -1061,7 +1073,6 @@ class Case(object):
                 os.symlink(exefile, destfile)
             except Exception as e:
                 logger.warning("FAILED to set up exefiles: {}".format(str(e)))
-
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -1185,6 +1196,10 @@ directory, NOT in this subdirectory."""
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
+
+        # User mods may have modified underlying XML files
+        if all_user_mods:
+            self.read_xml()
 
     def _get_comp_user_mods(self, component):
         """
@@ -1361,7 +1376,7 @@ directory, NOT in this subdirectory."""
         logger.warning("setting case file to {}".format(xmlfile))
         components = self.get_value("COMP_CLASSES")
         new_env_file = None
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             if os.path.basename(env_file.filename) == ftype:
                 if ftype == "env_run.xml":
                     new_env_file = EnvRun(infile=xmlfile, components=components)
@@ -1375,33 +1390,34 @@ directory, NOT in this subdirectory."""
                     new_env_file = EnvBatch(infile=xmlfile)
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
+                elif ftype == "env_archive.xml":
+                    new_env_file = EnvArchive(infile=xmlfile)
+                elif ftype == "env_mach_specific.xml":
+                    new_env_file = EnvMachSpecific(infile=xmlfile)
+                else:
+                    expect(False, "No match found for file type {}".format(ftype))
+
             if new_env_file is not None:
                 self._env_entryid_files = []
                 self._env_generic_files = []
-                self._env_entryid_files.append(new_env_file)
+                if ftype in ["env_archive.xml", "env_mach_specific.xml"]:
+                    self._env_generic_files = [new_env_file]
+                else:
+                    self._env_entryid_files = [new_env_file]
+
                 break
-        if new_env_file is None:
-            for env_file in self._env_generic_files:
-                if os.path.basename(env_file.filename) == ftype:
-                    if ftype == "env_archive.xml":
-                        new_env_file = EnvArchive(infile=xmlfile)
-                    elif ftype == "env_mach_specific.xml":
-                        new_env_file = EnvMachSpecific(infile=xmlfile)
-                    else:
-                        expect(False, "No match found for file type {}".format(ftype))
-                if new_env_file is not None:
-                    self._env_entryid_files = []
-                    self._env_generic_files = []
-                    self._env_generic_files.append(new_env_file)
-                    break
 
-        self._files = self._env_entryid_files + self._env_generic_files
+        expect(new_env_file is not None, "No match found for file type {}".format(ftype))
+        self._files = [new_env_file]
 
-    def update_env(self, new_object, env_file):
+    def update_env(self, new_object, env_file, blow_away=False):
         """
         Replace a case env object file
         """
         old_object = self.get_env(env_file)
+        if not blow_away:
+            expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file))
+
         new_object.filename = old_object.filename
         if old_object in self._env_entryid_files:
             self._env_entryid_files.remove(old_object)
@@ -1460,7 +1476,7 @@ directory, NOT in this subdirectory."""
 
             # Lock env_case.xml
             lock_file("env_case.xml", self._caseroot)
-        except:
+        except Exception:
             if os.path.exists(self._caseroot):
                 if not logger.isEnabledFor(logging.DEBUG) and not test:
                     logger.warning("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))

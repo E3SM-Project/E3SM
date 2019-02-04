@@ -127,7 +127,7 @@ module clubb_intr
   logical            :: clubb_do_deep
   logical            :: micro_do_icesupersat
   logical            :: history_budget
-
+  logical            :: use_sgv !PMA This flag controls tuning for tpert and gustiness
   integer            :: history_budget_histfile_num
   integer            :: edsclr_dim       ! Number of scalars to transport in CLUBB
   integer            :: offset
@@ -173,6 +173,11 @@ module clubb_intr
     prer_evap_idx, &    ! rain evaporation rate
     qrl_idx, &          ! longwave cooling rate
     radf_idx 
+
+  integer :: &          !PMA adds pbuf fields for ZM gustiness
+    prec_dp_idx, &
+    snow_dp_idx, &
+    vmag_gust_idx
  
   integer, public :: & 
     ixthlp2 = 0, &
@@ -285,6 +290,7 @@ module clubb_intr
     call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
     call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vm_idx)
 
+    call pbuf_add_field('vmag_gust',       'global', dtype_r8, (/pcols/),      vmag_gust_idx) !PMA total gustiness
 #endif 
 
   end subroutine clubb_register_cam
@@ -369,6 +375,7 @@ end subroutine clubb_init_cnst
 #ifdef CLUBB_SGS
     logical :: clubb_history, clubb_rad_history, clubb_cloudtop_cooling, clubb_rainevap_turb, &
                clubb_stabcorrect, clubb_expldiff ! Stats enabled (T/F)      
+    logical :: clubb_use_sgv !PMA This flag controls tuning for tpert and gustiness
 
     integer :: iunit, read_status
 
@@ -376,7 +383,7 @@ end subroutine clubb_init_cnst
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_do_deep, clubb_timestep, clubb_stabcorrect, &
                                 clubb_rnevap_effic, clubb_liq_deep, clubb_liq_sh, clubb_ice_deep, &
-                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix
+                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix, clubb_use_sgv
 
     !----- Begin Code -----
 
@@ -390,6 +397,7 @@ end subroutine clubb_init_cnst
     relvar_fix         = .false.   ! Initialize to false
     clubb_do_adv       = .false.   ! Initialize to false
     clubb_do_deep      = .false.   ! Initialize to false
+    use_sgv            = .false.
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -435,6 +443,7 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
       call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
       call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
+      call mpibcast(clubb_use_sgv,            1,   mpilog,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -443,7 +452,7 @@ end subroutine clubb_init_cnst
     if (clubb_cloudtop_cooling) do_cldcool = .true.
     if (clubb_rainevap_turb) do_rainturb = .true.
     if (clubb_expldiff) do_expldiff = .true.
-    
+    if (clubb_use_sgv) use_sgv =.true. 
     if (clubb_stabcorrect .and. clubb_expldiff)  then
       call endrun('clubb_readnl: clubb_stabcorrect and clubb_expldiff may not both be set to true at the same time')
     end if
@@ -623,6 +632,10 @@ end subroutine clubb_init_cnst
     qrl_idx         = pbuf_get_index('QRL')
     cmfmc_sh_idx    = pbuf_get_index('CMFMC_SH')
 
+    prec_dp_idx = pbuf_get_index('PREC_DP') !PMA ZM precip for gustiness
+    snow_dp_idx = pbuf_get_index('SNOW_DP') !PMA ZM snow for gustiness
+    vmag_gust_idx = pbuf_get_index('vmag_gust') !PMA ZM snow for gustiness
+
     iisclr_rt  = -1
     iisclr_thl = -1
     iisclr_CO2 = -1
@@ -758,6 +771,11 @@ end subroutine clubb_init_cnst
     call addfld ('RELVARC', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance', flag_xyfill=.true.,fill_value=fillvalue)
     call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
     call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Rate of cond-evap of liq within the cloud')
+!PMA gustiness output fields
+    call addfld ('VMAGGUST',       horiz_only,     'A',             '-', 'Total gustiness enhancement')
+    call addfld ('VMAGDP',        horiz_only,     'A',             '-', 'ZM gustiness enhancement')
+    call addfld ('VMAGCL',        horiz_only,     'A',             '-', 'CLUBB gustiness enhancement')
+    call addfld ('TPERTBLT',        horiz_only,     'A',             'K', 'perturbation temperature at PBL top')
 
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
@@ -868,6 +886,8 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
+
+       call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
 
     endif
    
@@ -1213,11 +1233,35 @@ end subroutine clubb_init_cnst
    real(r8)  qitend(pcols,pver)
    real(r8)  initend(pcols,pver)
    logical            :: lqice(pcnst)
+   integer :: ktopi(pcols)
    
    integer :: ixorg
 
    intrinsic :: selected_real_kind, max
 
+!PMA adds gustiness and tpert
+   real(r8), pointer :: prec_dp(:)                 ! total precipitation from ZM convection
+   real(r8), pointer :: snow_dp(:)                 ! snow precipitation from ZM convection
+   real(r8), pointer :: vmag_gust(:)
+   real(r8), pointer :: tpert(:)
+
+   real(r8) :: ugust  ! function: gustiness as a function of convective rainfall
+   real(r8) :: gfac
+   real(r8) :: gprec
+   real(r8) :: prec_gust(pcols)
+   real(r8) :: vmag_gust_dp(pcols),vmag_gust_cl(pcols)
+   real(r8) :: vmag(pcols)
+   real(r8) :: gust_fac(pcols)
+   real(r8) :: umb(pcols), vmb(pcols),up2b(pcols),vp2b(pcols)
+   real(r8),parameter :: gust_facl = 1.2_r8 !gust fac for land
+   real(r8),parameter :: gust_faco = 0.9_r8 !gust fac for ocean
+   real(r8),parameter :: gust_facc = 1.5_r8 !gust fac for clubb
+
+! ZM gustiness equation below from Redelsperger et al. (2000)
+! numbers are coefficients of the empirical equation
+
+   ugust(gprec,gfac) = gfac*log(1._R8+57801.6_R8*gprec-3.55332096e7_R8*(gprec**2.0_R8))
+  
 #endif
    det_s(:)   = 0.0_r8
    det_ice(:) = 0.0_r8
@@ -1314,6 +1358,12 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, pblh_idx,    pblh)
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr)
    call pbuf_get_field(pbuf, cmfmc_sh_idx, cmfmc_sh)
+
+!PMA adds fields for gustiness
+   call pbuf_get_field(pbuf, tpert_idx,   tpert)
+   call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
+   call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
+   call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver) .eq. 0._r8))) then
@@ -2413,7 +2463,12 @@ end subroutine clubb_init_cnst
    do i=1,ncol
       do k=1,pver
          th(i,k) = state1%t(i,k)*state1%exner(i,k)
-         thv(i,k) = th(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq))
+         if (use_sgv) then
+           thv(i,k) = th(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq) &
+                    - state1%q(i,k,ixcldliq))  !PMA corrects thv formula
+         else
+           thv(i,k) = th(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq))
+         end if
       enddo
    enddo
  
@@ -2442,6 +2497,46 @@ end subroutine clubb_init_cnst
  
    ! Assign the first pver levels of cloud_frac back to cld
    cld(:,1:pver) = cloud_frac(:,1:pver)
+
+!PMA adds gustiness and tpert
+
+    vmag_gust(:)    = 1._r8
+    vmag_gust_dp(:) = 0._r8
+    vmag_gust_cl(:) = 0._r8
+    ktopi(:)        = pver
+
+    if (use_sgv) then
+       do i=1,ncol
+          up2b(i)          = up2(i,pver)
+          vp2b(i)          = vp2(i,pver)
+          umb(i)           = abs(state1%u(i,pver))
+          vmb(i)           = abs(state1%v(i,pver))
+          prec_gust(i)     = max(0._r8,prec_dp(i)-snow_dp(i))*1.e3_r8
+          if (cam_in%landfrac(i).gt.0.95_r8) then
+             gust_fac(i)   = gust_facl
+          else
+             gust_fac(i)   = gust_faco
+          endif
+          vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
+          vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000) 
+          vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) / vmag(i))
+          vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
+          vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) / vmag(i))
+          vmag_gust(i)    = 1._r8 + vmag_gust_cl(i) + vmag_gust_dp(i)
+          do k=1,pver
+             if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
+                ktopi(i) = k
+                exit
+             end if
+          end do
+          tpert(i) = min(2._r8,sqrt(thlp2(i,ktopi(i))/max(state1%exner(i,ktopi(i)),1.e-3_r8)))
+       end do
+    end if
+    
+   call outfld('VMAGGUST', vmag_gust, pcols, lchnk)
+   call outfld('VMAGDP', vmag_gust_dp, pcols, lchnk)
+   call outfld('VMAGCL', vmag_gust_cl, pcols, lchnk)
+   call outfld('TPERTBLT', tpert, pcols, lchnk)
 
    call t_stopf('clubb_tend_cam_diag')
 
@@ -2590,7 +2685,7 @@ end subroutine clubb_init_cnst
     real(r8) :: tmp1(pcols)
     real(r8) :: rztodt                                          ! 1./ztodt
     integer  :: m
-    integer  :: ixq
+    integer  :: ixq,ixcldliq !PMA fix for thv
     real(r8) :: rrho                                            ! Inverse air density
     
     logical  :: lq(pcnst)
@@ -2606,6 +2701,9 @@ end subroutine clubb_init_cnst
 
 
     call cnst_get_ind('Q',ixq)
+    if (use_sgv) then
+       call cnst_get_ind('CLDLIQ',ixcldliq)
+    endif
     
     lq(:) = .TRUE.
     call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
@@ -2616,7 +2714,12 @@ end subroutine clubb_init_cnst
     
     do i = 1, ncol
        th(i) = state%t(i,pver)*state%exner(i,pver)         ! diagnose potential temperature
-       thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq))  ! diagnose virtual potential temperature
+       if (use_sgv) then
+         thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq) & ! PMA corrects virtual potential temperature formula
+                       - state%q(i,pver,ixcldliq))
+       else
+         thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq))  ! diagnose virtual potential temperature
+       end if
     enddo
     
     do i = 1, ncol

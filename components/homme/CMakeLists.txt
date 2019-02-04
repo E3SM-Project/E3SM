@@ -110,6 +110,13 @@ IF (${HOMME_USE_CXX})
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
+# Option to use ARKode package from SUNDIALS
+OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
+IF (${HOMME_USE_ARKODE})
+  MESSAGE(STATUS "Using ARKode, adding -DARKODE")
+  ADD_DEFINITIONS(-DARKODE)
+ENDIF ()
+
 IF (${HOMME_USE_KOKKOS})
   ############################################
   # Selection of Kokkos execution space
@@ -222,6 +229,12 @@ IF (DEFINED EXTRAE_DIR)
   SET(HAVE_EXTRAE TRUE)
 ENDIF ()
 
+# this section is for linking to SUNDIALS/ARKODE as an external library
+IF (DEFINED SUNDIALS_DIR)
+  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib)
+  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
+ENDIF ()
+
 ###########################################
 # Definitions for timing library
 ###########################################
@@ -249,6 +262,7 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # PIO
 #
 #set search paths for PIO's findNetCDF
+ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
 message("** Configuring PIO with:")

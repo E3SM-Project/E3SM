@@ -8,7 +8,7 @@ module BareGroundFluxesMod
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
-  use ch4Mod               , only : ch4_type
+  use CH4Mod               , only : ch4_type
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type

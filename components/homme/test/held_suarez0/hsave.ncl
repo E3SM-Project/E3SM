@@ -16,8 +16,8 @@ tmax=38000
 
 ; NETCDF files to process
 fnames =  systemfunc( \
-;  "ls ~/scratch1/preqx/hs-ne60-*/movies/held_suarez0*1.nc;"  \
-  "ls movies/held_suarez0*1.nc;"  \
+;  "ls ~/scratch1/preqx/hs-ne30-*/movies/held_suarez01.nc;"  \
+  "ls movies/held_suarez01.nc;"  \
 )
 fuv_all   = addfiles(fnames,"r")       ; Open netCDF files.	
 print("files = "+fnames)
@@ -39,6 +39,11 @@ if (isfilevar(fuv_all[0],"Q")) then
   computeQ=True
 else
   computeQ = False
+end if
+if (isfilevar(fuv_all[0],"div")) then
+  computevordiv=True
+else
+  computevordiv = False
 end if
 
 ; check command line argument for pnew:

@@ -813,17 +813,23 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
 
+    use cam_history, only: outfld
+    use scamMod, only: heat_glob_scm, single_column, use_camiop
+
     type(physics_state), intent(in   ) :: state
     type(physics_ptend), intent(out)   :: ptend
 
     integer , intent(in   ) :: nstep          ! time step number
     real(r8), intent(out  ) :: eshflx(pcols)  ! effective sensible heat flux
+    real(r8) :: heat_out(pcols)
 
 !---------------------------Local storage-------------------------------
     integer  :: i                        ! column
     integer  :: ncol                     ! number of atmospheric columns in chunk
+    integer  :: lchnk
 !-----------------------------------------------------------------------
     ncol = state%ncol
+    lchnk = state%lchnk
 
     call physics_ptend_init(ptend, state%psetcols, 'chkenergyfix', ls=.true.)
 
@@ -832,8 +838,18 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     heat_glob = 0._r8
 #endif
 ! add (-) global mean total energy difference as heating
+    if (single_column .and. use_camiop) then
+      heat_glob = heat_glob_scm(1)
+    endif
     ptend%s(:ncol,:pver) = heat_glob
 !!$    write(iulog,*) "chk_fix: heat", state%lchnk, ncol, heat_glob
+
+#if ( defined BFB_CAM_SCAM_IOP )
+    if (nstep > 0) then
+      heat_out(:ncol) = heat_glob
+      call outfld('heat_glob',  heat_out(:ncol), pcols, lchnk)
+    endif
+#endif
 
 ! compute effective sensible heat flux
     do i = 1, ncol

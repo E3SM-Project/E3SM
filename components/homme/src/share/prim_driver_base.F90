@@ -104,6 +104,9 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup ()
+
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
@@ -125,9 +128,6 @@ contains
 
     ! Initialize the time levels
     call TimeLevel_init(tl)
-
-    ! Cleanup the tmp stuff used in prim_init1_geometry
-    call prim_init1_cleanup ()
 
     if(par%masterproc) write(iulog,*) 'end of prim_init1'
   end subroutine prim_init1
@@ -550,7 +550,7 @@ contains
     integer :: ie
 
     ! Initialize output fields for plotting...
-    call prim_printstate_init(par)
+    call prim_printstate_init(par, elem)
 
     ! initialize flux terms to 0
     do ie=1,nelemd
@@ -558,13 +558,6 @@ contains
        elem(ie)%derived%FQ=0.0
        elem(ie)%derived%FQps=0.0
        elem(ie)%derived%FT=0.0
-
-       elem(ie)%accum%Qvar=0
-       elem(ie)%accum%Qmass=0
-       elem(ie)%accum%Q1mass=0
-       elem(ie)%accum%KEner=0
-       elem(ie)%accum%IEner=0
-       elem(ie)%accum%PEner=0
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0
@@ -654,10 +647,7 @@ contains
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-
-#ifndef CAM
-    use control_mod,          only: pertlim                     
-#endif
+    use control_mod,          only: smooth_phis_numcycle
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -921,6 +911,10 @@ contains
        enddo
     endif
 
+    ! smooth elem%phis if requested.
+    if (smooth_phis_numcycle>0) &
+          call smooth_topo_datasets(elem,hybrid,nets,nete)
+
 
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
     call print_cfl(elem,hybrid,nets,nete,dtnu)
@@ -948,7 +942,6 @@ contains
 
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
-
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
@@ -1039,14 +1032,6 @@ contains
     ! homme.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
-
-    ! Apply CAM Physics forcing
-    !   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 3: Q was adjusted by physics, but apply u,T forcing here, forcings are scaled by dp
-    !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
-    !   ftype= 1: forcing was applied time-split in CAM coupling layer
-    !   ftype= 0: apply all forcing here
-    !   ftype=-1: do not apply forcing
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
@@ -1330,9 +1315,14 @@ contains
 
 !----------------------------- APPLYCAMFORCING-PS ----------------------------
 
-!ftype logic
-!should be called with dt_remap, on 'eulerian' levels, only before homme remap
-!timestep
+!Ftype logic: This routine should be called with dt_remap, on 'eulerian' levels, 
+!only before homme remap timestep.
+! Note on ftypes:
+!   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 1: forcing was applied time-split in CAM coupling layer
+!   ftype= 0: apply all forcing here
+!   ftype=-1: do not apply forcing
   subroutine applyCAMforcing_ps(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
@@ -1346,6 +1336,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
 
+!in the next pr we will reorder calling _dyn and _tr versions
   call t_startf("ApplyCAMForcing")
 
   if (ftype==-1) then
@@ -1576,8 +1567,8 @@ contains
 
 
 
-    subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle,smooth_sgh_numcycle
+    subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
+    use control_mod, only : smooth_phis_numcycle
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1585,27 +1576,26 @@ contains
     implicit none
 
     integer , intent(in) :: nets,nete
-    real (kind=real_kind), intent(inout)   :: phis(np,np,nets:nete)
-    real (kind=real_kind), intent(inout)   :: sghdyn(np,np,nets:nete)
-    real (kind=real_kind), intent(inout)   :: sgh30dyn(np,np,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     ! local
     integer :: ie
     real (kind=real_kind) :: minf
+    real (kind=real_kind) :: phis(np,np,nets:nete)
 
+    do ie=nets,nete
+       phis(:,:,ie)=elem(ie)%state%phis(:,:)
+    enddo
+    
     minf=-9e9
     if (hybrid%masterthread) &
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
     call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
-    minf=0
-    if (hybrid%masterthread) &
-       write(iulog,*) "Applying hyperviscosity smoother to SGH"
-    call smooth_phis(sghdyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
-    if (hybrid%masterthread) &
-       write(iulog,*) "Applying hyperviscosity smoother to SGH30"
-    call smooth_phis(sgh30dyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
+
+    do ie=nets,nete
+       elem(ie)%state%phis(:,:)=phis(:,:,ie)
+    enddo
 
     end subroutine smooth_topo_datasets
     

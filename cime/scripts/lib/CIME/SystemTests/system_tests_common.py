@@ -3,7 +3,7 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp
+from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp, CIMEError
 from CIME.test_status import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
@@ -84,25 +84,22 @@ class SystemTestsCommon(object):
                 try:
                     self.build_phase(sharedlib_only=(phase_name==SHAREDLIB_BUILD_PHASE),
                                      model_only=(phase_name==MODEL_BUILD_PHASE))
-                except BaseException as e:
+                except BaseException as e: # We want KeyboardInterrupts to generate FAIL status
                     success = False
-                    msg = e.__str__()
-                    if "FAILED, cat" in msg or "BUILD FAIL" in msg:
+                    if isinstance(e, CIMEError):
                         # Don't want to print stacktrace for a build failure since that
                         # is not a CIME/infrastructure problem.
-                        excmsg = msg
+                        excmsg = str(e)
                     else:
-                        excmsg = "Exception during build:\n{}\n{}".format(msg, traceback.format_exc())
+                        excmsg = "Exception during build:\n{}\n{}".format(str(e), traceback.format_exc())
 
-                    logger.warning(excmsg)
                     append_testlog(excmsg)
+                    raise
 
-                time_taken = time.time() - start_time
-                with self._test_status:
-                    self._test_status.set_status(phase_name, TEST_PASS_STATUS if success else TEST_FAIL_STATUS, comments=("time={:d}".format(int(time_taken))))
-
-                if not success:
-                    break
+                finally:
+                    time_taken = time.time() - start_time
+                    with self._test_status:
+                        self._test_status.set_status(phase_name, TEST_PASS_STATUS if success else TEST_FAIL_STATUS, comments=("time={:d}".format(int(time_taken))))
 
         return success
 
@@ -157,30 +154,31 @@ class SystemTestsCommon(object):
 
             self._phase_modifying_call(STARCHIVE_PHASE, self._st_archive_case_test)
 
-        except BaseException as e:
+        except BaseException as e: # We want KeyboardInterrupts to generate FAIL status
             success = False
-            msg = e.__str__()
-            if "RUN FAIL" in msg:
+            if isinstance(e, CIMEError):
                 # Don't want to print stacktrace for a model failure since that
                 # is not a CIME/infrastructure problem.
-                excmsg = msg
+                excmsg = str(e)
             else:
-                excmsg = "Exception during run:\n{}\n{}".format(msg, traceback.format_exc())
-            logger.warning(excmsg)
+                excmsg = "Exception during run:\n{}\n{}".format(str(e), traceback.format_exc())
+
             append_testlog(excmsg)
+            raise
 
-        # Writing the run status should be the very last thing due to wait_for_tests
-        time_taken = time.time() - start_time
-        status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
-        with self._test_status:
-            self._test_status.set_status(RUN_PHASE, status, comments=("time={:d}".format(int(time_taken))))
+        finally:
+            # Writing the run status should be the very last thing due to wait_for_tests
+            time_taken = time.time() - start_time
+            status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
+            with self._test_status:
+                self._test_status.set_status(RUN_PHASE, status, comments=("time={:d}".format(int(time_taken))))
 
-        if success and get_model() == "e3sm":
-            save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
+            if success and get_model() == "e3sm":
+                save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
 
-        if get_model() == "cesm" and self._case.get_value("GENERATE_BASELINE"):
-            baseline_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
-            generate_teststatus(self._caseroot, baseline_dir)
+            if get_model() == "cesm" and self._case.get_value("GENERATE_BASELINE"):
+                baseline_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
+                generate_teststatus(self._caseroot, baseline_dir)
 
         # We return success if the run phase worked; memleaks, diffs will not be taken into account
         # with this return value.
@@ -254,7 +252,7 @@ class SystemTestsCommon(object):
             try:
                 if six.b("SUCCESSFUL TERMINATION") in gzip.open(cpllog, 'rb').read():
                     allgood = allgood - 1
-            except BaseException as e:
+            except Exception as e: # Probably want to be more specific here
                 msg = e.__str__()
 
                 logger.info("{} is not compressed, assuming run failed {}".format(cpllog, msg))
@@ -338,7 +336,7 @@ class SystemTestsCommon(object):
         """
         try:
             function()
-        except BaseException as e:
+        except Exception as e: # Do NOT want to catch KeyboardInterrupt
             msg = e.__str__()
             excmsg = "Exception during {}:\n{}\n{}".format(phase, msg, traceback.format_exc())
 
@@ -553,9 +551,9 @@ class TESTRUNPASS(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/{}.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(rundir, self._cpllog, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
@@ -575,13 +573,13 @@ class TESTRUNDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/{}.log.$LID
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
 else
-  cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc
 fi
-""".format(rundir, self._cpllog, cimeroot, rundir, case, cimeroot, rundir, case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
@@ -595,10 +593,10 @@ class TESTTESTDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/{}.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
-""".format(rundir, self._cpllog, cimeroot, rundir, case, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc.rest
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
                                               model_only=model_only)
@@ -617,14 +615,14 @@ class TESTRUNFAIL(FakeTest):
 """
 if [ -z "$TESTRUNFAIL_PASS" ]; then
   echo Insta fail
-  echo model failed > {}/{}.log.$LID
+  echo model failed > {rundir}/{log}.log.$LID
   exit -1
 else
   echo Insta pass
-  echo SUCCESSFUL TERMINATION > {}/{}.log.$LID
-  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+  echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
 fi
-""".format(rundir, self._cpllog, rundir, self._cpllog, cimeroot, rundir, case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
@@ -669,9 +667,9 @@ class TESTRUNSLOWPASS(FakeTest):
 """
 sleep 300
 echo Slow pass
-echo SUCCESSFUL TERMINATION > {}/{}.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(rundir, self._cpllog, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -685,9 +683,9 @@ class TESTMEMLEAKFAIL(FakeTest):
         script = \
 """
 echo Insta pass
-gunzip -c {} > {}/{}.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(testfile, rundir, self._cpllog, cimeroot, rundir, case)
+gunzip -c {testfile} > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(testfile=testfile, rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -701,9 +699,9 @@ class TESTMEMLEAKPASS(FakeTest):
         script = \
 """
 echo Insta pass
-gunzip -c {} > {}/{}.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(testfile, rundir, self._cpllog, cimeroot, rundir, case)
+gunzip -c {testfile} > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(testfile=testfile, rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)

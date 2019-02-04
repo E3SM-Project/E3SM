@@ -236,7 +236,6 @@ CONTAINS
     use control_mod,      only: moisture, runtype
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
-    use nctopo_util_mod,  only: nctopo_util_driver
     use cam_instance,     only: inst_index
 #ifdef MODEL_THETA_L
     use element_ops,      only: set_thermostate_from_derived_T
@@ -322,10 +321,6 @@ CONTAINS
           call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
        endif
        call prim_init2(elem,hybrid,nets,nete, TimeLevel, hvcoord)
-       !
-       ! This subroutine is used to create nc_topo files, if requested
-       ! 
-       call nctopo_util_driver(elem,hybrid,nets,nete)
 #ifdef HORIZ_OPENMP
        !$OMP END PARALLEL 
 #endif

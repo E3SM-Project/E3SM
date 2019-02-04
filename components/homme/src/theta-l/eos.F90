@@ -107,9 +107,9 @@ implicit none
         do i=1,np
            do j=1,np
               if ( p_over_exner(i,j,k)<0 ) then
-                 print *,'vertical column:'
+                 print *,'vertical column phi_i,dp3d,vtheta_dp:'
                  do k2=1,nlev
-                    write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+                    write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2+1),dp3d(i,j,k2),vtheta_dp(i,j,k2)
                  enddo
                  call abortmp('error: rho<0')
               endif

@@ -90,6 +90,8 @@ contains
 
          wa                     => soilhydrology_vars%wa_col                  , & ! Input:  [real(r8) (:)   ]  water in the unconfined aquifer (mm)              
          
+         h2osoi_liq_depth_intg  => waterstate_vars%h2osoi_liq_depth_intg_col  , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
+         h2osoi_ice_depth_intg  => waterstate_vars%h2osoi_ice_depth_intg_col  , & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
          h2ocan                 => waterstate_vars%h2ocan_col                 , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)                             
          h2osfc                 => waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
          h2osno                 => waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
@@ -179,6 +181,8 @@ contains
 
             else
                endwb(c) = endwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
             end if
          end do
       end do

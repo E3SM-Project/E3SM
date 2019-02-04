@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 class EnvMachPes(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_mach_pes.xml", components=None):
+    def __init__(self, case_root=None, infile="env_mach_pes.xml", components=None, read_only=False):
         """
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
         self._components = components
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
-        EnvBase.__init__(self, case_root, infile, schema=schema)
+        EnvBase.__init__(self, case_root, infile, schema=schema, read_only=read_only)
 
     def add_comment(self, comment):
         if comment is not None:

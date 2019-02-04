@@ -24,7 +24,6 @@ module dlnd_shr_mod
   !--------------------------------------------------------------------------
 
   ! input namelist variables
-  character(CL) , public :: decomp                ! decomp strategy
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
   logical       , public :: force_prognostic_true ! if true set prognostic true
@@ -35,63 +34,51 @@ module dlnd_shr_mod
   character(CL) , public :: rest_file_strm        ! restart filename for streams
   character(CL) , public :: datamode              ! mode
   character(len=*), public, parameter :: nullstr = 'undefined'
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  subroutine dlnd_shr_read_namelists(mpicom, my_task, master_task, &
-       inst_index, inst_suffix, inst_name, &
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CONTAINS
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  subroutine dlnd_shr_read_namelists(filename, mpicom, my_task, master_task, &
        logunit, SDLND, lnd_present, lnd_prognostic)
 
     ! !DESCRIPTION: Read in dlnd namelists
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
+    character(len=*)       , intent(in)    :: filename          ! input namelist filename
     integer(IN)            , intent(in)    :: mpicom            ! mpi communicator
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
-    integer                , intent(in)    :: inst_index        ! number of current instance (ie. 1)
-    character(len=16)      , intent(in)    :: inst_suffix       ! char string associated with instance
-    character(len=16)      , intent(in)    :: inst_name         ! fullname of current instance (ie. "lnd_0001")
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
     type(shr_strdata_type) , intent(inout) :: SDLND
     logical                , intent(out)   :: lnd_present       ! flag
     logical                , intent(out)   :: lnd_prognostic    ! flag
 
     !--- local variables ---
-    character(CL) :: fileName    ! generic file name
-    integer(IN)   :: nunit       ! unit number
-    integer(IN)   :: ierr        ! error code
+    integer(IN)             :: nunit       ! unit number
+    integer(IN)             :: ierr        ! error code
+    character(CL)           :: decomp      ! decomp strategy - not used for NUOPC - but still needed in namelist for now
 
-    !--- formats ---
     character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
     character(*), parameter :: F0L   = "('(dlnd_comp_init) ',a, l2)"
     character(*), parameter :: F01   = "('(dlnd_comp_init) ',a,5i8)"
-    character(*), parameter :: F02   = "('(dlnd_comp_init) ',a,4es13.6)"
-    character(*), parameter :: F06   = "('(dlnd_comp_init) ',a,5l3)"
     character(*), parameter :: subName = "(shr_dlnd_read_namelists) "
     !-------------------------------------------------------------------------------
 
     !----- define namelist -----
-    namelist / dlnd_nml / &
-         decomp, restfilm, restfils, force_prognostic_true, domain_fracname
-
-    !----------------------------------------------------------------------------
-    ! Determine input filenamname
-    !----------------------------------------------------------------------------
-
-    filename = "dlnd_in"//trim(inst_suffix)
+    namelist / dlnd_nml / decomp, &
+         restfilm, restfils, force_prognostic_true, domain_fracname
 
     !----------------------------------------------------------------------------
     ! Read dlnd_in
     !----------------------------------------------------------------------------
 
-    filename   = "dlnd_in"//trim(inst_suffix)
-    decomp     = "1d"
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
     force_prognostic_true = .false.
     domain_fracname = trim(nullstr)
+
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -102,13 +89,12 @@ CONTAINS
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' decomp     = ',trim(decomp)
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
        write(logunit,F00)' domain_fracname = ',trim(domain_fracname)
     endif
-    call shr_mpi_bcast(decomp  ,mpicom,'decomp')
+
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_batch.xml"):
+    def __init__(self, case_root=None, infile="env_batch.xml", read_only=False):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
@@ -23,7 +23,7 @@ class EnvBatch(EnvBase):
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
-        super(EnvBatch,self).__init__(case_root, infile, schema=schema)
+        super(EnvBatch,self).__init__(case_root, infile, schema=schema, read_only=read_only)
 
     # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
@@ -393,7 +393,7 @@ class EnvBatch(EnvBase):
                     if " " in val:
                         try:
                             rval = eval(val)
-                        except:
+                        except Exception:
                             rval = val
                     else:
                         rval = val
@@ -435,7 +435,7 @@ class EnvBatch(EnvBase):
                 else:
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
-            except:
+            except Exception:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
 
             if prereq:
@@ -555,7 +555,7 @@ class EnvBatch(EnvBase):
             return run_args_str
         elif len(run_args_str) > 0:
             batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
-            logger.info("batch_system: {}: ".format(batch_system))
+            logger.debug("batch_system: {}: ".format(batch_system))
             if batch_system == "lsf":
                 return "{} \"all, ARGS_FOR_SCRIPT={}\"".format(batch_env_flag, run_args_str)
             else:
@@ -575,7 +575,11 @@ class EnvBatch(EnvBase):
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-                getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                try:
+                    getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                except Exception as e:
+                    # We don't want exception from the run phases getting into submit phase
+                    logger.warning("Exception from {}: {}".format(function_name, str(e)))
 
             return
 
