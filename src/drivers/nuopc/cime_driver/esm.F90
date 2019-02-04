@@ -862,7 +862,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) scmlat
 
-       ! TODO(mvertens, 2019-01-30): need to add signel column functionality 
+       ! TODO(mvertens, 2019-01-30): need to add single column functionality 
 
     endif
 
