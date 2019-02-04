@@ -99,8 +99,7 @@
 <rrtmg_temp_fix          > .true.    </rrtmg_temp_fix>
 
 <!-- Energy fixer options -->
-<l_ieflx_fix> .false.</l_ieflx_fix>
-<ieflx_opt  > 2     </ieflx_opt>
+<ieflx_opt  > 0     </ieflx_opt>
 
 
 <!-- 1850 ozone data is from Jean-Francois Lamarque -->
