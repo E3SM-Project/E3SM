@@ -15,8 +15,8 @@ module ocn_comp_mct
    use seq_cdata_mod
    use seq_infodata_mod
    use seq_timemgr_mod
-   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
-   use shr_file_mod 
+   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name
+   use shr_file_mod
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
    use shr_taskmap_mod,   only : shr_taskmap_write
@@ -87,8 +87,8 @@ module ocn_comp_mct
 
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
-   type(seq_infodata_type), pointer :: infodata   
-   type (iosystem_desc_t), pointer :: io_system 
+   type(seq_infodata_type), pointer :: infodata
+   type (iosystem_desc_t), pointer :: io_system
    integer :: ocnLogUnit ! unit number for ocn log
 
    !! MPASO Datatypes
@@ -164,8 +164,6 @@ contains
                                       averagePool, scratchPool
 
     logical :: exists
-    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
-    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
     integer(kind=c_int) :: c_comm
@@ -251,7 +249,7 @@ contains
 !   set cdata pointers
 !
 !-----------------------------------------------------------------------
-    errorCode = 0 
+    errorCode = 0
 
     call seq_cdata_setptrs(cdata_o, ID=OCNID, mpicom=mpicom_o, &
          gsMap=gsMap_o, dom=dom_o, infodata=infodata)
@@ -264,7 +262,7 @@ contains
 #if (defined _MEMTRACE)
     if(iam == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','ocn_init_mct:start::',lbnum) 
+        call memmon_dump_fort('memmon.out','ocn_init_mct:start::',lbnum)
     endif
 #endif
 
@@ -273,7 +271,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   initialize the model run 
+!   initialize the model run
 !
 !-----------------------------------------------------------------------
 
@@ -323,42 +321,20 @@ contains
 
     ! Identify SMP nodes and process/SMP mapping for this instance
     ! (Assume that processor names are SMP node names on SMP clusters.)
+    call MPI_comm_size(mpicom_o,npes,ierr)
+    write(c_npes,'(i8)') npes
+
     inst_index = seq_comm_inst(ocnID)
     write(c_inst_index,'(i8)') inst_index
 
-    if (info_taskmap_comp > 0) then
-
-       no_taskmap_output = .false.
-
-       if (info_taskmap_comp == 1) then
-          verbose_taskmap_output = .false.
-       else
-          verbose_taskmap_output = .true.
-       endif
-
-       call MPI_comm_size(mpicom_o,npes,ierr)
-       write(c_npes,'(i8)') npes
-
-       if (iam==0) then
-          write(ocnLogUnit,'(/,3A)') &
-             trim(adjustl(c_npes)), &
-             ' pes participating in computation of MPAS-OCEAN instance #', &
-             trim(adjustl(c_inst_index))
-          call shr_sys_flush(ocnLogUnit)
-       endif
-
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
-
+    if (iam==0) then
+       write(ocnLogUnit,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
+100    format(/,a,' pes participating in computation of MPAS-OCEAN instance #',a)
+       call flush(ocnLogUnit)
     endif
 
     call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(ocnLogUnit, mpicom_o,                 &
-                           'OCN #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
+    call shr_taskmap_write(ocnLogUnit, mpicom_o, 'OCN #'//trim(adjustl(c_inst_index)))
     call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MPASO core and domain types
@@ -587,7 +563,7 @@ contains
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_START_TIME, ierr)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr)
     end if
-    ! Doublecheck that clocks are synced here.  
+    ! Doublecheck that clocks are synced here.
     ! (Note that if this is an initial run, a section below will advance the ocean clock
     ! by one coupling interval, at which point we expect the clocks to be OUT of sync.)
     call check_clocks_sync(domain % clock, Eclock, ierr)
@@ -605,15 +581,15 @@ contains
 
     ! Initialize mct ocn domain (needs ocn initialization info)
     call ocn_domain_mct( lsize, gsMap_o, dom_o )
-    
+
     ! Inialize mct attribute vectors
-    
+
     call mct_aVect_init(x2o_o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o_o)
-    
-    call mct_aVect_init(o2x_o, rList=seq_flds_o2x_fields, lsize=lsize) 
+
+    call mct_aVect_init(o2x_o, rList=seq_flds_o2x_fields, lsize=lsize)
     call mct_aVect_zero(o2x_o)
-    
+
     nsend = mct_avect_nRattr(o2x_o)
     nrecv = mct_avect_nRattr(x2o_o)
 
@@ -668,54 +644,6 @@ contains
     call mpas_add_clock_alarm(domain % clock, coupleAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
     call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
-    ! Build forcing arrays.
-    block_ptr => domain % blocklist
-    do while(associated(block_ptr))
-        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-
-        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
-        call mpas_timer_start("land_ice_build_arrays", .false.)
-        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
-                                                      forcingPool, scratchPool, statePool, dt, ierr)
-        call mpas_timer_stop("land_ice_build_arrays")
-
-        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
-
-        block_ptr => block_ptr % next
-    end do
-
-    currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    call mpas_log_write( 'Initial time '//trim(timeStamp))
-
-    ! read initial data required for variable shortwave
-    call mpas_timer_start('io_shortwave',.false.)
-    call ocn_get_shortWaveData(domain_ptr % streamManager, domain, domain % clock, .true.)
-    call mpas_timer_stop('io_shortwave')
-
-    ! read initial data required for ecosys forcing
-    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
-    if (config_use_ecosysTracers) then
-        call mpas_timer_start('io_ecosys',.false.)
-        call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
-        call mpas_timer_stop('io_ecosys')
-    endif
-
-    ! read initial data required for monthly surface salinity restoring
-    call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
-                                                 config_use_activeTracers_surface_restoring)
-    call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
-                                                 config_use_surface_salinity_monthly_restoring)
-    if (config_use_activeTracers_surface_restoring .and.  config_use_surface_salinity_monthly_restoring) then
-        call mpas_timer_start('io_monthly_surface_salinity',.false.)
-        call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
-        call mpas_timer_stop('io_monthly_surface_salinity')
-    endif
-
     ! Setup clock for initial runs
     if ( runtype == 'initial' ) then
        ! Advance clock one coupling interval to be in sync with the coupler clock.
@@ -764,7 +692,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ocn_export_mct(o2x_o, errorCode)  
+    call ocn_export_mct(o2x_o, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('ERROR in ocn_export_mct', MPAS_LOG_CRIT)
     endif
@@ -789,16 +717,64 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   get initial state from driver
+!   get intial state from driver
 !
 !-----------------------------------------------------------------------
 
     timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
     call mpas_get_timeInterval(timeStep, dt=dt)
 
-    call ocn_import_mct(x2o_o, errorCode)  
+    call ocn_import_mct(x2o_o, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
+    endif
+
+    ! Build forcing arrays.
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+
+        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
+        call mpas_timer_start("land_ice_build_arrays", .false.)
+        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+                                                      forcingPool, scratchPool, statePool, dt, ierr)
+        call mpas_timer_stop("land_ice_build_arrays")
+
+        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+
+        block_ptr => block_ptr % next
+    end do
+
+    currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+    call mpas_log_write( 'Initial time '//trim(timeStamp))
+
+    ! read initial data required for variable shortwave
+    call mpas_timer_start('io_shortwave',.false.)
+    call ocn_get_shortWaveData(domain_ptr % streamManager, domain, domain % clock, .true.)
+    call mpas_timer_stop('io_shortwave')
+
+    ! read initial data required for ecosys forcing
+    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+    if (config_use_ecosysTracers) then
+        call mpas_timer_start('io_ecosys',.false.)
+        call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_ecosys')
+    endif
+
+    ! read initial data required for monthly surface salinity restoring
+    call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                 config_use_activeTracers_surface_restoring)
+    call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                 config_use_surface_salinity_monthly_restoring)
+    if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
+        call mpas_timer_start('io_monthly_surface_salinity',.false.)
+        call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_monthly_surface_salinity')
     endif
 
     itimestep = 0
@@ -816,7 +792,7 @@ contains
 #if defined (_MEMTRACE)
     if(iam  == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','ocn_init_mct:end::',lbnum) 
+        call memmon_dump_fort('memmon.out','ocn_init_mct:end::',lbnum)
         call memmon_reset_addr()
     endif
 #endif
@@ -889,7 +865,7 @@ contains
 #ifdef MPAS_DEBUG
       debugOn = .true.
 #endif
- 
+
       domain_ptr => domain
 
       ! Set MPAS Log module instance
@@ -937,6 +913,16 @@ contains
       do while (.not. mpas_is_alarm_ringing(domain_ptr % clock, coupleAlarmID, ierr=ierr))
          call mpas_stream_mgr_read(domain_ptr % streamManager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain_ptr % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+         itimestep = itimestep + 1
+         call mpas_advance_clock(domain_ptr % clock)
+
+         currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+         ! write time stamp at every step
+         call mpas_dmpar_get_time(current_wallclock_time)
+         write (WCstring,'(F18.3)') current_wallclock_time
+         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
          ! Build forcing arrays.
          if (debugOn) call mpas_log_write('   Building forcing arrays')
@@ -996,16 +982,6 @@ contains
             call mpas_log_write('   Finished reading forcing streams')
          endif
 
-         itimestep = itimestep + 1
-         call mpas_advance_clock(domain_ptr % clock)
-
-         currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         ! write time stamp at every step
-         call mpas_dmpar_get_time(current_wallclock_time)
-         write (WCstring,'(F18.3)') current_wallclock_time
-         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
-
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
@@ -1023,12 +999,12 @@ contains
          end do
 
          if (debugOn) call mpas_log_write('   Computing analysis members')
-         call ocn_analysis_compute(domain_ptr, ierr) 
+         call ocn_analysis_compute(domain_ptr, ierr)
          if (iam==0.and.debugOn) then
             call mpas_log_write( '   Finished computing analysis members')
             call mpas_log_write('   Preparing analysis members for restart')
          endif
-         call ocn_analysis_restart(domain_ptr, ierr) 
+         call ocn_analysis_restart(domain_ptr, ierr)
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished preparing analysis members for restart')
             call mpas_log_write('   Writing analysis member output')
@@ -1249,7 +1225,7 @@ contains
 
     integer :: i, n, lsize, gsize, ier
 
-    type (block_type), pointer :: block_ptr 
+    type (block_type), pointer :: block_ptr
     type (mpas_pool_type), pointer :: meshPool
 
     integer, dimension(:), pointer :: indexToCellID
@@ -1317,7 +1293,7 @@ contains
 
     integer        , intent(in)    :: lsize
     type(mct_gsMap), intent(in)    :: gsMap_o
-    type(mct_ggrid), intent(inout) :: dom_o     
+    type(mct_ggrid), intent(inout) :: dom_o
 
 !EOP
 !BOC
@@ -1368,19 +1344,19 @@ contains
 
 !-------------------------------------------------------------------
 !
-! Determine domain 
+! Determine domain
 ! Initialize attribute vector with special value
 !
 !-------------------------------------------------------------------
 
-    data(:) = -9999.0_R8 
-    call mct_gGrid_importRAttr(dom_o,"lat"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"lon"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"area" ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"aream",data,lsize) 
-    data(:) = 1.0_R8     
-    call mct_gGrid_importRAttr(dom_o,"mask",data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"frac",data,lsize) 
+    data(:) = -9999.0_R8
+    call mct_gGrid_importRAttr(dom_o,"lat"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"lon"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"area" ,data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"aream",data,lsize)
+    data(:) = 1.0_R8
+    call mct_gGrid_importRAttr(dom_o,"mask",data,lsize)
+    call mct_gGrid_importRAttr(dom_o,"frac",data,lsize)
 
 !-------------------------------------------------------------------
 !
@@ -1401,10 +1377,10 @@ contains
           n = n + 1
           data(n) = lonCell(i) * r2d
        end do
-       
+
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_o,"lon",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"lon",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1421,7 +1397,7 @@ contains
        end do
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_o,"lat",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"lat",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1439,7 +1415,7 @@ contains
        end do
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_o,"area",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"area",data,lsize)
 
     ! Build mask and frac based on landIceMask
     block_ptr => domain % blocklist
@@ -1468,8 +1444,8 @@ contains
        block_ptr => block_ptr % next
     end do
 
-    call mct_gGrid_importRattr(dom_o,"mask",data,lsize) 
-    call mct_gGrid_importRattr(dom_o,"frac",data,lsize) 
+    call mct_gGrid_importRattr(dom_o,"mask",data,lsize)
+    call mct_gGrid_importRattr(dom_o,"frac",data,lsize)
 
     deallocate(data)
     deallocate(idata)
@@ -1492,7 +1468,7 @@ contains
 !  This routine receives message from cpl7 driver
 !
 !    The following fields are always received from the coupler:
-! 
+!
 !    o  taux   -- zonal wind stress (taux)                 (W/m2   )
 !    o  tauy   -- meridonal wind stress (tauy)             (W/m2   )
 !    o  snow   -- water flux due to snow                   (kg/m2/s)
@@ -1508,15 +1484,15 @@ contains
 !    o  ifrac  -- ice fraction                             (%)
 !    o  rofl   -- river runoff flux                        (kg/m2/s)
 !    o  rofi   -- ice runoff flux                          (kg/m2/s)
-! 
+!
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
-! 
+!
 !    o  pbot   -- bottom atm pressure                      (Pa)
 !    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
 !    o  co2prog-- bottom atm level prognostic co2
 !    o  co2diag-- bottom atm level diagnostic co2
-! 
+!
 !-----------------------------------------------------------------------
 !
 ! !REVISION HISTORY:
@@ -1542,9 +1518,11 @@ contains
    character (len=StrKIND) ::   &
       label,                 &
       message
- 
+
    integer ::  &
       i,n
+
+   integer, pointer :: indexIT, indexIS
 
    logical, pointer :: config_use_ecosysTracers, &
                        config_use_ecosysTracers_sea_ice_coupling, &
@@ -1597,10 +1575,16 @@ contains
                                   iceFluxDOCrField, &
                                   iceFluxFeParticulateField, &
                                   iceFluxFeDissolvedField, &
-                                  iceFluxDustField
+                                  iceFluxDustField, &
+                                  landIceFreshwaterFluxField, &
+                                  landIceHeatFluxField, &
+                                  landIceFractionField
+                                  !landIcePressureField
 
    type (field2DReal), pointer :: iceFluxPhytoCField, &
                                   iceFluxDOCField
+
+   type (field2DReal), pointer :: landIceInterfaceTracersField
 
    real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional, &
                                                latentHeatFlux, sensibleHeatFlux, &
@@ -1625,7 +1609,11 @@ contains
                                                iceFluxDOCr, &
                                                iceFluxFeParticulate, &
                                                iceFluxFeDissolved, &
-                                               iceFluxDust
+                                               iceFluxDust, &
+                                               landIceFreshwaterFlux, &
+                                               landIceHeatFlux, &
+                                               landIceFraction
+                                               !landIcePressure
 
    real (kind=RKIND), dimension(:), pointer :: latCell
 
@@ -1635,9 +1623,11 @@ contains
    real (kind=RKIND) :: removedRiverRunoffFluxThisProc, removedIceRunoffFluxThisProc
    real (kind=RKIND) :: removedRiverRunoffFluxReduced, removedIceRunoffFluxReduced
 
-!----------------------------------------------------------------------- 
+   real (kind=RKIND), dimension(:,:), pointer :: landIceInterfaceTracers
+
+!-----------------------------------------------------------------------
 !
-!  zero out padded cells 
+!  zero out padded cells
 !
 !-----------------------------------------------------------------------
 
@@ -1698,6 +1688,15 @@ contains
       call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFluxField)
 
+      call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+      call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
+      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+
+   !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
+
       windStressZonal => windStressZonalField % array
       windStressMeridional => windStressMeridionalField % array
       latentHeatFlux => latentHeatFluxField % array
@@ -1721,6 +1720,11 @@ contains
       iceRunoffFlux => iceRunoffFluxField % array
       removedRiverRunoffFlux => removedRiverRunoffFluxField % array
       removedIceRunoffFlux => removedIceRunoffFluxField % array
+      landIceFreshwaterFlux => landIceFreshwaterFluxField % array
+      landIceHeatFlux => landIceHeatFluxField % array
+      landIceInterfaceTracers => landIceInterfaceTracersField % array
+      landIceFraction => landIceFractionField % array
+      !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
@@ -1869,6 +1873,23 @@ contains
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
         end if
 
+        if ( landIceFreshwaterFluxField % isActive ) then
+           !landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
+        end if
+        if ( landIceHeatFluxField % isActive ) then
+           !landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
+        end if
+        if ( landIceInterfaceTracersField % isActive ) then
+           !landIceInterfaceTracers(indexIT, i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
+           !landIceInterfaceTracers(indexIS, i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
+        end if
+        if ( landIceFractionField % isActive ) then
+           !landIceFraction(i) = x2o_o % rAttr(index_x2o_Sg_icemask, n)
+        end if
+        !if ( landIcePressureField % isActive ) then
+           !landIcePressure(i) = x2o_o % rAttr(index_x2o_Sg_lithop, n)
+        !end if
+
         ! BGC fields
         if (config_use_ecosysTracers) then
            if ( windSpeedSquared10mField % isActive ) then
@@ -1953,7 +1974,7 @@ contains
               iceFluxDMS(i) = x2o_o % rAttr(index_x2o_Fioi_dms, n)
            endif
            if ( iceFluxDMSPField % isActive ) then
-              !JW TODO: dmspp? dmspd? the sum? 
+              !JW TODO: dmspp? dmspd? the sum?
               iceFluxDMSP(i) = x2o_o % rAttr(index_x2o_Fioi_dmspp, n)
            endif
          endif
@@ -1985,6 +2006,14 @@ contains
    call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
    call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
    call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
+
+   call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
+   call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+   call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+   call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
+   call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+   !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
 
    ! BGC fields
    if (config_use_ecosysTracers) then
@@ -2077,6 +2106,22 @@ contains
    if ( iceFractionField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceFractionField)
    end if
+
+   if ( landIceFreshwaterFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
+   end if
+   if ( landIceHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)
+   end if
+   if ( landIceInterfaceTracersField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceInterfaceTracersField)
+   end if
+   if ( landIceFractionField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceFractionField)
+   end if
+!   if ( landIcePressureField % isActive ) then
+!      call mpas_dmpar_exch_halo_field(landIcePressureField)
+!   end if
 
    ! BGC fields
    if (config_use_ecosysTracers) then
@@ -2192,6 +2237,8 @@ contains
    integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
                        index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity
 
+   integer, pointer :: indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
+
    type (block_type), pointer :: block_ptr
 
    type (mpas_pool_type), pointer :: meshPool,             &
@@ -2199,6 +2246,7 @@ contains
                                      statePool,            &
                                      tracersPool,          &
                                      ecosysAuxiliary,      &
+                                     diagnosticsPool,      &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling
@@ -2218,10 +2266,12 @@ contains
                                                avgOceanSurfaceDOCr, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
- 
+
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
+
+   real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2231,6 +2281,8 @@ contains
                        config_use_DMSTracers_sea_ice_coupling,  &
                        config_use_MacroMoleculesTracers_sea_ice_coupling
 
+   character (len=StrKIND), pointer :: config_land_ice_flux_mode
+
    logical :: keepFrazil
 
    errorcode = 0
@@ -2238,6 +2290,7 @@ contains
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+   call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
@@ -2253,6 +2306,7 @@ contains
      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+     call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -2311,6 +2365,20 @@ contains
 !    call mpas_pool_get_array(forcingPool, 'CO2Flux', CO2Flux)
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
+
+!JW     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerTemperature',landIceBoundaryLayerTemperature)
+!JW     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerSalinity',landIceBoundaryLayerSalinity)
+!JW     call mpas_pool_get_array(diagnosticsPool,'landIceHeatTransferVelocity',landIceHeatTransferVelocity)
+!JW     call mpas_pool_get_array(diagnosticsPool,'landIceSaltTransferVelocity',landIceSaltTransferVelocity)
+!     call mpas_pool_get_array(diagnosticsPool,'effectiveDensityInLandIce',effectiveDensityInLandIce)
+     if ( trim(config_land_ice_flux_mode) .ne. 'off' ) then
+        call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
+        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
+        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
+        call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
+        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
+        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceSaltTransferVelocity', indexSaltTrans)
+     endif
 
      do i = 1, nCellsSolve
        n = n + 1
@@ -2378,6 +2446,32 @@ contains
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
+
+!JW       o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
+!JW       o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)
+!JW       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
+!JW       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
+ 
+       if ( trim(config_land_ice_flux_mode) .ne. 'off' ) then
+          o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
+          o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
+          o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
+          o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
+          o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
+       endif
+
+       !Fyke: test
+       !write(stderrUnit,*) 'n=',n
+       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_blt, n)=',o2x_o % rAttr(index_o2x_So_blt, n)
+       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_bls, n)=',o2x_o % rAttr(index_o2x_So_bls, n)
+       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_htv, n)=',o2x_o % rAttr(index_o2x_So_htv, n)
+       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_stv, n)=',o2x_o % rAttr(index_o2x_So_stv, n)
+       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_rhoeff, n)=',o2x_o % rAttr(index_o2x_So_rhoeff, n)
+       !o2x_o % rAttr(index_o2x_So_blt, n) = 0._r8
+       !o2x_o % rAttr(index_o2x_So_bls, n) = 34.5_r8
+       !o2x_o % rAttr(index_o2x_So_htv, n) = 1.e-4_r8
+       !o2x_o % rAttr(index_o2x_So_stv, n) = 3.e-6_r8
+       !o2x_o % rAttr(index_o2x_So_rhoeff, n) = 1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
 
      end do
 
@@ -2475,7 +2569,7 @@ contains
       else
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
-     
+
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
