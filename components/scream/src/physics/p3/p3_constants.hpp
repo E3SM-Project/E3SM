@@ -15,8 +15,8 @@ namespace p3 {
 template <typename Scalar>
 struct Constants
 {
-  static constexpr Scalar INV_RHOW = 1.e-3;
   static constexpr Scalar RHOW     = 997.0;
+  static constexpr Scalar INV_RHOW = 1.0/RHOW;
   static constexpr Scalar THIRD    = 1.0/3.0;
   static constexpr Scalar SXTH     = 1.0/6.0;
   static constexpr Scalar PI       = 3.14159265;
