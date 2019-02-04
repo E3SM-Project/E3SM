@@ -12,6 +12,9 @@ namespace p3 {
  * Functions is a stateless struct used to encapsulate a
  * number of functions for p3. We use the ETI pattern for
  * these functions.
+ *
+ * P3 assumptions:
+ *  - Kokkos team policies have a vector length of 1
  */
 
 template <typename ScalarT, typename DeviceT>
