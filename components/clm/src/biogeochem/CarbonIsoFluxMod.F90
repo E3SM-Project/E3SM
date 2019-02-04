@@ -377,7 +377,7 @@ contains
       ! For later clean-up, it would be possible to generalize this function to operate on a single 
       ! patch-to-column flux.
 
-      call CNCIsoLitterToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars)
+      call CNCIsoLitterToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars, isocol_cf, isoveg_cf)
 
       if (.not. is_active_betr_bgc) then
 
@@ -558,7 +558,7 @@ contains
     ! call routine to shift patch-level gap mortality fluxes to column , for isotopes
     ! the non-isotope version of this routine is in GapMortalityMod.F90.
 
-    call CNCIsoGapPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars)
+    call CNCIsoGapPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars, isocol_cf, isoveg_cf)
 
   end subroutine CarbonIsoFlux2
 
@@ -708,7 +708,7 @@ contains
     ! call routine to shift patch-level gap mortality fluxes to column, for isotopes
     ! the non-isotope version of this routine is in GapMortalityMod.F90.
 
-    call CNCIsoHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars)
+    call CNCIsoHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars, isotopeflux_vars, isocol_cf, isoveg_cf)
 
   end subroutine CarbonIsoFlux2h
 
@@ -918,7 +918,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNCIsoLitterToColumn (num_soilc, filter_soilc, &
-       cnstate_vars, carbonflux_vars)
+       cnstate_vars, carbonflux_vars, col_cf, veg_cf)
     !
     ! !DESCRIPTION:
     ! called at the end of cn_phenology to gather all patch-level litterfall fluxes
@@ -929,6 +929,8 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)     , intent(in)    :: cnstate_vars
     type(carbonflux_type)  , intent(inout) :: carbonflux_vars
+     type(column_carbon_flux), intent(inout) :: col_cf
+     type(vegetation_carbon_flux), intent(inout) :: veg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: fc,c,pi,p,j
@@ -991,7 +993,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine CNCIsoGapPftToColumn (num_soilc, filter_soilc, &
-        cnstate_vars, carbonflux_vars)
+        cnstate_vars, carbonflux_vars, col_cf, veg_cf)
      !
      ! !DESCRIPTION:
      ! gather all patch-level gap mortality fluxes
@@ -1002,6 +1004,8 @@ contains
      integer               , intent(in)    :: filter_soilc(:)   ! soil column filter
      type(cnstate_type)    , intent(in)    :: cnstate_vars
      type(carbonflux_type) , intent(inout) :: carbonflux_vars
+     type(column_carbon_flux), intent(inout) :: col_cf
+     type(vegetation_carbon_flux), intent(inout) :: veg_cf
      !
      ! !LOCAL VARIABLES:
      integer :: fc,c,pi,p,j               ! indices
@@ -1136,7 +1140,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine CNCIsoHarvestPftToColumn (&
         num_soilc, filter_soilc, &
-        cnstate_vars, carbonflux_vars)
+        cnstate_vars, carbonflux_vars, col_cf, veg_cf)
      !
      ! !DESCRIPTION:
      ! gather all patch-level harvest mortality fluxes
@@ -1147,6 +1151,8 @@ contains
      integer               , intent(in)    :: filter_soilc(:)   ! soil column filter
      type(cnstate_type)    , intent(in)    :: cnstate_vars
      type(carbonflux_type) , intent(inout) :: carbonflux_vars
+     type(column_carbon_flux), intent(inout) :: col_cf
+     type(vegetation_carbon_flux), intent(inout) :: veg_cf
      !
      ! !LOCAL VARIABLES:
      integer :: fc,c,pi,p,j               ! indices

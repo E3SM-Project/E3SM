@@ -6102,6 +6102,7 @@ module VegetationDataType
           special_patch(num_special_patch) = p
        end if
     end do
+    
     call this%SetValues (num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
    
   end subroutine veg_cf_init
@@ -6260,7 +6261,7 @@ module VegetationDataType
   subroutine veg_cf_summary(this, bounds, num_soilp, filter_soilp, isotope, col_cf_input)
     !
     ! !DESCRIPTION:
-    ! On the radiation time step, perform patch and column-level carbon summary calculations
+    ! patch-level carbon flux summary calculations
     !
     ! !USES:
     !

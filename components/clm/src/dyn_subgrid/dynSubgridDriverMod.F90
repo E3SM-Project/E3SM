@@ -39,7 +39,7 @@ module dynSubgridDriverMod
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
 
-  use ColumnDataType      , only : column_carbon_state
+  use ColumnDataType      , only : column_carbon_state, col_cf
   use VegetationDataType  , only : vegetation_carbon_state
 
   !
@@ -321,7 +321,7 @@ contains
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               carbonflux_vars, col_cs)
+               carbonflux_vars, col_cs, col_cf)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &

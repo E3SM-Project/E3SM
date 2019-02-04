@@ -132,15 +132,18 @@ contains
 
     call carbonflux_vars%SetValues(&
           num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+    call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
     call veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     if ( use_c13 ) then
        call c13_carbonflux_vars%SetValues(&
              num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+       call c13_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
        call c13_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     end if
     if ( use_c14 ) then
        call c14_carbonflux_vars%SetValues(&
              num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+       call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
        call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     end if
 
@@ -388,7 +391,7 @@ contains
          if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               carbonflux_vars%somhr_col(c) = carbonflux_vars%somhr_col(c) + &
+               col_cf%somhr(c) = col_cf%somhr(c) + &
                     carbonflux_vars%decomp_cascade_hr_col(c,k)
             end do
          end if
@@ -401,7 +404,7 @@ contains
          if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               carbonflux_vars%lithr_col(c) = carbonflux_vars%lithr_col(c) + &
+               col_cf%lithr(c) = col_cf%lithr(c) + &
                     carbonflux_vars%decomp_cascade_hr_col(c,k)
             end do
          end if
@@ -412,9 +415,9 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        
-          carbonflux_vars%hr_col(c) = &
-               carbonflux_vars%lithr_col(c) + &
-               carbonflux_vars%somhr_col(c)
+          col_cf%hr(c) = &
+               col_cf%lithr(c) + &
+               col_cf%somhr(c)
        
     end do
 
