@@ -4356,6 +4356,7 @@ contains
     km_plant_no3         => veg_vp%km_plant_no3            , &
     km_plant_p           => veg_vp%km_plant_p              , &
     km_minsurf_p_vr      => veg_vp%km_minsurf_p_vr         , &
+    vmax_minsurf_p_vr    => veg_vp%vmax_minsurf_p_vr       , &
     decompmicc_patch_vr  => veg_vp%decompmicc_patch_vr     , &
     frootc               => carbonstate_vars%frootc_patch  , &
     t_scalar             => carbonflux_vars%t_scalar_col   , &
@@ -4376,7 +4377,8 @@ contains
     den_eff_ncompet_b_vr_col => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
     km_nit_nh4_vr_col => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
     km_den_no3_vr_col => PlantMicKinetics_vars%km_den_no3_vr_col, &
-    km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col  &
+    km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
+    vmax_minsurf_p_vr_col => PlantMicKinetics_vars%vmax_minsurf_p_vr_col &
   )
 
    do j = 1, nlevdecomp
@@ -4420,6 +4422,7 @@ contains
          km_den_no3_vr_col(c,j)=km_den
          !watch out how sorption-desorption is done
          km_minsurf_p_vr_col(c,j)=km_minsurf_p_vr(isoilorder(c),j)
+         vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
     enddo
   enddo
   end associate

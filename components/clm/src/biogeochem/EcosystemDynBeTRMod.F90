@@ -446,6 +446,38 @@ module EcosystemDynBeTRMod
                cnstate_vars)
        end if
 
+       call t_startf('PhosphorusWeathering')
+       call PhosphorusWeathering(num_soilc, filter_soilc, &
+       cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusWeathering')
+
+       call t_startf('PhosphorusAdsportion')
+       call PhosphorusAdsportion(num_soilc, filter_soilc, &
+            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusAdsportion')
+
+       call t_startf('PhosphorusDesoprtion')
+       call PhosphorusDesoprtion(num_soilc, filter_soilc, &
+            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusDesoprtion')
+
+       call t_startf('PhosphorusOcclusion')
+       call PhosphorusOcclusion(num_soilc, filter_soilc, &
+             cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusOcclusion')
+
+       !-----------------------------------------------------------------------
+       ! in type 1 bgc, leaching will be done in betr, evenutally.
+       call t_startf('NitrogenLeaching')
+       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+       call t_stopf('NitrogenLeaching')
+
+       call t_startf('PhosphorusLeaching')
+       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+       call t_stopf('PhosphorusLeaching')
+
   end subroutine CNEcosystemDynBeTR0
 
   !-----------------------------------------------------------------------
@@ -847,6 +879,38 @@ module EcosystemDynBeTRMod
                cnstate_vars)
        end if
 
+       call t_startf('PhosphorusWeathering')
+       call PhosphorusWeathering(num_soilc, filter_soilc, &
+       cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusWeathering')
+
+       call t_startf('PhosphorusAdsportion')
+       call PhosphorusAdsportion(num_soilc, filter_soilc, &
+            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusAdsportion')
+
+       call t_startf('PhosphorusDesoprtion')
+       call PhosphorusDesoprtion(num_soilc, filter_soilc, &
+            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusDesoprtion')
+
+       call t_startf('PhosphorusOcclusion')
+       call PhosphorusOcclusion(num_soilc, filter_soilc, &
+             cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       call t_stopf('PhosphorusOcclusion')
+
+       !-----------------------------------------------------------------------
+       ! in type 1 bgc, leaching will be done in betr, evenutally.
+       call t_startf('NitrogenLeaching')
+       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+       call t_stopf('NitrogenLeaching')
+
+       call t_startf('PhosphorusLeaching')
+       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+       call t_stopf('PhosphorusLeaching')
+
   end subroutine CNEcosystemDynBeTR1
   !-----------------------------------------------------------------------
   subroutine CNEcosystemDynBeTR2(bounds,                             &
@@ -1059,7 +1123,7 @@ module EcosystemDynBeTRMod
        ! CNphenology needs to be called after CNdecompAlloc, because it
        ! depends on current time-step fluxes to new growth on the last
        ! litterfall timestep in deciduous systems
-!       if(get_nstep()/=23)then
+
        call t_startf('CNPhenology')
        call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
@@ -1068,17 +1132,16 @@ module EcosystemDynBeTRMod
             nitrogenstate_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)!, litfall_on=(get_nstep()/=23))
        call t_stopf('CNPhenology')
-!       endif
 
       !--------------------------------------------
        ! Growth respiration
        !--------------------------------------------
-!       if(get_nstep()/=23)then
+
        call t_startf('CNGResp')
        call GrowthResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('CNGResp')
-!       endif
+
        call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
 
        if(use_c13) then
@@ -1126,7 +1189,7 @@ module EcosystemDynBeTRMod
        !--------------------------------------------
        ! Update1
        !--------------------------------------------
-!       if(get_nstep()/=23)then
+
        call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
            num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
            carbonflux_vars, carbonstate_vars, &
@@ -1138,7 +1201,6 @@ module EcosystemDynBeTRMod
 
        call CNLitterToColumn(num_soilc, filter_soilc, &
          cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
-!       endif
 
        call t_startf('CNUpdate1')
 
@@ -1173,18 +1235,17 @@ module EcosystemDynBeTRMod
 
        call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc1')
 
        call t_stopf('CNUpdate1')
-!       if(get_nstep()/=23)then
+
        call t_startf('CNGapMortality')
-!       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+
        call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, &
             carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars )
        call t_stopf('CNGapMortality')
-!       endif
+
        !--------------------------------------------
        ! Update2
        !--------------------------------------------
@@ -1221,15 +1282,11 @@ module EcosystemDynBeTRMod
 
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc2')
-!       print*,'after update2'
-!       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-!       if(get_nstep()/=23)then
+
        if (get_do_harvest()) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
                phosphorusstate_vars, phosphorusflux_vars)
-!       end if
        endif
        if ( use_c13 ) then
           call CarbonIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -1261,8 +1318,7 @@ module EcosystemDynBeTRMod
        call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             phosphorusflux_vars, phosphorusstate_vars)
 
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc3')
-!       if(get_nstep()/=3)then
+
        call WoodProducts(num_soilc, filter_soilc, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars,&
@@ -1272,18 +1328,16 @@ module EcosystemDynBeTRMod
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
             phosphorusstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
             nitrogenflux_vars, phosphorusflux_vars)
-!       endif
+
 
        call FireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
             cnstate_vars, carbonstate_vars)
-!       print*,'bf fire'
-!       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-!       if(get_nstep()/=3)then
+
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
-!       endif
+
        call t_stopf('CNUpdate2')
 
        !--------------------------------------------
@@ -1328,17 +1382,14 @@ module EcosystemDynBeTRMod
        call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
        call t_stopf('CNUpdate3')
-!       print*,'af fire'
-!       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
        call t_startf('PUpdate3')
        call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
        call t_stopf('PUpdate3')
-!       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'loc4')
 
     endif
-!    call carbonflux_vars%summary_cflux_for_betr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+
   end subroutine CNEcosystemDynBeTR2
 
 
@@ -1518,39 +1569,8 @@ module EcosystemDynBeTRMod
 
     ! only do if ed is off
     if( .not. use_fates) then
-       call t_startf('PhosphorusWeathering')
-       call PhosphorusWeathering(num_soilc, filter_soilc, &
-            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('PhosphorusWeathering')
-
-       call t_startf('PhosphorusAdsportion')
-       call PhosphorusAdsportion(num_soilc, filter_soilc, &
-            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('PhosphorusAdsportion')
-
-       call t_startf('PhosphorusDesoprtion')
-       call PhosphorusDesoprtion(num_soilc, filter_soilc, &
-            cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('PhosphorusDesoprtion')
-
-       call t_startf('PhosphorusOcclusion')
-       call PhosphorusOcclusion(num_soilc, filter_soilc, &
-             cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       call t_stopf('PhosphorusOcclusion')
-
-       !-----------------------------------------------------------------------
-       call t_startf('NitrogenLeaching')
-       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-       call t_stopf('NitrogenLeaching')
-
-       call t_startf('PhosphorusLeaching')
-       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-       call t_stopf('PhosphorusLeaching')
 
        call t_startf('CNUpdate3')
-
        call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
        call t_stopf('CNUpdate3')

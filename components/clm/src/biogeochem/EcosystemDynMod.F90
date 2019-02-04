@@ -113,7 +113,6 @@ contains
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
-    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance
 
     !
     ! !ARGUMENTS:
@@ -173,12 +172,6 @@ contains
                 call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
                      cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
                 call t_stopf('PhosphorusBiochemMin')
-             else
-                ! nu_com_phosphatase is true
-                !call t_startf('PhosphorusBiochemMin')
-                !call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
-                !     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-                !call t_stopf('PhosphorusBiochemMin')
              end if
        !end if
 
