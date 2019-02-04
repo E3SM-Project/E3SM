@@ -832,7 +832,7 @@ contains
 
   !finally, compute difference for FT
   ! this method is using new dp, new exner, new-new r*, new t
-  one_elem%derived%FT(:,:,:) = &
+  one_elem%derived%FTVtheta(:,:,:) = &
       (vthn1 - one_elem%state%vtheta_dp(:,:,:,n0))/dt
 
   end subroutine convert_thermo_forcing_elementwise
@@ -850,7 +850,7 @@ contains
   integer :: k,ie
   do ie=nets,nete
 
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
      elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)

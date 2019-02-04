@@ -427,7 +427,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 #ifdef MODEL_THETA_L
                   dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
                        dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f) + &
-                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k)
+                       dtime*dyn_in%elem(ie)%derived%FVTheta(i,j,k)
 #else                  
                   dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
                        dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
