@@ -101,7 +101,6 @@
 <!-- Energy fixer options -->
 <ieflx_opt  > 0     </ieflx_opt>
 
-
 <!-- 1850 ozone data is from Jean-Francois Lamarque -->
 <!-- NOTE: I don't think this is used when rad_climate uses advected O3, but I don't think it does any harm either -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
