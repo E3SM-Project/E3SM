@@ -58,6 +58,7 @@ module clm_instMod
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
   use VegetationDataType         , only : veg_cs, c13_veg_cs, c14_veg_cs
+  use VegetationDataType         , only : veg_cf, c13_veg_cf, c14_veg_cf
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -155,24 +156,19 @@ contains
     end if
     if (use_cn .or. use_fates) then
 
-       ! Note - always initialize the memory for the c13_carbonstate_vars and
-       ! c14_carbonstate_vars data structure so that they can be used in
+       ! Note - always initialize the memory for the c13_cs and
+       ! c14_cs data structure so that they can be used in
        ! associate statements (nag compiler complains otherwise)
 
-       call carbonstate_vars%Init(bounds_proc, carbon_type='c12', ratio=1._r8)
        call grc_cs%Init(begg, endg)
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
        call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
        if (use_c13) then
-          call c13_carbonstate_vars%Init(bounds_proc, carbon_type='c13', ratio=c13ratio, &
-               c12_carbonstate_vars=carbonstate_vars)
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
           call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%Init(bounds_proc, carbon_type='c14', ratio=c14ratio, &
-               c12_carbonstate_vars=carbonstate_vars)
           call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
           call c14_veg_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio)
@@ -183,11 +179,14 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call carbonflux_vars%Init(bounds_proc, carbon_type='c12')
+       call veg_cf%Init(begp, endp, carbon_type='c12')
        if (use_c13) then
           call c13_carbonflux_vars%Init(bounds_proc, carbon_type='c13')
+          call c13_veg_cf%Init(begp, endp, carbon_type='c13')
        end if
        if (use_c14) then
           call c14_carbonflux_vars%Init(bounds_proc, carbon_type='c14')
+          call c13_veg_cf%Init(begp, endp, carbon_type='c14')
        end if
     endif
 

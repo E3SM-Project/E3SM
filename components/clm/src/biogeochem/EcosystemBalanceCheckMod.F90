@@ -36,8 +36,9 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use clm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
+  use GridcellDataType    , only : gridcell_carbon_state
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_cs  
+  use ColumnDataType      , only : column_carbon_state  
   use VegetationType      , only : veg_pp
 
   !
@@ -65,7 +66,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine BeginColCBalance(bounds, num_soilc, filter_soilc, &
-       carbonstate_vars)
+       col_cs)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning carbon balance for mass
@@ -75,7 +76,7 @@ contains
     type(bounds_type)      , intent(in)    :: bounds          
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(column_carbon_state) , intent(inout) :: col_cs
     !
     ! !LOCAL VARIABLES:
     integer :: c     ! indices
@@ -175,17 +176,17 @@ contains
   !-----------------------------------------------------------------------
   subroutine ColCBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
-       carbonstate_vars, carbonflux_vars)
+       col_cs, carbonflux_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check for column and pft
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(bounds_type)         , intent(in)    :: bounds          
+    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(column_carbon_state) , intent(inout) :: col_cs
+    type(carbonflux_type)     , intent(in)    :: carbonflux_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: c,err_index    ! indices
@@ -656,21 +657,22 @@ contains
   end subroutine ColPBalanceCheck
 
   !-----------------------------------------------------------------------
-  subroutine BeginGridCBalanceBeforeDynSubgridDriver(bounds, carbonstate_vars)
+  subroutine BeginGridCBalanceBeforeDynSubgridDriver(bounds, col_cs, grc_cs)
     !
     ! !DESCRIPTION:
     ! Calculate the beginning carbon balance for mass conservation checks
     ! at grid cell level
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(bounds_type)          , intent(in)    :: bounds
+    type(column_carbon_state)  , intent(inout) :: col_cs
+    type(gridcell_carbon_state), intent(inout) :: grc_cs
     !
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         totcolc               =>  col_cs%totcolc           , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
-         begcb_grc             =>  carbonstate_vars%begcb_grc               & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         totcolc           =>  col_cs%totcolc           , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         begcb_grc         =>  grc_cs%begcb               & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
 
       call c2g( bounds = bounds, &
@@ -742,18 +744,19 @@ contains
   !-----------------------------------------------------------------------
   subroutine EndGridCBalanceAfterDynSubgridDriver(bounds, &
        num_soilc, filter_soilc, &
-       carbonstate_vars, carbonflux_vars)
+       col_cs, grc_cs, carbonflux_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check
     ! at grid level after dynamic subgrid driver has been called
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(bounds_type)          , intent(in)    :: bounds          
+    integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(column_carbon_state)  , intent(inout) :: col_cs
+    type(gridcell_carbon_state), intent(inout) :: grc_cs
+    type(carbonflux_type)      , intent(in)    :: carbonflux_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: g,err_index    ! indices
@@ -770,9 +773,9 @@ contains
          dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_cflux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_leaf_grc     =>    carbonflux_vars%dwt_seedc_to_leaf_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_deadstem_grc =>    carbonflux_vars%dwt_seedc_to_deadstem_grc , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         begcb_grc                 =>    carbonstate_vars%begcb_grc                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         endcb_grc                 =>    carbonstate_vars%endcb_grc                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         errcb_grc                 =>    carbonstate_vars%errcb_grc                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
+         begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
+         errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
          )
 
       ! set time steps

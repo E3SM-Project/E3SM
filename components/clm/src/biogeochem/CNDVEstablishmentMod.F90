@@ -110,8 +110,8 @@ contains
 
          agddtw         =>    dgvs_vars%agddtw_patch               , & ! Input:  [real(r8) (:) ]  accumulated growing degree days above twmax       
 
-         annsum_npp     =>    carbonflux_vars%annsum_npp_patch     , & ! Input:  [real(r8) (:) ]  annual sum NPP (gC/m2/yr)                         
-         annsum_litfall =>    carbonflux_vars%annsum_litfall_patch , & ! Input:  [real(r8) (:) ]  annual sum litfall (gC/m2/yr)                     
+         annsum_npp     =>    veg_cf%annsum_npp     , & ! Input:  [real(r8) (:) ]  annual sum NPP (gC/m2/yr)                         
+         annsum_litfall =>    veg_cf%annsum_litfall , & ! Input:  [real(r8) (:) ]  annual sum litfall (gC/m2/yr)                     
 
          agdd20         =>    dgvs_vars%agdd20_patch               , & ! Input:  [real(r8) (:) ]  20-yr running mean of agdd                        
          tmomin20       =>    dgvs_vars%tmomin20_patch             , & ! Input:  [real(r8) (:) ]  20-yr running mean of tmomin                      

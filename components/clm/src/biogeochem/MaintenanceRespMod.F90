@@ -125,12 +125,12 @@ contains
 
          cpool          =>    veg_cs%cpool          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
 
-         leaf_mr        =>    carbonflux_vars%leaf_mr_patch         , & ! Output: [real(r8) (:)   ]                                                    
-         froot_mr       =>    carbonflux_vars%froot_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
-         livestem_mr    =>    carbonflux_vars%livestem_mr_patch     , & ! Output: [real(r8) (:)   ]                                                    
-         livecroot_mr   =>    carbonflux_vars%livecroot_mr_patch    , & ! Output: [real(r8) (:)   ]                                                    
-         grain_mr       =>    carbonflux_vars%grain_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
-         xr             =>    carbonflux_vars%xr_patch              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
+         leaf_mr        =>    veg_cf%leaf_mr         , & ! Output: [real(r8) (:)   ]                                                    
+         froot_mr       =>    veg_cf%froot_mr        , & ! Output: [real(r8) (:)   ]                                                    
+         livestem_mr    =>    veg_cf%livestem_mr     , & ! Output: [real(r8) (:)   ]                                                    
+         livecroot_mr   =>    veg_cf%livecroot_mr    , & ! Output: [real(r8) (:)   ]                                                    
+         grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]                                                    
+         xr             =>    veg_cf%xr              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
 
          frootn         =>    nitrogenstate_vars%frootn_patch       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
          livestemn      =>    nitrogenstate_vars%livestemn_patch    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
