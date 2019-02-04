@@ -39,7 +39,6 @@ contains
   use control_mod,    only: rsplit
   use hybrid_mod,     only: hybrid_t
 
-
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout) :: elem(:)
   type (hvcoord_t)                :: hvcoord
@@ -72,6 +71,7 @@ contains
   ! hence:
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) )
   !
+  
    do ie=nets,nete
      ! update final ps_v
      elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &

@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 class EnvMachSpecific(EnvBase):
     # pylint: disable=unused-argument
     def __init__(self, caseroot=None, infile="env_mach_specific.xml",
-                 components=None, unit_testing=False):
+                 components=None, unit_testing=False, read_only=False):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
-        EnvBase.__init__(self, caseroot, infile, schema=schema)
+        EnvBase.__init__(self, caseroot, infile, schema=schema, read_only=read_only)
         self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing", "queue")
         self._unit_testing = unit_testing
 

@@ -48,7 +48,7 @@ module clm_interface_funcsMod
   use CNNitrogenFluxType    , only : nitrogenflux_type
   use CNNitrogenStateType   , only : nitrogenstate_type
 
-  use ch4Mod                , only : ch4_type
+  use CH4Mod                , only : ch4_type
 
   use PhotosynthesisType    , only : photosyns_type
   use cropType              , only : crop_type
@@ -114,7 +114,7 @@ module clm_interface_funcsMod
   ! if (use_clm_interface .and. use_clm_bgc)
   public    :: clm_bgc_run              ! STEP-2:   clm_interface_data  -> clm-bgc module -> clm_interface_data    ; called in clm_driver
   private   :: clm_bgc_get_data         ! STEP-2.1: clm_interface_data  -> clm-bgc module                          ; called in clm_bgc_run
-                                        ! STEP-2.2: run clm-bgc module                                             ; see CNDecompAlloc in CNDecompMod
+                                        ! STEP-2.2: run clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
   private   :: clm_bgc_update_data      ! STEP-2.3: clm-bgc module-> clm_interface_data                            ; called in clm_bgc_run
   public    :: update_bgc_data_clm2clm  ! STEP-3:   clm_interface_data  -> clm vars                                ; called in clm_driver
 
@@ -1314,7 +1314,7 @@ contains
 
     if (pf_cmode) then
         ! bgc_state_decomp is updated in CLM
-        ! by passing bgc_flux_decomp_sourcesink into CNSoilLittVertTransp
+        ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
         call update_bgc_flux_decomp_sourcesink(clm_bgc_data,    &
                     bounds, num_soilc, filter_soilc,            &
                     carbonflux_vars, nitrogenflux_vars,         &
@@ -1355,7 +1355,7 @@ contains
                 phosphorusstate_vars,phosphorusflux_vars)
 
     ! USES:
-    use CNDecompMod          , only: CNDecompAlloc
+    use SoilLittDecompMod          , only: SoilLittDecompAlloc
 
     ! ARGUMENTS:
     type(bounds_type)                   , intent(in)    :: bounds
@@ -1379,7 +1379,7 @@ contains
     type(clm_interface_data_type)       , intent(inout) :: clm_interface_data
 
     !-------------------------------------------------------------
-    ! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc
+    ! STEP-2: (i) pass data from clm_bgc_data to SoilLittDecompAlloc
     call clm_bgc_get_data(clm_interface_data, bounds,       &
                 num_soilc, filter_soilc,                    &
                 canopystate_vars, soilstate_vars,           &
@@ -1389,8 +1389,8 @@ contains
                 nitrogenstate_vars, nitrogenflux_vars,      &
                 phosphorusstate_vars,phosphorusflux_vars)
 
-    ! STEP-2: (ii) run CNDecompAlloc
-    call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
+    ! STEP-2: (ii) run SoilLittDecompAlloc
+    call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                num_soilp, filter_soilp,                     &
                canopystate_vars, soilstate_vars,            &
                temperature_vars, waterstate_vars,           &
@@ -1399,7 +1399,7 @@ contains
                nitrogenstate_vars, nitrogenflux_vars,       &
                phosphorusstate_vars,phosphorusflux_vars)
 
-    ! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc
+    ! STEP-2: (iii) update clm_bgc_data from SoilLittDecompAlloc
     call clm_bgc_update_data(clm_interface_data%bgc, bounds, &
                 num_soilc, filter_soilc,                     &
                 cnstate_vars, carbonflux_vars,               &
@@ -1410,7 +1410,7 @@ contains
 
 !--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  ! pass data from clm_bgc_data to clm original data-types that used by CNDecompAlloc
+  ! pass data from clm_bgc_data to clm original data-types that used by SoilLittDecompAlloc
   subroutine clm_bgc_get_data(clm_interface_data,       &
             bounds, num_soilc, filter_soilc,            &
             canopystate_vars, soilstate_vars,           &
@@ -1729,7 +1729,7 @@ contains
     character(len=256) :: subname = "update_bgc_data_clm2clm"
 
     ! bgc_state_decomp is updated in CLM
-    ! by passing bgc_flux_decomp_sourcesink into CNSoilLittVertTransp
+    ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
     call update_bgc_flux_decomp_cascade(clm_bgc_data,   &
                 bounds, num_soilc, filter_soilc,        &
                 carbonflux_vars, nitrogenflux_vars,     &

@@ -15,13 +15,18 @@ module seq_comm_mct
 !!! (or else, only accept one entry for these quantities when reading
 !!! the namelist).  ARE OTHER PROTECTIONS/CHECKS NEEDED???
 
-
-  use mct_mod     , only : mct_world_init, mct_world_clean, mct_die
-  use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
-  use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
-  use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-  use esmf        , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
-  use esmf        , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
+  use mct_mod        , only : mct_world_init, mct_world_clean, mct_die
+  use shr_sys_mod    , only : shr_sys_abort, shr_sys_flush
+  use shr_mpi_mod    , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
+  use shr_file_mod   , only : shr_file_getUnit, shr_file_freeUnit
+  ! gptl timing library is not built for unit tests but it is on
+  ! by default for Makefile (model) builds.
+#ifdef TIMING
+  use shr_taskmap_mod, only : shr_taskmap_write
+  use perf_mod       , only : t_startf, t_stopf
+#endif
+  use esmf           , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
+  use esmf           , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
 
   implicit none
 
@@ -144,9 +149,11 @@ module seq_comm_mct
   integer, public :: CPLWAVID(num_inst_wav)
   integer, public :: CPLESPID(num_inst_esp)
 
-  type(ESMF_LogKind_Flag), public :: esmf_logfile_kind
-
   integer, parameter, public :: seq_comm_namelen=16
+
+  ! taskmap output level specifications for components
+  ! (0:no output, 1:compact, 2:verbose)
+  integer, public :: info_taskmap_comp
 
   ! suffix for log and timing files if multi coupler driver
   character(len=seq_comm_namelen), public  :: cpl_inst_tag
@@ -222,6 +229,10 @@ contains
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
+    logical :: verbose_taskmap_output
+    integer :: drv_inst
+    character(len=8) :: c_drv_inst      ! driver instance number
+    character(len=8) :: c_driver_numpes ! number of pes in driver
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
@@ -233,7 +244,8 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, &
+         info_taskmap_model
 
     namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
@@ -244,7 +256,8 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
+         info_taskmap_model, info_taskmap_comp
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -312,6 +325,8 @@ contains
        call comp_pelayout_init(numpes, glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, glc_layout)
        call comp_pelayout_init(numpes, esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout)
        call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
+       info_taskmap_model = 0
+       info_taskmap_comp  = 0
 
        ! Read namelist if it exists
 
@@ -347,6 +362,52 @@ contains
     call shr_mpi_bcast(rof_layout,DRIVER_COMM,'rof_layout')
     call shr_mpi_bcast(esp_layout,DRIVER_COMM,'esp_layout')
 
+    call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
+    call shr_mpi_bcast(info_taskmap_comp, DRIVER_COMM,'info_taskmap_comp' )
+
+#ifdef TIMING
+    if (info_taskmap_model > 0) then
+       ! output task-to-node mapping
+
+       if (info_taskmap_model == 1) then
+         verbose_taskmap_output = .false.
+       else
+         verbose_taskmap_output = .true.
+       endif
+
+       if (present(drv_comm_id)) then
+          drv_inst = drv_comm_id
+          write(c_drv_inst,'(i8)') drv_inst
+       else
+          drv_inst = 0
+       endif
+
+       if (mype == 0) then
+          write(c_driver_numpes,'(i8)') numpes
+          if (drv_inst == 0) then
+             write(logunit,'(2A)') trim(adjustl(c_driver_numpes)), &
+                                   ' pes participating in computation of coupled model'
+          else
+             write(logunit,'(3A)') trim(adjustl(c_driver_numpes)), &
+                                   ' pes participating in computation of DRIVER instance #', &
+                                   trim(adjustl(c_drv_inst))
+          endif
+          call shr_sys_flush(logunit)
+       endif
+
+       call t_startf("shr_taskmap_write")
+       if (drv_inst == 0) then
+          call shr_taskmap_write(logunit, DRIVER_COMM, &
+                                 'GLOBAL', &
+                                 verbose=verbose_taskmap_output)
+       else
+          call shr_taskmap_write(logunit, DRIVER_COMM, &
+                                 'DRIVER #'//trim(adjustl(c_drv_inst)), &
+                                 verbose=verbose_taskmap_output)
+       endif
+       call t_stopf("shr_taskmap_write")
+    endif
+#endif
 
     !--- compute some other num_inst values
 

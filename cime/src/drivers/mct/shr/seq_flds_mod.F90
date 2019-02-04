@@ -129,11 +129,10 @@ module seq_flds_mod
   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
   use shr_carma_mod     , only : shr_carma_readnl
   use shr_ndep_mod      , only : shr_ndep_readnl
-  use shr_flds_mod      , only : seq_flds_dom_coord, seq_flds_dom_other
+  use shr_flds_mod      , only : seq_flds_dom_coord=>shr_flds_dom_coord, seq_flds_dom_other=>shr_flds_dom_other
 
   implicit none
   public
-  save
 
   interface seq_flds_lookup; module procedure &
        seq_flds_esmf_metadata_get
@@ -1411,6 +1410,24 @@ contains
     stdname  = 'surface_snow_melt_flux'
     units    = 'kg m-2 s-1'
     attname  = 'Fioi_meltw'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Heat flux from melting icebergs
+    call seq_flds_add(i2x_fluxes,"PFioi_bergh")
+    call seq_flds_add(x2o_fluxes,"PFioi_bergh")
+    longname = 'Heat flux from melting icebergs'
+    stdname  = 'surface_iceberg_melt_heat_flux'
+    units    = 'W m-2'
+    attname  = 'PFioi_bergh'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Water flux from melting icebergs
+    call seq_flds_add(i2x_fluxes,"PFioi_bergw")
+    call seq_flds_add(x2o_fluxes,"PFioi_bergw")
+    longname = 'Water flux due to melting icebergs'
+    stdname  = 'surface_iceberg_melt_flux'
+    units    = 'kg m-2 s-1'
+    attname  = 'PFioi_bergw'
     call metadata_set(attname, longname, stdname, units)
 
     ! Salt flux
@@ -3235,38 +3252,38 @@ contains
     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
 
     if (seq_comm_iamroot(ID)) then
-       write(logunit,"(A)") subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)
-       write(logunit,"(A)") subname//': seq_flds_a2x_fluxes= ',trim(seq_flds_a2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2a_states= ',trim(seq_flds_x2a_states)
-       write(logunit,"(A)") subname//': seq_flds_x2a_fluxes= ',trim(seq_flds_x2a_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_l2x_states= ',trim(seq_flds_l2x_states)
-       write(logunit,"(A)") subname//': seq_flds_l2x_fluxes= ',trim(seq_flds_l2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2l_states= ',trim(seq_flds_x2l_states)
-       write(logunit,"(A)") subname//': seq_flds_x2l_fluxes= ',trim(seq_flds_x2l_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_i2x_states= ',trim(seq_flds_i2x_states)
-       write(logunit,"(A)") subname//': seq_flds_i2x_fluxes= ',trim(seq_flds_i2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2i_states= ',trim(seq_flds_x2i_states)
-       write(logunit,"(A)") subname//': seq_flds_x2i_fluxes= ',trim(seq_flds_x2i_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_o2x_states= ',trim(seq_flds_o2x_states)
-       write(logunit,"(A)") subname//': seq_flds_o2x_fluxes= ',trim(seq_flds_o2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2o_states= ',trim(seq_flds_x2o_states)
-       write(logunit,"(A)") subname//': seq_flds_x2o_fluxes= ',trim(seq_flds_x2o_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_g2x_states= ',trim(seq_flds_g2x_states)
-       write(logunit,"(A)") subname//': seq_flds_g2x_fluxes= ',trim(seq_flds_g2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2g_states= ',trim(seq_flds_x2g_states)
-       write(logunit,"(A)") subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_xao_states= ',trim(seq_flds_xao_states)
-       write(logunit,"(A)") subname//': seq_flds_xao_fluxes= ',trim(seq_flds_xao_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_xao_albedo= ',trim(seq_flds_xao_albedo)
-       write(logunit,"(A)") subname//': seq_flds_xao_diurnl= ',trim(seq_flds_xao_diurnl)
-       write(logunit,"(A)") subname//': seq_flds_r2x_states= ',trim(seq_flds_r2x_states)
-       write(logunit,"(A)") subname//': seq_flds_r2x_fluxes= ',trim(seq_flds_r2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2r_states= ',trim(seq_flds_x2r_states)
-       write(logunit,"(A)") subname//': seq_flds_x2r_fluxes= ',trim(seq_flds_x2r_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_w2x_states= ',trim(seq_flds_w2x_states)
-       write(logunit,"(A)") subname//': seq_flds_w2x_fluxes= ',trim(seq_flds_w2x_fluxes)
-       write(logunit,"(A)") subname//': seq_flds_x2w_states= ',trim(seq_flds_x2w_states)
-       write(logunit,"(A)") subname//': seq_flds_x2w_fluxes= ',trim(seq_flds_x2w_fluxes)
+       write(logunit,*) subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)
+       write(logunit,*) subname//': seq_flds_a2x_fluxes= ',trim(seq_flds_a2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2a_states= ',trim(seq_flds_x2a_states)
+       write(logunit,*) subname//': seq_flds_x2a_fluxes= ',trim(seq_flds_x2a_fluxes)
+       write(logunit,*) subname//': seq_flds_l2x_states= ',trim(seq_flds_l2x_states)
+       write(logunit,*) subname//': seq_flds_l2x_fluxes= ',trim(seq_flds_l2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2l_states= ',trim(seq_flds_x2l_states)
+       write(logunit,*) subname//': seq_flds_x2l_fluxes= ',trim(seq_flds_x2l_fluxes)
+       write(logunit,*) subname//': seq_flds_i2x_states= ',trim(seq_flds_i2x_states)
+       write(logunit,*) subname//': seq_flds_i2x_fluxes= ',trim(seq_flds_i2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2i_states= ',trim(seq_flds_x2i_states)
+       write(logunit,*) subname//': seq_flds_x2i_fluxes= ',trim(seq_flds_x2i_fluxes)
+       write(logunit,*) subname//': seq_flds_o2x_states= ',trim(seq_flds_o2x_states)
+       write(logunit,*) subname//': seq_flds_o2x_fluxes= ',trim(seq_flds_o2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2o_states= ',trim(seq_flds_x2o_states)
+       write(logunit,*) subname//': seq_flds_x2o_fluxes= ',trim(seq_flds_x2o_fluxes)
+       write(logunit,*) subname//': seq_flds_g2x_states= ',trim(seq_flds_g2x_states)
+       write(logunit,*) subname//': seq_flds_g2x_fluxes= ',trim(seq_flds_g2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2g_states= ',trim(seq_flds_x2g_states)
+       write(logunit,*) subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
+       write(logunit,*) subname//': seq_flds_xao_states= ',trim(seq_flds_xao_states)
+       write(logunit,*) subname//': seq_flds_xao_fluxes= ',trim(seq_flds_xao_fluxes)
+       write(logunit,*) subname//': seq_flds_xao_albedo= ',trim(seq_flds_xao_albedo)
+       write(logunit,*) subname//': seq_flds_xao_diurnl= ',trim(seq_flds_xao_diurnl)
+       write(logunit,*) subname//': seq_flds_r2x_states= ',trim(seq_flds_r2x_states)
+       write(logunit,*) subname//': seq_flds_r2x_fluxes= ',trim(seq_flds_r2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2r_states= ',trim(seq_flds_x2r_states)
+       write(logunit,*) subname//': seq_flds_x2r_fluxes= ',trim(seq_flds_x2r_fluxes)
+       write(logunit,*) subname//': seq_flds_w2x_states= ',trim(seq_flds_w2x_states)
+       write(logunit,*) subname//': seq_flds_w2x_fluxes= ',trim(seq_flds_w2x_fluxes)
+       write(logunit,*) subname//': seq_flds_x2w_states= ',trim(seq_flds_x2w_states)
+       write(logunit,*) subname//': seq_flds_x2w_fluxes= ',trim(seq_flds_x2w_fluxes)
     end if
 
     call catFields(seq_flds_dom_fields, seq_flds_dom_coord , seq_flds_dom_other )

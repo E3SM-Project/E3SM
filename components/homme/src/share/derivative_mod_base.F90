@@ -79,6 +79,8 @@ private
   public  :: divergence_sphere_wk
   public  :: laplace_sphere_wk
   public  :: vlaplace_sphere_wk
+  public  :: vlaplace_sphere_wk_contra
+  public  :: vlaplace_sphere_wk_cartesian
 !  public  :: laplace_eta
   public  :: laplace_z
   public  :: element_boundary_integral
@@ -500,9 +502,9 @@ contains
 !DIR$ UNROLL(NP)
           do j=1,np
              ! phi(n)_y  sum over second index, 1st index fixed at m
-             dscontra(m,n,1)=dscontra(m,n,1)-(elem%mp(m,j)*s(m,j)*deriv%Dvv(n,j) )*rrearth
+             dscontra(m,n,1)=dscontra(m,n,1)-(elem%mp(m,j)*s(m,j)*deriv%Dvv(n,j) )
              ! phi(m)_x  sum over first index, second index fixed at n
-             dscontra(m,n,2)=dscontra(m,n,2)+(elem%mp(j,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
+             dscontra(m,n,2)=dscontra(m,n,2)+(elem%mp(j,n)*s(j,n)*deriv%Dvv(m,j) )
           enddo
        enddo
     enddo
@@ -510,8 +512,8 @@ contains
     ! convert contra -> latlon 
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))
-          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))
+          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))*rrearth
+          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))*rrearth
        enddo
     enddo
     end function curl_sphere_wk_testcov
@@ -564,20 +566,20 @@ contains
              dscontra(m,n,1)=dscontra(m,n,1)-(&
                   (elem%mp(j,n)*elem%metinv(m,n,1,1)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
                   (elem%mp(m,j)*elem%metinv(m,n,2,1)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
-                  ) *rrearth
+                  )
 
              dscontra(m,n,2)=dscontra(m,n,2)-(&
                   (elem%mp(j,n)*elem%metinv(m,n,1,2)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
                   (elem%mp(m,j)*elem%metinv(m,n,2,2)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
-                  ) *rrearth
+                  )
           enddo
        enddo
     enddo
     ! convert contra -> latlon 
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))
-          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))
+          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2)) *rrearth
+          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2)) *rrearth
        enddo
     enddo
 
@@ -1161,7 +1163,6 @@ contains
        end do
     end do
 
-!dir$ simd
     div(:,:)=(div(:,:)+vvtemp(:,:))*(elem%rmetdet(:,:)*rrearth)
     
   end function divergence_sphere
@@ -1362,11 +1363,10 @@ contains
 !   the second deta(i) factor below.  But if this routine is used for
 !   variables like u or theta and not multiplied by eta_dot_dpdn, this will need some work
 !
-    integer :: ncomp
     real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
     real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
     real(kind=real_kind), intent(in) :: etam(nlev)
-
+    integer :: ncomp
 
     ! local
     integer k,n
@@ -1387,7 +1387,7 @@ contains
 #endif
 
 
-  subroutine laplace_z(v,laplace,ncomp,dz) 
+  subroutine laplace_z(v,laplace,ncomp,nk,dz) 
 !
 !   input:  v = scalar 
 !   ouput:  vertical laplace operator in z coordinates
@@ -1397,24 +1397,24 @@ contains
 !   This routine is currently only used for the supercell test, which uses equally spaced
 !   levels ( dz=20km/nlev ) so currently only a constant dz is supported
 !
-    integer :: ncomp
-    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nlev)
-    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nlev)
+    integer :: ncomp,nk
+    real(kind=real_kind), intent(in) :: v(np,np,ncomp,nk)
+    real(kind=real_kind), intent(out):: laplace(np,np,ncomp,nk)
     real(kind=real_kind), intent(in) :: dz
 
 
     ! local
-    real(kind=real_kind) :: u_z(np,np,nlev+1)
+    real(kind=real_kind) :: u_z(np,np,nk+1)
     integer :: k,n
 
     ! no flux b.c.
     u_z(:,:,1)=0
-    u_z(:,:,nlev+1)=0
+    u_z(:,:,nk+1)=0
     do n=1,ncomp
-       do k=2,nlev
+       do k=2,nk
           u_z(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / dz        ! dz(k-.5)  
        enddo
-       do k=1,nlev
+       do k=1,nk
           laplace(:,:,n,k) =( u_z(:,:,k+1) - u_z(:,:,k) )/dz    ! dz(k)
        enddo
     enddo

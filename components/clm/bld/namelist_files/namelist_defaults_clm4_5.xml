@@ -96,14 +96,14 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c180403.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.c180713.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_default_2trop.c180518.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_default_2trop.c181022.nc</fates_paramfile>
 
 
 <!-- soil order related parameters (relative to {csmdata}) -->
@@ -113,17 +113,17 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- HOMME grid ne4 resolution -->
 
 <finidat hgrid="ne4np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
- ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne4_qu240.5712d76.clm2.r.0021-01-01-00000.nc
+ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne4_oQU240.67a0f98.0021-01-01-00000.nc
 </finidat>
 
 <finidat hgrid="ne4np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
- ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne4_oQU240.1155ba0.clm2.r.nc
+ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne4_oQU240.67a0f98.0001-01-04-00000.nc
 </finidat>
 
 <!-- HOMME grid ne11 resolution -->
 
 <finidat hgrid="ne11np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
- ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne11_oQU240.1155ba0.clm2.r.nc
+ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne11_oQU240.67a0f98.1850-01-07-00000.nc
 </finidat>
 
 <finidat hgrid="ne11np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
@@ -190,7 +190,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <!-- RRM CONUS, ARM, and ENA resolutions.  maxxpft, mask, bgc unknown -->
 <finidat hgrid="ne0np4_arm_x8v3_lowcon"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.armx8v3.1850-01-01.nc</finidat>
 <finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="1850">lnd/clm2/initdata_map/clmi.I1850CLM45.conusx4v1.74e105b.clm2.r.0021-01-01-00000.nc</finidat>
-<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45.0021-01-01.conusx4v1.0ac6464_simyr2000_c161130.nc</finidat>
+<finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45.conusx4v1_conusx4v1.67a0f98.2000-01-01-00000.nc</finidat>
 <finidat hgrid="ne0np4_enax4v1" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.enax4v1_oRRS18to6_simyr2000_c170621.nc</finidat>
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c170712.nc</finidat>
 
@@ -1717,6 +1717,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
 <use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
 <use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
+<fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
 <fates_inventory_ctrl_filename use_fates=".true."> " " </fates_inventory_ctrl_filename>
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>

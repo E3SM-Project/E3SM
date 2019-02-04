@@ -37,11 +37,12 @@ contains
 !=======================================================================================================! 
 
 
-  subroutine prim_printstate_init(par)
+  subroutine prim_printstate_init(par, elem)
     type (parallel_t) :: par
+    type (element_t), pointer :: elem(:)
 
     real (kind=real_kind) :: time
-    integer               :: c0
+    integer               :: c0,ie
 
     if (par%masterproc) then
        time=0.0D0
@@ -56,6 +57,15 @@ contains
 #endif
     end if
 
+    do ie = 1,nelemd
+       elem(ie)%accum%Qvar=0
+       elem(ie)%accum%Qmass=0
+       elem(ie)%accum%Q1mass=0
+       elem(ie)%accum%KEner=0
+       elem(ie)%accum%IEner=0
+       elem(ie)%accum%PEner=0
+       elem(ie)%accum%IEner_wet=0
+    end do
   end subroutine prim_printstate_init
 !=======================================================================================================! 
 
@@ -138,8 +148,6 @@ contains
     IEner_wet = 0
     ! dynamics timelevels
     n0=tl%n0
-    nm1=tl%nm1
-    np1=tl%np1
 
     dt=tstep*qsplit
     if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
@@ -314,9 +322,6 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
-    enddo
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)

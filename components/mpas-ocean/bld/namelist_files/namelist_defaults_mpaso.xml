@@ -44,13 +44,14 @@
 <config_iterative_init_variable>'landIcePressure'</config_iterative_init_variable>
 
 <!-- time_integration -->
+<config_dt ocn_grid="oQU480">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU240wLI">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30">'00:10:00'</config_dt>
-<config_dt ocn_grid="oEC60to30v3">'00:10:00'</config_dt>
-<config_dt ocn_grid="oEC60to30wLI">'00:10:00'</config_dt>
-<config_dt ocn_grid="oEC60to30v3wLI">'00:10:00'</config_dt>
+<config_dt ocn_grid="oEC60to30">'00:30:00'</config_dt>
+<config_dt ocn_grid="oEC60to30v3">'00:30:00'</config_dt>
+<config_dt ocn_grid="oEC60to30wLI">'00:30:00'</config_dt>
+<config_dt ocn_grid="oEC60to30v3wLI">'00:30:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10v3">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10wLI">'00:10:00'</config_dt>
@@ -58,6 +59,8 @@
 <config_dt ocn_grid="oRRS18to6">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS18to6v3">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
+<config_dt ocn_grid="oARRM60to10">'00:10:00'</config_dt>
+<config_dt ocn_grid="oARRM60to6">'00:05:00'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
 <!-- ALE_vertical_grid -->
@@ -81,6 +84,7 @@
 <config_min_pbc_fraction>0.10</config_min_pbc_fraction>
 
 <!-- hmix -->
+<config_hmix_scaleWithMesh ocn_grid="oQU480">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU240wLI">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
@@ -95,25 +99,36 @@
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oARRM60to10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oARRM60to6">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
 
 <!-- hmix_del2 -->
 <config_use_mom_del2>.false.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="oEC60to30">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="oEC60to30v3">.true.</config_use_mom_del2> 
+<config_use_mom_del2 ocn_grid="oEC60to30wLI">.true.</config_use_mom_del2> 
+<config_use_mom_del2 ocn_grid="oEC60to30v3wLI">.true.</config_use_mom_del2> 
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_mom_del2>10.0</config_mom_del2>
+<config_mom_del2 ocn_grid="oEC60to30">1000.0</config_mom_del2>
+<config_mom_del2 ocn_grid="oEC60to30v3">1000.0</config_mom_del2>
+<config_mom_del2 ocn_grid="oEC60to30wLI">1000.0</config_mom_del2>
+<config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
 <!-- hmix_del4 -->
 <config_use_mom_del4>.true.</config_use_mom_del4>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
+<config_mom_del4 ocn_grid="oQU480">2.0e15</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30">1.2e12</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30v3">1.2e12</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30wLI">1.2e12</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30v3wLI">1.2e12</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30">1.2e11</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30v3">1.2e11</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30wLI">1.2e11</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30v3wLI">1.2e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10v3">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
@@ -121,6 +136,8 @@
 <config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS18to6v3">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
+<config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_tracer_del4>0.0</config_tracer_del4>
 
@@ -131,6 +148,7 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- mesoscale_eddy_parameterization -->
+<config_use_standardGM ocn_grid="oQU480">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU240">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU240wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
@@ -145,11 +163,19 @@
 <config_use_standardGM ocn_grid="oRRS18to6">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS18to6v3">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oARRM60to10">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oARRM60to6">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
+<config_GM_Bolus_kappa_function>'constant'</config_GM_Bolus_kappa_function>
 <config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
+<config_standardGM_tracer_kappa ocn_grid="oEC60to30v3wLI" ocn_forcing="core_forced_restoring" >600.0</config_standardGM_tracer_kappa>
+<config_GM_Bolus_kappa_min>0.0</config_GM_Bolus_kappa_min>
+<config_GM_Bolus_kappa_max>600.0</config_GM_Bolus_kappa_max>
+<config_GM_Bolus_cell_size_min>20e3</config_GM_Bolus_cell_size_min>
+<config_GM_Bolus_cell_size_max>30e3</config_GM_Bolus_cell_size_max>
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
 <config_max_relative_slope>0.01</config_max_relative_slope>
@@ -167,33 +193,6 @@
 <config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
 <config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
 <config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
-
-<!-- vmix -->
-<config_convective_visc>1.0</config_convective_visc>
-<config_convective_diff>1.0</config_convective_diff>
-
-<!-- vmix_const -->
-<config_use_const_visc>.false.</config_use_const_visc>
-<config_use_const_diff>.false.</config_use_const_diff>
-<config_vert_visc>1.0e-4</config_vert_visc>
-<config_vert_diff>1.0e-5</config_vert_diff>
-
-<!-- vmix_rich -->
-<config_use_rich_visc>.false.</config_use_rich_visc>
-<config_use_rich_diff>.false.</config_use_rich_diff>
-<config_bkrd_vert_visc>1.0e-4</config_bkrd_vert_visc>
-<config_bkrd_vert_diff>1.0e-5</config_bkrd_vert_diff>
-<config_rich_mix>0.005</config_rich_mix>
-
-<!-- vmix_tanh -->
-<config_use_tanh_visc>.false.</config_use_tanh_visc>
-<config_use_tanh_diff>.false.</config_use_tanh_diff>
-<config_max_visc_tanh>2.5e-1</config_max_visc_tanh>
-<config_min_visc_tanh>1.0e-4</config_min_visc_tanh>
-<config_max_diff_tanh>2.5e-2</config_max_diff_tanh>
-<config_min_diff_tanh>1.0e-5</config_min_diff_tanh>
-<config_zMid_tanh>-100</config_zMid_tanh>
-<config_zWidth_tanh>100</config_zWidth_tanh>
 
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
@@ -233,6 +232,33 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 
+<!-- vmix_const -->
+<config_use_const_visc>.false.</config_use_const_visc>
+<config_use_const_diff>.false.</config_use_const_diff>
+<config_vert_visc>1.0e-4</config_vert_visc>
+<config_vert_diff>1.0e-5</config_vert_diff>
+
+<!-- vmix_rich -->
+<config_use_rich_visc>.false.</config_use_rich_visc>
+<config_use_rich_diff>.false.</config_use_rich_diff>
+<config_bkrd_vert_visc>1.0e-4</config_bkrd_vert_visc>
+<config_bkrd_vert_diff>1.0e-5</config_bkrd_vert_diff>
+<config_rich_mix>0.005</config_rich_mix>
+
+<!-- vmix -->
+<config_convective_visc>1.0</config_convective_visc>
+<config_convective_diff>1.0</config_convective_diff>
+
+<!-- vmix_tanh -->
+<config_use_tanh_visc>.false.</config_use_tanh_visc>
+<config_use_tanh_diff>.false.</config_use_tanh_diff>
+<config_max_visc_tanh>2.5e-1</config_max_visc_tanh>
+<config_min_visc_tanh>1.0e-4</config_min_visc_tanh>
+<config_max_diff_tanh>2.5e-2</config_max_diff_tanh>
+<config_min_diff_tanh>1.0e-5</config_min_diff_tanh>
+<config_zMid_tanh>-100</config_zMid_tanh>
+<config_zWidth_tanh>100</config_zWidth_tanh>
+
 <!-- forcing -->
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
@@ -241,6 +267,7 @@
 
 <!-- coupling -->
 <config_ssh_grad_relax_timescale>86400.0</config_ssh_grad_relax_timescale>
+<config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
@@ -276,10 +303,13 @@
 <config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_topDragCoeff>2.5e-3</config_land_ice_flux_topDragCoeff>
+<config_land_ice_flux_topDragCoeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_land_ice_flux_topDragCoeff>
 <config_land_ice_flux_ISOMIP_gammaT>1e-4</config_land_ice_flux_ISOMIP_gammaT>
 <config_land_ice_flux_rms_tidal_velocity>5e-2</config_land_ice_flux_rms_tidal_velocity>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient>0.011</config_land_ice_flux_jenkins_heat_transfer_coefficient>
+<config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="oEC60to30v3wLI">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient>3.1e-4</config_land_ice_flux_jenkins_salt_transfer_coefficient>
+<config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="oEC60to30v3wLI">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 
 <!-- advection -->
 <config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
@@ -327,13 +357,14 @@
 <config_n_bcl_iter_mid>2</config_n_bcl_iter_mid>
 <config_n_bcl_iter_end>2</config_n_bcl_iter_end>
 <config_btr_dt>'0000_00:00:15'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU480">'0000_00:05:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30">'0000_00:00:40'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:00:40'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:00:40'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30v3wLI">'0000_00:00:40'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30v3wLI">'0000_00:01:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10wLI">'0000_00:00:18'</config_btr_dt>
@@ -341,6 +372,8 @@
 <config_btr_dt ocn_grid="oRRS18to6">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS18to6v3">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
+<config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
+<config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
@@ -793,6 +826,7 @@
 <config_AM_eddyProductVariables_write_on_startup>.false.</config_AM_eddyProductVariables_write_on_startup>
 
 <!-- AM_mocStreamfunction -->
+<config_AM_mocStreamfunction_enable ocn_grid="oQU480">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU240">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU240wLI">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU120">.false.</config_AM_mocStreamfunction_enable>
@@ -807,6 +841,8 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS18to6">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS18to6v3">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
 <config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>

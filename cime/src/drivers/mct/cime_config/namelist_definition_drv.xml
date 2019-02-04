@@ -705,7 +705,10 @@
       Setting this to zero will always do flux_max_iteration
     </desc>
     <values>
-      <value cime_model='cesm'>0.0</value>
+      <!-- the value for f09 grids is maintained as 0.0 for compatibility with cmip6 experiments
+           the 1% convergence criteria improves performance of the atm ocn flux calculation in shr_flux_mod.F90 -->
+      <value cime_model='cesm'>0.01</value>
+      <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
       <value cime_model='e3sm'>0.0</value>
     </values>
   </entry>
@@ -916,7 +919,7 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
     <desc>
       Set the coupler sequencing.
     </desc>
@@ -1161,7 +1164,13 @@
     <category>history</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      turns on coupler history stream for instantaneous runoff to coupler fields.
+      turns on coupler history stream for average* runoff to coupler fields
+      (*despite the lack of an averaging time span in the name).
+      Files are written at time-of-day = 00000, and at the end of the run interval,
+      even if that time is not 00000.
+      Run length less than 24 hours; averaging period is the run length,
+      Otherwise; averaging period is 24 hours for files before the last (partial) day,
+                 averaging period is the last (partial) day for the last file.
       default: false
     </desc>
     <values>
@@ -1463,6 +1472,19 @@
     <group>seq_infodata_inparm</group>
     <desc>
       Use faster method for reprosum, but one where reproducibility is not always guaranteed.
+      default: .false.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="reprosum_allow_infnan">
+    <type>logical</type>
+    <category>reprosum</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Allow INF and NaN in summands
       default: .false.
     </desc>
     <values>
@@ -2269,6 +2291,23 @@
   </entry>
 
   <!-- =========================== -->
+  <!-- group esmf_inparm           -->
+  <!-- =========================== -->
+
+  <entry id="esmf_logfile_kind" modify_via_xml="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <category>driver</category>
+    <group>esmf_inparm</group>
+    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_MULTI_ON_ERROR,ESMF_LOGKIND_NONE</valid_values>
+    <desc>
+      Specify type of ESMF logging
+    </desc>
+    <values>
+      <value>$ESMF_LOGFILE_KIND</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
   <!-- group seq_cime_pes          -->
   <!-- =========================== -->
 
@@ -2841,6 +2880,32 @@
     </desc>
     <values>
       <value>$PSTRID_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_model">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for the whole model 
+      (0: no output; 1: compact; 2: verbose)
+    </desc>
+    <values>
+      <value>$INFO_TASKMAP_MODEL</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_comp">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for individual component models
+      (0: no output; 1: compact; 2: verbose)
+    </desc>
+    <values>
+      <value>$INFO_TASKMAP_COMP</value>
     </values>
   </entry>
 

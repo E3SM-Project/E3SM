@@ -46,6 +46,7 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/ll_mod.F90
   ${SRC_SHARE}/mass_matrix_mod.F90
   ${SRC_SHARE}/mesh_mod.F90
+  ${SRC_SHARE}/sort_mod.F90
   ${SRC_SHARE}/metagraph_mod.F90
   ${SRC_SHARE}/metis_mod.F90
   ${SRC_SHARE}/namelist_mod.F90

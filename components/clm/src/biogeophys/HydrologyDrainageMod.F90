@@ -16,6 +16,7 @@ module HydrologyDrainageMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
+  use topounitType      , only : top_af ! atmospheric flux variables
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use VegetationType    , only : veg_pp                
@@ -73,7 +74,7 @@ contains
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
-    integer  :: g,l,c,j,fc                 ! indices
+    integer  :: g,t,l,c,j,fc               ! indices
     real(r8) :: dtime                      ! land model time step (sec)
     !-----------------------------------------------------------------------
     
@@ -82,13 +83,15 @@ contains
          ctype                  => col_pp%itype                                  , & ! Input:  [integer  (:)   ]  column type                                        
 
          qflx_floodg            => atm2lnd_vars%forc_flood_grc                , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM             
-         forc_rain              => atm2lnd_vars%forc_rain_downscaled_col      , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                                  
-         forc_snow              => atm2lnd_vars%forc_snow_downscaled_col      , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                                  
+         forc_rain              => top_af%rain                                , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
+         forc_snow              => top_af%snow                                , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
 
          glc_dyn_runoff_routing => glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
 
          wa                     => soilhydrology_vars%wa_col                  , & ! Input:  [real(r8) (:)   ]  water in the unconfined aquifer (mm)              
          
+         h2osoi_liq_depth_intg  => waterstate_vars%h2osoi_liq_depth_intg_col  , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
+         h2osoi_ice_depth_intg  => waterstate_vars%h2osoi_ice_depth_intg_col  , & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
          h2ocan                 => waterstate_vars%h2ocan_col                 , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)                             
          h2osfc                 => waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
          h2osno                 => waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
@@ -178,6 +181,8 @@ contains
 
             else
                endwb(c) = endwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
             end if
          end do
       end do
@@ -224,6 +229,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
+         t = col_pp%topounit(c)
          g = col_pp%gridcell(c)
 
          if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice      &
@@ -234,7 +240,7 @@ contains
             qflx_h2osfc_surf(c)   = 0._r8
             qflx_surf(c)          = 0._r8
             qflx_infl(c)          = 0._r8
-            qflx_qrgwl(c) = forc_rain(c) + forc_snow(c) + qflx_floodg(g) - qflx_evap_tot(c) - qflx_snwcp_ice(c) - &
+            qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) + qflx_floodg(g) - qflx_evap_tot(c) - qflx_snwcp_ice(c) - &
                  (endwb(c)-begwb(c))/dtime
 
             ! With glc_dyn_runoff_routing = false (the less realistic way, typically used

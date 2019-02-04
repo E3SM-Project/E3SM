@@ -80,7 +80,7 @@
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
     <batch_cancel>qdel</batch_cancel>
-    <batch_env>-v</batch_env>
+    <batch_env>--env</batch_env>
     <batch_directive>#COBALT</batch_directive>
     <jobid_pattern>(\d+)</jobid_pattern>
     <depend_string> --dependencies</depend_string>
@@ -96,7 +96,7 @@
     </submit_args>
   </batch_system>
 
-  <batch_system type="lsf" version="9.1">
+  <batch_system type="lsf">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
@@ -110,19 +110,12 @@
     <batch_mail_flag>-u</batch_mail_flag>
     <batch_mail_type_flag></batch_mail_type_flag>
     <batch_mail_type></batch_mail_type>
-    <submit_args>
-      <arg flag="-q" name="$JOB_QUEUE"/>
-      <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-P" name="$PROJECT"/>
-    </submit_args>
     <directives>
+      <directive                       > -J {{ job_id }} </directive>
       <directive                       > -n {{ total_tasks }} </directive>
-      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
-      <directive                       > -N  </directive>
-      <directive default="poe"         > -a {{ poe }} </directive>
+      <directive                       > -W $JOB_WALLCLOCK_TIME </directive>
       <directive default="cesm.stdout" > -o {{ job_id }}.%J  </directive>
       <directive default="cesm.stderr" > -e {{ job_id }}.%J  </directive>
-      <directive                       > -J {{ job_id }} </directive>
     </directives>
   </batch_system>
 
@@ -175,30 +168,6 @@
     </directives>
   </batch_system>
 
-  <!-- babbage is PBS -->
-  <batch_system MACH="babbage" type="pbs">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
-  <!-- babbageKnc is PBS -->
-  <batch_system MACH="babbageKnc" type="pbs">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
-  <!-- brutus is PBS -->
-  <batch_system type="pbs" MACH="brutus" >
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:59:00" nodemin="1" nodemax="624" default="true">batch</queue>
-    </queues>
-  </batch_system>
-
   <!-- bluewaters is PBS -->
   <batch_system MACH="bluewaters" type="pbs" >
     <jobid_pattern>(\d+.bw)$</jobid_pattern>
@@ -212,31 +181,145 @@
     </queues>
   </batch_system>
 
-  <!-- brutus is PBS -->
-  <batch_system MACH="brutus" type="pbs">
-    <directives>
+  <batch_system MACH="cheyenne" type="pbs">
+    <directives queue="regular">
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
     </directives>
+
+    <directives queue="premium">
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+
+    <directives queue="economy">
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+
+    <directives queue="share">
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select=1:mpiprocs={{ total_tasks }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
+      <queue default="true" walltimemax="06:00" jobmin="1" jobmax="18">share</queue>
+      <queue walltimemax="12:00" nodemin="1" nodemax="4032">economy</queue>
+    </queues>
   </batch_system>
 
-  <!-- eos is PBS -->
-  <batch_system MACH="eos" type="pbs">
-    <jobid_pattern>^(\d+)</jobid_pattern>
-    <directives>
-      <directive>-A $PROJECT</directive>
-      <directive>-l mppwidth={{ mppwidth }}</directive>
-      <directive>-l  nodes={{ num_nodes }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
+  <batch_system type="slurm" MACH="constance">
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
   </batch_system>
 
-  <!-- erebus is PBS -->
-  <batch_system MACH="erebus" type="pbs">
+  <batch_system MACH="cori-haswell" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive>-C haswell </directive>
     </directives>
+    <queues>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="710">regular</queue>
+    <!--  <queue walltimemax="00:30:00" nodemin="1" nodemax="3072" default="true">debug</queue> -->
+    </queues>
   </batch_system>
 
+  <batch_system MACH="cori-knl" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive>-C knl,quad,cache </directive>
+      <directive>-S 2 </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="177">regular</queue>
+    <!--  <queue walltimemax="00:30:00" nodemin="1" nodemax="3072" default="true">debug</queue> -->
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="daint" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <queues>
+      <queue default="true">default</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="eastwind" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <queues>
+      <queue nodemin="1" nodemax="833" default="true">batch</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="edison" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <queues>
+      <queue walltimemax="36:00:00" nodemin="1" nodemax="2712" >regular</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="256" default="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <!-- euler2 is LSF -->
+  <batch_system MACH="euler2" type="lsf" >
+    <directives>
+      <directive> -R "select[model==XeonE5_2680v3]" </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="23:59:00" default="true">normal.24h</queue>
+      <queue walltimemax="03:59:00" >normal.4h</queue>
+    </queues>
+  </batch_system>
+
+  <!-- euler3 is LSF -->
+  <batch_system MACH="euler3" type="lsf" >
+    <directives>
+      <directive> -R "span[ptile=4] select[model==XeonE3_1585Lv5]" </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="23:59:00" default="true">normal.24h</queue>
+      <queue walltimemax="03:59:00" >normal.4h</queue>
+    </queues>
+  </batch_system>
+
+  <!-- euler4 is LSF -->
+  <batch_system MACH="euler4" type="lsf" >
+    <directives>
+      <directive> -R "select[model==XeonGold_6150]" </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="23:59:00" default="true">normal.24h</queue>
+      <queue walltimemax="03:59:00" >normal.4h</queue>
+    </queues>
+  </batch_system>
   <!-- gaea is PBS -->
   <batch_system MACH="gaea" type="pbs" >
     <directives>
@@ -270,21 +353,6 @@
     </queues>
   </batch_system>
 
-  <!-- hera is SLURM -->
-  <batch_system MACH="hera" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-    <batch_directive>#MSUB</batch_directive>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-      <directive>-A ees</directive>
-      <directive>-l gres=lscratchd</directive>
-    </directives>
-  </batch_system>
-
   <batch_system MACH="laramie" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -295,31 +363,29 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="cheyenne" type="pbs">
-    <directives queue="regular">
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
-    </directives>
-
-    <directives queue="premium">
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
-    </directives>
-
-    <directives queue="economy">
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
-    </directives>
-
-    <directives queue="share">
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-      <directive> -l select=1:mpiprocs={{ total_tasks }}:ompthreads={{ thread_count }}</directive>
+  <batch_system MACH="lawrencium-lr3" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+      <directive>--qos=lr_normal</directive>
+      <directive>--partition=lr3</directive>
+      <directive>--account={{ project }}</directive>
+      <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
-      <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
-      <queue default="true" walltimemax="06:00" jobmin="1" jobmax="18">share</queue>
-      <queue walltimemax="12:00" nodemin="1" nodemax="4032">economy</queue>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="lawrencium-lr2" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <directives>
+       <directive>--qos=lr_normal</directive>
+       <directive>--partition=lr2</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
     </queues>
   </batch_system>
 
@@ -329,9 +395,14 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="theta" type="cobalt_theta">
+  <!-- modex is PBS -->
+  <batch_system MACH="modex" type="pbs">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+    </directives>
     <queues>
-      <queue walltimemax="00:60:00" nodemin="1" nodemax="50" default="true">default</queue>
+      <queue walltimemax="36:00:00" default="true">batch</queue>
     </queues>
   </batch_system>
 
@@ -396,107 +467,6 @@
     </queues>
   </batch_system>
 
-  <!-- sierra is SLURM -->
-  <batch_system MACH="sierra" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-    <batch_directive>#MSUB</batch_directive>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-      <directive> </directive>
-      <directive>-A ees </directive>
-      <directive>-l nodes={{ num_nodes }}</directive>
-      <directive>-l gres=lscratchd</directive>
-    </directives>
-  </batch_system>
-
-  <batch_system MACH="eastwind" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <queues>
-      <queue nodemin="1" nodemax="833" default="true">batch</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="cori-haswell" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-q" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-      <directive>-C haswell </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="06:00:00" nodemin="1" nodemax="710">regular</queue>
-    <!--  <queue walltimemax="00:30:00" nodemin="1" nodemax="3072" default="true">debug</queue> -->
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="cori-knl" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-q" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-      <directive>-C knl,quad,cache </directive>
-      <directive>-S 2 </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="02:00:00" nodemin="1" nodemax="177">regular</queue>
-    <!--  <queue walltimemax="00:30:00" nodemin="1" nodemax="3072" default="true">debug</queue> -->
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="edison" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-q" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <queues>
-      <queue walltimemax="36:00:00" nodemin="1" nodemax="2712" >regular</queue>
-      <queue walltimemax="00:30:00" nodemin="1" nodemax="256" default="true">debug</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="lawrencium-lr3" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-    <directives>
-      <directive>--qos=lr_normal</directive>
-      <directive>--partition=lr3</directive>
-      <directive>--account={{ project }}</directive>
-      <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="lawrencium-lr2" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-    <directives>
-       <directive>--qos=lr_normal</directive>
-       <directive>--partition=lr2</directive>
-       <directive>--account={{ project }}</directive>
-       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
-    </queues>
-  </batch_system>
-
   <batch_system MACH="stampede2-skx" type="slurm" >
     <batch_submit>ssh stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <submit_args>
@@ -523,76 +493,18 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="rosa" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
+  <batch_system type="pbs" MACH="theia" >
     <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
+      <arg flag="-l procs=" name=" $TOTALPES"/>
     </submit_args>
     <queues>
-      <queue default="true">default</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="35">batch</queue>
     </queues>
   </batch_system>
 
-  <!-- titan is PBS -->
-  <batch_system MACH="titan" type="pbs">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
-  <batch_system type="slurm" MACH="constance">
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-  </batch_system>
-
-  <batch_system MACH="lbl-lr3" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-       <directive>--qos=lr_normal</directive>
-       <directive>--partition=lr3</directive>
-       <directive>--account={{ project }}</directive>
-    </directives>
+  <batch_system MACH="theta" type="cobalt_theta">
     <queues>
-      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr3</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="lbl-lr2" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-    <submit_args>
-      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
-    </submit_args>
-    <directives>
-       <directive>--qos=lr_normal</directive>
-       <directive>--partition=lr2</directive>
-       <directive>--account={{ project }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
-    </queues>
-  </batch_system>
-
-  <!-- modex is PBS -->
-  <batch_system MACH="modex" type="pbs">
-    <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="36:00:00" default="true">batch</queue>
+      <queue walltimemax="00:60:00" nodemin="1" nodemax="50" default="true">default</queue>
     </queues>
   </batch_system>
 

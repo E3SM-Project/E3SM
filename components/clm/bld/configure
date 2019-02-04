@@ -653,6 +653,7 @@ sub write_filepath_cesmbld
 		     "external_models/fates/biogeophys",
 		     "external_models/fates/biogeochem",
 		     "external_models/fates/fire",
+		     "external_models/fates/parteh",
 		     "external_models/mpp/src/mpp/dtypes",
 		     "external_models/mpp/src/mpp/thermal",
 		     "external_models/mpp/src/mpp/util",

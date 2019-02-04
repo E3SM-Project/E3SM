@@ -4,10 +4,15 @@
 Creating a Case
 *********************************
 
-Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid and a case directory.
+This and following sections provide more detail about the basic commands of the CIME Case Control System: **create_newcase**,
+**case.setup**, **case.build** and **case.submit**. On a supported system, you can configure, build and run many complex
+climate model configurations with only these 4 commands.
 
-This is a test.
+To see if your machine is supported try::
 
+  > query_config --machines
+
+If you are not on an out-of-the box CIME-supported platform, you will need to :ref:`port <porting>` CIME to your system before proceeding.
 
 ===================================
 Calling **create_newcase**
@@ -15,26 +20,50 @@ Calling **create_newcase**
 
 The first step in creating a CIME-based experiment is to use `create_newcase  <../Tools_user/create_newcase.html>`_.
 
-If you are not on an out-of-the box CIME-supported platform, you will need to :ref:`port <porting>` CIME to your system before proceeding.
-
-Review the input options for `create_newcase  <../Tools_user/create_newcase.html>`_ in the  **help** text.::
+See the options for `create_newcase  <../Tools_user/create_newcase.html>`_ in the  **help** text.::
 
   > create_newcase --help
 
-The only required arguments to `create_newcase  <../Tools_user/create_newcase.html>`_ are shown here::
+The only required arguments to `create_newcase  <../Tools_user/create_newcase.html>`_ are::
 
-  > create_newcase --case [CASE] --compset [COMPSET] --res [GRID]
+  > create_newcase --case CASENAME --compset COMPSET --res GRID
 
+Creating a CIME experiment or *case* requires, at a minimum, specifying a compset and a model grid and a case directory.
 CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms* (machines).
 
-The [CASE] argument must be a string and may not contain any of the following special characters
-::
+.. warning::
+   The ``--case`` argument must be a string and may not contain any of the following special characters
+   ::
+      > + * ? < > { } [ ] ~ ` @ :
 
-   > + * ? < > / { } [ ] ~ ` @ :
+The ``--case`` argument is used to define the name of your case, a very important piece of
+metadata that will be used in filenames, internal metadata and directory paths. The
+``CASEROOT`` is a directory create_newcase will create with the same name as the
+``CASENAME``. If ``CASENAME`` is simply a name (not a path), ``CASEROOT`` is created in
+the directory where you execute create_newcase. If ``CASENAME`` is a relative or absolute
+path, ``CASEROOT`` is created there, and the name of the case will be the last component
+of the path.
 
 ======================================
 Results of calling **create_newcase**
 ======================================
+
+Suppose **create_newcase** was called as follows.
+Here, $CIMEROOT is the full pathname of the root directory of the CIME distribution::
+
+  > cd $CIMEROOT/scripts
+  > create_newcase --case ~/cime/example1 --compset A --res f09_g16_rx1
+
+In the example, the command creates a ``$CASEROOT`` directory: ``~/cime/example1``.
+If that directory already exists, a warning is printed and the command aborts.
+
+In the argument to ``--case``, the case name is taken from the string after the last slash
+--- so here the case name is ``example1``.
+
+The output from create_newcase includes information such as.
+
+- The compset longname is ``2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV``
+- The model resolution is ``a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null``
 
 `create_newcase  <../Tools_user/create_newcase.html>`_ installs files in ``$CASEROOT`` that will build and run the model and to optionally archive the case on the target platform.
 

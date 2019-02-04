@@ -55,6 +55,7 @@
       <value mach="oic5">netcdf</value>
       <value mach="lawrencium-lr2">netcdf</value>
       <value mach="lawrencium-lr3">netcdf</value>
+      <value mach="lawrencium-lr6">netcdf</value>
       <value mach="cades">netcdf</value>
       <value mach="grizzly">netcdf</value>
       <value mach="wolf">netcdf</value>
@@ -85,10 +86,10 @@
   </entry>
   -->
 
-
   <entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
       <value MACH="sandiatoss3">1</value>
+      <value MACH="ghost">1</value>
     </values>
   </entry>
 
@@ -154,7 +155,7 @@
 
   <entry id="LND_PIO_TYPENAME">
     <values>
-      <value mach="bebop" compset=".*CLM45.+MALISIA.*">netcdf</value>
+      <value mach="bebop" compset=".*CLM45.+MALI%SIA.*">netcdf</value>
     </values>
   </entry>
 

@@ -593,9 +593,55 @@ Valid values: Any positive real value, typically between 100 and 500 m.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_Bolus_kappa_function" type="char*1024"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Control what type of function is used for GM Bolus $\kappa$
+
+Valid values: 'constant' and 'ramp'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_standardGM_tracer_kappa" type="real"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
 Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_kappa_min" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component),
+$\kappa$, min value in ramp as a function of dcEdge. Used when
+config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_kappa_max" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component),
+$\kappa$, max value in ramp as a function of dcEdge. Used when
+config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_cell_size_min" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size
+refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_cell_size_max" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size
+refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
 
 Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
@@ -693,170 +739,6 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_Rayleigh_bottom_damping_coeff" type="real"
 	category="Rayleigh_damping" group="Rayleigh_damping">
 Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix -->
-
-<entry id="config_convective_visc" type="real"
-	category="vmix" group="vmix">
-Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_convective_diff" type="real"
-	category="vmix" group="vmix">
-Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number less than zero)
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix_const -->
-
-<entry id="config_use_const_visc" type="logical"
-	category="vmix_const" group="vmix_const">
-If true, constant vertical viscosity is included in the momentum equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_const_diff" type="logical"
-	category="vmix_const" group="vmix_const">
-If true, constant vertical diffusion is included in the tracer equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_vert_visc" type="real"
-	category="vmix_const" group="vmix_const">
-Vertical viscosity, applied uniformly throughout domain
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_vert_diff" type="real"
-	category="vmix_const" group="vmix_const">
-Vertical diffusion, applied uniformly throughout domain
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix_rich -->
-
-<entry id="config_use_rich_visc" type="logical"
-	category="vmix_rich" group="vmix_rich">
-If true, Richardson-number based vertical viscosity is included in the momentum equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_rich_diff" type="logical"
-	category="vmix_rich" group="vmix_rich">
-If true, Richardson-number based vertical diffusion is included in the tracer equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_bkrd_vert_visc" type="real"
-	category="vmix_rich" group="vmix_rich">
-Background vertical viscosity for Richardson-number based vertical mixing, $\nu_{bkrd}$
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_bkrd_vert_diff" type="real"
-	category="vmix_rich" group="vmix_rich">
-Background vertical diffusion for Richardson-number based vertical mixing, $\kappa_{bkrd}$
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rich_mix" type="real"
-	category="vmix_rich" group="vmix_rich">
-Coefficient for Richardon-number vertical mixing function, $c_{Ri}$
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- vmix_tanh -->
-
-<entry id="config_use_tanh_visc" type="logical"
-	category="vmix_tanh" group="vmix_tanh">
-If true, tanh-based vertical viscosity is included in the momentum equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_tanh_diff" type="logical"
-	category="vmix_tanh" group="vmix_tanh">
-If true, tanh-based vertical diffusion is included in the tracer equation
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_max_visc_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-maximum viscosity value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_min_visc_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-minimum viscosity value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_max_diff_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-maximum diffusion value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_min_diff_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-minimum diffusion value for tanh-fit function
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_zMid_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-z-coodinate location of center of tanh function
-
-Valid values: Any real value, typically negative.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_zWidth_tanh" type="real"
-	category="vmix_tanh" group="vmix_tanh">
-vertical width parameter for tanh function
 
 Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
@@ -1154,6 +1036,170 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- vmix_const -->
+
+<entry id="config_use_const_visc" type="logical"
+	category="vmix_const" group="vmix_const">
+If true, constant vertical viscosity is included in the momentum equation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_const_diff" type="logical"
+	category="vmix_const" group="vmix_const">
+If true, constant vertical diffusion is included in the tracer equation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_visc" type="real"
+	category="vmix_const" group="vmix_const">
+Vertical viscosity, applied uniformly throughout domain
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_diff" type="real"
+	category="vmix_const" group="vmix_const">
+Vertical diffusion, applied uniformly throughout domain
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- vmix_rich -->
+
+<entry id="config_use_rich_visc" type="logical"
+	category="vmix_rich" group="vmix_rich">
+If true, Richardson-number based vertical viscosity is included in the momentum equation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_rich_diff" type="logical"
+	category="vmix_rich" group="vmix_rich">
+If true, Richardson-number based vertical diffusion is included in the tracer equation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_bkrd_vert_visc" type="real"
+	category="vmix_rich" group="vmix_rich">
+Background vertical viscosity for Richardson-number based vertical mixing, $\nu_{bkrd}$
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_bkrd_vert_diff" type="real"
+	category="vmix_rich" group="vmix_rich">
+Background vertical diffusion for Richardson-number based vertical mixing, $\kappa_{bkrd}$
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rich_mix" type="real"
+	category="vmix_rich" group="vmix_rich">
+Coefficient for Richardon-number vertical mixing function, $c_{Ri}$
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- vmix -->
+
+<entry id="config_convective_visc" type="real"
+	category="vmix" group="vmix">
+Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_convective_diff" type="real"
+	category="vmix" group="vmix">
+Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number less than zero)
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- vmix_tanh -->
+
+<entry id="config_use_tanh_visc" type="logical"
+	category="vmix_tanh" group="vmix_tanh">
+If true, tanh-based vertical viscosity is included in the momentum equation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tanh_diff" type="logical"
+	category="vmix_tanh" group="vmix_tanh">
+If true, tanh-based vertical diffusion is included in the tracer equation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_visc_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh">
+maximum viscosity value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_visc_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh">
+minimum viscosity value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_diff_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh">
+maximum diffusion value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_diff_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh">
+minimum diffusion value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zMid_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh">
+z-coodinate location of center of tanh function
+
+Valid values: Any real value, typically negative.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zWidth_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh">
+vertical width parameter for tanh function
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- forcing -->
 
 <entry id="config_use_bulk_wind_stress" type="logical"
@@ -1196,6 +1242,14 @@ Default: Defined in namelist_defaults.xml
 Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response.
 
 Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_remove_AIS_coupler_runoff" type="logical"
+	category="coupling" group="coupling">
+If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2336,8 +2390,8 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_ecosys_atm_alt_co2_use_eco" type="logical"
-        category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-sets whether alt DIC field uses ecosystem source-sink terms
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+determines whether DIC_ALT is affected by ecosystem dynamics
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

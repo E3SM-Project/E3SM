@@ -46,6 +46,7 @@
   io_stride         = 8
   interp_nlat       = 65
   interp_nlon       = 128
+  interp_gridtype   = 1
 /
 &prof_inparm
   profile_outpe_num   = 100

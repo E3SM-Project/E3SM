@@ -98,11 +98,29 @@ module clm_varcon
 
   real(r8), parameter :: aquifer_water_baseline = 5000._r8 ! baseline value for water in the unconfined aquifer [mm]
 
-!!! C13
+  !!! C13
   real(r8), parameter :: preind_atm_del13c = -6.0   ! preindustrial value for atmospheric del13C
   real(r8), parameter :: preind_atm_ratio = SHR_CONST_PDB + (preind_atm_del13c * SHR_CONST_PDB)/1000.0  ! 13C/12C
   real(r8) :: c13ratio = preind_atm_ratio/(1.0+preind_atm_ratio) ! 13C/(12+13)C preind atmosphere
 
+   ! typical del13C for C3 photosynthesis (permil, relative to PDB)
+  real(r8), parameter :: c3_del13c = -28._r8
+
+  ! typical del13C for C4 photosynthesis (permil, relative to PDB)
+  real(r8), parameter :: c4_del13c = -13._r8
+
+  ! isotope ratio (13c/12c) for C3 photosynthesis
+  real(r8), parameter :: c3_r1 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
+
+  ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
+  real(r8), parameter :: c3_r2 = c3_r1/(1._r8 + c3_r1)
+
+  ! isotope ratio (13c/12c) for C4 photosynthesis  
+  real(r8), parameter :: c4_r1 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
+
+  ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
+  real(r8), parameter :: c4_r2 = c4_r1/(1._r8 + c4_r1)
+  
   !!! C14
   real(r8) :: c14ratio = 1.e-12_r8
   ! real(r8) :: c14ratio = 1._r8  ! debug lets set to 1 to try to avoid numerical errors
@@ -131,6 +149,7 @@ module clm_varcon
   character(len=16), parameter :: grlnd  = 'lndgrid'      ! name of lndgrid
   character(len=16), parameter :: namea  = 'gridcellatm'  ! name of atmgrid
   character(len=16), parameter :: nameg  = 'gridcell'     ! name of gridcells
+  character(len=16), parameter :: namet  = 'topounit'     ! name of topographic units
   character(len=16), parameter :: namel  = 'landunit'     ! name of landunits
   character(len=16), parameter :: namec  = 'column'       ! name of columns
   character(len=16), parameter :: namep  = 'pft'          ! name of patches
@@ -166,7 +185,7 @@ module clm_varcon
   real(r8) ,allocatable :: dzsoifl(:)      !original soil thickness  (used in interpolation of sand and clay)
 
   !------------------------------------------------------------------
-  ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in ch4varcon)
+  ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in CH4varcon)
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 

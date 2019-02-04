@@ -25,10 +25,9 @@
   <entry id="MALI_USE_ALBANY">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+    <default_value>TRUE</default_value>
     <values>
-      <value compset="_MALI">TRUE</value>
-      <value compset="_MALISIA">FALSE</value>
+      <value compset="_MALI%SIA">FALSE</value>
     </values>
     <group>build_component_mali</group>
     <file>env_build.xml</file>
@@ -55,7 +54,7 @@
 
   <description>
     <desc compset="_MALI">MPAS-Albany Land Ice default (Albany-FO solver):</desc>
-    <desc compset="_MALISIA" >MPAS-Albany Land Ice (shallow ice solver):</desc>
+    <desc compset="_MALI%SIA" >MPAS-Albany Land Ice (shallow ice solver):</desc>
   </description>
 
   <help>

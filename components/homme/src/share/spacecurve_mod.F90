@@ -6,7 +6,10 @@ module spacecurve_mod
 !
 !
 ! Revisions:
+! John Dennis, NCAR: Initial
 ! Mark Taylor: 2018/3  Remove memory leaks, make most routines private
+! Mark Taylor: 2018/10 add more deallocates
+! AMB: 2018/10  Add sfcmap_* (i,j) <-> SFC index routines
 !
   use kinds, only : iulog
   implicit none
@@ -18,9 +21,8 @@ module spacecurve_mod
   end type factor_t
 
 
-  integer,public, dimension(:,:), allocatable :: ordered
-  integer,public, dimension(:,:), allocatable :: dir     ! direction to move along each level
-  integer,public, dimension(:)  , allocatable :: pos     ! position along each of the axes
+  integer, dimension(:,:), allocatable :: ordered
+  integer, dimension(:)  , allocatable :: pos     ! position along each of the axes
 
   integer,public                              :: maxdim  ! dimensionality of entire space
   integer,public                              :: vcnt   ! visitation count
@@ -33,6 +35,38 @@ module spacecurve_mod
   public :: PrintCurve
   public :: IsFactorable,IsLoadBalanced
   public :: genspacepart
+
+  ! Map (i,j) <-> SFC index in O(log ne) time. Unlike the above routines,
+  ! nothing like a mesh(ne,ne) is allocated; these routines use O(log ne) memory
+  ! rather than O(ne^2).
+  type, public :: sfcmap_t
+     type (factor_t) :: fact
+     integer :: n, index_os, index, pos_os(2), pos(2)
+     logical :: pos2i
+     ! For use when working on a range of SFC indices:
+     integer :: idxs, idxe
+     integer, pointer :: positions(:,:)
+  end type sfcmap_t
+  ! Call sfcmap_init before calling the map routines sfcmap_i2pos/pos2i and
+  ! sfcmap_indexrange2pos. Call sfcmap_finalize at the end. sfcmap_test is a
+  ! non-MPI correctness check, so it makes sense to call it only if
+  ! par%masterproc.
+  !   In input and outuput, SFC index space starts at 0, and position starts at
+  ! (1,1). (Internally, pos starts at (0,0), but this is not apparent to the
+  ! caller.)
+  public :: &
+       ! Set up and tear down the internal data structure.
+       sfcmap_init, sfcmap_finalize, &
+       ! Map one SFC index to (i,j), and one (i,j) to SFC index.
+       sfcmap_i2pos, sfcmap_pos2i, &
+       ! Map a range of SFC indices, [idxs, idxe], to a list of positions
+       ! pos(idxe-idxs+1,2). This is faster than calling sfcmap_i2pos on each
+       ! index individually.
+       sfcmap_indexrange2pos, &
+       ! Run unit tests. This is run alone, i.e., w/o initialization or
+       ! finalization.
+       sfcmap_test
+
 contains 
   !---------------------------------------------------------
   recursive function Cinco(l,type,ma,md,ja,jd) result(ierr)
@@ -781,67 +815,6 @@ contains
     ierr = 0
   end function IncrementCurve
   !---------------------------------------------------------
-  recursive function hilbert_old(l,d,ma,md,ja,jd) result(ierr)
-
-    integer  :: l,d             ! log base 2 of levels and dimensions left
-    integer  :: ma,md           ! main axis and direction 
-    integer  :: ja,jd           ! joiner axis and direction 
-
-    integer  :: ierr
-    integer  :: axis
-    integer  :: ll
-
-    if(verbose) write(iulog,10) l,d,ma,md,ja,jd,pos(0),pos(1)
-    ll = l     ! Copy this to a temporary variable 
-    if(d == 0) then 
-       ll=ll-1
-       if(ll == 0) then 
-          return 
-       endif
-       axis = ja
-       if(dir(ll,axis) /= jd) then     ! do not move away from joiner plane 
-          axis = MOD(axis+1,maxdim)    ! next axis
-       endif
-       if(verbose) write(iulog,*)'hilbert_old: call hilbert_old(l,d) #1:'
-       ierr = hilbert_old(ll,maxdim,axis,dir(ll,axis),ja,jd) 
-       dir(ll,ja) = -dir(ll,ja)
-       return 
-    endif
-    axis = MOD(ma+1,maxdim)
-    if(verbose) write(iulog,*)'hilbert_old: before call hilbert_old(l,d) #2:'
-    ierr = hilbert_old(ll,d-1,axis,dir(ll,axis),ma,md)
-    if(verbose) write(iulog,*)'hilbert_old:  after call hilbert_old(l,d) #2:'
-    if(verbose) write(iulog,30) l,d,ma,md,ja,jd,pos(0),pos(1)
-
-
-    pos(ma) = pos(ma) + md
-    dir(ll,ma) = - dir(ll,ma)
-
-    !----------------------------------
-    !  Mark this node as visited 
-    !----------------------------------
-    if(verbose) write(iulog,20) l,d,ma,md,ja,jd,pos(0),pos(1)
-    vcnt=vcnt+1
-    if(verbose) write(iulog,15) pos(0)+1,pos(1)+1,vcnt 
-    if(verbose) write(iulog,*)'  '
-    if(verbose) write(iulog,*)'  '
-    ordered(pos(0)+1,pos(1)+1)=vcnt
-
-    if(verbose) write(iulog,*)'hilbert_old: before call hilbert_old(l,d) #3:'
-    ierr = hilbert_old(ll,d-1,axis,dir(ll,axis),ja,jd)
-    if(verbose) write(iulog,*)'hilbert_old:  after call hilbert_old(l,d) #3:'
-
-10  format('hilbert_old: Entering hilbert_old (l,d,ma,md,ja,jd) are: ', &
-         2(i4),'  [',2(i3),'][',2(i3),']',2(i3))
-15  format('hilbert_old: mark element {x,y,ordered}:',3(i4))
-20  format('hilbert_old: Before visit code (l,d,ma,md,ja,jd) are:', &
-         2(i4),'  [',2(i3),'][',2(i3),']',2(i3))
-
-30  format('hilbert_old:  after call hilbert_old(l,d) #2: (l,d,ma,md,ja,jd are:', &
-         2(i4),'  [',2(i3),'][',2(i3),']',2(i3))
-
-  end function hilbert_old
-  !---------------------------------------------------------
   function log2( n)
 
     implicit none
@@ -1037,10 +1010,11 @@ contains
        ordered(:,:) = 0
 
        call map(level)
-       deallocate(fact%factors)
-
-
        Mesh(:,:) = ordered(:,:)
+
+       deallocate(fact%factors)
+       deallocate(ordered)
+       deallocate(pos)
 
      end subroutine GenSpaceCurve
      !------------------------------------------------------------------------------------------------------- 
@@ -1277,4 +1251,563 @@ contains
 
      end subroutine genspacepart
 
-   end module spacecurve_mod
+  !-----------------------------------------------------------------------------
+  ! O(log ne) (i,j) <-> SFC index maps.
+  !
+  ! index space starts at 0
+  ! pos internally starts at (0,0); externally it starts at (1,1)
+
+  function sfcmap_init(ne, sfcmap) result(ierr)
+    integer, intent(in) :: ne
+    type (sfcmap_t), intent(out) :: sfcmap
+    integer :: i, ierr, f
+
+    sfcmap%n = ne
+    sfcmap%fact = factor(ne)
+    ierr = 0
+    if (sfcmap%fact%numfact == -1) ierr = -1
+  end function sfcmap_init
+
+  subroutine sfcmap_finalize(sfcmap)
+    type (sfcmap_t), intent(inout) :: sfcmap
+    deallocate(sfcmap%fact%factors)
+  end subroutine sfcmap_finalize
+
+  function sfcmap_pos2i(s, pos, index) result(status)
+    type (sfcmap_t), intent(inout) :: s
+    integer, intent(in) :: pos(2)
+    integer, intent(out) :: index
+    integer :: status
+
+    s%pos2i = .true.
+    s%idxs = -1
+    s%pos_os = (/ 0, 0 /)
+    s%pos = pos - 1
+    s%index = 0
+    status = sfcmap_impl(s, s%pos_os, s%fact%numfact, s%n, 0, 1, 0, 1)
+    index = s%index
+  end function sfcmap_pos2i
+
+  function sfcmap_i2pos(s, index, pos) result(status)
+    type (sfcmap_t), intent(inout) :: s
+    integer, intent(in) :: index
+    integer, intent(out) :: pos(2)
+    integer :: status
+
+    s%pos2i = .false.
+    s%idxs = -1
+    s%index_os = 0
+    s%index = index
+    s%pos = (/ 0, 0 /)
+    status = sfcmap_impl(s, s%pos, s%fact%numfact, s%n, 0, 1, 0, 1)
+    pos = s%pos + 1
+  end function sfcmap_i2pos
+
+  function sfcmap_indexrange2pos(s, idxs, idxe, pos) result(status)
+    type (sfcmap_t), intent(inout) :: s
+    integer, intent(in) :: idxs, idxe
+    integer, target, intent(inout) :: pos(:,:)
+    integer :: index, status
+    
+    s%pos2i = .false.
+    s%idxs = idxs
+    s%idxe = idxe
+    s%index_os = 0
+    s%index = idxs
+    s%pos = (/ 0, 0 /)
+    s%positions => pos
+    status = sfcmap_impl(s, s%pos, s%fact%numfact, s%n, 0, 1, 0, 1)
+  end function sfcmap_indexrange2pos
+
+  ! Top level implementation routine for the caller-level functions above.
+  recursive function sfcmap_impl(s, pos, k, k_n, ma, md, ja, jd) result(o)
+    type (sfcmap_t), intent(inout) :: s
+    integer, intent(in) :: k, k_n, ma, md, ja, jd
+    integer, intent(inout) :: pos(2)
+    integer :: km1, km1_n, km1_n2, region, next_region, o
+
+    if (k == 0) then
+       ! In this level, each region is a point, so we're done.
+       o = 0
+       return
+    end if
+
+    km1 = k - 1                      ! child level
+    km1_n = k_n / s%fact%factors(k)  ! size of child level
+    km1_n2 = km1_n*km1_n
+
+    ! Calculate the region (of the factor^2 possible) in which the input
+    ! position or index lies.
+    if (s%pos2i) then
+       region = sfcmap_pos2region(s%fact%factors(k), km1_n, ma, s%pos, s%pos_os)
+       s%index = s%index + km1_n2*region
+    else
+       region = (s%index - s%index_os) / km1_n2
+       s%index_os = s%index_os + km1_n2*region
+    end if
+
+    ! Find either the only index/pos requested, or find the first in the range.
+    o = sfcmap_impl_find_first(s, pos, k, km1, km1_n, region, ma, md, ja, jd)
+
+    ! For indexrange2pos, now that we found the first point, follow the curve to
+    ! the last point. Doing this for a range is faster than finding one position
+    ! at a time.
+    if (o == 0 .and. s%idxs >= 0) then
+       if (k > 1) then
+          next_region = region + 1
+       else
+          next_region = region ! repeat the first index b/c of new base case
+       end if
+       o = sfcmap_impl_follow(s, k, k_n, next_region, ma, md, ja, jd)
+    end if
+  end function sfcmap_impl
+
+  recursive function sfcmap_impl_find_first(s, pos, k, km1, km1_n, region, ma,  md, ja, jd) &
+       result(o)
+    type (sfcmap_t), intent(inout) :: s
+    integer, intent(in) :: k, km1, km1_n, region, ma, md, ja, jd
+    integer, intent(inout) :: pos(2)
+    integer :: ima, km1_n_md, o
+
+    ! The pos increment line moves the cursor to the starting point of the child
+    ! region containing the input position or index. Thus, if you're trying to
+    ! understand the code, draw a 2-level curve so that the starting point is
+    ! relevant. (In a 1-level curve, the child region is just a point, and thus
+    ! the starting point is not revealed.) Then the function recurses on that
+    ! region.
+    ima = modulo(ma+1, 2) ! other indexer; one is for x, the other for y
+    km1_n_md = km1_n*md
+    select case (s%fact%factors(k))
+    case (2)
+       !  _
+       ! | |
+       ! 0 3
+       select case(region)
+       case (0)
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (1)
+          pos(ima+1) = pos(ima+1) +   km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (2)
+          pos( ma+1) = pos( ma+1) +   km1_n_md
+          pos(ima+1) = pos(ima+1) +   km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md, ima, -md)
+       case (3)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md - md
+          pos(ima+1) = pos(ima+1) +   km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md,  ja,  jd)
+       end select
+    case (3)
+       !  _ _
+       ! |  _|
+       ! | |_
+       ! 0   8
+       select case (region)
+       case (0)
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (1)
+          pos(ima+1) = pos(ima+1) +   km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (2)
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (3)
+          pos( ma+1) = pos( ma+1) +   km1_n_md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (4)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md, ima, -md)
+       case (5)
+          pos( ma+1) = pos( ma+1) + 3*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma, -md,  ma, -md)
+       case (6)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md, ima, -md)
+       case (7)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md - md
+          pos(ima+1) = pos(ima+1) +   km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md,  ma,  md)
+       case (8)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ja,  jd)
+       end select
+    case (5)
+       !  _   _ _
+       ! | |_|  _|
+       ! |  _  |_
+       ! |_| |  _|
+       !  _ _| |_
+       ! 0       24
+       select case (region)
+       case (0)
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (1)
+          pos( ma+1) = pos( ma+1) +   km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (2)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (3)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          pos(ima+1) = pos(ima+1) +   km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (4)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md,  ma, -md)
+       case (5)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 3*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md, ima, -md)
+       case (6)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma, -md,  ma, -md)
+       case (7)
+          pos( ma+1) = pos( ma+1) +   km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma, -md, ima,  md)
+       case (8)
+          pos( ma+1) = pos( ma+1)
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (9)
+          pos( ma+1) = pos( ma+1)
+          pos(ima+1) = pos(ima+1) + 3*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (10)
+          pos( ma+1) = pos( ma+1)
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (11)
+          pos( ma+1) = pos( ma+1) +   km1_n_md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md, ima, -md)
+       case (12)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md,  ma,  md)
+       case (13)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          pos(ima+1) = pos(ima+1) + 3*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima,  md, ima,  md)
+       case (14)
+          pos( ma+1) = pos( ma+1) + 2*km1_n_md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (15)
+          pos( ma+1) = pos( ma+1) + 3*km1_n_md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ma,  md)
+       case (16)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md, ima, -md)
+       case (17)
+          pos( ma+1) = pos( ma+1) + 5*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma, -md,  ma, -md)
+       case (18)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 4*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md, ima, -md)
+       case (19)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 3*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md,  ma,  md)
+       case (20)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md, ima, -md)
+       case (21)
+          pos( ma+1) = pos( ma+1) + 5*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma, -md,  ma, -md)
+       case (22)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md - md
+          pos(ima+1) = pos(ima+1) + 2*km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md, ima, -md)
+       case (23)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md - md
+          pos(ima+1) = pos(ima+1) +   km1_n_md - md
+          o = sfcmap_impl(s, pos, km1, km1_n, ima, -md,  ma,  md)
+       case (24)
+          pos( ma+1) = pos( ma+1) + 4*km1_n_md
+          o = sfcmap_impl(s, pos, km1, km1_n,  ma,  md,  ja,  jd)
+       end select
+    case default
+       print *, 'error: factors =', s%fact%factors
+       o = -1
+    end select
+  end function sfcmap_impl_find_first
+
+  function sfcmap_pos2region(factor, km1_n, ma, pos, pos_os) result(reg)
+    integer, intent(in) :: factor, km1_n, ma, pos(2), pos_os(2)
+    integer :: reg, x, y, tmp
+
+    x = abs(pos(1) - pos_os(1)) / km1_n
+    y = abs(pos(2) - pos_os(2)) / km1_n
+    if (ma == 1) then
+       tmp = x
+       x = y
+       y = tmp
+    end if
+    select case (factor)
+    case (2)
+       if (x == 0) then
+          if (y == 0) then
+             reg = 0
+          else
+             reg = 1
+          end if
+       else
+          if (y == 0) then
+             reg = 3
+          else
+             reg = 2
+          end if
+       end if
+    case (3)
+       select case (x)
+       case (0)
+          reg = y
+       case (1)
+          select case (y)
+          case (0); reg =  7
+          case (1); reg =  6
+          case (2); reg =  3
+          end select
+       case (2)
+          select case (y)
+          case (0); reg =  8
+          case (1); reg =  5
+          case (2); reg =  4
+          end select
+       end select
+    case (5)
+       select case (x)
+       case (0)
+          select case (y)
+          case (0); reg =  0
+          case (1); reg =  7
+          case (2); reg =  8
+          case (3); reg =  9
+          case (4); reg = 10
+          end select
+       case (1)
+          select case (y)
+          case (0); reg =  1
+          case (1); reg =  6
+          case (2); reg =  5
+          case (3); reg = 12
+          case (4); reg = 11
+          end select
+       case (2)
+          select case (y)
+          case (0); reg =  2
+          case (1); reg =  3
+          case (2); reg =  4
+          case (3); reg = 13
+          case (4); reg = 14
+          end select
+       case (3)
+          select case (y)
+          case (0); reg = 23
+          case (1); reg = 22
+          case (2); reg = 19
+          case (3); reg = 18
+          case (4); reg = 15
+          end select
+       case (4)
+          select case (y)
+          case (0); reg = 24
+          case (1); reg = 21
+          case (2); reg = 20
+          case (3); reg = 17
+          case (4); reg = 16
+          end select
+       end select       
+    end select
+  end function sfcmap_pos2region
+
+  recursive function sfcmap_impl_follow(s, k, k_n, region_min, &
+       ma, md, ja, jd) result(o)
+    type (sfcmap_t), intent(inout) :: s
+    integer, intent(in) :: k, k_n, region_min, ma, md, ja, jd
+    integer :: km1, km1_n, km1_n2, ima, region, o
+
+    if (k == 0) then ! base case
+       s%index = s%index + 1
+       s%positions(s%index-s%idxs,1) = s%pos(1) + 1
+       s%positions(s%index-s%idxs,2) = s%pos(2) + 1
+       s%pos(ja+1) = s%pos(ja+1) + jd
+       o = 0
+       if (s%index == s%idxe+1) o = 1
+       return
+    end if
+
+    km1 = k - 1
+    km1_n = k_n / s%fact%factors(k)
+    ima = modulo(ma+1, 2)
+
+    select case (s%fact%factors(k))
+    case (2)
+       do region = region_min, 3
+          select case(region)
+          case (0); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case (1); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case (2); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md, ima, -md)
+          case (3); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md,  ja,  jd)
+          end select
+          if (o == 1) return
+       end do
+    case (3)
+       do region = region_min, 8
+          select case (region)
+          case (0); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case (1); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case (2); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case (3); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case (4); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md, ima, -md)
+          case (5); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma, -md,  ma, -md)
+          case (6); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md, ima, -md)
+          case (7); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md,  ma,  md)
+          case (8); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ja,  jd)
+          end select
+          if (o == 1) return
+       end do
+    case (5)
+       do region = region_min, 24
+          select case (region)
+          case ( 0); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case ( 1); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case ( 2); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case ( 3); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case ( 4); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md,  ma, -md)
+          case ( 5); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md, ima, -md)
+          case ( 6); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma, -md,  ma, -md)
+          case ( 7); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma, -md, ima,  md)
+          case ( 8); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case ( 9); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case (10); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case (11); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md, ima, -md)
+          case (12); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md,  ma,  md)
+          case (13); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima,  md, ima,  md)
+          case (14); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case (15); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ma,  md)
+          case (16); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md, ima, -md)
+          case (17); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma, -md,  ma, -md)
+          case (18); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md, ima, -md)
+          case (19); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md,  ma,  md)
+          case (20); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md, ima, -md)
+          case (21); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma, -md,  ma, -md)
+          case (22); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md, ima, -md)
+          case (23); o = sfcmap_impl_follow(s, km1, km1_n, 0, ima, -md,  ma,  md)
+          case (24); o = sfcmap_impl_follow(s, km1, km1_n, 0,  ma,  md,  ja,  jd)
+          end select
+          if (o == 1) return
+       end do
+    end select
+    o = 0
+  end function sfcmap_impl_follow
+
+  subroutine sfcmap_test(verbose)
+    logical, intent(in) :: verbose
+    integer, allocatable :: mesh(:,:)
+    integer :: ne, ine, index, pos(2), ierr, i, j, len, idxs, idxe
+    real :: start, finish
+    type (sfcmap_t) :: sfcmap
+    integer, allocatable :: positions(:,:)
+
+    integer, parameter :: nes(8) = (/ 11, 8, 27, 75, 30, 36, 750, 1080 /)
+
+    do ine = 1, size(nes)
+       ne = nes(ine)
+       ierr = sfcmap_init(ne, sfcmap)
+       call cpu_time(start)
+       if (ne /= 11 .and. ierr /= 0) then
+          print *, 'SGI> not impled for ne',ne,'with factors',sfcmap%fact%factors
+       end if
+       if (ierr /= 0) then
+          call sfcmap_finalize(sfcmap)
+          cycle
+       end if
+       allocate(mesh(ne,ne))
+       call cpu_time(start)
+       call genspacecurve(mesh)
+       call cpu_time(finish)
+       if (verbose) print *, 'SGI>  gsc  et', ne, finish-start
+       do index = 0, ne**2 - 1
+          ierr = sfcmap_i2pos(sfcmap, index, pos)
+          if (ierr /= 0) then
+             print *, 'not impled for ne',ne,'with factors',sfcmap%fact%factors
+             exit
+          end if
+          if (mesh(pos(1),pos(2)) /= index) then
+             print '(a,i4,i6,i6,i3,i3)', 'SGI>', ne, index, mesh(pos(1),pos(2)), pos(1), pos(2)
+          end if
+       end do
+       call cpu_time(finish)
+       if (verbose) print *, 'SGI>  p2i  et', ne, finish-start
+       index = -1
+       call cpu_time(start)
+       do j = 1, ne
+          do i = 1, ne
+             pos = (/ i, j /)
+             ierr = sfcmap_pos2i(sfcmap, pos, index)
+             if (mesh(i,j) /= index) then
+                print '(a,i4,i6,i6,i3,i3)', 'SGI>', ne, mesh(i,j), index, i, j
+             end if
+          end do
+       end do
+       call cpu_time(finish)
+       if (verbose) print *, 'SGI>  i2p  et', ne, finish-start
+       if (ne >= 128) then
+          idxs = ne*(ne/5);
+          idxe = min(ne**2 - 1, idxs + (ne*ne)/32)
+       else
+          idxs = 0
+          idxe = ne**2 - 1
+       end if
+       allocate(positions(idxe-idxs+1, 2))
+       call cpu_time(start)
+       ierr = sfcmap_indexrange2pos(sfcmap, idxs, idxe, positions)
+       call cpu_time(finish)
+       if (verbose) print *, 'SGI> is2ps et', real(size(positions,1))/(ne**2), finish-start
+       do i = 1, idxe-idxs+1
+          ierr = sfcmap_pos2i(sfcmap, positions(i,:), index)
+          if (mesh(positions(i,1), positions(i,2)) /= index) then
+             print '(a,i4,i6,i6,i3,i3)', 'SGI>', ne, &
+                  mesh(positions(i,1), positions(i,2)), &
+                  index, positions(i,1), positions(i,2)
+          end if
+       end do
+       positions = 0
+       len = 7
+       if (ne**2 > len) then
+          call cpu_time(start)
+          do j = 0, ne**2 - len, len
+             ierr = sfcmap_indexrange2pos(sfcmap, j, j+len-1, positions)
+             do i = 1,len
+                pos = positions(i,:)
+                ierr = sfcmap_pos2i(sfcmap, pos, index)
+                if (mesh(pos(1), pos(2)) /= index) then
+                   print '(a,i4,i4,i4,i6,i6,i3,i3)', 'SGI>', &
+                        ne, j, i, mesh(pos(1), pos(2)), index, pos(1), pos(2)
+                end if
+             end do
+          end do
+          call cpu_time(finish)
+          if (verbose) print *, 'SGI> is2ps*et', ne, finish-start
+       end if
+       deallocate(positions)
+       deallocate(mesh)
+       call sfcmap_finalize(sfcmap)
+    end do
+  end subroutine sfcmap_test
+
+end module spacecurve_mod

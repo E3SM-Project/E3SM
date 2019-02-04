@@ -100,7 +100,7 @@
     type of prescribed SST mode used specifically for an aquaplanet setup in
     which global SSTs correspond to an analytic form set by the index value.
     Currently, indices for 10 SST profiles are supported [e.g., index 3 corresponds
-    to the “QOBS” profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
+    to the "QOBS" profile of Neale and Hoskins (2001, Atmos. Sci. Lett.)].
     With source code modifications, it is possible for users to create their own
     analytic SST distributions and match them to indices 11 or greater.
     </desc>
@@ -167,6 +167,7 @@
       <value compset="1850_" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.47x0.63.*_oi%0.47x0.63"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
+      <value compset="1950_" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1950_clim_c20180910.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF"      grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_4x5_clim_c110526.nc</value>

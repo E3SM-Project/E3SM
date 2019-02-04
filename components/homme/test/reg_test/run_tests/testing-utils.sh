@@ -297,6 +297,14 @@ createAllRunScripts() {
     echo "rm -f movies/*" >> $RUN_SCRIPT
     echo "" >> $RUN_SCRIPT # new line
 
+    #kokkos needs omp_num_threads set
+    if [ -n "${OMP_NUMBER_THREADS_KOKKOS}" ]; then
+      echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS_KOKKOS}" >> $thisRunScript
+      #do we need this?
+      echo "export OMP_STACKSIZE=128M" >> $thisRunScript
+      echo "" >> $thisRunScript # new line
+    fi
+
     for testNum in $(seq 1 ${NUM_TESTS})
     do
       testExec=TEST_${testNum}

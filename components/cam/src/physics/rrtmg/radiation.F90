@@ -38,13 +38,10 @@ save
 
 public :: &
    radiation_register,    &! registers radiation physics buffer fields
-   radiation_defaultopts, &! set default values of namelist variables in runtime_opts
-   radiation_setopts,     &! set namelist values from runtime_opts
-   radiation_printopts,   &! print namelist values to log
-   radiation_get,         &! provide read access to private module data
    radiation_nextsw_cday, &! calendar day of next radiation calculation
    radiation_do,          &! query which radiation calcs are done this timestep
    radiation_init,        &! calls radini
+   radiation_readnl,      &! read radiation namelist
    radiation_tend          ! moved from radctl.F90
 
 integer,public, allocatable :: cosp_cnt(:)       ! counter for cosp
@@ -97,6 +94,73 @@ integer :: firstblock, lastblock      ! global block indices
 !===============================================================================
 contains
 !===============================================================================
+
+subroutine radiation_readnl(nlfile, dtime_in)
+!-------------------------------------------------------------------------------
+! Purpose: Read radiation_nl namelist group.
+!-------------------------------------------------------------------------------
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: mpicom, mstrid=>masterprocid, mpi_integer, mpi_logical, &
+                              mpi_character, masterproc
+   use time_manager,    only: get_step_size
+
+   ! File containing namelist input
+   character(len=*), intent(in) :: nlfile
+   integer, intent(in), optional :: dtime_in
+
+   ! Local variables
+   integer :: unitn, ierr
+   integer :: dtime  ! timestep size
+   character(len=*), parameter :: subroutine_name = 'radiation_readnl'
+
+   ! Variables defined in namelist
+   namelist /radiation_nl/ iradsw, iradlw, irad_always, &
+                           use_rad_dt_cosz, spectralflux
+
+   ! Read the namelist, only if called from master process
+   ! TODO: better documentation and cleaner logic here?
+   if (masterproc) then
+      unitn = getunit()
+      open(unitn, file=trim(nlfile), status='old')
+      call find_group_name(unitn, 'radiation_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, radiation_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subroutine_name // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+#ifdef SPMD
+   ! Broadcast namelist variables
+   call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
+   call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
+   call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
+   call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+#endif
+
+   ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
+   if (present(dtime_in)) then
+      dtime = dtime_in
+   else
+      dtime  = get_step_size()
+   end if
+   if (iradsw      < 0) iradsw      = nint((-iradsw     *3600._r8)/dtime)
+   if (iradlw      < 0) iradlw      = nint((-iradlw     *3600._r8)/dtime)
+   if (irad_always < 0) irad_always = nint((-irad_always*3600._r8)/dtime)
+
+   ! Print runtime options to log.
+   if (masterproc) then
+      call radiation_printopts()
+   end if
+
+end subroutine radiation_readnl
+
 
   subroutine radiation_register
 !-----------------------------------------------------------------------
@@ -319,7 +383,7 @@ end function radiation_nextsw_cday
 ! 
 !-----------------------------------------------------------------------
     use physics_buffer, only: pbuf_get_index
-    use phys_grid,      only: npchunks, get_ncols_p, chunks, knuhcs, ngcols_p, latlon_to_dyn_gcol_map
+    use phys_grid,      only: npchunks, get_ncols_p, chunks, knuhcs, ngcols, dyn_to_latlon_gcol_map
     use cam_history,    only: addfld, horiz_only, add_default
     use constituents,   only: cnst_get_ind
     use physconst,      only: gravit, stebol, &
@@ -360,7 +424,7 @@ end function radiation_nextsw_cday
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
     integer, allocatable, dimension(:,:) :: clm_id
     integer :: id, lchnk, ncol, ilchnk, astat, iseed, ipes, ipes_tmp
-    integer :: igcol, imap, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
+    integer :: igcol, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
     !-----------------------------------------------------------------------
     
     call rrtmg_state_init()
@@ -451,13 +515,14 @@ end function radiation_nextsw_cday
        end if
        !compute all clm ids on masterproc and then scatter it ....
        if(masterproc) then
-          do igcol = 1, ngcols_p
-             imap = latlon_to_dyn_gcol_map(igcol)
-             chunkid  = knuhcs(imap)%chunkid
-             icol = knuhcs(imap)%col
-             iown  = chunks(chunkid)%owner
-             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-             clm_id_mstr(icol,ilchnk,iown+1) = igcol
+          do igcol = 1, ngcols
+             if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then                
+                chunkid  = knuhcs(igcol)%chunkid
+                icol = knuhcs(igcol)%col
+                iown  = chunks(chunkid)%owner
+                ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+                clm_id_mstr(icol,ilchnk,iown+1) = igcol
+             endif
           enddo
        endif
        
@@ -466,7 +531,7 @@ end function radiation_nextsw_cday
        tot_cols = pcols*max_chnks_in_blk
        call MPI_Scatter( clm_id_mstr, tot_cols,  mpi_integer, &
             clm_id,    tot_cols,  mpi_integer, 0,             &
-            MPI_COMM_WORLD,ierr)
+            mpicom,ierr)
 #else
        !BSINGH - Haven't tested it.....               
        call endrun('radiation.F90(rrtmg)-radiation_init: non-mpi compiles are not tested yet for pergro test...')

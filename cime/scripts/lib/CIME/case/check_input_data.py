@@ -48,7 +48,7 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                                    input_data_root=input_data_root, data_list_dir=data_list_dir)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
-    
+
     expect(not download or (download and success), "Could not find all inputdata on any server")
     self.stage_refcase(input_data_root=input_data_root, data_list_dir=data_list_dir)
     return success
@@ -123,7 +123,10 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         for cam2file in  glob.iglob(os.path.join("{}","*.cam2.*").format(rundir)):
             camfile = cam2file.replace("cam2", "cam")
             os.symlink(cam2file, camfile)
-
+    elif not get_refcase and run_type != "startup":
+        logger.info("GET_REFCASE is false, the user is expected to stage the refcase to the run directory.")
+        if os.path.exists(os.path.join("Buildconf","refcase.input_data_list")):
+            os.remove(os.path.join("Buildconf","refcase.input_data_list"))
     return True
 
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf", download=False):
@@ -189,7 +192,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             no_files_missing = False
                         else:
                             logging.debug("  Found input file: '{}'".format(full_path))
-
                     else:
                         # There are some special values of rel_path that
                         # we need to ignore - some of the component models

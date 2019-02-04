@@ -635,10 +635,12 @@ contains
                          ddz3 = max(0._r8,min(1._r8,(swe_old(c,j) - wx)/wx))
 
                          ! 2nd term is delta fsno over fsno, allowing for negative values for ddz3
-                         wsum = sum(h2osoi_liq(c,snl(c)+1:0)+h2osoi_ice(c,snl(c)+1:0))
-                         fsno_melt = 1. - (acos(2.*min(1._r8,wsum/int_snow(c)) - 1._r8)/rpi)**(n_melt(c))
+                         if ((swe_old(c,j) - wx) > 0._r8) then
+                            wsum = sum(h2osoi_liq(c,snl(c)+1:0)+h2osoi_ice(c,snl(c)+1:0))
+                            fsno_melt = 1. - (acos(2.*min(1._r8,wsum/int_snow(c)) - 1._r8)/rpi)**(n_melt(c))
 
-                         ddz3 = ddz3 - max(0._r8,(fsno_melt - frac_sno(c))/frac_sno(c))
+                            ddz3 = ddz3 - max(0._r8,(fsno_melt - frac_sno(c))/frac_sno(c))
+                         endif
                          ddz3 = -1._r8/dtime * ddz3
                       else
                          ddz3 = - 1._r8/dtime * max(0._r8,(frac_iceold(c,j) - fi)/frac_iceold(c,j))

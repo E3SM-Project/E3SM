@@ -30,7 +30,9 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
+
 CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
+COMP_INTERFACE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_INTERFACE --value)
 EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
 SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
 SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
@@ -40,6 +42,7 @@ COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --valu
 NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
 MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
 PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
+COMPARE_TO_NUOPC ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPARE_TO_NUOPC --value)
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -81,6 +84,16 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
 
+HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+   USE_CXX = true
+   USE_KOKKOS = TRUE
+endif
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
+
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
@@ -101,6 +114,24 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
+ifeq ($(COMP_INTERFACE), nuopc)
+   CPPDEFS += -DNUOPC_INTERFACE
+   CPPDEFS += -DESMFUSE_$(COMP_ATM)
+   CPPDEFS += -DESMFUSE_$(COMP_LND)
+   CPPDEFS += -DESMFUSE_$(COMP_OCN)
+   CPPDEFS += -DESMFUSE_$(COMP_ICE)
+   CPPDEFS += -DESMFUSE_$(COMP_ROF)
+   CPPDEFS += -DESMFUSE_$(COMP_WAV)
+   CPPDEFS += -DESMFUSE_$(COMP_GLC)
+   CPPDEFS += -DESMFUSE_$(COMP_ESP)
+else
+   CPPDEFS += -DMCT_INTERFACE
+endif
+
+ifeq ($(COMPARE_TO_NUOPC), TRUE)
+   CPPDEFS += -DCOMPARE_TO_NUOPC
+endif
+
 ifeq ($(strip $(MPILIB)),mpi-serial)
   CPPDEFS += -DNO_MPI2
 else
@@ -112,11 +143,15 @@ ifeq ($(strip $(PIO_VERSION)),1)
 endif
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
 include $(CASEROOT)/Macros.make
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
@@ -179,7 +214,7 @@ ifdef NETCDF_C_PATH
     LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
   endif
   ifndef LIB_NETCDF_FORTRAN
-    LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
+    LIB_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/lib
   endif
  else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
@@ -204,9 +239,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-	ifdef PNETCDF_PATH
-		undefine PNETCDF_PATH
-	endif
+  ifdef PNETCDF_PATH
+    undefine PNETCDF_PATH
+  endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)
@@ -270,6 +305,16 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
+  ifdef KOKKOS_PATH
+    INC_KOKKOS:=$(KOKKOS_PATH)/include
+    LIB_KOKKOS:=$(KOKKOS_PATH)/lib
+  else
+    $(error $(HOMME_TARGET) requires env. variable KOKKOS_ROOT to be set)
+  endif
+	CPPDEFS += -DUSE_KOKKOS_KERNELS
+endif
+
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -305,6 +350,32 @@ ifeq ($(PIO_VERSION),2)
   EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
 else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
+endif
+
+ifdef LIB_PNETCDF
+   CPPDEFS += -D_PNETCDF
+   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
+endif
+
+# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+CIME_ESMFMKFILE := undefined_ESMFMKFILE
+ifdef ESMFMKFILE
+   CIME_ESMFMKFILE := $(ESMFMKFILE)
+endif
+ifdef ESMF_LIBDIR
+   CIME_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
+endif
+# For compiling and linking with external ESMF.
+# If linking to external ESMF library then include esmf.mk
+# ESMF_F90COMPILEPATHS
+# ESMF_F90LINKPATHS
+# ESMF_F90LINKRPATHS
+# ESMF_F90ESMFLINKLIBS
+ifeq ($(USE_ESMF_LIB), TRUE)
+  -include $(CIME_ESMFMKFILE)
+  CPPDEFS += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR) -DESMF_VERSION_MINOR=$(ESMF_VERSION_MINOR)
+  FFLAGS += $(ESMF_F90COMPILEPATHS)
+  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
 ifdef CPRE
@@ -392,6 +463,9 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
+ifdef INC_KOKKOS
+  INCLDIR += -I$(INC_KOKKOS)
+endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -417,7 +491,7 @@ else
        # nagfor runtime to get autoconf
        # tests to work.
          CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
        endif
     endif
   endif
@@ -454,7 +528,6 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 #
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
-
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -477,8 +550,11 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  ifeq ($(MODEL),driver)
+    INCLDIR+=-I$(COSP_LIBDIR)
+  endif
 endif
 
 ifeq ($(MODEL),cam)
@@ -504,15 +580,6 @@ endif
 
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
-CCSM_ESMFMKFILE := undefined_CCSM_ESMFMKFILE
-ifdef ESMFMKFILE
-   CCSM_ESMFMKFILE := $(ESMFMKFILE)
-endif
-ifdef ESMF_LIBDIR
-   CCSM_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
-endif
-
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
@@ -523,9 +590,6 @@ ifndef SLIBS
   endif
 endif
 
-ifdef LIB_PNETCDF
-   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
-endif
 ifdef LAPACK_LIBDIR
    SLIBS += -L$(LAPACK_LIBDIR) -llapack -lblas
 endif
@@ -537,16 +601,8 @@ ifdef LIB_MPI
    endif
 endif
 
-# For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk
-# ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
-# ESMF_F90LINKRPATHS
-# ESMF_F90ESMFLINKLIBS
-ifeq ($(USE_ESMF_LIB), TRUE)
-  -include $(CCSM_ESMFMKFILE)
-  FFLAGS += $(ESMF_F90COMPILEPATHS)
-  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+ifdef LIB_KOKKOS
+   SLIBS += -L$(LIB_KOKKOS) -lkokkos
 endif
 
 # Add PETSc libraries
@@ -759,9 +815,8 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
 ifeq ($(CIME_MODEL),cesm)
-  ifneq ($(CLMVER),$(null))
+  ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
     USE_SHARED_CLM=FALSE
@@ -772,10 +827,10 @@ endif
 ifeq ($(USE_SHARED_CLM),FALSE)
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
-  ifeq ($(CLMVER),$(null))
-    LNDLIB := liblnd.a
-  else
+  ifeq ($(COMP_LND),clm)
     LNDLIB := libclm.a
+  else
+    LNDLIB := liblnd.a
   endif
   INCLDIR += -I$(LNDOBJDIR)
 else
@@ -849,21 +904,23 @@ $(MCTLIBS)  : $(MPISERIAL)
 $(PIOLIB) : $(MPISERIAL) $(GPTLLIB)
 
 $(CSMSHARELIB):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
+
 ifneq ($(MODEL),csm_share)
   $(OBJS):  $(CSMSHARELIB)
+else
+  complib: install_lib
 endif
+
+install_lib: $(COMPLIB)
+	$(CP) -p $(COMPLIB) $(CSMSHARELIB)
+	$(CP) -p *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-ifdef INCLUDE_DIR
-  $(COMPLIB): $(OBJS)
+$(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
-else
-  $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
-endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
