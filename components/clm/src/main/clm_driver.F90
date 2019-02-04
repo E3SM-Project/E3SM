@@ -129,6 +129,7 @@ module clm_driver
   use UrbanParamsType        , only : urbanparams_vars
 
   use GridcellType           , only : grc_pp
+  use GridcellDataType       , only : grc_cs
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
@@ -333,14 +334,10 @@ contains
           call nitrogenflux_vars%ZeroDWT(bounds_clump)
           call phosphorusflux_vars%ZeroDWT(bounds_clump)
 
-          call carbonstate_vars%ZeroDWT(bounds_clump)
           call veg_cs%ZeroDwt(bounds_clump)
+          
           call nitrogenstate_vars%ZeroDWT(bounds_clump)
           call phosphorusstate_vars%ZeroDWT(bounds_clump)
-
-          call carbonstate_vars%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
 
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -357,7 +354,7 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
 
-          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, carbonstate_vars)
+          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
           call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
 
@@ -400,10 +397,6 @@ contains
              do nc = 1,nclumps
                 call get_clump_bounds(nc, bounds_clump)
 
-                call carbonstate_vars%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp)
-
                 call veg_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
@@ -421,7 +414,7 @@ contains
 
                 call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     carbonstate_vars, carbonflux_vars)
+                     col_cs, grc_cs, carbonflux_vars)
 
                 call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -468,10 +461,8 @@ contains
 
        if (use_cn) then
           call t_startf('begcnpbal')
-          call carbonstate_vars%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
 
+          ! call veg_cs summary before col_cs summary, for p2c
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
@@ -489,7 +480,7 @@ contains
 
           call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               carbonstate_vars)
+               col_cs)
 
           call BeginColNBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -1243,7 +1234,7 @@ contains
 
                 call ColCBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     carbonstate_vars, carbonflux_vars)
+                     col_cs, carbonflux_vars)
 
                 call ColNBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &

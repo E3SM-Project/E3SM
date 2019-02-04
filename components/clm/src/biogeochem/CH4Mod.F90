@@ -1970,7 +1970,7 @@ contains
 
          h2osoi_vol     =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         rr             =>    carbonflux_vars%rr_patch           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
+         rr             =>    veg_cf%rr           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
          somhr          =>    carbonflux_vars%somhr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
          lithr          =>    carbonflux_vars%lithr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration        
          hr_vr          =>    carbonflux_vars%hr_vr_col          , & ! Input:  [real(r8) (:,:)  ]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -2458,7 +2458,7 @@ contains
 
          elai          =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8) (:)    ]  one-sided leaf area index with burying by snow    
 
-         annsum_npp    =>    carbonflux_vars%annsum_npp_patch    , & ! Input:  [real(r8) (:)    ]  annual sum NPP (gC/m2/yr)                         
+         annsum_npp    =>    veg_cf%annsum_npp    , & ! Input:  [real(r8) (:)    ]  annual sum NPP (gC/m2/yr)                         
 
          t_soisno      =>    col_es%t_soisno       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
 
@@ -2474,8 +2474,8 @@ contains
 
          frootc        =>    veg_cs%frootc       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C                               
 
-         annavg_agnpp  =>    carbonflux_vars%annavg_agnpp_patch  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average aboveground NPP          
-         annavg_bgnpp  =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average belowground NPP          
+         annavg_agnpp  =>    veg_cf%annavg_agnpp  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average aboveground NPP          
+         annavg_bgnpp  =>    veg_cf%annavg_bgnpp  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average belowground NPP          
 
          grnd_ch4_cond =>    ch4_vars%grnd_ch4_cond_patch        , & ! Input:  [real(r8) (:)    ]  tracer conductance for boundary layer [m/s]       
          c_atm         =>    ch4_vars%c_atm_grc                    & ! Input:  [real(r8) (: ,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)         
@@ -3671,13 +3671,13 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                      & 
-         agnpp          =>    carbonflux_vars%agnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP                         
-         bgnpp          =>    carbonflux_vars%bgnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP                         
+         agnpp          =>    veg_cf%agnpp         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP                         
+         bgnpp          =>    veg_cf%bgnpp         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP                         
          somhr          =>    carbonflux_vars%somhr_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) soil organic matter heterotrophic respiration
-         tempavg_agnpp  =>    carbonflux_vars%tempavg_agnpp_patch , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)      
-         annavg_agnpp   =>    carbonflux_vars%annavg_agnpp_patch  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
-         tempavg_bgnpp  =>    carbonflux_vars%tempavg_bgnpp_patch , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)      
-         annavg_bgnpp   =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
+         tempavg_agnpp  =>    veg_cf%tempavg_agnpp , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)      
+         annavg_agnpp   =>    veg_cf%annavg_agnpp  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
+         tempavg_bgnpp  =>    veg_cf%tempavg_bgnpp , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)      
+         annavg_bgnpp   =>    veg_cf%annavg_bgnpp  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
          
          finundated     =>    ch4_vars%finundated_col             , & ! Input:  [real(r8) (:) ]  fractional inundated area in soil column          
          annsum_counter =>    ch4_vars%annsum_counter_col         , & ! Output: [real(r8) (:) ]  seconds since last annual accumulator turnover    

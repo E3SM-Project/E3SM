@@ -15,9 +15,11 @@ module CarbonIsoFluxMod
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
   use ColumnType             , only : col_pp 
-  use ColumnDataType         , only : column_carbon_state, col_cs  
+  use ColumnDataType         , only : column_carbon_state, column_carbon_flux
+  use ColumnDataType         , only : col_cs, col_cf  
   use VegetationType         , only : veg_pp                
-  use VegetationDataType     , only : vegetation_carbon_state, veg_cs  
+  use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux 
+  use VegetationDataType     , only : veg_cs, veg_cf  
   !
   implicit none
   save
@@ -41,7 +43,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic flux
@@ -61,6 +63,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
+    type(column_carbon_flux),intent(in)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(in):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi,l,fc,cc,j
@@ -78,293 +82,293 @@ contains
       ! threading to work properly - the subroutine calls will need to be changed so that
       ! instead of 'call CarbonIsoFluxCalc(foo, ...)' we have 'call CarbonIsoFluxCalc(foo(begp:endp), ...)'.
       
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%leafc_xfer_to_leafc_patch           , carbonflux_vars%leafc_xfer_to_leafc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%leafc_xfer_to_leafc           , veg_cf%leafc_xfer_to_leafc, &
            isoveg_cs%leafc_xfer                   , veg_cs%leafc_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%frootc_xfer_to_frootc_patch         , carbonflux_vars%frootc_xfer_to_frootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%frootc_xfer_to_frootc         , veg_cf%frootc_xfer_to_frootc, &
            isoveg_cs%frootc_xfer                  , veg_cs%frootc_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livestemc_xfer_to_livestemc_patch   , carbonflux_vars%livestemc_xfer_to_livestemc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livestemc_xfer_to_livestemc   , veg_cf%livestemc_xfer_to_livestemc, &
            isoveg_cs%livestemc_xfer               , veg_cs%livestemc_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%deadstemc_xfer_to_deadstemc_patch   , carbonflux_vars%deadstemc_xfer_to_deadstemc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%deadstemc_xfer_to_deadstemc   , veg_cf%deadstemc_xfer_to_deadstemc, &
            isoveg_cs%deadstemc_xfer               , veg_cs%deadstemc_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livecrootc_xfer_to_livecrootc_patch , carbonflux_vars%livecrootc_xfer_to_livecrootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livecrootc_xfer_to_livecrootc , veg_cf%livecrootc_xfer_to_livecrootc, &
            isoveg_cs%livecrootc_xfer              , veg_cs%livecrootc_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%deadcrootc_xfer_to_deadcrootc_patch , carbonflux_vars%deadcrootc_xfer_to_deadcrootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%deadcrootc_xfer_to_deadcrootc , veg_cf%deadcrootc_xfer_to_deadcrootc, &
            isoveg_cs%deadcrootc_xfer              , veg_cs%deadcrootc_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%leafc_to_litter_patch               , carbonflux_vars%leafc_to_litter_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%leafc_to_litter               , veg_cf%leafc_to_litter, &
            isoveg_cs%leafc                        , veg_cs%leafc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%frootc_to_litter_patch              , carbonflux_vars%frootc_to_litter_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%frootc_to_litter              , veg_cf%frootc_to_litter, &
            isoveg_cs%frootc                       , veg_cs%frootc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livestemc_to_deadstemc_patch        , carbonflux_vars%livestemc_to_deadstemc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livestemc_to_deadstemc        , veg_cf%livestemc_to_deadstemc, &
            isoveg_cs%livestemc                    , veg_cs%livestemc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livecrootc_to_deadcrootc_patch      , carbonflux_vars%livecrootc_to_deadcrootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livecrootc_to_deadcrootc      , veg_cf%livecrootc_to_deadcrootc, &
            isoveg_cs%livecrootc                   , veg_cs%livecrootc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%leaf_curmr_patch                    , carbonflux_vars%leaf_curmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%leaf_curmr                    , veg_cf%leaf_curmr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%froot_curmr_patch                   , carbonflux_vars%froot_curmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%froot_curmr                   , veg_cf%froot_curmr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livestem_curmr_patch                , carbonflux_vars%livestem_curmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livestem_curmr                , veg_cf%livestem_curmr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livecroot_curmr_patch               , carbonflux_vars%livecroot_curmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livecroot_curmr               , veg_cf%livecroot_curmr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%xr_patch                            , carbonflux_vars%xr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%xr                            , veg_cf%xr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)  
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%leaf_xsmr_patch                     , carbonflux_vars%leaf_xsmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%leaf_xsmr                     , veg_cf%leaf_xsmr, &
            isoveg_cs%totvegc                      , veg_cs%totvegc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%froot_xsmr_patch                    , carbonflux_vars%froot_xsmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%froot_xsmr                    , veg_cf%froot_xsmr, &
            isoveg_cs%totvegc                      , veg_cs%totvegc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livestem_xsmr_patch                 , carbonflux_vars%livestem_xsmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livestem_xsmr                 , veg_cf%livestem_xsmr, &
            isoveg_cs%totvegc                      , veg_cs%totvegc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livecroot_xsmr_patch                , carbonflux_vars%livecroot_xsmr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livecroot_xsmr                , veg_cf%livecroot_xsmr, &
            isoveg_cs%totvegc                      , veg_cs%totvegc, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_xsmrpool_patch             , carbonflux_vars%cpool_to_xsmrpool_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_xsmrpool             , veg_cf%cpool_to_xsmrpool, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_leafc_patch                , carbonflux_vars%cpool_to_leafc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_leafc                , veg_cf%cpool_to_leafc, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_leafc_storage_patch        , carbonflux_vars%cpool_to_leafc_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_leafc_storage        , veg_cf%cpool_to_leafc_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_frootc_patch               , carbonflux_vars%cpool_to_frootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_frootc               , veg_cf%cpool_to_frootc, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_frootc_storage_patch       , carbonflux_vars%cpool_to_frootc_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_frootc_storage       , veg_cf%cpool_to_frootc_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livestemc_patch            , carbonflux_vars%cpool_to_livestemc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_livestemc            , veg_cf%cpool_to_livestemc, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livestemc_storage_patch    , carbonflux_vars%cpool_to_livestemc_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_livestemc_storage    , veg_cf%cpool_to_livestemc_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadstemc_patch            , carbonflux_vars%cpool_to_deadstemc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_deadstemc            , veg_cf%cpool_to_deadstemc, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadstemc_storage_patch    , carbonflux_vars%cpool_to_deadstemc_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_deadstemc_storage    , veg_cf%cpool_to_deadstemc_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livecrootc_patch           , carbonflux_vars%cpool_to_livecrootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_livecrootc           , veg_cf%cpool_to_livecrootc, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_livecrootc_storage_patch   , carbonflux_vars%cpool_to_livecrootc_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_livecrootc_storage   , veg_cf%cpool_to_livecrootc_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadcrootc_patch           , carbonflux_vars%cpool_to_deadcrootc_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_deadcrootc           , veg_cf%cpool_to_deadcrootc, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_deadcrootc_storage_patch   , carbonflux_vars%cpool_to_deadcrootc_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_deadcrootc_storage   , veg_cf%cpool_to_deadcrootc_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_leaf_gr_patch                 , carbonflux_vars%cpool_leaf_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_leaf_gr                 , veg_cf%cpool_leaf_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_froot_gr_patch                , carbonflux_vars%cpool_froot_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_froot_gr                , veg_cf%cpool_froot_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_livestem_gr_patch             , carbonflux_vars%cpool_livestem_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_livestem_gr             , veg_cf%cpool_livestem_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_deadstem_gr_patch             , carbonflux_vars%cpool_deadstem_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_deadstem_gr             , veg_cf%cpool_deadstem_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_livecroot_gr_patch            , carbonflux_vars%cpool_livecroot_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_livecroot_gr            , veg_cf%cpool_livecroot_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_deadcroot_gr_patch            , carbonflux_vars%cpool_deadcroot_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_deadcroot_gr            , veg_cf%cpool_deadcroot_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_leaf_storage_gr_patch         , carbonflux_vars%cpool_leaf_storage_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_leaf_storage_gr         , veg_cf%cpool_leaf_storage_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_froot_storage_gr_patch        , carbonflux_vars%cpool_froot_storage_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_froot_storage_gr        , veg_cf%cpool_froot_storage_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_livestem_storage_gr_patch     , carbonflux_vars%cpool_livestem_storage_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_livestem_storage_gr     , veg_cf%cpool_livestem_storage_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_deadstem_storage_gr_patch     , carbonflux_vars%cpool_deadstem_storage_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_deadstem_storage_gr     , veg_cf%cpool_deadstem_storage_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_livecroot_storage_gr_patch    , carbonflux_vars%cpool_livecroot_storage_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_livecroot_storage_gr    , veg_cf%cpool_livecroot_storage_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_deadcroot_storage_gr_patch    , carbonflux_vars%cpool_deadcroot_storage_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_deadcroot_storage_gr    , veg_cf%cpool_deadcroot_storage_gr, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%cpool_to_gresp_storage_patch        , carbonflux_vars%cpool_to_gresp_storage_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%cpool_to_gresp_storage        , veg_cf%cpool_to_gresp_storage, &
            isoveg_cs%cpool                        , veg_cs%cpool, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%transfer_leaf_gr_patch              , carbonflux_vars%transfer_leaf_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%transfer_leaf_gr              , veg_cf%transfer_leaf_gr, &
            isoveg_cs%gresp_xfer                   , veg_cs%gresp_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%transfer_froot_gr_patch             , carbonflux_vars%transfer_froot_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%transfer_froot_gr             , veg_cf%transfer_froot_gr, &
            isoveg_cs%gresp_xfer                   , veg_cs%gresp_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%transfer_livestem_gr_patch          , carbonflux_vars%transfer_livestem_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%transfer_livestem_gr          , veg_cf%transfer_livestem_gr, &
            isoveg_cs%gresp_xfer                   , veg_cs%gresp_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%transfer_deadstem_gr_patch          , carbonflux_vars%transfer_deadstem_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%transfer_deadstem_gr          , veg_cf%transfer_deadstem_gr, &
            isoveg_cs%gresp_xfer                   , veg_cs%gresp_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%transfer_livecroot_gr_patch         , carbonflux_vars%transfer_livecroot_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%transfer_livecroot_gr         , veg_cf%transfer_livecroot_gr, &
            isoveg_cs%gresp_xfer                   , veg_cs%gresp_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%transfer_deadcroot_gr_patch         , carbonflux_vars%transfer_deadcroot_gr_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%transfer_deadcroot_gr         , veg_cf%transfer_deadcroot_gr, &
            isoveg_cs%gresp_xfer                   , veg_cs%gresp_xfer, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%leafc_storage_to_xfer_patch         , carbonflux_vars%leafc_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%leafc_storage_to_xfer         , veg_cf%leafc_storage_to_xfer, &
            isoveg_cs%leafc_storage                , veg_cs%leafc_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%frootc_storage_to_xfer_patch        , carbonflux_vars%frootc_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%frootc_storage_to_xfer        , veg_cf%frootc_storage_to_xfer, &
            isoveg_cs%frootc_storage               , veg_cs%frootc_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livestemc_storage_to_xfer_patch     , carbonflux_vars%livestemc_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livestemc_storage_to_xfer     , veg_cf%livestemc_storage_to_xfer, &
            isoveg_cs%livestemc_storage            , veg_cs%livestemc_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%deadstemc_storage_to_xfer_patch     , carbonflux_vars%deadstemc_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%deadstemc_storage_to_xfer     , veg_cf%deadstemc_storage_to_xfer, &
            isoveg_cs%deadstemc_storage            , veg_cs%deadstemc_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%livecrootc_storage_to_xfer_patch    , carbonflux_vars%livecrootc_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%livecrootc_storage_to_xfer    , veg_cf%livecrootc_storage_to_xfer, &
            isoveg_cs%livecrootc_storage           , veg_cs%livecrootc_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%deadcrootc_storage_to_xfer_patch    , carbonflux_vars%deadcrootc_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%deadcrootc_storage_to_xfer    , veg_cf%deadcrootc_storage_to_xfer, &
            isoveg_cs%deadcrootc_storage           , veg_cs%deadcrootc_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%gresp_storage_to_xfer_patch         , carbonflux_vars%gresp_storage_to_xfer_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%gresp_storage_to_xfer         , veg_cf%gresp_storage_to_xfer, &
            isoveg_cs%gresp_storage                , veg_cs%gresp_storage, &
            num_soilp                                            , filter_soilp, 1._r8, 0, isotope)
 
@@ -418,7 +422,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
@@ -437,6 +441,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
+    type(column_carbon_flux),intent(in)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(in):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi
@@ -444,108 +450,108 @@ contains
 
     ! patch-level gap mortality fluxes
    
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_leafc_to_litter_patch                    , carbonflux_vars%m_leafc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_leafc_to_litter                    , veg_cf%m_leafc_to_litter, &
          isoveg_cs%leafc                               , veg_cs%leafc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_leafc_storage_to_litter_patch            , carbonflux_vars%m_leafc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_leafc_storage_to_litter            , veg_cf%m_leafc_storage_to_litter, &
          isoveg_cs%leafc_storage                       , veg_cs%leafc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_leafc_xfer_to_litter_patch               , carbonflux_vars%m_leafc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_leafc_xfer_to_litter               , veg_cf%m_leafc_xfer_to_litter, &
          isoveg_cs%leafc_xfer                          , veg_cs%leafc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_frootc_to_litter_patch                   , carbonflux_vars%m_frootc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_frootc_to_litter                   , veg_cf%m_frootc_to_litter, &
          isoveg_cs%frootc                              , veg_cs%frootc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_frootc_storage_to_litter_patch           , carbonflux_vars%m_frootc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_frootc_storage_to_litter           , veg_cf%m_frootc_storage_to_litter, &
          isoveg_cs%frootc_storage                      , veg_cs%frootc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_frootc_xfer_to_litter_patch              , carbonflux_vars%m_frootc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_frootc_xfer_to_litter              , veg_cf%m_frootc_xfer_to_litter, &
          isoveg_cs%frootc_xfer                         , veg_cs%frootc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_livestemc_to_litter_patch                , carbonflux_vars%m_livestemc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_livestemc_to_litter                , veg_cf%m_livestemc_to_litter, &
          isoveg_cs%livestemc                           , veg_cs%livestemc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_livestemc_storage_to_litter_patch        , carbonflux_vars%m_livestemc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_livestemc_storage_to_litter        , veg_cf%m_livestemc_storage_to_litter, &
          isoveg_cs%livestemc_storage                   , veg_cs%livestemc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_livestemc_xfer_to_litter_patch           , carbonflux_vars%m_livestemc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_livestemc_xfer_to_litter           , veg_cf%m_livestemc_xfer_to_litter, &
          isoveg_cs%livestemc_xfer                      , veg_cs%livestemc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_deadstemc_to_litter_patch                , carbonflux_vars%m_deadstemc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_deadstemc_to_litter                , veg_cf%m_deadstemc_to_litter, &
          isoveg_cs%deadstemc                           , veg_cs%deadstemc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_deadstemc_storage_to_litter_patch        , carbonflux_vars%m_deadstemc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_deadstemc_storage_to_litter        , veg_cf%m_deadstemc_storage_to_litter, &
          isoveg_cs%deadstemc_storage                   , veg_cs%deadstemc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_deadstemc_xfer_to_litter_patch           , carbonflux_vars%m_deadstemc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_deadstemc_xfer_to_litter           , veg_cf%m_deadstemc_xfer_to_litter, &
          isoveg_cs%deadstemc_xfer                      , veg_cs%deadstemc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_livecrootc_to_litter_patch               , carbonflux_vars%m_livecrootc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_livecrootc_to_litter               , veg_cf%m_livecrootc_to_litter, &
          isoveg_cs%livecrootc                          , veg_cs%livecrootc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_livecrootc_storage_to_litter_patch       , carbonflux_vars%m_livecrootc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_livecrootc_storage_to_litter       , veg_cf%m_livecrootc_storage_to_litter, &
          isoveg_cs%livecrootc_storage                  , veg_cs%livecrootc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_livecrootc_xfer_to_litter_patch          , carbonflux_vars%m_livecrootc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_livecrootc_xfer_to_litter          , veg_cf%m_livecrootc_xfer_to_litter, &
          isoveg_cs%livecrootc_xfer                     , veg_cs%livecrootc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_deadcrootc_to_litter_patch               , carbonflux_vars%m_deadcrootc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_deadcrootc_to_litter               , veg_cf%m_deadcrootc_to_litter, &
          isoveg_cs%deadcrootc                          , veg_cs%deadcrootc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_deadcrootc_storage_to_litter_patch       , carbonflux_vars%m_deadcrootc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_deadcrootc_storage_to_litter       , veg_cf%m_deadcrootc_storage_to_litter, &
          isoveg_cs%deadcrootc_storage                  , veg_cs%deadcrootc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_deadcrootc_xfer_to_litter_patch          , carbonflux_vars%m_deadcrootc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_deadcrootc_xfer_to_litter          , veg_cf%m_deadcrootc_xfer_to_litter, &
          isoveg_cs%deadcrootc_xfer                     , veg_cs%deadcrootc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_gresp_storage_to_litter_patch            , carbonflux_vars%m_gresp_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_gresp_storage_to_litter            , veg_cf%m_gresp_storage_to_litter, &
          isoveg_cs%gresp_storage                       , veg_cs%gresp_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_gresp_xfer_to_litter_patch               , carbonflux_vars%m_gresp_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_gresp_xfer_to_litter               , veg_cf%m_gresp_xfer_to_litter, &
          isoveg_cs%gresp_xfer                          , veg_cs%gresp_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%m_cpool_to_litter_patch               , carbonflux_vars%m_cpool_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%m_cpool_to_litter               , veg_cf%m_cpool_to_litter, &
          isoveg_cs%cpool                          , veg_cs%cpool, &
          num_soilp                                              , filter_soilp, 1._r8, 0, isotope)            
 
@@ -559,7 +565,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux2h(num_soilc , filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! set the carbon isotopic fluxes for harvest mortality
@@ -577,122 +583,125 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
+    type(column_carbon_flux),intent(in)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(in):: isoveg_cf
     !-----------------------------------------------------------------------
 
     ! patch-level gap mortality fluxes
    
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_leafc_to_litter_patch                  , carbonflux_vars%hrv_leafc_to_litter_patch, &
+
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_leafc_to_litter                  , veg_cf%hrv_leafc_to_litter, &
          isoveg_cs%leafc                               , veg_cs%leafc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_leafc_storage_to_litter_patch          , carbonflux_vars%hrv_leafc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_leafc_storage_to_litter          , veg_cf%hrv_leafc_storage_to_litter, &
          isoveg_cs%leafc_storage                       , veg_cs%leafc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_leafc_xfer_to_litter_patch             , carbonflux_vars%hrv_leafc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_leafc_xfer_to_litter             , veg_cf%hrv_leafc_xfer_to_litter, &
          isoveg_cs%leafc_xfer                          , veg_cs%leafc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_frootc_to_litter_patch                 , carbonflux_vars%hrv_frootc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_frootc_to_litter                 , veg_cf%hrv_frootc_to_litter, &
          isoveg_cs%frootc                              , veg_cs%frootc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_frootc_storage_to_litter_patch         , carbonflux_vars%hrv_frootc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_frootc_storage_to_litter         , veg_cf%hrv_frootc_storage_to_litter, &
          isoveg_cs%frootc_storage                      , veg_cs%frootc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_frootc_xfer_to_litter_patch            , carbonflux_vars%hrv_frootc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_frootc_xfer_to_litter            , veg_cf%hrv_frootc_xfer_to_litter, &
          isoveg_cs%frootc_xfer                         , veg_cs%frootc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_livestemc_to_litter_patch              , carbonflux_vars%hrv_livestemc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_livestemc_to_litter              , veg_cf%hrv_livestemc_to_litter, &
          isoveg_cs%livestemc                           , veg_cs%livestemc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_livestemc_storage_to_litter_patch      , carbonflux_vars%hrv_livestemc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_livestemc_storage_to_litter      , veg_cf%hrv_livestemc_storage_to_litter, &
          isoveg_cs%livestemc_storage                   , veg_cs%livestemc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_livestemc_xfer_to_litter_patch         , carbonflux_vars%hrv_livestemc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_livestemc_xfer_to_litter         , veg_cf%hrv_livestemc_xfer_to_litter, &
          isoveg_cs%livestemc_xfer                      , veg_cs%livestemc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_to_prod10c_patch             , carbonflux_vars%hrv_deadstemc_to_prod10c_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadstemc_to_prod10c             , veg_cf%hrv_deadstemc_to_prod10c, &
          isoveg_cs%deadstemc                           , veg_cs%deadstemc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_to_prod100c_patch            , carbonflux_vars%hrv_deadstemc_to_prod100c_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadstemc_to_prod100c            , veg_cf%hrv_deadstemc_to_prod100c, &
          isoveg_cs%deadstemc                           , veg_cs%deadstemc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_storage_to_litter_patch      , carbonflux_vars%hrv_deadstemc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadstemc_storage_to_litter      , veg_cf%hrv_deadstemc_storage_to_litter, &
          isoveg_cs%deadstemc_storage                   , veg_cs%deadstemc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadstemc_xfer_to_litter_patch         , carbonflux_vars%hrv_deadstemc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadstemc_xfer_to_litter         , veg_cf%hrv_deadstemc_xfer_to_litter, &
          isoveg_cs%deadstemc_xfer                      , veg_cs%deadstemc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_livecrootc_to_litter_patch             , carbonflux_vars%hrv_livecrootc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_livecrootc_to_litter             , veg_cf%hrv_livecrootc_to_litter, &
          isoveg_cs%livecrootc                          , veg_cs%livecrootc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_livecrootc_storage_to_litter_patch     , carbonflux_vars%hrv_livecrootc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_livecrootc_storage_to_litter     , veg_cf%hrv_livecrootc_storage_to_litter, &
          isoveg_cs%livecrootc_storage                  , veg_cs%livecrootc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_livecrootc_xfer_to_litter_patch        , carbonflux_vars%hrv_livecrootc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_livecrootc_xfer_to_litter        , veg_cf%hrv_livecrootc_xfer_to_litter, &
          isoveg_cs%livecrootc_xfer                     , veg_cs%livecrootc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadcrootc_to_litter_patch             , carbonflux_vars%hrv_deadcrootc_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadcrootc_to_litter             , veg_cf%hrv_deadcrootc_to_litter, &
          isoveg_cs%deadcrootc                          , veg_cs%deadcrootc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadcrootc_storage_to_litter_patch     , carbonflux_vars%hrv_deadcrootc_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadcrootc_storage_to_litter     , veg_cf%hrv_deadcrootc_storage_to_litter, &
          isoveg_cs%deadcrootc_storage                  , veg_cs%deadcrootc_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_deadcrootc_xfer_to_litter_patch        , carbonflux_vars%hrv_deadcrootc_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_deadcrootc_xfer_to_litter        , veg_cf%hrv_deadcrootc_xfer_to_litter, &
          isoveg_cs%deadcrootc_xfer                     , veg_cs%deadcrootc_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_gresp_storage_to_litter_patch          , carbonflux_vars%hrv_gresp_storage_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_gresp_storage_to_litter          , veg_cf%hrv_gresp_storage_to_litter, &
          isoveg_cs%gresp_storage                       , veg_cs%gresp_storage, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_gresp_xfer_to_litter_patch             , carbonflux_vars%hrv_gresp_xfer_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_gresp_xfer_to_litter             , veg_cf%hrv_gresp_xfer_to_litter, &
          isoveg_cs%gresp_xfer                          , veg_cs%gresp_xfer, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_xsmrpool_to_atm_patch                  , carbonflux_vars%hrv_xsmrpool_to_atm_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_xsmrpool_to_atm                  , veg_cf%hrv_xsmrpool_to_atm, &
          isoveg_cs%totvegc                             , veg_cs%totvegc, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
-    call CarbonIsoFluxCalc(&
-         isotopeflux_vars%hrv_cpool_to_litter_patch                  , carbonflux_vars%hrv_cpool_to_litter_patch, &
+    call CIsoFluxCalc(&
+         isoveg_cf%hrv_cpool_to_litter                  , veg_cf%hrv_cpool_to_litter, &
          isoveg_cs%cpool                               , veg_cs%cpool, &
          num_soilp                                                   , filter_soilp, 1._r8, 0, isotope)
 
@@ -706,7 +715,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs)
+       isotopeflux_vars, isotopestate_vars, isotope, isocol_cs, isoveg_cs, isocol_cf, isoveg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
@@ -725,6 +734,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
+    type(column_carbon_flux),intent(in)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(in):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: pi,pp,l,fc,cc,j
@@ -738,123 +749,123 @@ contains
 
       ! patch-level fire mortality fluxes
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_leafc_to_fire_patch              , carbonflux_vars%m_leafc_to_fire_patch, &
+     call CIsoFluxCalc(&
+           isoveg_cf%m_leafc_to_fire              , veg_cf%m_leafc_to_fire, &
            isoveg_cs%leafc                       , veg_cs%leafc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_leafc_storage_to_fire_patch      , carbonflux_vars%m_leafc_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_leafc_storage_to_fire      , veg_cf%m_leafc_storage_to_fire, &
            isoveg_cs%leafc_storage               , veg_cs%leafc_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_leafc_xfer_to_fire_patch         , carbonflux_vars%m_leafc_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_leafc_xfer_to_fire         , veg_cf%m_leafc_xfer_to_fire, &
            isoveg_cs%leafc_xfer                  , veg_cs%leafc_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_frootc_to_fire_patch             , carbonflux_vars%m_frootc_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_frootc_to_fire             , veg_cf%m_frootc_to_fire, &
            isoveg_cs%frootc                      , veg_cs%frootc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_frootc_storage_to_fire_patch     , carbonflux_vars%m_frootc_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_frootc_storage_to_fire     , veg_cf%m_frootc_storage_to_fire, &
            isoveg_cs%frootc_storage              , veg_cs%frootc_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_frootc_xfer_to_fire_patch        , carbonflux_vars%m_frootc_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_frootc_xfer_to_fire        , veg_cf%m_frootc_xfer_to_fire, &
            isoveg_cs%frootc_xfer                 , veg_cs%frootc_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_livestemc_to_fire_patch          , carbonflux_vars%m_livestemc_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_livestemc_to_fire          , veg_cf%m_livestemc_to_fire, &
            isoveg_cs%livestemc                   , veg_cs%livestemc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_livestemc_storage_to_fire_patch  , carbonflux_vars%m_livestemc_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_livestemc_storage_to_fire  , veg_cf%m_livestemc_storage_to_fire, &
            isoveg_cs%livestemc_storage           , veg_cs%livestemc_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_livestemc_xfer_to_fire_patch     , carbonflux_vars%m_livestemc_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_livestemc_xfer_to_fire     , veg_cf%m_livestemc_xfer_to_fire, &
            isoveg_cs%livestemc_xfer              , veg_cs%livestemc_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_to_fire_patch          , carbonflux_vars%m_deadstemc_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadstemc_to_fire          , veg_cf%m_deadstemc_to_fire, &
            isoveg_cs%deadstemc                   , veg_cs%deadstemc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_to_litter_fire_patch   , carbonflux_vars%m_deadstemc_to_litter_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadstemc_to_litter_fire   , veg_cf%m_deadstemc_to_litter_fire, &
            isoveg_cs%deadstemc                   , veg_cs%deadstemc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_storage_to_fire_patch  , carbonflux_vars%m_deadstemc_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadstemc_storage_to_fire  , veg_cf%m_deadstemc_storage_to_fire, &
            isoveg_cs%deadstemc_storage           , veg_cs%deadstemc_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadstemc_xfer_to_fire_patch     , carbonflux_vars%m_deadstemc_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadstemc_xfer_to_fire     , veg_cf%m_deadstemc_xfer_to_fire, &
            isoveg_cs%deadstemc_xfer              , veg_cs%deadstemc_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_livecrootc_to_fire_patch         , carbonflux_vars%m_livecrootc_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_livecrootc_to_fire         , veg_cf%m_livecrootc_to_fire, &
            isoveg_cs%livecrootc                  , veg_cs%livecrootc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_livecrootc_storage_to_fire_patch , carbonflux_vars%m_livecrootc_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_livecrootc_storage_to_fire , veg_cf%m_livecrootc_storage_to_fire, &
            isoveg_cs%livecrootc_storage          , veg_cs%livecrootc_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_livecrootc_xfer_to_fire_patch    , carbonflux_vars%m_livecrootc_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_livecrootc_xfer_to_fire    , veg_cf%m_livecrootc_xfer_to_fire, &
            isoveg_cs%livecrootc_xfer             , veg_cs%livecrootc_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_to_fire_patch         , carbonflux_vars%m_deadcrootc_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadcrootc_to_fire         , veg_cf%m_deadcrootc_to_fire, &
            isoveg_cs%deadcrootc                  , veg_cs%deadcrootc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_to_litter_fire_patch  , carbonflux_vars%m_deadcrootc_to_litter_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadcrootc_to_litter_fire  , veg_cf%m_deadcrootc_to_litter_fire, &
            isoveg_cs%deadcrootc                  , veg_cs%deadcrootc, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_storage_to_fire_patch , carbonflux_vars%m_deadcrootc_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadcrootc_storage_to_fire , veg_cf%m_deadcrootc_storage_to_fire, &
            isoveg_cs%deadcrootc_storage          , veg_cs%deadcrootc_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_deadcrootc_xfer_to_fire_patch    , carbonflux_vars%m_deadcrootc_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_deadcrootc_xfer_to_fire    , veg_cf%m_deadcrootc_xfer_to_fire, &
            isoveg_cs%deadcrootc_xfer             , veg_cs%deadcrootc_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_gresp_storage_to_fire_patch      , carbonflux_vars%m_gresp_storage_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_gresp_storage_to_fire      , veg_cf%m_gresp_storage_to_fire, &
            isoveg_cs%gresp_storage               , veg_cs%gresp_storage, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-      call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_gresp_xfer_to_fire_patch         , carbonflux_vars%m_gresp_xfer_to_fire_patch, &
+      call CIsoFluxCalc(&
+           isoveg_cf%m_gresp_xfer_to_fire         , veg_cf%m_gresp_xfer_to_fire, &
            isoveg_cs%gresp_xfer                  , veg_cs%gresp_xfer, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
-     call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_cpool_to_fire_patch              , carbonflux_vars%m_cpool_to_fire_patch, &
+     call CIsoFluxCalc(&
+           isoveg_cf%m_cpool_to_fire              , veg_cf%m_cpool_to_fire, &
            isoveg_cs%cpool                       , veg_cs%cpool, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)   
 
-     call CarbonIsoFluxCalc(&
-           isotopeflux_vars%m_cpool_to_litter_fire_patch       , carbonflux_vars%m_cpool_to_litter_fire_patch, &
+     call CIsoFluxCalc(&
+           isoveg_cf%m_cpool_to_litter_fire       , veg_cf%m_cpool_to_litter_fire, &
            isoveg_cs%cpool                       , veg_cs%cpool, &
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope) 
 
@@ -872,13 +883,13 @@ contains
                      do j = 1, nlevdecomp
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadstemc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
+                             isoveg_cf%m_deadstemc_to_litter_fire(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
+                             isoveg_cf%m_deadcrootc_to_litter_fire(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_cpool_to_litter_fire_patch(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
+                             isoveg_cf%m_cpool_to_litter_fire(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
 
                      end do
                   end if
@@ -937,8 +948,8 @@ contains
          leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
          
-         leafc_to_litter           =>    carbonflux_vars%leafc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-         frootc_to_litter          =>    carbonflux_vars%frootc_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+         leafc_to_litter           =>    veg_cf%leafc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+         frootc_to_litter          =>    veg_cf%frootc_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
          phenology_c_to_litr_met_c =>    carbonflux_vars%phenology_c_to_litr_met_c_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
          phenology_c_to_litr_cel_c =>    carbonflux_vars%phenology_c_to_litr_cel_c_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
          phenology_c_to_litr_lig_c =>    carbonflux_vars%phenology_c_to_litr_lig_c_col   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
@@ -1012,27 +1023,27 @@ contains
           croot_prof                     =>    cnstate_vars%croot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
           stem_prof                      =>    cnstate_vars%stem_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems                          
           
-          m_leafc_to_litter              =>    carbonflux_vars%m_leafc_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_to_litter             =>    carbonflux_vars%m_frootc_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_to_litter          =>    carbonflux_vars%m_livestemc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_to_litter          =>    carbonflux_vars%m_deadstemc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_to_litter         =>    carbonflux_vars%m_livecrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_to_litter         =>    carbonflux_vars%m_deadcrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_leafc_storage_to_litter      =>    carbonflux_vars%m_leafc_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_storage_to_litter     =>    carbonflux_vars%m_frootc_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_storage_to_litter  =>    carbonflux_vars%m_livestemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_storage_to_litter  =>    carbonflux_vars%m_deadstemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_storage_to_litter =>    carbonflux_vars%m_livecrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_storage_to_litter =>    carbonflux_vars%m_deadcrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-          m_gresp_storage_to_litter      =>    carbonflux_vars%m_gresp_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          m_leafc_xfer_to_litter         =>    carbonflux_vars%m_leafc_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_frootc_xfer_to_litter        =>    carbonflux_vars%m_frootc_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livestemc_xfer_to_litter     =>    carbonflux_vars%m_livestemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadstemc_xfer_to_litter     =>    carbonflux_vars%m_deadstemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          m_livecrootc_xfer_to_litter    =>    carbonflux_vars%m_livecrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-          m_deadcrootc_xfer_to_litter    =>    carbonflux_vars%m_deadcrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-          m_gresp_xfer_to_litter         =>    carbonflux_vars%m_gresp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          m_cpool_to_litter              =>    carbonflux_vars%m_cpool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]  
+          m_leafc_to_litter              =>    veg_cf%m_leafc_to_litter              , & ! Input:  [real(r8) (:)   ]                                                    
+          m_frootc_to_litter             =>    veg_cf%m_frootc_to_litter             , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livestemc_to_litter          =>    veg_cf%m_livestemc_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadstemc_to_litter          =>    veg_cf%m_deadstemc_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livecrootc_to_litter         =>    veg_cf%m_livecrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadcrootc_to_litter         =>    veg_cf%m_deadcrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_leafc_storage_to_litter      =>    veg_cf%m_leafc_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
+          m_frootc_storage_to_litter     =>    veg_cf%m_frootc_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livestemc_storage_to_litter  =>    veg_cf%m_livestemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadstemc_storage_to_litter  =>    veg_cf%m_deadstemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livecrootc_storage_to_litter =>    veg_cf%m_livecrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadcrootc_storage_to_litter =>    veg_cf%m_deadcrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
+          m_gresp_storage_to_litter      =>    veg_cf%m_gresp_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
+          m_leafc_xfer_to_litter         =>    veg_cf%m_leafc_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_frootc_xfer_to_litter        =>    veg_cf%m_frootc_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livestemc_xfer_to_litter     =>    veg_cf%m_livestemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadstemc_xfer_to_litter     =>    veg_cf%m_deadstemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+          m_livecrootc_xfer_to_litter    =>    veg_cf%m_livecrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
+          m_deadcrootc_xfer_to_litter    =>    veg_cf%m_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
+          m_gresp_xfer_to_litter         =>    veg_cf%m_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          m_cpool_to_litter              =>    veg_cf%m_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]  
           gap_mortality_c_to_litr_met_c  =>    carbonflux_vars%gap_mortality_c_to_litr_met_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
           gap_mortality_c_to_litr_cel_c  =>    carbonflux_vars%gap_mortality_c_to_litr_cel_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
           gap_mortality_c_to_litr_lig_c  =>    carbonflux_vars%gap_mortality_c_to_litr_lig_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
@@ -1157,28 +1168,28 @@ contains
           croot_prof                       =>    cnstate_vars%croot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
           stem_prof                        =>    cnstate_vars%stem_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems                          
           
-          hrv_leafc_to_litter              =>    carbonflux_vars%hrv_leafc_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_to_litter             =>    carbonflux_vars%hrv_frootc_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_to_litter          =>    carbonflux_vars%hrv_livestemc_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-          phrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10c_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          phrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100c_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_to_litter         =>    carbonflux_vars%hrv_livecrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_to_litter         =>    carbonflux_vars%hrv_deadcrootc_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_leafc_storage_to_litter      =>    carbonflux_vars%hrv_leafc_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_storage_to_litter     =>    carbonflux_vars%hrv_frootc_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_storage_to_litter  =>    carbonflux_vars%hrv_livestemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadstemc_storage_to_litter  =>    carbonflux_vars%hrv_deadstemc_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_storage_to_litter =>    carbonflux_vars%hrv_livecrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_storage_to_litter =>    carbonflux_vars%hrv_deadcrootc_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_gresp_storage_to_litter      =>    carbonflux_vars%hrv_gresp_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_leafc_xfer_to_litter         =>    carbonflux_vars%hrv_leafc_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_frootc_xfer_to_litter        =>    carbonflux_vars%hrv_frootc_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livestemc_xfer_to_litter     =>    carbonflux_vars%hrv_livestemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadstemc_xfer_to_litter     =>    carbonflux_vars%hrv_deadstemc_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_livecrootc_xfer_to_litter    =>    carbonflux_vars%hrv_livecrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_deadcrootc_xfer_to_litter    =>    carbonflux_vars%hrv_deadcrootc_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_gresp_xfer_to_litter         =>    carbonflux_vars%hrv_gresp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-          hrv_cpool_to_litter              =>    carbonflux_vars%hrv_cpool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]      
+          hrv_leafc_to_litter              =>    veg_cf%hrv_leafc_to_litter              , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_frootc_to_litter             =>    veg_cf%hrv_frootc_to_litter             , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livestemc_to_litter          =>    veg_cf%hrv_livestemc_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
+          phrv_deadstemc_to_prod10c        =>    veg_cf%hrv_deadstemc_to_prod10c         , & ! Input:  [real(r8) (:)   ]                                                    
+          phrv_deadstemc_to_prod100c       =>    veg_cf%hrv_deadstemc_to_prod100c        , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livecrootc_to_litter         =>    veg_cf%hrv_livecrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadcrootc_to_litter         =>    veg_cf%hrv_deadcrootc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_leafc_storage_to_litter      =>    veg_cf%hrv_leafc_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_frootc_storage_to_litter     =>    veg_cf%hrv_frootc_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livestemc_storage_to_litter  =>    veg_cf%hrv_livestemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadstemc_storage_to_litter  =>    veg_cf%hrv_deadstemc_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livecrootc_storage_to_litter =>    veg_cf%hrv_livecrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadcrootc_storage_to_litter =>    veg_cf%hrv_deadcrootc_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_gresp_storage_to_litter      =>    veg_cf%hrv_gresp_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_leafc_xfer_to_litter         =>    veg_cf%hrv_leafc_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_frootc_xfer_to_litter        =>    veg_cf%hrv_frootc_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livestemc_xfer_to_litter     =>    veg_cf%hrv_livestemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadstemc_xfer_to_litter     =>    veg_cf%hrv_deadstemc_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_livecrootc_xfer_to_litter    =>    veg_cf%hrv_livecrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_deadcrootc_xfer_to_litter    =>    veg_cf%hrv_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_gresp_xfer_to_litter         =>    veg_cf%hrv_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+          hrv_cpool_to_litter              =>    veg_cf%hrv_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]      
 
           chrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col           , & ! InOut:  [real(r8) (:)   ]                                                    
           chrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col          , & ! InOut:  [real(r8) (:)   ]                                                    

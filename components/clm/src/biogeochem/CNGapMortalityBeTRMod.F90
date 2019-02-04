@@ -173,34 +173,34 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         carbonflux_vars%m_leafc_to_litter_patch(p)               = veg_cs%leafc(p)               * m
-         carbonflux_vars%m_frootc_to_litter_patch(p)              = veg_cs%frootc(p)              * m
-         carbonflux_vars%m_livestemc_to_litter_patch(p)           = veg_cs%livestemc(p)           * m
-         carbonflux_vars%m_deadstemc_to_litter_patch(p)           = veg_cs%deadstemc(p)           * m
-         carbonflux_vars%m_livecrootc_to_litter_patch(p)          = veg_cs%livecrootc(p)          * m
-         carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = veg_cs%deadcrootc(p)          * m
+         veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
+         veg_cf%m_frootc_to_litter(p)              = veg_cs%frootc(p)              * m
+         veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
+         veg_cf%m_deadstemc_to_litter(p)           = veg_cs%deadstemc(p)           * m
+         veg_cf%m_livecrootc_to_litter(p)          = veg_cs%livecrootc(p)          * m
+         veg_cf%m_deadcrootc_to_litter(p)          = veg_cs%deadcrootc(p)          * m
          if (spinup_state >= 1) then
-           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = veg_cs%deadstemc(p)*m * spinup_mortality_factor
-           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = veg_cs%deadcrootc(p)*m * spinup_mortality_factor
+           veg_cf%m_deadstemc_to_litter(p)         = veg_cs%deadstemc(p)*m * spinup_mortality_factor
+           veg_cf%m_deadcrootc_to_litter(p)        = veg_cs%deadcrootc(p)*m * spinup_mortality_factor
          end if
 
          ! storage pools
-         carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = veg_cs%leafc_storage(p)       * m
-         carbonflux_vars%m_frootc_storage_to_litter_patch(p)      = veg_cs%frootc_storage(p)      * m
-         carbonflux_vars%m_livestemc_storage_to_litter_patch(p)   = veg_cs%livestemc_storage(p)   * m
-         carbonflux_vars%m_deadstemc_storage_to_litter_patch(p)   = veg_cs%deadstemc_storage(p)   * m
-         carbonflux_vars%m_livecrootc_storage_to_litter_patch(p)  = veg_cs%livecrootc_storage(p)  * m
-         carbonflux_vars%m_deadcrootc_storage_to_litter_patch(p)  = veg_cs%deadcrootc_storage(p)  * m
-         carbonflux_vars%m_gresp_storage_to_litter_patch(p)       = veg_cs%gresp_storage(p)       * m
+         veg_cf%m_leafc_storage_to_litter(p)       = veg_cs%leafc_storage(p)       * m
+         veg_cf%m_frootc_storage_to_litter(p)      = veg_cs%frootc_storage(p)      * m
+         veg_cf%m_livestemc_storage_to_litter(p)   = veg_cs%livestemc_storage(p)   * m
+         veg_cf%m_deadstemc_storage_to_litter(p)   = veg_cs%deadstemc_storage(p)   * m
+         veg_cf%m_livecrootc_storage_to_litter(p)  = veg_cs%livecrootc_storage(p)  * m
+         veg_cf%m_deadcrootc_storage_to_litter(p)  = veg_cs%deadcrootc_storage(p)  * m
+         veg_cf%m_gresp_storage_to_litter(p)       = veg_cs%gresp_storage(p)       * m
 
          ! transfer pools
-         carbonflux_vars%m_leafc_xfer_to_litter_patch(p)          = veg_cs%leafc_xfer(p)          * m
-         carbonflux_vars%m_frootc_xfer_to_litter_patch(p)         = veg_cs%frootc_xfer(p)         * m
-         carbonflux_vars%m_livestemc_xfer_to_litter_patch(p)      = veg_cs%livestemc_xfer(p)      * m
-         carbonflux_vars%m_deadstemc_xfer_to_litter_patch(p)      = veg_cs%deadstemc_xfer(p)      * m
-         carbonflux_vars%m_livecrootc_xfer_to_litter_patch(p)     = veg_cs%livecrootc_xfer(p)     * m
-         carbonflux_vars%m_deadcrootc_xfer_to_litter_patch(p)     = veg_cs%deadcrootc_xfer(p)     * m
-         carbonflux_vars%m_gresp_xfer_to_litter_patch(p)          = veg_cs%gresp_xfer(p)          * m
+         veg_cf%m_leafc_xfer_to_litter(p)          = veg_cs%leafc_xfer(p)          * m
+         veg_cf%m_frootc_xfer_to_litter(p)         = veg_cs%frootc_xfer(p)         * m
+         veg_cf%m_livestemc_xfer_to_litter(p)      = veg_cs%livestemc_xfer(p)      * m
+         veg_cf%m_deadstemc_xfer_to_litter(p)      = veg_cs%deadstemc_xfer(p)      * m
+         veg_cf%m_livecrootc_xfer_to_litter(p)     = veg_cs%livecrootc_xfer(p)     * m
+         veg_cf%m_deadcrootc_xfer_to_litter(p)     = veg_cs%deadcrootc_xfer(p)     * m
+         veg_cf%m_gresp_xfer_to_litter(p)          = veg_cs%gresp_xfer(p)          * m
 
          !------------------------------------------------------
          ! patch-level gap mortality nitrogen fluxes
@@ -361,26 +361,26 @@ contains
          croot_prof                          =>    cnstate_vars%croot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of coarse roots
          stem_prof                           =>    cnstate_vars%stem_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of stems
 
-         m_leafc_to_litter                   =>    carbonflux_vars%m_leafc_to_litter_patch                , & ! Input:  [real(r8) (:)   ]
-         m_frootc_to_litter                  =>    carbonflux_vars%m_frootc_to_litter_patch               , & ! Input:  [real(r8) (:)   ]
-         m_livestemc_to_litter               =>    carbonflux_vars%m_livestemc_to_litter_patch            , & ! Input:  [real(r8) (:)   ]
-         m_deadstemc_to_litter               =>    carbonflux_vars%m_deadstemc_to_litter_patch            , & ! Input:  [real(r8) (:)   ]
-         m_livecrootc_to_litter              =>    carbonflux_vars%m_livecrootc_to_litter_patch           , & ! Input:  [real(r8) (:)   ]
-         m_deadcrootc_to_litter              =>    carbonflux_vars%m_deadcrootc_to_litter_patch           , & ! Input:  [real(r8) (:)   ]
-         m_leafc_storage_to_litter           =>    carbonflux_vars%m_leafc_storage_to_litter_patch        , & ! Input:  [real(r8) (:)   ]
-         m_frootc_storage_to_litter          =>    carbonflux_vars%m_frootc_storage_to_litter_patch       , & ! Input:  [real(r8) (:)   ]
-         m_livestemc_storage_to_litter       =>    carbonflux_vars%m_livestemc_storage_to_litter_patch    , & ! Input:  [real(r8) (:)   ]
-         m_deadstemc_storage_to_litter       =>    carbonflux_vars%m_deadstemc_storage_to_litter_patch    , & ! Input:  [real(r8) (:)   ]
-         m_livecrootc_storage_to_litter      =>    carbonflux_vars%m_livecrootc_storage_to_litter_patch   , & ! Input:  [real(r8) (:)   ]
-         m_deadcrootc_storage_to_litter      =>    carbonflux_vars%m_deadcrootc_storage_to_litter_patch   , & ! Input:  [real(r8) (:)   ]
-         m_gresp_storage_to_litter           =>    carbonflux_vars%m_gresp_storage_to_litter_patch        , & ! Input:  [real(r8) (:)   ]
-         m_leafc_xfer_to_litter              =>    carbonflux_vars%m_leafc_xfer_to_litter_patch           , & ! Input:  [real(r8) (:)   ]
-         m_frootc_xfer_to_litter             =>    carbonflux_vars%m_frootc_xfer_to_litter_patch          , & ! Input:  [real(r8) (:)   ]
-         m_livestemc_xfer_to_litter          =>    carbonflux_vars%m_livestemc_xfer_to_litter_patch       , & ! Input:  [real(r8) (:)   ]
-         m_deadstemc_xfer_to_litter          =>    carbonflux_vars%m_deadstemc_xfer_to_litter_patch       , & ! Input:  [real(r8) (:)   ]
-         m_livecrootc_xfer_to_litter         =>    carbonflux_vars%m_livecrootc_xfer_to_litter_patch      , & ! Input:  [real(r8) (:)   ]
-         m_deadcrootc_xfer_to_litter         =>    carbonflux_vars%m_deadcrootc_xfer_to_litter_patch      , & ! Input:  [real(r8) (:)   ]
-         m_gresp_xfer_to_litter              =>    carbonflux_vars%m_gresp_xfer_to_litter_patch           , & ! Input:  [real(r8) (:)   ]
+         m_leafc_to_litter                   =>    veg_cf%m_leafc_to_litter                , & ! Input:  [real(r8) (:)   ]
+         m_frootc_to_litter                  =>    veg_cf%m_frootc_to_litter               , & ! Input:  [real(r8) (:)   ]
+         m_livestemc_to_litter               =>    veg_cf%m_livestemc_to_litter            , & ! Input:  [real(r8) (:)   ]
+         m_deadstemc_to_litter               =>    veg_cf%m_deadstemc_to_litter            , & ! Input:  [real(r8) (:)   ]
+         m_livecrootc_to_litter              =>    veg_cf%m_livecrootc_to_litter           , & ! Input:  [real(r8) (:)   ]
+         m_deadcrootc_to_litter              =>    veg_cf%m_deadcrootc_to_litter           , & ! Input:  [real(r8) (:)   ]
+         m_leafc_storage_to_litter           =>    veg_cf%m_leafc_storage_to_litter        , & ! Input:  [real(r8) (:)   ]
+         m_frootc_storage_to_litter          =>    veg_cf%m_frootc_storage_to_litter       , & ! Input:  [real(r8) (:)   ]
+         m_livestemc_storage_to_litter       =>    veg_cf%m_livestemc_storage_to_litter    , & ! Input:  [real(r8) (:)   ]
+         m_deadstemc_storage_to_litter       =>    veg_cf%m_deadstemc_storage_to_litter    , & ! Input:  [real(r8) (:)   ]
+         m_livecrootc_storage_to_litter      =>    veg_cf%m_livecrootc_storage_to_litter   , & ! Input:  [real(r8) (:)   ]
+         m_deadcrootc_storage_to_litter      =>    veg_cf%m_deadcrootc_storage_to_litter   , & ! Input:  [real(r8) (:)   ]
+         m_gresp_storage_to_litter           =>    veg_cf%m_gresp_storage_to_litter        , & ! Input:  [real(r8) (:)   ]
+         m_leafc_xfer_to_litter              =>    veg_cf%m_leafc_xfer_to_litter           , & ! Input:  [real(r8) (:)   ]
+         m_frootc_xfer_to_litter             =>    veg_cf%m_frootc_xfer_to_litter          , & ! Input:  [real(r8) (:)   ]
+         m_livestemc_xfer_to_litter          =>    veg_cf%m_livestemc_xfer_to_litter       , & ! Input:  [real(r8) (:)   ]
+         m_deadstemc_xfer_to_litter          =>    veg_cf%m_deadstemc_xfer_to_litter       , & ! Input:  [real(r8) (:)   ]
+         m_livecrootc_xfer_to_litter         =>    veg_cf%m_livecrootc_xfer_to_litter      , & ! Input:  [real(r8) (:)   ]
+         m_deadcrootc_xfer_to_litter         =>    veg_cf%m_deadcrootc_xfer_to_litter      , & ! Input:  [real(r8) (:)   ]
+         m_gresp_xfer_to_litter              =>    veg_cf%m_gresp_xfer_to_litter           , & ! Input:  [real(r8) (:)   ]
 
          m_leafn_to_litter                   =>    nitrogenflux_vars%m_leafn_to_litter_patch              , & ! Input:  [real(r8) (:)   ]
          m_frootn_to_litter                  =>    nitrogenflux_vars%m_frootn_to_litter_patch             , & ! Input:  [real(r8) (:)   ]

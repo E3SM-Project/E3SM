@@ -91,9 +91,9 @@ contains
          ivt                    => veg_pp%itype                                , & ! Input  :  [integer (:)]  pft vegetation type
          pcolumn                => veg_pp%column                               , & ! Input  :  [integer (:)]  pft's column index
          croplive               => crop_vars%croplive_patch                    , & ! Input  :  [logical (:)]  flag, true if planted, not harvested
-         cpool_to_frootc        => carbonflux_vars%cpool_to_frootc_patch       , & ! Input  :  [real(r8) (:)] allocation to fine root C (gC/m2/s)
-         cpool_to_frootc_storage=> carbonflux_vars%cpool_to_frootc_storage_patch, & ! Input:  [real(r8) (:)] allocation to fine root C storage (gC/m2/s)
-         frootc_xfer_to_frootc  => carbonflux_vars%frootc_xfer_to_frootc_patch , & ! Input  :  [real(r8) (:)] fine root C growth from storage (gC/m2/s)
+         cpool_to_frootc        => veg_cf%cpool_to_frootc       , & ! Input  :  [real(r8) (:)] allocation to fine root C (gC/m2/s)
+         cpool_to_frootc_storage=> veg_cf%cpool_to_frootc_storage, & ! Input:  [real(r8) (:)] allocation to fine root C storage (gC/m2/s)
+         frootc_xfer_to_frootc  => veg_cf%frootc_xfer_to_frootc , & ! Input  :  [real(r8) (:)] fine root C growth from storage (gC/m2/s)
          onset_flag             => cnstate_vars%onset_flag_patch               , & ! Input  :  [real(r8) (:)] onset flag
          dormant_flag           => cnstate_vars%dormant_flag_patch             , & ! Input  :  [real(r8) (:)]  dormancy flag
          root_depth             => soilstate_vars%root_depth_patch             , & ! InOut  :  [real(r8) (:)] current root depth
@@ -110,12 +110,12 @@ contains
          huigrain               => cnstate_vars%huigrain_patch                 , & ! Input  :  [real(r8) (:)]  same to reach vegetative maturity
          livecrootc             => veg_cs%livecrootc           , & !
          deadcrootc             => veg_cs%deadcrootc           , &
-         cpool_to_livecrootc    => carbonflux_vars%cpool_to_livecrootc_patch   , & ! Input  :  [real(r8) (:)] allocation to coarse root C (gC/m2/s)
-         cpool_to_livecrootc_storage => carbonflux_vars%cpool_to_livecrootc_storage_patch, & ! Input:  [real(r8) (:)] allocation to coarse root C storage (gC/m2/s)
-         cpool_to_deadcrootc    => carbonflux_vars%cpool_to_deadcrootc_patch   , & ! Input  :  [real(r8) (:)] allocation to dead coarse root C (gC/m2/s)
-         cpool_to_deadcrootc_storage => carbonflux_vars%cpool_to_deadcrootc_storage_patch, & ! Input:  [real(r8) (:)] allocation to dead coarse root C storage (gC/m2/s)
-         livecrootc_xfer_to_livecrootc => carbonflux_vars%livecrootc_xfer_to_livecrootc_patch , & ! Input  :  [real(r8) (:)] coarse root C growth from storage (gC/m2/s)
-         deadcrootc_xfer_to_deadcrootc => carbonflux_vars%deadcrootc_xfer_to_deadcrootc_patch ,  & ! Input  :  [real(r8) (:)] dead coarse root C growth from storage (gC/m2/s)
+         cpool_to_livecrootc    => veg_cf%cpool_to_livecrootc   , & ! Input  :  [real(r8) (:)] allocation to coarse root C (gC/m2/s)
+         cpool_to_livecrootc_storage => veg_cf%cpool_to_livecrootc_storage, & ! Input:  [real(r8) (:)] allocation to coarse root C storage (gC/m2/s)
+         cpool_to_deadcrootc    => veg_cf%cpool_to_deadcrootc   , & ! Input  :  [real(r8) (:)] allocation to dead coarse root C (gC/m2/s)
+         cpool_to_deadcrootc_storage => veg_cf%cpool_to_deadcrootc_storage, & ! Input:  [real(r8) (:)] allocation to dead coarse root C storage (gC/m2/s)
+         livecrootc_xfer_to_livecrootc => veg_cf%livecrootc_xfer_to_livecrootc , & ! Input  :  [real(r8) (:)] coarse root C growth from storage (gC/m2/s)
+         deadcrootc_xfer_to_deadcrootc => veg_cf%deadcrootc_xfer_to_deadcrootc ,  & ! Input  :  [real(r8) (:)] dead coarse root C growth from storage (gC/m2/s)
          altmax_lastyear         => canopystate_vars%altmax_lastyear_col         & ! Input: [real(r8) (:)   ]  maximum annual depth of thaw
          )
 

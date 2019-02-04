@@ -7,12 +7,14 @@ module FatesBGCDynMod
    ! functionality.
    ! ==============================================================================================
    
-   use shr_kind_mod, only : r8 => shr_kind_r8
-   use perf_mod    , only : t_startf, t_stopf
-   use shr_log_mod , only : errMsg => shr_log_errMsg
-   use abortutils  , only : endrun
-   use ColumnDataType, only : col_cs
-   use VegetationDataType, only : veg_cs
+   use shr_kind_mod       , only : r8 => shr_kind_r8
+   use perf_mod           , only : t_startf, t_stopf
+   use shr_log_mod        , only : errMsg => shr_log_errMsg
+   use abortutils         , only : endrun
+   use ColumnDataType     , only : col_cs
+   use ColumnDataType     , only : col_cf, c13_col_cf, c14_col_cf
+   use VegetationDataType , only : veg_cs
+   use VegetationDataType , only : veg_cf, c13_veg_cf, c14_veg_cf
    
    implicit none
 
@@ -130,13 +132,16 @@ contains
 
     call carbonflux_vars%SetValues(&
           num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+    call veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     if ( use_c13 ) then
        call c13_carbonflux_vars%SetValues(&
              num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+       call c13_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     end if
     if ( use_c14 ) then
        call c14_carbonflux_vars%SetValues(&
              num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+       call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     end if
 
     call t_stopf('BGCZero')
@@ -244,8 +249,8 @@ contains
 
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
-    call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars, col_cs, veg_cs)
+    call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            crop_vars, carbonflux_vars, carbonstate_vars, col_cs, veg_cs, col_cf, veg_cf)
 
     call t_stopf('BNGCUpdate1')
 
