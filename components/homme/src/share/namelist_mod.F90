@@ -8,6 +8,9 @@ module namelist_mod
   use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
   use physical_constants, only: rearth, rrearth, omega
+#if (defined MODEL_THETA_L && defined ARKODE)
+  use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
+#endif
 
   use control_mod, only : &
     MAX_STRING_LEN,&
@@ -21,8 +24,6 @@ module namelist_mod
     numnodes,      &
     sub_case,      &
     tasknum,       &       ! used dg model in AIX machine
-    remapfreq,     &       ! number of steps per remapping call
-    remap_type,    &       ! selected remapping option
     statefreq,     &       ! number of steps per printstate call
     restartfreq,   &
     restartfile,   &       ! name of the restart file for INPUT
@@ -62,7 +63,6 @@ module namelist_mod
     hypervis_subcycle,    &
     hypervis_subcycle_q,  &
     smooth_phis_numcycle, &
-    smooth_sgh_numcycle,  &
     smooth_phis_nudt,     &
     initial_total_mass,   & ! set > 0 to set the initial_total_mass
     u_perturb,     &        ! J&W baroclinic test perturbation size
@@ -76,6 +76,7 @@ module namelist_mod
     maxits,        &
     tol,           &
     debug_level,   &
+    theta_advect_form,   &
     vert_remap_q_alg
 
 #ifndef CAM
@@ -204,8 +205,6 @@ module namelist_mod
       numnodes,      &
       ne,            &             ! element resolution factor
       tasknum,       &
-      remapfreq,     &             ! number of steps per remapping call
-      remap_type,    &             ! selected remapping option
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
       theta_hydrostatic_mode,       &   
@@ -239,12 +238,12 @@ module namelist_mod
       hypervis_subcycle_q, &
       hypervis_scaling, &
       smooth_phis_numcycle, &
-      smooth_sgh_numcycle, &
       smooth_phis_nudt, &
       initial_total_mass, &
       u_perturb,     &
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
+      theta_advect_form,     & 
       vert_remap_q_alg
 
 
@@ -314,6 +313,14 @@ module namelist_mod
       tol,           &
       debug_level
 
+#if (defined MODEL_THETA_L && defined ARKODE)
+    namelist /arkode_nl/ &
+      rel_tol, &
+      abs_tol, &
+      calc_nonlinear_stats, &
+      use_column_solver
+#endif
+
 
     ! ==========================
     ! Set the default partmethod
@@ -353,8 +360,6 @@ module namelist_mod
     restartdir    = "./restart/"
     runtype       = 0
     statefreq     = 1
-    remapfreq     = 240
-    remap_type    = "parabolic"
     tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
@@ -365,6 +370,11 @@ module namelist_mod
     use_semi_lagrange_transport   = .false.
     use_semi_lagrange_transport_local_conservation   = .false.
     disable_diagnostics = .false.
+
+    theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
+#if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
+    theta_hydrostatic_mode = .false.   ! default NH
+#endif
 
 
     ! =======================
@@ -548,20 +558,31 @@ module namelist_mod
           if(output_timeunits(i).eq.1) then  ! per_day
              output_frequency(i) = output_frequency(i)*(secpday/tstep)
              output_start_time(i)= output_start_time(i)*(secpday/tstep)
-             output_end_time(i)  = output_end_time(i)*(secpday/tstep)
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)*(secpday/tstep)
           else if(output_timeunits(i).eq.2) then  ! per_hour
              output_frequency(i) = output_frequency(i)*(secphr/tstep)
              output_start_time(i)= output_start_time(i)*(secphr/tstep)
-             output_end_time(i)  = output_end_time(i)*(secphr/tstep)
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)*(secphr/tstep)
           else if(output_timeunits(i).eq.3) then  ! per_seconds
              output_frequency(i) = output_frequency(i)/tstep
              output_start_time(i)= output_start_time(i)/tstep
-             output_end_time(i)  = output_end_time(i)/tstep
+             if (output_end_time(i)>=0) &
+                  output_end_time(i)  = output_end_time(i)/tstep
           end if
-          if(output_end_time(i)<0) then
-             output_end_time(i)=nEndStep
-          endif
+          if(output_end_time(i)<0) output_end_time(i)=nEndStep
+          if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
+
+#if (defined MODEL_THETA_L && defined ARKODE)
+       write(iulog,*)"reading arkode namelist..."
+#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
+       read(unit=7,nml=arkode_nl)
+#else
+       read(*,nml=arkode_nl)
+#endif
+#endif
 
 !=======================================================================================================!
 
@@ -593,8 +614,6 @@ module namelist_mod
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
@@ -636,6 +655,7 @@ module namelist_mod
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
@@ -661,7 +681,6 @@ module namelist_mod
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(smooth_sgh_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -714,6 +733,13 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+
+#if (defined MODEL_THETA_L && defined ARKODE)
+    call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
+    call MPI_bcast(abs_tol, 1, MPIreal_t, par%root, par%comm, ierr)
+    call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
+    call MPI_bcast(use_column_solver, 1, MPIlogical_t, par%root, par%comm, ierr)
+#endif
 
     ! use maximum available:
     if (NThreads == -1) NThreads = omp_get_max_threads()
@@ -774,8 +800,12 @@ module namelist_mod
     end if
     ! set map
     if (cubed_sphere_map<0) then
+#if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
+       cubed_sphere_map=2  ! theta model default = element local
+#else
        cubed_sphere_map=0  ! default is equi-angle gnomonic
-       if (ne.eq.0) cubed_sphere_map=2  ! element_local for var-res grids
+#endif
+       if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
@@ -803,6 +833,15 @@ module namelist_mod
        if (hypervis_subcycle_q/=1) then
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
        endif
+    endif
+#endif
+
+#ifndef CAM
+!standalone homme does not support ftype=1 (cause it is identical to ftype=0).
+!also, standalone ftype=0 is the same as standalone ftype=2.
+    if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4).or.(ftype == -1)) then
+    else
+       call abortmp('Standalone homme supports only se_ftype=-1,0,2,3,4')
     endif
 #endif
 
@@ -902,9 +941,11 @@ module namelist_mod
        if (integration == "runge_kutta"  ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
+       write(iulog,*)"readnl: theta_hydrostatic_mode = ",theta_hydrostatic_mode
        write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport
        write(iulog,*)"readnl: use_semi_lagrange_transport_local_conservation=",use_semi_lagrange_transport_local_conservation
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
+       write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
@@ -939,7 +980,6 @@ module namelist_mod
        write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
        write(iulog,*)"PHIS smoothing:  ",smooth_phis_numcycle,smooth_phis_nudt
-       write(iulog,*)"SGH  smoothing:  ",smooth_sgh_numcycle
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s
@@ -974,6 +1014,14 @@ module namelist_mod
           end if
        end do
 
+#if (defined MODEL_THETA_L && defined ARKODE)
+       write(iulog,*)""
+       write(iulog,*)"arkode: rel_tol = ",rel_tol
+       write(iulog,*)"arkode: abs_tol = ",abs_tol
+       write(iulog,*)"arkode: calc_nonlinear_stats = ",calc_nonlinear_stats
+       write(iulog,*)"arkode: use_column_solver = ",use_column_solver
+#endif
+
        ! display physical constants for HOMME stand alone simulations
        write(iulog,*)""
        write(iulog,*)"physconst: omega  = ",omega
@@ -994,6 +1042,13 @@ module namelist_mod
        end if
 #endif
 ! ^ ifndef CAM
+
+#ifndef CAM
+#ifdef HOMME_SHA1
+      write(iulog,*)"HOMME SHA = ", HOMME_SHA1
+#endif
+#endif
+
 
 !=======================================================================================================!
     endif

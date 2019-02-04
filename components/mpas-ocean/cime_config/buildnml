@@ -31,6 +31,8 @@ def buildnml(case, caseroot, compname):
     ocn_grid          = case.get_value("OCN_GRID")
     ocn_mask          = case.get_value("MASK_GRID")
     ocn_forcing       = case.get_value("MPASO_FORCING")
+    ocn_iceberg       = case.get_value("MPASO_ICEBERG")
+    ocn_ismf          = case.get_value("MPASO_ISMF")
     ocn_bgc           = case.get_value("MPASO_BGC")
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
@@ -103,8 +105,8 @@ def buildnml(case, caseroot, compname):
         decomp_date += '160830'
         decomp_prefix += 'mpas-o.graph.info.'
     elif ocn_grid == 'oEC60to30v3wLI':
-        ic_date += '170328'
-        ic_prefix += 'oEC60to30v3wLI'
+        ic_date += '171031'
+        ic_prefix += 'oEC60to30v3wLI60lev'
         decomp_date += '170328'
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
@@ -116,6 +118,11 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx.EC60to30v3wLI.170328.nc'
         analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+    elif ocn_grid == 'oQU480':
+        ic_date += '151209'
+        ic_prefix += 'ocean.QU.480km'
+        decomp_date += '151209'
+        decomp_prefix += 'mpas-o.graph.info.'
     elif ocn_grid == 'oQU240':
         ic_date += '151209'
         ic_prefix += 'ocean.QU.240km'
@@ -153,7 +160,7 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'oRRS30to10v3wLI'
         decomp_date += '171109'
         decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3wLI.nc'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.180503.nc'
         analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
     elif ocn_grid == 'oRRS18to6':
         ic_date += '160830'
@@ -177,6 +184,16 @@ def buildnml(case, caseroot, compname):
         ic_date += '151209'
         ic_prefix += 'ocean.RRS.15-5km'
         decomp_date += '151209'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oARRM60to10':
+        ic_date += '180715'
+        ic_prefix += 'ocean.ARRM60to10'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oARRM60to6':
+        ic_date += '180803'
+        ic_prefix += 'ocean.ARRM60to6'
+        decomp_date += '180820'
         decomp_prefix += 'mpas-o.graph.info.'
 
     #--------------------------------------------------------------------
@@ -229,7 +246,7 @@ def buildnml(case, caseroot, compname):
 
         inst_string = ""
         if ninst_ocn > 1:
-            inst_string = "{0:04d}".format(inst_counter)
+            inst_string = "_{0:04d}".format(inst_counter)
 
             # If multi-instance case does not have restart file, use single-case restart
             # for each instance
@@ -260,6 +277,8 @@ def buildnml(case, caseroot, compname):
         sysmod += " -date_stamp '{}'".format(decomp_date)
         sysmod += " -ocn_grid '{}'".format(ocn_mask)
         sysmod += " -ocn_forcing '{}'".format(ocn_forcing)
+        sysmod += " -ocn_iceberg '{}'".format(ocn_iceberg)
+        sysmod += " -ocn_ismf '{}'".format(ocn_ismf)
         sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
         sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
         sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
@@ -506,6 +525,9 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <var name="xtime"/>')
         lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="totalVolumeChange"/>')
+        lines.append('    <var name="absoluteFreshWaterConservation"/>')
+        lines.append('    <var name="netFreshwaterInput"/>')
         lines.append('    <var_array name="minGlobalStats"/>')
         lines.append('    <var_array name="maxGlobalStats"/>')
         lines.append('    <var_array name="sumGlobalStats"/>')
@@ -844,6 +866,10 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityMeridionalSquared"/>')
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        if ocn_iceberg == 'true':
+            lines.append('    <var name="icebergHeatFlux"/>')
+            lines.append('    <var name="icebergFreshWaterFlux"/>')
+
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             lines.append('    <var name="PH_PREV_ALT_CO2_3D"/>')
             lines.append('    <var name="dust_FLUX_IN"/>')

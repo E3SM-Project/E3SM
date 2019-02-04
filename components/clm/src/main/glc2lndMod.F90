@@ -21,7 +21,8 @@ module glc2lndMod
   use clm_varpar     , only : maxpatch_glcmec
   use clm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
-  use GridcellType   , only : grc_pp 
+  use GridcellType   , only : grc_pp
+  use TopounitType   , only : top_pp
   use LandunitType   , only : lun_pp
   use ColumnType     , only : col_pp 
   !
@@ -384,7 +385,7 @@ contains
     type(bounds_type)  , intent(in) :: bounds  ! bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: g,c                              ! indices
+    integer :: g,t,c                              ! indices
     real(r8):: area_ice_mec                     ! area of the ice_mec landunit
     integer :: l_ice_mec                        ! index of the ice_mec landunit
     integer :: icemec_class                     ! current icemec class (1..maxpatch_glcmec)
@@ -397,47 +398,52 @@ contains
     do g = bounds%begg, bounds%endg
        ! Values from GLC are only valid within the icemask, so we only update CLM's areas there
        if (this%icemask_grc(g) > 0._r8) then
+          do t = grc_pp%topi(g), grc_pp%topf(g)
 
-          ! Set total icemec landunit area
-          area_ice_mec = sum(this%frac_grc(g, 1:maxpatch_glcmec))
-          call set_landunit_weight(g, istice_mec, area_ice_mec)
+             ! For now, all topounits on the gridcell will have identical settings for 
+             ! the fractional area of the glacier landunit. This makes sense for max_topounits = 1,
+             ! but should not break for max_topounits > 1. Revisit this code during the update for glacier_mec.
+             ! Set total icemec landunit area
+             area_ice_mec = sum(this%frac_grc(g, 1:maxpatch_glcmec))
+             call set_landunit_weight(t, istice_mec, area_ice_mec)
 
-          ! If new landunit area is greater than 0, then update column areas
-          ! (If new landunit area is 0, col_pp%wtlunit is arbitrary, so we might as well keep the existing values)
-          if (area_ice_mec > 0) then
-             ! Determine index of the glc_mec landunit
-             l_ice_mec = grc_pp%landunit_indices(istice_mec, g)
-             if (l_ice_mec == ispval) then
-                write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
-                call endrun()
-             end if
-          
-             frac_assigned(1:maxpatch_glcmec) = .false.
-             do c = lun_pp%coli(l_ice_mec), lun_pp%colf(l_ice_mec)
-                icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
-                col_pp%wtlunit(c) = this%frac_grc(g, icemec_class) / lun_pp%wtgcell(l_ice_mec)
-                frac_assigned(icemec_class) = .true.
-             end do
-
-             ! Confirm that all elevation classes that have non-zero area according to
-             ! this%frac have been assigned to a column in CLM's data structures
-             error = .false.
-             do icemec_class = 1, maxpatch_glcmec
-                if (this%frac_grc(g, icemec_class) > 0._r8 .and. &
-                     .not. frac_assigned(icemec_class)) then
-                   error = .true.
+             ! If new landunit area is greater than 0, then update column areas
+             ! (If new landunit area is 0, col_pp%wtlunit is arbitrary, so we might as well keep the existing values)
+             if (area_ice_mec > 0) then
+                ! Determine index of the glc_mec landunit
+                l_ice_mec = top_pp%landunit_indices(istice_mec, t)
+                if (l_ice_mec == ispval) then
+                   write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
+                   call endrun()
                 end if
-             end do
-             if (error) then
-                write(iulog,*) subname//' ERROR: at least one glc_mec column has non-zero area from the coupler,'
-                write(iulog,*) 'but there was no slot in memory for this column; g = ', g
-                write(iulog,*) 'this%frac_grc(g, 1:maxpatch_glcmec) = ', &
-                     this%frac_grc(g, 1:maxpatch_glcmec)
-                write(iulog,*) 'frac_assigned(1:maxpatch_glcmec) = ', &
-                     frac_assigned(1:maxpatch_glcmec)
-                call endrun()
-             end if  ! error
-          end if  ! area_ice_mec > 0
+             
+                frac_assigned(1:maxpatch_glcmec) = .false.
+                do c = lun_pp%coli(l_ice_mec), lun_pp%colf(l_ice_mec)
+                   icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+                   col_pp%wtlunit(c) = this%frac_grc(g, icemec_class) / lun_pp%wttopounit(l_ice_mec)
+                   frac_assigned(icemec_class) = .true.
+                end do
+
+                ! Confirm that all elevation classes that have non-zero area according to
+                ! this%frac have been assigned to a column in CLM's data structures
+                error = .false.
+                do icemec_class = 1, maxpatch_glcmec
+                   if (this%frac_grc(g, icemec_class) > 0._r8 .and. &
+                        .not. frac_assigned(icemec_class)) then
+                      error = .true.
+                   end if
+                end do
+                if (error) then
+                   write(iulog,*) subname//' ERROR: at least one glc_mec column has non-zero area from the coupler,'
+                   write(iulog,*) 'but there was no slot in memory for this column; g = ', g
+                   write(iulog,*) 'this%frac_grc(g, 1:maxpatch_glcmec) = ', &
+                        this%frac_grc(g, 1:maxpatch_glcmec)
+                   write(iulog,*) 'frac_assigned(1:maxpatch_glcmec) = ', &
+                        frac_assigned(1:maxpatch_glcmec)
+                   call endrun()
+                end if  ! error
+             end if  ! area_ice_mec > 0
+          end do ! loop over topounits on this gridcell
        end if  ! this%icemask_grc(g) > 0
     end do  ! g
 

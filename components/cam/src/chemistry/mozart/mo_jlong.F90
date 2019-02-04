@@ -471,9 +471,8 @@
       call mpibcast( alb,     numalb,   mpir8, 0, mpicom )
       call mpibcast( o3rat,   numcolo3, mpir8, 0, mpicom )
       call mpibcast( colo3,   nump,     mpir8, 0, mpicom )
-      do w = 1,nw
-         call mpibcast( rsf_tab(w,:,:,:,:), numalb*numcolo3*numsza*nump, mpir4, 0, mpicom )
-      enddo
+
+      call mpibcast( rsf_tab, nw*numalb*numcolo3*numsza*nump, mpir4, 0, mpicom )
 #endif
 #ifdef USE_BDE
       if (masterproc) write(iulog,*) 'Jlong using bdes'

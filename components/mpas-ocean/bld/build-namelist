@@ -48,6 +48,12 @@ OPTIONS
      -ocn_forcing          variable for defining if the ocn model is forced with an active atm
                            or using CORE forcing.  
                            Options are: active_atm, core_forced, core_forced_restoring
+     -ocn_iceberg          variable for defining if the ocn model is expecting coupling fields
+                           for icebergs from the seaice model
+                           Options are: false, true
+     -ocn_ismf             variable for defining how the ocn model will handle ice shelf melt
+                           fluxes
+                           Options are: false, true
      -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPASO configuration scripts.
@@ -100,6 +106,8 @@ my %opts = ( help          => 0,
              inst_string   => undef,
              ocn_grid      => undef,
              ocn_forcing   => undef,
+             ocn_iceberg   => undef,
+             ocn_ismf      => undef,
              decomp_prefix => undef,
              date_stamp    => undef,
              ocn_bgc       => undef,
@@ -122,6 +130,8 @@ GetOptions(
     "inst_string=s"   => \$opts{'inst_string'},	   
     "ocn_grid=s"      => \$opts{'ocn_grid'},
     "ocn_forcing=s"   => \$opts{'ocn_forcing'},
+    "ocn_iceberg=s"   => \$opts{'ocn_iceberg'},
+    "ocn_ismf=s"      => \$opts{'ocn_ismf'},
     "decomp_prefix=s" => \$opts{'decomp_prefix'},
     "date_stamp=s"    => \$opts{'date_stamp'},
     "ocn_bgc=s"       => \$opts{'ocn_bgc'},
@@ -161,6 +171,8 @@ my $CIMEROOT      = $opts{'cimeroot'};
 my $inst_string   = $opts{'inst_string'};
 my $OCN_GRID      = $opts{'ocn_grid'};
 my $OCN_FORCING   = $opts{'ocn_forcing'};
+my $OCN_ICEBERG   = $opts{'ocn_iceberg'};
+my $OCN_ISMF      = $opts{'ocn_ismf'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
 my $ocn_bgc       = $opts{'ocn_bgc'};
@@ -188,6 +200,7 @@ print $fh  <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
 <entry id="ocn_grid" value="$OCN_GRID">
+<entry id="ocn_forcing" value="$OCN_FORCING">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
@@ -434,6 +447,7 @@ my $ntasks = $NTASKS_OCN / $NINST_OCN;
 if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
+print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -590,7 +604,12 @@ add_default($nl, 'config_use_Redi_surface_layer_tapering');
 add_default($nl, 'config_Redi_surface_layer_tapering_extent');
 add_default($nl, 'config_use_Redi_bottom_layer_tapering');
 add_default($nl, 'config_Redi_bottom_layer_tapering_depth');
+add_default($nl, 'config_GM_Bolus_kappa_function');
 add_default($nl, 'config_standardGM_tracer_kappa');
+add_default($nl, 'config_GM_Bolus_kappa_min');
+add_default($nl, 'config_GM_Bolus_kappa_max');
+add_default($nl, 'config_GM_Bolus_cell_size_min');
+add_default($nl, 'config_GM_Bolus_cell_size_max');
 add_default($nl, 'config_Redi_kappa');
 add_default($nl, 'config_gravWaveSpeed_trunc');
 add_default($nl, 'config_max_relative_slope');
@@ -712,6 +731,11 @@ add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 ############################
 
 add_default($nl, 'config_ssh_grad_relax_timescale');
+if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
+	add_default($nl, 'config_remove_AIS_coupler_runoff', 'val'=>".true.");
+} else {
+	add_default($nl, 'config_remove_AIS_coupler_runoff', 'val'=>".false.");
+}
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -742,7 +766,11 @@ add_default($nl, 'config_frazil_use_surface_pressure');
 # Namelist group: land_ice_fluxes #
 ###################################
 
-add_default($nl, 'config_land_ice_flux_mode');
+if ($OCN_ISMF eq 'true') {
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
+} else {
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"pressure_only");
+}
 add_default($nl, 'config_land_ice_flux_formulation');
 add_default($nl, 'config_land_ice_flux_useHollandJenkinsAdvDiff');
 add_default($nl, 'config_land_ice_flux_attenuation_coefficient');

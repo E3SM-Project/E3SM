@@ -10,7 +10,7 @@ module decompMod
   ! Must use shr_sys_abort rather than endrun here to avoid circular dependency
   use shr_sys_mod , only : shr_sys_abort 
   use clm_varctl  , only : iulog
-  use clm_varcon  , only : grlnd, nameg, namel, namec, namep, nameCohort
+  use clm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
   use mct_mod     , only : mct_gsMap
   !
   ! !PUBLIC TYPES:
@@ -34,9 +34,9 @@ module decompMod
   public get_beg               ! get beg bound for a given subgrid level
   public get_end               ! get end bound for a given subgrid level
   public get_proc_clumps       ! number of clumps for this processor
-  public get_proc_total        ! total no. of gridcells, landunits, columns and pfts for any processor
-  public get_proc_total_ghosts ! total no. of gridcells, landunits, columns and pfts for any processor
-  public get_proc_global       ! total gridcells, landunits, columns, pfts across all processors
+  public get_proc_total        ! total no. of gridcells, topounits, landunits, columns and pfts for any processor
+  public get_proc_total_ghosts ! total no. of gridcells, topounits, landunits, columns and pfts for any processor
+  public get_proc_global       ! total gridcells, topounits, landunits, columns, pfts across all processors
   public get_clmlevel_gsize    ! get global size associated with clmlevel
   public get_clmlevel_gsmap    ! get gsmap associated with clmlevel
 
@@ -76,6 +76,7 @@ module decompMod
 
      ! The following variables correspond to "Ghost/Halo" quantites
      integer :: begg_ghost, endg_ghost           ! beginning and ending gridcell index
+     integer :: begt_ghost, endt_ghost           ! beginning and ending topounit index
      integer :: begl_ghost, endl_ghost           ! beginning and ending landunit index
      integer :: begc_ghost, endc_ghost           ! beginning and ending column index
      integer :: begp_ghost, endp_ghost           ! beginning and ending pft index
@@ -83,6 +84,7 @@ module decompMod
 
      ! The following variables correspond to "ALL" (=Local + Ghost) quantites
      integer :: begg_all, endg_all               ! beginning and ending gridcell index
+     integer :: begt_all, endt_all               ! beginning and ending topounit index
      integer :: begl_all, endl_all               ! beginning and ending landunit index
      integer :: begc_all, endc_all               ! beginning and ending column index
      integer :: begp_all, endp_all               ! beginning and ending pft index
@@ -100,8 +102,8 @@ module decompMod
 
      ! The following variables correspond to "Local" quantities on a proc
      integer         :: ncells                           ! number of gridcells in proc
-     integer         :: nlunits                          ! number of landunits in proc
      integer         :: ntopounits                       ! number of topographic units in proc
+     integer         :: nlunits                          ! number of landunits in proc
      integer         :: ncols                            ! number of columns in proc
      integer         :: npfts                            ! number of pfts in proc
      integer         :: nCohorts                         ! number of cohorts in proc
@@ -114,11 +116,13 @@ module decompMod
 
      ! The following variables correspond to "Ghost/Halo" quantites on a proc
      integer         :: ncells_ghost                     ! number of gridcells in proc
+     integer         :: ntopounits_ghost                 ! number of topounits in proc
      integer         :: nlunits_ghost                    ! number of landunits in proc
      integer         :: ncols_ghost                      ! number of columns in proc
      integer         :: npfts_ghost                      ! number of pfts in proc
      integer         :: nCohorts_ghost                   ! number of cohorts in proc
      integer         :: begg_ghost, endg_ghost           ! beginning and ending gridcell index
+     integer         :: begt_ghost, endt_ghost           ! beginning and ending topounit index
      integer         :: begl_ghost, endl_ghost           ! beginning and ending landunit index
      integer         :: begc_ghost, endc_ghost           ! beginning and ending column index
      integer         :: begp_ghost, endp_ghost           ! beginning and ending pft index
@@ -126,11 +130,13 @@ module decompMod
 
      ! The following variables correspond to "ALL" (=Local + Ghost) quantites on a proc
      integer         :: ncells_all                       ! number of gridcells in proc
+     integer         :: ntopounits_all                   ! number of topounits in proc
      integer         :: nlunits_all                      ! number of landunits in proc
      integer         :: ncols_all                        ! number of columns in proc
      integer         :: npfts_all                        ! number of pfts in proc
      integer         :: nCohorts_all                     ! number of cohorts in proc
      integer         :: begg_all, endg_all               ! beginning and ending gridcell index
+     integer         :: begt_all, endt_all               ! beginning and ending topounit index
      integer         :: begl_all, endl_all               ! beginning and ending landunit index
      integer         :: begc_all, endc_all               ! beginning and ending column index
      integer         :: begp_all, endp_all               ! beginning and ending pft index
@@ -170,6 +176,7 @@ module decompMod
 
   type(mct_gsMap)  ,public,target :: gsMap_lnd_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_gce_gdc2glo
+  type(mct_gsMap)  ,public,target :: gsMap_top_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_lun_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_col_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_patch_gdc2glo
@@ -309,6 +316,8 @@ contains
      bounds%endc_ghost = 0
      bounds%begl_ghost = 0
      bounds%endl_ghost = 0
+     bounds%begt_ghost = 0
+     bounds%endt_ghost = 0
      bounds%begg_ghost = 0
      bounds%endg_ghost = 0
 
@@ -319,6 +328,8 @@ contains
      bounds%endc_all = clumps(cid)%endc
      bounds%begl_all = clumps(cid)%begl
      bounds%endl_all = clumps(cid)%endl
+     bounds%begt_all = clumps(cid)%begt
+     bounds%endt_all = clumps(cid)%endt
      bounds%begg_all = clumps(cid)%begg
      bounds%endg_all = clumps(cid)%endg
 
@@ -402,6 +413,8 @@ contains
      bounds%endc_ghost = procinfo%endc_ghost
      bounds%begl_ghost = procinfo%begl_ghost
      bounds%endl_ghost = procinfo%endl_ghost
+     bounds%begt_ghost = procinfo%begt_ghost
+     bounds%endt_ghost = procinfo%endt_ghost
      bounds%begg_ghost = procinfo%begg_ghost
      bounds%endg_ghost = procinfo%endg_ghost
 
@@ -412,6 +425,8 @@ contains
      bounds%endc_all = procinfo%endc_all
      bounds%begl_all = procinfo%begl_all
      bounds%endl_all = procinfo%endl_all
+     bounds%begt_all = procinfo%begt_all
+     bounds%endt_all = procinfo%endt_all
      bounds%begg_all = procinfo%begg_all
      bounds%endg_all = procinfo%endg_all
 
@@ -494,7 +509,7 @@ contains
      !
      ! !ARGUMENTS:
      integer, optional, intent(out) :: ng        ! total number of gridcells across all processors
-     integer, optional, intent(out) :: nt        ! total number of gridcells across all processors
+     integer, optional, intent(out) :: nt        ! total number of topounits across all processors
      integer, optional, intent(out) :: nl        ! total number of landunits across all processors
      integer, optional, intent(out) :: nc        ! total number of columns across all processors
      integer, optional, intent(out) :: np        ! total number of pfts across all processors
@@ -539,6 +554,8 @@ contains
         get_clmlevel_gsize = ldomain%ns
      case(nameg)
         get_clmlevel_gsize = numg
+     case(namet)
+        get_clmlevel_gsize = numt
      case(namel)
         get_clmlevel_gsize = numl
      case(namec)
@@ -567,15 +584,17 @@ contains
 
     select case (clmlevel)
     case(grlnd)
-       gsmap => gsmap_lnd_gdc2glo
+       gsmap => gsMap_lnd_gdc2glo
     case(nameg)
-       gsmap => gsmap_gce_gdc2glo
+       gsmap => gsMap_gce_gdc2glo
+    case(namet)
+       gsmap => gsMap_top_gdc2glo
     case(namel)
-       gsmap => gsmap_lun_gdc2glo
+       gsmap => gsMap_lun_gdc2glo
     case(namec)
-       gsmap => gsmap_col_gdc2glo
+       gsmap => gsMap_col_gdc2glo
     case(namep)
-       gsmap => gsmap_patch_gdc2glo
+       gsmap => gsMap_patch_gdc2glo
     case(nameCohort)
        gsmap => gsMap_cohort_gdc2glo
     case default

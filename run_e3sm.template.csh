@@ -530,7 +530,7 @@ umask 022
 set cime_dir = ${code_root_dir}/${tag_name}/cime
 set create_newcase_exe = $cime_dir/scripts/create_newcase
 if ( -f ${create_newcase_exe} ) then
-  set e3sm_exe = acme.exe
+  set e3sm_exe = e3sm.exe
   set case_setup_exe = $case_scripts_dir/case.setup
   set case_build_exe = $case_scripts_dir/case.build
   set case_run_exe = $case_scripts_dir/.case.run
@@ -562,6 +562,19 @@ endif
 
 if ( `lowercase $case_run_dir` == default ) then
   set case_run_dir = ${e3sm_simulations_dir}/${case_name}/run
+endif
+
+# Default group and permissions on NERSC can be a pain for sharing data
+# within the project. This should take care of it. Create top level 
+# directory and set the default group to 'acme', permissions for 
+# group read access for top level and all files underneath (Chris Golaz).
+if ( $machine == 'cori*' || $machine == 'edison' ) then
+  mkdir -p ${e3sm_simulations_dir}/${case_name}
+  cd ${e3sm_simulations_dir}
+  chgrp acme ${case_name}
+  chmod 750 ${case_name}
+  chmod g+s ${case_name}
+  setfacl -d -m g::rx ${case_name}
 endif
 
 mkdir -p ${case_build_dir}
@@ -1201,7 +1214,7 @@ else if ( $model_start_type == 'branch' ) then
   cp -s ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp -s ${restart_files_dir}/mpassi.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/../../atm/hist/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
   cp -s ${restart_files_dir}/../../rof/hist/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir

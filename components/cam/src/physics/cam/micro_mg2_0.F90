@@ -1707,9 +1707,10 @@ subroutine micro_mg_tend ( &
 
         ! Add evaporation of rain number.
         if (pre(i,k) < 0._r8) then
-           dum = pre(i,k)*deltat/qr(i,k)
-           dum = max(-1._r8,dum)
-           nsubr(i,k) = dum*nr(i,k)/deltat
+	   ! We would normally divide qr and nr by precip_frac for an in-precip
+	   ! calculation, since they are grid cell averages, but that is
+	   ! unnecessary here because the two factors of precip_frac cancel.
+           nsubr(i,k) = pre(i,k)*nr(i,k)/qr(i,k)
         else
            nsubr(i,k) = 0._r8
         end if

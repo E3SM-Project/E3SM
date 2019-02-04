@@ -171,19 +171,22 @@ contains
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
-    use dynConsBiogeochemMod , only : dyn_cnbal_patch
+    use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
     use dynHarvestMod        , only : dynHarvest_interp
     use dynCNDVMod           , only : dynCNDV_interp
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
+    use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
+    use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
+    use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
     type(urbanparams_type)   , intent(in)    :: urbanparams_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
+    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
@@ -282,12 +285,14 @@ contains
        ! (particularly mask that is past through coupler).
 
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+       call patch_state_updater%set_new_weights(bounds_clump)
+       call column_state_updater%set_new_weights(bounds_clump, nc)
 
        call set_subgrid_diagnostic_fields(bounds_clump)
 
        call initialize_new_columns(bounds_clump, &
             prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), &
-            temperature_vars)
+            temperature_vars, waterstate_vars, soilhydrology_vars)
 
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
@@ -296,12 +301,32 @@ contains
             waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
 
        if (use_cn) then
-          call dyn_cnbal_patch(bounds_clump, prior_weights, &
+          call dyn_cnbal_patch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               prior_weights, &
+               patch_state_updater, &
                canopystate_vars, photosyns_vars, cnstate_vars, &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
                nitrogenstate_vars, nitrogenflux_vars,&
                phosphorusstate_vars,phosphorusflux_vars)
+
+          call CarbonStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               carbonflux_vars, carbonstate_vars)
+
+          call NitrogenStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               nitrogenflux_vars, nitrogenstate_vars)
+
+          call PhosphorusStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               phosphorusflux_vars, phosphorusstate_vars)
+
+          call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
+               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
+               nitrogenstate_vars, phosphorusstate_vars )
        end if
 
     end do

@@ -598,7 +598,7 @@ contains
     !$OMP SINGLE
     call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,PIO_rearr_box,PIOFS)
     do ios=1,max_output_streams
-       if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .lt. output_end_time(ios))) then 
+       if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .le. output_end_time(ios))) then 
           ncdf(ios)%iframe=1
 
           call nf_open_file(masterproc,nprocs,comm,rank,ios,&

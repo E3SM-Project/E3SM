@@ -18,7 +18,6 @@ def create_dirs(self):
     incroot  = self.get_value("INCROOT")
     rundir   = self.get_value("RUNDIR")
     caseroot = self.get_value("CASEROOT")
-
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
     models = self.get_values("COMP_CLASSES")
@@ -60,7 +59,6 @@ def create_namelists(self, component=None):
 
     self.stage_refcase()
 
-
     logger.info("Creating component namelists")
 
     # Create namelists - must have cpl last in the list below
@@ -99,8 +97,8 @@ def create_namelists(self, component=None):
         except (OSError, IOError) as e:
             expect(False, "Failed to write {}/README: {}".format(docdir, e))
 
-    for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
-                   "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
+    for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in", "nuopc.runconfig",
+                   "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*", "nuopc.runseq"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
             logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))
             safe_copy(file_to_copy, docdir)

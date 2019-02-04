@@ -43,38 +43,40 @@ CESM is public domain software.
 
 Separable Pieces with their own copyright and license:
 
-Name            Code Location               Institution(s)      License
+Name            Code Location                  Institution(s)      License
 -------------------------------------------------------------------------------
 
 Software
 -----------
-CIME            cime/                        NCAR, SNL, ANL      BSD
-MCT             cime/src/externals/mct       ANL                 BSD
-GPTL            cime/src/share/timing        author              non-commerical
+CIME            cime/                           NCAR, SNL, ANL      BSD
+MCT             cime/src/externals/mct          ANL                 BSD
+GPTL            cime/src/share/timing           author              non-commerical
 
 Ocean/Ice       under components/
 -----------     -----------------
-CICE            cice                         LANL                BSD
-MPAS Ocean      mpas-ocean                   LANL                BSD
-MPAS SeaIce     mpas-seaice                  LANL                BSD
-MPAS-Albany LandIce   mpas-albany-landice    LANL,SNL            BSD
+CICE            cice                            LANL                BSD
+MPAS Ocean      mpas-ocean                      LANL                BSD
+MPAS SeaIce     mpas-seaice                     LANL                BSD
+MPAS-Albany LandIce   mpas-albany-landice       LANL,SNL            BSD
 
 Land            under components/clm/src
 -----------     ------------------------
-Fates           external_models/fates        LBNL, NCAR, LANL    BSD
-Betr            external_models/betr         LBNL                BSD
-MPP             external_models/mpqp         LBNL                BSD
+Fates           external_models/fates           LBNL, NCAR, LANL    BSD
+Betr            external_models/betr            LBNL                BSD
+MPP             external_models/mpp             LBNL                BSD
 
 Atmosphere      under components/cam/src
 -----------     ------------------------
-CLUBB           physics/clubb                authors             --
-rrtmg           physics/rrtmg                AER                 non-commercial
-COSP            physics/cosp                 BCC                 BSD      
-Cosp/MISR       physics/cosp/MISR_simulator  author              BSD
-Cosp/LIDAR      physics/cosp/actsim          CNRS                BSD
-Cosp/quickbeam  physics/cosp/quickbeam       author              BSD
-Cosp/MODIS      physics/cosp/MODIS_simulator U Colo.             BSD
-icarus-scops    physics/icarus-scops         BCC                 BSD
+CLUBB           physics/clubb                   authors             --
+rrtmg           physics/rrtmg                   AER                 non-commercial
+COSP            physics/cosp                    BCC                 BSD
+Cosp/MISR       physics/cosp/MISR_simulator     author              BSD
+Cosp/LIDAR      physics/cosp/actsim             CNRS                BSD
+Cosp/quickbeam  physics/cosp/quickbeam          author              BSD
+Cosp/MODIS      physics/cosp/MODIS_simulator    U Colo.             BSD
+icarus-scops    physics/icarus-scops            BCC                 BSD
+HOMMEXX         components/homme/src/share/cxx  SNL                 BSD
+                components/homme/src/share/cxx/COPYRIGHT
 
 -------------------------------------------------------------------------------
 

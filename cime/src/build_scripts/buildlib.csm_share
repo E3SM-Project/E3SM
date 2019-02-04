@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from standard_script_setup import *
-from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging
+from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging, expect
 from CIME.case import Case
 import glob
 
@@ -41,83 +41,95 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     return args.buildroot, args.installpath, args.caseroot
 
 
-def buildlib(bldroot, installpath, caseroot):
+def buildlib(bldroot, installpath, case):
 ###############################################################################
-    with Case(caseroot, read_only=False) as case:
-        cimeroot = case.get_value("CIMEROOT")
-        filepath = [os.path.join(caseroot,"SourceMods","src.share"),
-                    os.path.join(cimeroot,"src","drivers","mct","shr"),
-                    os.path.join(cimeroot,"src","share","streams"),
-                    os.path.join(cimeroot,"src","share","util"),
-                    os.path.join(cimeroot,"src","share","RandNum","src"),
-                    os.path.join(cimeroot,"src","share","RandNum","src","dsfmt_f03"),
-                    os.path.join(cimeroot,"src","share","RandNum","src","kissvec"),
-                    os.path.join(cimeroot,"src","share","RandNum","src","mt19937")]
-        if case.get_value("USE_ESMF_LIB"):
-            use_esmf = "esmf"
+    caseroot = case.get_value("CASEROOT")
+    cimeroot = case.get_value("CIMEROOT")
+    comp_interface = case.get_value("COMP_INTERFACE")
+    filepath = [os.path.join(caseroot,"SourceMods","src.share"),
+                os.path.join(cimeroot,"src","drivers",comp_interface,"shr"),
+                os.path.join(cimeroot,"src","share","streams"),
+                os.path.join(cimeroot,"src","share","util"),
+                os.path.join(cimeroot,"src","share","RandNum","src"),
+                os.path.join(cimeroot,"src","share","RandNum","src","dsfmt_f03"),
+                os.path.join(cimeroot,"src","share","RandNum","src","kissvec"),
+                os.path.join(cimeroot,"src","share","RandNum","src","mt19937")]
+
+    # Append path for driver - currently only values of 'mct' and 'nuopc' are accepted
+    driver = case.get_value("COMP_INTERFACE")
+    if driver == "mct":
+        filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
+    elif driver == "nuopc":
+        filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","shr"))
+        filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","cime_flds"))
+    else:
+        expect(False, "driver value of {} not supported".format(driver))
+
+    if case.get_value("USE_ESMF_LIB"):
+        use_esmf = "esmf"
+    else:
+        use_esmf = "noesmf"
+        filepath.append(os.path.join(cimeroot, "src", "share", "esmf_wrf_timemgr"))
+
+    ninst_value = case.get_value("NINST_VALUE")
+
+    libdir = os.path.join(bldroot,comp_interface,use_esmf, ninst_value,"csm_share")
+    if not os.path.isdir(libdir):
+        os.makedirs(libdir)
+
+    filepathfile = os.path.join(libdir, "Filepath")
+    # if the filepathfile has a different number of lines than filepath, replace it
+    file_len = 0
+    if os.path.isfile(filepathfile):
+        file_len = len(open(filepathfile).readlines())
+
+    if len(filepath) != file_len:
+        with open(filepathfile, "w") as fd:
+            for path in filepath:
+                fd.write("{}\n".format(path))
+
+    components = case.get_values("COMP_CLASSES")
+    multiinst_cppdefs = ""
+    multi_driver = case.get_value("MULTI_DRIVER")
+    for comp in components:
+        if comp == "CPL":
+            continue
+        if multi_driver:
+            ninst_comp = 1
         else:
-            use_esmf = "noesmf"
-            filepath.append(os.path.join(cimeroot, "src", "share", "esmf_wrf_timemgr"))
+            ninst_comp = case.get_value("NINST_{}".format(comp))
+        multiinst_cppdefs += " -DNUM_COMP_INST_{}={}".format(comp, ninst_comp)
 
-        comp_interface = case.get_value("COMP_INTERFACE")
-        ninst_value = case.get_value("NINST_VALUE")
+    installdir = os.path.join(installpath, comp_interface,
+                              use_esmf, ninst_value)
+    for ndir in ("lib", "include"):
+        if not os.path.isdir(os.path.join(installdir,ndir)):
+            os.makedirs(os.path.join(installdir,ndir))
+    # copy some header files
+    for _file in glob.iglob(os.path.join(cimeroot,"src","share","include","*")):
+        copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
+    for _file in glob.iglob(os.path.join(cimeroot,"src","share","RandNum","include","*")):
+        copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
 
-        libdir = os.path.join(bldroot,comp_interface,use_esmf, ninst_value,"csm_share")
-        if not os.path.isdir(libdir):
-            os.makedirs(libdir)
+    # This runs the make command
+    gmake_opts = "-f {}/Makefile complib MODEL=csm_share ".format(os.path.join(caseroot,"Tools"))
+    gmake_opts += "-j {} ".format(case.get_value("GMAKE_J"))
+    gmake_opts += " COMPLIB=libcsm_share.a"
+    gmake_opts += ' USER_CPPDEFS="{} -DTIMING" '.format(multiinst_cppdefs)
+    gmake_opts += " CASEROOT={} ".format(caseroot)
+    gmake_opts += " CIMEROOT={} ".format(cimeroot)
+    gmake_opts += "INCLUDE_DIR={} ".format(os.path.join(installdir, "include"))
+    gmake_opts += " -C {}".format(libdir)
 
-        filepathfile = os.path.join(libdir, "Filepath")
-        # if the filepathfile has a different number of lines than filepath, replace it
-        file_len = 0
-        if os.path.isfile(filepathfile):
-            file_len = len(open(filepathfile).readlines())
+    gmake_cmd = case.get_value("GMAKE")
 
-        if len(filepath) != file_len:
-            with open(filepathfile, "w") as fd:
-                for path in filepath:
-                    fd.write("{}\n".format(path))
-
-        components = case.get_values("COMP_CLASSES")
-        multiinst_cppdefs = ""
-        multi_driver = case.get_value("MULTI_DRIVER")
-        for comp in components:
-            if comp == "CPL":
-                continue
-            if multi_driver:
-                ninst_comp = 1
-            else:
-                ninst_comp = case.get_value("NINST_{}".format(comp))
-            multiinst_cppdefs += " -DNUM_COMP_INST_{}={}".format(comp, ninst_comp)
-
-        installdir = os.path.join(installpath, comp_interface,
-                                  use_esmf, ninst_value)
-        for ndir in ("lib", "include"):
-            if not os.path.isdir(os.path.join(installdir,ndir)):
-                os.makedirs(os.path.join(installdir,ndir))
-        # copy some header files
-        for _file in glob.iglob(os.path.join(cimeroot,"src","share","include","*")):
-            copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
-        for _file in glob.iglob(os.path.join(cimeroot,"src","share","RandNum","include","*")):
-            copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
-
-        # This runs the gptl make command
-        gmake_opts = "-f {}/Makefile complib MODEL=csm_share ".format(os.path.join(caseroot,"Tools"))
-        gmake_opts += "-j {} ".format(case.get_value("GMAKE_J"))
-        gmake_opts += " COMPLIB={} ".format(os.path.join(installdir,"lib","libcsm_share.a"))
-        gmake_opts += " USER_CPPDEFS=\"{}\" ".format(multiinst_cppdefs)
-        gmake_opts += " CASEROOT={} ".format(caseroot)
-        gmake_opts += " CIMEROOT={} ".format(cimeroot)
-        gmake_opts += "INCLUDE_DIR={} ".format(os.path.join(installdir, "include"))
-        gmake_opts += " -C {}".format(libdir)
-
-        gmake_cmd = case.get_value("GMAKE")
-
-        cmd = "{} {}".format(gmake_cmd, gmake_opts)
-        run_bld_cmd_ensure_logging(cmd, logger)
+    cmd = "{} {}".format(gmake_cmd, gmake_opts)
+    run_bld_cmd_ensure_logging(cmd, logger)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
-    buildlib(bldroot, installpath, caseroot)
+    with Case(caseroot) as case:
+        buildlib(bldroot, installpath, case)
 
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

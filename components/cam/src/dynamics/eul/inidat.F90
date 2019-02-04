@@ -72,10 +72,12 @@ contains
     
     use constituents,     only: pcnst, cnst_name, cnst_read_iv, cnst_get_ind
     use commap,           only: clat,clon
-    use iop,              only: setiopupdate,readiopdata
+    use scamMod,          only: readiopdata, setiopupdate
     use dyn_comp ,        only: dyn_import_t
     use physconst,        only: pi
     use cam_pio_utils,    only: cam_pio_get_var
+    use hycoef,           only: hyam, hybm
+    use eul_single_column_mod, only: scm_setinitial
     
 !
 ! Arguments
@@ -287,7 +289,8 @@ contains
           ! No need to initialize surface properties here
           !  at this point
           iop_update_surface = .false.
-          call readiopdata( iop_update_surface )
+          call readiopdata( iop_update_surface, hyam, hybm )
+	  call scm_setinitial()
           ps(:,:,1)     = ps(:,:,n3)
           if (have_u) u3(:,:,:,1)   = u3(:,:,:,n3)
           if (have_v) v3(:,:,:,1)   = v3(:,:,:,n3)

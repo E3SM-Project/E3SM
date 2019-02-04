@@ -1128,7 +1128,7 @@
   </grid>
   <grid name="a%0.9x1.25">
     <mach name="any">
-      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALISIA.+SWAV" pesize="any">
+      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALI%SIA.+SWAV" pesize="any">
         <comment>MALISIA.</comment>
         <ntasks>
           <ntasks_atm>8</ntasks_atm>
@@ -2649,14 +2649,14 @@
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>384</ntasks_atm>
-          <ntasks_lnd>384</ntasks_lnd>
-          <ntasks_rof>384</ntasks_rof>
+          <ntasks_atm>363</ntasks_atm>
+          <ntasks_lnd>363</ntasks_lnd>
+          <ntasks_rof>363</ntasks_rof>
           <ntasks_ice>128</ntasks_ice>
           <ntasks_ocn>128</ntasks_ocn>
           <ntasks_glc>64</ntasks_glc>
           <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>384</ntasks_cpl>
+          <ntasks_cpl>363</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>2</nthrds_atm>
@@ -8112,7 +8112,7 @@
       </pes>
     </mach>
     <mach name="edison">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>"edison ne4 coupled compest on 6 nodes, OCN by itself on 2 nodes sypd=45.2"</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
@@ -8427,7 +8427,7 @@
   </grid>
   <grid name=".*T62_oi%oRRS18to6*">
     <mach name="cori-knl">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-knl, hires (18to6) G case on 150 nodes, 64x2, sypd=0.5</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -8456,7 +8456,7 @@
   </grid>
   <grid name=".*T62_oi%oEC60to30.*">
     <mach name="cori-knl">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-knl, lowres (60to30) G case on 16 nodes, 64x2, sypd=2.42</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>

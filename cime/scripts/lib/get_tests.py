@@ -11,7 +11,7 @@ _ALL_TESTS = {}
 try:
     from tests import _TESTS # pylint: disable=import-error
     _ALL_TESTS.update(_TESTS)
-except:
+except ImportError:
     pass
 
 # Here are the tests belonging to e3sm suites. Format is
@@ -44,12 +44,16 @@ _CIME_TESTS = {
                    ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
                     "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNFAIL_P1.f19_g16_rx1.A",
+                    "TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
                     "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
                     "TESTRUNPASS_P1.f19_g16_rx1.A",
                     "TESTTESTDIFF_P1.f19_g16_rx1.A",
                     "TESTMEMLEAKFAIL_P1.f09_g16.X",
                     "TESTMEMLEAKPASS_P1.f09_g16.X")
                    ),
+
+    "cime_test_all" : ("cime_test_only", "0:10:00",
+                       ("TESTRUNDIFF_P1.f19_g16_rx1.A", )),
 
     "cime_developer" : (None, "0:15:00",
                             ("NCK_Ld3.f45_g37_rx1.A",
@@ -60,8 +64,8 @@ _CIME_TESTS = {
                              "IRT_N2.f19_g16_rx1.A",
                              "ERR.f45_g37_rx1.A",
                              "ERP.f45_g37_rx1.A",
-                             "SMS_D_Ln9.f19_g16_rx1.A",
-                             "DAE.f19_f19.A",
+                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A",
+                             "DAE.ww3a.ADWAV",
                              "PET_P4.f19_f19.A",
                              "PEM_P4.f19_f19.A",
                              "SMS.T42_T42.S",
@@ -197,7 +201,7 @@ def get_full_test_names(testargs, machine, compiler):
         else:
             try:
                 tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
-            except:
+            except Exception:
                 if "." not in testarg:
                     expect(False, "Unrecognized test suite '{}'".format(testarg))
                 else:
@@ -259,25 +263,7 @@ def get_recommended_test_time(test_full_name):
     return best_time
 
 ###############################################################################
-def sort_by_time(test_one, test_two):
+def key_test_time(test_full_name):
 ###############################################################################
-    """
-    >>> tests = get_full_test_names(["cime_tiny"], "melvin", "gnu")
-    >>> tests.extend(get_full_test_names(["cime_developer"], "melvin", "gnu"))
-    >>> tests.append("A.f19_f19.A.melvin_gnu")
-    >>> tests.sort(cmp=sort_by_time)
-    >>> tests
-    ['DAE.f19_f19.A.melvin_gnu', 'ERI.f09_g16.X.melvin_gnu', 'ERIO.f09_g16.X.melvin_gnu', 'ERP.f45_g37_rx1.A.melvin_gnu', 'ERR.f45_g37_rx1.A.melvin_gnu', 'ERS.ne30_g16_rx1.A.melvin_gnu', 'IRT_N2.f19_g16_rx1.A.melvin_gnu', 'NCK_Ld3.f45_g37_rx1.A.melvin_gnu', 'PET_P32.f19_f19.A.melvin_gnu', 'PRE.f19_f19.ADESP.melvin_gnu', 'PRE.f19_f19.ADESP_TEST.melvin_gnu', 'SEQ_Ln9.f19_g16_rx1.A.melvin_gnu', 'SMS.T42_T42.S.melvin_gnu', 'SMS_D_Ln9.f19_g16_rx1.A.melvin_gnu', 'ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'A.f19_f19.A.melvin_gnu']
-    """
-    rec1, rec2 = get_recommended_test_time(test_one), get_recommended_test_time(test_two)
-    if rec1 == rec2:
-        return (test_one > test_two) - (test_two < test_one)
-    else:
-        if rec2 is None:
-            return -1
-        elif rec1 is None:
-            return 1
-        else:
-            a = convert_to_seconds(rec2)
-            b = convert_to_seconds(rec1)
-            return (a < b) - (b < a)
+    result = get_recommended_test_time(test_full_name)
+    return 99999999 if result is None else convert_to_seconds(result)

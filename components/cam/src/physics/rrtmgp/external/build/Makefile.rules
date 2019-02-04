@@ -1,0 +1,12 @@
+COMPILE = $(FC) $(FCFLAGS) $(FCINCLUDE) -c
+ECOMPILE = $(FC) $(FCFLAGS)
+
+%.o: %.f
+	$(COMPILE) -fixed $<
+
+%.o: %.F90
+	$(COMPILE) $<
+
+%: %.o
+	$(ECOMPILE) -o ../$@ $^ $(LDFLAGS) $(LIBS)
+

@@ -95,7 +95,8 @@ module subgridWeightsMod
   use clm_varctl   , only : iulog, all_active
   use clm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
-  use GridcellType , only : grc_pp                
+  use GridcellType , only : grc_pp
+  use TopounitType , only : top_pp  
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
@@ -113,7 +114,7 @@ module subgridWeightsMod
   public :: check_weights                 ! check subgrid weights
   public :: get_landunit_weight           ! get the weight of a given landunit on a single grid cell
   public :: set_landunit_weight           ! set the weight of a given landunit on a single grid cell
-  public :: is_gcell_all_ltypeX           ! determine whether a grid cell is 100% covered by the given landunit type
+  public :: is_topo_all_ltypeX            ! determine whether a topounit is 100% covered by the given landunit type
   public :: set_subgrid_diagnostic_fields ! set all subgrid weights diagnostic fields
   !
   ! !REVISION HISTORY:
@@ -214,8 +215,11 @@ contains
   subroutine compute_higher_order_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Assuming veg_pp%wtcol, col_pp%wtlunit and lun_pp%wtgcell have already been computed, compute
-    ! the "higher-order" weights: veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell, for all p and c
+    ! Assuming veg_pp%wtcol, col_pp%wtlunit and lun_pp%wttopounit have already been computed, compute
+    ! the "higher-order" weights: 
+    ! veg_pp%wtlunit, veg_pp%wttopounit, veg_pp%wtgcell,
+    ! col_pp%wttopounit, col_pp%wtgcell, and
+    ! lun_pp%wtgcell, for all p, c, and l
     !
     ! !USES:
     !
@@ -224,18 +228,25 @@ contains
     type(bounds_type), intent(in) :: bounds  ! clump bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p, c, l      ! indices for pft, col & landunit
+    integer :: p, c, l, t      ! indices for pft, col, landunit, and topounit
     !------------------------------------------------------------------------
+
+    do l = bounds%begl, bounds%endl
+       t = lun_pp%topounit(l)
+       lun_pp%wtgcell(l)    = lun_pp%wttopounit(l) * top_pp%wtgcell(t)
+    end do
 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       col_pp%wtgcell(c) = col_pp%wtlunit(c) * lun_pp%wtgcell(l)
+       col_pp%wttopounit(c) = col_pp%wtlunit(c) * lun_pp%wttopounit(l)
+       col_pp%wtgcell(c)    = col_pp%wtlunit(c) * lun_pp%wtgcell(l)
     end do
 
     do p = bounds%begp, bounds%endp
        c = veg_pp%column(p)
-       veg_pp%wtlunit(p) = veg_pp%wtcol(p) * col_pp%wtlunit(c)
-       veg_pp%wtgcell(p) = veg_pp%wtcol(p) * col_pp%wtgcell(c)
+       veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+       veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+       veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
     end do
   end subroutine compute_higher_order_weights
 
@@ -306,13 +317,15 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g  ! grid cell index
+    integer :: t  ! topounit index
     !------------------------------------------------------------------------
 
     if (all_active) then
        is_active_l = .true.
 
     else
-       g =lun_pp%gridcell(l)
+       g = lun_pp%gridcell(l)
+       t = lun_pp%topounit(l)
 
        is_active_l = .false.
 
@@ -320,10 +333,10 @@ contains
        ! General conditions under which is_active_l NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (lun_pp%wtgcell(l) > 0) is_active_l = .true.
+       if (lun_pp%wttopounit(l) > 0) is_active_l = .true.
 
        ! ------------------------------------------------------------------------
-       ! Conditions under which is_active_p is set to true because we want extra virtual landunits:
+       ! Conditions under which is_active_l is set to true because we want extra virtual landunits:
        ! ------------------------------------------------------------------------
 
        ! Always run over ice_mec landunits within the glcmask, because this is where glc
@@ -333,26 +346,28 @@ contains
        ! glcmask, we make it easy to add virtual columns, simply by changing the fglcmask
        ! file. Since icemask is a subset of glcmask, the only downside of using glcmask
        ! rather than icemask is a (typically small) performance cost.
+       ! PET: 4/25/2018: By keeping the glcmask reference at the gridcell level, this forces
+       ! is_active_l = .true. for istice_mec landunits on all topounits for the gridcell.
        if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true.
 
        ! In general, include a virtual natural vegetation landunit. This aids
        ! initialization of a new landunit; and for runs that are coupled to CISM, this
        ! provides bare land SMB forcing even if there is no vegetated area.
        !
-       ! However, we do NOT include a virtual vegetated column in grid cells that are 100%
+       ! However, we do NOT include a virtual vegetated column in topounits that are 100%
        ! standard (non-mec) glacier. This is for performance reasons: for FV 0.9x1.25,
        ! excluding these virtual vegetated columns (mostly over Antarctica) leads to a ~
        ! 6% performance improvement (the performance improvement is much less for ne30,
-       ! though). In such grid cells, we do not need the forcing to CISM (because if we
+       ! though). In such topounits, we do not need the forcing to CISM (because if we
        ! needed forcing to CISM, we'd be using an istice_mec point rather than plain
        ! istice). Furthermore, standard glacier landunits cannot retreat (only istice_mec
        ! points can retreat, due to coupling with CISM), so we don't need to worry about
-       ! the glacier retreating in this grid cell, exposing new natural veg area. The
+       ! the glacier retreating in this topounit, exposing new natural veg area. The
        ! only thing that could happen is the growth of some special landunit - e.g., crop
-       ! - in this grid cell, due to dynamic landunits. We'll live with the fact that
+       ! - in this topounit, due to dynamic landunits. We'll live with the fact that
        ! initialization of the new crop landunit will be initialized in an un-ideal way
        ! in this rare situation.
-       if (lun_pp%itype(l) == istsoil .and. .not. is_gcell_all_ltypeX(g, istice)) then
+       if (lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(t, istice)) then
           is_active_l = .true.
        end if
 
@@ -453,17 +468,17 @@ contains
   end function is_active_p
 
   !-----------------------------------------------------------------------
-  function get_landunit_weight(g, ltype) result(weight)
+  function get_landunit_weight(t, ltype) result(weight)
     !
     ! !DESCRIPTION:
-    ! Get the subgrid weight of a given landunit type on a single grid cell
+    ! Get the subgrid weight of a given landunit type on a single topographic unit
     !
     ! !USES:
     use clm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     real(r8) :: weight  ! function result
-    integer , intent(in) :: g     ! grid cell index
+    integer , intent(in) :: t     ! topounit index
     integer , intent(in) :: ltype ! landunit type of interest
     !
     ! !LOCAL VARIABLES:
@@ -472,26 +487,26 @@ contains
     character(len=*), parameter :: subname = 'get_landunit_weight'
     !-----------------------------------------------------------------------
     
-    l = grc_pp%landunit_indices(ltype, g)
+    l = top_pp%landunit_indices(ltype, t)
     if (l == ispval) then
        weight = 0._r8
     else
-       weight = lun_pp%wtgcell(l)
+       weight = lun_pp%wttopounit(l)
     end if
 
   end function get_landunit_weight
 
   !-----------------------------------------------------------------------
-  subroutine set_landunit_weight(g, ltype, weight)
+  subroutine set_landunit_weight(t, ltype, weight)
     !
     ! !DESCRIPTION:
-    ! Set the subgrid weight of a given landunit type on a single grid cell
+    ! Set the subgrid weight of a given landunit type on a single topographic unit
     !
     ! !USES:
     use clm_varcon, only : ispval
     !
     ! !ARGUMENTS:
-    integer , intent(in) :: g      ! grid cell index
+    integer , intent(in) :: t      ! topounit index
     integer , intent(in) :: ltype  ! landunit type of interest
     real(r8), intent(in) :: weight ! new weight of this landunit
     !
@@ -501,12 +516,12 @@ contains
     character(len=*), parameter :: subname = 'set_landunit_weight'
     !-----------------------------------------------------------------------
 
-    l = grc_pp%landunit_indices(ltype, g)
+    l = top_pp%landunit_indices(ltype, t)
     if (l /= ispval) then
-       lun_pp%wtgcell(l) = weight
+       lun_pp%wttopounit(l) = weight
     else if (weight > 0._r8) then
        write(iulog,*) subname//' ERROR: Attempt to assign non-zero weight to a non-existent landunit'
-       write(iulog,*) 'g, l, ltype, weight = ', g, l, ltype, weight
+       write(iulog,*) 'g, t, l, ltype, weight = ', top_pp%gridcell(t), t, l, ltype, weight
        call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
     end if
     
@@ -514,34 +529,34 @@ contains
 
 
   !-----------------------------------------------------------------------
-  function is_gcell_all_ltypeX(g, ltype) result(all_ltypeX)
+  function is_topo_all_ltypeX(t, ltype) result(all_ltypeX)
     !
     ! !DESCRIPTION:
-    ! Determine if the given grid cell is 100% covered by the landunit type given by ltype
+    ! Determine if the given topounit is 100% covered by the landunit type given by ltype
     !
     ! !USES:
     !
     ! !ARGUMENTS:
     implicit none
     logical :: all_ltypeX        ! function result
-    integer, intent(in) :: g     ! grid cell index
+    integer, intent(in) :: t     ! topounit index
     integer, intent(in) :: ltype ! landunit type of interest
     !
     ! !LOCAL VARIABLES:
     real(r8) :: wt_lunit ! subgrid weight of the given landunit
 
     real(r8), parameter :: tolerance = 1.e-13_r8  ! tolerance for checking whether landunit's weight is 1
-    character(len=*), parameter :: subname = 'is_gcell_all_ltypeX'
+    character(len=*), parameter :: subname = 'is_topo_all_ltypeX'
     !------------------------------------------------------------------------------
 
-    wt_lunit = get_landunit_weight(g, ltype)
+    wt_lunit = get_landunit_weight(t, ltype)
     if (wt_lunit >= (1._r8 - tolerance)) then
        all_ltypeX = .true.
     else
        all_ltypeX = .false.
     end if
 
-  end function is_gcell_all_ltypeX
+  end function is_topo_all_ltypeX
 
   !------------------------------------------------------------------------------
   subroutine check_weights (bounds, active_only)

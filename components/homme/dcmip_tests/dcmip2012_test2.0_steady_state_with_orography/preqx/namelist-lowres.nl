@@ -39,6 +39,7 @@
   num_io_procs      = 16         
   interp_nlat       = 91
   interp_nlon       = 360
+  interp_gridtype   = 1
 /
 &prof_inparm
   profile_outpe_num   = 100

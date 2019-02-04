@@ -34,6 +34,8 @@ module mpassi_cpl_indices
   integer :: index_i2x_Fioi_salt       ! salt  flux from meting  ice
   integer :: index_i2x_Fioi_taux       ! ice/ocn stress, zonal
   integer :: index_i2x_Fioi_tauy       ! ice/ocn stress, zonal
+  integer :: index_i2x_Fioi_bergh      ! heat  flux from melting icebergs (<0)
+  integer :: index_i2x_Fioi_bergw      ! water flux from melting icebergs
 
   ! ice -> drv (BGC)
 
@@ -164,6 +166,8 @@ contains
     index_i2x_Fioi_salt     = mct_avect_indexra(i2x,'Fioi_salt')
     index_i2x_Fioi_taux     = mct_avect_indexra(i2x,'Fioi_taux')
     index_i2x_Fioi_tauy     = mct_avect_indexra(i2x,'Fioi_tauy')
+    index_i2x_Fioi_bergh    = mct_avect_indexra(i2x,'PFioi_bergh')
+    index_i2x_Fioi_bergw    = mct_avect_indexra(i2x,'PFioi_bergw')
 
     index_i2x_Fioi_algae1   = mct_avect_indexra(i2x,'Fioi_algae1',perrWith='quiet')
     index_i2x_Fioi_algae2   = mct_avect_indexra(i2x,'Fioi_algae2',perrWith='quiet')

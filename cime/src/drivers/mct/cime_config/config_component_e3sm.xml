@@ -20,6 +20,26 @@
     Used to set the driver namelist variable "drv_threading".</desc>
   </entry>
 
+  <entry id="INFO_TASKMAP_MODEL">
+    <type>integer</type>
+    <valid_values>0,1,2</valid_values>
+    <default_value>2</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of task-to-node mapping output for the whole model 
+    (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
+  <entry id="INFO_TASKMAP_COMP">
+    <type>integer</type>
+    <valid_values>0,1,2</valid_values>
+    <default_value>0</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of task-to-node mapping output for supported component models
+    (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
   <entry id="SAVE_TIMING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -279,6 +299,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
@@ -289,6 +310,8 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10wLI">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to10">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to6">96</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
@@ -376,6 +399,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
@@ -386,6 +410,8 @@
       <value compset="_MPASO" grid="oi%oRRS30to10wLI">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
+      <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
+      <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
 
     </values>
     <group>run_coupling</group>
@@ -641,6 +667,14 @@
     <file>env_case.xml</file>
     <desc>If set to off, this component set/ grid specification is not scientifically supported.
     If set to on, this component set/ grid specification is scientifically supported</desc>
+  </entry>
+
+  <entry id="MAX_GB_OLD_TEST_DATA">
+    <type>integer</type>
+    <default_value>500</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>How much old test to allow</desc>
   </entry>
 
   <entry id="GLC_NEC">

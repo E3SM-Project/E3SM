@@ -44,6 +44,7 @@ Case Control System Part 2: Configuration, Porting, Testing and Use Cases
    unit_testing.rst
    multi-instance.rst
    workflows.rst
+   cime-dir.rst
 
 Indices and tables
 ==================

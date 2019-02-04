@@ -287,7 +287,7 @@ contains
   subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
        atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-       fractions_rx, fractions_gx, fractions_wx, tag)
+       fractions_rx, fractions_gx, fractions_wx, tag, rest_file)
 
     implicit none
 
@@ -295,13 +295,13 @@ contains
     type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
     type(seq_infodata_type), intent(in)    :: infodata
     type (component_type)       , intent(inout) :: atm(:)
-    type (component_type)       , intent(inout) :: lnd(:)
-    type (component_type)       , intent(inout) :: ice(:)
-    type (component_type)       , intent(inout) :: ocn(:)
-    type (component_type)       , intent(inout) :: rof(:)
-    type (component_type)       , intent(inout) :: glc(:)
-    type (component_type)       , intent(inout) :: wav(:)
-    type (component_type)       , intent(inout) :: esp(:)
+    type (component_type)  , intent(inout) :: lnd(:)
+    type (component_type)  , intent(inout) :: ice(:)
+    type (component_type)  , intent(inout) :: ocn(:)
+    type (component_type)  , intent(inout) :: rof(:)
+    type (component_type)  , intent(inout) :: glc(:)
+    type (component_type)  , intent(inout) :: wav(:)
+    type (component_type)  , intent(inout) :: esp(:)
     type(mct_aVect)        , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -309,7 +309,8 @@ contains
     type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
-    character(len=*)       , intent(in) :: tag
+    character(len=*)       , intent(in)    :: tag
+    character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
 
     integer(IN)   :: n,n1,n2,n3,fk
     integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -322,7 +323,6 @@ contains
     logical       :: whead,wdata      ! flags header/data writing
     logical       :: cplroot          ! root pe on cpl id
     integer(IN)   :: iun              ! unit number
-    character(CL) :: rest_file        ! Local path to restart filename
     type(mct_gsMap),pointer :: gsmap
     character(len=6) :: year_char
 

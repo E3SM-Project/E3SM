@@ -21,6 +21,10 @@ _TESTS = {
                              ("ERS.f09_g16.I1850CLM45CN","clm-bgcinterface"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                              ("ERS.f19_g16.I1850CNRDCTCBC","clm-rd"),
+                             ("ERS.f19_g16.I1850GSWCNPECACNTBC","clm-eca_f19_g16_I1850GSWCNPECACNTBC"),
+                             ("ERS.f19_g16.I20TRGSWCNPECACNTBC","clm-eca_f19_g16_I20TRGSWCNPECACNTBC"),
+                             ("ERS.f19_g16.I1850GSWCNPRDCTCBC","clm-ctc_f19_g16_I1850GSWCNPRDCTCBC"),
+                             ("ERS.f19_g16.I20TRGSWCNPRDCTCBC","clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC"),
                               "ERS.f09_g16.ICLM45BC")
                              ),
 
@@ -34,9 +38,11 @@ _TESTS = {
 
     "e3sm_atm_integration" : (None, None,
                               ("ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
+                              ("SMS_Ld1.ne4_ne4.FC5AV1C-L-AQUAP","cam-clubb_only"),
                                ("PET_Ln5.ne4_ne4.FC5AV1C-L","allactive-mach-pet"),
                                "PEM_Ln5.ne4_ne4.FC5AV1C-L",
                                ("SMS_D_Ln5.ne4_ne4.FC5AV1C-L", "cam-cosplite_nhtfrq5"),
+                               ("ERS_Ld5.ne4_ne4.FC5AV1C-L", "cam-rrtmgp"),
                                "REP_Ln5.ne4_ne4.FC5AV1C-L")
                               ),
     #atmopheric tests for extra coverage
@@ -59,6 +65,12 @@ _TESTS = {
                         )
                        ),
 
+    #atmopheric nbfb tests
+    "e3sm_atm_nbfb" : (None, None,
+                                 ("PGN_P1x1.ne4_ne4.FC5AV1C-L",
+                                  "TSC.ne4_ne4.FC5AV1C-L")
+                                 ),
+
     "e3sm_developer" : (("e3sm_land_developer","e3sm_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.ne30_g16_rx1.A",
@@ -70,8 +82,8 @@ _TESTS = {
                          "ERS_Ld5.T62_oQU120.CMPASO-NYF",
                          "ERS.f09_g16_g.MALISIA",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
-                         "SMS.f09_g16_a.IGCLM45_MLI"
-                        ,("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
+                         "SMS.f09_g16_a.IGCLM45_MLI",
+                        ("SMS_P12x2.ne4_oQU240.A_WCYCL1850","allactive-mach_mods")
                         )),
 
     "e3sm_integration" : (("e3sm_developer", "e3sm_atm_integration"),"03:00:00",
@@ -79,6 +91,7 @@ _TESTS = {
 		           ("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
                            "ERS_Ln9.ne4_ne4.FC5AV1C-L",
                           #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
+                           "NCK.ne11_oQU240.A_WCYCL1850",
                            ("PET.f19_g16.X","allactive-mach-pet"),
                            ("PET.f45_g37_rx1.A","allactive-mach-pet"),
                            ("PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S","allactive-mach-pet"),
@@ -86,6 +99,7 @@ _TESTS = {
                            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
                            "SMS.f09_g16_a.MALI",
                            "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
+                           ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850","clm-bgcexp"),
                            ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"))
                           ),
     #e3sm tests for extra coverage
@@ -117,6 +131,6 @@ _TESTS = {
                          ("ERS_Ld9.1x1_brazil.ICLM45ED",
                           "ERS_D_Ld9.1x1_brazil.ICLM45ED",
                           "SMS_D_Lm6.1x1_brazil.ICLM45ED")
-                         ),
+               ),
 
 }

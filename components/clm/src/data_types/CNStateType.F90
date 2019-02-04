@@ -158,6 +158,8 @@ module CNStateType
      real(r8), pointer :: cp_scalar                    (:)     ! cp scaling factor for root p uptake kinetics (no units)
      real(r8), pointer :: np_scalar                    (:)     ! np scaling factor for root n/p uptake kinetics (no units)
      real(r8), pointer :: cost_ben_scalar              (:)     ! cost benefit analysis scaling factor for root n uptake kinetics (no units)
+     real(r8), pointer :: cn_scalar_runmean            (:)     ! long term average of cn scaling factor for root n uptake kinetics (no units) 
+     real(r8), pointer :: cp_scalar_runmean            (:)     ! long term average of cp scaling factor for root p uptake kinetics (no units)
 
      real(r8), pointer :: frac_loss_lit_to_fire_col        (:)
      real(r8), pointer :: frac_loss_cwd_to_fire_col        (:)
@@ -179,6 +181,9 @@ module CNStateType
      procedure, private :: InitAllocate
      procedure, private :: InitHistory  
      procedure, private :: InitCold     
+     procedure, public  :: InitAccBuffer
+     procedure, public  :: InitAccVars
+     procedure, public  :: UpdateAccVars
 
   end type cnstate_type
   !------------------------------------------------------------------------
@@ -339,6 +344,8 @@ contains
     allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = 0.0
     allocate(this%np_scalar                   (begp:endp))                   ; this%np_scalar     (:) = 0.0
     allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
+    allocate(this%cn_scalar_runmean           (begp:endp))                   ; this%cn_scalar_runmean (:) = 0.0
+    allocate(this%cp_scalar_runmean           (begp:endp))                   ; this%cp_scalar_runmean (:) = 0.0
     allocate(this%frac_loss_lit_to_fire_col       (begc:endc))               ; this%frac_loss_lit_to_fire_col(:) =0._r8
     allocate(this%frac_loss_cwd_to_fire_col       (begc:endc))               ; this%frac_loss_cwd_to_fire_col(:) =0._r8
     allocate(fert_type                        (begc:endc))                   ; fert_type     (:) = 0
@@ -665,6 +672,16 @@ contains
     call hist_addfld1d (fname='cp_scalar', units='', &
        avgflag='A', long_name='P limitation factor', &
        ptr_patch=this%cp_scalar, default='active')
+
+    this%cn_scalar_runmean(begp:endp) = spval
+    call hist_addfld1d (fname='nlim_m', units='', &
+       avgflag='A', long_name='runmean N limitation factor', &
+       ptr_patch=this%cn_scalar_runmean, default='active')
+
+    this%cp_scalar_runmean(begp:endp) = spval
+    call hist_addfld1d (fname='plim_m', units='', &
+       avgflag='A', long_name='runmean P limitation factor', &
+       ptr_patch=this%cp_scalar_runmean, default='active')
 
     this%r_mort_cal_patch(begp:endp) = spval
     call hist_addfld1d (fname='R_MORT_CAL', units='none', &
@@ -1109,7 +1126,7 @@ contains
     use fileutils  , only : getfil
     !
     ! !ARGUMENTS:
-    class(cnstate_type) :: this
+    class(cnstate_type)              :: this
     type(bounds_type), intent(in)    :: bounds 
     type(file_desc_t), intent(inout) :: ncid   
     character(len=*) , intent(in)    :: flag   
@@ -1432,7 +1449,133 @@ contains
             dim1name='pft', long_name='cp_scalar', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cp_scalar)
 
+    call restartvar(ncid=ncid, flag=flag, varname='nlim_m', xtype=ncd_double,  &
+            dim1name='pft', long_name='cn_scalar_runmean', units='-', &
+            interpinic_flag='interp', readvar=readvar, data=this%cn_scalar_runmean)
+    call restartvar(ncid=ncid, flag=flag, varname='plim_m', xtype=ncd_double,  &
+            dim1name='pft', long_name='cp_scalar_runmean', units='-', &
+            interpinic_flag='interp', readvar=readvar, data=this%cp_scalar_runmean)
+
   end subroutine Restart
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccBuffer (this, bounds)
+    ! !USES
+    use accumulMod       , only : init_accum_field
+    !
+    ! !ARGUMENTS:
+    class(cnstate_type)           :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+
+    this%cn_scalar_runmean(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='nlim_m', units='-',                                              &
+         desc='runing average of N limitation strength',  accum_type='runmean', accum_period=-7300,    &
+         subgrid_type='pft', numlev=1, init_value=0._r8)
+
+    this%cp_scalar_runmean(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='plim_m', units='-',                                              &
+         desc='runing average of P limitation strength',  accum_type='runmean', accum_period=-7300,    &
+         subgrid_type='pft', numlev=1, init_value=0._r8)
+
+  end subroutine InitAccBuffer
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccVars(this, bounds)
+
+    ! !USES
+    use accumulMod       , only : init_accum_field, extract_accum_field
+    use clm_time_manager , only : get_nstep
+    use clm_varctl       , only : nsrest
+    use abortutils       , only : endrun
+    !
+    ! !ARGUMENTS:
+    class(cnstate_type)           :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: begp, endp
+    integer  :: nstep
+    integer  :: ier
+    real(r8), pointer :: rbufslp(:)  ! temporary
+    !---------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+
+    ! Allocate needed dynamic memory for single level pft field
+    allocate(rbufslp(begp:endp), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)' in '
+       call endrun(msg="extract_accum_hist allocation error for rbufslp"//&
+            errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Determine time step
+    nstep = get_nstep()
+
+    call extract_accum_field ('nlim_m', rbufslp, nstep)
+    this%cn_scalar_runmean(begp:endp) = rbufslp(begp:endp)
+
+    call extract_accum_field ('plim_m', rbufslp, nstep)
+    this%cp_scalar_runmean(begp:endp) = rbufslp(begp:endp)
+    deallocate(rbufslp)
+  
+  end subroutine InitAccVars
+
+  !-----------------------------------------------------------------------
+  subroutine UpdateAccVars (this, bounds)
+    !
+    ! USES
+    use clm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
+    use accumulMod       , only : update_accum_field, extract_accum_field
+    !
+    ! !ARGUMENTS:
+    class(cnstate_type)                    :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: m,g,l,c,p                 ! indices
+    integer :: ier                       ! error status
+    integer :: dtime                     ! timestep size [seconds]
+    integer :: nstep                     ! timestep number
+    integer :: year                      ! year (0, ...) for nstep
+    integer :: month                     ! month (1, ..., 12) for nstep
+    integer :: day                       ! day of month (1, ..., 31) for nstep
+    integer :: secs                      ! seconds into current date for nstep
+    logical :: end_cd                    ! temporary for is_end_curr_day() value
+    integer :: begp, endp
+    real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
+    !---------------------------------------------------------------------
+
+    begp = bounds%begp; endp = bounds%endp
+
+    dtime = get_step_size()
+    nstep = get_nstep()
+    call get_curr_date (year, month, day, secs)
+
+    ! Allocate needed dynamic memory for single level pft field
+
+    allocate(rbufslp(begp:endp), stat=ier)
+    if (ier/=0) then
+       write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Accumulate and extract
+    do p = begp,endp
+       rbufslp(p) = this%cn_scalar(p)
+    end do
+    call update_accum_field  ('nlim_m' , rbufslp             , nstep)
+    call extract_accum_field ('nlim_m' , this%cn_scalar_runmean  , nstep)
+    do p = begp,endp
+       rbufslp(p) = this%cp_scalar(p)
+    end do
+    call update_accum_field  ('plim_m' , rbufslp             , nstep)
+    call extract_accum_field ('plim_m' , this%cp_scalar_runmean  , nstep)
+    deallocate(rbufslp)
+
+  end subroutine UpdateAccVars
 
   !-----------------------------------------------------------------------
   subroutine CropRestIncYear (this)

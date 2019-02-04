@@ -368,7 +368,6 @@ contains
     integer(C_SIZE_T) :: tlen
 
     tlen = size(array)
-
     call read_darray_internal_{TYPE} (File%fh, vardesc%varid, iodesc%ioid, tlen, array, iostat)
 
   end subroutine read_darray_{DIMS}d_{TYPE}
@@ -399,4 +398,3 @@ contains
   end subroutine read_darray_internal_{TYPE}
 
 end module piodarray
-

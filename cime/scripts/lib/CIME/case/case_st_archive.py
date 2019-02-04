@@ -227,7 +227,7 @@ def _archive_history_files(archive, archive_entry,
     # run directory are those that are needed for restarts
 
     for suffix in archive.get_hist_file_extensions(archive_entry):
-        if compname.find('mpas') == 0:
+        if compname.find('mpas') == 0 or compname == 'mali':
             newsuffix =                    compname + r'\d*'
         else:
             newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
@@ -385,7 +385,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
 #        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
         restfiles = ""
-        if compname.find("mpas") == 0:
+        if compname.find('mpas') == 0 or compname == 'mali':
             pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
             pfile = re.compile(pattern)
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
@@ -637,8 +637,8 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:
                 sshhost = fd.read()
-            run_cmd("ssh cooleylogin1 ssh {} '{}/case.submit {} --resubmit' "\
-                        .format(sshhost, caseroot, caseroot), verbose=True)
+            run_cmd("ssh cooleylogin1 ssh {} '{case}/case.submit {case} --resubmit' "\
+                        .format(sshhost, case=caseroot), verbose=True)
         else:
             self.submit(resubmit=True)
 
@@ -679,6 +679,80 @@ def test_st_archive(self, testdir="st_archive_test"):
 
     logger.info("testing components: {} ".format(list(set(components))))
     _archive_process(self, archive, None, False, False,components=list(set(components)),
+                     dout_s_root=dout_s_root,
+                     casename="casename", rundir=testdir, testonly=True)
+
+    _check_disposition(testdir)
+
+    # Now test the restore capability
+    testdir2 = os.path.join(testdir,"run2")
+    os.makedirs(testdir2)
+
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
+
+    restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
+    for _file in restfiles:
+        expect(os.path.isfile(os.path.join(testdir2,_file)), "Expected file {} to be restored from rest dir".format(_file))
+
+    return True
+
+def test_env_archive(self, testdir="env_archive_test"):
+    components = self.get_values("COMP_CLASSES")
+    comps_in_case = []
+    # create the run directory testdir and populate it with rest_file and hist_file from
+    # config_archive.xml test_file_names
+    if os.path.exists(testdir):
+        logger.info("Removing existing test directory {}".format(testdir))
+        shutil.rmtree(testdir)
+    dout_s_root=os.path.join(testdir,"archive")
+    archive = self.get_env('archive')
+    comp_archive_specs = archive.scan_children("comp_archive_spec")
+
+    # ignore stub and dead components
+    for comp in list(components):
+        compname = self.get_value("COMP_{}".format(comp))
+        if (compname == 's'+comp.lower() or compname == 'x'+comp.lower()) and comp != 'ESP':
+            logger.info("Not testing component {}".format(comp))
+            components.remove(comp)
+        elif comp == 'ESP' and self.get_value('MODEL') == 'e3sm':
+            components.remove(comp)
+        else:
+            if compname == 'cpl':
+                compname = 'drv'
+            comps_in_case.append(compname)
+
+    for comp_archive_spec in comp_archive_specs:
+        comp_expected = archive.get(comp_archive_spec, 'compname')
+        if comp_expected == "ww3":
+            comp_expected = "ww"
+        comp_class = archive.get(comp_archive_spec, 'compclass').upper()
+        if comp_class in components:
+            components.remove(comp_class)
+        else:
+            expect(False,"Error finding comp_class {} in components".format(comp_class))
+        if comp_expected == 'cpl':
+            comp_expected = 'drv'
+        if comp_expected != 'dart':
+            expect(comp_expected in comps_in_case, "env_archive defines component {} not defined in case".format(comp_expected))
+
+        test_file_names = archive.get_optional_child("test_file_names", root=comp_archive_spec)
+        if test_file_names is not None:
+            if not os.path.exists(testdir):
+                os.makedirs(os.path.join(testdir,"archive"))
+
+            for file_node in archive.get_children("tfile", root=test_file_names):
+                fname = os.path.join(testdir,archive.text(file_node))
+                disposition = archive.get(file_node, "disposition")
+                logger.info("Create file {} with disposition {}".
+                            format(fname, disposition))
+                with open(fname, 'w') as fd:
+                    fd.write(disposition+"\n")
+
+    expect(not components, "No archive entry found for components: {}".format(components))
+    if 'dart' not in comps_in_case:
+        comps_in_case.append('dart')
+    logger.info("testing components: {} ".format(comps_in_case))
+    _archive_process(self, archive, None, False, False,components=comps_in_case,
                      dout_s_root=dout_s_root,
                      casename="casename", rundir=testdir, testonly=True)
 

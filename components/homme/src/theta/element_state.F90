@@ -74,6 +74,7 @@ module element_state
     real (kind=real_kind) :: KEu_vert2(np,np)
     real (kind=real_kind) :: KEw_horiz1(np,np)  ! nonhydro only
     real (kind=real_kind) :: KEw_horiz2(np,np)  ! nonhydro only
+    real (kind=real_kind) :: KEw_horiz3(np,np)  ! nonhydro only
     real (kind=real_kind) :: KEw_vert1(np,np)   ! nonhydro only
     real (kind=real_kind) :: KEw_vert2(np,np)   ! nonhydro only
 

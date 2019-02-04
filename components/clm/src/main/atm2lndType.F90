@@ -70,7 +70,6 @@ module atm2lndType
      real(r8), pointer :: forc_hgt_q_grc                (:)   => null() ! obs height of humidity [m] (new)
      real(r8), pointer :: forc_vp_grc                   (:)   => null() ! atmospheric vapor pressure (Pa)
      real(r8), pointer :: forc_rh_grc                   (:)   => null() ! atmospheric relative humidity (%)
-     real(r8), pointer :: forc_psrf_grc                 (:)   => null() ! surface pressure (Pa)
      real(r8), pointer :: forc_pco2_grc                 (:)   => null() ! CO2 partial pressure (Pa)
      real(r8), pointer :: forc_solad_grc                (:,:) => null() ! direct beam radiation (numrad) (vis=forc_sols , nir=forc_soll )
      real(r8), pointer :: forc_solai_grc                (:,:) => null() ! diffuse radiation (numrad) (vis=forc_solsd, nir=forc_solld)
@@ -217,7 +216,6 @@ contains
     allocate(this%forc_hgt_t_grc                (begg:endg))        ; this%forc_hgt_t_grc                (:)   = ival
     allocate(this%forc_hgt_q_grc                (begg:endg))        ; this%forc_hgt_q_grc                (:)   = ival
     allocate(this%forc_vp_grc                   (begg:endg))        ; this%forc_vp_grc                   (:)   = ival
-    allocate(this%forc_psrf_grc                 (begg:endg))        ; this%forc_psrf_grc                 (:)   = ival
     allocate(this%forc_pco2_grc                 (begg:endg))        ; this%forc_pco2_grc                 (:)   = ival
     allocate(this%forc_solad_grc                (begg:endg,numrad)) ; this%forc_solad_grc                (:,:) = ival
     allocate(this%forc_solai_grc                (begg:endg,numrad)) ; this%forc_solai_grc                (:,:) = ival
@@ -700,6 +698,7 @@ contains
 
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
+          g = veg_pp%gridcell(p)
           rbufslp(p) = this%forc_wind_grc(g) 
        end do
        call update_accum_field  ('WIND24', rbufslp, nstep)
@@ -707,6 +706,7 @@ contains
 
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
+          g = veg_pp%gridcell(p)
           rbufslp(p) = this%forc_rh_grc(g) 
        end do
        call update_accum_field  ('RH24', rbufslp, nstep)

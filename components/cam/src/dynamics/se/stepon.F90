@@ -25,6 +25,10 @@ module stepon
    use edgetype_mod,       only: EdgeBuffer_t
    use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
    use parallel_mod,   only : par
+   use scamMod,        only: use_iop, doiopupdate, single_column, &
+                             setiopupdate, readiopdata
+   use element_mod,    only: element_t
+   use shr_const_mod,       only: SHR_CONST_PI
 
    implicit none
    private
@@ -53,6 +57,9 @@ module stepon
 !
 ! !PRIVATE DATA MEMBERS:
 !
+
+  logical :: iop_update_surface
+
   type (derivative_t)   :: deriv           ! derivative struct
   type (quadrature_t)   :: gv,gp           ! quadratures on velocity and pressure grids
   type (EdgeBuffer_t) :: edgebuf              ! edge buffer
@@ -73,7 +80,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   use dimensions_mod, only: nlev, nelemd, npsq
   use cam_history,    only: addfld, add_default, horiz_only
   use cam_history,    only: register_vector_field
-  use control_mod,    only: smooth_phis_numcycle
   use gravity_waves_sources, only: gws_init
   use phys_control,   only: use_gw_front
 
@@ -110,12 +116,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   call register_vector_field('FU', 'FV')
   call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Vorticity',                   gridname='GLL')
   call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence',                  gridname='GLL')
-
-  if (smooth_phis_numcycle>0) then
-     call addfld ('PHIS_SM',  horiz_only, 'I', 'm2/s2', 'Surface geopotential (smoothed)',                gridname='GLL')
-     call addfld ('SGH_SM',   horiz_only, 'I', 'm',     'Standard deviation of orography (smoothed)',     gridname='GLL')
-     call addfld ('SGH30_SM', horiz_only, 'I', 'm',     'Standard deviation of 30s orography (smoothed)', gridname='GLL')
-  endif
 
   call addfld ('CONVU   ', (/ 'ilev' /),'A', 'm/s2    ','Zonal component IE->KE conversion term',      gridname='physgrid')
   call addfld ('CONVV   ', (/ 'ilev' /),'A', 'm/s2    ','Meridional component IE->KE conversion term', gridname='physgrid')
@@ -157,8 +157,11 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   
   use dp_coupling, only: d_p_coupling
   use time_mod,    only: tstep, phys_tscale       ! dynamics timestep
+  use time_manager, only: is_last_step
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
+  use hycoef,      only: hyam, hybm
+  use se_single_column_mod, only: scm_setfield, scm_setinitial
   implicit none
 !
 ! !OUTPUT PARAMETERS:
@@ -170,8 +173,11 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (physics_buffer_desc), pointer :: pbuf2d(:,:)
+   type (element_t), pointer :: elem(:)
 
 !-----------------------------------------------------------------------
+
+   elem => dyn_out%elem
 
    ! NOTE: dtime_out computed here must match formula below
    dtime_out = get_step_size()
@@ -187,10 +193,22 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    ! Move data into phys_state structure.
    !----------------------------------------------------------
    
+  ! Determine whether it is time for an IOP update;
+  ! doiopupdate set to true if model time step > next available IOP 
+  if (use_iop .and. .not. is_last_step()) then
+    call setiopupdate
+  end if
+  
+  if (single_column) then
+    iop_update_surface = .true. 
+    if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
+    call scm_setfield(elem)       
+  endif 
+  
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
    call d_p_coupling (phys_state, phys_tend,  pbuf2d, dyn_out )
-   call t_stopf('d_p_coupling')
+   call t_stopf('d_p_coupling') 
    
 end subroutine stepon_run1
 
@@ -202,10 +220,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use dyn_comp,       only: TimeLevel
    
    use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
-   use control_mod,     only: ftype, qsplit, smooth_phis_numcycle
+   use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
-   use nctopo_util_mod, only: phisdyn,sghdyn,sgh30dyn
 
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
@@ -229,15 +246,17 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   do ie=1,nelemd
-      kptr=0
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-      kptr=kptr+2*nlev
+   if (.not. single_column) then 
+     do ie=1,nelemd
+       kptr=0
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
 
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-      kptr=kptr+nlev
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-   end do
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+       kptr=kptr+nlev
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+     end do
+   endif
 
    call bndry_exchangeV(par, edgebuf)
 
@@ -250,15 +269,17 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
 
    do ie=1,nelemd
-      kptr=0
+     if (.not. single_column) then
+       kptr=0
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-      kptr=kptr+2*nlev
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+       kptr=kptr+2*nlev
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-      kptr=kptr+nlev
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+       kptr=kptr+nlev
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+     endif
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -267,9 +288,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       dyn_ps0=ps0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=2:  apply forcing to Q,ps.  Return dynamics tendencies
+      ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (ftype==2) then
+      if ( (ftype==2) .or. (ftype==3) .or. (ftype==4) ) then
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 !$omp parallel do private(k)
@@ -277,23 +298,32 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
                  ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
          enddo
+
+         if (ftype == 3) then ! ftype == 3, scale tendencies with current dp
+           do k=1,nlev
+             do j=1,np
+               do i=1,np
+                  dyn_in%elem(ie)%derived%FT(i,j,k) = dyn_in%elem(ie)%derived%FT(i,j,k)*dp(i,j,k)
+                  dyn_in%elem(ie)%derived%FM(i,j,1:2,k) = dyn_in%elem(ie)%derived%FM(i,j,1:2,k)*dp(i,j,k)
+               end do
+             end do
+           end do
+         endif !ftype 3
+
          do k=1,nlev
             do j=1,np
                do i=1,np
-
                   do ic=1,pcnst
-                     ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                     
                      ! apply forcing to Qdp
-!                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-!                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
+                     ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
+                     !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
                      dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
                           dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic)
 
 ! BEWARE critical region if using OpenMP over k (AAM)
                      if (ic==1) then
+                        fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
+                             dyn_in%elem(ie)%state%Q(i,j,k,ic))
                         ! force ps_v to conserve mass:  
                         dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
                              dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
@@ -314,12 +344,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                        ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
                   dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
                        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-
                end do
             end do
           end do
          end do
-      endif
+
+      endif ! if ftype == 2 or == 3 or == 4
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment
@@ -428,7 +458,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                ftmp(i+(j-1)*np,1:pver,1) = tmp_dyn(i,j,1:pver)
             end do
          end do
-         call outfld('VOR',ftmp(:,:,1),npsq,ie)
+         if (.not. single_column) call outfld('VOR',ftmp(:,:,1),npsq,ie)
       enddo
    endif
    if (hist_fld_active('DIV')) then
@@ -439,44 +469,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                ftmp(i+(j-1)*np,1:pver,1) = tmp_dyn(i,j,1:pver)
             end do
          end do
-         call outfld('DIV',ftmp(:,:,1),npsq,ie)
+         if (.not. single_column) call outfld('DIV',ftmp(:,:,1),npsq,ie)
       enddo
    endif
 #endif
-   if (smooth_phis_numcycle>0) then
-      if (hist_fld_active('PHIS_SM')) then
-         do ie=1,nelemd
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,1,1) = phisdyn(i,j,ie)
-               end do
-            end do
-            call outfld('PHIS_SM',ftmp(:,1,1),npsq,ie)
-         enddo
-      endif
-      if (hist_fld_active('SGH_SM')) then
-         do ie=1,nelemd
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,1,1) = sghdyn(i,j,ie)
-               end do
-            end do
-            call outfld('SGH_SM',ftmp(:,1,1),npsq,ie)
-         enddo
-      endif
-      if (hist_fld_active('SGH30_SM')) then
-         do ie=1,nelemd
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,1,1) = sgh30dyn(i,j,ie)
-               end do
-            end do
-            call outfld('SGH30_SM',ftmp(:,1,1),npsq,ie)
-         enddo
-      endif
-   end if
-   
-   if (hist_fld_active('FU') .or. hist_fld_active('FV')) then
+   if (hist_fld_active('FU') .or. hist_fld_active('FV') .and. .not. single_column) then
       do ie=1,nelemd
          do k=1,nlev
             do j=1,np
@@ -502,17 +499,99 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use camsrfexch,  only: cam_out_t     
    use dyn_comp,    only: dyn_run
    use time_mod,    only: tstep
+   use hycoef,      only: hyam, hybm
+   use dimensions_mod, only: nlev, nelemd, np, npsq
+   use se_single_column_mod, only: scm_setfield, scm_setinitial
+   use dyn_comp, only: TimeLevel
+   use cam_history,     only: outfld   
+   use cam_logfile, only: iulog
    real(r8), intent(in) :: dtime   ! Time-step
+   real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
+   real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
+   real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
+               out_v(npsq,nlev), out_psv(npsq)  
+   real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
+   real(r8), parameter :: fac = 1000._r8	
+   real(r8) :: term1, term2        
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
-   integer :: rc
+   type (element_t), pointer :: elem(:)
+   integer :: rc, i, j, k, p, ie, tl_f
+   
+   elem => dyn_out%elem
+   
+#if (defined BFB_CAM_SCAM_IOP)   
+
+   tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
+   
+   ! Save ftmp stuff to get state before dynamics is called
+   do ie=1,nelemd
+     ftmp_temp(:,:,:,ie) = dyn_in%elem(ie)%state%T(:,:,:,tl_f)
+     ftmp_q(:,:,:,:,ie) = dyn_in%elem(ie)%state%Q(:,:,:,:)
+   enddo
+
+#endif   
+   
+   if (single_column) then
+     
+     ! Update IOP properties e.g. omega, divT, divQ
+     
+     iop_update_surface = .false. 
+     if (doiopupdate) then
+       call scm_setinitial(elem)
+       call readiopdata(iop_update_surface,hyam,hybm)
+       call scm_setfield(elem)
+     endif   
+
+   endif   
 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')
    call dyn_run(dyn_out,rc)	
    call t_stopf  ('dyn_run')
+   
+   ! Update to get tendency 
+#if (defined BFB_CAM_SCAM_IOP) 
+
+   tl_f = TimeLevel%n0
+   
+   do ie=1,nelemd
+     do k=1,nlev
+       do j=1,np
+         do i=1,np
+	 
+	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
+           out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
+	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
+	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
+	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
+	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
+
+	   do p=1,pcnst		
+	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
+	        ftmp_q(i,j,k,p,ie))/dtime
+	   enddo
+	   
+	 enddo
+       enddo
+     enddo
+     
+     call outfld('divT3d',forcing_temp,npsq,ie)
+     call outfld('Ps',out_psv,npsq,ie)
+     call outfld('t',out_temp,npsq,ie)
+     call outfld('q',out_q,npsq,ie)
+     call outfld('u',out_u,npsq,ie)
+     call outfld('v',out_v,npsq,ie)
+     do p=1,pcnst
+       call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
+     enddo
+     
+   enddo
+
+#endif   
 
 end subroutine stepon_run3
 
