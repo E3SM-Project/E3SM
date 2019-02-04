@@ -24,6 +24,8 @@ fout = cdms2.open(filepath + 'HadISST_sst_ice_masked.nc','w')
 sst_masked = MV2.masked_where(ice>0,sst,copy=True)
 sst_masked.id = 'sst'
 cdutil.setTimeBoundsMonthly(sst_masked)
+#reverse latitude so that latitude in ascending
+sst_masked = sst_masked[:,::-1,:]
 fout.write(sst_masked)
 
 att_keys = fin2.attributes.keys()

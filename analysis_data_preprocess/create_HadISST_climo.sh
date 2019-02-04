@@ -16,24 +16,23 @@ mkdir $tmp
 cd $original_data_path
 echo $path
 
-#cdo splityear HadISST_sst_ice_masked.nc ${tmp}HadISST1
-#
-#for yr in {1870..2017}; do
-#    yyyy=`printf "%04d" $yr`
-##    cdo invertlat 'HadISST0'${yyyy}'.nc' 'HadISST1'${yyyy}'.nc'
-#    cdo setrtomiss,-1e20,-1000 ${tmp}'HadISST1'${yyyy}'.nc' ${tmp}'HadISST2'${yyyy}'.nc'
-#    rm ${tmp}'HadISST1'${yyyy}'.nc'
-#
-#    for mth in {1..12}; do
-#        mm=`printf "%02d" $mth`
-#        ncks -O -F -d time,${mth} ${tmp}HadISST2${yyyy}.nc ${tmp}HadISST_PI_${yyyy}${mm}.nc
-#        cp ${tmp}HadISST_PI_${yyyy}${mm}.nc ${tmp}HadISST_PD_${yyyy}${mm}.nc
-#        cp ${tmp}HadISST_PI_${yyyy}${mm}.nc ${tmp}HadISST_CL_${yyyy}${mm}.nc
-#        done
-#done
+cdo splityear HadISST_sst_ice_masked.nc ${tmp}HadISST1
+
+for yr in {1870..2017}; do
+    yyyy=`printf "%04d" $yr`
+#    cdo invertlat 'HadISST0'${yyyy}'.nc' 'HadISST1'${yyyy}'.nc'
+    cdo setrtomiss,-1e20,-1000 ${tmp}'HadISST1'${yyyy}'.nc' ${tmp}'HadISST2'${yyyy}'.nc'
+    rm ${tmp}'HadISST1'${yyyy}'.nc'
+
+    for mth in {1..12}; do
+        mm=`printf "%02d" $mth`
+        ncks -O -F -d time,${mth} ${tmp}HadISST2${yyyy}.nc ${tmp}HadISST_PI_${yyyy}${mm}.nc
+        cp ${tmp}HadISST_PI_${yyyy}${mm}.nc ${tmp}HadISST_PD_${yyyy}${mm}.nc
+        cp ${tmp}HadISST_PI_${yyyy}${mm}.nc ${tmp}HadISST_CL_${yyyy}${mm}.nc
+        done
+done
 
 ncrcat ${tmp}HadISST2*nc ${time_series_output_path}sst_187001_201712.nc 
-exit 1
 
 #add time_bnds to time attr
 #ncatted -O -a bounds,time,a,c,time_bnds ${time_series_output_path}sst_187001_201712.nc
