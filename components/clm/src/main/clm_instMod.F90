@@ -55,6 +55,7 @@ module clm_instMod
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType             , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType             , only : col_cf, c13_col_cf, c14_col_cf
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
   use VegetationDataType         , only : veg_cs, c13_veg_cs, c14_veg_cs
@@ -179,13 +180,16 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call carbonflux_vars%Init(bounds_proc, carbon_type='c12')
+       call col_cf%Init(begc, endc, carbon_type='c12')
        call veg_cf%Init(begp, endp, carbon_type='c12')
        if (use_c13) then
           call c13_carbonflux_vars%Init(bounds_proc, carbon_type='c13')
+          call c13_col_cf%Init(begc, endc, carbon_type='c13')
           call c13_veg_cf%Init(begp, endp, carbon_type='c13')
        end if
        if (use_c14) then
           call c14_carbonflux_vars%Init(bounds_proc, carbon_type='c14')
+          call c14_col_cf%Init(begc, endc, carbon_type='c14')
           call c13_veg_cf%Init(begp, endp, carbon_type='c14')
        end if
     endif

@@ -135,6 +135,7 @@ module clm_driver
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs  
+  use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws, veg_wf
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs   
@@ -325,11 +326,14 @@ contains
           call t_startf('cnpinit')
 
           call carbonflux_vars%ZeroDWT(bounds_clump)
+          call col_cf%ZeroDWT(bounds_clump)
           if (use_c13) then
              call c13_carbonflux_vars%ZeroDWT(bounds_clump)
+             call c13_col_cf%ZeroDWT(bounds_clump)
           end if
           if (use_c14) then
              call c14_carbonflux_vars%ZeroDWT(bounds_clump)
+             call c14_col_cf%ZeroDWT(bounds_clump)
           end if
           call nitrogenflux_vars%ZeroDWT(bounds_clump)
           call phosphorusflux_vars%ZeroDWT(bounds_clump)

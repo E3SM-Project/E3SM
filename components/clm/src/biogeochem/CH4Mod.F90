@@ -1971,8 +1971,8 @@ contains
          h2osoi_vol     =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
          rr             =>    veg_cf%rr           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
-         somhr          =>    carbonflux_vars%somhr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
-         lithr          =>    carbonflux_vars%lithr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration        
+         somhr          =>    col_cf%somhr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
+         lithr          =>    col_cf%lithr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration        
          hr_vr          =>    carbonflux_vars%hr_vr_col          , & ! Input:  [real(r8) (:,:)  ]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          o_scalar       =>    carbonflux_vars%o_scalar_col       , & ! Input:  [real(r8) (:,:)  ]  fraction by which decomposition is limited by anoxia
          col_rr         =>    carbonflux_vars%rr_col             , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
@@ -3673,7 +3673,7 @@ contains
     associate(                                                      & 
          agnpp          =>    veg_cf%agnpp         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP                         
          bgnpp          =>    veg_cf%bgnpp         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP                         
-         somhr          =>    carbonflux_vars%somhr_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) soil organic matter heterotrophic respiration
+         somhr          =>    col_cf%somhr           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) soil organic matter heterotrophic respiration
          tempavg_agnpp  =>    veg_cf%tempavg_agnpp , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)      
          annavg_agnpp   =>    veg_cf%annavg_agnpp  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
          tempavg_bgnpp  =>    veg_cf%tempavg_bgnpp , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)      

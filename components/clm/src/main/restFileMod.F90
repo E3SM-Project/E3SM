@@ -266,6 +266,7 @@ contains
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='define')
+       call col_cf%Restart(bounds, ncid, flag='define')
        call veg_cf%Restart(bounds, ncid, flag='define')
        
        call nitrogenflux_vars%Restart(bounds, ncid, flag='define')
@@ -297,6 +298,7 @@ contains
                c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='define')
+       call col_cf%Restart(bounds, ncid, flag='define')
        call veg_cf%Restart(bounds, ncid, flag='define')
 
        call alm_fates%restart(bounds, ncid, flag='define',  &
@@ -417,6 +419,7 @@ contains
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='write')
+       call col_cf%Restart(bounds, ncid, flag='write')
        call veg_cf%Restart(bounds, ncid, flag='write')
 
        call nitrogenflux_vars%Restart(bounds, ncid, flag='write')
@@ -451,6 +454,7 @@ contains
 	            cnstate_vars=cnstate_vars )
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='write')
+       call col_cf%Restart(bounds, ncid, flag='write')
        call veg_cf%Restart(bounds, ncid, flag='write')
 
        call alm_fates%restart(bounds, ncid, flag='write',  &
@@ -670,6 +674,7 @@ contains
        end if
 
        call carbonflux_vars%restart(bounds, ncid, flag='read')
+       call col_cf%Restart(bounds, ncid, flag='read')
        call veg_cf%Restart(bounds, ncid, flag='read')
 
        call nitrogenflux_vars%Restart(bounds, ncid, flag='read')
@@ -704,6 +709,7 @@ contains
 	            cnstate_vars=cnstate_vars)
        end if
        call carbonflux_vars%restart(bounds, ncid, flag='read')
+       call col_cf%Restart(bounds, ncid, flag='read')
        call veg_cf%Restart(bounds, ncid, flag='read')
 
        call alm_fates%restart(bounds, ncid, flag='read',  &

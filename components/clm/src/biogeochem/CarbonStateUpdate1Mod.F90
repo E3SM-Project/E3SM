@@ -40,8 +40,8 @@ module CarbonStateUpdate1Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CarbonStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       carbonflux_vars, carbonstate_vars, col_cs)
+  subroutine CStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+       carbonflux_vars, col_cs, col_cfv2)
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
@@ -52,6 +52,7 @@ contains
     integer                , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
     type(carbonflux_type)  , intent(in)    :: carbonflux_vars
     type(column_carbon_state),intent(inout):: col_cs
+    type(column_carbon_flux),intent(inout) :: col_cfv2
     !
     ! !LOCAL VARIABLES:
     integer  :: c   ! column index
@@ -65,7 +66,8 @@ contains
 
     associate( &
          cf => carbonflux_vars  , &
-         cs => col_cs             &
+         cs => col_cs           , &
+         ccfv2 => col_cfv2
          )
 
       dt = real( get_step_size(), r8 )

@@ -201,7 +201,7 @@ contains
          totcolc                   =>    col_cs%totcolc                  , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
          gpp                       =>    carbonflux_vars%gpp_col                       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production
          er                        =>    carbonflux_vars%er_col                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-         col_fire_closs            =>    carbonflux_vars%fire_closs_col                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
+         col_fire_closs            =>    col_cf%fire_closs                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
          col_prod1c_loss           =>    carbonflux_vars%prod1c_loss_col               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
          col_hrv_xsmrpool_to_atm   =>    carbonflux_vars%hrv_xsmrpool_to_atm_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             =>    carbonflux_vars%som_c_leached_col             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
@@ -268,7 +268,7 @@ contains
             write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
             write(iulog,*)'input                 = ',col_cinputs*dt
             write(iulog,*)'output                = ',col_coutputs*dt
-            write(iulog,*)'er                    = ',er(c)*dt,carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
             write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
             write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
             write(iulog,*)'hrv_to_prod10         = ',hrv_deadstemc_to_prod10c(c)*dt

@@ -30,7 +30,7 @@ module AllocationMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_ws  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs  
+  use VegetationDataType  , only : veg_cs, veg_cf  
   ! bgc interface & pflotran module switches
   use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
@@ -3064,9 +3064,9 @@ contains
          livestem_xsmr                => veg_cf%livestem_xsmr                   , & 
          livecroot_xsmr               => veg_cf%livecroot_xsmr                  , &
          grain_xsmr                   => veg_cf%grain_xsmr                      , &
-         allocation_leaf              => carbonflux_vars%allocation_leaf                       , &
-         allocation_stem              => carbonflux_vars%allocation_stem                       , &
-         allocation_froot             => carbonflux_vars%allocation_froot                      , &
+         allocation_leaf              => veg_cf%allocation_leaf                       , &
+         allocation_stem              => veg_cf%allocation_stem                       , &
+         allocation_froot             => veg_cf%allocation_froot                      , &
          xsmrpool_turnover            => veg_cf%xsmrpool_turnover               , &
          rf_decomp_cascade            => cnstate_vars%rf_decomp_cascade_col                    , &
          fpi_vr                       => cnstate_vars%fpi_vr_col                               , &

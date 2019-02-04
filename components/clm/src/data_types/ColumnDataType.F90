@@ -10,10 +10,13 @@ module ColumnDataType
   use shr_const_mod   , only : SHR_CONST_TKFRZ
   use shr_const_mod   , only : SHR_CONST_PDB
   use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use shr_sys_mod     , only : shr_sys_flush
   use abortutils      , only : endrun
+  use MathfuncMod     , only : dot_sum
   use clm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
   use clm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
+  use clm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
   use clm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
   use clm_varcon      , only : c13ratio, c14ratio, secspday
@@ -39,6 +42,17 @@ module ColumnDataType
   implicit none
   save
   private
+
+  !
+  ! NOTE(bandre, 2013-10) according to Charlie Koven, nfix_timeconst
+  ! is currently used as a flag and rate constant. Rate constant: time
+  ! over which to exponentially relax the npp flux for N fixation term
+  ! flag: (if  <=  0. or  >=  365; use old annual method). Default value is
+  ! junk that should always be overwritten by the namelist or init function!
+  !
+  ! (days) time over which to exponentially relax the npp flux for N fixation term
+  real(r8), public :: nfix_timeconst = -1.2345_r8 
+  !
   
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy state information at the column level.
@@ -341,10 +355,115 @@ module ColumnDataType
   ! Define the data structure that holds carbon flux information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_carbon_flux
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    ! primary decomposition and vertical movement fluxes
+    real(r8), pointer :: decomp_cpools_sourcesink              (:,:,:) => null() ! change in decomposing c pools. Used to update concentrations concurrently with vertical transport (gC/m3/timestep)  
+    real(r8), pointer :: decomp_cascade_hr_vr                  (:,:,:) => null() ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+    real(r8), pointer :: decomp_cascade_ctransfer_vr           (:,:,:) => null() ! vertically-resolved C transferred along deomposition cascade (gC/m3/s)
+    real(r8), pointer :: decomp_k                              (:,:,:) => null() ! rate constant for decomposition (1./sec)
+    real(r8), pointer :: decomp_cpools_transport_tendency      (:,:,:) => null() ! C tendency due to vertical transport in decomposing C pools (gC/m^3/s)
+    real(r8), pointer :: decomp_cascade_hr                     (:,:)   => null() ! vertically-integrated (diagnostic) het. resp. from decomposing C pools (gC/m2/s)
+    real(r8), pointer :: decomp_cascade_ctransfer              (:,:)   => null() ! vertically-integrated (diagnostic) C transferred along deomposition cascade (gC/m2/s)
+    real(r8), pointer :: hr_vr                                 (:,:)   => null() ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+    real(r8), pointer :: o_scalar                              (:,:)   => null() ! fraction by which decomposition is limited by anoxia
+    real(r8), pointer :: w_scalar                              (:,:)   => null() ! fraction by which decomposition is limited by moisture availability
+    real(r8), pointer :: t_scalar                              (:,:)   => null() ! fraction by which decomposition is limited by temperature
+    real(r8), pointer :: decomp_cpools_leached                 (:,:)   => null() ! C loss from vertical transport from each decomposing C pool (gC/m^2/s)
+    real(r8), pointer :: phr_vr                                (:,:)   => null() ! potential hr (not N-limited) (gC/m3/s)
+    real(r8), pointer :: fphr                                  (:,:)   => null() ! fraction of potential heterotrophic respiration
+    real(r8), pointer :: som_c_leached                         (:)     => null() ! total SOM C loss from vertical transport (gC/m^2/s)
+    ! phenology: litterfall and crop fluxes
+    real(r8), pointer :: phenology_c_to_litr_met_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
+    real(r8), pointer :: phenology_c_to_litr_cel_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
+    real(r8), pointer :: phenology_c_to_litr_lig_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
+    ! gap mortality
+    real(r8), pointer :: gap_mortality_c_to_litr_met_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
+    real(r8), pointer :: gap_mortality_c_to_litr_cel_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
+    real(r8), pointer :: gap_mortality_c_to_litr_lig_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
+    real(r8), pointer :: gap_mortality_c_to_cwdc               (:,:)   => null() ! C fluxes associated with gap mortality to CWD pool (gC/m3/s)
+    ! column-level fire fluxes
+    real(r8), pointer :: m_decomp_cpools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing C fire loss (gC/m3/s)
+    real(r8), pointer :: m_decomp_cpools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing C fire loss (gC/m2/s)
+    real(r8), pointer :: m_c_to_litr_met_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter labile C by fire (gC/m3/s) 
+    real(r8), pointer :: m_c_to_litr_cel_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter cellulose C by fire (gC/m3/s) 
+    real(r8), pointer :: m_c_to_litr_lig_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter lignin C by fire (gC/m3/s) 
+    real(r8), pointer :: fire_mortality_c_to_cwdc              (:,:)   => null() ! C fluxes associated with fire mortality to CWD pool (gC/m3/s)
+    real(r8), pointer :: somc_fire                             (:)     => null() ! (gC/m2/s) carbon emissions due to peat burning
+    ! dynamic LULCC fluxes: harvest
+    real(r8), pointer :: harvest_c_to_litr_met_c               (:,:)   => null() ! C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
+    real(r8), pointer :: harvest_c_to_litr_cel_c               (:,:)   => null() ! C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
+    real(r8), pointer :: harvest_c_to_litr_lig_c               (:,:)   => null() ! C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+    real(r8), pointer :: harvest_c_to_cwdc                     (:,:)   => null() ! C fluxes associated with harvest to CWD pool (gC/m3/s)
+    real(r8), pointer :: hrv_deadstemc_to_prod10c              (:)     => null() ! dead stem C harvest mortality to 10-year product pool (gC/m2/s)        
+    real(r8), pointer :: hrv_deadstemc_to_prod100c             (:)     => null() ! dead stem C harvest mortality to 100-year product pool (gC/m2/s)        
+    real(r8), pointer :: hrv_cropc_to_prod1c                   (:)     => null() ! crop C harvest mortality to 1-year product pool (gC/m2/s)
+    ! dynamic LULCC fluxes: land cover change
+    real(r8), pointer :: dwt_frootc_to_litr_met_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_frootc_to_litr_cel_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_frootc_to_litr_lig_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_livecrootc_to_cwdc                (:,:)   => null() ! (gC/m3/s) live coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_deadcrootc_to_cwdc                (:,:)   => null() ! (gC/m3/s) dead coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_slash_cflux                       (:)     => null() ! (gC/m2/s) conversion slash flux due to landcover change
+    real(r8), pointer :: dwt_conv_cflux                        (:)     => null() ! (gC/m2/s) conversion C flux (immediate loss to atm)
+    real(r8), pointer :: dwt_prod10c_gain                      (:)     => null() ! (gC/m2/s) addition to 10-yr wood product pool
+    real(r8), pointer :: dwt_prod100c_gain                     (:)     => null() ! (gC/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_closs                             (:)     => null() ! (gC/m2/s) total carbon loss from product pools and conversion
+    real(r8), pointer :: landuseflux                           (:)     => null() ! (gC/m2/s) dwt_closs+product_closs
+    real(r8), pointer :: landuptake                            (:)     => null() ! (gC/m2/s) nee-landuseflux
+    ! wood product pool loss fluxes
+    real(r8), pointer :: prod1c_loss                           (:)     => null() ! (gC/m2/s) decomposition loss from 1-year product pool
+    real(r8), pointer :: prod10c_loss                          (:)     => null() ! (gC/m2/s) decomposition loss from 10-yr wood product pool
+    real(r8), pointer :: prod100c_loss                         (:)     => null() ! (gC/m2/s) decomposition loss from 100-yr wood product pool
+    real(r8), pointer :: product_closs                         (:)     => null() ! (gC/m2/s) total wood product carbon loss
+    ! summary (diagnostic) flux variables, not involved in mass balance
+    real(r8), pointer :: lithr                                 (:)     => null() ! (gC/m2/s) litter heterotrophic respiration 
+    real(r8), pointer :: somhr                                 (:)     => null() ! (gC/m2/s) soil organic matter heterotrophic respiration
+    real(r8), pointer :: hr                                    (:)     => null() ! (gC/m2/s) total heterotrophic respiration
+    real(r8), pointer :: sr                                    (:)     => null() ! (gC/m2/s) total soil respiration (HR + root resp)
+    real(r8), pointer :: er                                    (:)     => null() ! (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+    real(r8), pointer :: litfire                               (:)     => null() ! (gC/m2/s) litter fire losses
+    real(r8), pointer :: somfire                               (:)     => null() ! (gC/m2/s) soil organic matter fire losses
+    real(r8), pointer :: totfire                               (:)     => null() ! (gC/m2/s) total ecosystem fire losses
+    real(r8), pointer :: nep                                   (:)     => null() ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
+    real(r8), pointer :: nbp                                   (:)     => null() ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
+    real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
+    ! CLAMP summary (diagnostic) flux variables, not involved in mass balance
+    real(r8), pointer :: bgc_cpool_ext_inputs_vr               (:,:,:) => null() ! col-level extneral organic carbon input gC/m3 /time step
+    real(r8), pointer :: bgc_cpool_ext_loss_vr                 (:,:,:) => null() ! col-level extneral organic carbon loss gC/m3 /time step
+    real(r8), pointer :: cwdc_hr                               (:)     => null() ! (gC/m2/s) col-level coarse woody debris C heterotrophic respiration
+    real(r8), pointer :: cwdc_loss                             (:)     => null() ! (gC/m2/s) col-level coarse woody debris C loss
+    real(r8), pointer :: litterc_loss                          (:)     => null() ! (gC/m2/s) col-level litter C loss
+    ! patch averaged to column variables - to remove need for pcf_a instance
+    real(r8), pointer :: rr                                    (:)     => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
+    real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)      
+    real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)         
+    real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)                  
+    real(r8), pointer :: fire_closs_p2c                        (:)     => null() ! column (gC/m2/s) patch2col averaged column-level fire C loss (p2c)
+    real(r8), pointer :: fire_closs                            (:)     => null() ! column (gC/m2/s) total patch-level fire C loss 
+    real(r8), pointer :: fire_decomp_closs                     (:)     => null() ! column (gC/m2/s) carbon loss to fire for decomposable pools
+    real(r8), pointer :: litfall                               (:)     => null() ! column (gC/m2/s) total patch-level litterfall C loss (p2c)       
+    real(r8), pointer :: vegfire                               (:)     => null() ! column (gC/m2/s) patch-level fire loss (obsolete, mark for removal) (p2c)
+    real(r8), pointer :: wood_harvestc                         (:)     => null() ! column (p2c)                                                  
+    real(r8), pointer :: hrv_xsmrpool_to_atm                   (:)     => null() ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
+    real(r8), pointer :: plant_to_litter_cflux		            (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: plant_to_cwd_cflux		               (:)     => null() ! for the purpose of mass balance check
+    ! Temporary and annual sums
+    real(r8), pointer :: annsum_npp                            (:)     => null() ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
+    real(r8), pointer :: lag_npp                               (:)     => null() ! col lagged net primary production (gC/m2/s)
+    ! Variables for clm_interface_funcsMod & pflotran
+    real(r8), pointer :: externalc_to_decomp_cpools            (:,:,:) => null() ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
+    real(r8), pointer :: externalc_to_decomp_delta             (:)     => null() ! col (gC/m2) summarized net change of whole column C i/o to decomposing pool bwtn time-step
+    real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
+    real(r8), pointer :: f_co2_soil                            (:)     => null() ! total soil-atm. CO2 exchange (gC/m2/s)
+
   contains
-    procedure, public :: Init  => init_col_cf
-    procedure, public :: Clean => clean_col_cf
+    procedure, public :: Init       => col_cf_init
+    procedure, public :: Restart    => col_cf_restart
+    procedure, public :: Summary    => col_cf_summary
+    procedure, public :: SummaryCH4 => col_cf_summary_fo_ch4
+    procedure, public :: SetValues  => col_cf_setvalues
+    procedure, public :: ZeroDWT    => col_cf_zerodwt
+    procedure, public :: Clean      => col_cf_clean
+    procedure, private ::              col_cf_summary_pf ! summary calculations for PFLOTRAN interface
   end type column_carbon_flux
   
   !-----------------------------------------------------------------------
@@ -2928,23 +3047,1939 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column carbon flux data structure
   !------------------------------------------------------------------------
-  subroutine init_col_cf(this, begc, endc)
+  subroutine col_cf_init(this, begc, endc, carbon_type)
     !
     ! !ARGUMENTS:
     class(column_carbon_flux) :: this
     integer, intent(in) :: begc,endc
+    character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: c,j                        ! indices
+    integer           :: k,l,ii,jj 
+    character(8)      :: vr_suffix
+    character(10)     :: active
+    character(24)     :: fieldname
+    character(100)    :: longname
+    real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
+    real(r8), pointer :: data2dptr(:,:) ! temp. pointer for slicing larger arrays
+    character(len=3)  :: ctag
+    integer           :: fc                                        ! filter index
+    integer           :: num_special_col                           ! number of good values in special_col filter
+    integer           :: special_col(bounds%endc-bounds%begc+1)    ! special landunit filter - columns
     !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_cf
+    !-----------------------------------------------------------------------
+    allocate(this%decomp_cpools_sourcesink          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               ; this%decomp_cpools_sourcesink   (:,:,:) = nan
+    allocate(this%decomp_cascade_hr_vr              (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_hr_vr       (:,:,:) = spval
+    allocate(this%decomp_cascade_ctransfer_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ctransfer_vr(:,:,:) = nan
+    allocate(this%decomp_k                          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_k                   (:,:,:) = spval
+    allocate(this%decomp_cpools_transport_tendency  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_transport_tendency(:,:,:) = nan
+    allocate(this%decomp_cascade_hr                 (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_hr               (:,:)   = nan  
+    allocate(this%decomp_cascade_ctransfer          (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_ctransfer        (:,:)   = nan  
+    allocate(this%o_scalar                          (begc:endc,1:nlevdecomp_full)); this%o_scalar                     (:,:) = spval  
+    allocate(this%w_scalar                          (begc:endc,1:nlevdecomp_full)); this%w_scalar                     (:,:) = spval  
+    allocate(this%t_scalar                          (begc:endc,1:nlevdecomp_full)); this%t_scalar                     (:,:) = spval  
+    allocate(this%decomp_cpools_leached             (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_leached        (:,:) = nan  
+    allocate(this%phr_vr                            (begc:endc,1:nlevdecomp_full)); this%phr_vr                       (:,:) = nan  
+    allocate(this%fphr                              (begc:endc,1:nlevgrnd))       ; this%fphr                         (:,:) = nan  
+    allocate(this%som_c_leached                     (begc:endc))                  ; this%som_c_leached                (:)   = nan    
+    allocate(this%phenology_c_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_met_c    (:,:) = nan  
+    allocate(this%phenology_c_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_cel_c    (:,:) = nan  
+    allocate(this%phenology_c_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_lig_c    (:,:) = nan  
+    allocate(this%gap_mortality_c_to_litr_met_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_met_c(:,:) = nan  
+    allocate(this%gap_mortality_c_to_litr_cel_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_cel_c(:,:) = nan  
+    allocate(this%gap_mortality_c_to_litr_lig_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_lig_c(:,:) = nan  
+    allocate(this%gap_mortality_c_to_cwdc           (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_cwdc      (:,:) = nan  
+    allocate(this%m_decomp_cpools_to_fire_vr        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%m_decomp_cpools_to_fire_vr(:,:,:)= nan
+    allocate(this%m_decomp_cpools_to_fire           (begc:endc,1:ndecomp_pools))  ; this%m_decomp_cpools_to_fire      (:,:) = nan  
+    allocate(this%m_c_to_litr_met_fire              (begc:endc,1:nlevdecomp_full)); this%m_c_to_litr_met_fire         (:,:) = nan  
+    allocate(this%m_c_to_litr_cel_fire              (begc:endc,1:nlevdecomp_full)); this%m_c_to_litr_cel_fire         (:,:) = nan  
+    allocate(this%m_c_to_litr_lig_fire              (begc:endc,1:nlevdecomp_full)); this%m_c_to_litr_lig_fire         (:,:) = nan  
+    allocate(this%fire_mortality_c_to_cwdc          (begc:endc,1:nlevdecomp_full)); this%fire_mortality_c_to_cwdc     (:,:) = nan  
+    allocate(this%somc_fire                         (begc:endc))                  ; this%somc_fire                    (:)   = nan    
+    allocate(this%harvest_c_to_litr_met_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_met_c      (:,:) = nan  
+    allocate(this%harvest_c_to_litr_cel_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_cel_c      (:,:) = nan  
+    allocate(this%harvest_c_to_litr_lig_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_lig_c      (:,:) = nan  
+    allocate(this%harvest_c_to_cwdc                 (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_cwdc            (:,:) = nan  
+    allocate(this%hrv_deadstemc_to_prod10c          (begc:endc))                  ; this%hrv_deadstemc_to_prod10c     (:)   = nan    
+    allocate(this%hrv_deadstemc_to_prod100c         (begc:endc))                  ; this%hrv_deadstemc_to_prod100c    (:)   = nan   
+    allocate(this%hrv_cropc_to_prod1c               (begc:endc))                  ; this%hrv_cropc_to_prod1c          (:)   = nan   
+    allocate(this%dwt_frootc_to_litr_met_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_met_c     (:,:) = nan  
+    allocate(this%dwt_frootc_to_litr_cel_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_cel_c     (:,:) = nan  
+    allocate(this%dwt_frootc_to_litr_lig_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_lig_c     (:,:) = nan  
+    allocate(this%dwt_livecrootc_to_cwdc            (begc:endc,1:nlevdecomp_full)); this%dwt_livecrootc_to_cwdc       (:,:) = nan  
+    allocate(this%dwt_deadcrootc_to_cwdc            (begc:endc,1:nlevdecomp_full)); this%dwt_deadcrootc_to_cwdc       (:,:) = nan  
+    allocate(this%dwt_slash_cflux                   (begc:endc))                  ; this%dwt_slash_cflux              (:)   = nan    
+    allocate(this%dwt_conv_cflux                    (begc:endc))                  ; this%dwt_conv_cflux               (:)   = nan    
+    allocate(this%dwt_prod10c_gain                  (begc:endc))                  ; this%dwt_prod10c_gain             (:)   = nan    
+    allocate(this%dwt_prod100c_gain                 (begc:endc))                  ; this%dwt_prod100c_gain            (:)   = nan    
+    allocate(this%dwt_closs                         (begc:endc))                  ; this%dwt_closs                    (:)   = nan    
+    allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = nan    
+    allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = nan    
+    allocate(this%prod1c_loss                       (begc:endc))                  ; this%prod1c_loss                  (:)   = nan    
+    allocate(this%prod10c_loss                      (begc:endc))                  ; this%prod10c_loss                 (:)   = nan    
+    allocate(this%prod100c_loss                     (begc:endc))                  ; this%prod100c_loss                (:)   = nan    
+    allocate(this%product_closs                     (begc:endc))                  ; this%product_closs                (:)   = nan    
+    allocate(this%hr_vr                             (begc:endc,1:nlevdecomp_full)); this%hr_vr                        (:,:) = nan  
+    allocate(this%lithr                             (begc:endc))                  ; this%lithr                        (:)   = nan    
+    allocate(this%somhr                             (begc:endc))                  ; this%somhr                        (:)   = nan    
+    allocate(this%hr                                (begc:endc))                  ; this%hr                           (:)   = nan    
+    allocate(this%sr                                (begc:endc))                  ; this%sr                           (:)   = nan    
+    allocate(this%er                                (begc:endc))                  ; this%er                           (:)   = nan    
+    allocate(this%litfire                           (begc:endc))                  ; this%litfire                      (:)   = nan    
+    allocate(this%somfire                           (begc:endc))                  ; this%somfire                      (:)   = nan    
+    allocate(this%totfire                           (begc:endc))                  ; this%totfire                      (:)   = nan    
+    allocate(this%nep                               (begc:endc))                  ; this%nep                          (:)   = nan    
+    allocate(this%nbp                               (begc:endc))                  ; this%nbp                          (:)   = nan    
+    allocate(this%nee                               (begc:endc))                  ; this%nee                          (:)   = nan    
+    allocate(this%bgc_cpool_ext_inputs_vr           (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_inputs_vr(:,:,:) = nan
+    allocate(this%bgc_cpool_ext_loss_vr             (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_loss_vr  (:,:,:) = nan
+    allocate(this%cwdc_hr                           (begc:endc))                  ; this%cwdc_hr                      (:)   = nan    
+    allocate(this%cwdc_loss                         (begc:endc))                  ; this%cwdc_loss                    (:)   = nan    
+    allocate(this%litterc_loss                      (begc:endc))                  ; this%litterc_loss                 (:)   = nan    
+    allocate(this%rr                                (begc:endc))                  ; this%rr                           (:)   = nan    
+    allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = nan    
+    allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = nan    
+    allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = nan    
+    allocate(this%fire_closs_p2c                    (begc:endc))                  ; this%fire_closs_p2c               (:)   = nan    
+    allocate(this%fire_closs                        (begc:endc))                  ; this%fire_closs                   (:)   = nan    
+    allocate(this%fire_decomp_closs                 (begc:endc))                  ; this%fire_decomp_closs            (:)   = nan    
+    allocate(this%litfall                           (begc:endc))                  ; this%litfall                      (:)   = nan    
+    allocate(this%vegfire                           (begc:endc))                  ; this%vegfire                      (:)   = nan    
+    allocate(this%wood_harvestc                     (begc:endc))                  ; this%wood_harvestc                (:)   = nan    
+    allocate(this%hrv_xsmrpool_to_atm               (begc:endc))                  ; this%hrv_xsmrpool_to_atm          (:)   = nan    
+    allocate(this%plant_to_litter_cflux             (begc:endc))                  ; this%plant_to_litter_cflux        (:)   = nan              
+    allocate(this%plant_to_cwd_cflux	             (begc:endc))                  ; this%plant_to_cwd_cflux		       (:)   = nan 
+    allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = nan 
+    allocate(this%lag_npp                           (begc:endc))                  ; this%lag_npp                      (:)   = spval 
+    allocate(this%externalc_to_decomp_cpools        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%externalc_to_decomp_cpools(:,:,:) = spval
+    allocate(this%externalc_to_decomp_delta         (begc:endc))                  ; this%externalc_to_decomp_delta    (:)   = spval    
+    allocate(this%f_co2_soil_vr                     (begc:endc,1:nlevdecomp_full)); this%f_co2_soil_vr                (:,:) = nan  
+    allocate(this%f_co2_soil                        (begc:endc))                  ; this%f_co2_soil                   (:)   = nan    
     
-  end subroutine init_col_cf
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_cf
+    !-----------------------------------------------------------------------
+    ! ------------------------------------------------------------------------------------
+    ! History Diagnostics with FATES turned on is a very limited set, and only
+    ! operates on C12 right now.
+    ! ------------------------------------------------------------------------------------
+    if (use_fates) then
+       if (carbon_type == 'c12') then
+          this%som_c_leached(begc:endc) = spval
+          call hist_addfld1d (fname='SOM_C_LEACHED', units='gC/m^2/s', &
+               avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
+               ptr_col=this%som_c_leached)!, default='inactive')
+          
+          if ( nlevdecomp_full > 1 ) then
+             this%hr_vr(begc:endc,:) = spval
+             call hist_addfld2d (fname='HR_vr', units='gC/m^3/s', type2d='levdcmp', &
+                  avgflag='A', long_name='total vertically resolved heterotrophic respiration', &
+                  ptr_col=this%hr_vr)
+          end if
+
+          this%lithr(begc:endc) = spval
+          call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
+               avgflag='A', long_name='litter heterotrophic respiration', &
+               ptr_col=this%lithr)
+          
+          this%somhr(begc:endc) = spval
+          call hist_addfld1d (fname='SOMHR', units='gC/m^2/s', &
+               avgflag='A', long_name='soil organic matter heterotrophic respiration', &
+               ptr_col=this%somhr)
+          
+          this%hr(begc:endc) = spval
+          call hist_addfld1d (fname='HR', units='gC/m^2/s', &
+               avgflag='A', long_name='total heterotrophic respiration', &
+               ptr_col=this%hr)
+       end if
+       ! end of use_fates (C12) block
     
+    else if (carbon_type == 'c12') then
+       if (hist_wrtch4diag) then
+          this%fphr(begc:endc,1:nlevgrnd) = spval
+          call hist_addfld_decomp (fname='FPHR'//trim(vr_suffix), units='unitless', type2d='levdcmp', &
+               avgflag='A', long_name='fraction of potential HR due to N limitation', &
+               ptr_col=this%fphr)
+       end if
+
+       this%cwdc_hr(begc:endc) = spval
+       call hist_addfld1d (fname='CWDC_HR', units='gC/m^2/s', &
+            avgflag='A', long_name='coarse woody debris C heterotrophic respiration', &
+            ptr_col=this%cwdc_hr)
+
+       this%cwdc_loss(begc:endc) = spval
+       call hist_addfld1d (fname='CWDC_LOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='coarse woody debris C loss', &
+            ptr_col=this%cwdc_loss)
+
+       this%lithr(begc:endc) = spval
+       call hist_addfld1d (fname='LITTERC_HR', units='gC/m^2/s', &
+            avgflag='A', long_name='litter C heterotrophic respiration', &
+            ptr_col=this%lithr)
+
+       this%litterc_loss(begc:endc) = spval
+       call hist_addfld1d (fname='LITTERC_LOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='litter C loss', &
+            ptr_col=this%litterc_loss)
+
+       this%somhr(begc:endc) = spval
+       call hist_addfld1d (fname='SOILC_HR', units='gC/m^2/s', &
+            avgflag='A', long_name='soil C heterotrophic respiration', &
+            ptr_col=this%somhr)
+
+       this%somhr(begc:endc) = spval
+       call hist_addfld1d (fname='SOILC_LOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='soil C loss', &
+            ptr_col=this%somhr)
+
+       this%somc_fire(begc:endc) = spval
+       call hist_addfld1d (fname='SOMC_FIRE', units='gC/m^2/s', &
+            avgflag='A', long_name='C loss due to peat burning', &
+            ptr_col=this%somc_fire, default='inactive')
+    
+       this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
+       this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
+       do k = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+             data1dptr => this%m_decomp_cpools_to_fire(:,k)
+             fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
+             longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
+             call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr, default='inactive')
+
+             if ( nlevdecomp_full > 1 ) then
+                data2dptr => this%m_decomp_cpools_to_fire_vr(:,:,k)
+                fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'//trim(vr_suffix)
+                longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
+                call hist_addfld_decomp (fname=fieldname, units='gC/m^3/s', type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+          endif
+
+          ! decomposition k
+          data2dptr => this%decomp_k(:,:,k)
+          fieldname = 'K_'//trim(decomp_cascade_con%decomp_pool_name_history(k))
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' potential loss coefficient'
+          call hist_addfld_decomp (fname=fieldname, units='1/s',  type2d='levdcmp', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data2dptr, default='inactive')
+       end do
+       if(.not. is_active_betr_bgc )then
+          this%decomp_cascade_hr(begc:endc,:)             = spval
+          this%decomp_cascade_hr_vr(begc:endc,:,:)        = spval
+          this%decomp_cascade_ctransfer(begc:endc,:)      = spval
+          this%decomp_cascade_ctransfer_vr(begc:endc,:,:) = spval
+          do l = 1, ndecomp_cascade_transitions
+
+             ! output the vertically integrated fluxes only as  default
+             !-- HR fluxes (none from CWD)
+             if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+                data1dptr => this%decomp_cascade_hr(:,l)
+                ! check to see if there are multiple pathways that include respiration, and if so, note that in the history file
+                ii = 0
+                do jj = 1, ndecomp_cascade_transitions
+                   if ( decomp_cascade_con%cascade_donor_pool(jj) == decomp_cascade_con%cascade_donor_pool(l) ) ii = ii+1
+                end do
+                if ( ii == 1 ) then
+                   fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'_HR'
+                else
+                   fieldname = trim( &
+                        decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'_HR_'//&
+                        trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_receiver_pool(l)))
+                endif
+                longname =  'Het. Resp. from '//&
+                     trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))
+                call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data1dptr)
+             endif
+
+             !-- transfer fluxes (none from terminal pool, if present)
+             if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                data1dptr => this%decomp_cascade_ctransfer(:,l)
+                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'C_TO_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'C'
+                longname =  &
+                     'decomp. of '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                     ' C to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' C'
+                call hist_addfld1d (fname=fieldname, units='gC/m^2/s', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data1dptr)
+             endif
+
+             ! output the vertically resolved fluxes 
+             if ( nlevdecomp_full > 1 ) then  
+                !-- HR fluxes (none from CWD)
+                if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+                   data2dptr => this%decomp_cascade_hr_vr(:,:,l)
+                   ! check to see if there are multiple pathways that include respiration, and if so, note that in the history file
+                   ii = 0
+                   do jj = 1, ndecomp_cascade_transitions
+                      if ( decomp_cascade_con%cascade_donor_pool(jj) == decomp_cascade_con%cascade_donor_pool(l) ) ii = ii+1
+                   end do
+                   if ( ii == 1 ) then
+                      fieldname = &
+                           trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                           //'_HR'//trim(vr_suffix)
+                   else
+                      fieldname = &
+                           trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'_HR_'//&
+                           trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_receiver_pool(l)))&
+                           //trim(vr_suffix)
+                   endif
+                   longname =  'Het. Resp. from '//&
+                        trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))
+                   call hist_addfld_decomp (fname=fieldname, units='gC/m^3/s',  type2d='levdcmp', &
+                        avgflag='A', long_name=longname, &
+                        ptr_col=data2dptr, default='inactive')
+                endif
+
+                !-- transfer fluxes (none from terminal pool, if present)
+                if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                   data2dptr => this%decomp_cascade_ctransfer_vr(:,:,l)
+                   fieldname = trim( &
+                        decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'C_TO_'//&
+                        trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
+                        //'C'//trim(vr_suffix)
+                   longname =  'decomp. of '//&
+                        trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                        ' C to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' C'
+                   call hist_addfld_decomp (fname=fieldname, units='gC/m^3/s',  type2d='levdcmp', &
+                        avgflag='A', long_name=longname, &
+                        ptr_col=data2dptr, default='inactive')
+                endif
+             end if  ! nlevdecomp_full > 1
+          end do ! ndecomp_cascade_transitions
+
+          this%decomp_cpools_leached(begc:endc,:) = spval
+          this%decomp_cpools_transport_tendency(begc:endc,:,:) = spval
+          do k = 1, ndecomp_pools
+             if ( .not. decomp_cascade_con%is_cwd(k) ) then
+                data1dptr => this%decomp_cpools_leached(:,k)
+                fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_LEACHING'
+                longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C leaching loss'
+                call hist_addfld1d (fname=fieldname, units='gC/m^2/s', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data1dptr)!, default='inactive')
+
+                data2dptr => this%decomp_cpools_transport_tendency(:,:,k)
+                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TNDNCY_VERT_TRANSPORT'
+                longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C tendency due to vertical transport'
+                call hist_addfld_decomp (fname=fieldname, units='gC/m^3/s',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+          end do
+       endif ! .not. is_active_betr_bgc
+       ! still in C12 block
+
+       this%t_scalar(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='T_SCALAR', units='unitless',  type2d='levdcmp', &
+            avgflag='A', long_name='temperature inhibition of decomposition', &
+            ptr_col=this%t_scalar)
+
+       this%w_scalar(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='W_SCALAR', units='unitless',  type2d='levdcmp', &
+            avgflag='A', long_name='Moisture (dryness) inhibition of decomposition', &
+            ptr_col=this%w_scalar)
+
+       this%o_scalar(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='O_SCALAR', units='unitless', type2d='levdcmp', &
+            avgflag='A', long_name='fraction by which decomposition is reduced due to anoxia', &
+            ptr_col=this%o_scalar)
+
+       this%som_c_leached(begc:endc) = spval
+       call hist_addfld1d (fname='SOM_C_LEACHED', units='gC/m^2/s', &
+            avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
+            ptr_col=this%som_c_leached)!, default='inactive')
+
+       this%lithr(begc:endc) = spval
+       call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
+            avgflag='A', long_name='litter heterotrophic respiration', &
+            ptr_col=this%lithr)
+
+       this%somhr(begc:endc) = spval
+       call hist_addfld1d (fname='SOMHR', units='gC/m^2/s', &
+            avgflag='A', long_name='soil organic matter heterotrophic respiration', &
+            ptr_col=this%somhr)
+
+       if ( nlevdecomp_full > 1 ) then
+          this%hr_vr(begc:endc,:) = spval
+          call hist_addfld2d (fname='HR_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='total vertically resolved heterotrophic respiration', &
+               ptr_col=this%hr_vr)
+
+          ! pflotran
+          this%f_co2_soil_vr(begc:endc,:) = spval
+          call hist_addfld2d (fname='F_CO2_SOIL_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='total vertically resolved soil-atm. CO2 exchange', &
+               ptr_col=this%f_co2_soil_vr)
+       endif
+
+       this%hr(begc:endc) = spval
+       call hist_addfld1d (fname='HR', units='gC/m^2/s', &
+            avgflag='A', long_name='total heterotrophic respiration', &
+            ptr_col=this%hr)
+
+       !pflotran
+       this%f_co2_soil(begc:endc) = spval
+       call hist_addfld1d (fname='F_CO2_SOIL', units='gC/m^2/s', &
+            avgflag='A', long_name='total soil-atm. CO2 exchange', &
+            ptr_col=this%f_co2_soil)
+
+       this%sr(begc:endc) = spval
+       call hist_addfld1d (fname='SR', units='gC/m^2/s', &
+            avgflag='A', long_name='total soil respiration (HR + root resp)', &
+            ptr_col=this%sr)
+
+       this%er(begc:endc) = spval
+       call hist_addfld1d (fname='ER', units='gC/m^2/s', &
+            avgflag='A', long_name='total ecosystem respiration, autotrophic + heterotrophic', &
+            ptr_col=this%er)
+
+       this%litfire(begc:endc) = spval
+       call hist_addfld1d (fname='LITFIRE', units='gC/m^2/s', &
+            avgflag='A', long_name='litter fire losses', &
+            ptr_col=this%litfire, default='inactive')
+
+       this%somfire(begc:endc) = spval
+       call hist_addfld1d (fname='SOMFIRE', units='gC/m^2/s', &
+            avgflag='A', long_name='soil organic matter fire losses', &
+            ptr_col=this%somfire, default='inactive')
+
+       this%totfire(begc:endc) = spval
+       call hist_addfld1d (fname='TOTFIRE', units='gC/m^2/s', &
+            avgflag='A', long_name='total ecosystem fire losses', &
+            ptr_col=this%totfire, default='inactive')
+
+       this%nep(begc:endc) = spval
+       call hist_addfld1d (fname='NEP', units='gC/m^2/s', &
+            avgflag='A', long_name='net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink', &
+            ptr_col=this%nep)
+
+       this%nbp(begc:endc) = spval
+       call hist_addfld1d (fname='NBP', units='gC/m^2/s', &
+            avgflag='A', long_name='net biome production, includes fire, landuse, and harvest flux, positive for sink', &
+            ptr_col=this%nbp)
+
+       this%nee(begc:endc) = spval
+       call hist_addfld1d (fname='NEE', units='gC/m^2/s', &
+            avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
+            //' harvest, and hrv_xsmrpool flux, positive for source', &
+            ptr_col=this%nee)
+       
+       this%fire_closs(begc:endc) = spval
+       call hist_addfld1d (fname='COL_FIRE_CLOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='total column-level fire C loss for non-peat fires outside land-type converted region', &
+            ptr_col=this%fire_closs, default='inactive')
+
+       this%fire_decomp_closs(begc:endc) = spval
+       call hist_addfld1d (fname='DECOMP_FIRE_CLOSS', units='gC/m^2/s', &
+          avgflag='A', long_name='decomposable fire C loss for non-peat fires outside land-type converted region', &
+          ptr_col=this%fire_decomp_closs, default='inactive')
+
+       this%dwt_slash_cflux(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_SLASH_CFLUX', units='gC/m^2/s', &
+            avgflag='A', long_name='slash C flux to litter and CWD due to land use', &
+             ptr_col=this%dwt_slash_cflux)
+
+       this%dwt_conv_cflux(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_CONV_CFLUX', units='gC/m^2/s', &
+            avgflag='A', long_name='conversion C flux (immediate loss to atm)', &
+            ptr_col=this%dwt_conv_cflux, default='inactive')
+
+       this%dwt_prod10c_gain(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_PROD10C_GAIN', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain, default='inactive')
+
+       this%prod10c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='PROD10C_LOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='loss from 10-yr wood product pool', &
+            ptr_col=this%prod10c_loss, default='inactive')
+
+       this%dwt_prod100c_gain(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_PROD100C_GAIN', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%prod100c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='PROD100C_LOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='loss from 100-yr wood product pool', &
+            ptr_col=this%prod100c_loss, default='inactive')
+
+       this%prod1c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='PROD1C_LOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='loss from 1-yr crop product pool', &
+            ptr_col=this%prod1c_loss, default='inactive')
+
+       this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_MET_C', units='gC/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_met_c, default='inactive')
+
+       this%dwt_frootc_to_litr_cel_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_CEL_C', units='gC/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_cel_c, default='inactive')
+
+       this%dwt_frootc_to_litr_lig_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_LIG_C', units='gC/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_lig_c, default='inactive')
+
+       this%dwt_livecrootc_to_cwdc(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='DWT_LIVECROOTC_TO_CWDC', units='gC/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='live coarse root to CWD due to landcover change', &
+            ptr_col=this%dwt_livecrootc_to_cwdc, default='inactive')
+
+       this%dwt_deadcrootc_to_cwdc(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='DWT_DEADCROOTC_TO_CWDC', units='gC/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
+            ptr_col=this%dwt_deadcrootc_to_cwdc, default='inactive')
+
+       this%dwt_closs(begc:endc) = spval
+       call hist_addfld1d (fname='DWT_CLOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='total carbon loss from land cover conversion', &
+            ptr_col=this%dwt_closs, default='inactive')
+
+       this%product_closs(begc:endc) = spval
+       call hist_addfld1d (fname='PRODUCT_CLOSS', units='gC/m^2/s', &
+            avgflag='A', long_name='total carbon loss from wood product pools', &
+            ptr_col=this%product_closs, default='inactive')
+
+       this%landuseflux(begc:endc) = spval
+       call hist_addfld1d (fname='LAND_USE_FLUX', units='gC/m^2/s', &
+            avgflag='A', long_name='total C emitted from land cover conversion and wood product pools', &
+            ptr_col=this%landuseflux)
+
+       this%landuptake(begc:endc) = spval
+       call hist_addfld1d (fname='LAND_UPTAKE', units='gC/m^2/s', &
+            avgflag='A', long_name='NEE minus LAND_USE_FLUX, negative for update', &
+            ptr_col=this%landuptake)
+
+       this%annsum_npp(begc:endc) = spval
+       call hist_addfld1d (fname='CANNSUM_NPP', units='gC/m^2/s', &
+            avgflag='A', long_name='annual sum of column-level NPP', &
+            ptr_col=this%annsum_npp, default='inactive')
+
+       ! end of C12 block
+       
+    else if ( carbon_type == 'c13' ) then
+       this%m_decomp_cpools_to_fire(begc:endc,:) = spval
+       this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
+       do k = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+             data1dptr => this%m_decomp_cpools_to_fire(:,k)
+             fieldname = 'C13_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
+             longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
+             call hist_addfld1d (fname=fieldname, units='gC13/m^2',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr, default='inactive')
+
+             if ( nlevdecomp_full > 1 ) then
+                data2dptr => this%m_decomp_cpools_to_fire_vr(:,:,k)
+                fieldname = 'C13_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'//trim(vr_suffix)
+                longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
+                call hist_addfld_decomp (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             end if
+          endif
+       end do
+       if(.not. is_active_betr_bgc)then
+          this%decomp_cascade_hr(begc:endc,:)             = spval
+          this%decomp_cascade_hr_vr(begc:endc,:,:)        = spval
+          this%decomp_cascade_ctransfer(begc:endc,:)      = spval
+          this%decomp_cascade_ctransfer_vr(begc:endc,:,:) = spval
+          do l = 1, ndecomp_cascade_transitions
+             !-- HR fluxes (none from CWD)
+             if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+                data2dptr => this%decomp_cascade_hr_vr(:,:,l)
+                ! check to see if there are multiple pathways that include respiration, and if so, note that in the history file
+                ii = 0
+                do jj = 1, ndecomp_cascade_transitions
+                   if ( decomp_cascade_con%cascade_donor_pool(jj) == decomp_cascade_con%cascade_donor_pool(l) ) ii = ii+1
+                end do
+                if ( ii == 1 ) then
+                   fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                        //'_HR'//trim(vr_suffix)
+                else
+                   fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                        //'_HR_'//&
+                        trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_receiver_pool(l)))//&
+                        trim(vr_suffix)
+                endif
+                longname =  'C13 Het. Resp. from '&
+                     //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))
+                call hist_addfld_decomp (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+             !-- transfer fluxes (none from terminal pool, if present)
+             if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                data2dptr => this%decomp_cascade_ctransfer_vr(:,:,l)
+                fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                     //'C_TO_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
+                     //'C'//trim(vr_suffix)
+                longname =  'C13 decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))&
+                     //' C to '//&
+                     trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' C'
+                call hist_addfld_decomp (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+          end do
+       endif ! .not. is_active_betr_bgc
+       
+       this%lithr(begc:endc) = spval
+       call hist_addfld1d (fname='C13_LITHR', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 fine root C litterfall to litter 3 C', &
+            ptr_col=this%lithr)
+
+       this%somhr(begc:endc) = spval
+       call hist_addfld1d (fname='C13_SOMHR', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 soil organic matter heterotrophic respiration', &
+            ptr_col=this%somhr)
+
+       this%hr(begc:endc) = spval
+       call hist_addfld1d (fname='C13_HR', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total heterotrophic respiration', &
+            ptr_col=this%hr)
+
+
+       this%sr(begc:endc) = spval
+       call hist_addfld1d (fname='C13_SR', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total soil respiration (HR + root resp)', &
+            ptr_col=this%sr)
+
+       this%er(begc:endc) = spval
+       call hist_addfld1d (fname='C13_ER', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total ecosystem respiration, autotrophic + heterotrophic', &
+            ptr_col=this%er)
+
+       this%litfire(begc:endc) = spval
+       call hist_addfld1d (fname='C13_LITFIRE', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 litter fire losses', &
+            ptr_col=this%litfire, default='inactive')
+
+       this%somfire(begc:endc) = spval
+       call hist_addfld1d (fname='C13_SOMFIRE', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 soil organic matter fire losses', &
+            ptr_col=this%somfire, default='inactive')
+
+       this%totfire(begc:endc) = spval
+       call hist_addfld1d (fname='C13_TOTFIRE', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total ecosystem fire losses', &
+            ptr_col=this%totfire, default='inactive')
+
+       this%nep(begc:endc) = spval
+       call hist_addfld1d (fname='C13_NEP', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 net ecosystem production, excludes fire flux, positive for sink', &
+            ptr_col=this%nep)
+
+       this%nee(begc:endc) = spval
+       call hist_addfld1d (fname='C13_NEE', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 net ecosystem exchange of carbon, includes fire flux, positive for source', &
+            ptr_col=this%nee)
+
+       this%fire_closs(begc:endc) = spval
+       call hist_addfld1d (fname='C13_COL_FIRE_CLOSS', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total column-level fire C loss', &
+            ptr_col=this%fire_closs)
+
+       this%dwt_slash_cflux(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_SLASH_CFLUX', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 slash C flux to litter and CWD due to land use', &
+            ptr_col=this%dwt_slash_cflux)
+
+       this%dwt_conv_cflux(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 conversion C flux (immediate loss to atm)', &
+            ptr_col=this%dwt_conv_cflux)
+
+       this%dwt_prod10c_gain(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain)
+
+       this%prod10c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='C13_PROD10C_LOSS', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 loss from 10-yr wood product pool', &
+            ptr_col=this%prod10c_loss)
+
+       this%dwt_prod100c_gain(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_PROD100C_GAIN', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain)
+
+       this%prod100c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='C13_PROD100C_LOSS', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 loss from 100-yr wood product pool', &
+            ptr_col=this%prod100c_loss)
+
+       this%prod1c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='C13_PROD1C_LOSS', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 loss from 1-yr crop product pool', &
+            ptr_col=this%prod1c_loss)
+
+       this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C13_DWT_FROOTC_TO_LITR_MET_C', units='gC13/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C13 fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_met_c, default='inactive')
+
+       this%dwt_frootc_to_litr_cel_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C13_DWT_FROOTC_TO_LITR_CEL_C', units='gC13/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C13 fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_cel_c, default='inactive')
+
+       this%dwt_frootc_to_litr_lig_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C13_DWT_FROOTC_TO_LITR_LIG_C', units='gC13/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C13 fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_lig_c, default='inactive')
+
+       this%dwt_livecrootc_to_cwdc(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C13_DWT_LIVECROOTC_TO_CWDC', units='gC13/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C13 live coarse root to CWD due to landcover change', &
+            ptr_col=this%dwt_livecrootc_to_cwdc, default='inactive')
+
+       this%dwt_deadcrootc_to_cwdc(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C13_DWT_DEADCROOTC_TO_CWDC', units='gC13/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C13 dead coarse root to CWD due to landcover change', &
+            ptr_col=this%dwt_deadcrootc_to_cwdc, default='inactive')
+
+       this%dwt_closs(begc:endc) = spval
+       call hist_addfld1d (fname='C13_DWT_CLOSS', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total carbon loss from land cover conversion', &
+            ptr_col=this%dwt_closs)
+
+       this%product_closs(begc:endc) = spval
+       call hist_addfld1d (fname='C13_PRODUCT_CLOSS', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 total carbon loss from wood product pools', &
+            ptr_col=this%product_closs)
+       
+       ! end of C13 block
+    
+    else if (carbon_type == 'c14') then
+       this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
+       this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
+       do k = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+             data1dptr => this%m_decomp_cpools_to_fire(:,k)
+             fieldname = 'C14_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
+             longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
+             call hist_addfld1d (fname=fieldname, units='gC14/m^2',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr, default='inactive')
+
+             if ( nlevdecomp_full > 1 ) then
+                data2dptr => this%m_decomp_cpools_to_fire_vr(:,:,k)
+                fieldname = 'C14_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'//trim(vr_suffix)
+                longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
+                call hist_addfld_decomp (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             end if
+          endif
+       end do
+       if(.not. is_active_betr_bgc)then
+          this%decomp_cascade_hr(begc:endc,:)             = spval
+          this%decomp_cascade_hr_vr(begc:endc,:,:)        = spval
+          this%decomp_cascade_ctransfer(begc:endc,:)      = spval
+          this%decomp_cascade_ctransfer_vr(begc:endc,:,:) = spval
+          do l = 1, ndecomp_cascade_transitions
+             !-- HR fluxes (none from CWD)
+             if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+                data2dptr => this%decomp_cascade_hr_vr(:,:,l)
+                ! check to see if there are multiple pathways that include respiration, and if so, note that in the history file
+                ii = 0
+                do jj = 1, ndecomp_cascade_transitions
+                   if ( decomp_cascade_con%cascade_donor_pool(jj) == decomp_cascade_con%cascade_donor_pool(l) ) ii = ii+1
+                end do
+                if ( ii == 1 ) then
+                   fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                        //'_HR'//trim(vr_suffix)
+                else
+                   fieldname = 'C14_'//&
+                        trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                        //'_HR_'//&
+                        trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_receiver_pool(l)))&
+                        //trim(vr_suffix)
+                endif
+                longname =  'C14 Het. Resp. from '&
+                     //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))
+                call hist_addfld_decomp (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+             !-- transfer fluxes (none from terminal pool, if present)
+             if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                data2dptr => this%decomp_cascade_ctransfer_vr(:,:,l)
+                fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                     //'C_TO_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
+                     //'C'//trim(vr_suffix)
+                longname =  'C14 decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                     ' C to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' C'
+                call hist_addfld_decomp (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+          end do
+       endif ! .not. is_active_betr_bgc
+       
+       this%lithr(begc:endc) = spval
+       call hist_addfld1d (fname='C14_LITHR', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 fine root C litterfall to litter 3 C', &
+            ptr_col=this%lithr)
+
+       this%somhr(begc:endc) = spval
+       call hist_addfld1d (fname='C14_SOMHR', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 soil organic matter heterotrophic respiration', &
+            ptr_col=this%somhr)
+
+       this%hr(begc:endc) = spval
+       call hist_addfld1d (fname='C14_HR', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total heterotrophic respiration', &
+            ptr_col=this%hr)
+
+       this%sr(begc:endc) = spval
+       call hist_addfld1d (fname='C14_SR', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total soil respiration (HR + root resp)', &
+            ptr_col=this%sr)
+
+       this%er(begc:endc) = spval
+       call hist_addfld1d (fname='C14_ER', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total ecosystem respiration, autotrophic + heterotrophic', &
+            ptr_col=this%er)
+
+       this%litfire(begc:endc) = spval
+       call hist_addfld1d (fname='C14_LITFIRE', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 litter fire losses', &
+            ptr_col=this%litfire, default='inactive')
+
+       this%somfire(begc:endc) = spval
+       call hist_addfld1d (fname='C14_SOMFIRE', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 soil organic matter fire losses', &
+            ptr_col=this%somfire, default='inactive')
+
+       this%totfire(begc:endc) = spval
+       call hist_addfld1d (fname='C14_TOTFIRE', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total ecosystem fire losses', &
+            ptr_col=this%totfire, default='inactive')
+
+       this%nep(begc:endc) = spval
+       call hist_addfld1d (fname='C14_NEP', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 net ecosystem production, excludes fire flux, positive for sink', &
+            ptr_col=this%nep)
+
+       this%nee(begc:endc) = spval
+       call hist_addfld1d (fname='C14_NEE', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 net ecosystem exchange of carbon, includes fire flux, positive for source', &
+            ptr_col=this%nee)
+
+       this%fire_closs(begc:endc) = spval
+       call hist_addfld1d (fname='C14_COL_FIRE_CLOSS', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total column-level fire C loss', &
+            ptr_col=this%fire_closs)
+
+       this%dwt_slash_cflux(begc:endc) = spval
+       call hist_addfld1d (fname='C14_DWT_SLASH_CFLUX', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 slash C flux to litter and CWD due to land use', &
+            ptr_col=this%dwt_slash_cflux)
+
+       this%dwt_conv_cflux(begc:endc) = spval
+       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 conversion C flux (immediate loss to atm)', &
+            ptr_col=this%dwt_conv_cflux)
+
+       this%dwt_prod10c_gain(begc:endc) = spval
+       call hist_addfld1d (fname='C14_DWT_PROD10C_GAIN', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain)
+
+       this%prod10c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='C14_PROD10C_LOSS', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 loss from 10-yr wood product pool', &
+            ptr_col=this%prod10c_loss)
+
+       this%dwt_prod100c_gain(begc:endc) = spval
+       call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain)
+
+       this%prod100c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='C14_PROD100C_LOSS', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 loss from 100-yr wood product pool', &
+            ptr_col=this%prod100c_loss)
+
+       this%prod1c_loss(begc:endc) = spval
+       call hist_addfld1d (fname='C14_PROD1C_LOSS', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 loss from 1-yr crop product pool', &
+            ptr_col=this%prod1c_loss)
+
+       this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C14_DWT_FROOTC_TO_LITR_MET_C', units='gC14/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C14 fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_met_c, default='inactive')
+
+       this%dwt_frootc_to_litr_cel_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C14_DWT_FROOTC_TO_LITR_CEL_C', units='gC14/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C14 fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_cel_c, default='inactive')
+
+       this%dwt_frootc_to_litr_lig_c(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C14_DWT_FROOTC_TO_LITR_LIG_C', units='gC14/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C14 fine root to litter due to landcover change', &
+            ptr_col=this%dwt_frootc_to_litr_lig_c, default='inactive')
+
+       this%dwt_livecrootc_to_cwdc(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C14_DWT_LIVECROOTC_TO_CWDC', units='gC14/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C14 live coarse root to CWD due to landcover change', &
+            ptr_col=this%dwt_livecrootc_to_cwdc, default='inactive')
+
+       this%dwt_deadcrootc_to_cwdc(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='C14_DWT_DEADCROOTC_TO_CWDC', units='gC14/m^2/s',  type2d='levdcmp', &
+            avgflag='A', long_name='C14 dead coarse root to CWD due to landcover change', &
+            ptr_col=this%dwt_deadcrootc_to_cwdc, default='inactive')
+
+       this%dwt_closs(begc:endc) = spval
+       call hist_addfld1d (fname='C14_DWT_CLOSS', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total carbon loss from land cover conversion', &
+            ptr_col=this%dwt_closs)
+
+       this%product_closs(begc:endc) = spval
+       call hist_addfld1d (fname='C14_PRODUCT_CLOSS', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 total carbon loss from wood product pools', &
+            ptr_col=this%product_closs)
+
+       ! end of C14 block     
+    end if  ! use_fates (C12) or C12 or C13 or C14 
+    
+    ! this block is outside the regular C12, C13, C14 if-else, uses a different mechanism to select
+    ctag=get_carbontag(carbon_type)
+    do k = 1, ndecomp_pools
+       this%bgc_cpool_ext_inputs_vr(begc:endc, :, k) = spval    
+       data2dptr => this%bgc_cpool_ext_inputs_vr(:,:,k)
+       fieldname='BGC_'//trim(ctag)//'POOL_EINPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       longname=trim(ctag)//' input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name=longname, &
+            ptr_col=data2dptr, default='inactive')
+
+       this%bgc_cpool_ext_loss_vr(begc:endc, :, k) = spval    
+       data2dptr => this%bgc_cpool_ext_loss_vr(:,:,k)
+       fieldname='BGC_'//trim(ctag)//'POOL_ELOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       longname=trim(ctag)//' loss of '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name=longname, &
+            ptr_col=data2dptr, default='inactive')
+    enddo
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_cf
+    !-----------------------------------------------------------------------
+
+    do c = bounds%begc, bounds%endc
+       l = col_pp%landunit(c)
+
+       if (lun_pp%ifspecial(l)) then
+          this%annsum_npp(c) = spval
+       end if
+
+       this%fphr(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          this%fphr(c,nlevdecomp+1:nlevgrnd) = 0._r8 
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
+          this%fphr(c,:) = spval
+       else  ! Inactive CH4 columns
+          this%fphr(c,:) = spval
+       end if
+
+       ! also initialize dynamic landcover fluxes so that they have
+       ! real values on first timestep, prior to calling pftdyn_cnbal
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          this%dwt_conv_cflux(c)        = 0._r8
+          this%dwt_prod10c_gain(c)      = 0._r8
+          this%dwt_prod100c_gain(c)     = 0._r8
+          this%prod1c_loss(c)           = 0._r8
+          this%prod10c_loss(c)          = 0._r8
+          this%prod100c_loss(c)         = 0._r8
+          this%dwt_slash_cflux(c)       = 0._r8
+          do j = 1, nlevdecomp_full
+             this%dwt_frootc_to_litr_met_c(c,j) = 0._r8
+             this%dwt_frootc_to_litr_cel_c(c,j) = 0._r8
+             this%dwt_frootc_to_litr_lig_c(c,j) = 0._r8
+             this%dwt_livecrootc_to_cwdc(c,j)   = 0._r8
+             this%dwt_deadcrootc_to_cwdc(c,j)   = 0._r8
+          end do
+          this%dwt_closs(c)  = 0._r8
+          this%annsum_npp(c) = 0._r8   
+       end if
+    end do
+
+    ! set special filter
+    num_special_col = 0
+    do c = bounds%begc, bounds%endc
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
+
+    do fc = 1,num_special_col
+       c = special_col(fc)
+       
+       this%dwt_closs(c)   = 0._r8
+       this%landuseflux(c) = 0._r8
+       this%landuptake(c)  = 0._r8
+    end do
+    
+    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+  
+  end subroutine col_cf_init
+    
+  !-----------------------------------------------------------------------
+  subroutine col_cf_restart ( this, bounds, ncid, flag )
+    !
+    ! !DESCRIPTION: 
+    ! Read/write restart data for column carbon flux
+    !
+    ! !ARGUMENTS:
+    class (column_carbon_flux)        :: this
+    type(bounds_type) , intent(in)    :: bounds 
+    type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
+    character(len=*)  , intent(in)    :: flag   !'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j,c ! indices
+    logical :: readvar      ! determine if variable is on initial file
+
+    ! pflotran
+    integer :: k
+    real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    character(len=128) :: varname   ! temporary
+    !------------------------------------------------------------------------
+    ! -------------------------------------------
+    ! None of these restarts are needed for FATES
+    ! -------------------------------------------
+    if (use_fates) return
+
+    !-------------------------------
+    ! Prognostic crop variables
+    !-------------------------------
+
+    call restartvar(ncid=ncid, flag=flag, varname='col_lag_npp', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%lag_npp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='cannsum_npp', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%annsum_npp) 
+
+
+    if (use_vertsoilc) then
+       ptr2d => this%t_scalar
+       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='T scaling factor', units='-', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+
+    ! clm_interface & pflotran
+    !------------------------------------------------------------------------
+    if (use_pflotran .and. pf_cmode) then
+       do k = 1, ndecomp_pools
+          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_c'
+          if (use_vertsoilc) then
+             ptr2d => this%externalc_to_decomp_cpools(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr",  &
+                  xtype=ncd_double, dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='net soil organic C adding/removal/transport', &
+                  units='gC/m3/s', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%externalc_to_decomp_cpools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, &
+                  xtype=ncd_double, dim1name='column', &
+                  long_name='net soil organic C adding/removal/transport', &
+                  units='gC/m3/s', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+             this%externalc_to_decomp_cpools(:,:,k) = 0._r8
+          end if
+       end do
+    end if
+
+  end subroutine col_cf_restart
+  
+  !-----------------------------------------------------------------------
+  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope)
+    !
+    ! !DESCRIPTION:
+    ! column-level carbon flux summary calculations
+    !
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux)              :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    character(len=*)       , intent(in)    :: isotope   
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fc              ! lake filter indices
+    real(r8) :: maxdepth        ! depth to integrate soil variables
+    integer  :: nlev
+    !-----------------------------------------------------------------------
+    associate(& 
+         is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+         is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool  
+         is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool   
+         )
+    
+    if (use_fates) return
+
+    ! PET: retaining the following here during migration, but this is science code that should
+    ! really be in the NDynamics module. Flag for relocation during ELM v2 code cleanup.
+    if ( trim(isotope) == 'bulk') then
+       if (nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+
+          ! this code is to calculate an exponentially-relaxed npp value for use in NDynamics code
+          dtime = get_step_size()
+          nfixlags = nfix_timeconst * secspday
+
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             if ( this%lag_npp(c) /= spval ) then
+                this%lag_npp(c) = &
+                     this%lag_npp(c) * exp(-dtime/nfixlags) + &
+                     this%npp(c) * (1._r8 - exp(-dtime/nfixlags))
+             else
+                ! first timestep
+                this%lag_npp(c) = this%npp(c)
+             endif
+          end do
+       endif
+    endif
+    nlev = nlevdecomp
+    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+    ! some zeroing
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%cwdc_loss(c)          = 0._r8
+       this%som_c_leached(c)      = 0._r8
+    end do
+
+    if ( (.not. is_active_betr_bgc           ) .and. &
+         (.not. (use_pflotran .and. pf_cmode))) then
+
+       ! vertically integrate HR and decomposition cascade fluxes
+       do k = 1, ndecomp_cascade_transitions
+
+       do j = 1,nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+
+                this%decomp_cascade_ctransfer(c,k) = &
+                     this%decomp_cascade_ctransfer(c,k) + &
+                     this%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j) 
+             end do
+          end do
+       end do
+
+
+       ! total heterotrophic respiration (HR)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%hr(c) = &
+               this%lithr(c) + &
+               this%somhr(c)
+       end do
+
+
+    elseif (is_active_betr_bgc) then
+
+       do fc = 1, num_soilc
+          c = filter_soilc(fc)
+          this%hr(c) = dot_sum(this%hr_vr(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
+       enddo
+    endif
+    
+    ! some zeroing
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr(c)              = 0._r8
+       this%lithr(c)              = 0._r8
+       this%decomp_cascade_hr(c,1:ndecomp_cascade_transitions)= 0._r8
+       if (.not. (use_pflotran .and. pf_cmode)) then
+       ! pflotran has returned 'hr_vr(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+       ! thus 'hr_vr_col' should NOT be set to 0
+            this%hr_vr(c,1:nlevdecomp) = 0._r8
+       end if
+    enddo
+
+    ! vertically integrate HR and decomposition cascade fluxes
+    do k = 1, ndecomp_cascade_transitions
+
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+       
+             this%decomp_cascade_hr(c,k) = &
+                this%decomp_cascade_hr(c,k) + &
+                this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+       
+          end do
+       end do
+    end do
+
+    ! litter heterotrophic respiration (LITHR)
+    do k = 1, ndecomp_cascade_transitions
+       if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%lithr(c) = &
+              this%lithr(c) + &
+              this%decomp_cascade_hr(c,k)
+          end do
+       end if
+    end do
+
+    ! soil organic matter heterotrophic respiration (SOMHR)
+    do k = 1, ndecomp_cascade_transitions
+       if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%somhr(c) = &
+              this%somhr(c) + &
+              this%decomp_cascade_hr(c,k)
+          end do
+       end if
+    end do
+
+    ! total heterotrophic respiration, vertically resolved (HR)
+
+    do k = 1, ndecomp_cascade_transitions
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%hr_vr(c,j) = &
+                this%hr_vr(c,j) + &
+                this%decomp_cascade_hr_vr(c,j,k)
+          end do
+       end do
+    end do
+
+    !----------------------------------------------------------------
+    ! bgc interface & pflotran:
+    !----------------------------------------------------------------
+    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
+        call col_cf_summary_pf(this, bounds, num_soilc, filter_soilc)
+    end if
+    !----------------------------------------------------------------
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       ! total soil respiration, heterotrophic + root respiration (SR)
+       this%sr(c) = &
+            this%rr(c) + &
+            this%hr(c)
+
+       ! total ecosystem respiration, autotrophic + heterotrophic (ER)
+       this%er(c) = &
+            this%ar(c) + &
+            this%hr(c)
+
+       ! litter fire losses (LITFIRE)
+       this%litfire(c) = 0._r8
+
+       ! total product loss
+       this%product_closs(c) = &
+            this%prod10c_loss(c)  + &
+            this%prod100c_loss(c) + & 
+            this%prod1c_loss(c)
+
+       ! soil organic matter fire losses (SOMFIRE)
+       this%somfire(c) = 0._r8
+
+       ! total ecosystem fire losses (TOTFIRE)
+       this%totfire(c) = &
+            this%litfire(c) + &
+            this%somfire(c) + &
+            this%vegfire(c)
+    end do
+
+    ! vertically integrate column-level carbon fire losses
+    do l = 1, ndecomp_pools
+       do j = 1,nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%m_decomp_cpools_to_fire(c,l) = &
+                  this%m_decomp_cpools_to_fire(c,l) + &
+                  this%m_decomp_cpools_to_fire_vr(c,j,l)*dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
+    ! column-level carbon losses to fire, including pft losses
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+
+       this%fire_closs(c) = this%fire_closs_p2c(c) 
+       do l = 1, ndecomp_pools
+          this%fire_closs(c) = &
+               this%fire_closs(c) + &
+               this%m_decomp_cpools_to_fire(c,l)
+       end do
+
+       ! column-level carbon losses due to landcover change
+       this%dwt_closs(c) = &
+            this%dwt_conv_cflux(c)
+
+       ! net ecosystem production, excludes fire flux, landcover change, and loss from wood products, positive for sink (NEP)
+       this%nep(c) = &
+            this%gpp(c) - &
+            this%er(c)
+
+       ! net biome production of carbon, includes depletion from: fire flux, landcover change flux, and loss
+       ! from wood products pools, positive for sink (NBP)
+       this%nbp(c) =             &
+            this%nep(c)        - &
+            this%fire_closs(c) - &
+            this%dwt_closs(c)  - &
+            this%product_closs(c)
+
+       ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
+       ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
+       this%nee(c) =                &
+            -this%nep(c)           + &
+            this%fire_closs(c)    + &
+            this%dwt_closs(c)     + &
+            this%product_closs(c) + &
+            this%hrv_xsmrpool_to_atm(c)
+
+       ! land use flux and land uptake
+       this%landuseflux(c) = &
+            this%dwt_closs(c) + &
+            this%product_closs(c)
+
+       this%landuptake(c) = &
+            this%nee(c) - &
+            this%landuseflux(c)
+    end do
+
+    if  (.not. is_active_betr_bgc) then
+
+       ! (cWDC_HR) - coarse woody debris heterotrophic respiration
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%cwdc_hr(c) = 0._r8
+       end do
+
+       ! (cWDC_LOSS) - coarse woody debris C loss
+       do l = 1, ndecomp_pools
+          if ( is_cwd(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%cwdc_loss(c) = &
+                     this%cwdc_loss(c) + &
+                     this%m_decomp_cpools_to_fire(c,l)
+             end do
+          end if
+       end do
+
+       do k = 1, ndecomp_cascade_transitions
+          if ( is_cwd(decomp_cascade_con%cascade_donor_pool(k)) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%cwdc_loss(c) = &
+                     this%cwdc_loss(c) + &
+                     this%decomp_cascade_ctransfer(c,k)
+             end do
+          end if
+       end do
+
+       if (.not.(use_pflotran .and. pf_cmode)) then
+          ! (LITTERC_LOSS) - litter C loss
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%litterc_loss(c) = this%lithr(c)
+          end do
+       end if !(.not.(use_pflotran .and. pf_cmode))
+
+       do l = 1, ndecomp_pools
+          if ( is_litter(l) ) then
+             do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 this%litterc_loss(c) = &
+                    this%litterc_loss(c) + &
+                    this%m_decomp_cpools_to_fire(c,l)
+             end do
+          end if
+       end do
+    
+ 
+       do k = 1, ndecomp_cascade_transitions
+         if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+           do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%litterc_loss(c) = &
+                  this%litterc_loss(c) + &
+                  this%decomp_cascade_ctransfer(c,k)
+           end do
+         end if
+       end do
+
+       if (use_pflotran .and. pf_cmode) then
+          ! note: the follwoing should be useful to non-pflotran-coupled, but seems cause 1 BFB test unmatching.
+          ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+          do l = 1, ndecomp_pools
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools_leached(c,l) = 0._r8
+             end do
+             do j = 1, nlev
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_cpools_leached(c,l) = &
+                     this%decomp_cpools_leached(c,l) + &
+                     this%decomp_cpools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+                end do
+             end do
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%som_c_leached(c) = &
+                   this%som_c_leached(c) + &
+                   this%decomp_cpools_leached(c,l)
+             end do
+          end do
+       end if
+
+    end if ! .not. is_active_betr_bgc
+    
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%plant_to_litter_cflux(c) = 0._r8
+        this%plant_to_cwd_cflux(c) = 0._r8
+        do j = 1, nlev
+            this%plant_to_litter_cflux(c) = &
+                this%plant_to_litter_cflux(c)  + &
+                this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
+                this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
+                this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+            this%plant_to_cwd_cflux(c) = &
+                this%plant_to_cwd_cflux(c) + &
+                this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
+                this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
+        end do
+    end do
+  
+    end associate
+
+    end subroutine col_cf_summary
+  
+  !------------------------------------------------------------  
+  subroutine col_cf_summary_for_ch4( this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! summarize column-level fluxes for methane calculation
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux)     :: this  
+    type(bounds_type), intent(in) :: bounds  
+    integer, intent(in) :: num_soilc
+    integer, intent(in) :: filter_soilc(:)
+    !
+    ! !LOCAL VARIABLES
+    integer :: fc, c
+    integer :: j,k,l       ! indices
+    !------------------------------------------------------------  
+    associate(&
+         is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+         is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+         is_cwd    =>    decomp_cascade_con%is_cwd      &
+    )
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr(c)              = 0._r8
+       this%lithr(c)              = 0._r8
+       this%decomp_cascade_hr(c,1:ndecomp_cascade_transitions)= 0._r8
+       if (.not. (use_pflotran .and. pf_cmode)) then
+       ! pflotran has returned 'hr_vr(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+       ! thus 'hr_vr_col' should NOT be set to 0
+            this%hr_vr(c,1:nlevdecomp) = 0._r8
+       end if
+    enddo
+
+    if ( (.not. is_active_betr_bgc           ) .and. &
+         (.not. (use_pflotran .and. pf_cmode))) then
+      ! vertically integrate HR and decomposition cascade fluxes
+      do k = 1, ndecomp_cascade_transitions
+
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+
+             this%decomp_cascade_hr(c,k) = &
+                this%decomp_cascade_hr(c,k) + &
+                this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+
+          end do
+       end do
+      end do
+
+      ! litter heterotrophic respiration (LITHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%lithr(c) = &
+              this%lithr(c) + &
+              this%decomp_cascade_hr(c,k)
+          end do
+        end if
+      end do
+
+      ! soil organic matter heterotrophic respiration (SOMHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%somhr(c) = &
+              this%somhr(c) + &
+              this%decomp_cascade_hr(c,k)
+          end do
+        end if
+      end do
+
+      ! total heterotrophic respiration, vertically resolved (HR)
+
+      do k = 1, ndecomp_cascade_transitions
+        do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%hr_vr(c,j) = &
+                this%hr_vr(c,j) + &
+                this%decomp_cascade_hr_vr(c,j,k)
+          end do
+        end do
+      end do
+    endif
+
+    end associate
+  
+  end subroutine col_cf_summary_for_ch4  
+
+  !-----------------------------------------------------------------------
+  subroutine col_cf_setvalues ( this, num_column, filter_column, value_column)
+    !
+    ! !DESCRIPTION:
+    ! Set column-level carbon fluxes
+    !
+    ! !ARGUMENTS:
+    class (column_carbon_flux) :: this
+    integer , intent(in) :: num_column
+    integer , intent(in) :: filter_column(:)
+    real(r8), intent(in) :: value_column
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fi,i,j,k,l     ! loop index
+    !------------------------------------------------------------------------
+
+    do j = 1, nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+
+          this%phenology_c_to_litr_met_c(i,j)     = value_column
+          this%phenology_c_to_litr_cel_c(i,j)     = value_column
+          this%phenology_c_to_litr_lig_c(i,j)     = value_column
+
+          this%gap_mortality_c_to_litr_met_c(i,j) = value_column
+          this%gap_mortality_c_to_litr_cel_c(i,j) = value_column
+          this%gap_mortality_c_to_litr_lig_c(i,j) = value_column
+          this%gap_mortality_c_to_cwdc(i,j)       = value_column
+
+          this%fire_mortality_c_to_cwdc(i,j)      = value_column
+          this%m_c_to_litr_met_fire(i,j)          = value_column
+          this%m_c_to_litr_cel_fire(i,j)          = value_column  
+          this%m_c_to_litr_lig_fire(i,j)          = value_column
+
+          this%harvest_c_to_litr_met_c(i,j)       = value_column             
+          this%harvest_c_to_litr_cel_c(i,j)       = value_column             
+          this%harvest_c_to_litr_lig_c(i,j)       = value_column             
+          this%harvest_c_to_cwdc(i,j)             = value_column          
+
+          this%hr_vr(i,j)                         = value_column
+       end do
+    end do
+
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%m_decomp_cpools_to_fire_vr(i,j,k) = value_column
+             this%decomp_cpools_transport_tendency(i,j,k) = value_column
+          end do
+       end do
+    end do
+
+    do l = 1, ndecomp_cascade_transitions
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%decomp_cascade_hr(i,l) = value_column
+          this%decomp_cascade_ctransfer(i,l) = value_column
+       end do
+    end do
+
+    do l = 1, ndecomp_cascade_transitions
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_cascade_hr_vr(i,j,l) = value_column
+             this%decomp_cascade_ctransfer_vr(i,j,l) = value_column
+             this%decomp_k(i,j,l) = value_column
+          end do
+       end do
+    end do
+
+    do k = 1, ndecomp_pools
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%decomp_cpools_leached(i,k) = value_column
+          this%m_decomp_cpools_to_fire(i,k) = value_column
+          this%bgc_cpool_ext_inputs_vr(i,:, k) = value_column
+          this%bgc_cpool_ext_loss_vr(i,:, k) = value_column
+       end do
+    end do
+
+    do fi = 1,num_column
+       i = filter_column(fi)
+
+       this%hrv_deadstemc_to_prod10c(i)  = value_column        
+       this%hrv_deadstemc_to_prod100c(i) = value_column  
+       this%hrv_cropc_to_prod1c(i)       = value_column
+       this%somc_fire(i)                 = value_column  
+       this%prod1c_loss(i)               = value_column
+       this%prod10c_loss(i)              = value_column
+       this%prod100c_loss(i)             = value_column
+       this%product_closs(i)             = value_column
+       this%somhr(i)                     = value_column
+       this%lithr(i)                     = value_column
+       this%hr(i)                        = value_column
+       this%sr(i)                        = value_column
+       this%er(i)                        = value_column
+       this%litfire(i)                   = value_column
+       this%somfire(i)                   = value_column
+       this%totfire(i)                   = value_column
+       this%nep(i)                       = value_column
+       this%nbp(i)                       = value_column
+       this%nee(i)                       = value_column
+       this%fire_closs(i)                = value_column
+       this%cwdc_hr(i)                   = value_column
+       this%cwdc_loss(i)                 = value_column
+       this%litterc_loss(i)              = value_column
+       this%som_c_leached(i)             = value_column
+
+       ! Zero p2c column fluxes
+       this%rr(i)                    = value_column  
+       this%ar(i)                    = value_column  
+       this%gpp(i)                   = value_column 
+       this%npp(i)                   = value_column 
+       this%fire_closs(i)            = value_column 
+       this%litfall(i)               = value_column       
+       this%vegfire(i)               = value_column       
+       this%wood_harvestc(i)         = value_column 
+       this%hrv_xsmrpool_to_atm(i)   = value_column
+    end do
+
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_cpools_sourcesink(i,j,k) = value_column  
+          end do
+       end do
+    end do
+
+    ! pflotran
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             ! only initializing in the first time-step
+             if ( this%externalc_to_decomp_cpools(i,j,k) == spval ) then
+                this%externalc_to_decomp_cpools(i,j,k) = value_column
+             end if
+          end do
+       end do
+    end do
+
+    do fi = 1,num_column
+       i = filter_column(fi)
+       this%f_co2_soil(i) = value_column
+       ! only initializing in the first time-step
+       if ( this%externalc_to_decomp_delta(i) == spval ) then
+          this%externalc_to_decomp_delta(i) = value_column
+       end if
+    end do
+
+    do j = 1, nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%f_co2_soil_vr(i,j) = value_column
+       end do
+    end do
+    
+  end subroutine col_cf_setvalues
+  
+  !-----------------------------------------------------------------------
+  subroutine col_cf_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize flux variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux)      :: this
+    type(bounds_type), intent(in)  :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c, j          ! indices
+    !-----------------------------------------------------------------------
+
+    ! set column-level conversion and product pool fluxes
+    ! to 0 at the beginning of every timestep
+
+    do c = bounds%begc,bounds%endc
+       this%dwt_conv_cflux(c)           = 0._r8
+       this%dwt_prod10c_gain(c)         = 0._r8
+       this%dwt_prod100c_gain(c)        = 0._r8
+       this%dwt_slash_cflux(c)          = 0._r8
+    end do
+
+    do j = 1, nlevdecomp_full
+       do c = bounds%begc,bounds%endc
+          this%dwt_frootc_to_litr_met_c(c,j)    = 0._r8
+          this%dwt_frootc_to_litr_cel_c(c,j)    = 0._r8
+          this%dwt_frootc_to_litr_lig_c(c,j)    = 0._r8
+          this%dwt_livecrootc_to_cwdc(c,j)      = 0._r8
+          this%dwt_deadcrootc_to_cwdc(c,j)      = 0._r8
+       end do
+    end do
+
+  end subroutine col_cf_zerodwt
+  
+  !-------------------------------------------------------------------------------------------------
+  subroutine col_cf_summary_pf(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! bgc interface & pflotran:
+    ! On the radiation time step, perform column-level carbon
+    ! summary calculations, which mainly from PFLOTRAN bgc
+    !
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux)       :: this
+    type(bounds_type) ,  intent(in) :: bounds
+    integer,             intent(in) :: num_soilc       ! number of soil columns in filter
+    integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !CALLED FROM:
+    ! subroutine Summary (if plotran bgc coupled with CLM-CN
+    !
+    ! LOCAL VARIABLES:
+    real(r8) :: dtime                ! time-step (s)
+    integer :: c,j,l                 ! indices
+    integer :: fc                    ! column filter indices
+
+    associate(&
+        is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+        is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+        is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool
+        )
+
+    dtime = get_step_size()
+    ! total heterotrophic respiration (HR)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%hr(c) = 0._r8
+       do j = 1,nlevdecomp_full
+          this%hr(c) = this%hr(c) + &
+             this%hr_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+
+    ! new variable to account for co2 exchange (not all HR goes to atm at current time-step)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%f_co2_soil(c) = 0._r8
+    end do
+    do j = 1,nlevdecomp_full
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%f_co2_soil(c) = this%f_co2_soil(c) + &
+             this%f_co2_soil_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%cwdc_hr(c)      = 0._r8
+       this%cwdc_loss(c)    = 0._r8
+       this%litterc_loss(c) = 0._r8
+    end do
+    
+    do l = 1, ndecomp_pools
+       if ( is_cwd(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             do j = 1, nlevdecomp_full
+                this%cwdc_loss(c) = &
+                   this%cwdc_loss(c) + &
+                   this%decomp_cpools_sourcesink(c,j,l) / dtime
+             end do
+          end do
+       end if
+    
+       if ( is_litter(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             do j = 1, nlevdecomp_full
+                this%litterc_loss(c) = &
+                   this%litterc_loss(c) + &
+                   this%decomp_cpools_sourcesink(c,j,l) / dtime
+             end do
+          end do
+       end if
+    
+    end do
+    
+    ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools for PFLOTRAN-bgc
+    ! (note: this can be for general purpose, although here added an 'if...endif' block for PF-bgc)
+    ! first, need to save the total plant C adding/removing to decomposing pools at previous time-step
+    ! for calculating the net changes, which are used to do balance check
+
+    do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        this%externalc_to_decomp_delta(c) = 0._r8
+        do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+            this%externalc_to_decomp_delta(c) = this%externalc_to_decomp_delta(c) + &
+                                this%externalc_to_decomp_cpools(c,j,l)*dzsoi_decomp(j)
+          end do
+        end do
+    end do
+    !
+    ! do the initialization for the following variable here.
+    ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
+
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%externalc_to_decomp_cpools(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+    end do
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             ! for litter C pools
+             if (l==i_met_lit) then
+                this%externalc_to_decomp_cpools(c,j,l) =                 &
+                    this%externalc_to_decomp_cpools(c,j,l)               &
+                        + this%phenology_c_to_litr_met_c(c,j)            &
+                        + this%dwt_frootc_to_litr_met_c(c,j)             &
+                        + this%gap_mortality_c_to_litr_met_c(c,j)        &
+                        + this%harvest_c_to_litr_met_c(c,j)              &
+                        + this%m_c_to_litr_met_fire(c,j)                 
+
+             elseif (l==i_cel_lit) then
+                this%externalc_to_decomp_cpools(c,j,l) =                 &
+                    this%externalc_to_decomp_cpools(c,j,l)               &
+                        + this%phenology_c_to_litr_cel_c(c,j)            &
+                        + this%dwt_frootc_to_litr_cel_c(c,j)             &
+                        + this%gap_mortality_c_to_litr_cel_c(c,j)        &
+                        + this%harvest_c_to_litr_cel_c(c,j)              &
+                        + this%m_c_to_litr_cel_fire(c,j)                 
+
+             elseif (l==i_lig_lit) then
+                this%externalc_to_decomp_cpools(c,j,l) =                 &
+                    this%externalc_to_decomp_cpools(c,j,l)               &
+                        + this%phenology_c_to_litr_lig_c(c,j)            &
+                        + this%dwt_frootc_to_litr_lig_c(c,j)             &
+                        + this%gap_mortality_c_to_litr_lig_c(c,j)        &
+                        + this%harvest_c_to_litr_lig_c(c,j)              &
+                        + this%m_c_to_litr_lig_fire(c,j)                 
+
+             ! for cwd
+             elseif (l==i_cwd) then
+                this%externalc_to_decomp_cpools(c,j,l) =                 &
+                    this%externalc_to_decomp_cpools(c,j,l)               &
+                        + this%dwt_livecrootc_to_cwdc(c,j)               &
+                        + this%dwt_deadcrootc_to_cwdc(c,j)               &
+                        + this%gap_mortality_c_to_cwdc(c,j)              &
+                        + this%harvest_c_to_cwdc(c,j)                    &
+                        + this%fire_mortality_c_to_cwdc(c,j)             
+
+             end if
+
+             ! the following is the net changes of plant C to decompible C poools between time-step
+             ! in pflotran, decomposible C pools increments ARE from previous time-step (saved above);
+             ! while, in CLM-CN all plant C pools are updated with current C fluxes among plant and ground/soil.
+             ! therefore, when do balance check it is needed to adjust the time-lag of changes.
+             this%externalc_to_decomp_delta(c) = this%externalc_to_decomp_delta(c) - &
+                                this%externalc_to_decomp_cpools(c,j,l)*dzsoi_decomp(j)
+
+             if (abs(this%externalc_to_decomp_cpools(c,j,l))<=1.e-20_r8) then
+                 this%externalc_to_decomp_cpools(c,j,l) = 0._r8
+             end if
+
+          end do
+       end do
+    end do
+
+    ! change the sign so that it is the increments from the previous time-step (unit: from g/m2/s)
+    do fc = 1, num_soilc
+       c = filter_soilc(fc)
+       this%externalc_to_decomp_delta(c) = -this%externalc_to_decomp_delta(c)
+    end do
+
+    end associate
+  
+  end subroutine col_cf_summary_pf
+  
   !------------------------------------------------------------------------
-  subroutine clean_col_cf(this)
+  subroutine col_cf_clean(this)
     !
     ! !ARGUMENTS:
     class(column_carbon_flux) :: this
     !------------------------------------------------------------------------
     
-  end subroutine clean_col_cf
+  end subroutine col_cf_clean
   
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column nitrogen flux data structure
