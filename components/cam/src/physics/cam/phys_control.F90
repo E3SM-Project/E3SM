@@ -105,6 +105,7 @@ logical           :: do_tms
 logical           :: micro_do_icesupersat
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
+character(len=128):: p3_lookup_dir        = unset_str  ! location of p3 input files
 logical, public, protected :: use_mass_borrower    = .false.     ! switch on tracer borrower, instead of using the QNEG3 clipping
 logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
@@ -190,7 +191,7 @@ subroutine phys_ctl_readnl(nlfile)
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix
+      rrtmg_temp_fix, p3_lookup_dir
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -277,6 +278,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(mg_prc_coeff_fix,                1 , mpilog,  0, mpicom)
    call mpibcast(rrtmg_temp_fix,                  1 , mpilog,  0, mpicom)
    call mpibcast(cld_sed,                         1 , mpir8,   0, mpicom)
+   call mpibcast(p3_lookup_dir,  len(p3_lookup_dir) , mpichar, 0, mpicom)
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)
@@ -302,7 +304,7 @@ subroutine phys_ctl_readnl(nlfile)
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
-   if ((microp_scheme /= 'MG' .and. microp_scheme /= 'RK')) then
+   if ((microp_scheme /= 'MG' .and. microp_scheme /= 'RK' .and. microp_scheme /= 'P3')) then
       write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
       call endrun('phys_setopts: illegal value of microp_scheme')
    endif
@@ -325,7 +327,7 @@ subroutine phys_ctl_readnl(nlfile)
    endif
    
    ! Add a check to make sure CLUBB and MG are used together
-   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG')) then
+   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3')) then
       write(iulog,*)'CLUBB is only compatible with MG microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
@@ -340,7 +342,7 @@ subroutine phys_ctl_readnl(nlfile)
 
    ! Macro/micro co-substepping support.
    if (cld_macmic_num_steps > 1) then
-      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
+      if ((microp_scheme /= "MG" .and. microp_scheme /= "P3") .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
          call endrun ("Setting cld_macmic_num_steps > 1 is only &
               &supported with Park or CLUBB macrophysics and MG microphysics.")
       end if
@@ -422,7 +424,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
-                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out)
+                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
+                       ,p3_lookup_dir_out)
 
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
@@ -497,6 +500,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    real(r8),          intent(out), optional :: prc_exp_out
    real(r8),          intent(out), optional :: prc_exp1_out
    real(r8),          intent(out), optional :: cld_sed_out
+   character(len=128),intent(out), optional :: p3_lookup_dir_out
 
    if ( present(deep_scheme_out         ) ) deep_scheme_out          = deep_scheme
    if ( present(shallow_scheme_out      ) ) shallow_scheme_out       = shallow_scheme
@@ -562,6 +566,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(cld_sed_out             ) ) cld_sed_out              = cld_sed
    if ( present(mg_prc_coeff_fix_out    ) ) mg_prc_coeff_fix_out     = mg_prc_coeff_fix
    if ( present(rrtmg_temp_fix_out      ) ) rrtmg_temp_fix_out       = rrtmg_temp_fix
+   if ( present(p3_lookup_dir_out       ) ) p3_lookup_dir_out        = p3_lookup_dir
 
 end subroutine phys_getopts
 
