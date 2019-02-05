@@ -36,10 +36,12 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use clm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
-  use GridcellDataType    , only : gridcell_carbon_state
+  use GridcellDataType    , only : gridcell_carbon_state, grc_cf
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state  
+  use ColumnDataType      , only : column_carbon_state, col_cf 
   use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_cf
+  
 
   !
   implicit none
@@ -199,15 +201,15 @@ contains
 
     associate(                                                                           &
          totcolc                   =>    col_cs%totcolc                  , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         gpp                       =>    carbonflux_vars%gpp_col                       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production
-         er                        =>    carbonflux_vars%er_col                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+         gpp                       =>    col_cf%gpp                       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production
+         er                        =>    col_cf%er                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          col_fire_closs            =>    col_cf%fire_closs                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
-         col_prod1c_loss           =>    carbonflux_vars%prod1c_loss_col               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
-         col_hrv_xsmrpool_to_atm   =>    carbonflux_vars%hrv_xsmrpool_to_atm_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
-         som_c_leached             =>    carbonflux_vars%som_c_leached_col             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
-         col_decompc_delta         =>    carbonflux_vars%externalc_to_decomp_delta_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
-         hrv_deadstemc_to_prod10c  =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 10-year product pool
-         hrv_deadstemc_to_prod100c =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
+         col_prod1c_loss           =>    col_cf%prod1c_loss               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
+         col_hrv_xsmrpool_to_atm   =>    col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
+         som_c_leached             =>    col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
+         col_decompc_delta         =>    col_cf%externalc_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
+         hrv_deadstemc_to_prod10c  =>    col_cf%hrv_deadstemc_to_prod10c  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 10-year product pool
+         hrv_deadstemc_to_prod100c =>    col_cf%hrv_deadstemc_to_prod100c , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
          col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
          col_errcb                 =>    col_cs%errcb                      & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
@@ -768,11 +770,11 @@ contains
 
     associate(                                                                       &
          totcolc                   =>    col_cs%totcolc              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         dwt_prod10c_gain_grc      =>    carbonflux_vars%dwt_prod10c_gain_grc      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_prod100c_gain_grc     =>    carbonflux_vars%dwt_prod100c_gain_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_conv_cflux_grc        =>    carbonflux_vars%dwt_conv_cflux_grc        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_seedc_to_leaf_grc     =>    carbonflux_vars%dwt_seedc_to_leaf_grc     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_seedc_to_deadstem_grc =>    carbonflux_vars%dwt_seedc_to_deadstem_grc , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_prod10c_gain_grc      =>    grc_cf%dwt_prod10c_gain      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_prod100c_gain_grc     =>    grc_cf%dwt_prod100c_gain     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_conv_cflux_grc        =>    grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_seedc_to_leaf_grc     =>    grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
          errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)

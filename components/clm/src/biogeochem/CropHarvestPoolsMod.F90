@@ -17,6 +17,7 @@ module CropHarvestPoolsMod
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   !
   implicit none
   save
@@ -69,14 +70,14 @@ contains
        c = filter_soilc(fc)
 
        ! calculate fluxes (1/sec)
-       carbonflux_vars%prod1c_loss_col(c)    = col_cs%prod1c(c)    * kprod1
+       col_cf%prod1c_loss(c)    = col_cs%prod1c(c)    * kprod1
 
        if ( use_c13 ) then
-          c13_carbonflux_vars%prod1c_loss_col(c)  = c13_col_cs%prod1c(c)  * kprod1
+          c13_col_cf%prod1c_loss(c)  = c13_col_cs%prod1c(c)  * kprod1
        endif
 
        if ( use_c14 ) then
-          c14_carbonflux_vars%prod1c_loss_col(c)  = c14_col_cs%prod1c(c)  * kprod1
+          c14_col_cf%prod1c_loss(c)  = c14_col_cs%prod1c(c)  * kprod1
        endif
 
        nitrogenflux_vars%prod1n_loss_col(c)    = nitrogenstate_vars%prod1n_col(c)    * kprod1
@@ -92,16 +93,16 @@ contains
 
        ! fluxes into wood product pools, from harvest
        col_cs%prod1c(c)    = col_cs%prod1c(c)    + &
-            carbonflux_vars%hrv_cropc_to_prod1c_col(c)*dt
+            col_cf%hrv_cropc_to_prod1c(c)*dt
 
        if ( use_c13 ) then
           c13_col_cs%prod1c(c)  = c13_col_cs%prod1c(c)  + &
-               c13_carbonflux_vars%hrv_cropc_to_prod1c_col(c)*dt
+               c13_col_cf%hrv_cropc_to_prod1c(c)*dt
        endif
 
        if ( use_c14 ) then
           c14_col_cs%prod1c(c)  = c14_col_cs%prod1c(c)  + &
-               c14_carbonflux_vars%hrv_cropc_to_prod1c_col(c)*dt
+               c14_col_cf%hrv_cropc_to_prod1c(c)*dt
        endif
 
        nitrogenstate_vars%prod1n_col(c)    = nitrogenstate_vars%prod1n_col(c)    + &
@@ -111,16 +112,16 @@ contains
 
        ! fluxes out of wood product pools, from decomposition
        col_cs%prod1c(c)    = col_cs%prod1c(c)    - &
-            carbonflux_vars%prod1c_loss_col(c)*dt
+            col_cf%prod1c_loss(c)*dt
 
        if ( use_c13 ) then
           c13_col_cs%prod1c(c)  = c13_col_cs%prod1c(c)  - &
-               c13_carbonflux_vars%prod1c_loss_col(c)*dt
+               c13_col_cf%prod1c_loss(c)*dt
        endif
 
        if ( use_c14 ) then
           c14_col_cs%prod1c(c)  = c14_col_cs%prod1c(c)  - &
-               c14_carbonflux_vars%prod1c_loss_col(c)*dt
+               c14_col_cf%prod1c_loss(c)*dt
        endif
 
        nitrogenstate_vars%prod1n_col(c)    = nitrogenstate_vars%prod1n_col(c)    - &

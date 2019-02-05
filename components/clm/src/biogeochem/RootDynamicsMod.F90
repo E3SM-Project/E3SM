@@ -24,7 +24,7 @@ module RootDynamicsMod
   use CropType            , only : crop_type
   use SimpleMathMod       , only : array_normalization
   use RootBiophysMod      , only : init_vegrootfr
-  use VegetationDataType  , only : veg_ef, veg_cs
+  use VegetationDataType  , only : veg_ef, veg_cs, veg_cf
 
   ! !PUBLIC TYPES:
   implicit none

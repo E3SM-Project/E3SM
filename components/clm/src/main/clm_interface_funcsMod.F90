@@ -30,7 +30,7 @@ module clm_interface_funcsMod
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf 
-  use ColumnDataType        , only : col_cs
+  use ColumnDataType        , only : col_cs, col_cf
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -640,12 +640,12 @@ contains
     !
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
-      externalc_to_decomp_cpools_vr    => carbonflux_vars%externalc_to_decomp_cpools_col        , &
+      externalc_to_decomp_cpools_vr    => col_cf%externalc_to_decomp_cpools        , &
       externaln_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col      , &
       externalp_to_decomp_ppools_vr    => phosphorusflux_vars%externalp_to_decomp_ppools_col    , &
-      t_scalar                         => carbonflux_vars%t_scalar_col                          , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
-      w_scalar                         => carbonflux_vars%w_scalar_col                          , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
-      o_scalar                         => carbonflux_vars%o_scalar_col                          , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
+      t_scalar                         => col_cf%t_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
+      w_scalar                         => col_cf%w_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
+      o_scalar                         => col_cf%o_scalar                          , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
       ! inorg. nitrogen source
       ndep_to_sminn                    => nitrogenflux_vars%ndep_to_sminn_col                   , &
       nfix_to_sminn                    => nitrogenflux_vars%nfix_to_sminn_col                   , &
@@ -1001,7 +1001,7 @@ contains
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
     associate ( &
-     decomp_cpools_sourcesink_vr  => carbonflux_vars%decomp_cpools_sourcesink_col    , &
+     decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
      decomp_npools_sourcesink_vr  => nitrogenflux_vars%decomp_npools_sourcesink_col  , &
      decomp_ppools_sourcesink_vr  => phosphorusflux_vars%decomp_ppools_sourcesink_col  &
      )
@@ -1042,12 +1042,12 @@ contains
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
     associate ( &
-     phr_vr                           => carbonflux_vars%phr_vr_col                                 , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
-     fphr                             => carbonflux_vars%fphr_col                                   , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+     phr_vr                           => col_cf%phr_vr                                 , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
+     fphr                             => col_cf%fphr                                   , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
 
-     decomp_cascade_hr_vr_col         => carbonflux_vars%decomp_cascade_hr_vr_col                   , &
+     decomp_cascade_hr_vr_col         => col_cf%decomp_cascade_hr_vr                   , &
 
-     decomp_cascade_ctransfer_vr_col  => carbonflux_vars%decomp_cascade_ctransfer_vr_col            , &
+     decomp_cascade_ctransfer_vr_col  => col_cf%decomp_cascade_ctransfer_vr            , &
      decomp_cascade_ntransfer_vr_col  => nitrogenflux_vars%decomp_cascade_ntransfer_vr_col          , &
      decomp_cascade_ptransfer_vr_col  => phosphorusflux_vars%decomp_cascade_ptransfer_vr_col        , &
 
@@ -1252,8 +1252,8 @@ contains
 
 !------------------------------------------------------------------------------------
     associate ( &
-     hr_vr                        => carbonflux_vars%hr_vr_col              , &
-     f_co2_soil_vr                => carbonflux_vars%f_co2_soil_vr_col      , &
+     hr_vr                        => col_cf%hr_vr              , &
+     f_co2_soil_vr                => col_cf%f_co2_soil_vr      , &
      f_n2o_soil_vr                => nitrogenflux_vars%f_n2o_soil_vr_col    , &
      f_n2_soil_vr                 => nitrogenflux_vars%f_n2_soil_vr_col     , &
      f_ngas_decomp_vr             => nitrogenflux_vars%f_ngas_decomp_vr_col , &
@@ -1628,10 +1628,10 @@ contains
          gross_pmin                       =>    phosphorusflux_vars%gross_pmin_col                      , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
          net_pmin                         =>    phosphorusflux_vars%net_pmin_col                        , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
 
-         decomp_cascade_hr_vr             =>    carbonflux_vars%decomp_cascade_hr_vr_col                , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         phr_vr                           =>    carbonflux_vars%phr_vr_col                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
-         fphr                             =>    carbonflux_vars%fphr_col                                  & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr                , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         phr_vr                           =>    col_cf%phr_vr                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
+         fphr                             =>    col_cf%fphr                                  & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          )
 
     !---------------------------------------------------------------------------

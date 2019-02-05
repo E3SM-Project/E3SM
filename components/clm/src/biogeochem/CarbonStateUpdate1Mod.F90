@@ -22,6 +22,7 @@ module CarbonStateUpdate1Mod
   use CropType               , only : crop_type
   use decompMod              , only : bounds_type
   use clm_varcon             , only : dzsoi_decomp
+  use GridcellDataType       , only : gridcell_carbon_state, gridcell_carbon_flux
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
   ! bgc interface & pflotran:
@@ -41,7 +42,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       carbonflux_vars, col_cs, col_cfv2)
+       grc_cs, grc_cf, col_cs, col_cf)
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
@@ -50,9 +51,10 @@ contains
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(column_carbon_state),intent(inout):: col_cs
-    type(column_carbon_flux),intent(inout) :: col_cfv2
+    type(gridcell_carbon_state), intent(inout)  :: grc_cs
+    type(gridcell_carbon_flux) , intent(inout)  :: grc_cf
+    type(column_carbon_state)  , intent(inout)  :: col_cs
+    type(column_carbon_flux)   , intent(in)     :: col_cf
     !
     ! !LOCAL VARIABLES:
     integer  :: c   ! column index
@@ -65,9 +67,10 @@ contains
     !-----------------------------------------------------------------------
 
     associate( &
-         cf => carbonflux_vars  , &
-         cs => col_cs           , &
-         ccfv2 => col_cfv2
+         gcs => grc_cs  , &
+         gcf => grc_cf  , &
+         ccs => col_cs  , &
+         ccf => col_cf    &
          )
 
       dt = real( get_step_size(), r8 )
@@ -75,23 +78,23 @@ contains
       if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
-            cs%seedc(g) = cs%seedc(g) &
-                 - cf%dwt_seedc_to_leaf_grc(g)     * dt &
-                 - cf%dwt_seedc_to_deadstem_grc(g) * dt
+            gcs%seedc(g) = gcs%seedc(g) &
+                 - gcf%dwt_seedc_to_leaf(g)     * dt &
+                 - gcf%dwt_seedc_to_deadstem(g) * dt
          end do
 
          do j = 1,nlevdecomp
             do fc = 1, num_soilc_with_inactive
                c = filter_soilc_with_inactive(fc)
 
-               cs%decomp_cpools_vr(c,j,i_met_lit) = cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                    cf%dwt_frootc_to_litr_met_c_col(c,j) * dt
-               cs%decomp_cpools_vr(c,j,i_cel_lit) = cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                    cf%dwt_frootc_to_litr_cel_c_col(c,j) * dt
-               cs%decomp_cpools_vr(c,j,i_lig_lit) = cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                    cf%dwt_frootc_to_litr_lig_c_col(c,j) * dt
-               cs%decomp_cpools_vr(c,j,i_cwd) = cs%decomp_cpools_vr(c,j,i_cwd) + &
-                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) * dt
+               ccs%decomp_cpools_vr(c,j,i_met_lit) = ccs%decomp_cpools_vr(c,j,i_met_lit) + &
+                    ccf%dwt_frootc_to_litr_met_c(c,j) * dt
+               ccs%decomp_cpools_vr(c,j,i_cel_lit) = ccs%decomp_cpools_vr(c,j,i_cel_lit) + &
+                    ccf%dwt_frootc_to_litr_cel_c(c,j) * dt
+               ccs%decomp_cpools_vr(c,j,i_lig_lit) = ccs%decomp_cpools_vr(c,j,i_lig_lit) + &
+                    ccf%dwt_frootc_to_litr_lig_c(c,j) * dt
+               ccs%decomp_cpools_vr(c,j,i_cwd) = ccs%decomp_cpools_vr(c,j,i_cwd) + &
+                    ( ccf%dwt_livecrootc_to_cwdc(c,j) + ccf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
 
             end do
          end do
@@ -224,12 +227,12 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                ! phenology and dynamic land cover fluxes
-               cf%decomp_cpools_sourcesink_col(c,j,i_met_lit) = &
-                    cf%phenology_c_to_litr_met_c_col(c,j) * dt
-               cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit) = &
-                    cf%phenology_c_to_litr_cel_c_col(c,j) * dt
-               cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit) = &
-                    cf%phenology_c_to_litr_lig_c_col(c,j) * dt
+               ccfv2%decomp_cpools_sourcesink(c,j,i_met_lit) = &
+                    ccfv2%phenology_c_to_litr_met_c(c,j) * dt
+               ccfv2%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
+                    ccfv2%phenology_c_to_litr_cel_c(c,j) * dt
+               ccfv2%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
+                    ccfv2%phenology_c_to_litr_lig_c(c,j) * dt
             end do
          end do
 
@@ -239,9 +242,9 @@ contains
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                       cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
-                       - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
+                  ccfv2%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                       ccfv2%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) &
+                       - ( ccfv2%decomp_cascade_hr_vr(c,j,k) + ccfv2%decomp_cascade_ctransfer_vr(c,j,k)) *dt
                end do
             end do
          end do
@@ -251,9 +254,9 @@ contains
                   ! column loop
                   do fc = 1,num_soilc
                      c = filter_soilc(fc)
-                     cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                          cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
-                          + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
+                     ccfv2%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) = &
+                          ccfv2%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
+                          + ccfv2%decomp_cascade_ctransfer_vr(c,j,k)*dt
                   end do
                end do
             end if
@@ -262,18 +265,18 @@ contains
       elseif( use_fates ) then
 
          ! The following pools were updated via the FATES interface
-         ! cf%decomp_cpools_sourcesink_col(c,j,i_met_lit)
-         ! cf%decomp_cpools_sourcesink_col(c,j,i_cel_lit)
-         ! cf%decomp_cpools_sourcesink_col(c,j,i_lig_lit)
+         ! ccfv2%decomp_cpools_sourcesink(c,j,i_met_lit)
+         ! ccfv2%decomp_cpools_sourcesink(c,j,i_cel_lit)
+         ! ccfv2%decomp_cpools_sourcesink(c,j,i_lig_lit)
 
          ! litter and SOM HR fluxes
          do k = 1, ndecomp_cascade_transitions
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                        cf%decomp_cpools_sourcesink_col(c,j,cascade_donor_pool(k)) &
-                        - ( cf%decomp_cascade_hr_vr_col(c,j,k) + cf%decomp_cascade_ctransfer_vr_col(c,j,k)) *dt
+                  ccfv2%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                        ccfv2%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) &
+                        - ( ccfv2%decomp_cascade_hr_vr(c,j,k) + ccfv2%decomp_cascade_ctransfer_vr(c,j,k)) *dt
                end do
             end do
          end do
@@ -282,9 +285,9 @@ contains
                do j = 1,nlevdecomp
                   do fc = 1,num_soilc
                      c = filter_soilc(fc)
-                     cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                           cf%decomp_cpools_sourcesink_col(c,j,cascade_receiver_pool(k)) &
-                           + cf%decomp_cascade_ctransfer_vr_col(c,j,k)*dt
+                     ccfv2%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) = &
+                           ccfv2%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
+                           + ccfv2%decomp_cascade_ctransfer_vr(c,j,k)*dt
                   end do
                end do
             end if

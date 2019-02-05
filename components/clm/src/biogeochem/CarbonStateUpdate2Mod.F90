@@ -80,13 +80,13 @@ contains
 
                ! column gap mortality fluxes
                csv2%decomp_cpools_vr(c,j,i_met_lit) = &
-                    csv2%decomp_cpools_vr(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_met_lit) + ccfv2%gap_mortality_c_to_litr_met_c(c,j) * dt
                csv2%decomp_cpools_vr(c,j,i_cel_lit) = &
-                    csv2%decomp_cpools_vr(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_cel_lit) + ccfv2%gap_mortality_c_to_litr_cel_c(c,j) * dt
                csv2%decomp_cpools_vr(c,j,i_lig_lit) = &
-                    csv2%decomp_cpools_vr(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_lig_lit) + ccfv2%gap_mortality_c_to_litr_lig_c(c,j) * dt
                csv2%decomp_cpools_vr(c,j,i_cwd) = &
-                    csv2%decomp_cpools_vr(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_cwd) + ccfv2%gap_mortality_c_to_cwdc(c,j) * dt
 
             end do
          end do
@@ -178,13 +178,13 @@ contains
 
                ! column harvest fluxes
                csv2%decomp_cpools_vr(c,j,i_met_lit) = &
-                    csv2%decomp_cpools_vr(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_met_lit) + ccfv2%harvest_c_to_litr_met_c(c,j) * dt
                csv2%decomp_cpools_vr(c,j,i_cel_lit) = &
-                    csv2%decomp_cpools_vr(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_cel_lit) + ccfv2%harvest_c_to_litr_cel_c(c,j) * dt
                csv2%decomp_cpools_vr(c,j,i_lig_lit) = &
-                    csv2%decomp_cpools_vr(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+                    csv2%decomp_cpools_vr(c,j,i_lig_lit) + ccfv2%harvest_c_to_litr_lig_c(c,j) * dt
                csv2%decomp_cpools_vr(c,j,i_cwd) = &
-                    csv2%decomp_cpools_vr(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+                    csv2%decomp_cpools_vr(c,j,i_cwd) + ccfv2%harvest_c_to_cwdc(c,j)  * dt
 
                ! wood to product pools - states updated in WoodProducts()
             end do

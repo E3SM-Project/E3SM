@@ -32,7 +32,7 @@ module lnd2atmMod
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
-  use ColumnDataType       , only : col_ws, col_wf  
+  use ColumnDataType       , only : col_ws, col_wf, col_cf  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
 
   
@@ -217,7 +217,7 @@ contains
 
     if (use_cn) then
        call c2g(bounds, &
-            carbonflux_vars%nee_col(bounds%begc:bounds%endc), &
+            col_cf%nee(bounds%begc:bounds%endc), &
             lnd2atm_vars%nee_grc   (bounds%begg:bounds%endg), &
             c2l_scale_type= 'unity', l2g_scale_type='unity')
 

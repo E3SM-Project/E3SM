@@ -27,9 +27,10 @@ module dynHarvestMod
   use clm_varcon            , only : grlnd
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
-  use ColumnType            , only : col_pp                
+  use ColumnType            , only : col_pp
+  use ColumnDataType        , only : col_cf  
   use VegetationType        , only : veg_pp                
-  use VegetationDataType    , only : veg_cs  
+  use VegetationDataType    , only : veg_cs, veg_cf  
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -539,12 +540,12 @@ contains
         hrv_deadcrootc_xfer_to_litter    =>    veg_cf%hrv_deadcrootc_xfer_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_gresp_xfer_to_litter         =>    veg_cf%hrv_gresp_xfer_to_litter           , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_cpool_to_litter              =>    veg_cf%hrv_cpool_to_litter                , & ! Input:  [real(r8) (:)   ]       
-        chrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col             , & ! InOut:  [real(r8) (:)   ]                                                    
-        chrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col            , & ! InOut:  [real(r8) (:)   ]                                                    
-        harvest_c_to_litr_met_c          =>    carbonflux_vars%harvest_c_to_litr_met_c_col              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
-        harvest_c_to_litr_cel_c          =>    carbonflux_vars%harvest_c_to_litr_cel_c_col              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
-        harvest_c_to_litr_lig_c          =>    carbonflux_vars%harvest_c_to_litr_lig_c_col              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
-        harvest_c_to_cwdc                =>    carbonflux_vars%harvest_c_to_cwdc_col                    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
+        chrv_deadstemc_to_prod10c        =>    col_cf%hrv_deadstemc_to_prod10c             , & ! InOut:  [real(r8) (:)   ]                                                    
+        chrv_deadstemc_to_prod100c       =>    col_cf%hrv_deadstemc_to_prod100c            , & ! InOut:  [real(r8) (:)   ]                                                    
+        harvest_c_to_litr_met_c          =>    col_cf%harvest_c_to_litr_met_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
+        harvest_c_to_litr_cel_c          =>    col_cf%harvest_c_to_litr_cel_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
+        harvest_c_to_litr_lig_c          =>    col_cf%harvest_c_to_litr_lig_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+        harvest_c_to_cwdc                =>    col_cf%harvest_c_to_cwdc                    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
         
         hrv_leafn_to_litter              =>    nitrogenflux_vars%hrv_leafn_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_frootn_to_litter             =>    nitrogenflux_vars%hrv_frootn_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    

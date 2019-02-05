@@ -129,7 +129,8 @@ module clm_driver
   use UrbanParamsType        , only : urbanparams_vars
 
   use GridcellType           , only : grc_pp
-  use GridcellDataType       , only : grc_cs
+  use GridcellDataType       , only : grc_cs, c13_grc_cs, c14_grc_cs
+  use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
@@ -325,14 +326,14 @@ contains
        if (use_cn) then
           call t_startf('cnpinit')
 
-          call carbonflux_vars%ZeroDWT(bounds_clump)
+          call grc_cf%ZeroDWT(bounds_clump)
           call col_cf%ZeroDWT(bounds_clump)
           if (use_c13) then
-             call c13_carbonflux_vars%ZeroDWT(bounds_clump)
+             call c13_grc_cf%ZeroDWT(bounds_clump)
              call c13_col_cf%ZeroDWT(bounds_clump)
           end if
           if (use_c14) then
-             call c14_carbonflux_vars%ZeroDWT(bounds_clump)
+             call c14_grc_cf%ZeroDWT(bounds_clump)
              call c14_col_cf%ZeroDWT(bounds_clump)
           end if
           call nitrogenflux_vars%ZeroDWT(bounds_clump)
@@ -381,6 +382,7 @@ contains
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars,            &
        veg_cs, c13_veg_cs, c14_veg_cs,         &
        col_cs, c13_col_cs, c14_col_cs,         &
+       grc_cs, grc_cf ,&
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)

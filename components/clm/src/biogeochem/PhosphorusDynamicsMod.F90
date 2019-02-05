@@ -14,8 +14,7 @@ module PhosphorusDynamicsMod
   use clm_varcon          , only : dzsoi_decomp, zisoi
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type, nfix_timeconst
-  
+  use CNCarbonFluxType    , only : carbonflux_type  
   use clm_varpar          , only : nlevdecomp
   use clm_varctl          , only : use_vertsoilc
   use PhosphorusFluxType  , only : phosphorusflux_type
@@ -27,7 +26,7 @@ module PhosphorusDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_ws, col_wf
+  use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst
   use VegetationType      , only : veg_pp
   use VegetationPropertiesType      , only : veg_vp
   use clm_varctl          , only : NFIX_PTASE_plant

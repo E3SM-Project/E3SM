@@ -752,17 +752,17 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_met_lit) = 0._r8
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
 
          nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
 
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nld_si,i_met_lit) = &
+         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_met_lit) = &
                this%fates(nc)%bc_out(s)%FATES_c_to_litr_lab_c_col(1:nld_si) * dtime
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nld_si,i_cel_lit) = &
+         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_cel_lit) = &
                this%fates(nc)%bc_out(s)%FATES_c_to_litr_cel_c_col(1:nld_si) * dtime
-         carbonflux_inst%decomp_cpools_sourcesink_col(c,1:nld_si,i_lig_lit) = &
+         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_lig_lit) = &
                this%fates(nc)%bc_out(s)%FATES_c_to_litr_lig_c_col(1:nld_si) * dtime
       end do
 

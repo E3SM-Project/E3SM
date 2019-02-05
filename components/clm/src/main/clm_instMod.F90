@@ -49,7 +49,8 @@ module clm_instMod
   use SoilorderConType           , only : soilordercon         ! Constants
 
   use GridcellDataType           , only : grc_es, grc_ef, grc_ws, grc_wf
-  use GridcellDataType           , only : grc_cs
+  use GridcellDataType           , only : grc_cs, c13_grc_cs, c14_grc_cs
+  use GridcellDataType           , only : grc_cf, c13_grc_cf, c14_grc_cf
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
@@ -165,11 +166,13 @@ contains
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
        call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
        if (use_c13) then
+          call c13_grc_cs%Init(begg, endg)
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
           call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)
        end if
        if (use_c14) then
+          call c14_grc_cs%Init(begg, endg)
           call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
           call c14_veg_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio)
@@ -179,18 +182,18 @@ contains
        ! c14_carbonflux_vars data structure so that they can be used in
        ! associate statements (nag compiler complains otherwise)
 
-       call carbonflux_vars%Init(bounds_proc, carbon_type='c12')
+       call grc_cf%Init(begg, endg, carbon_type='c12')
        call col_cf%Init(begc, endc, carbon_type='c12')
        call veg_cf%Init(begp, endp, carbon_type='c12')
        if (use_c13) then
-          call c13_carbonflux_vars%Init(bounds_proc, carbon_type='c13')
+          call c13_grc_cf%Init(begg, endg, carbon_type='c13')
           call c13_col_cf%Init(begc, endc, carbon_type='c13')
           call c13_veg_cf%Init(begp, endp, carbon_type='c13')
        end if
        if (use_c14) then
-          call c14_carbonflux_vars%Init(bounds_proc, carbon_type='c14')
+          call c14_grc_cf%Init(begg, endg, carbon_type='c14')
           call c14_col_cf%Init(begc, endc, carbon_type='c14')
-          call c13_veg_cf%Init(begp, endp, carbon_type='c14')
+          call c14_veg_cf%Init(begp, endp, carbon_type='c14')
        end if
     endif
 

@@ -8,6 +8,8 @@ module AnnualUpdateMod
   use decompMod        , only : bounds_type
   use CNCarbonFluxType , only : carbonflux_type
   use CNStateType      , only : cnstate_type
+  use ColumnDataType   , only : col_cf
+  use VegetationDataType, only : veg_cf
   !
   implicit none
   save
@@ -97,7 +99,7 @@ contains
 
           call p2c(bounds, num_soilc, filter_soilc, &
                veg_cf%annsum_npp(bounds%begp:bounds%endp), &
-               carbonflux_vars%annsum_npp_col(bounds%begc:bounds%endc))
+               col_cf%annsum_npp(bounds%begc:bounds%endc))
 
           call p2c(bounds, num_soilc, filter_soilc, &
                cnstate_vars%annavg_t2m_patch(bounds%begp:bounds%endp), &

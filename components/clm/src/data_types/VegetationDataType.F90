@@ -33,6 +33,7 @@ module VegetationDataType
   use GridcellType              , only : grc_pp
   use ColumnDataType            , only : col_es
   use ColumnDataType            , only : column_carbon_state
+  use ColumnDataType            , only : column_carbon_flux
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -500,7 +501,7 @@ module VegetationDataType
     real(r8), pointer :: leafc_loss                          (:) => null()    ! (gC/m2/s) patch-level leaf C loss
     real(r8), pointer :: woodc_alloc                         (:) => null()    ! (gC/m2/s) patch-level wood C alloc
     real(r8), pointer :: woodc_loss                          (:) => null()    ! (gC/m2/s) patch-level wood C loss
-                                                                 => null()
+
     ! fire code                                                 
     real(r8), pointer :: fire_closs                          (:) => null()    ! (gC/m2/s) total patch-level fire C loss 
                                                                  
@@ -6258,7 +6259,7 @@ module VegetationDataType
   end subroutine veg_cf_restart
   
   !-----------------------------------------------------------------------
-  subroutine veg_cf_summary(this, bounds, num_soilp, filter_soilp, isotope, col_cf_input)
+  subroutine veg_cf_summary(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, isotope, col_cf_input)
     !
     ! !DESCRIPTION:
     ! patch-level carbon flux summary calculations
@@ -6266,10 +6267,12 @@ module VegetationDataType
     ! !USES:
     !
     ! !ARGUMENTS:
-    class(carbonflux_type)                 :: this
+    class(vegetation_carbon_flux)                 :: this
     type(bounds_type)      , intent(in)    :: bounds          
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     character(len=*)       , intent(in)    :: isotope   
     type(column_carbon_flux), intent(inout):: col_cf_input    ! receives p2c output
     !

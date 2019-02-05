@@ -24,7 +24,7 @@ module MaintenanceRespMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnDataType      , only : col_es
   use VegetationType      , only : veg_pp                
-  use VegetationDataType  , only : veg_es, veg_cs
+  use VegetationDataType  , only : veg_es, veg_cs, veg_cf
   !
   implicit none
   save

@@ -212,21 +212,17 @@ contains
        call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
-       call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
        call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
 
-       call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
-       call veg_cf%Summary(bounds, num_soilp, filter_soilp, 'bulk', col_cf)
+       call veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
        call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
        if ( use_c13 ) then
-          call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
-          call c13_veg_cf%Summary(bounds, num_soilp, filter_soilp, 'c13', c13_col_cf)
+          call c13_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
           call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c13')
        end if
        if ( use_c14 ) then
-          call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
-          call c14_veg_cf%Summary(bounds, num_soilp, filter_soilp, 'c14', c14_col_cf)
+          call c14_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
           call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c14')
        end if
 
@@ -361,23 +357,14 @@ contains
 
        call t_startf('CNZero')
 
-       call carbonflux_vars%SetValues( &
-            num_soilp, filter_soilp, 0._r8, &
-            num_soilc, filter_soilc, 0._r8)
        call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
        call veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        if ( use_c13 ) then
-          call c13_carbonflux_vars%SetValues( &
-               num_soilp, filter_soilp, 0._r8, &
-               num_soilc, filter_soilc, 0._r8)
           call c13_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
           call c13_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        end if
 
        if ( use_c14 ) then
-          call c14_carbonflux_vars%SetValues( &
-               num_soilp, filter_soilp, 0._r8, &
-               num_soilc, filter_soilc, 0._r8)
           call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
           call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        end if
@@ -642,14 +629,11 @@ contains
             carbonflux_vars)
        call t_stopf('CNGResp')
 
-       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        call veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf)
        if(use_c13) then
-         call c13_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
          call c13_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c13_col_cf)
        endif
        if(use_c14) then
-         call c14_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
          call c14_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c14_col_cf)
        endif
 
@@ -876,16 +860,13 @@ contains
                cnstate_vars)
        end if
 
-       call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
        call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
        if( use_c13 ) then
-          call c13_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
           call c13_col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
           call c13_veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
        endif
        if( use_c14 ) then
-          call c14_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
           call c14_col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
           call c14_veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
        endif    

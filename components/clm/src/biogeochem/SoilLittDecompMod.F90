@@ -35,7 +35,7 @@ module SoilLittDecompMod
   use WaterStateType         , only : waterstate_type
   use CH4Mod                 , only : ch4_type
   use cropType               , only : crop_type
-  use ColumnDataType         , only : col_cs
+  use ColumnDataType         , only : col_cs, col_cf
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
@@ -177,7 +177,7 @@ contains
 
          decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
 
-         w_scalar                         =>    carbonflux_vars%w_scalar_col                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
+         w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
          
          decomp_cascade_ntransfer_vr      =>    nitrogenflux_vars%decomp_cascade_ntransfer_vr_col      , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
          decomp_cascade_sminn_flux_vr     =>    nitrogenflux_vars%decomp_cascade_sminn_flux_vr_col     , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
@@ -196,11 +196,11 @@ contains
          gross_pmin                       =>    phosphorusflux_vars%gross_pmin_col                     , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
          net_pmin                         =>    phosphorusflux_vars%net_pmin_col                       , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
 
-         decomp_cascade_hr_vr             =>    carbonflux_vars%decomp_cascade_hr_vr_col               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_k                         =>    carbonflux_vars%decomp_k_col                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
-         phr_vr                           =>    carbonflux_vars%phr_vr_col                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
-         fphr                             =>    carbonflux_vars%fphr_col                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_k                         =>    col_cf%decomp_k                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
+         phr_vr                           =>    col_cf%phr_vr                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
+         fphr                             =>    col_cf%fphr                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          pmnf_decomp_cascade              =>    nitrogenflux_vars%pmnf_decomp_cascade                  , &
          pmpf_decomp_cascade              =>    phosphorusflux_vars%pmpf_decomp_cascade                , & 
          soil_n_immob_flux                =>    nitrogenflux_vars%soil_n_immob_flux                    , &
@@ -695,13 +695,13 @@ contains
          plant_ndemand_col                =>    nitrogenflux_vars%plant_ndemand_col                    , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_col                =>    phosphorusflux_vars%plant_pdemand_col                  , & ! Output:  [real(r8) (:,:) ]
 
-         w_scalar                         =>    carbonflux_vars%w_scalar_col                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
-         decomp_cascade_hr_vr             =>    carbonflux_vars%decomp_cascade_hr_vr_col               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_k                         =>    carbonflux_vars%decomp_k_col                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
-         hr_vr                            =>    carbonflux_vars%hr_vr_col                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
-         phr_vr                           =>    carbonflux_vars%phr_vr_col                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
-         fphr                             =>    carbonflux_vars%fphr_col                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
+         decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_k                         =>    col_cf%decomp_k                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
+         hr_vr                            =>    col_cf%hr_vr                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
+         phr_vr                           =>    col_cf%phr_vr                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
+         fphr                             =>    col_cf%fphr                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
 
          smin_no3_vr                      =>    nitrogenstate_vars%smin_no3_vr_col                     , &
          smin_nh4_vr                      =>    nitrogenstate_vars%smin_nh4_vr_col                       &
@@ -897,8 +897,8 @@ contains
    !
    !-----------------------------------------------------------------------
    associate (&
-         decomp_cascade_hr_vr             =>    carbonflux_vars%decomp_cascade_hr_vr_col               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ntransfer_vr      =>    nitrogenflux_vars%decomp_cascade_ntransfer_vr_col        & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
    )
    ! set zeros for those variables NOT available from PFLOTRAN

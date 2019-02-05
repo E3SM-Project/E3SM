@@ -21,7 +21,7 @@ module CNNitrifDenitrifMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ch4Mod              , only : ch4_type
   use ColumnType          , only : col_pp 
-  use ColumnDataType      , only : col_es, col_ws  
+  use ColumnDataType      , only : col_es, col_ws, col_cf  
   !
   implicit none
   save
@@ -176,9 +176,9 @@ contains
          conc_o2_sat                   =>    ch4_vars%conc_o2_sat_col                            , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)   
          finundated                    =>    ch4_vars%finundated_col                             , & ! Input:  [real(r8) (:)    ]  fractional inundated area in soil column (excluding dedicated wetland columns)
          
-         phr_vr                        =>    carbonflux_vars%phr_vr_col                          , & ! Input:  [real(r8) (:,:)  ]  potential hr (not N-limited)                    
-         w_scalar                      =>    carbonflux_vars%w_scalar_col                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp                    
-         t_scalar                      =>    carbonflux_vars%t_scalar_col                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp                   
+         phr_vr                        =>    col_cf%phr_vr                          , & ! Input:  [real(r8) (:,:)  ]  potential hr (not N-limited)                    
+         w_scalar                      =>    col_cf%w_scalar                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp                    
+         t_scalar                      =>    col_cf%t_scalar                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp                   
 
          smin_nh4_vr                   =>    nitrogenstate_vars%smin_nh4_vr_col                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool                   
          smin_no3_vr                   =>    nitrogenstate_vars%smin_no3_vr_col                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool                   

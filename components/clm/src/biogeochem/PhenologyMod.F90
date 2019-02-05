@@ -34,11 +34,11 @@ module PhenologyMod
   use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : nu_com 
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es, col_ws 
+  use ColumnDataType      , only : col_es, col_ws, col_cf 
   use TopounitDataType    , only : top_af  
   use GridcellType        , only : grc_pp                
   use VegetationType      , only : veg_pp                
-  use VegetationDataType  , only : veg_es, veg_cs
+  use VegetationDataType  , only : veg_es, veg_cs, veg_cf
   
   !
   implicit none
@@ -2809,9 +2809,9 @@ contains
          frootc_to_litter                    =>    veg_cf%frootc_to_litter          , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)                  
          livestemc_to_litter                 =>    veg_cf%livestemc_to_litter       , & ! Input:  [real(r8) (:)   ]  live stem C litterfall (gC/m2/s)                  
 !         grainc_to_food                      =>    veg_cf%grainc_to_food            , & ! Input:  [real(r8) (:)   ]  grain C to food (gC/m2/s)                         
-         phenology_c_to_litr_met_c           =>    carbonflux_vars%phenology_c_to_litr_met_c_col   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
-         phenology_c_to_litr_cel_c           =>    carbonflux_vars%phenology_c_to_litr_cel_c_col   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
-         phenology_c_to_litr_lig_c           =>    carbonflux_vars%phenology_c_to_litr_lig_c_col   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
+         phenology_c_to_litr_met_c           =>    col_cf%phenology_c_to_litr_met_c   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
+         phenology_c_to_litr_cel_c           =>    col_cf%phenology_c_to_litr_cel_c   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
+         phenology_c_to_litr_lig_c           =>    col_cf%phenology_c_to_litr_lig_c   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
 
          livestemn_to_litter                 =>    nitrogenflux_vars%livestemn_to_litter_patch     , & ! Input:  [real(r8) (:)   ]  livestem N to litter (gN/m2/s)                    
 !         grainn_to_food                      =>    nitrogenflux_vars%grainn_to_food_patch          , & ! Input:  [real(r8) (:)   ]  grain N to food (gN/m2/s)                         
@@ -2968,7 +2968,7 @@ contains
    phrv_livestemp_to_prod1p            =>   phosphorusflux_vars%hrv_livestemp_to_prod1p_patch, & ! InOut:  [real(r8) (:)] column level crop carbon harvested
    phrv_grainp_to_prod1p               =>   phosphorusflux_vars%hrv_grainp_to_prod1p_patch , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
    phrv_cropp_to_prod1p                =>   phosphorusflux_vars%hrv_cropp_to_prod1p_patch  , & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
-   chrv_cropc_to_prod1c                =>   carbonflux_vars%hrv_cropc_to_prod1c_col        , & ! InOut:  [real(r8) (:)] column level crop carbon harvested
+   chrv_cropc_to_prod1c                =>   col_cf%hrv_cropc_to_prod1c        , & ! InOut:  [real(r8) (:)] column level crop carbon harvested
    chrv_cropn_to_prod1n                =>   nitrogenflux_vars%hrv_cropn_to_prod1n_col      , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
    chrv_cropp_to_prod1p                =>   phosphorusflux_vars%hrv_cropp_to_prod1p_col      & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
    )

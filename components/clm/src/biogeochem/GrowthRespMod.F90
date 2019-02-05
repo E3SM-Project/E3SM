@@ -10,7 +10,8 @@ module GrowthRespMod
   use pftvarcon        , only : grperc, grpnow, npcropmin
   use VegetationPropertiesType   , only : veg_vp
   use CNCarbonFluxType , only : carbonflux_type
-  use VegetationType        , only : veg_pp                
+  use VegetationType        , only : veg_pp  
+  use VegetationDataType    , only : veg_cf  
   !
   implicit none
   save

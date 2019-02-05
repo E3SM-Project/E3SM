@@ -27,7 +27,7 @@ module controlMod
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact 
   use AllocationMod         , only: suplnitro
   use AllocationMod         , only: suplphos
-  use CNCarbonFluxType        , only: nfix_timeconst
+  use ColumnDataType          , only: nfix_timeconst
   use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
   use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
