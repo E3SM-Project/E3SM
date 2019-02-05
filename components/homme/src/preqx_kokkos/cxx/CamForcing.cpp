@@ -173,5 +173,4 @@ void apply_cam_forcing_dynamics(const Real &dt) {
   GPTLstop("ApplyCAMForcing_dynamics");
 }
 
-// ---------------------------------------- //
-}
+} // namespace Homme

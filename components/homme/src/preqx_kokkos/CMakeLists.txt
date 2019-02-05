@@ -142,10 +142,12 @@ SET(PREQX_DEPS_F90
 )
 
 SET(PREQX_DEPS_CXX
+  ${TARGET_DIR}/cxx/cxx_f90_interface_preqx.cpp
+  ${TARGET_DIR}/cxx/CamForcing.cpp
   ${TARGET_DIR}/cxx/ElementsState.cpp
   ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
+  ${TARGET_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/CamForcing.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/Diagnostics.cpp
   ${SRC_SHARE_DIR}/cxx/Elements.cpp
@@ -161,13 +163,11 @@ SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/ReferenceElement.cpp
   ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
-  ${SRC_SHARE_DIR}/cxx/cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
-  ${SRC_SHARE_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/prim_advec_tracers_remap.cpp
   ${SRC_SHARE_DIR}/cxx/prim_driver.cpp
   ${SRC_SHARE_DIR}/cxx/prim_step.cpp

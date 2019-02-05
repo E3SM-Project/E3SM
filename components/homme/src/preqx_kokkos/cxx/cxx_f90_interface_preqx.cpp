@@ -286,16 +286,10 @@ void init_functors_c ()
 
   // First, sphere operators
   auto& sph_op = Context::singleton().get<SphereOperators>(elems.m_geometry,ref_FE);
-  auto& caar   = Context::singleton().get<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
-  auto& esf    = Context::singleton().get<EulerStepFunctor>();
-  auto& hvf    = Context::singleton().get<HyperviscosityFunctor>();
-  auto& vrm    = Context::singleton().get<VerticalRemapManager>();
-
-  // Silence compiler warnings
-  (void) caar;
-  (void) esf;
-  (void) hvf;
-  (void) vrm;
+  Context::singleton().get<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
+  Context::singleton().get<EulerStepFunctor>();
+  Context::singleton().get<HyperviscosityFunctor>();
+  Context::singleton().get<VerticalRemapManager>();
 }
 
 void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
@@ -313,6 +307,9 @@ void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,   CF90Ptr& elem_state_temp_ptr, CF90Ptr& elem_state_dp3d_ptr,
                              CF90Ptr& elem_state_Qdp_ptr, CF90Ptr& elem_state_ps_v_ptr)
 {
+  if (!Context::singleton().has<Elements>()) {
+    Context::singleton().create<Elements>();
+  }
   Elements& elements = Context::singleton().get<Elements> ();
   elements.m_state.pull_from_f90_pointers(elem_state_v_ptr,elem_state_temp_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
   Tracers &tracers = Context::singleton().get<Tracers>();
@@ -335,6 +332,10 @@ void init_boundary_exchanges_c ()
 {
   SimulationParams& params = Context::singleton().get<SimulationParams>();
 
+  // Create BEs
+  auto  connectivity = Context::singleton().get_ptr<Connectivity>();
+  auto& be_map = Context::singleton().create<BuffersManagerMap>(connectivity);
+
   // Euler BEs
   auto& esf = Context::singleton().get<EulerStepFunctor>();
   esf.reset(params);
@@ -342,8 +343,7 @@ void init_boundary_exchanges_c ()
 
   // RK stages BE's
   auto& cf = Context::singleton().get<CaarFunctor>();
-  auto connectivity = Context::singleton().get_ptr<Connectivity>();
-  cf.init_boundary_exchanges(Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE]);
+  cf.init_boundary_exchanges(be_map[MPI_EXCHANGE]);
 
   // HyperviscosityFunctor's BE's
   auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
