@@ -1394,31 +1394,25 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         !call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         !call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
-         !call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         !call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
+         call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
+         call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-            !basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
-            !surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-            !basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
+            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
+            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
             !OceanDensity (i) = x2g_g % rAttr(, n)
          end do
 
          block => block % next
     end do
-
-
-!Need to loop over blocks
-!Jer: Need to define local pointers to MPAS-LI arrays, get these arrays, and point to them with local pointers
-!Jer: Need to assign local pointers to x2g arrays (as in CESM)
-!Jer: then, need to re-get forcingPool fields and call maps_dmpar_exch_halo_field on them
 
   end subroutine glc_import_mct
 
@@ -1462,16 +1456,35 @@ contains
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
+         call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
+         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          do i = 1, nCellsSolve
             n = n + 1
+
+            !call route_ice_runoff(0.0_RKIND, & !Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), and attach to ice calving flux once present...
+            !                      rofi_to_ocn=Fogg_rofi, &
+            !                      rofi_to_ice=Figg_rofi)
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0 !...and remove these placeholders
+            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
+
             g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
+            g2x_g % rAttr(index_g2x_Sg_tbot, n) = basalTemperature(i)
+            g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
+            g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
+
+	    !!!Mask configurations
             g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
             ! Sg_icemask should be 1 in locations where GLC will use a SMB value
             ! This is cells with ice or bare land (no ocean cells)
