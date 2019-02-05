@@ -21,7 +21,9 @@
 		<stream name="output">
 			<attribute name="output_interval">0000_01:00:00</attribute>
 		</stream>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="land_ice_fluxes">
+			<attribute name="clobber_mode">overwrite</attribute>
 			<attribute name="output_interval">0000_01:00:00</attribute>
 		</stream>
 		<stream name="globalStatsOutput">
