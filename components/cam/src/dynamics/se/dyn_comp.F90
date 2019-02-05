@@ -225,24 +225,26 @@ CONTAINS
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use cam_instance,     only: inst_index
+#ifdef MODEL_THETA_L
+    use element_ops,      only: set_thermostate_from_derived_T
+#endif
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
     type(element_t),    pointer :: elem(:)
 
-    integer :: ithr, nets, nete, ie, k
+    integer :: ithr, nets, nete, ie, k, tlev
     real(r8), parameter :: Tinit=300.0_r8
-    real(r8) :: dyn_ps0
     type(hybrid_t) :: hybrid
+    real(r8) :: temperature(np,np,nlev)
 
     elem  => dyn_in%elem
 
-    dyn_ps0=ps0
     hvcoord%hyam=hyam
     hvcoord%hyai=hyai
     hvcoord%hybm=hybm
     hvcoord%hybi=hybi
-    hvcoord%ps0=dyn_ps0  
+    hvcoord%ps0=ps0  
 
     call set_layer_locations(hvcoord,.false.,par%masterproc)
 
@@ -275,15 +277,21 @@ CONTAINS
           moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
-                elem(ie)%state%ps_v(:,:,:) =dyn_ps0
+                elem(ie)%state%ps_v(:,:,:) =ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
-
-                elem(ie)%state%T(:,:,:,:) =Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
+#ifdef MODEL_THETA_L
+                elem(ie)%derived%T(:,:,:) = Tinit
+                do tlev=1,3
+                   call set_thermostate_from_derived_T(elem(ie),hvcoord,tlev)
+                enddo
+#else
+                elem(ie)%state%T(:,:,:,:) = Tinit 
+#endif                      
 
              end do
           end if

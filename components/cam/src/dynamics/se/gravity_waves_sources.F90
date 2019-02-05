@@ -126,6 +126,7 @@ CONTAINS
     real(kind=real_kind)  ::  gradth(np,np,2,nlev,nets:nete)  ! grad(theta)
     real(kind=real_kind)  :: p(np,np)        ! pressure at mid points
     real(kind=real_kind)  :: theta(np,np)    ! potential temperature at mid points
+    real(kind=real_kind)  ::  temperature(np,np,nlev)
     real(kind=real_kind)  ::  C(np,np,2)     
     
     do ie=nets,nete
@@ -136,7 +137,12 @@ CONTAINS
           
           ! pressure at mid points
           p(:,:)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-          theta(:,:) = elem(ie)%state%T(:,:,k,tl)*(psurf_ref / p(:,:))**kappa
+#ifdef MODEL_THETA_L          
+          temperature(:,:,k) = elem(ie)%derived%T(:,:,k)
+#else
+          temperature(:,:,k) = elem(ie)%state%T(:,:,k,tl)
+#endif
+          theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
           gradth(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
           
           ! compute C = (grad(theta) dot grad ) u
