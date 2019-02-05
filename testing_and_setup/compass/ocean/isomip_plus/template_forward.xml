@@ -39,6 +39,7 @@
 		<option name="config_use_activeTracers_interior_restoring">.true.</option>
 		<option name="config_use_activeTracers_surface_bulk_forcing">.true.</option>
 		<option name="config_check_ssh_consistency">.false.</option>
+		<option name="config_AM_globalStats_text_file">.false.</option>
 		<option name="config_AM_timeSeriesStatsMonthly_enable">.true.</option>
 		<option name="config_AM_timeSeriesStatsMonthly_restart_stream">'none'</option>
 		<option name="config_pio_num_iotasks">2</option>
@@ -109,20 +110,6 @@
 				<member name="landIceInterfaceTracers" type="var_array"/>
 				<member name="accumulatedLandIceMass" type="var"/>
                                 <member name="accumulatedLandIceHeat" type="var"/>
-			</add_contents>
-		</stream>
-		<stream name="timeSeriesStatsMonthlyRestart">
-			<attribute name="name">timeSeriesStatsMonthlyRestart</attribute>
-			<attribute name="filename_interval">output_interval</attribute>
-			<attribute name="clobber_mode">truncate</attribute>
-			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
-			<attribute name="output_interval">none</attribute>
-			<attribute name="filename_template">restarts/restart.AM.timeSeriesStatsMonthly.$Y-$M-$D_$h.$m.$s.nc</attribute>
-			<attribute name="input_interval">initial_only</attribute>
-			<attribute name="type">input;output</attribute>
-			<attribute name="immutable">true</attribute>
-			<attribute name="io_type">pnetcdf</attribute>
-			<add_contents>
 			</add_contents>
 		</stream>
 

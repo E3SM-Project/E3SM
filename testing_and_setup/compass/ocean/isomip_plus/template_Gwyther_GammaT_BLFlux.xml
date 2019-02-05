@@ -20,7 +20,9 @@
 		<option name="config_land_ice_flux_jenkins_salt_transfer_coefficient">@GammaS</option>
 		<option name="config_land_ice_flux_boundaryLayerThickness">2.0</option>
 		<option name="config_land_ice_flux_attenuation_coefficient">@blFlux</option>
-		<option name="config_run_duration">'0001-00-00_00:00:00'</option>
+		<option name="config_dt">'00:02:00'</option>
+		<option name="config_btr_dt">'00:00:05'</option>
+		<option name="config_run_duration">'0000-01-00_00:00:00'</option>
 		<option name="config_pio_num_iotasks">2</option>
 		<option name="config_pio_stride">68</option>
 	</namelist>
@@ -34,5 +36,11 @@
 			<argument flag="graph.info">136</argument>
 		</step>
 		<model_run procs="136" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="./update_evaporationFlux.py">
+			<argument flag="--in_forcing_file">forcing_data_init.nc</argument>
+			<argument flag="--out_forcing_file">forcing_data_updated.nc</argument>
+			<argument flag="--out_forcing_link">forcing_data.nc</argument>
+			<argument flag="--avg_months">3</argument>
+		</step>
 	</run_script>
 </config>
