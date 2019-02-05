@@ -62,6 +62,9 @@ module seq_rest_mod
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
+  use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
+  use prep_glc_mod,    only: prep_glc_get_x2gacc_gx_cnt
+
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
@@ -123,6 +126,8 @@ module seq_rest_mod
   integer        , pointer :: l2racc_lx_cnt
   type(mct_aVect), pointer :: l2gacc_lx(:)
   integer        , pointer :: l2gacc_lx_cnt
+  type(mct_aVect), pointer :: x2gacc_gx(:)
+  integer        , pointer :: x2gacc_gx_cnt
   type(mct_aVect), pointer :: xao_ox(:)
   type(mct_aVect), pointer :: xao_ax(:)
 
@@ -221,6 +226,15 @@ contains
           call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
        end if
+
+       if (ocn_present .and. glc_prognostic) then
+          gsmap         => component_get_gsmap_cx(ocn(1))
+          x2gacc_gx     => prep_glc_get_x2gacc_gx()
+          x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+          call seq_io_read(rest_file, gsmap, x2gacc_gx, 'x2gacc_gx')
+          call seq_io_read(rest_file, x2gacc_gx_cnt ,'x2gacc_gx_cnt')
+       end if
+
        if (ocn_present) then
           gsmap         => component_get_gsmap_cx(ocn(1))
           x2oacc_ox     => prep_ocn_get_x2oacc_ox()
@@ -478,6 +492,15 @@ contains
              call seq_io_write(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx', &
                   whead=whead, wdata=wdata)
              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
+                  whead=whead, wdata=wdata)
+          end if
+          if (ocn_present .and. glc_prognostic) then
+             gsmap         => component_get_gsmap_cx(ocn(1))
+             x2gacc_gx => prep_glc_get_x2gacc_gx()
+             x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+             call seq_io_write(rest_file, gsmap, x2gacc_gx , 'x2gacc_gx', &
+                  whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, x2gacc_gx_cnt, 'x2gacc_gx_cnt', &
                   whead=whead, wdata=wdata)
           end if
           if (ocn_present) then
