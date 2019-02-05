@@ -13,9 +13,10 @@ module CNDVEstablishmentMod
   use CNDVType          , only : dgvs_type, dgv_ecophyscon
   use CNCarbonStateType , only : carbonstate_type
   use CNCarbonFluxType  , only : carbonflux_type
-  use LandunitType      , only : lun_pp                
+  use LandunitType      , only : lun_pp
+  use ColumnDataType    , only : col_cf  
   use VegetationType         , only : veg_pp                
-  use VegetationDataType  , only : veg_cs  
+  use VegetationDataType  , only : veg_cs, veg_cf  
   !
   ! !PUBLIC TYPES:
   implicit none

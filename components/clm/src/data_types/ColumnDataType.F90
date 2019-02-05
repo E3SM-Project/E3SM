@@ -23,11 +23,15 @@ module ColumnDataType
   use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
   use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
+  use clm_varctl      , only : hist_wrtch4diag
+  use clm_varctl      ,  only : get_carbontag
+  use ch4varcon       , only : allowlakeprod
   use clm_time_manager, only : is_restart, get_nstep
-  use clm_time_manager, only : is_first_step
+  use clm_time_manager, only : is_first_step, get_step_size
   use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec  
   use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
+  use histFileMod     , only : hist_addfld_decomp 
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod       , only : bounds_type
   use spmdMod         , only : masterproc
@@ -459,7 +463,7 @@ module ColumnDataType
     procedure, public :: Init       => col_cf_init
     procedure, public :: Restart    => col_cf_restart
     procedure, public :: Summary    => col_cf_summary
-    procedure, public :: SummaryCH4 => col_cf_summary_fo_ch4
+    procedure, public :: SummaryCH4 => col_cf_summary_for_ch4
     procedure, public :: SetValues  => col_cf_setvalues
     procedure, public :: ZeroDWT    => col_cf_zerodwt
     procedure, public :: Clean      => col_cf_clean
@@ -500,6 +504,8 @@ module ColumnDataType
   type(column_energy_flux)           , public, target :: col_ef     ! column energy flux
   type(column_water_flux)            , public, target :: col_wf     ! column water flux
   type(column_carbon_flux)           , public, target :: col_cf     ! column carbon flux
+  type(column_carbon_flux)           , public, target :: c13_col_cf ! column carbon flux
+  type(column_carbon_flux)           , public, target :: c14_col_cf ! column carbon flux
   type(column_nitrogen_flux)         , public, target :: col_nf     ! column nitrogen flux
   type(column_phosphorus_flux)       , public, target :: col_pf     ! column phosphorus flux
 
@@ -3066,7 +3072,7 @@ contains
     character(len=3)  :: ctag
     integer           :: fc                                        ! filter index
     integer           :: num_special_col                           ! number of good values in special_col filter
-    integer           :: special_col(bounds%endc-bounds%begc+1)    ! special landunit filter - columns
+    integer           :: special_col(endc-begc+1)    ! special landunit filter - columns
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -3989,7 +3995,7 @@ contains
     ! set cold-start initial values for select members of col_cf
     !-----------------------------------------------------------------------
 
-    do c = bounds%begc, bounds%endc
+    do c = begc, endc
        l = col_pp%landunit(c)
 
        if (lun_pp%ifspecial(l)) then
@@ -4029,7 +4035,7 @@ contains
 
     ! set special filter
     num_special_col = 0
-    do c = bounds%begc, bounds%endc
+    do c = begc, endc
        l = col_pp%landunit(c)
        if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1

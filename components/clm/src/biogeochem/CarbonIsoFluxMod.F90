@@ -63,8 +63,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
-    type(column_carbon_flux),intent(in)    :: isocol_cf
-    type(vegetation_carbon_flux),intent(in):: isoveg_cf
+    type(column_carbon_flux),intent(inout)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(inout):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi,l,fc,cc,j
@@ -388,12 +388,12 @@ contains
             do j = 1, nlevdecomp
                do l = 1, ndecomp_cascade_transitions
                   if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
-                     isotopeflux_vars%decomp_cascade_hr_vr_col(cc,j,l)  =  &
-                          carbonflux_vars%decomp_cascade_hr_vr_col(cc,j,l) * &
+                     isocol_cf%decomp_cascade_hr_vr(cc,j,l)  =  &
+                          col_cf%decomp_cascade_hr_vr(cc,j,l) * &
                           (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
                          / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
                   else
-                     isotopeflux_vars%decomp_cascade_hr_vr_col(cc,j,l) = 0._r8
+                     isocol_cf%decomp_cascade_hr_vr(cc,j,l) = 0._r8
                   end if
                end do
             end do
@@ -404,12 +404,12 @@ contains
             do j = 1, nlevdecomp
                do l = 1, ndecomp_cascade_transitions
                   if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
-                     isotopeflux_vars%decomp_cascade_ctransfer_vr_col(cc,j,l)  =  &
-                          carbonflux_vars%decomp_cascade_ctransfer_vr_col(cc,j,l) * &
+                     isocol_cf%decomp_cascade_ctransfer_vr(cc,j,l)  =  &
+                          col_cf%decomp_cascade_ctransfer_vr(cc,j,l) * &
                           (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
                           / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
                   else
-                     isotopeflux_vars%decomp_cascade_ctransfer_vr_col(cc,j,l) = 0._r8
+                     isocol_cf%decomp_cascade_ctransfer_vr(cc,j,l) = 0._r8
                   end if
                end do
             end do
@@ -441,8 +441,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
-    type(column_carbon_flux),intent(in)    :: isocol_cf
-    type(vegetation_carbon_flux),intent(in):: isoveg_cf
+    type(column_carbon_flux),intent(inout)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(inout):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: fp,pi
@@ -583,8 +583,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
-    type(column_carbon_flux),intent(in)    :: isocol_cf
-    type(vegetation_carbon_flux),intent(in):: isoveg_cf
+    type(column_carbon_flux),intent(inout)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(inout):: isoveg_cf
     !-----------------------------------------------------------------------
 
     ! patch-level gap mortality fluxes
@@ -734,8 +734,8 @@ contains
     character(len=*)       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
-    type(column_carbon_flux),intent(in)    :: isocol_cf
-    type(vegetation_carbon_flux),intent(in):: isoveg_cf
+    type(column_carbon_flux),intent(inout)    :: isocol_cf
+    type(vegetation_carbon_flux),intent(inout):: isoveg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: pi,pp,l,fc,cc,j
@@ -881,14 +881,14 @@ contains
                   pp = col_pp%pfti(cc) + pi - 1
                   if (veg_pp%active(pp)) then
                      do j = 1, nlevdecomp
-                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
-                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
+                        isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
+                             isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
                              isoveg_cf%m_deadstemc_to_litter_fire(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
-                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
-                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
+                        isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
+                             isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
                              isoveg_cf%m_deadcrootc_to_litter_fire(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
-                        isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
-                             isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
+                        isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
+                             isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
                              isoveg_cf%m_cpool_to_litter_fire(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
 
                      end do
@@ -903,11 +903,11 @@ contains
             do j = 1, nlevdecomp
                do l = 1, ndecomp_pools
                   if ( col_cs%decomp_cpools_vr(cc,j,l) /= 0._r8) then
-                     isotopeflux_vars%m_decomp_cpools_to_fire_vr_col(cc,j,l)  =  &
-                          carbonflux_vars%m_decomp_cpools_to_fire_vr_col(cc,j,l) * &
+                     isocol_cf%m_decomp_cpools_to_fire_vr(cc,j,l)  =  &
+                          col_cf%m_decomp_cpools_to_fire_vr(cc,j,l) * &
                           (isocol_cs%decomp_cpools_vr(cc,j,l) / col_cs%decomp_cpools_vr(cc,j,l)) * 1._r8
                   else
-                     isotopeflux_vars%m_decomp_cpools_to_fire_vr_col(cc,j,l) = 0._r8
+                     isocol_cf%m_decomp_cpools_to_fire_vr(cc,j,l) = 0._r8
                   end if
                end do
             end do
@@ -952,9 +952,9 @@ contains
          
          leafc_to_litter           =>    veg_cf%leafc_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
          frootc_to_litter          =>    veg_cf%frootc_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
-         phenology_c_to_litr_met_c =>    carbonflux_vars%phenology_c_to_litr_met_c_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
-         phenology_c_to_litr_cel_c =>    carbonflux_vars%phenology_c_to_litr_cel_c_col , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
-         phenology_c_to_litr_lig_c =>    carbonflux_vars%phenology_c_to_litr_lig_c_col   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
+         phenology_c_to_litr_met_c =>    col_cf%phenology_c_to_litr_met_c , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
+         phenology_c_to_litr_cel_c =>    col_cf%phenology_c_to_litr_cel_c , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
+         phenology_c_to_litr_lig_c =>    col_cf%phenology_c_to_litr_lig_c   & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
          )
 
       do j = 1, nlevdecomp
@@ -1048,10 +1048,10 @@ contains
           m_deadcrootc_xfer_to_litter    =>    veg_cf%m_deadcrootc_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
           m_gresp_xfer_to_litter         =>    veg_cf%m_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
           m_cpool_to_litter              =>    veg_cf%m_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]  
-          gap_mortality_c_to_litr_met_c  =>    carbonflux_vars%gap_mortality_c_to_litr_met_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
-          gap_mortality_c_to_litr_cel_c  =>    carbonflux_vars%gap_mortality_c_to_litr_cel_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
-          gap_mortality_c_to_litr_lig_c  =>    carbonflux_vars%gap_mortality_c_to_litr_lig_c_col    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
-          gap_mortality_c_to_cwdc        =>    carbonflux_vars%gap_mortality_c_to_cwdc_col            & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
+          gap_mortality_c_to_litr_met_c  =>    col_cf%gap_mortality_c_to_litr_met_c    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
+          gap_mortality_c_to_litr_cel_c  =>    col_cf%gap_mortality_c_to_litr_cel_c    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
+          gap_mortality_c_to_litr_lig_c  =>    col_cf%gap_mortality_c_to_litr_lig_c    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
+          gap_mortality_c_to_cwdc        =>    col_cf%gap_mortality_c_to_cwdc            & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
           )
           
        do j = 1, nlevdecomp
@@ -1197,12 +1197,12 @@ contains
           hrv_gresp_xfer_to_litter         =>    veg_cf%hrv_gresp_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
           hrv_cpool_to_litter              =>    veg_cf%hrv_cpool_to_litter              , & ! Input:  [real(r8) (:)   ]      
 
-          chrv_deadstemc_to_prod10c        =>    carbonflux_vars%hrv_deadstemc_to_prod10c_col           , & ! InOut:  [real(r8) (:)   ]                                                    
-          chrv_deadstemc_to_prod100c       =>    carbonflux_vars%hrv_deadstemc_to_prod100c_col          , & ! InOut:  [real(r8) (:)   ]                                                    
-          harvest_c_to_litr_met_c          =>    carbonflux_vars%harvest_c_to_litr_met_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
-          harvest_c_to_litr_cel_c          =>    carbonflux_vars%harvest_c_to_litr_cel_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
-          harvest_c_to_litr_lig_c          =>    carbonflux_vars%harvest_c_to_litr_lig_c_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
-          harvest_c_to_cwdc                =>    carbonflux_vars%harvest_c_to_cwdc_col                    & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
+          chrv_deadstemc_to_prod10c        =>    col_cf%hrv_deadstemc_to_prod10c           , & ! InOut:  [real(r8) (:)   ]                                                    
+          chrv_deadstemc_to_prod100c       =>    col_cf%hrv_deadstemc_to_prod100c          , & ! InOut:  [real(r8) (:)   ]                                                    
+          harvest_c_to_litr_met_c          =>    col_cf%harvest_c_to_litr_met_c            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
+          harvest_c_to_litr_cel_c          =>    col_cf%harvest_c_to_litr_cel_c            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
+          harvest_c_to_litr_lig_c          =>    col_cf%harvest_c_to_litr_lig_c            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+          harvest_c_to_cwdc                =>    col_cf%harvest_c_to_cwdc                    & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
           )
 
        do j = 1, nlevdecomp

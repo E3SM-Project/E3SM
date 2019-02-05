@@ -46,9 +46,9 @@ module FireMod
   use GridcellType           , only : grc_pp
   use TopounitDataType       , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es, col_ws, col_cs  
+  use ColumnDataType         , only : col_es, col_ws, col_cs, col_cf 
   use VegetationType         , only : veg_pp                
-  use VegetationDataType     , only : veg_cs  
+  use VegetationDataType     , only : veg_cs, veg_cf  
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
@@ -858,8 +858,8 @@ contains
         retransp                            =>    phosphorusstate_vars%retransp_patch                           , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of retranslocated P            
         ppool                               =>    phosphorusstate_vars%ppool_patch                              , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of storage P            
 
-        fire_mortality_c_to_cwdc            =>    carbonflux_vars%fire_mortality_c_to_cwdc_col                , & ! Input:  [real(r8) (:,:)   ]  C flux fire mortality to CWD (gC/m3/s)
-        somc_fire                           =>    carbonflux_vars%somc_fire_col                               , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) fire C emissions due to peat burning
+        fire_mortality_c_to_cwdc            =>    col_cf%fire_mortality_c_to_cwdc                , & ! Input:  [real(r8) (:,:)   ]  C flux fire mortality to CWD (gC/m3/s)
+        somc_fire                           =>    col_cf%somc_fire                               , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) fire C emissions due to peat burning
         m_leafc_to_fire                     =>    veg_cf%m_leafc_to_fire                       , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) fire C emis. from leafc	    
         m_leafc_storage_to_fire             =>    veg_cf%m_leafc_storage_to_fire               , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) fire C emis. from leafc_storage   
         m_leafc_xfer_to_fire                =>    veg_cf%m_leafc_xfer_to_fire                  , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) fire C emis. from leafc_xfer	    
@@ -952,10 +952,10 @@ contains
         m_gresp_storage_to_litter_fire      =>    veg_cf%m_gresp_storage_to_litter_fire        , & ! Output: [real(r8) (:)     ]                                                    
         m_gresp_xfer_to_litter_fire         =>    veg_cf%m_gresp_xfer_to_litter_fire           , & ! Output: [real(r8) (:)     ]                             
         m_cpool_to_litter_fire              =>    veg_cf%m_cpool_to_litter_fire                , & ! Output: [real(r8) (:)     ]                       
-        m_decomp_cpools_to_fire_vr          =>    carbonflux_vars%m_decomp_cpools_to_fire_vr_col              , & ! Output: [real(r8) (:,:,:) ]  (gC/m3/s) VR decomp. C fire loss
-        m_c_to_litr_met_fire                =>    carbonflux_vars%m_c_to_litr_met_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_c_to_litr_cel_fire                =>    carbonflux_vars%m_c_to_litr_cel_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_c_to_litr_lig_fire                =>    carbonflux_vars%m_c_to_litr_lig_fire_col                      & ! Output: [real(r8) (:,:)   ]
+        m_decomp_cpools_to_fire_vr          =>    col_cf%m_decomp_cpools_to_fire_vr              , & ! Output: [real(r8) (:,:,:) ]  (gC/m3/s) VR decomp. C fire loss
+        m_c_to_litr_met_fire                =>    col_cf%m_c_to_litr_met_fire                    , & ! Output: [real(r8) (:,:)   ]                                                  
+        m_c_to_litr_cel_fire                =>    col_cf%m_c_to_litr_cel_fire                    , & ! Output: [real(r8) (:,:)   ]                                                  
+        m_c_to_litr_lig_fire                =>    col_cf%m_c_to_litr_lig_fire                      & ! Output: [real(r8) (:,:)   ]
 
         )
 

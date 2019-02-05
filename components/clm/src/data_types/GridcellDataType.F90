@@ -68,7 +68,7 @@ module GridcellDataType
   end type gridcell_water_state
   
   !-----------------------------------------------------------------------
-  ! Define the data structure that holds energy flux information at the gridcell level.
+  ! Define the data structure that holds water flux information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_water_flux
     ! Dynamic land cover change
@@ -101,13 +101,38 @@ module GridcellDataType
   end type gridcell_carbon_state
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds carbon flux information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_carbon_flux
+    ! Dynamic land cover change
+    real(r8), pointer :: dwt_seedc_to_leaf          (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_seedc_to_deadstem      (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_conv_cflux             (:) => null()  ! (gC/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_conv_cflux_dribbled    (:) => null()  ! (gC/m2/s) dwt_conv_cflux dribbled evenly throughout the year
+    real(r8), pointer :: dwt_prod10c_gain           (:) => null()  ! (gC/m2/s) dynamic landcover addition to 10-year wood product pool
+    real(r8), pointer :: dwt_prod100c_gain          (:) => null()  ! (gC/m2/s) dynamic landcover addition to 100-year wood product pool
+    real(r8), pointer :: hrv_deadstemc_to_prod10c   (:) => null()  ! (gC/m2/s) dead stem harvest to 10-year wood product pool
+    real(r8), pointer :: hrv_deadstemc_to_prod100c  (:) => null()  ! (gC/m2/s) dead stem harvest to 100-year wood product pool
+
+  contains
+    procedure, public :: Init    => grc_cf_init
+    procedure, public :: ZeroDWT => grc_cf_zerodwt
+    procedure, public :: Clean   => grc_cf_clean
+  end type gridcell_carbon_flux
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
-  type(gridcell_energy_state)          , public, target :: grc_es    ! gridcell energy state
-  type(gridcell_energy_flux)           , public, target :: grc_ef    ! gridcell energy flux
-  type(gridcell_water_state)           , public, target :: grc_ws    ! gridcell water state
-  type(gridcell_water_flux)            , public, target :: grc_wf    ! gridcell water flux
-  type(gridcell_carbon_state)          , public, target :: grc_cs    ! gridcell carbon state
+  type(gridcell_energy_state)          , public, target :: grc_es     ! gridcell energy state
+  type(gridcell_energy_flux)           , public, target :: grc_ef     ! gridcell energy flux
+  type(gridcell_water_state)           , public, target :: grc_ws     ! gridcell water state
+  type(gridcell_water_flux)            , public, target :: grc_wf     ! gridcell water flux
+  type(gridcell_carbon_state)          , public, target :: grc_cs     ! gridcell carbon state
+  type(gridcell_carbon_state)          , public, target :: c13_grc_cs ! gridcell carbon state (C13)
+  type(gridcell_carbon_state)          , public, target :: c14_grc_cs ! gridcell carbon state (C14)
+  type(gridcell_carbon_flux)           , public, target :: grc_cf     ! gridcell carbon flux
+  type(gridcell_carbon_flux)           , public, target :: c13_grc_cf ! gridcell carbon flux (C13)
+  type(gridcell_carbon_flux)           , public, target :: c14_grc_cf ! gridcell carbon flux (C14)
   !------------------------------------------------------------------------
 
 contains
@@ -367,7 +392,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_cs
     !-----------------------------------------------------------------------
-    allocate(this%seedc   (begg:endg)) ;    this%seedc   (:) = nan
+    allocate(this%seedc   (begg:endg));     this%seedc   (:) = nan
     allocate(this%begcb   (begg:endg));     this%begcb   (:) = nan
     allocate(this%endcb   (begg:endg));     this%endcb   (:) = nan
     allocate(this%errcb   (begg:endg));     this%errcb   (:) = nan
@@ -403,6 +428,236 @@ contains
     deallocate(this%errcb)
 
   end subroutine grc_cs_clean
+
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell carbon flux data structure
+  !------------------------------------------------------------------------
+  subroutine grc_cf_init(this, begg, endg, carbon_type)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_carbon_flux) :: this
+    integer, intent(in) :: begg,endg
+    character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g
+    !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_cf
+    !-----------------------------------------------------------------------
+    allocate(this%dwt_seedc_to_leaf            (begg:endg)) ; this%dwt_seedc_to_leaf            (:) = nan
+    allocate(this%dwt_seedc_to_deadstem        (begg:endg)) ; this%dwt_seedc_to_deadstem        (:) = nan
+    allocate(this%dwt_conv_cflux               (begg:endg)) ; this%dwt_conv_cflux               (:) = nan
+    allocate(this%dwt_conv_cflux_dribbled      (begg:endg)) ; this%dwt_conv_cflux_dribbled      (:) = nan
+    allocate(this%dwt_prod10c_gain             (begg:endg)) ; this%dwt_prod10c_gain             (:) = nan
+    allocate(this%dwt_prod100c_gain            (begg:endg)) ; this%dwt_prod100c_gain            (:) = nan
+    allocate(this%hrv_deadstemc_to_prod10c     (begg:endg)) ; this%hrv_deadstemc_to_prod10c     (:) = nan
+    allocate(this%hrv_deadstemc_to_prod100c    (begg:endg)) ; this%hrv_deadstemc_to_prod100c    (:) = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_cf
+    !-----------------------------------------------------------------------
+    ! no history fields or cold-start initialization for gridcell carbon flux
+    ! if using fates
+    if (use_fates) then
+       return
+    end if
+
+    if (carbon_type == 'c12') then
+
+       this%dwt_seedc_to_leaf(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_SEEDC_TO_LEAF_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='seed source to patch-level leaf', &
+            ptr_gcell=this%dwt_seedc_to_leaf, default='inactive')
+
+       this%dwt_seedc_to_deadstem(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_SEEDC_TO_DEADSTEM_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='seed source to patch-level deadstem', &
+            ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
+
+       this%dwt_conv_cflux(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_CONV_CFLUX_GRC', units='gC/m^2/s', &
+            avgflag='A', &
+            long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
+            ptr_gcell=this%dwt_conv_cflux)
+
+       this%dwt_conv_cflux_dribbled(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_CONV_CFLUX_DRIBBLED', units='gC/m^2/s', &
+            avgflag='A', &
+            long_name='conversion C flux (immediate loss to atm), dribbled throughout the year', &
+            ptr_gcell=this%dwt_conv_cflux_dribbled)
+
+       this%dwt_prod10c_gain(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_PROD10C_GAIN_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain, default='inactive')
+
+       this%dwt_prod100c_gain(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_PROD100C_GAIN_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%hrv_deadstemc_to_prod10c(begg:endg) = spval
+       call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD10C_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='dead stem harvest to 10-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+
+       this%hrv_deadstemc_to_prod100c(begg:endg) = spval
+       call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD100C_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='dead stem harvest to 100-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+    end if
+
+    if ( carbon_type == 'c13' ) then
+
+       this%dwt_seedc_to_leaf(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_LEAF_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 seed source to patch-level leaf', &
+            ptr_gcell=this%dwt_seedc_to_leaf, default='inactive')
+
+       this%dwt_seedc_to_deadstem(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 seed source to patch-level deadstem', &
+            ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
+
+       this%dwt_conv_cflux(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX_GRC', units='gC13/m^2/s', &
+            avgflag='A', &
+            long_name='C13 conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
+            ptr_gcell=this%dwt_conv_cflux)
+
+       this%dwt_conv_cflux_dribbled(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX_DRIBBLED', units='gC13/m^2/s', &
+            avgflag='A', &
+            long_name='C13 conversion C flux (immediate loss to atm), dribbled throughout the year', &
+            ptr_gcell=this%dwt_conv_cflux_dribbled)
+
+       this%dwt_seedc_to_deadstem(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 seed source to patch-level deadstem', &
+            ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
+
+       this%dwt_prod10c_gain(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain, default='inactive')
+
+       this%dwt_prod100c_gain(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_PROD100C_GAIN_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%hrv_deadstemc_to_prod10c(begg:endg) = spval
+       call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 dead stem harvest to 10-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+
+       this%hrv_deadstemc_to_prod100c(begg:endg) = spval
+       call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD100C_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 dead stem harvest to 100-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+    endif
+
+    if (carbon_type == 'c14') then
+
+       this%dwt_seedc_to_leaf(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_LEAF_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 seed source to patch-level leaf', &
+            ptr_gcell=this%dwt_seedc_to_leaf, default='inactive')
+
+       this%dwt_seedc_to_deadstem(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 seed source to patch-level deadstem', &
+            ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
+
+       this%dwt_conv_cflux(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX_GRC', units='gC14/m^2/s', &
+            avgflag='A', &
+            long_name='C14 conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
+            ptr_gcell=this%dwt_conv_cflux)
+
+       this%dwt_conv_cflux_dribbled(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX_DRIBBLED', units='gC14/m^2/s', &
+            avgflag='A', &
+            long_name='C14 conversion C flux (immediate loss to atm), dribbled throughout the year', &
+            ptr_gcell=this%dwt_conv_cflux_dribbled)
+
+       this%dwt_seedc_to_deadstem(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 seed source to patch-level deadstem', &
+            ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
+
+       this%dwt_prod10c_gain(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_PROD10C_GAIN_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 landcover change-driven addition to 10-yr wood product pool', &
+            ptr_col=this%dwt_prod10c_gain, default='inactive')
+
+       this%dwt_prod100c_gain(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 landcover change-driven addition to 100-yr wood product pool', &
+            ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%hrv_deadstemc_to_prod10c(begg:endg) = spval
+       call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 dead stem harvest to 10-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+
+       this%hrv_deadstemc_to_prod100c(begg:endg) = spval
+       call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD100C_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 dead stem harvest to 100-yr wood product pool', &
+            ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+    endif
+    
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of grc_cf
+    !-----------------------------------------------------------------------
+    do g = begg, endg
+       this%dwt_prod10c_gain(g)          = 0._r8
+       this%dwt_prod100c_gain(g)         = 0._r8
+       this%hrv_deadstemc_to_prod10c(g)  = 0._r8
+       this%hrv_deadstemc_to_prod100c(g) = 0._r8
+    end do
+    
+  end subroutine grc_cf_init
+  
+  !-----------------------------------------------------------------------
+  subroutine grc_cf_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize flux variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(gridcell_carbon_flux)      :: this
+    type(bounds_type), intent(in)  :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g          ! indices
+    !-----------------------------------------------------------------------
+
+    ! set column-level conversion and product pool fluxes
+    ! to 0 at the beginning of every timestep
+
+    do g = bounds%begg, bounds%endg
+       this%dwt_seedc_to_leaf(g)         = 0._r8
+       this%dwt_seedc_to_deadstem(g)     = 0._r8
+       this%dwt_conv_cflux(g)            = 0._r8
+       this%dwt_prod10c_gain(g)          = 0._r8
+       this%dwt_prod100c_gain(g)         = 0._r8
+       this%hrv_deadstemc_to_prod10c(g)  = 0._r8
+       this%hrv_deadstemc_to_prod100c(g) = 0._r8
+    end do
+
+  end subroutine grc_cf_zerodwt
+
+  !------------------------------------------------------------------------
+  subroutine grc_cf_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_carbon_flux) :: this
+    !------------------------------------------------------------------------
+
+  end subroutine grc_cf_clean
 
 
 end module GridcellDataType

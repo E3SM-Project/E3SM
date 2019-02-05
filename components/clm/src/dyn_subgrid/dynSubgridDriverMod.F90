@@ -39,6 +39,7 @@ module dynSubgridDriverMod
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
 
+  use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
   use ColumnDataType      , only : column_carbon_state, col_cf
   use VegetationDataType  , only : vegetation_carbon_state
 
@@ -155,6 +156,7 @@ contains
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
        col_cs, c13_col_cs, c14_col_cs, &
+       grc_cs, grc_cf, &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,&
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
@@ -203,9 +205,11 @@ contains
     type(vegetation_carbon_state), intent(inout) :: veg_cs
     type(vegetation_carbon_state), intent(inout) :: c13_veg_cs
     type(vegetation_carbon_state), intent(inout) :: c14_veg_cs
-    type(column_carbon_state), intent(inout) :: col_cs
-    type(column_carbon_state), intent(inout) :: c13_col_cs
-    type(column_carbon_state), intent(inout) :: c14_col_cs
+    type(column_carbon_state)    , intent(inout) :: col_cs
+    type(column_carbon_state)    , intent(inout) :: c13_col_cs
+    type(column_carbon_state)    , intent(inout) :: c14_col_cs
+    type(gridcell_carbon_state)  , intent(inout) :: grc_cs
+    type(gridcell_carbon_flux)   , intent(inout) :: grc_cf
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
@@ -321,7 +325,7 @@ contains
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               carbonflux_vars, col_cs, col_cf)
+               grc_cs, grc_cf, col_cs, col_cf)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &

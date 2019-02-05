@@ -75,15 +75,15 @@ contains
                    c = filter_soilc(fc)
                    ! pft-level wood to column-level CWD (uncombusted wood)
                    csv2%decomp_cpools_vr(c,j,i_cwd) = csv2%decomp_cpools_vr(c,j,i_cwd) &
-                        + cf%fire_mortality_c_to_cwdc_col(c,j) * dt
+                        + ccfv2%fire_mortality_c_to_cwdc(c,j) * dt
 
                    ! pft-level wood to column-level litter (uncombusted wood)
                    csv2%decomp_cpools_vr(c,j,i_met_lit) = csv2%decomp_cpools_vr(c,j,i_met_lit) &
-                        + cf%m_c_to_litr_met_fire_col(c,j)* dt
+                        + ccfv2%m_c_to_litr_met_fire(c,j)* dt
                    csv2%decomp_cpools_vr(c,j,i_cel_lit) = csv2%decomp_cpools_vr(c,j,i_cel_lit) &
-                        + cf%m_c_to_litr_cel_fire_col(c,j)* dt
+                        + ccfv2%m_c_to_litr_cel_fire(c,j)* dt
                    csv2%decomp_cpools_vr(c,j,i_lig_lit) = csv2%decomp_cpools_vr(c,j,i_lig_lit) &
-                        + cf%m_c_to_litr_lig_fire_col(c,j)* dt
+                        + ccfv2%m_c_to_litr_lig_fire(c,j)* dt
                 end do
              end do
          end if !(.not.(use_pflotran .and. pf_cmode))
@@ -93,7 +93,7 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  csv2%decomp_cpools_vr(c,j,l) = csv2%decomp_cpools_vr(c,j,l) - cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
+                  csv2%decomp_cpools_vr(c,j,l) = csv2%decomp_cpools_vr(c,j,l) - ccfv2%m_decomp_cpools_to_fire_vr(c,j,l) * dt
                end do
             end do
          end do

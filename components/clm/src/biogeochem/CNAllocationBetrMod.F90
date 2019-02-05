@@ -27,9 +27,11 @@ module CNAllocationBeTRMod
   use CropType            , only : crop_type
   use VegetationPropertiesType, only : veg_vp
   use LandunitType        , only : lun_pp                
-  use ColumnType          , only : col_pp                
+  use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_cf  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs, veg_cf
+  use VegetationDataType  , only : veg_cs
+  use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   
   ! bgc interface & pflotran module switches
   use clm_varctl          , only : nu_com
@@ -559,8 +561,8 @@ contains
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
          isoilorder                   => cnstate_vars%isoilorder                               , &
          slatop                       => veg_vp%slatop                                     , &
-         t_scalar                     => carbonflux_vars%t_scalar_col                          , &
-         w_scalar                     => carbonflux_vars%w_scalar_col                          , &
+         t_scalar                     => col_cf%t_scalar                          , &
+         w_scalar                     => col_cf%w_scalar                          , &
          leafn                        => nitrogenstate_vars%leafn_patch                          &
          )
       secondp_vr                   => phosphorusstate_vars%secondp_vr_col
@@ -623,13 +625,13 @@ contains
          psnshade_to_cpool(p) = psnsha(p) * laisha(p) * 12.011e-6_r8
 
          if ( use_c13 ) then
-            c13vcfv2%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c13vcfv2%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c13_veg_cf%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
+            c13_veg_cf%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
          endif
 
          if ( use_c14 ) then
-            c14vcfv2%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c14vcfv2%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c14_veg_cf%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
+            c14_veg_cf%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
          endif
 
          gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
@@ -1017,7 +1019,7 @@ contains
      leafc                        => veg_cs%leafc                     , & ! Input:  [real(r8) (:)   ]
      leafc_storage                => veg_cs%leafc_storage             , &
      leafc_xfer                   => veg_cs%leafc_xfer                , &
-     t_scalar                     => carbonflux_vars%t_scalar_col                     , &
+     t_scalar                     => col_cf%t_scalar                     , &
      leafn                        => nitrogenstate_vars%leafn_patch                   , &
      leafn_storage                => nitrogenstate_vars%leafn_storage_patch           , &
      leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch              , &
@@ -1294,7 +1296,7 @@ contains
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => veg_cf%cpool_to_xsmrpool               , &
-         w_scalar                     => carbonflux_vars%w_scalar_col                          , &
+         w_scalar                     => col_cf%w_scalar                          , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , &
          leaf_mr                      => veg_cf%leaf_mr                         , &
          froot_mr                     => veg_cf%froot_mr                        , &

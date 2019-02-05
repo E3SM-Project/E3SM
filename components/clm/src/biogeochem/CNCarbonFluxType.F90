@@ -922,33 +922,6 @@ contains
     ! ------------------------------------------------------------------------------------
     if (use_fates) then
        if (carbon_type == 'c12') then
-          this%som_c_leached_col(begc:endc) = spval
-          call hist_addfld1d (fname='SOM_C_LEACHED', units='gC/m^2/s', &
-               avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
-               ptr_col=this%som_c_leached_col)!, default='inactive')
-          
-          if ( nlevdecomp_full > 1 ) then
-             this%hr_vr_col(begc:endc,:) = spval
-             call hist_addfld2d (fname='HR_vr', units='gC/m^3/s', type2d='levdcmp', &
-                  avgflag='A', long_name='total vertically resolved heterotrophic respiration', &
-                  ptr_col=this%hr_vr_col)
-          end if
-
-          this%lithr_col(begc:endc) = spval
-          call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
-               avgflag='A', long_name='litter heterotrophic respiration', &
-               ptr_col=this%lithr_col)
-          
-          this%somhr_col(begc:endc) = spval
-          call hist_addfld1d (fname='SOMHR', units='gC/m^2/s', &
-               avgflag='A', long_name='soil organic matter heterotrophic respiration', &
-               ptr_col=this%somhr_col)
-          
-          this%hr_col(begc:endc) = spval
-          call hist_addfld1d (fname='HR', units='gC/m^2/s', &
-               avgflag='A', long_name='total heterotrophic respiration', &
-               ptr_col=this%hr_col)
-
        end if
 
        return
@@ -958,6 +931,7 @@ contains
 
 
     if (carbon_type == 'c12') then
+    end if
 
     !-------------------------------
     ! C13 flux variables - native to PFT
@@ -970,6 +944,7 @@ contains
     !-------------------------------
     if ( carbon_type == 'c14' ) then
 
+    end if
 
     !-------------------------------
     ! C flux variables - native to column 
@@ -977,163 +952,16 @@ contains
 
     ! add history fields for all CLAMP CN variables
 
-    if (carbon_type == 'c12') then
-
-       this%dwt_seedc_to_leaf_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_SEEDC_TO_LEAF_GRC', units='gC/m^2/s', &
-            avgflag='A', long_name='seed source to patch-level leaf', &
-            ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_SEEDC_TO_DEADSTEM_GRC', units='gC/m^2/s', &
-            avgflag='A', long_name='seed source to patch-level deadstem', &
-            ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_CONV_CFLUX_GRC', units='gC/m^2/s', &
-            avgflag='A', &
-            long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
-
-       this%dwt_conv_cflux_dribbled_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_CONV_CFLUX_DRIBBLED', units='gC/m^2/s', &
-            avgflag='A', &
-            long_name='conversion C flux (immediate loss to atm), dribbled throughout the year', &
-            ptr_gcell=this%dwt_conv_cflux_dribbled_grc)
-
-       this%dwt_prod10c_gain_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_PROD10C_GAIN_GRC', units='gC/m^2/s', &
-            avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-            ptr_col=this%dwt_prod10c_gain_grc, default='inactive')
-
-       this%dwt_prod100c_gain_grc(begg:endg) = spval
-       call hist_addfld1d (fname='DWT_PROD100C_GAIN_GRC', units='gC/m^2/s', &
-            avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-            ptr_col=this%dwt_prod100c_gain_grc, default='inactive')
-
-       this%hrv_deadstemc_to_prod10c_grc(begg:endg) = spval
-       call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD10C_GRC', units='gC/m^2/s', &
-            avgflag='A', long_name='dead stem harvest to 10-yr wood product pool', &
-            ptr_col=this%hrv_deadstemc_to_prod10c_grc, default='inactive')
-
-       this%hrv_deadstemc_to_prod100c_grc(begg:endg) = spval
-       call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD100C_GRC', units='gC/m^2/s', &
-            avgflag='A', long_name='dead stem harvest to 100-yr wood product pool', &
-            ptr_col=this%hrv_deadstemc_to_prod100c_grc, default='inactive')
-
-       
-    end if
 
     !-------------------------------
     ! C13 flux variables - native to column 
     !-------------------------------
 
-    if ( carbon_type == 'c13' ) then
-
-
-       this%dwt_seedc_to_leaf_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_LEAF_GRC', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 seed source to patch-level leaf', &
-            ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 seed source to patch-level deadstem', &
-            ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX_GRC', units='gC13/m^2/s', &
-            avgflag='A', &
-            long_name='C13 conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
-
-       this%dwt_conv_cflux_dribbled_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_CONV_CFLUX_DRIBBLED', units='gC13/m^2/s', &
-            avgflag='A', &
-            long_name='C13 conversion C flux (immediate loss to atm), dribbled throughout the year', &
-            ptr_gcell=this%dwt_conv_cflux_dribbled_grc)
-
-       this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_SEEDC_TO_DEADSTEM', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 seed source to patch-level deadstem', &
-            ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_prod10c_gain_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN_GRC', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 landcover change-driven addition to 10-yr wood product pool', &
-            ptr_col=this%dwt_prod10c_gain_grc, default='inactive')
-
-       this%dwt_prod100c_gain_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_DWT_PROD100C_GAIN_GRC', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 landcover change-driven addition to 100-yr wood product pool', &
-            ptr_col=this%dwt_prod100c_gain_grc, default='inactive')
-
-       this%hrv_deadstemc_to_prod10c_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 dead stem harvest to 10-yr wood product pool', &
-            ptr_col=this%hrv_deadstemc_to_prod10c_grc, default='inactive')
-
-       this%hrv_deadstemc_to_prod100c_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD100C_GRC', units='gC13/m^2/s', &
-            avgflag='A', long_name='C13 dead stem harvest to 100-yr wood product pool', &
-            ptr_col=this%hrv_deadstemc_to_prod100c_grc, default='inactive')
-    endif
 
     !-------------------------------
     ! C14 flux variables - native to column 
     !-------------------------------
 
-    if (carbon_type == 'c14') then
-
-
-
-       this%dwt_seedc_to_leaf_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_LEAF_GRC', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 seed source to patch-level leaf', &
-            ptr_gcell=this%dwt_seedc_to_leaf_grc, default='inactive')
-
-       this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM_GRC', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 seed source to patch-level deadstem', &
-            ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_conv_cflux_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX_GRC', units='gC14/m^2/s', &
-            avgflag='A', &
-            long_name='C14 conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-            ptr_gcell=this%dwt_conv_cflux_grc)
-
-       this%dwt_conv_cflux_dribbled_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_CONV_CFLUX_DRIBBLED', units='gC14/m^2/s', &
-            avgflag='A', &
-            long_name='C14 conversion C flux (immediate loss to atm), dribbled throughout the year', &
-            ptr_gcell=this%dwt_conv_cflux_dribbled_grc)
-
-       this%dwt_seedc_to_deadstem_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_SEEDC_TO_DEADSTEM', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 seed source to patch-level deadstem', &
-            ptr_gcell=this%dwt_seedc_to_deadstem_grc, default='inactive')
-
-       this%dwt_prod10c_gain_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_PROD10C_GAIN_GRC', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 landcover change-driven addition to 10-yr wood product pool', &
-            ptr_col=this%dwt_prod10c_gain_grc, default='inactive')
-
-       this%dwt_prod100c_gain_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN_GRC', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 landcover change-driven addition to 100-yr wood product pool', &
-            ptr_col=this%dwt_prod100c_gain_grc, default='inactive')
-
-       this%hrv_deadstemc_to_prod10c_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 dead stem harvest to 10-yr wood product pool', &
-            ptr_col=this%hrv_deadstemc_to_prod10c_grc, default='inactive')
-
-       this%hrv_deadstemc_to_prod100c_grc(begg:endg) = spval
-       call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD100C_GRC', units='gC14/m^2/s', &
-            avgflag='A', long_name='C14 dead stem harvest to 100-yr wood product pool', &
-            ptr_col=this%hrv_deadstemc_to_prod100c_grc, default='inactive')
-    endif
 
 
   end subroutine InitHistory

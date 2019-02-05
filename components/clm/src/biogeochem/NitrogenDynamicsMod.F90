@@ -14,7 +14,7 @@ module NitrogenDynamicsMod
   use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type, nfix_timeconst
+  use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
@@ -22,7 +22,8 @@ module NitrogenDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es, col_ws, col_wf  
+  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf 
+  use ColumnDataType      , only : nfix_timeconst  
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs  
   use VegetationPropertiesType  , only : veg_vp
@@ -180,8 +181,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         cannsum_npp    => carbonflux_vars%annsum_npp_col      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
-         col_lag_npp    => carbonflux_vars%lag_npp_col         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
+         cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
+         col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
 
          qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
          
@@ -664,7 +665,7 @@ contains
          benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
          t_soi10cm_col         => col_es%t_soi10cm       , &
          h2osoi_vol            => col_ws%h2osoi_vol       , &
-         t_scalar              => carbonflux_vars%t_scalar_col           &
+         t_scalar              => col_cf%t_scalar           &
          )
 
       do fc=1,num_soilc

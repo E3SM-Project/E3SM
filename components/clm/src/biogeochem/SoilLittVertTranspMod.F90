@@ -20,6 +20,7 @@ module SoilLittVertTranspMod
   use PhosphorusStateType    , only : phosphorusstate_type
   use clm_varctl             , only : nu_com
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
   !
   implicit none
   save
@@ -241,8 +242,8 @@ contains
          select case (i_type)
          case (1)  ! C
             conc_ptr          => col_cs%decomp_cpools_vr
-            source            => carbonflux_vars%decomp_cpools_sourcesink_col
-            trcr_tendency_ptr => carbonflux_vars%decomp_cpools_transport_tendency_col
+            source            => col_cf%decomp_cpools_sourcesink
+            trcr_tendency_ptr => col_cf%decomp_cpools_transport_tendency
          case (2)  ! N
             conc_ptr          => nitrogenstate_vars%decomp_npools_vr_col
             source            => nitrogenflux_vars%decomp_npools_sourcesink_col
@@ -255,20 +256,20 @@ contains
             if ( use_c13 ) then
                ! C13
                conc_ptr          => c13_col_cs%decomp_cpools_vr
-               source            => c13_carbonflux_vars%decomp_cpools_sourcesink_col
-               trcr_tendency_ptr => c13_carbonflux_vars%decomp_cpools_transport_tendency_col
+               source            => c13_col_cf%decomp_cpools_sourcesink
+               trcr_tendency_ptr => c13_col_cf%decomp_cpools_transport_tendency
             else
                ! C14
                conc_ptr          => c14_col_cs%decomp_cpools_vr
-               source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
-               trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
+               source            => c14_col_cf%decomp_cpools_sourcesink
+               trcr_tendency_ptr => c14_col_cf%decomp_cpools_transport_tendency
             endif
          case (5)
             if ( use_c14 .and. use_c13 ) then
                ! C14
                conc_ptr          => c14_col_cs%decomp_cpools_vr
-               source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
-               trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
+               source            => c14_col_cf%decomp_cpools_sourcesink
+               trcr_tendency_ptr => c14_col_cf%decomp_cpools_transport_tendency
             else
                write(iulog,*) 'error.  ncase = 5, but c13 and c14 not both enabled.'
                call endrun(msg=errMsg(__FILE__, __LINE__))

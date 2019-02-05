@@ -28,9 +28,11 @@ module AllocationMod
   use VegetationPropertiesType      , only : veg_vp
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_ws  
+  use ColumnDataType      , only : col_ws
+  use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs, veg_cf  
+  use VegetationDataType  , only : veg_cs
+  use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   ! bgc interface & pflotran module switches
   use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
@@ -642,8 +644,8 @@ contains
          km_den                       => veg_vp%km_den                                     , &
          decompmicc_patch_vr          => veg_vp%decompmicc_patch_vr                        , &
          slatop                       => veg_vp%slatop                                     , &
-         t_scalar                     => carbonflux_vars%t_scalar_col                          , &
-         w_scalar                     => carbonflux_vars%w_scalar_col                          , &
+         t_scalar                     => col_cf%t_scalar                          , &
+         w_scalar                     => col_cf%w_scalar                          , &
          smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
          smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
          sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
@@ -711,13 +713,13 @@ contains
          psnshade_to_cpool(p) = psnsha(p) * laisha(p) * 12.011e-6_r8
 
          if ( use_c13 ) then
-            c13vcfv2%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c13vcfv2%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c13_veg_cf%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
+            c13_veg_cf%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
          endif
 
          if ( use_c14 ) then
-            c14vcfv2%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c14vcfv2%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c14_veg_cf%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
+            c14_veg_cf%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
          endif
 
          gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
@@ -1219,8 +1221,8 @@ contains
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
          np_scalar                    => cnstate_vars%np_scalar                                , & 
 
-         t_scalar                     => carbonflux_vars%t_scalar_col                          , &
-         w_scalar                     => carbonflux_vars%w_scalar_col                          , &
+         t_scalar                     => col_cf%t_scalar                          , &
+         w_scalar                     => col_cf%w_scalar                          , &
 
          plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch            , &
          plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch            , &
@@ -3045,7 +3047,7 @@ contains
          cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => veg_cf%cpool_to_xsmrpool               , &
-         w_scalar                     => carbonflux_vars%w_scalar_col                          , &
+         w_scalar                     => col_cf%w_scalar                          , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , &
          leaf_mr                      => veg_cf%leaf_mr                         , &
          froot_mr                     => veg_cf%froot_mr                        , & 
@@ -3265,26 +3267,26 @@ contains
                      psnsun_to_cpool(p) = psnsun_to_cpool(p)
                      psnshade_to_cpool(p) = psnshade_to_cpool(p) 
                      if ( use_c13 ) then
-                         c13vcfv2%psnsun_to_cpool(p) = c13vcfv2%psnsun_to_cpool(p)
-                         c13vcfv2%psnshade_to_cpool(p) = c13vcfv2%psnshade_to_cpool(p)
+                         c13_veg_cf%psnsun_to_cpool(p) = c13_veg_cf%psnsun_to_cpool(p)
+                         c13_veg_cf%psnshade_to_cpool(p) = c13_veg_cf%psnshade_to_cpool(p)
                      endif
 
                      if ( use_c14 ) then
-                         c14vcfv2%psnsun_to_cpool(p) = c14vcfv2%psnsun_to_cpool(p)
-                         c14vcfv2%psnshade_to_cpool(p) = c14vcfv2%psnshade_to_cpool(p)
+                         c14_veg_cf%psnsun_to_cpool(p) = c14_veg_cf%psnsun_to_cpool(p)
+                         c14_veg_cf%psnshade_to_cpool(p) = c14_veg_cf%psnshade_to_cpool(p)
                      endif
 
                  else
                      psnsun_to_cpool(p)   = psnsun_to_cpool(p)  *(1._r8 - downreg(p))
                      psnshade_to_cpool(p) = psnshade_to_cpool(p)*(1._r8 - downreg(p))
                      if ( use_c13 ) then
-                         c13vcfv2%psnsun_to_cpool(p)   = c13vcfv2%psnsun_to_cpool(p)  *(1._r8 - downreg(p))
-                         c13vcfv2%psnshade_to_cpool(p) = c13vcfv2%psnshade_to_cpool(p)*(1._r8 - downreg(p))
+                         c13_veg_cf%psnsun_to_cpool(p)   = c13_veg_cf%psnsun_to_cpool(p)  *(1._r8 - downreg(p))
+                         c13_veg_cf%psnshade_to_cpool(p) = c13_veg_cf%psnshade_to_cpool(p)*(1._r8 - downreg(p))
                      endif
 
                      if ( use_c14 ) then
-                         c14vcfv2%psnsun_to_cpool(p)   = c14vcfv2%psnsun_to_cpool(p)  *(1._r8 - downreg(p))
-                         c14vcfv2%psnshade_to_cpool(p) = c14vcfv2%psnshade_to_cpool(p)*(1._r8 - downreg(p))
+                         c14_veg_cf%psnsun_to_cpool(p)   = c14_veg_cf%psnsun_to_cpool(p)  *(1._r8 - downreg(p))
+                         c14_veg_cf%psnshade_to_cpool(p) = c14_veg_cf%psnshade_to_cpool(p)*(1._r8 - downreg(p))
                      endif
                  endif
              end if

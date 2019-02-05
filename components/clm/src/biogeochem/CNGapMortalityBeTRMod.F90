@@ -17,9 +17,10 @@ module CNGapMortalityBeTRMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_cf
   use VegetationPropertiesType      , only : veg_vp
   use VegetationType      , only : veg_pp  
-  use VegetationDataType  , only : veg_cs  
+  use VegetationDataType  , only : veg_cs, veg_cf  
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -423,10 +424,10 @@ contains
          m_livecrootp_xfer_to_litter         =>    phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]
          m_deadcrootp_xfer_to_litter         =>    phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]
 
-         gap_mortality_c_to_litr_met_c       =>    carbonflux_vars%gap_mortality_c_to_litr_met_c_col      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
-         gap_mortality_c_to_litr_cel_c       =>    carbonflux_vars%gap_mortality_c_to_litr_cel_c_col      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
-         gap_mortality_c_to_litr_lig_c       =>    carbonflux_vars%gap_mortality_c_to_litr_lig_c_col      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
-         gap_mortality_c_to_cwdc             =>    carbonflux_vars%gap_mortality_c_to_cwdc_col            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
+         gap_mortality_c_to_litr_met_c       =>    col_cf%gap_mortality_c_to_litr_met_c      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
+         gap_mortality_c_to_litr_cel_c       =>    col_cf%gap_mortality_c_to_litr_cel_c      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
+         gap_mortality_c_to_litr_lig_c       =>    col_cf%gap_mortality_c_to_litr_lig_c      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
+         gap_mortality_c_to_cwdc             =>    col_cf%gap_mortality_c_to_cwdc            , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to CWD pool (gC/m3/s)
 
          gap_mortality_n_to_litr_met_n       =>    nitrogenflux_vars%gap_mortality_n_to_litr_met_n_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter metabolic pool (gN/m3/s)
          gap_mortality_n_to_litr_cel_n       =>    nitrogenflux_vars%gap_mortality_n_to_litr_cel_n_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter cellulose pool (gN/m3/s)
