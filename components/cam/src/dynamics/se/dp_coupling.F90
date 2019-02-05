@@ -5,6 +5,7 @@
 module dp_coupling
   use constituents,   only: pcnst, cnst_name
   use cam_history,    only: outfld, write_inithist, hist_fld_active
+  
   use dimensions_mod, only: np, npsq, nelemd, nlev
   use dof_mod,        only: UniquePoints, PutUniquePoints
   use dyn_comp,       only: dyn_export_t, dyn_import_t, TimeLevel
@@ -25,6 +26,7 @@ module dp_coupling
   use perf_mod,    only : t_startf, t_stopf, t_barrierf
   use parallel_mod, only : par
   use scamMod,        only: single_column
+  use element_ops,    only: get_temperature
   private
   public :: d_p_coupling, p_d_coupling
 !===============================================================================
@@ -111,7 +113,11 @@ CONTAINS
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
+#ifdef MODEL_THETA_L
+          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%T(:,:,:), T_tmp(1:ncols,:,ie))
+#else
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
+#endif
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
 
@@ -274,15 +280,20 @@ CONTAINS
     call derived_phys(phys_state,phys_tend,pbuf2d)
     call t_stopf('derived_phys')
 
+!for theta there is no need to multiply omega_p by p
+#ifndef MODEL_THETA_L
 !$omp parallel do private (lchnk, ncols, ilyr, icol)
     do lchnk=begchunk,endchunk
       ncols=get_ncols_p(lchnk)
       do ilyr=1,pver
         do icol=1,ncols
-          if (.not. single_column) phys_state(lchnk)%omega(icol,ilyr)=phys_state(lchnk)%omega(icol,ilyr)*phys_state(lchnk)%pmid(icol,ilyr)
+          if (.not. single_column) then
+          phys_state(lchnk)%omega(icol,ilyr)=phys_state(lchnk)%omega(icol,ilyr)*phys_state(lchnk)%pmid(icol,ilyr)
+          endif
         end do
       end do
    end do
+#endif
 
    if (write_inithist() ) then
       do lchnk=begchunk,endchunk
