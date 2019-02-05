@@ -354,6 +354,19 @@ def summarize_suite(suite_tag):  # {{{
 
             test_path = '{}/{}/{}/{}'.format(test_core, test_configuration,
                                              test_resolution, test_test)
+            driver_path = '{}/config_driver.xml'.format(test_path)
+            config_tree = ET.parse(driver_path)
+            config_root = config_tree.getroot()
+
+            cases = []
+            assert(config_root.tag == 'driver_script')
+            for case in config_root.iter('case'):
+                name = case.attrib['name']
+                cases.append(name)
+
+            del config_root
+            del config_tree
+
             # Loop over all files in test_path that have the .xml extension.
             for file in os.listdir('{}'.format(test_path)):
                 if fnmatch.fnmatch(file, '*.xml'):
@@ -364,29 +377,31 @@ def summarize_suite(suite_tag):  # {{{
                     config_root = config_tree.getroot()
 
                     if config_root.tag == 'config':
-                        for model_run in config_root.iter('model_run'):
-                            try:
-                                procs_str = model_run.attrib['procs']
-                                procs = int(procs_str)
-                            except (KeyError, ValueError):
-                                procs = 1
+                        case = config_root.attrib['case']
+                        if case in cases:
+                            for model_run in config_root.iter('model_run'):
+                                try:
+                                    procs_str = model_run.attrib['procs']
+                                    procs = int(procs_str)
+                                except (KeyError, ValueError):
+                                    procs = 1
 
-                            try:
-                                threads_str = model_run.attrib['threads']
-                                threads = int(threads_str)
-                            except (KeyError, ValueError):
-                                threads = 1
+                                try:
+                                    threads_str = model_run.attrib['threads']
+                                    threads = int(threads_str)
+                                except (KeyError, ValueError):
+                                    threads = 1
 
-                            cores = threads * procs
+                                cores = threads * procs
 
-                            if procs > max_procs:
-                                max_procs = procs
+                                if procs > max_procs:
+                                    max_procs = procs
 
-                            if threads > max_threads:
-                                max_threads = threads
+                                if threads > max_threads:
+                                    max_threads = threads
 
-                            if cores > max_cores:
-                                max_cores = cores
+                                if cores > max_cores:
+                                    max_cores = cores
 
                     del config_root
                     del config_tree
