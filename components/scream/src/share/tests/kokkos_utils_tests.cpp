@@ -71,6 +71,7 @@ TEST_CASE("team_utils", "[kokkos_utils]") {
   // test will not work with more than 16 threads
   if (n > 16) {
     WARN("Skipped because this test doesn't support more than 16 threads");
+    return;
   }
 
   const int ni = n*5;
