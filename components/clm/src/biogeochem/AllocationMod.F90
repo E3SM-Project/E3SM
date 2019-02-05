@@ -4330,21 +4330,26 @@ contains
 
 !-----------------------------------------------------------------------
   subroutine update_competition_kinetic_pars(bounds, num_soilc, filter_soilc  , &
-    cnstate_vars, carbonstate_vars, carbonflux_vars, PlantMicKinetics_vars)
+    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, &
+    phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
 
   use pftvarcon        , only: noveg
   use PlantMicKineticsMod, only : PlantMicKinetics_type
   use clm_varpar      , only: nlevdecomp
+  use clm_time_manager, only: get_step_size
   implicit none
   type(bounds_type)        , intent(in)    :: bounds
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
   integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type), intent(in) :: cnstate_vars
   type(carbonstate_type), intent(in) :: carbonstate_vars
-  type(carbonflux_type), intent(in) :: carbonflux_vars
+  type(carbonflux_type) , intent(in) :: carbonflux_vars
+  type(nitrogenflux_type), intent(in) :: nitrogenflux_vars
+  type(phosphorusflux_type), intent(in):: phosphorusflux_vars
+  type(phosphorusstate_type), intent(in) :: phosphorusstate_vars
   type(PlantMicKinetics_type), intent(inout) :: PlantMicKinetics_vars
   integer :: j, fc, c, p
-
+  real(r8) :: dt
   associate(                                                 &
     ivt                  => veg_pp%itype                   , &
     km_nit               => veg_vp%km_nit                  , &
@@ -4363,6 +4368,7 @@ contains
     froot_prof            => cnstate_vars%froot_prof_patch  , &
     cn_scalar            => cnstate_vars%cn_scalar         , &
     cp_scalar            => cnstate_vars%cp_scalar         , &
+    ndep_prof           => cnstate_vars%ndep_prof_col      , &
     isoilorder                   => cnstate_vars%isoilorder, &
     plant_eff_ncompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch, &
     plant_eff_pcompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch, &
@@ -4378,9 +4384,13 @@ contains
     km_nit_nh4_vr_col => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
     km_den_no3_vr_col => PlantMicKinetics_vars%km_den_no3_vr_col, &
     km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
-    vmax_minsurf_p_vr_col => PlantMicKinetics_vars%vmax_minsurf_p_vr_col &
+    vmax_minsurf_p_vr_col => PlantMicKinetics_vars%vmax_minsurf_p_vr_col, &
+    dsolutionp_dt_vr_col => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
+    pdep_to_sminp        => phosphorusflux_vars%pdep_to_sminp_col    , &
+    col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr, &
+    labilep_vr                   => phosphorusstate_vars%labilep_vr_col &
   )
-
+  dt = real( get_step_size(), r8 )
    do j = 1, nlevdecomp
       do fc=1,num_soilc
          c = filter_soilc(fc)
@@ -4423,6 +4433,10 @@ contains
          !watch out how sorption-desorption is done
          km_minsurf_p_vr_col(c,j)=km_minsurf_p_vr(isoilorder(c),j)
          vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
+
+         dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr_col(c,j) + primp_to_labilep_vr_col(c,j) +&
+                        pdep_to_sminp(c)*ndep_prof(c,j) - col_plant_pdemand_vr(c,j)
+         dlabp_dt_vr_col(c,j) = labilep_vr(c,j))/dt
     enddo
   enddo
   end associate
@@ -4430,10 +4444,10 @@ contains
 
 !-----------------------------------------------------------------------
 
-
   subroutine update_PlantMicKinetics_pars(bounds, num_soilc, filter_soilc  , &
       cnstate_vars, carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, &
-      phosphorusstate_vars, PlantMicKinetics_vars)
+      nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars, &
+      PlantMicKinetics_vars)
 
   use PlantMicKineticsMod, only : PlantMicKinetics_type
   implicit none
@@ -4445,6 +4459,8 @@ contains
   type(carbonflux_type), intent(in) :: carbonflux_vars
   type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
   type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
+  type(nitrogenflux_type), intent(in) :: nitrogenflux_vars
+  type(phosphorusflux_type), intent(in) :: phosphorusflux_vars
   type(PlantMicKinetics_type), intent(inout) :: PlantMicKinetics_vars
 
 
@@ -4453,7 +4469,8 @@ contains
       phosphorusstate_vars)
 
   call update_competition_kinetic_pars(bounds, num_soilc, filter_soilc  , &
-    cnstate_vars, carbonstate_vars, carbonflux_vars, PlantMicKinetics_vars)
+    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, &
+    phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
 
   end subroutine update_PlantMicKinetics_pars
 end module AllocationMod

@@ -33,7 +33,7 @@ implicit none
     real(r8), pointer :: km_decomp_p_vr_col(:,:)
     real(r8), pointer :: km_nit_nh4_vr_col(:,:)
     real(r8), pointer :: km_den_no3_vr_col(:,:)
-
+    real(r8), pointer :: dlabp_dt_vr_col(:,:)
   contains
     procedure, public  :: Init
     procedure, public  :: InitAllocate
@@ -86,7 +86,7 @@ implicit none
      allocate(this%km_decomp_p_vr_col(begc:endc,1:nlevdecomp_full)); this%km_decomp_p_vr_col(:,:) = nan
      allocate(this%km_nit_nh4_vr_col(begc:endc,1:nlevdecomp_full)); this%km_nit_nh4_vr_col(:,:) = nan
      allocate(this%km_den_no3_vr_col(begc:endc,1:nlevdecomp_full)); this%km_den_no3_vr_col(:,:) = nan
-
+     allocate(this%dlabp_dt_vr_col(begc:endc, 1:nlevdecomp_full)); this%dlabp_dt_vr_col(:,:) = nan
 
     end subroutine InitAllocate
     !------------------------------------------------------------------------
