@@ -86,6 +86,7 @@ module EcosystemDynBeTRMod
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
     use clm_varpar                , only : crop_prog
+    use NitrogenDynamicsMod       , only: NitrogenLeaching
     use CropHarvestPoolsMod     , only : CropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
@@ -93,7 +94,8 @@ module EcosystemDynBeTRMod
     use NitrogenStateUpdate3BeTRMod    , only : NitrogenStateUpdate3
     use PhosphorusStateUpdate1BeTRMod      , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusBiochemMin_Ptaseact
+    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusAdsportion
+    use PhosphorusDynamicsMod              , only : PhosphorusLeaching, PhosphorusOcclusion,PhosphorusDesoprtion
     use VerticalProfileMod      , only : decomp_vertprofiles
      use SoilLittVertTranspMod, only: SoilLittVertTransp
     use RootDynamicsMod           , only: RootDynamics
@@ -521,7 +523,8 @@ module EcosystemDynBeTRMod
     use NitrogenStateUpdate3BeTRMod    , only : NitrogenStateUpdate3
     use PhosphorusStateUpdate1BeTRMod      , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusBiochemMin_Ptaseact
+    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering
+    use PhosphorusDynamicsMod              , only : PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
     use VerticalProfileMod      , only : decomp_vertprofiles
     use RootDynamicsMod           , only: RootDynamics
     use PhenologyFLuxLimitMod     , only : phenology_flux_limiter
@@ -901,15 +904,7 @@ module EcosystemDynBeTRMod
 
        !-----------------------------------------------------------------------
        ! in type 1 bgc, leaching will be done in betr, evenutally.
-       call t_startf('NitrogenLeaching')
-       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-       call t_stopf('NitrogenLeaching')
 
-       call t_startf('PhosphorusLeaching')
-       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-       call t_stopf('PhosphorusLeaching')
 
   end subroutine CNEcosystemDynBeTR1
   !-----------------------------------------------------------------------
