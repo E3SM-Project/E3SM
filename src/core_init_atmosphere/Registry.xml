@@ -108,7 +108,7 @@
 
         <nml_record name="data_sources" in_defaults="true">
 
-                <nml_option name="config_geog_data_path"        type="character"     default_value="/glade/p/work/wrfhelp/WPS_GEOG/"
+                <nml_option name="config_geog_data_path"        type="character"     default_value="/glade/work/wrfhelp/WPS_GEOG/"
                      units="-"
                      description="Path to the WPS static data files (case 7 only)"
                      possible_values="Any valid path"/>
