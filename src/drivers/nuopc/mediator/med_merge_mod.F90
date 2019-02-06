@@ -76,8 +76,6 @@ contains
     character(CX) :: merge_field
     character(CS) :: merge_type
     character(CS) :: merge_fracname
-    character(CL) :: mrgstr   ! temporary string
-    logical       :: init_mrgstr
     integer       :: dbrc
     character(len=*),parameter :: subname=' (module_med_merge_mod: med_merge_auto)'
     !---------------------------------------
@@ -95,18 +93,12 @@ contains
     call ESMF_FieldBundleGet(FBOut, fieldCount=cnt, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (document) then
-       if (mastertask) write(logunit,*) ' '
-    end if
-
     ! Loop over all fields in field bundle FBOut
     do n = 1,cnt
 
        ! Get the nth field name in FBexp
        call shr_nuopc_methods_FB_getNameN(FBOut, n, fldname, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       init_mrgstr = .true.
 
        ! Loop over the field in fldListTo
        do nf = 1,shr_nuopc_fldList_GetNumFlds(fldListTo)
@@ -123,38 +115,13 @@ contains
                 ! Determine the merge information for the import field
                 call shr_nuopc_fldList_GetFldInfo(fldListTo, nf, compsrc, merge_fields, merge_type, merge_fracname)
 
+                ! If merge_field is a colon delimited string then cycle through every field - otherwise by default nm
+                ! will only equal 1
                 do nm = 1,shr_string_listGetNum(merge_fields)
-                   call shr_string_listGetName(merge_fields, nm, merge_field)
-                   if (merge_type /= 'unset' .and. merge_field /= 'unset') then
 
-                      ! Document merging if appropriate
-                      if (document) then
-                         if (merge_type == 'merge' .or. merge_type == 'sum_with_weights') then
-                            if (init_mrgstr) then
-                               mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
-                                    // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                               init_mrgstr = .false.
-                            else
-                               mrgstr = trim(mrgstr) //' + ' &
-                                    // trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                            end if
-                         else if (merge_type == 'sum') then
-                            if (init_mrgstr) then
-                               mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
-                                    //trim(merge_field) //'('//trim(compname(compsrc))//')'
-                            else
-                               mrgstr = trim(mrgstr) //' + '//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                            end if
-                         else
-                            if (merge_type == 'copy') then
-                               mrgstr = trim(string)//": " // trim(fldname) //'('//trim(compout_name)//')'//' = ' &
-                                    //trim(merge_field) //'('//trim(compname(compsrc))//')'
-                            else if (merge_type == 'copy_with_weights') then
-                               mrgstr = trim(string)//": "// trim(fldname) //'('//trim(compout_name)//')'//' = ' &
-                                    //trim(merge_fracname)//'*'//trim(merge_field)//'('//trim(compname(compsrc))//')'
-                            end if
-                         end if
-                      end if
+                   call shr_string_listGetName(merge_fields, nm, merge_field)
+
+                   if (merge_type /= 'unset' .and. merge_field /= 'unset') then
 
                       ! Perform merge
                       if (compsrc == compmed) then
@@ -216,14 +183,12 @@ contains
                                  FBOut, fldname, FB=FBImp(compsrc), FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
                             if (ChkErr(rc,__LINE__,u_FILE_u)) return
                          end if
+
                       end if ! end of single merge
 
                    end if ! end of check of merge_type and merge_field not unset
                 end do ! end of nmerges loop
              end do  ! end of compsrc loop
-             if (document) then
-                if (mastertask) write(logunit,'(a)')trim(mrgstr)
-             end if
           end if ! end of check if stdname and fldname are the same
        end do ! end of loop over fldsListTo
     end do ! end of loop over fields in FBOut

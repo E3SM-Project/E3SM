@@ -60,8 +60,15 @@ module med_io_mod
 !=================================================================================
 contains
 !=================================================================================
+
   logical function med_io_file_exists(vm, iam, filename)
+
+    !---------------
+    ! inquire if i/o file exists
+    !---------------
+
     use ESMF, only : ESMF_VMBroadCast
+
     type(ESMF_VM)                :: vm
     integer,          intent(in) :: iam
     character(len=*), intent(in) :: filename
@@ -73,29 +80,44 @@ contains
     med_io_file_exists = .false.
     if (iam==0) inquire(file=trim(filename),exist=med_io_file_exists)
     if (med_io_file_exists) tmp(1) = 1
+
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if(tmp(1) == 1) med_io_file_exists = .true.
 
   end function med_io_file_exists
 
+  !===============================================================================
   subroutine med_io_init()
-    use seq_comm_mct          , only : CPLID
-    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-    io_subsystem => shr_pio_getiosys(CPLID)
-    pio_iotype   =  shr_pio_getiotype(CPLID)
-    pio_ioformat =  shr_pio_getioformat(CPLID)
+
+    !---------------
+    ! initialize pio
+    !---------------
+
+    use shr_pio_mod           , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
+    use med_internalstate_mod , only : med_id
+
+    io_subsystem => shr_pio_getiosys(med_id)
+    pio_iotype   =  shr_pio_getiotype(med_id)
+    pio_ioformat =  shr_pio_getioformat(med_id)
 
   end subroutine med_io_init
 
   !===============================================================================
   subroutine med_io_wopen(filename, vm, iam, clobber, file_ind, model_doi_url)
-    ! !DESCRIPTION: open netcdf file
-    use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
-    use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
-    use pio, only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
-    use shr_sys_mod, only : shr_sys_abort
-    use med_internalstate_mod, only : logunit
+
+    !---------------
+    ! open netcdf file
+    !---------------
+
+    use pio                   , only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio                   , only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef
+    use PIO                   , only : pio_put_att, pio_redef, pio_get_att
+    use pio                   , only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
+    use shr_sys_mod           , only : shr_sys_abort
+    use med_internalstate_mod , only : logunit
+
     ! input/output arguments
     character(*),            intent(in) :: filename
     type(ESMF_VM)                       :: vm
@@ -184,9 +206,11 @@ contains
 
   !===============================================================================
   subroutine med_io_close(filename, iam, file_ind)
+
     use pio, only: pio_file_is_open, pio_closefile
     use med_internalstate_mod, only : logunit
     use shr_sys_mod, only : shr_sys_abort
+
     ! !DESCRIPTION: close netcdf file
 
     ! input/output variables
