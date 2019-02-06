@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 get_filename_component(working_dir ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
 set(CTEST_SOURCE_DIRECTORY "${working_dir}")
-set(CTEST_BINARY_DIRECTORY "${working_dir}/build")
+set(CTEST_BINARY_DIRECTORY "${working_dir}/ctest-build")
 
 if(NOT DEFINED dashboard_model)
   set(dashboard_model Experimental)
