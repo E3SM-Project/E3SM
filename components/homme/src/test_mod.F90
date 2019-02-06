@@ -104,6 +104,11 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
 
     endselect
   endif
+
+#ifdef MODEL_THETA_L
+  call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+#endif
+
 end subroutine
 
 !_______________________________________________________________________

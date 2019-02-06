@@ -1033,7 +1033,6 @@ contains
     ! by calling it here, it mimics eam forcings computations in standalone
     ! homme.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-    call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #endif
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
@@ -1139,6 +1138,11 @@ contains
           enddo
        enddo
     enddo
+
+#ifdef MODEL_THETA_L
+    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+#endif
+
     call t_stopf("prim_run_subcyle_diags")
 
     ! now we have:
@@ -1366,6 +1370,7 @@ contains
 
   use control_mod,        only : use_moisture
   use hybvcoord_mod,      only : hvcoord_t
+  use prim_advance_mod,   only : convert_thermo_forcing
   implicit none
   type (element_t),       intent(inout) :: elem
   real (kind=real_kind),  intent(in)    :: dt
@@ -1376,12 +1381,34 @@ contains
   ! local
   integer :: i,j,k,ie,q
 !  real (kind=real_kind) :: v1
-  real (kind=real_kind) :: dp(np,np,nlev), dp_tmp, fq
+  real (kind=real_kind)  :: dp(np,np,nlev), dp_tmp, fq
+  real (kind=real_kind)  :: pprime(np,np,nlev)
+  real (kind=real_kind)  :: vthn1(np,np,nlev)
+  real (kind=real_kind)  :: pnh(np,np,nlev)
+  real (kind=real_kind)  :: phi_n1(np,np,nlev)
+  real (kind=real_kind)  :: rstarn1(np,np,nlev)
+  real (kind=real_kind)  :: exner(np,np,nlev)
+  real(kind=real_kind)   :: dpnh_dp_i(np,np,nlevp)
+
+!preliminary work for conversion
+  if (theta_hydrostatic_mode) then
+     pprime = 0.0
+  else
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
+     enddo
+     !compute pnh, here only pnh is needed
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
+          elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+     pprime = pnh - dp
+  endif
 
 !OG copied omp pragmas from stepon as is
    if (adjustment) then 
-!blind copy of lines in cam/stepon, NO NEGATIVITY CHECK
+!if adjustment, blind copy lines in cam/stepon, NO NEGATIVITY CHECK
 
+!repeated calculation for nonhydro
 !$omp parallel do private(k)
       do k=1,nlev
          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1469,6 +1496,39 @@ contains
         enddo
 
      endif ! if adjustment
+
+!continue conversion using pprime from above
+     call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+!derived%T is computed each remap step
+     tn1(:,:,:) = elem%derived%T + dt*elem(ie)%derived%FT(:,:,:)
+
+     ! update pressure based on Qdp forcing
+     do k=1,nlev
+        ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
+        !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
+        !     (
+        !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
+        ! constant NH perturbation pressure
+        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + psn1(:,:)*hvcoord%hybm(k) + pprime(:,:,k)
+        exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+     enddo
+
+     ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+     vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
+
+     phi_n1(:,:,nlevp)=elem(ie)%state%phinh_i(:,:,nlevp,np1)
+     do k=nlev,1,-1
+        phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+     enddo
+
+     !finally, compute difference for FVTheta
+     ! this method is using new dp, new exner, new-new r*, new t
+     elem(ie)%derived%FVTheta(:,:,:) = &
+         (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,np1))/dt
+
+     elem(ie)%derived%FPHI(:,:,:) = &
+         (phi_n1 - elem(ie)%state%phinh_i(:,:,:,np1))/dt
+
 
 end subroutine applyCAMforcing_tracers
   
