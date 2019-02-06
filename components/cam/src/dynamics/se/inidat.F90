@@ -61,7 +61,7 @@ contains
     use scamMod,             only: setiopupdate, readiopdata
     use se_single_column_mod, only: scm_setinitial
 #ifdef MODEL_THETA_L
-    use element_ops,         only: set_thermostate_from_derived_T
+    use element_ops,         only: set_thermostate
 #endif
 
     implicit none
@@ -539,7 +539,7 @@ contains
 !$omp parallel do private(ie, t, m_cnst)
     do ie=1,nelemd
 #ifdef MODEL_THETA_L
-       call set_thermostate_from_derived_T(elem(ie),hvcoord,tl)
+       call set_thermostate(elem(ie),elem(ie)%derived%T,hvcoord)
 #else
        do t=2,3
           elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,tl)

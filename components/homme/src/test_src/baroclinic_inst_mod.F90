@@ -188,9 +188,7 @@ do ie=nets,nete
        end do
     end do
 
-    do tl=1,timelevels
-       call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
-    enddo
+    call set_thermostate(elem(ie),temperature,hvcoord)
 enddo
 
 

@@ -226,7 +226,7 @@ CONTAINS
     use comsrf,           only: landm, sgh, sgh30
     use cam_instance,     only: inst_index
 #ifdef MODEL_THETA_L
-    use element_ops,      only: set_thermostate_from_derived_T
+    use element_ops,      only: set_thermostate
 #endif
 
     type (dyn_import_t), intent(inout) :: dyn_in
@@ -287,7 +287,7 @@ CONTAINS
 #ifdef MODEL_THETA_L
                 elem(ie)%derived%T(:,:,:) = Tinit
                 do tlev=1,3
-                   call set_thermostate_from_derived_T(elem(ie),hvcoord,tlev)
+                   call set_thermostate(elem(ie),elem(ie)%derived%T,hvcoord)
                 enddo
 #else
                 elem(ie)%state%T(:,:,:,:) = Tinit 

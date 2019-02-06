@@ -23,7 +23,7 @@ use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp,iam
 use element_ops,          only: set_state, set_state_i, set_elem_state, get_state, tests_finalize,&
-     set_forcing_rayleigh_friction, set_thermostate
+     set_forcing_rayleigh_friction
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
