@@ -419,6 +419,13 @@ module atm_time_integration
          block => block % next
       end do
       call mpas_timer_stop('physics_get_tend')
+#else
+      !
+      ! If no physics are being used, simply zero-out the physics tendency fields
+      !
+      tend_ru_physics(:,:) = 0.0_RKIND
+      tend_rtheta_physics(:,:) = 0.0_RKIND
+      tend_rho_physics(:,:) = 0.0_RKIND
 #endif
 
       !
