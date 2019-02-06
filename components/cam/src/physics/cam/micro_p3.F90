@@ -37,8 +37,9 @@
 
 MODULE MICRO_P3
 
-   use spmd_utils,       only: masterproc
-   use cam_logfile,      only: iulog
+   use shr_kind_mod,   only: r8=>shr_kind_r8
+   use spmd_utils,     only: masterproc
+   use cam_logfile,    only: iulog
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
@@ -49,7 +50,6 @@ MODULE MICRO_P3
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, get_precip_fraction, zerodegc, pi=>pi_e3sm, dnu, &
        micro_p3_utils_init, rainfrze, icenuct, homogfrze
-   use shr_kind_mod,   only: r8=>shr_kind_r8
 
   implicit none
 
@@ -429,21 +429,24 @@ contains
     real(r8) :: nimlt     ! melting of ice
     real(r8) :: nisub     ! change in ice number from sublimation
     real(r8) :: nislf     ! change in ice number from collection within a category (Not in paper?)
-    real(r8) :: qchetc    ! contact freezing droplets
     real(r8) :: qcheti    ! immersion freezing droplets
-    real(r8) :: qrhetc    ! contact freezing rain
     real(r8) :: qrheti    ! immersion freezing rain
-    real(r8) :: nchetc    ! contact freezing droplets
     real(r8) :: ncheti    ! immersion freezing droplets
-    real(r8) :: nrhetc    ! contact freezing rain
     real(r8) :: nrheti    ! immersion freezing rain
     real(r8) :: nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
     real(r8) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
     real(r8) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
-    real(r8) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
-    real(r8) :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
-    real(r8) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
     real(r8) :: rhorime_c ! density of rime (from cloud)
+    real(r8) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
+
+    ! AaronDonahue, The following microphysical processes are not currently used
+    ! in the code so they have been deleted pending future improvements.
+!    real(r8) :: nchetc    ! contact freezing droplets
+!    real(r8) :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
+!    real(r8) :: nrhetc    ! contact freezing rain
+!    real(r8) :: qchetc    ! contact freezing droplets
+!    real(r8) :: qrhetc    ! contact freezing rain
+!    real(r8) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
 
     logical   :: log_wetgrowth
 
@@ -563,9 +566,8 @@ contains
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1./exner        !inverse of Exner expression, used when converting potential temp to temp
-    tmparr1 = inv_exner !(pres*1.e-5)**(rd*inv_cp)
-    t       = th    *tmparr1    !compute temperature from theta (value at beginning of microphysics step)
-    t_old   = th_old*tmparr1    !compute temperature from theta (value at beginning of model time step)
+    t       = th    *inv_exner    !compute temperature from theta (value at beginning of microphysics step)
+    t_old   = th_old*inv_exner    !compute temperature from theta (value at beginning of model time step)
     qv      = max(qv,0.)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
     ! AaronDonahue added this load of latent heat to be consistent with E3SM, since the inconsistentcy was causing water conservation errors.
     call get_latent_heat(its,ite,kts,kte,xxlv,xxls,xlf)
@@ -703,15 +705,15 @@ contains
           nrevp   = 0.;     ncautr  = 0.
 
           ! initialize ice-phase  process rates
-          qchetc  = 0.;     qisub   = 0.;     nrshdr  = 0.
+          qisub   = 0.;     nrshdr  = 0.
           qcheti  = 0.;     qrcol   = 0.;     qcshd   = 0.
-          qrhetc  = 0.;     qimlt   = 0.;     qccol   = 0.
+          qimlt   = 0.;     qccol   = 0.
           qrheti  = 0.;     qinuc   = 0.;     nimlt   = 0.
-          nchetc  = 0.;     nccol   = 0.;     ncshdc  = 0.
+          nccol   = 0.;     ncshdc  = 0.
           ncheti  = 0.;     nrcol   = 0.;     nislf   = 0.
-          nrhetc  = 0.;     ninuc   = 0.;     qidep   = 0.
+          ninuc   = 0.;     qidep   = 0.
           nrheti  = 0.;     nisub   = 0.;     qwgrth  = 0.
-          qcmul   = 0.;     qrmul   = 0.;     nimul   = 0.
+          qcmul   = 0.;          
 
           log_wetgrowth = .false.
 
@@ -1460,7 +1462,7 @@ contains
           !          cannot possibly overdeplete qv
 
           ! cloud
-          sinks   = (qcaut+qcacc+qccol+qcevp+qchetc+qcheti+qcshd)*dt
+          sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd)*dt
           sources = qc(i,k) + (qccon+qcnuc)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20) then
              ratio  = sources/sinks
@@ -1470,25 +1472,22 @@ contains
              qccol  = qccol*ratio
              qcheti = qcheti*ratio
              qcshd  = qcshd*ratio
-             !qchetc = qchetc*ratio
           endif
 
           ! rain
-          sinks   = (qrevp+qrcol+qrhetc+qrheti+qrmul)*dt
+          sinks   = (qrevp+qrcol+qrheti)*dt
           sources = qr(i,k) + (qrcon+qcaut+qcacc+qimlt+qcshd)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20) then
              ratio  = sources/sinks
              qrevp  = qrevp*ratio
              qrcol  = qrcol*ratio
              qrheti = qrheti*ratio
-             qrmul  = qrmul*ratio
-             !qrhetc = qrhetc*ratio   ! AaronDonahue - Why is this commented out? We don't have qrhetc?
           endif
 
           ! ice
           sinks   = (qisub+qimlt)*dt
           sources = qitot(i,k) + (qidep+qinuc+qrcol+qccol+  &
-               qrhetc+qrheti+qchetc+qcheti+qrmul)*dt
+               qrheti+qcheti)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20) then
              ratio = sources/sinks
              qisub = qisub*ratio
@@ -1502,16 +1501,16 @@ contains
 
           !-- ice-phase dependent processes:
 
-          qc(i,k) = qc(i,k) + (-qchetc-qcheti-qccol-qcshd)*dt
+          qc(i,k) = qc(i,k) + (-qcheti-qccol-qcshd)*dt
           if (log_predictNc) then
-             nc(i,k) = nc(i,k) + (-nccol-nchetc-ncheti)*dt
+             nc(i,k) = nc(i,k) + (-nccol-ncheti)*dt
           endif
 
-          qr(i,k) = qr(i,k) + (-qrcol+qimlt-qrhetc-qrheti+            &
-               qcshd-qrmul)*dt
+          qr(i,k) = qr(i,k) + (-qrcol+qimlt-qrheti+            &
+               qcshd)*dt
           ! apply factor to source for rain number from melting of ice, (ad-hoc
           ! but accounts for rapid evaporation of small melting ice particles)
-          nr(i,k) = nr(i,k) + (-nrcol-nrhetc-nrheti+nmltratio*nimlt+  &
+          nr(i,k) = nr(i,k) + (-nrcol-nrheti+nmltratio*nimlt+  &
                nrshdr+ncshdc)*dt
 
           if (qitot(i,k).ge.qsmall) then
@@ -1523,16 +1522,16 @@ contains
              qitot(i,k) = qitot(i,k) - (qisub+qimlt)*dt
           endif
 
-          dum             = (qrcol+qccol+qrhetc+qrheti+          &
-               qchetc+qcheti+qrmul)*dt
+          dum             = (qrcol+qccol+qrheti+          &
+               qcheti)*dt
           qitot(i,k) = qitot(i,k) + (qidep+qinuc)*dt + dum
           qirim(i,k) = qirim(i,k) + dum
           birim(i,k) = birim(i,k) + (qrcol*inv_rho_rimeMax+qccol/  &
-               rhorime_c+(qrhetc+qrheti+qchetc+     &
-               qcheti+qrmul)*inv_rho_rimeMax)*dt
+               rhorime_c+(qrheti+     &
+               qcheti)*inv_rho_rimeMax)*dt
           nitot(i,k) = nitot(i,k) + (ninuc-nimlt-nisub-      &
-               nislf+nrhetc+nrheti+nchetc+          &
-               ncheti+nimul)*dt
+               nislf+nrheti+          &
+               ncheti)*dt
 
           !PMC nCat deleted interactions_loop
 
@@ -1560,8 +1559,8 @@ contains
           qv(i,k) = qv(i,k) + (-qidep+qisub-qinuc)*dt
 
           th(i,k) = th(i,k) + exner(i,k)*((qidep-qisub+qinuc)*     &
-               xxls(i,k)*inv_cp +(qrcol+qccol+qchetc+   &
-               qcheti+qrhetc+qrheti-qimlt)*       &  !AaronDonahue - Is qrmul missing here?
+               xxls(i,k)*inv_cp +(qrcol+qccol+   &
+               qcheti+qrheti-qimlt)*       &  
                xlf(i,k)*inv_cp)*dt
 
           !==
