@@ -4386,9 +4386,12 @@ contains
     km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
     vmax_minsurf_p_vr_col => PlantMicKinetics_vars%vmax_minsurf_p_vr_col, &
     dsolutionp_dt_vr_col => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
+    dlabp_dt_vr_col      => PlantMicKinetics_vars%dlabp_dt_vr_col, &
     pdep_to_sminp        => phosphorusflux_vars%pdep_to_sminp_col    , &
+    biochem_pmin_vr_col => phosphorusflux_vars%biochem_pmin_vr_col, &
     col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr, &
-    labilep_vr                   => phosphorusstate_vars%labilep_vr_col &
+    labilep_vr                   => phosphorusstate_vars%labilep_vr_col, &
+    primp_to_labilep_vr_col => phosphorusflux_vars%primp_to_labilep_vr_col &
   )
   dt = real( get_step_size(), r8 )
    do j = 1, nlevdecomp
@@ -4436,7 +4439,7 @@ contains
 
          dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr_col(c,j) + primp_to_labilep_vr_col(c,j) +&
                         pdep_to_sminp(c)*ndep_prof(c,j) - col_plant_pdemand_vr(c,j)
-         dlabp_dt_vr_col(c,j) = labilep_vr(c,j))/dt
+         dlabp_dt_vr_col(c,j) = labilep_vr(c,j)/dt
     enddo
   enddo
   end associate
