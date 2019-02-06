@@ -231,15 +231,17 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,n0,n0_q)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   implicit none
   
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  integer :: n0,n0_q
+  integer :: tl
 
-  elem%state%T(:,:,:,n0)=temperature(:,:,:)
+  do tl = 1,3
+     elem%state%T(:,:,:,tl)=temperature(:,:,:)
+  enddo
 
   end subroutine set_thermostate
 

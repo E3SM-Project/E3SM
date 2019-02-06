@@ -1337,24 +1337,31 @@ contains
   real (kind=real_kind),  intent(in)    :: dt_remap
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
+  integer                               :: ie
 
 !in the next pr we will reorder calling _dyn and _tr versions
   call t_startf("ApplyCAMForcing")
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
-    call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
-    call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+    do ie = nets,nete
+       call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+    enddo
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
 #ifndef CAM
-    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    do ie = nets,nete
+       call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+    enddo
 #endif
   elseif (ftype==4) then
 #ifndef CAM
-    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    do ie = nets,nete
+       call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+    enddo
 #endif
   endif
   call t_stopf("ApplyCAMForcing")
@@ -1370,6 +1377,9 @@ contains
 
   use control_mod,        only : use_moisture
   use hybvcoord_mod,      only : hvcoord_t
+#ifdef MODEL_THETA_L
+  use namelist_mod,       only : theta_hydrostatic_mode
+#endif
   use prim_advance_mod,   only : convert_thermo_forcing
   implicit none
   type (element_t),       intent(inout) :: elem
@@ -1379,17 +1389,21 @@ contains
   logical,                intent(in)    :: adjustment
 
   ! local
-  integer :: i,j,k,ie,q
-!  real (kind=real_kind) :: v1
+  integer :: i,j,k,ie,q,ic
+  real (kind=real_kind)  :: v1
   real (kind=real_kind)  :: dp(np,np,nlev), dp_tmp, fq
+#ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
+  real (kind=real_kind)  :: tn1(np,np,nlev)
   real (kind=real_kind)  :: pnh(np,np,nlev)
   real (kind=real_kind)  :: phi_n1(np,np,nlev)
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
-  real(kind=real_kind)   :: dpnh_dp_i(np,np,nlevp)
+  real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+#endif
 
+#ifdef MODEL_THETA_L
 !preliminary work for conversion
   if (theta_hydrostatic_mode) then
      pprime = 0.0
@@ -1400,9 +1414,10 @@ contains
      enddo
      !compute pnh, here only pnh is needed
      call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
-          elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+          elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
      pprime = pnh - dp
   endif
+#endif
 
 !OG copied omp pragmas from stepon as is
    if (adjustment) then 
@@ -1422,7 +1437,7 @@ contains
                   ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
                   !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
                   elem%state%Qdp(i,j,k,ic,np1_qdp) = &
-                  dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic)
+                  dp(i,j,k)*elem%derived%FQ(i,j,k,ic)
 
                   if (ic==1) then
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
@@ -1438,13 +1453,13 @@ contains
 
 !$omp parallel do private(k, j, i, ic, dp_tmp)
       do k=1,nlev
-         do ic=1,pcnst
+         do ic=1,qsize
             do j=1,np
                do i=1,np
                   ! make Q consistent now that we have updated ps_v above
                   ! recompute dp, since ps_v was changed above
-                  dp_tmp = ( hyai(k+1) - hyai(k) )*hvcoord%ps0 + &
-                       ( hybi(k+1) - hybi(k) )*elem%state%ps_v(i,j,np1)
+                  dp_tmp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(i,j,np1)
                   elem%state%Q(i,j,k,ic)= &
                        elem%state%Qdp(i,j,k,ic,np1_qdp)/dp_tmp
                end do
@@ -1471,7 +1486,7 @@ contains
                     endif
                     elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
                     if (q==1) then
-                       elem%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
+                       elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
                     endif
                  enddo
               enddo
@@ -1497,6 +1512,7 @@ contains
 
      endif ! if adjustment
 
+#ifdef MODEL_THETA_L
 !continue conversion using pprime from above
      call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
 !derived%T is computed each remap step
@@ -1528,7 +1544,7 @@ contains
 
      elem(ie)%derived%FPHI(:,:,:) = &
          (phi_n1 - elem(ie)%state%phinh_i(:,:,:,np1))/dt
-
+#endif
 
 end subroutine applyCAMforcing_tracers
   
