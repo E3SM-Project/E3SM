@@ -1122,13 +1122,6 @@ IEFLX fixer options
 Default: 0
 </entry>
 
-<entry id="l_ieflx_fix" type="logical"  category="fixers"
-       group="phys_ctl_nl" valid_values="">
-Whether or not to turn on IEFLX fixer
-Default: false
-</entry>
-
-
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
