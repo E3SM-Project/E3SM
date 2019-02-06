@@ -1405,9 +1405,11 @@ contains
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
+!JW            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
+            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
             surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+!JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
             !OceanDensity (i) = x2g_g % rAttr(, n)
          end do
 
@@ -1439,10 +1441,14 @@ contains
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
+   type (mpas_pool_type), pointer :: thermalPool
 
-   integer, pointer :: nCellsSolve
+   integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+   real (kind=RKIND), dimension(:), pointer :: thickness
+   real (kind=RKIND), dimension(:), pointer :: basalTemperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
 
@@ -1484,7 +1490,7 @@ contains
             g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
             g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
 
-	    !!!Mask configurations
+            !!!Mask configurations
             g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
             ! Sg_icemask should be 1 in locations where GLC will use a SMB value
             ! This is cells with ice or bare land (no ocean cells)

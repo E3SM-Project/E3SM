@@ -2395,7 +2395,7 @@ contains
 !JW     call mpas_pool_get_array(diagnosticsPool,'landIceHeatTransferVelocity',landIceHeatTransferVelocity)
 !JW     call mpas_pool_get_array(diagnosticsPool,'landIceSaltTransferVelocity',landIceSaltTransferVelocity)
 !     call mpas_pool_get_array(diagnosticsPool,'effectiveDensityInLandIce',effectiveDensityInLandIce)
-     if ( trim(config_land_ice_flux_mode) .ne. 'off' ) then
+     if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
         call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
         call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
         call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
@@ -2476,7 +2476,7 @@ contains
 !JW       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
 !JW       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
  
-       if ( trim(config_land_ice_flux_mode) .ne. 'off' ) then
+       if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
           o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
           o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
           o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
