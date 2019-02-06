@@ -245,6 +245,15 @@ contains
 
     if (glc_present .and. ocn_c2_glc) then
 
+       call seq_comm_getData(CPLID, &
+            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+
+       o2x_ox => component_get_c2x_cx(ocn(1))
+       lsize_o = mct_aVect_lsize(o2x_ox)
+
+       x2g_gx => component_get_x2c_cx(glc(1))
+       lsize_g = mct_aVect_lsize(x2g_gx)
+
        allocate(o2x_gx(num_inst_ocn))
        do eoi = 1,num_inst_ocn
           call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
@@ -256,9 +265,6 @@ contains
           call mct_aVect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
           call mct_aVect_zero(x2gacc_gx(egi))
        end do
-
-       o2x_ox => component_get_c2x_cx(ocn(1))
-       lsize_o = mct_aVect_lsize(o2x_ox)
 
        x2gacc_gx_cnt = 0
        samegrid_go = .true.
@@ -391,13 +397,14 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_accum(timer)
+  subroutine prep_glc_accum(lnd_c2_glc, timer)
 
     !---------------------------------------------------------------
     ! Description
     ! Accumulate glc inputs
     !
     ! Arguments
+    logical         , intent(in) :: lnd_c2_glc ! .true.  => lnd to glc coupling on
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
@@ -409,25 +416,29 @@ contains
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2gacc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-       else
-          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-       endif
-    end do
-    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    if (lnd_c2_glc) then
+       do eli = 1,num_inst_lnd
+          l2x_lx => component_get_c2x_cx(lnd(eli))
+          if (l2gacc_lx_cnt == 0) then
+             call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+          else
+             call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+          endif
+       end do
+       l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    end if
 
-    do egi = 1,num_inst_glc
-       x2g_gx => component_get_x2c_cx(glc(egi))
-       if (x2gacc_gx_cnt == 0) then
-	  call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
-       else
-	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
-       endif
-    end do
-    x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    if (glc_present) then
+       do egi = 1,num_inst_glc
+          x2g_gx => component_get_x2c_cx(glc(egi))
+          if (x2gacc_gx_cnt == 0) then
+             call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
+          else
+             call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
+          endif
+       end do
+       x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    end if
 
     call t_drvstopf  (trim(timer))
 

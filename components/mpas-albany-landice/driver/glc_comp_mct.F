@@ -1406,10 +1406,10 @@ contains
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
 !JW            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
-            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
+!            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
+!            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
-            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
+!            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
             !OceanDensity (i) = x2g_g % rAttr(, n)
          end do
 
