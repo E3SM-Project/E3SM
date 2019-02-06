@@ -21,11 +21,13 @@
 #include "utilities/MathUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/SyncUtils.hpp"
+#include "RemapStateProvider.hpp"
 
 #include "profiling.hpp"
 
 namespace Homme {
 namespace Remap {
+
 // All VertRemapAlg types must provide the following methods:
 // compute_grids_phase, and compute_remap_phase
 //
@@ -39,38 +41,61 @@ namespace Remap {
 // qsize * num_elems
 struct VertRemapAlg {};
 
-template <bool nonzero_rsplit> struct _RemapFunctorRSplit {
-  static_assert(nonzero_rsplit == false, "The template specialization for "
-                                         "_RemapFunctorRSplit seems to have "
-                                         "been removed.");
+// The RemapStateAndThicknessProvider provides states and src/tgt thicknesses
+// to the RemapFunctor. Its implementation differ depending on whether rsplit
+// is zero or not. In case it is not zero, it must provide states to remap.
+// For this task, it relies on the RemapStateProvider class, which is implemented
+// inside each model (preqx and theta), since the state structure is different
+// across models.
+template <bool nonzero_rsplit>
+struct RemapStateAndThicknessProvider;
 
-  static constexpr int num_states_remap = 0;
+template <>
+struct RemapStateAndThicknessProvider<false> {
 
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]> m_src_layer_thickness;
-  explicit _RemapFunctorRSplit(const int &num_elems)
-      : m_src_layer_thickness("Source layer thickness", num_elems) {}
+  ExecViewUnmanaged<const Scalar * [NP][NP][NUM_LEV]> m_eta_dot_dpdn;
+
+  explicit
+  RemapStateAndThicknessProvider (const Elements& elements)
+    : m_src_layer_thickness("Source layer thickness", elements.num_elems())
+    , m_eta_dot_dpdn(elements.m_derived.m_eta_dot_dpdn)
+  {}
+
+  int num_states_remap () const { return 0; }
+
+  void preprocess_states (const int /* np1 */) const {}
+  void postprocess_states (const int /* np1 */) const {}
 
   KOKKOS_INLINE_FUNCTION
-  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> get_source_thickness(
-      const int ie, const int np1,
-      ExecViewUnmanaged<const Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d)
-      const {
+  ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
+  get_state(const KernelVariables &/* kv */, int /*np1*/, int /*var*/) const {
+    Errors::runtime_abort("Error! Asked for state in an rsplit=0 remap.\n");
+
+    // Dummy, to silence compiler warnings
+    return ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>();
+  } 
+
+  KOKKOS_INLINE_FUNCTION
+  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]>
+  get_source_thickness(const int ie, const int /* np1 */) const {
     return Homme::subview(m_src_layer_thickness, ie);
   }
 
   KOKKOS_INLINE_FUNCTION
-  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> compute_source_thickness(
+  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]>
+  compute_source_thickness(
       KernelVariables &kv, const int &np1, const Real &dt,
-      ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> tgt_layer_thickness,
-      ExecViewUnmanaged<const Scalar * [NP][NP][NUM_LEV]> eta_dot_dpdn,
-      ExecViewUnmanaged<const Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d)
+      ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> tgt_layer_thickness)
       const {
-    ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> src_layer_thickness =
-        get_source_thickness(kv.ie, np1, dp3d);
+
+    auto src_layer_thickness = get_source_thickness(kv.ie, np1);
+
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int &loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
+      auto eta_dot_dpdn = Homme::subview(m_eta_dot_dpdn,kv.ie,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
                            [&](const int &level) {
         const int ilev = level / VECTOR_SIZE;
@@ -79,10 +104,10 @@ template <bool nonzero_rsplit> struct _RemapFunctorRSplit {
         const int next_vlev = (level + 1) % VECTOR_SIZE;
         const auto eta_dot_dpdn_next =
             (level + 1 < NUM_PHYSICAL_LEV
-                 ? eta_dot_dpdn(kv.ie, igp, jgp, next_ilev)[next_vlev]
+                 ? eta_dot_dpdn(next_ilev)[next_vlev]
                  : 0);
         const Real delta_dpdn =
-            eta_dot_dpdn_next - eta_dot_dpdn(kv.ie, igp, jgp, ilev)[vlev];
+            eta_dot_dpdn_next - eta_dot_dpdn(ilev)[vlev];
         src_layer_thickness(igp, jgp, ilev)[vlev] =
             tgt_layer_thickness(igp, jgp, ilev)[vlev] + dt * delta_dpdn;
       });
@@ -90,63 +115,55 @@ template <bool nonzero_rsplit> struct _RemapFunctorRSplit {
     kv.team_barrier();
     return src_layer_thickness;
   }
+};
+
+template <> struct
+RemapStateAndThicknessProvider<true> {
+
+  ExecViewUnmanaged<Scalar *[NUM_TIME_LEVELS][NP][NP][NUM_LEV]> m_dp3d;
+  RemapStateProvider          m_state_provider;
+
+  explicit RemapStateAndThicknessProvider (const Elements& elements) 
+    : m_dp3d (elements.m_state.m_dp3d)
+    , m_state_provider (elements.m_state) {}
+
+  int num_states_remap () const { return m_state_provider.num_states_remap(); }
+
+  void preprocess_states  (const int np1) const {m_state_provider.preprocess_states(np1);}
+  void postprocess_states (const int np1) const {m_state_provider.postprocess_states(np1);}
 
   KOKKOS_INLINE_FUNCTION
   ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
-  get_state(const KernelVariables &kv, const Elements &elements, int np1,
-            int var) const {
-    return ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>();
-  }
-};
-
-template <> struct _RemapFunctorRSplit<true> {
-  explicit _RemapFunctorRSplit(const int &num_elems) {}
-
-  static constexpr int num_states_remap = 3;
+  get_state(const KernelVariables &kv, int np1, int var) const {
+    return m_state_provider.get_state(kv,np1,var);
+  } 
 
   KOKKOS_INLINE_FUNCTION
-  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> get_source_thickness(
-      const int ie, const int np1,
-      ExecViewUnmanaged<const Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d)
-      const {
-    return Homme::subview(dp3d, ie, np1);
+  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]>
+  get_source_thickness (const int ie, const int np1) const {
+    return Homme::subview(m_dp3d, ie, np1);
   }
 
   KOKKOS_INLINE_FUNCTION
   ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> compute_source_thickness(
-      KernelVariables &kv, const int np1, const Real dt,
-      ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> tgt_layer_thickness,
-      ExecViewUnmanaged<const Scalar * [NP][NP][NUM_LEV]> eta_dot_dpdn,
-      ExecViewUnmanaged<const Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d)
+      KernelVariables &kv, const int np1, const Real /* dt */,
+      ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> /* tgt_layer_thickness */)
       const {
-    return get_source_thickness(kv.ie, np1, dp3d);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
-  get_state(const KernelVariables &kv, const Elements &elements, int np1,
-            int var) const {
-    switch (var) {
-    case 0:
-      return Homme::subview(elements.m_state.m_v, kv.ie, np1, 0);
-    case 1:
-      return Homme::subview(elements.m_state.m_v, kv.ie, np1, 1);
-    default:
-      assert(var == 2);
-      return Homme::subview(elements.m_state.m_t, kv.ie, np1);
-    }
+    return get_source_thickness(kv.ie, np1);
   }
 };
 
+// This base class serves the purpose of allowing pimp implementation in VerticalRemapManager
 struct Remapper {
   virtual ~Remapper() {}
   virtual void run_remap(int np1, int np1_qdp, double dt) = 0;
 };
 
-template <bool nonzero_rsplit, template <typename...> class _RemapType,
+// The Remap functor
+template <bool nonzero_rsplit,
+          template <typename...> class _RemapType,
           typename... RemapOptions>
-struct RemapFunctor : public Remapper,
-                      public _RemapFunctorRSplit<nonzero_rsplit> {
+struct RemapFunctor : public Remapper {
 
   using RemapType = _RemapType<RemapOptions...>;
 
@@ -162,6 +179,8 @@ struct RemapFunctor : public Remapper,
   };
 
   RemapData m_data;
+  RemapStateAndThicknessProvider<nonzero_rsplit> m_fields_provider;
+
   const Elements m_elements;
   const Tracers m_tracers;
   const HybridVCoord m_hvcoord;
@@ -173,18 +192,18 @@ struct RemapFunctor : public Remapper,
 
   RemapType m_remap;
 
-  explicit RemapFunctor(const int qsize, const Elements &elements,
-                        const Tracers &tracers, const HybridVCoord &hvcoord)
-      : _RemapFunctorRSplit<nonzero_rsplit>(elements.num_elems()),
-        m_data(qsize), m_elements(elements), m_tracers(tracers),
-        m_hvcoord(hvcoord),
-        m_tgt_layer_thickness("Target Layer Thickness", elements.num_elems()),
-        valid_layer_thickness(
-            "Check for whether the surface thicknesses are positive",
-            elements.num_elems()),
-        host_valid_input(Kokkos::create_mirror_view(valid_layer_thickness)),
-        m_remap(elements.num_elems(), this->num_to_remap()) {
-    // Nothing to be done here
+  explicit
+  RemapFunctor(const int qsize, const Elements &elements,
+               const Tracers &tracers, const HybridVCoord &hvcoord)
+   : m_fields_provider(elements),
+     m_data(qsize), m_elements(elements), m_tracers(tracers),
+     m_hvcoord(hvcoord),
+     m_tgt_layer_thickness("Target Layer Thickness", elements.num_elems()),
+     m_remap(elements.num_elems(), this->num_to_remap())
+  {
+    // Members used for sanity checks
+    valid_layer_thickness = decltype(valid_layer_thickness)("Check for whether the surface thicknesses are positive",elements.num_elems());
+    host_valid_input = Kokkos::create_mirror_view(valid_layer_thickness);
   }
 
   void input_valid_assert() {
@@ -198,17 +217,17 @@ struct RemapFunctor : public Remapper,
   }
 
   KOKKOS_INLINE_FUNCTION
-  int num_to_remap() const { return this->num_states_remap + m_data.qsize; }
+  int num_to_remap() const { return m_fields_provider.num_states_remap() + m_data.qsize; }
 
   KOKKOS_INLINE_FUNCTION
   ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
   get_remap_val(const KernelVariables &kv, int var) const {
-    if (!nonzero_rsplit || var >= this->num_states_remap) {
-      if (var >= this->num_states_remap)
-        var -= this->num_states_remap;
+    if (!nonzero_rsplit || var >= m_fields_provider.num_states_remap()) {
+      if (var >= m_fields_provider.num_states_remap())
+        var -= m_fields_provider.num_states_remap();
       return Homme::subview(m_tracers.qdp, kv.ie, m_data.np1_qdp, var);
     } else {
-      return this->get_state(kv, m_elements, m_data.np1, var);
+      return m_fields_provider.get_state(kv, m_data.np1, var);
     }
   }
 
@@ -232,9 +251,9 @@ struct RemapFunctor : public Remapper,
         compute_target_thickness(kv);
 
     ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> src_layer_thickness =
-        this->compute_source_thickness(
-            kv, m_data.np1, m_data.dt, tgt_layer_thickness,
-            m_elements.m_derived.m_eta_dot_dpdn, m_elements.m_state.m_dp3d);
+        m_fields_provider.compute_source_thickness(
+            kv, m_data.np1, m_data.dt, tgt_layer_thickness);
+
 
     check_source_thickness(kv, src_layer_thickness);
   }
@@ -243,15 +262,15 @@ struct RemapFunctor : public Remapper,
   void operator()(ComputeExtrinsicsTag, const TeamMember &team) const {
     KernelVariables kv(team);
 
-    assert(this->num_states_remap > 0);
-    const int den = (this->num_states_remap > 0) ? this->num_states_remap : 1;
+    assert(m_fields_provider.num_states_remap() > 0);
+    const int den = (m_fields_provider.num_states_remap() > 0) ? m_fields_provider.num_states_remap() : 1;
     const int var = kv.ie % den;
     kv.ie /= den;
     assert(kv.ie < m_elements.num_elems());
 
     compute_extrinsic_state(
-        kv, this->get_source_thickness(kv.ie, m_data.np1, m_elements.m_state.m_dp3d),
-        this->get_state(kv, m_elements, m_data.np1, var));
+        kv, m_fields_provider.get_source_thickness(kv.ie, m_data.np1),
+        m_fields_provider.get_state(kv, m_data.np1, var));
   }
 
   // This functor is the only one guaranteed to be run
@@ -261,7 +280,7 @@ struct RemapFunctor : public Remapper,
   void operator()(ComputeGridsTag, const TeamMember &team) const {
     KernelVariables kv(team);
     m_remap.compute_grids_phase(
-        kv, this->get_source_thickness(kv.ie, m_data.np1, m_elements.m_state.m_dp3d),
+        kv, m_fields_provider.get_source_thickness(kv.ie, m_data.np1),
         Homme::subview(m_tgt_layer_thickness, kv.ie));
   }
 
@@ -276,7 +295,7 @@ struct RemapFunctor : public Remapper,
 
     auto tgt_layer_thickness = Homme::subview(m_tgt_layer_thickness, kv.ie);
     ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> src_layer_thickness =
-        this->get_source_thickness(kv.ie, m_data.np1, m_elements.m_state.m_dp3d);
+        m_fields_provider.get_source_thickness(kv.ie, m_data.np1);
 
     this->m_remap.compute_remap_phase(kv, get_remap_val(kv, var));
   }
@@ -285,15 +304,15 @@ struct RemapFunctor : public Remapper,
   void operator()(ComputeIntrinsicsTag, const TeamMember &team) const {
     KernelVariables kv(team);
 
-    assert(this->num_states_remap != 0);
-    const int den = (this->num_states_remap > 0) ? this->num_states_remap : 1;
+    assert(m_fields_provider.num_states_remap() != 0);
+    const int den = (m_fields_provider.num_states_remap() > 0) ? m_fields_provider.num_states_remap() : 1;
     const int var = kv.ie % den;
     kv.ie /= den;
     assert(kv.ie < m_elements.num_elems());
 
     auto tgt_layer_thickness = Homme::subview(m_tgt_layer_thickness, kv.ie);
     compute_intrinsic_state(kv, tgt_layer_thickness,
-                            this->get_state(kv, m_elements, m_data.np1, var));
+                            m_fields_provider.get_state(kv, m_data.np1, var));
   }
 
   void run_remap(int np1, int np1_qdp, double dt) override {
@@ -313,9 +332,10 @@ struct RemapFunctor : public Remapper,
     if (num_to_remap() > 0) {
       // We don't want the latency of launching an empty kernel
       if (nonzero_rsplit) {
+        m_fields_provider.preprocess_states(m_data.np1);
         run_functor<ComputeExtrinsicsTag>("Remap Scale States Functor",
                                           m_elements.num_elems() *
-                                              this->num_states_remap);
+                                          m_fields_provider.num_states_remap());
       }
       run_functor<ComputeGridsTag>("Remap Compute Grids Functor",
                                    this->m_elements.num_elems());
@@ -325,7 +345,8 @@ struct RemapFunctor : public Remapper,
       if (nonzero_rsplit) {
         run_functor<ComputeIntrinsicsTag>("Remap Rescale States Functor",
                                           m_elements.num_elems() *
-                                              this->num_states_remap);
+                                          m_fields_provider.num_states_remap());
+        m_fields_provider.postprocess_states(m_data.np1);
       }
     }
   }
