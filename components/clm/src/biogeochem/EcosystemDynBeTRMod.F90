@@ -523,8 +523,9 @@ module EcosystemDynBeTRMod
     use NitrogenStateUpdate3BeTRMod    , only : NitrogenStateUpdate3
     use PhosphorusStateUpdate1BeTRMod      , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering
+    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusLeaching
     use PhosphorusDynamicsMod              , only : PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
+    use NitrogenDynamicsMod       , only: NitrogenLeaching
     use VerticalProfileMod      , only : decomp_vertprofiles
     use RootDynamicsMod           , only: RootDynamics
     use PhenologyFLuxLimitMod     , only : phenology_flux_limiter

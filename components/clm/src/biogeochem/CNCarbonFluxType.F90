@@ -5,7 +5,7 @@ module CNCarbonFluxType
   use decompMod              , only : bounds_type
   use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar             , only : crop_prog
-  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
+  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp,maxpatch_pft
   use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak
   use clm_varctl             , only : use_cndv, use_c13, use_fates
@@ -5695,7 +5695,7 @@ end subroutine CSummary_interface
   integer, intent(in) :: num_soilc
   integer, intent(in) :: filter_soilc(:)
   type(cnstate_type), optional, intent(in) :: cnstate_vars
-  integer :: fp, p
+  integer :: fp, p, fc, pi, c, j
    ! patch loop
   do fp = 1,num_soilp
     p = filter_soilp(fp)
