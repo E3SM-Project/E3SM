@@ -207,23 +207,23 @@ contains
 
        if (lnd_c2_glc) then
 
-       samegrid_lg = .true.
-       if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
+          samegrid_lg = .true.
+          if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
 
-       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_Sl2g'
-       end if
-       call seq_map_init_rcfile(mapper_Sl2g, lnd(1), glc(1), &
-            'seq_maps.rc', 'lnd2glc_smapname:', 'lnd2glc_smaptype:', samegrid_lg, &
-            'mapper_Sl2g initialization', esmf_map_flag)
-       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_Fl2g'
-       end if
-       call seq_map_init_rcfile(mapper_Fl2g, lnd(1), glc(1), &
-            'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
-            'mapper_Fl2g initialization', esmf_map_flag)
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sl2g'
+          end if
+          call seq_map_init_rcfile(mapper_Sl2g, lnd(1), glc(1), &
+               'seq_maps.rc', 'lnd2glc_smapname:', 'lnd2glc_smaptype:', samegrid_lg, &
+               'mapper_Sl2g initialization', esmf_map_flag)
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Fl2g'
+          end if
+          call seq_map_init_rcfile(mapper_Fl2g, lnd(1), glc(1), &
+               'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
+               'mapper_Fl2g initialization', esmf_map_flag)
 
           ! We need to initialize our own Fg2l mapper because in some cases (particularly
           ! TG compsets - dlnd forcing CISM) the system doesn't otherwise create a Fg2l
@@ -244,6 +244,15 @@ contains
 
     if (glc_present .and. ocn_c2_glc) then
 
+       call seq_comm_getData(CPLID, &
+            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+
+       o2x_ox => component_get_c2x_cx(ocn(1))
+       lsize_o = mct_aVect_lsize(o2x_ox)
+
+       x2g_gx => component_get_x2c_cx(glc(1))
+       lsize_g = mct_aVect_lsize(x2g_gx)
+
        allocate(o2x_gx(num_inst_ocn))
        do eoi = 1,num_inst_ocn
           call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
@@ -255,9 +264,6 @@ contains
           call mct_aVect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
           call mct_aVect_zero(x2gacc_gx(egi))
        end do
-
-       o2x_ox => component_get_c2x_cx(ocn(1))
-       lsize_o = mct_aVect_lsize(o2x_ox)
 
        x2gacc_gx_cnt = 0
        samegrid_go = .true.
@@ -390,13 +396,14 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_accum(timer)
+  subroutine prep_glc_accum(lnd_c2_glc, timer)
 
     !---------------------------------------------------------------
     ! Description
     ! Accumulate glc inputs
     !
     ! Arguments
+    logical         , intent(in) :: lnd_c2_glc ! .true.  => lnd to glc coupling on
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
@@ -408,25 +415,29 @@ contains
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2gacc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-       else
-          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-       endif
-    end do
-    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    if (lnd_c2_glc) then
+       do eli = 1,num_inst_lnd
+          l2x_lx => component_get_c2x_cx(lnd(eli))
+          if (l2gacc_lx_cnt == 0) then
+             call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+          else
+             call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+          endif
+       end do
+       l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    end if
 
-    do egi = 1,num_inst_glc
-       x2g_gx => component_get_x2c_cx(glc(egi))
-       if (x2gacc_gx_cnt == 0) then
-	  call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
-       else
-	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
-       endif
-    end do
-    x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    if (glc_present) then
+       do egi = 1,num_inst_glc
+          x2g_gx => component_get_x2c_cx(glc(egi))
+          if (x2gacc_gx_cnt == 0) then
+             call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
+          else
+             call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
+          endif
+       end do
+       x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    end if
 
     call t_drvstopf  (trim(timer))
 
