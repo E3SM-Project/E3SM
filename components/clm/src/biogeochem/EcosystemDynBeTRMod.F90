@@ -518,7 +518,7 @@ module EcosystemDynBeTRMod
     use clm_varpar                , only : crop_prog
     use CropHarvestPoolsMod     , only : CropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
-    use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
+    use AllocationMod             , only : update_PlantMicKinetics_pars
     use PhosphorusStateUpdate3Mod          , only : PhosphorusStateUpdate3
     use NitrogenStateUpdate3BeTRMod    , only : NitrogenStateUpdate3
     use PhosphorusStateUpdate1BeTRMod      , only : PhosphorusStateUpdate1
@@ -592,15 +592,21 @@ module EcosystemDynBeTRMod
        !call decomposition method from betr
        !----------------------------------------------------------------
       call t_startf('betr type1 soil bgc')
+
+      call update_PlantMicKinetics_pars(bounds, num_soilc, filter_soilc  , &
+        cnstate_vars, carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, &
+        nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars, &
+        PlantMicKinetics_vars)
+
       call ep_betr%BeTRSetBiophysForcing(bounds, col, pft, 1, nlevsoi, &
          waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
-         atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars)
+         atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars, carbonflux_vars=carbonflux_vars)
 
       call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
        num_soilc, filter_soilc, &
        carbonstate_vars, carbonflux_vars, &
        c13_carbonstate_vars, c14_carbonstate_vars,  &
-       nitrogenstate_vars,  phosphorusstate_vars,PlantMicKinetics_vars)
+       nitrogenstate_vars,  phosphorusstate_vars, PlantMicKinetics_vars)
 
       call ep_betr%OutLoopSoilBGC(bounds, col, pft)
 
@@ -636,7 +642,8 @@ module EcosystemDynBeTRMod
        call GrowthResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('GrowthResp')
-       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+
+       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, cnstate_vars)
 
        if(use_c13) then
          call c13_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
@@ -904,7 +911,17 @@ module EcosystemDynBeTRMod
 
        !-----------------------------------------------------------------------
        ! in type 1 bgc, leaching will be done in betr, evenutally.
+       !-----------------------------------------------------------------------
+       ! in type 1 bgc, leaching will be done in betr, evenutally.
+       call t_startf('NitrogenLeaching')
+       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+       call t_stopf('NitrogenLeaching')
 
+       call t_startf('PhosphorusLeaching')
+       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+       call t_stopf('PhosphorusLeaching')
 
   end subroutine CNEcosystemDynBeTR1
   !-----------------------------------------------------------------------
@@ -1528,7 +1545,7 @@ module EcosystemDynBeTRMod
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
-    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance,PhosphorusLeaching
+    use PhosphorusDynamicsMod         , only: PhosphorusLeaching
 
     !
     ! !ARGUMENTS:
