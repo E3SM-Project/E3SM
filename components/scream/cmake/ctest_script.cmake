@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-# if(NOT DEFINED build_name)
-#   message(FATAL_ERROR "Missing required parameter build_name")
-# endif()
-
 get_filename_component(working_dir ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
 set(CTEST_SOURCE_DIRECTORY "${working_dir}")
 set(CTEST_BINARY_DIRECTORY "${working_dir}/build")
