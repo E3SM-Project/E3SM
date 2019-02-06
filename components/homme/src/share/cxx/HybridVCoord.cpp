@@ -19,26 +19,32 @@ void HybridVCoord::init(const Real ps0_in,
                    CRCPtr hybrid_bm_ptr,
                    CRCPtr hybrid_bi_ptr)
 {
+  // Sanity checks
+  assert(hybrid_am_ptr!=nullptr);
+  assert(hybrid_ai_ptr!=nullptr);
+  assert(hybrid_bm_ptr!=nullptr);
+  assert(hybrid_bi_ptr!=nullptr);
+
   ps0 = ps0_in;
 
-  // hybrid_am = ExecViewManaged<Real[NUM_PHYSICAL_LEV]>(
-  //    "Hybrid coordinates; coefficient A_midpoints");
-  hybrid_ai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>(
-      "Hybrid coordinates; coefficient A_interfaces");
-  hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>(
-      "Hybrid coordinates; coefficient B_interfaces");
-  // hybrid_bm = ExecViewManaged<Real[NUM_PHYSICAL_LEV]>(
-  //    "Hybrid coordinates; coefficient B_midpoints");
+  // Create interface views
+  hybrid_ai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid coordinates; coefficient A_interfaces");
+  hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid coordinates; coefficient B_interfaces");
 
-  // HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]>
-  // host_hybrid_am(hybrid_am_ptr);
-  // HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]>
-  // host_hybrid_bm(hybrid_bm_ptr);
-  HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_ai(
-      hybrid_ai_ptr);
+  // Create midpoints views
+  hybrid_am = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid coordinates; coefficient A_midpoints");
+  hybrid_bm = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid coordinates; coefficient B_midpoints");
+
+  // Create views of input pointers
+  HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_ai(hybrid_ai_ptr);
+  HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_bi(hybrid_bi_ptr);
+  HostViewUnmanaged<const Scalar[NUM_LEV]> host_hybrid_am(reinterpret_cast<const Scalar*>(hybrid_am_ptr));
+  HostViewUnmanaged<const Scalar[NUM_LEV]> host_hybrid_bm(reinterpret_cast<const Scalar*>(hybrid_bm_ptr));
+
+  // Copy inputs into class members
   Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
-  HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_bi(
-      hybrid_bi_ptr);
+  Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
+  Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
   Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
 
   // i don't think this saves us much now
@@ -46,20 +52,20 @@ void HybridVCoord::init(const Real ps0_in,
     // Only hybrid_ai(0) is needed.
     hybrid_ai0 = hybrid_ai_ptr[0];
   }
-  // this is not in master anymore?
-  //  assert(hybrid_ai_ptr != nullptr);
-  //  assert(hybrid_bi_ptr != nullptr);
 
+  // Compute delta_A and delta_B
   compute_deltas();
+  // Compute Eta=A+B
+  compute_eta();
 
   m_inited = true;
 }
 
 void HybridVCoord::random_init(int seed) {
-  hybrid_ai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>(
-      "Hybrid a_interface coefs");
-  hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>(
-      "Hybrid b_interface coefs");
+  hybrid_ai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid a_interface coefs");
+  hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid b_interface coefs");
+  hybrid_am = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid a_interface coefs");
+  hybrid_bm = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid b_interface coefs");
 
   std::mt19937_64 engine(seed);
   ps0 = 1.0;
@@ -140,6 +146,7 @@ void HybridVCoord::random_init(int seed) {
   hybrid_ai0 = host_hybrid_ai(0);
 
   compute_deltas();
+  compute_eta();
 
   m_inited = true;
 }
@@ -188,6 +195,26 @@ void HybridVCoord::compute_deltas ()
     }
     Kokkos::deep_copy(dp0, hdp0);
   }
+}
+
+void HybridVCoord::compute_eta ()
+{
+  // Create device views
+  etai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Eta coordinate at interfaces");
+  etam = ExecViewManaged<Scalar[NUM_LEV]>("Eta coordinate at midpoints");
+
+  // Local copies, to avoid issues on GPU when accessing this-> members
+  auto l_etai = etai;
+  auto l_etam = etam;
+
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_LEV),
+                       [&](const int& ilev){
+    l_etam(ilev) = hybrid_am(ilev) + hybrid_bm(ilev);
+  });
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_INTERFACE_LEV),
+                       [&](const int& ilev){
+    l_etai(ilev) = hybrid_ai(ilev) + hybrid_bi(ilev);
+  });
 }
 
 } // namespace Homme
