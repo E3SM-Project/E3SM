@@ -120,7 +120,7 @@ CONTAINS
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
-        data(1:flds_scalar_num) = farrayptr(1,1:flds_scalar_num)
+        data(1:flds_scalar_num) = farrayptr(1:flds_scalar_num,1)
       endif
 
       call ESMF_VMBroadCast(vm, data, flds_scalar_num, 0, rc=rc)
@@ -208,8 +208,8 @@ CONTAINS
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
-        farrayptr(1,flds_scalar_index_nextsw_cday) = infodata%nextsw_cday
-        farrayptr(1,flds_scalar_index_precip_fact) = infodata%precip_fact
+        farrayptr(flds_scalar_index_nextsw_cday,1) = infodata%nextsw_cday
+        farrayptr(flds_scalar_index_precip_fact,1) = infodata%precip_fact
       endif
 
     endif

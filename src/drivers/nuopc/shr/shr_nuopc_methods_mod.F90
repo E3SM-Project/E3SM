@@ -3254,7 +3254,7 @@ module shr_nuopc_methods_mod
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
-      tmp(:) = farrayptr(:,scalar_id)
+      tmp(:) = farrayptr(scalar_id,:)
     endif
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -3306,7 +3306,7 @@ module shr_nuopc_methods_mod
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
-      farrayptr(1,scalar_id) = value
+      farrayptr(scalar_id,1) = value
     endif
 
   end subroutine shr_nuopc_methods_State_SetScalar
