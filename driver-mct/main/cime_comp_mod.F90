@@ -2580,7 +2580,7 @@ contains
                                            !unsafe to do it here.
           endif
 
-          call prep_glc_accum(timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+          call prep_glc_accum(lnd_c2_glc, timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
 
        endif
 
@@ -3827,7 +3827,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_glc) call prep_glc_accum(timer='CPL:lndpost_accl2g' )
+       if (lnd_c2_glc) call prep_glc_accum(.true., timer='CPL:lndpost_accl2g' )
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
