@@ -21,12 +21,15 @@ void reset_cxx_comm (const MPI_Fint& f_comm)
 {
   // f_comm must be a valid Fortran handle to a communicator
   MPI_Comm c_comm = MPI_Comm_f2c(f_comm);
+  if (!Context::singleton().has<Comm>()) {
+    Context::singleton().create<Comm>();
+  }
   Context::singleton().get<Comm>().reset_mpi_comm(c_comm);
 }
 
 void init_connectivity (const int& num_local_elems)
 {
-  Connectivity& connectivity = Context::singleton().get<Connectivity>();
+  Connectivity& connectivity = Context::singleton().create<Connectivity>();
   connectivity.set_num_elements(num_local_elems);
   connectivity.set_comm(Context::singleton().get<Comm>());
 }

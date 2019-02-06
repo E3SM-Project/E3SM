@@ -22,6 +22,7 @@
 #include "profiling.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/BuffersManager.hpp"
+#include "mpi/Connectivity.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 #include "vector/vector_pragmas.hpp"
@@ -149,8 +150,10 @@ public:
   void init_boundary_exchanges () {
     assert(m_data.qsize >= 0); // after reset() called
 
-    auto connectivity = Context::singleton().get_ptr<Connectivity>();
-    auto bm_exchange = Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE];
+    auto bm_exchange = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
+    if (!bm_exchange->is_connectivity_set()) {
+      bm_exchange->set_connectivity(Context::singleton().get_ptr<Connectivity>());
+    }
     for (int np1_qdp = 0, k = 0; np1_qdp < Q_NUM_TIME_LEVELS; ++np1_qdp) {
       for (int dssi = 0; dssi < 3; ++dssi, ++k) {
         m_bes[k] = std::make_shared<BoundaryExchange>();
@@ -174,7 +177,10 @@ public:
     }
 
     {
-      auto bm_exchange_minmax = Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE_MIN_MAX];
+      auto bm_exchange_minmax = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
+      if (!bm_exchange_minmax->is_connectivity_set()) {
+        bm_exchange_minmax->set_connectivity(Context::singleton().get_ptr<Connectivity>());
+      }
       m_mm_be = std::make_shared<BoundaryExchange>();
       BoundaryExchange& be = *m_mm_be;
       be.set_buffers_manager(bm_exchange_minmax);
@@ -843,7 +849,7 @@ public: // Expose for unit testing.
                         const Array2Lvl& qlim, const ArrayGllLvl& ptens) {
     struct Limit {
       KOKKOS_INLINE_FUNCTION bool
-      operator() (const TeamMember& team, const Real& mass,
+      operator() (const TeamMember& team, const Real& /* mass */,
                   const Real& minp, const Real& maxp,
                   Real* KOKKOS_RESTRICT const x,
                   Real const* KOKKOS_RESTRICT const c) const {

@@ -324,14 +324,14 @@ module prim_driver_mod
     hybrid_bi_ptr = c_loc(hvcoord%hybi)
     call init_hvcoord_c (hvcoord%ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr)
 
+    ! Initialize the C++ functors in the C++ context
+    call init_functors_c ()
+
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
-
-    ! Initialize the C++ functors in the C++ context
-    call init_functors_c ()
 
   end subroutine prim_init2
 

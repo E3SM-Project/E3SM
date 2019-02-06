@@ -47,8 +47,7 @@ HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& pa
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be = std::make_shared<BoundaryExchange>();
   auto& be = *m_be;
-  auto connectivity = Context::singleton().get_ptr<Connectivity>();
-  auto bm_exchange = Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE];
+  auto bm_exchange = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
   be.set_buffers_manager(bm_exchange);
   be.set_num_fields(0, 0, 4);
   be.register_field(m_elements.m_buffers.vtens, 2, 0);

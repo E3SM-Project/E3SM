@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
   // Initialize mpi
   MPI_Init(&argc,&argv);
 
-  Homme::Context::singleton().get<Homme::Comm>().reset_mpi_comm(MPI_COMM_WORLD);
+  Homme::Context::singleton().create<Homme::Comm>().reset_mpi_comm(MPI_COMM_WORLD);
   Homme::initialize_hommexx_session();
 
   int result = Catch::Session().run(argc, argv);

@@ -64,6 +64,9 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
 
   // Create connectivity
   init_connectivity_f90(num_min_max_fields_1d,num_scalar_fields_2d, num_scalar_fields_3d, num_vector_fields_3d, DIM);
+
+  // Note: init_connectivity_f90 calls init_connectivity, which in turns creates
+  //       a Connectivity object in the Context, making the following call safe.
   std::shared_ptr<Connectivity> connectivity = Context::singleton().get_ptr<Connectivity>();
 
   // Retrieve local number of elements
@@ -92,6 +95,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   field_4d_cxx_host = Kokkos::create_mirror_view(field_4d_cxx);
 
   // Get the buffers manager
+  Context::singleton().create<BuffersManagerMap>()[MPI_EXCHANGE];
   std::shared_ptr<BuffersManager> buffers_manager = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
   std::shared_ptr<BuffersManager> buffers_manager_min_max = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
 

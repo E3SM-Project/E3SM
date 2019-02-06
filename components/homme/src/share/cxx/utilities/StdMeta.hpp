@@ -32,14 +32,29 @@ template <typename HeldType>
 class holder : public holder_base {
 public:
 
-  template<typename... Args>
-  holder (Args&&... args) {
-    m_value = std::make_shared<HeldType>(args...);
-  }
+  holder () = default;
+
   virtual const std::type_info& type () const { return typeid(HeldType); }
 
   HeldType& value () { return *m_value; }
   std::shared_ptr<HeldType> ptr () const { return m_value; }
+
+  template<typename DerivedFromHeldType>
+  void reset_ptr (std::shared_ptr<DerivedFromHeldType> ptr) {
+    static_assert(std::is_base_of<HeldType,DerivedFromHeldType>::value,
+                  "Error! Attempting to set stored value to a pointer to a non-derived class.\n");
+    m_value = ptr;
+  }
+
+  static holder<HeldType>* create_empty () { return new holder<HeldType>(); }
+
+  template<typename... Args>
+  static holder<HeldType>* create (Args... args) {
+    auto ptr = create_empty();
+    ptr->m_value = std::make_shared<HeldType>(args...);
+    return ptr;
+  }
+
 private:
   // Note: we store a shared_ptr rather than a HeldType directly,
   //       since we may store multiple copies of the concrete object.
@@ -57,7 +72,14 @@ public:
 
   template<typename T, typename... Args>
   void reset (Args&&... args) {
-    m_content.reset( new Impl::holder<T>(args...) );
+    m_content.reset( Impl::holder<T>::create(args...) );
+  }
+
+  template<typename BaseType, typename ConcreteType>
+  void reset_ptr (std::shared_ptr<ConcreteType> ptr) {
+    auto raw_ptr = Impl::holder<BaseType>::create_empty();
+    raw_ptr->reset_ptr(ptr);
+    m_content.reset(raw_ptr);
   }
 
   Impl::holder_base& content () const { 
@@ -89,7 +111,7 @@ ConcreteType& any_cast (any& src) {
 }
 
 template<typename ConcreteType>
-std::shared_ptr<ConcreteType> any_ptr_cast (any& src) {
+std::shared_ptr<ConcreteType> any_ptr_cast (const any& src) {
   const auto& src_type = src.content().type();
   const auto& req_type = typeid(ConcreteType);
 
@@ -101,7 +123,6 @@ std::shared_ptr<ConcreteType> any_ptr_cast (any& src) {
 
   return ptr->ptr();
 }
-
 
 } // namespace Homme
 

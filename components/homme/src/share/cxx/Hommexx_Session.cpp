@@ -45,6 +45,7 @@ void initialize_hommexx_session ()
    * threads/processors Kokkos uses */
   initialize_kokkos();
 
+  // Note: at this point, the Comm *should* already be created.
   const auto& comm = Context::singleton().get<Comm>();
   if (comm.root()) {
     ExecSpace::print_configuration(std::cout, true);

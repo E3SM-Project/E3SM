@@ -56,7 +56,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
 
   // Get the simulation params struct
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
+  SimulationParams& params = Context::singleton().create<SimulationParams>();
 
   if (remap_alg==1) {
     params.remap_alg = RemapAlg::PPM_MIRRORED;
@@ -122,7 +122,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 void init_hvcoord_c (const Real& ps0, CRCPtr& hybrid_am_ptr, CRCPtr& hybrid_ai_ptr,
                                       CRCPtr& hybrid_bm_ptr, CRCPtr& hybrid_bi_ptr)
 {
-  HybridVCoord& hvcoord = Context::singleton().get<HybridVCoord>();
+  HybridVCoord& hvcoord = Context::singleton().create<HybridVCoord>();
   hvcoord.init(ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr);
 }
 
@@ -208,14 +208,14 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
 void init_reference_element_c (CF90Ptr& deriv, CF90Ptr& mass)
 {
-  ReferenceElement& ref_FE = Context::singleton().get<ReferenceElement> ();
+  ReferenceElement& ref_FE = Context::singleton().create<ReferenceElement> ();
   ref_FE.init(deriv,mass);
 }
 
 void init_time_level_c (const int& nm1, const int& n0, const int& np1,
                         const int& nstep, const int& nstep0)
 {
-  TimeLevel& tl = Context::singleton().get<TimeLevel>();
+  TimeLevel& tl = Context::singleton().create<TimeLevel>();
   tl.nm1    = nm1-1;
   tl.n0     = n0-1;
   tl.np1    = np1-1;
@@ -225,14 +225,14 @@ void init_time_level_c (const int& nm1, const int& n0, const int& np1,
 
 void init_elements_c (const int& num_elems)
 {
-  Elements& r = Context::singleton().get<Elements> ();
+  Elements& r = Context::singleton().create<Elements> ();
   const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
   r.init (num_elems, consthv);
 
   // Init also the tracers structure
-  Tracers& t = Context::singleton().get<Tracers> ();
+  Tracers& t = Context::singleton().create<Tracers> ();
   t.init(num_elems,params.qsize);
 
   // In the context, we register also ElementsGeometry, ElementsDerivedState, and ElementsBuffers,
@@ -240,36 +240,19 @@ void init_elements_c (const int& num_elems)
   // This allows objects that need only a piece of Elements, to grab it from the Context,
   // while still knowing that what they grab contains the same views as the object stored in the
   // Elements inside the Context
-  ElementsGeometry& geometry = Context::singleton().get<ElementsGeometry>();
+  ElementsGeometry& geometry = Context::singleton().create<ElementsGeometry>();
   geometry = r.m_geometry;
-  ElementsDerivedState& derived = Context::singleton().get<ElementsDerivedState>();
+  ElementsDerivedState& derived = Context::singleton().create<ElementsDerivedState>();
   derived = r.m_derived;
-  ElementsBuffers& buffers = Context::singleton().get<ElementsBuffers>();
+  ElementsBuffers& buffers = Context::singleton().create<ElementsBuffers>();
   buffers = r.m_buffers;
 }
 
 void init_functors_c ()
 {
   // We init all the functors in the Context, so that every call to
-  // Context::singleton().get<[FunctorName]>()
-  // will return a functor already initialized.
-  // This avoids the risk of having a class doing
-  //   FunctorName f = Context::singleton().get<FunctorName>();
-  //   f.init(some_args);
-  // and then, somewhere else, we find
-  //   FunctorName f = Context::singleton().get<FunctorName>(some_args);
-  // The problem is that the first call created an uninitialized functor,
-  // *copied it*, and initialized the copy. The second call to get,
-  // sees that there is *already* an object of type FunctorName in the
-  // Context, and therefore does *not* create a FunctorName object.
-  // A solution would be to use a reference in the first call, or to always
-  // use the get method with the initialization arguments. However, if the functor
-  // is already init-ed, what do we do? Ignore: there's the risk that the user thinks
-  // that the functor was created with the inputs he/she provided Throw: we create
-  // the headache of first finding out if a functor already exists, and, if not,
-  // create it and init it.
-  // It is way easier to create all functors here once and for all,
-  // so that the user does not have to initialize them when calling them.
+  // Context::singleton().get<[FunctorName]>() is allowed (otherwise
+  // Context would throw because the requested object is not found).
 
   auto& elems   = Context::singleton().get<Elements>();
   auto& tracers = Context::singleton().get<Tracers>();
@@ -284,12 +267,12 @@ void init_functors_c ()
   Errors::runtime_check(hvcoord.m_inited,  "Error! You must initialize the HybridVCoord structure before initializing the functors.\n", -1);
   Errors::runtime_check(params.params_set, "Error! You must initialize the SimulationParams structure before initializing the functors.\n", -1);
 
-  // First, sphere operators
-  auto& sph_op = Context::singleton().get<SphereOperators>(elems.m_geometry,ref_FE);
-  Context::singleton().get<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
-  Context::singleton().get<EulerStepFunctor>();
-  Context::singleton().get<HyperviscosityFunctor>();
-  Context::singleton().get<VerticalRemapManager>();
+  // First, sphere operators, then all the functors
+  auto& sph_op = Context::singleton().create<SphereOperators>(elems.m_geometry,ref_FE);
+  Context::singleton().create<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
+  Context::singleton().create<EulerStepFunctor>();
+  Context::singleton().create<HyperviscosityFunctor>();
+  Context::singleton().create<VerticalRemapManager>();
 }
 
 void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
@@ -307,14 +290,10 @@ void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,   CF90Ptr& elem_state_temp_ptr, CF90Ptr& elem_state_dp3d_ptr,
                              CF90Ptr& elem_state_Qdp_ptr, CF90Ptr& elem_state_ps_v_ptr)
 {
-  if (!Context::singleton().has<Elements>()) {
-    Context::singleton().create<Elements>();
-  }
   Elements& elements = Context::singleton().get<Elements> ();
   elements.m_state.pull_from_f90_pointers(elem_state_v_ptr,elem_state_temp_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
   Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
-
 }
 
 void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
@@ -322,7 +301,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
   Elements& elements = Context::singleton().get<Elements> ();
-  Diagnostics& diagnostics = Context::singleton().get<Diagnostics> ();
+  Diagnostics& diagnostics = Context::singleton().create<Diagnostics> ();
 
   diagnostics.init(elements.num_elems(), elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_iener_wet_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
@@ -332,7 +311,7 @@ void init_boundary_exchanges_c ()
 {
   SimulationParams& params = Context::singleton().get<SimulationParams>();
 
-  // Create BEs
+  // Create BEs. Note: connectivity is created in init_connectivity in mpi_cxx_f90_interface
   auto  connectivity = Context::singleton().get_ptr<Connectivity>();
   auto& be_map = Context::singleton().create<BuffersManagerMap>(connectivity);
 
