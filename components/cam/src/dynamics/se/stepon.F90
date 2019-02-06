@@ -323,6 +323,30 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 !!!! double check dtime but thats what ftype1 uses
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
+         do k=1,nlev
+            do j=1,np
+               do i=1,np       
+                  ! force V, T, both timelevels
+                  do velcomp=1,2
+                     dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f)= &
+                     dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f) +  &
+                     dtime*dyn_in%elem(ie)%derived%FM(i,j,velcomp,k)
+                  enddo
+        
+#ifdef MODEL_THETA_L
+                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
+                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f) + &
+                  dtime*dyn_in%elem(ie)%derived%FVTheta(i,j,k)
+#else                  
+                  dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
+                  dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
+                  dtime*dyn_in%elem(ie)%derived%FT(i,j,k)    
+#endif
+        
+               end do
+            end do
+        end do
+
       endif !ftype=1 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
