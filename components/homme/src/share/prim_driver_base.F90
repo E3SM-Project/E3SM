@@ -1358,78 +1358,6 @@ contains
 
 
 !----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
-!old, nets:nete routine
-  subroutine applyCAMforcing_tracers_(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
-  use control_mod,        only : use_moisture
-  use hybvcoord_mod,      only : hvcoord_t
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
-
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1
-  real (kind=real_kind) :: temperature(np,np,nlev)
-  real (kind=real_kind) :: Rstar(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
-
-  do ie=nets,nete
-     ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:)=0
-
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-                    endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
-                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
-                 endif
-              enddo
-           enddo
-        enddo
-     enddo
-
-     if (use_moisture) then
-        ! to conserve dry mass in the precese of Q1 forcing:
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt*elem(ie)%derived%FQps(:,:)
-     endif
-
-
-     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-     enddo
-     do q=1,qsize
-        do k=1,nlev
-           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
-        enddo
-     enddo
-  enddo
-
-  end subroutine applyCAMforcing_tracers_
-
 
 !new, 1 elem routine
 !if adjustment, then CAM-type update by adjustment
@@ -1448,23 +1376,16 @@ contains
   ! local
   integer :: i,j,k,ie,q
 !  real (kind=real_kind) :: v1
-!  real (kind=real_kind) :: temperature(np,np,nlev)
-!  real (kind=real_kind) :: Rstar(np,np,nlev)
-!  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev), fq
-!  real (kind=real_kind) :: pnh(np,np,nlev)
-!  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)  
+  real (kind=real_kind) :: dp(np,np,nlev), dp_tmp, fq
 
 !OG copied omp pragmas from stepon as is
-
    if (adjustment) then 
-!blind copy of lines in stepon
+!blind copy of lines in cam/stepon, NO NEGATIVITY CHECK
 
 !$omp parallel do private(k)
       do k=1,nlev
-!insert ps0 from hvcoord
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord% ???? + &
-        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,tl_f)
+         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
       enddo
       do k=1,nlev
          do j=1,np
@@ -1478,7 +1399,7 @@ contains
 
                   if (ic==1) then
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
-                          elem(ie)%state%Q(i,j,k,ic))
+                          elem%state%Q(i,j,k,ic))
                         ! force ps_v to conserve mass:  
                      elem%state%ps_v(i,j,np1)= &
                           elem%state%ps_v(i,j,np1) + fq
@@ -1490,67 +1411,62 @@ contains
 
 !$omp parallel do private(k, j, i, ic, dp_tmp)
       do k=1,nlev
-          do ic=1,pcnst
+         do ic=1,pcnst
             do j=1,np
                do i=1,np
                   ! make Q consistent now that we have updated ps_v above
                   ! recompute dp, since ps_v was changed above
-                  dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                       ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                  dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                       dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
+                  dp_tmp = ( hyai(k+1) - hyai(k) )*hvcoord%ps0 + &
+                       ( hybi(k+1) - hybi(k) )*elem%state%ps_v(i,j,np1)
+                  elem%state%Q(i,j,k,ic)= &
+                       elem%state%Qdp(i,j,k,ic,np1_qdp)/dp_tmp
                end do
             end do
           end do
-         end do
-     else
+        end do
 
-!blindly copying what homme does now
+     else ! end of adjustment
 
+!blindly copying what homme does
      ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:)=0
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+        elem%derived%FQps(:,:)=0
+        do q=1,qsize
+           do k=1,nlev
+              do j=1,np
+                 do i=1,np
+                    v1 = dt*elem%derived%FQ(i,j,k,q)
+                    if (elem%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                          v1=0  ! Q already negative, dont make it more so
+                       else
+                          v1 = -elem%state%Qdp(i,j,k,q,np1_qdp)
+                       endif
                     endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
-                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
-                 endif
+                    elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
+                    if (q==1) then
+                       elem%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
+                    endif
+                 enddo
               enddo
            enddo
         enddo
-     enddo
 
-     if (use_moisture) then
-        ! to conserve dry mass in the precese of Q1 forcing:
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt*elem(ie)%derived%FQps(:,:)
-     endif
+        if (use_moisture) then
+           ! to conserve dry mass in the precese of Q1 forcing:
+           elem%state%ps_v(:,:,np1) = elem%state%ps_v(:,:,np1) + &
+             dt*elem%derived%FQps(:,:)
+        endif
 
-     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,np1)
-     enddo
-     do q=1,qsize
+        ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
         do k=1,nlev
-           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
         enddo
-     enddo
+        do q=1,qsize
+           do k=1,nlev
+              elem%state%Q(:,:,k,q) = elem%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+           enddo
+        enddo
 
      endif ! if adjustment
 

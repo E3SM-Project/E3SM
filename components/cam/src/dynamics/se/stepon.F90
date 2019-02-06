@@ -228,7 +228,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
-
+   use prim_advance_mod,only: applyCAMforcing_tracers
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
@@ -306,57 +306,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 
-
-!!!!!!!!!!!!! take it into a sub
 !!!! double check dtime but thats what ftype1 uses
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
-
-         do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-         enddo
-
-         do k=1,nlev
-            do j=1,np
-               do i=1,np
-                  do ic=1,pcnst
-                     ! apply forcing to Qdp
-                     ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                     !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic)
-
-! BEWARE critical region if using OpenMP over k (AAM)
-                     if (ic==1) then
-                        fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
-                             dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                        ! force ps_v to conserve mass:  
-                        dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
-                             dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
-                     endif
-                  enddo
-               end do
-            end do
-         end do
-
-!$omp parallel do private(k, j, i, ic, dp_tmp)
-         do k=1,nlev
-          do ic=1,pcnst
-            do j=1,np
-               do i=1,np
-                  ! make Q consistent now that we have updated ps_v above
-                  ! recompute dp, since ps_v was changed above
-                  dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                       ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                  dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                       dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-               end do
-            end do
-          end do
-         end do
-
-!!!!!!!!!!!!!!!!!!end of sub
-
 
       endif ! if ftype == 2 or == 4
 
@@ -367,61 +318,10 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 
-
 !!!!!!!!!!!!!!!!!!!!!!!! same sub as before, this time bfb with ftype1 
-!will be broken, but it is not tested
-
-
-!$omp parallel do private(k)
-         do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-         enddo
-         do k=1,nlev
-            do j=1,np
-               do i=1,np
-
-                  do ic=1,pcnst
-                     ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                     
-                     ! apply forcing to Qdp
-                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-
-                     ! BEWARE critical region if using OpenMP over k (AAM)
-                     if (ic==1) then
-                        ! force ps_v to conserve mass:  
-                        dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
-                             dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
-                     endif
-                  enddo
-               enddo !ic
-             enddo !i
-           enddo !j
-         enddo !k
-
-!$omp parallel do private(k, j, i, ic, dp_tmp)
-         do k=1,nlev
-            do ic=1,pcnst
-               do j=1,np
-                  do i=1,np
-                     ! make Q consistent now that we have updated ps_v above
-                     dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                          ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                     dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-                  end do
-               end do
-            end do
-         end do
-!!!!!!!!!!!!!!!! end of sub
-
-!!!!!!!!!!!!!!!! here call applyCAMforcing_dynamics from homme
-
-
-
+!will be broken due to line Qdp := Qdp+fq , but it is not tested.
+!!!! double check dtime but thats what ftype1 uses
+         call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
       endif !ftype=1 
 
