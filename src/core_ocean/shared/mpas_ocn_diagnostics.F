@@ -285,12 +285,13 @@ contains
       !    used -1e34 so error clearly occurs if these values are used.
       !
 
-      !$omp single
+      !$omp master
       normalVelocity(:,nEdges+1) = -1e34
       layerThickness(:,nCells+1) = -1e34
       activeTracers(indexTemperature,:,nCells+1) = -1e34
       activeTracers(indexSalinity,:,nCells+1) = -1e34
-      !$omp end single
+      !$omp end master
+      call mpas_threading_barrier()
 
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
@@ -320,7 +321,7 @@ contains
       !
       allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
 
-      !$omp do schedule(runtime) private(invAreaCell1, iEdge, r_tmp, i, k)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
@@ -364,7 +365,7 @@ contains
 
       nEdges = nEdgesArray( 2 )
 
-      !$omp do schedule(runtime) private(eoe, i, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          tangentialVelocity(:, iEdge) = 0.0_RKIND
          ! Compute v (tangential) velocities
@@ -621,7 +622,7 @@ contains
 
         allocate(pTop(nVertLevels))
 
-        !$omp do schedule(runtime) private(k)
+        !$omp do schedule(runtime)
         do iCell = 1, nCells
 
            ! assume atmospheric pressure at the surface is zero for now.
@@ -752,7 +753,7 @@ contains
 
         nCells = nCellsArray( 1 )
 
-        !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
+        !$omp do schedule(runtime)
         do iCell=1,nCells
           surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0_RKIND
@@ -1168,7 +1169,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      !$omp do schedule(runtime) private(normalThicknessFluxSum, thicknessSum, k, vertSum)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
 
         ! thicknessSum is initialized outside the loop because on land boundaries
@@ -1188,8 +1189,6 @@ contains
         enddo
       enddo ! iEdge
       !$omp end do
-
-      call mpas_threading_barrier()
 
       call mpas_timer_stop("ocn_filter_btr_mode_vel")
 
@@ -1239,7 +1238,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      !$omp do schedule(runtime) private(normalThicknessFluxSum, thicknessSum, vertSum, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
 
         ! thicknessSum is initialized outside the loop because on land boundaries
@@ -1450,8 +1449,7 @@ contains
                                          densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
-      !$omp do schedule(runtime) private(invAreaCell, deltaVelocitySquared, i, iEdge, factor, delU2, fracAbsorbed, &
-      !$omp                              fracAbsorbedRunoff)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
        invAreaCell = 1.0_RKIND / areaCell(iCell)
 
@@ -1513,8 +1511,6 @@ contains
 
       enddo
       !$omp end do
-
-      call mpas_threading_barrier()
 
       ! deallocate scratch space
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
@@ -1740,7 +1736,7 @@ contains
 
 
       ! average temperature and salinity over horizontal neighbors and the sub-ice-shelf boundary layer
-      !$omp do schedule(runtime) private(blThickness, iLevel, dz)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          blThickness = 0.0_RKIND
          blTempScratch(iCell) = 0.0_RKIND
