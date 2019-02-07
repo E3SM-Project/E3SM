@@ -425,7 +425,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars, phosphorusflux_vars, phosphorusstate_vars, ldecomp_on)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state

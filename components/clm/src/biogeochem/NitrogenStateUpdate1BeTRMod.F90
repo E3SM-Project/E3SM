@@ -497,7 +497,7 @@ contains
 
     logical :: is_decomp_on
 
-    is_decomp_on = .true.; if(present(decomp_on))is_decomp_on=ldecomp_on
+    is_decomp_on = .true.; if(present(ldecomp_on))is_decomp_on=ldecomp_on
 
   call NitrogenStateUpdate1Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
      cnstate_vars, nitrogenflux_vars, nitrogenstate_vars, is_decomp_on)

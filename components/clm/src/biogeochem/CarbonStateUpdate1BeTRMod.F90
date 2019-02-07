@@ -492,7 +492,7 @@ end subroutine CarbonStateUpdate1Veg
   subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       crop_vars, carbonflux_vars, carbonstate_vars)
+       crop_vars, carbonflux_vars, carbonstate_vars, ldecomp_on)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
