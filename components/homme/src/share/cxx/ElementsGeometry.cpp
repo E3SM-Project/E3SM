@@ -21,27 +21,31 @@ void ElementsGeometry::init(const int num_elems, const bool consthv) {
   m_num_elems = num_elems;
   m_consthv   = consthv;
 
+  // Coriolis force
   m_fcor = ExecViewManaged<Real * [NP][NP]>("FCOR", m_num_elems);
-  m_spheremp = ExecViewManaged<Real * [NP][NP]>("SPHEREMP", m_num_elems);
+
+  // Mass on the sphere
+  m_spheremp  = ExecViewManaged<Real * [NP][NP]>("SPHEREMP",  m_num_elems);
   m_rspheremp = ExecViewManaged<Real * [NP][NP]>("RSPHEREMP", m_num_elems);
+
+  // Metric
   m_metinv = ExecViewManaged<Real * [2][2][NP][NP]>("METINV", m_num_elems);
   m_metdet = ExecViewManaged<Real * [NP][NP]>("METDET", m_num_elems);
 
   if(!consthv){
-    m_tensorvisc = ExecViewManaged<Real * [2][2][NP][NP]>("TENSORVISC", m_num_elems);
+    m_tensorvisc   = ExecViewManaged<Real * [2][2][NP][NP]>("TENSORVISC",   m_num_elems);
     m_vec_sph2cart = ExecViewManaged<Real * [2][3][NP][NP]>("VEC_SPH2CART", m_num_elems);
   }
 
-  m_phis = ExecViewManaged<Real * [NP][NP]>("PHIS", m_num_elems);
+  m_phis     = ExecViewManaged<Real *    [NP][NP]>("PHIS",          m_num_elems);
 
   //matrix D and its derivatives 
-  m_d =
-      ExecViewManaged<Real * [2][2][NP][NP]>("matrix D", m_num_elems);
-  m_dinv = ExecViewManaged<Real * [2][2][NP][NP]>(
-      "DInv - inverse of matrix D", m_num_elems);
+  m_d    = ExecViewManaged<Real * [2][2][NP][NP]>("matrix D",                   m_num_elems);
+  m_dinv = ExecViewManaged<Real * [2][2][NP][NP]>("DInv - inverse of matrix D", m_num_elems);
 }
 
-void ElementsGeometry::init (const int ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
+void ElementsGeometry::init (const int ie,
+                             CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                              CF90Ptr& spheremp, CF90Ptr& rspheremp,
                              CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
                              CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart, const bool consthv) {

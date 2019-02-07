@@ -34,7 +34,8 @@ public:
   ExecViewManaged<Real * [2][3][NP][NP]>  m_vec_sph2cart;
 
   // Prescribed surface geopotential height at eta = 1
-  ExecViewManaged<Real * [NP][NP]> m_phis;
+  ExecViewManaged<Real *    [NP][NP]> m_phis;
+  ExecViewManaged<Real * [2][NP][NP]> m_gradphis;
 
   // D (map for covariant coordinates) and D^{-1}
   ExecViewManaged<Real * [2][2][NP][NP]> m_d;
