@@ -56,7 +56,7 @@ module init_atm_core_interface
       core % Conventions = 'MPAS'
       core % source = 'MPAS'
 
-#include "inc/core_variables.inc"
+#include "core_variables.inc"
 
    end subroutine init_atm_setup_core
 
@@ -81,7 +81,7 @@ module init_atm_core_interface
 
       type (domain_type), pointer :: domain
 
-#include "inc/domain_variables.inc"
+#include "domain_variables.inc"
 
    end subroutine init_atm_setup_domain
 
@@ -396,16 +396,16 @@ module init_atm_core_interface
    end function init_atm_setup_block
 
 
-#include "inc/setup_immutable_streams.inc"
+#include "setup_immutable_streams.inc"
 
-#include "inc/block_dimension_routines.inc"
+#include "block_dimension_routines.inc"
 
-#include "inc/define_packages.inc"
+#include "define_packages.inc"
 
-#include "inc/structs_and_variables.inc"
+#include "structs_and_variables.inc"
 
-#include "inc/namelist_call.inc"
+#include "namelist_call.inc"
 
-#include "inc/namelist_defines.inc"
+#include "namelist_defines.inc"
 
 end module init_atm_core_interface
