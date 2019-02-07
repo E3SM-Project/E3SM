@@ -393,15 +393,17 @@ contains
   end subroutine 
 
   !____________________________________________________________________
-  subroutine tests_finalize(elem,hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem,hvcoord,ie)
   implicit none
 
-  type(hvcoord_t),     intent(in)  :: hvcoord
-  type(element_t),  intent(inout)  :: elem
-  integer,             intent(in)  :: ns,ne
-  integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
+  type(hvcoord_t),     intent(in)     :: hvcoord
+  type(element_t),     intent(inout)  :: elem
+  integer, optional,   intent(in)     :: ie ! optional element index, to save initial state
+  integer                             :: tl
 
-  !do nothing
+  do tl=2,3
+    call copy_state(elem,1,tl)
+  enddo
   end subroutine tests_finalize
 
 

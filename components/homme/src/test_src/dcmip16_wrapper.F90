@@ -135,7 +135,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
     enddo; enddo; enddo
 
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord)
 
   enddo
   sample_period = 1800.0 ! sec
@@ -209,7 +209,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
      enddo; enddo; enddo;
 
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord)
   enddo
 
   sample_period = 1800.0 ! sec
@@ -313,7 +313,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
 
     ! set density to ensure hydrostatic balance and save initial state
-    call tests_finalize(elem(ie),hvcoord,1,nt,ie)
+    call tests_finalize(elem(ie),hvcoord,ie)
 
   enddo
 

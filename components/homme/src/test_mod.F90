@@ -9,7 +9,7 @@ use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
 use element_state,  only: timelevels
-use element_ops,    only: copy_state
+use element_ops,    only: copy_state, get_temperature
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: real_kind, rl => real_kind, iulog
@@ -46,6 +46,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   type(timelevel_t),  intent(in)            :: tl                       ! time level sctructure
   integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer                                   :: ie
  
   ! init calls for any runtype
   select case(test_case)
@@ -106,7 +107,9 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   endif
 
 #ifdef MODEL_THETA_L
-  call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+  do ie=nets,nete
+    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+  enddo
 #endif
 
 end subroutine

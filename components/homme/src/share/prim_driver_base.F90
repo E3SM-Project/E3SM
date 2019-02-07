@@ -979,6 +979,7 @@ contains
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
     use prim_advance_mod,   only: convert_thermo_forcing
+    use element_ops,        only: get_temperature
 
     implicit none
 
@@ -1378,7 +1379,11 @@ contains
   use control_mod,        only : use_moisture
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
-  use namelist_mod,       only : theta_hydrostatic_mode
+  use control_mod,        only : theta_hydrostatic_mode
+!is it ok to use p0 instead of hyb%ps0?
+  use physical_constants, only : cp, g, kappa, Rgas, p0
+  use element_ops,        only : get_temperature, get_r_star
+  use eos,                only : get_pnh_and_exner
 #endif
   use prim_advance_mod,   only : convert_thermo_forcing
   implicit none
@@ -1397,7 +1402,7 @@ contains
   real (kind=real_kind)  :: vthn1(np,np,nlev)
   real (kind=real_kind)  :: tn1(np,np,nlev)
   real (kind=real_kind)  :: pnh(np,np,nlev)
-  real (kind=real_kind)  :: phi_n1(np,np,nlev)
+  real (kind=real_kind)  :: phi_n1(np,np,nlevp)
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
@@ -1413,7 +1418,7 @@ contains
         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
      enddo
      !compute pnh, here only pnh is needed
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),dp,&
+     call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
           elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
      pprime = pnh - dp
   endif
@@ -1516,7 +1521,7 @@ contains
 !continue conversion using pprime from above
      call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
 !derived%T is computed each remap step
-     tn1(:,:,:) = elem%derived%T + dt*elem(ie)%derived%FT(:,:,:)
+     tn1(:,:,:) = elem%derived%T + dt*elem%derived%FT(:,:,:)
 
      ! update pressure based on Qdp forcing
      do k=1,nlev
@@ -1525,25 +1530,25 @@ contains
         !     (
         !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
         ! constant NH perturbation pressure
-        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + psn1(:,:)*hvcoord%hybm(k) + pprime(:,:,k)
+        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k) + pprime(:,:,k)
         exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
      enddo
 
      ! now we have tn1,dp,pnh - compute corresponding theta and phi:
      vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
 
-     phi_n1(:,:,nlevp)=elem(ie)%state%phinh_i(:,:,nlevp,np1)
+     phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
      do k=nlev,1,-1
         phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
      enddo
 
      !finally, compute difference for FVTheta
      ! this method is using new dp, new exner, new-new r*, new t
-     elem(ie)%derived%FVTheta(:,:,:) = &
-         (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,np1))/dt
+     elem%derived%FVTheta(:,:,:) = &
+         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
 
-     elem(ie)%derived%FPHI(:,:,:) = &
-         (phi_n1 - elem(ie)%state%phinh_i(:,:,:,np1))/dt
+     elem%derived%FPHI(:,:,:) = &
+         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
 #endif
 
 end subroutine applyCAMforcing_tracers

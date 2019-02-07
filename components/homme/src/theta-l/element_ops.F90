@@ -555,12 +555,11 @@ contains
   type(element_t),     intent(inout):: elem
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,tl, ntQ
+  integer :: k,tl
   real(real_kind), dimension(np,np,nlev) :: dp, pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
-  integer                           :: tl
 
   tl = 1
 
@@ -570,7 +569,6 @@ contains
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
   enddo
 
-  ntQ=1
   call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
        elem%state%phinh_i(:,:,:,tl))
 
