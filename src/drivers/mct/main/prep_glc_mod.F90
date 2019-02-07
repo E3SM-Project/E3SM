@@ -809,9 +809,9 @@ contains
     character(*), parameter :: subname = '(prep_glc_calculate_subshelf_boundary_fluxes)'
     !---------------------------------------------------------------
 
-    if  (associated(o2x_gx)) then
-       write(logunit,*) 'size of o2x_gx = ', size(o2x_gx)
-    endif
+!    if  (associated(o2x_gx)) then
+!       write(logunit,*) 'size of o2x_gx = ', size(o2x_gx)
+!    endif
 
     if (.not.(glc_present)) return
 
@@ -851,11 +851,11 @@ contains
       oceanSaltTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_stv,n)
       interfacePressure(n) =              o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)
 
-      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_blt,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_blt,n)
-      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_bls,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_bls,n)
-      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_htv,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_htv,n)
-      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_stv,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_stv,n)
-      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)
+!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_blt,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_blt,n)
+!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_bls,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_bls,n)
+!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_htv,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_htv,n)
+!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_stv,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_stv,n)
+!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)
 
 
       iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
