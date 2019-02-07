@@ -560,7 +560,7 @@ module ocn_time_integration_split
 
                allocate(uTemp(nVertLevels))
 
-               !$omp do schedule(runtime) private(cell1, cell2, k, normalThicknessFluxSum, thicknessSum)
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdges
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -813,7 +813,7 @@ module ocn_time_integration_split
                      nEdges = nEdgesPtr
                      nEdges = nEdgesArray( edgeHaloComputeCounter )
 
-                     !$omp do schedule(runtime) private(cell1, cell2, CoriolisTerm, i, eoe)
+                     !$omp do schedule(runtime)
                      do iEdge = 1, nEdges
 
                         temp_mask = edgeMask(1, iEdge)
@@ -1025,7 +1025,7 @@ module ocn_time_integration_split
 
                    nEdges = nEdgesArray( edgeHaloComputeCounter )
 
-                   !$omp do schedule(runtime) private(cell1, cell2, eoe, CoriolisTerm, i, sshCell1, sshCell2)
+                   !$omp do schedule(runtime)
                    do iEdge = 1, nEdges
 
                      ! asarje: added to avoid redundant computations based on mask
@@ -1338,7 +1338,7 @@ module ocn_time_integration_split
                   useVelocityCorrection = 0
                endif
 
-               !$omp do schedule(runtime) private(k, normalThicknessFluxSum, thicknessSum, normalVelocityCorrection)
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdges
 
                   ! velocity for normalVelocityCorrectionection is normalBarotropicVelocity + normalBaroclinicVelocity + uBolus

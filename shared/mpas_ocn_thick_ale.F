@@ -147,7 +147,7 @@ contains
       !
       ! ALE thickness alteration due to SSH (z-star)
       !
-      !$omp do schedule(runtime) private(kMax, thicknessSum, k)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          kMax = maxLevelCell(iCell)
 
@@ -182,7 +182,7 @@ contains
       !
       if (config_use_min_max_thickness) then
 
-         !$omp do schedule(runtime) private(kMax, remainder, k, newThickness)
+         !$omp do schedule(runtime)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
 

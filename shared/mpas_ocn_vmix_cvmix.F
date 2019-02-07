@@ -349,7 +349,7 @@ contains
 
       call mpas_timer_start('cvmix cell loop', .false.)
       do kpp_stage = 1,2
-      !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
@@ -707,6 +707,7 @@ contains
  endif ! kpp stage 2 convection calc
       end do  ! do iCell=1,mesh%nCells
       !$omp end do
+
       if (kpp_stage == 1 .and. config_cvmix_use_BLD_smoothing) then ! smooth boundary layer
          nCells = nCellsArray(2)
 
