@@ -93,6 +93,7 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/compose_mod.F90
   ${SRC_SHARE_DIR}/compose_test_mod.F90
   ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
+  ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
 )
 
 SET(TEST_SRC_F90
