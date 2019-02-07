@@ -1094,11 +1094,19 @@ contains
           if (qr(i,k).ge.qsmall) then
              call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r(i,k),lamr(i,k))
              !interpolate value at mu_r
-             dum1 = revap_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*                   &
-                  (revap_table(dumii+1,dumjj)-revap_table(dumii,dumjj))
+! bug fix 12/23/18
+!             dum1 = revap_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*                  &
+!                    (revap_table(dumii+1,dumjj)-revap_table(dumii,dumjj))
+
+             dum1 = revap_table(dumii,dumjj)+(rdumii-real(dumii))*                            &
+                    (revap_table(dumii+1,dumjj)-revap_table(dumii,dumjj))
+
              !interoplate value at mu_r+1
-             dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*                 &
-                  (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))
+! bug fix 12/23/18
+!             dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*                &
+!                  (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))
+             dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*                          &
+                    (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))    
              !final interpolation
              dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
 
@@ -1841,19 +1849,30 @@ contains
                    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
                         mu_r(i,k),lamr(i,k))
                    !mass-weighted fall speed:
-                   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*              &
-                        (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))         !at mu_r
-                   dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*            &
-                        (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
+! bug fix 12/23/18
+!                   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*             &
+!                        (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))         !at mu_r
+!                   dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*           &
+!                        (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
+                   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+                          (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))       !at mu_r
+                   dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+                          (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
                    V_qr(k) = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
                    V_qr(k) = V_qr(k)*rhofacr(i,k)               !corrected for air density
 
                    ! number-weighted fall speed:
-                   dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*              &
-                        (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj)         ) !at mu_r
+! bug fix 12/23/18
+!                   dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*             &
+!                        (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj)         ) !at mu_r
+!
+!                   dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*           &
+!                        (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))    !at mu_r+1
+                   dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+                          (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj))       !at mu_r
+                   dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+                          (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))   !at mu_r+1
 
-                   dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*            &
-                        (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))    !at mu_r+1
                    V_nr(k) = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
                    V_nr(k) = V_nr(k)*rhofacr(i,k)                !corrected for air density
 
