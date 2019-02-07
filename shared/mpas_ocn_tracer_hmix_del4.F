@@ -232,7 +232,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(delsq_tracerField, .true.)
 
       call mpas_timer_stop("tracer del4")

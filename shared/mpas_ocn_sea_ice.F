@@ -135,8 +135,7 @@ contains
 
       density_ice = rho_ice
 
-      !$omp do schedule(runtime) private(maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, energyChange, &
-      !$omp                              temperatureChange, thicknessChange, iceThicknessChange, iTracer)
+      !$omp do schedule(runtime)
       do iCell = 1, nCellsSolve ! Check performance of these two loop definitions
 !     do iCell = nCellsSolve, 1, -1
          maxLevel = min(maxLevelCell(iCell), verticalLevelCap)
