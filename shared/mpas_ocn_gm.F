@@ -418,11 +418,10 @@ contains
       ! use relativeSlopeTaperingCell as a temporary space for smoothing of relativeSlopeTopOfCell
       relativeSlopeTaperingCell = relativeSlopeTopOfCell
       do iter = 1, 5
-         !$omp barrier
 
          nCells = nCellsArray( 2 )
 
-         !$omp do schedule(runtime) private(k, rtmp)
+         !$omp do schedule(runtime)
          do iCell=1,nCells
            relativeSlopeTaperingCell(1, iCell) = 0.0_RKIND
            relativeSlopeTaperingCell(maxLevelCell(iCell):nVertLevels, iCell) = 0.0_RKIND
@@ -523,7 +522,7 @@ contains
 
       nEdges = nEdgesArray( 3 )
 
-      !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, N)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
