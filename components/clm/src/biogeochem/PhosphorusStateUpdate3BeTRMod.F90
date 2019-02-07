@@ -120,7 +120,7 @@ contains
           ! column loop
           do fc = 1,num_soilc
             c = filter_soilc(fc)
-!            flux_mineralization(c,j) =
+            flux_mineralization(c,j) = pf%net_mineralization_p_vr_col(c,j)*dt
           enddo
         enddo
       endif

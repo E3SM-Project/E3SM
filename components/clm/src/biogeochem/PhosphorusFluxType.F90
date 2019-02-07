@@ -228,7 +228,7 @@ module PhosphorusFluxType
      real(r8), pointer :: gross_pmin_col                            (:)     ! col vert-int (diagnostic) gross rate of P mineralization (gP/m2/s)
      real(r8), pointer :: net_pmin_vr_col                           (:,:)   ! col vertically-resolved net rate of P mineralization (gP/m3/s)
      real(r8), pointer :: net_pmin_col                              (:)     ! col vert-int (diagnostic) net rate of P mineralization (gP/m2/s)
-
+     real(r8), pointer :: net_mineralization_p_vr_col                        (:,:)
      real(r8), pointer :: biochem_pmin_ppools_vr_col                (:,:,:) ! col vertically-resolved biochemical P mineralization for each soi pool (gP/m3/s)
      real(r8), pointer :: biochem_pmin_vr_col                       (:,:)   ! col vertically-resolved total biochemical P mineralization (gP/m3/s)
      real(r8), pointer :: biochem_pmin_to_plant_patch               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
@@ -575,7 +575,7 @@ contains
     allocate(this%gross_pmin_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%gross_pmin_vr_col          (:,:) = nan
     allocate(this%net_pmin_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%net_pmin_vr_col            (:,:) = nan
     allocate(this%biochem_pmin_to_ecosysp_vr_col(begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_to_ecosysp_vr_col(:,:) = nan
-
+    allocate(this%net_mineralization_p_vr_col(begc:endc,1:nlevdecomp_full)); this%net_mineralization_p_vr_col(:,:) = nan
     allocate(this%biochem_pmin_ppools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     allocate(this%biochem_pmin_vr_col       (begc:endc,1:nlevdecomp_full))
     allocate(this%biochem_pmin_col          (begc:endc))
