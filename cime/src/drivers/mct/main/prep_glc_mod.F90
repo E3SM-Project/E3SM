@@ -1554,7 +1554,7 @@ contains
       ! a is strictly positive; c is strictly negative so we never get imaginary roots
       ! The positive root is the one we want (salinity is strictly positive)
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_r8*a*c*oceanSalinity(iCell)))/(2.0_r8*a)
-      if (outInterfaceSalinity(iCell) .le. 0.0_r8) then
+      if (outInterfaceSalinity(iCell) .lt. 0.0_r8) then
 	write(logunit,*) subname,' ERROR: Negative interface salinity in subshelf boundary calculation: ', &
 	                           'iCell,outInterfaceSalinity(iCell)=', iCell,outInterfaceSalinity(iCell)
         call shr_sys_abort(subname//' ERROR: Negative interface salinity in subshelf boundary calculation.')
