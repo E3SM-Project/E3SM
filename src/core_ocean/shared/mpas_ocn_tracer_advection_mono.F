@@ -304,8 +304,7 @@ module ocn_tracer_advection_mono
 #endif
         ! Need one halo of cells around owned cells
         nCells = nCellsArray( 2 )
-        !$omp do schedule(runtime) private(k, tracer_max_new, tracer_min_new, tracer_upwind_new, scale_factor, invAreaCell1, i, &
-        !$omp                              iEdge, cell1, cell2, signedFactor)
+        !$omp do schedule(runtime)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
@@ -381,7 +380,7 @@ module ocn_tracer_advection_mono
 
         nCells = nCellsArray( 1 )
         ! Accumulate the scaled high order vertical tendencies, and the upwind tendencies
-        !$omp do schedule(runtime) private(invAreaCell1, signedFactor, i, iEdge, flux, k)
+        !$omp do schedule(runtime)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
@@ -495,7 +494,7 @@ module ocn_tracer_advection_mono
         ! Need all owned and 1 halo cells
         nCells = nCellsArray( 2 )
         !  Compute the high and low order vertical fluxes. Also determine bounds on tracer_cur.
-        !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i)
+        !$omp do schedule(runtime)
         do iCell = 1, nCells
 
           ! Operate on top cell in column
@@ -583,7 +582,7 @@ module ocn_tracer_advection_mono
 #endif
         ! Need one halo of cells around owned cells
         nCells = nCellsArray( 2 )
-        !$omp do schedule(runtime) private(k, tracer_max_new, tracer_min_new, tracer_upwind_new, scale_factor, i)
+        !$omp do schedule(runtime)
         do iCell = 1, nCells
 
           ! Build the factors for the FCT
@@ -660,7 +659,7 @@ module ocn_tracer_advection_mono
         if (monotonicityCheck) then
           nCells = nCellsArray( 1 )
           ! Check for monotonicity of new tracer value
-          !$omp do schedule(runtime) private(k)
+          !$omp do schedule(runtime)
           do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
               ! work_tend on the RHS is the total vertical advection tendency

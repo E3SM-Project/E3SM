@@ -451,9 +451,7 @@ contains
       nCells = nCellsArray( 2 )
 
       ! loop over all columns
-      !$omp do schedule(runtime) private(kBottomFrazil, k, columnTemperatureMin, sumNewFrazilIceThickness, &
-      !$omp                              oceanFreezingTemperature, potential, freezingEnergy, meltingEnergy, &
-      !$omp                              newFrazilIceThickness, meltedFrazilIceThickness)
+      !$omp do schedule(runtime)
       do iCell=1,nCells
 
         underLandIce = .false.
