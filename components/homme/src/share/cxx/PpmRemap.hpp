@@ -9,9 +9,6 @@
 
 #include "ErrorDefs.hpp"
 
-#include "RemapFunctor.hpp"
-
-#include "Elements.hpp"
 #include "KernelVariables.hpp"
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"

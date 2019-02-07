@@ -401,47 +401,56 @@ TEST_CASE("ppm_fixed_means", "vertical remap") {
 
 TEST_CASE("remap_interface", "vertical remap") {
   constexpr int num_elems = 4;
-  Elements elements;
-  elements.random_init(num_elems);
+  ElementsState state;
+  state.random_init(num_elems);
+  HybridVCoord hvcoord;
+  hvcoord.random_init(std::random_device()());
+
+  Real dp3d_min;
+  {
+    auto h_dp3d = Kokkos::create_mirror_view(state.m_dp3d);
+    Kokkos::deep_copy(h_dp3d,state.m_dp3d);
+    Real* ptr = reinterpret_cast<Real*>(h_dp3d.data());
+    dp3d_min = *std::min_element(ptr,ptr+h_dp3d.size()*VECTOR_SIZE);
+  }
+
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> eta_dot_dpdn ("",num_elems);
+  ExecViewManaged<Scalar*[Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]> qdp("",num_elems);
 
   // TODO: make dt random
   constexpr int np1 = 0;
   constexpr int n0_qdp = 0;
   std::random_device rd;
   std::mt19937_64 engine(rd());
-  // Note: the bounds on the distribution for dt are strictly linked to how ps_v
-  // and eta_dot_dpdn
-  //       are (randomly) init-ed in Elements. In particular, this interval
-  // *should* ensure that
-  //       dp3d[k] + dt*(eta_dot_dpdn[k+1]-eta_dot_dpdn[k]) > 0, which is needed
-  // to pass the test
-  std::uniform_real_distribution<Real> random_dist(0.01, 10);
-  const Real dt = random_dist(engine);
+  // Note: the bounds on the distribution for dt are strictly linked to how ps_v is (randomly)
+  //       init-ed in ElementsState, and how eta_dot_dpdn is (randomly) init-ed in ElementsDerivedState
+  //       (here we are initing eta_dot_dpdn in the same way). In particular, this interval *should* ensure that
+  //       dp3d[k] + dt*(eta_dot_dpdn[k+1]-eta_dot_dpdn[k]) > 0, which is needed to pass the test
+  std::uniform_real_distribution<Real> eta_pdf(0.01*dp3d_min, 0.1*dp3d_min);
+  std::uniform_real_distribution<Real> dt_pdf(0.01, 10);
+  const Real dt = dt_pdf(engine);
+  genRandArray(eta_dot_dpdn,engine,eta_pdf);
+  genRandArray(qdp,engine,dt_pdf);
 
-  HybridVCoord hvcoord;
-  hvcoord.random_init(std::random_device()());
   SECTION("states_only") {
     constexpr bool rsplit_non_zero = true;
     constexpr int qsize = 0;
-    Tracers tracers(num_elems, qsize);
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, elements, tracers, hvcoord);
+    _Remap remap(qsize, state, eta_dot_dpdn, qdp, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
   }
   SECTION("tracers_only") {
     constexpr bool rsplit_non_zero = false;
     constexpr int qsize = QSIZE_D;
-    Tracers tracers(num_elems, qsize);
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, elements, tracers, hvcoord);
+    _Remap remap(qsize, state, eta_dot_dpdn, qdp, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
   }
   SECTION("states_tracers") {
     constexpr bool rsplit_non_zero = true;
     constexpr int qsize = QSIZE_D;
-    Tracers tracers(num_elems, qsize);
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, elements, tracers, hvcoord);
+    _Remap remap(qsize, state, eta_dot_dpdn, qdp, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
   }
 }

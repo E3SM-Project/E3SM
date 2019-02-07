@@ -52,15 +52,10 @@ SET (REMAP_UT_F90_SRCS
 SET (REMAP_UT_CXX_SRCS
   ${SRC_PREQX_DIR}/cxx/ElementsState.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/Elements.cpp
-  ${SRC_SHARE_DIR}/cxx/ElementsBuffers.cpp
-  ${SRC_SHARE_DIR}/cxx/ElementsDerivedState.cpp
-  ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
-  ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SHARE_UT_DIR}/remap_ut.cpp
 )

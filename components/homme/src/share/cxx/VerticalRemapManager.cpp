@@ -23,31 +23,31 @@ struct VerticalRemapManager::Impl {
       if (params.rsplit != 0) {
         remapper = std::make_shared<Remap::RemapFunctor<
             true, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedParabola> >(
-            params.qsize, e, t, h);
+            params.qsize, e.m_state, e.m_derived.m_eta_dot_dpdn, t.qdp, h);
       } else {
         remapper = std::make_shared<Remap::RemapFunctor<
             false, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedParabola> >(
-            params.qsize, e, t, h);
+            params.qsize, e.m_state, e.m_derived.m_eta_dot_dpdn, t.qdp, h);
       }
     } else if (params.remap_alg == RemapAlg::PPM_FIXED_MEANS) {
       if (params.rsplit != 0) {
         remapper = std::make_shared<Remap::RemapFunctor<
             true, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedMeans> >(
-            params.qsize, e, t, h);
+            params.qsize, e.m_state, e.m_derived.m_eta_dot_dpdn, t.qdp, h);
       } else {
         remapper = std::make_shared<Remap::RemapFunctor<
             false, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedMeans> >(
-            params.qsize, e, t, h);
+            params.qsize, e.m_state, e.m_derived.m_eta_dot_dpdn, t.qdp, h);
       }
     } else if (params.remap_alg == RemapAlg::PPM_MIRRORED) {
       if (params.rsplit != 0) {
         remapper = std::make_shared<Remap::RemapFunctor<
             true, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmMirrored> >(
-            params.qsize, e, t, h);
+            params.qsize, e.m_state, e.m_derived.m_eta_dot_dpdn, t.qdp, h);
       } else {
         remapper = std::make_shared<Remap::RemapFunctor<
             false, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmMirrored> >(
-            params.qsize, e, t, h);
+            params.qsize, e.m_state, e.m_derived.m_eta_dot_dpdn, t.qdp, h);
       }
     } else {
       Errors::runtime_abort(
