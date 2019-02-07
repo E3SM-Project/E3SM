@@ -152,7 +152,7 @@ contains
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
       !
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, tracer_turb_flux, flux)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)

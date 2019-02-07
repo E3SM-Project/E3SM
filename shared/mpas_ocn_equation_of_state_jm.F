@@ -309,7 +309,7 @@ contains
          enddo
       endif
 
-      !$omp do schedule(runtime) private(k, DRDT0, DKDT, DRHODT, DRDS0, DKDS, DRHODS)
+      !$omp do schedule(runtime)
       do iCell=1,nCells
          if (displacement_type == 'surfaceDisplaced') then
            if(present(tracersSurfaceLayerValue)) then
