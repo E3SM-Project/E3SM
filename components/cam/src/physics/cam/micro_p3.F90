@@ -35,11 +35,11 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
-MODULE MICRO_P3
+module micro_p3
 
+   use cam_logfile,    only: iulog
    use shr_kind_mod,   only: r8=>shr_kind_r8
    use spmd_utils,     only: masterproc
-   use cam_logfile,    only: iulog
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
@@ -52,6 +52,7 @@ MODULE MICRO_P3
        micro_p3_utils_init, rainfrze, icenuct, homogfrze
 
   implicit none
+  save
 
   public  :: p3_init,p3_main
 
@@ -2913,4 +2914,4 @@ contains
   end subroutine check_values
   !===========================================================================================
 
-END MODULE MICRO_P3
+end module micro_p3

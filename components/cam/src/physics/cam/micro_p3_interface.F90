@@ -38,6 +38,7 @@ module micro_p3_interface
   use time_manager,   only: is_first_step
        
   implicit none
+  save
 
   public :: micro_p3_init, micro_p3_register, micro_p3_tend, &
             micro_p3_init_cnst, micro_p3_implements_cnst !&
