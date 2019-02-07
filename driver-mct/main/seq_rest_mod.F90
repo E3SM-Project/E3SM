@@ -227,8 +227,8 @@ contains
           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
        end if
 
-       if (ocn_present .and. glc_prognostic) then
-          gsmap         => component_get_gsmap_cx(ocn(1))
+       if (glc_present) then
+          gsmap         => component_get_gsmap_cx(glc(1))
           x2gacc_gx     => prep_glc_get_x2gacc_gx()
           x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
           call seq_io_read(rest_file, gsmap, x2gacc_gx, 'x2gacc_gx')
@@ -494,8 +494,8 @@ contains
              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
                   whead=whead, wdata=wdata)
           end if
-          if (ocn_present .and. glc_prognostic) then
-             gsmap         => component_get_gsmap_cx(ocn(1))
+          if (glc_present) then
+             gsmap         => component_get_gsmap_cx(glc(1))
              x2gacc_gx => prep_glc_get_x2gacc_gx()
              x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
              call seq_io_write(rest_file, gsmap, x2gacc_gx , 'x2gacc_gx', &
