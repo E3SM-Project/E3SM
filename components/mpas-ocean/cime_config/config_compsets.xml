@@ -62,6 +62,11 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-MALI-DIB-IAF-ISMF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE%DIB_MPASO%IBISMFCOREFORCED_DROF%IAFAIS00_MALI%SIA_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-OECO-IAF</alias>
     <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO%OECO_DROF%IAF_SGLC_SWAV</lname>
   </compset>
