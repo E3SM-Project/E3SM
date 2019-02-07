@@ -18,13 +18,11 @@
 namespace Homme
 {
 
-void u3_5stage_timestep(const int nm1, const int n0, const int np1, const int n0_qdp,
-                        const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
+void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
 
 // -------------- IMPLEMENTATIONS -------------- //
 
-void prim_advance_exp (const int nm1, const int n0, const int np1,
-                       const Real dt, const bool compute_diagnostics)
+void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics)
 {
   GPTLstart("tl-ae prim_advance_exp");
   // Get simulation params
@@ -34,8 +32,7 @@ void prim_advance_exp (const int nm1, const int n0, const int np1,
   //       the options are supported when we init the simulation params. However, this way
   //       we remind ourselves that in these cases there is some missing code to convert from Fortran
 
-  // Get time level info, and determine the tracers time level
-  TimeLevel& tl = Context::singleton().get<TimeLevel>();
+  // Determine the tracers time level
   tl.n0_qdp= -1;
   if (params.moisture == MoistDry::MOIST) {
     tl.update_tracers_levels(params.qsplit);
@@ -69,7 +66,7 @@ void prim_advance_exp (const int nm1, const int n0, const int np1,
   switch (method) {
     case 5:
       // Perform RK stages
-      u3_5stage_timestep(nm1, n0, np1, tl.n0_qdp, dt, eta_ave_w, compute_diagnostics);
+      u3_5stage_timestep(tl, dt, eta_ave_w, compute_diagnostics);
       break;
     default:
       {
@@ -98,7 +95,7 @@ void prim_advance_exp (const int nm1, const int n0, const int np1,
     // Get and run the HVF
     HyperviscosityFunctor& functor = Context::singleton().get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");
-    functor.run(np1,dt,eta_ave_w);
+    functor.run(tl.np1,dt,eta_ave_w);
     GPTLstop("tl-ae advance_hypervis_dp");
   }
 
@@ -111,8 +108,7 @@ void prim_advance_exp (const int nm1, const int n0, const int np1,
   GPTLstop("tl-ae prim_advance_exp");
 }
 
-void u3_5stage_timestep(const int nm1, const int n0, const int np1, const int n0_qdp,
-                        const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
 {
   GPTLstart("tl-ae U3-5stage_timestep");
   // Get elements structure
@@ -120,27 +116,29 @@ void u3_5stage_timestep(const int nm1, const int n0, const int np1, const int n0
 
   // Create the functor
   CaarFunctor& functor = Context::singleton().get<CaarFunctor>();
-  functor.set_n0_qdp(n0_qdp);
+  functor.set_n0_qdp(tl.n0_qdp);
 
   // ===================== RK STAGES ===================== //
 
   // Stage 1: u1 = u0 + dt/5 RHS(u0),          t_rhs = t
-  functor.run(n0,n0,nm1,dt/5.0,eta_ave_w/4.0,compute_diagnostics);
+  functor.run(tl.n0,tl.n0,tl.nm1,dt/5.0,eta_ave_w/4.0,compute_diagnostics);
 
   // Stage 2: u2 = u0 + dt/5 RHS(u1),          t_rhs = t + dt/5
-  functor.run(n0,nm1,np1,dt/5.0,0.0,false);
+  functor.run(tl.n0,tl.nm1,tl.np1,dt/5.0,0.0,false);
 
   // Stage 3: u3 = u0 + dt/3 RHS(u2),          t_rhs = t + dt/5 + dt/5
-  functor.run(n0,np1,np1,dt/3.0,0.0,false);
+  functor.run(tl.n0,tl.np1,tl.np1,dt/3.0,0.0,false);
 
   // Stage 4: u4 = u0 + 2dt/3 RHS(u3),         t_rhs = t + dt/5 + dt/5 + dt/3
-  functor.run(n0,np1,np1,2.0*dt/3.0,0.0,false);
+  functor.run(tl.n0,tl.np1,tl.np1,2.0*dt/3.0,0.0,false);
 
   // Compute (5u1-u0)/4 and store it in timelevel nm1
   {
     const auto t    = elements.m_state.m_t;
     const auto v    = elements.m_state.m_v;
     const auto dp3d = elements.m_state.m_dp3d;
+    const auto nm1  = tl.nm1;
+    const auto n0   = tl.n0;
     Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP*NUM_LEV),
       KOKKOS_LAMBDA(const int it) {
@@ -157,7 +155,7 @@ void u3_5stage_timestep(const int nm1, const int n0, const int np1, const int n0
   ExecSpace::fence();
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
-  functor.run(nm1,np1,np1,3.0*dt/4.0,3.0*eta_ave_w/4.0,false);
+  functor.run(tl.nm1,tl.np1,tl.np1,3.0*dt/4.0,3.0*eta_ave_w/4.0,false);
   GPTLstop("tl-ae U3-5stage_timestep");
 }
 

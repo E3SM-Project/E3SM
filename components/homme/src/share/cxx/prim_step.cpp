@@ -13,8 +13,7 @@
 namespace Homme
 {
 
-void prim_advance_exp (const int nm1, const int n0, const int np1,
-                       const Real dt, const bool compute_diagnostics);
+void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics);
 void prim_advec_tracers_remap(const Real);
 
 void prim_step (const Real dt, const bool compute_diagnostics)
@@ -72,11 +71,11 @@ void prim_step (const Real dt, const bool compute_diagnostics)
   // Dynamical Step
   // ===============
   GPTLstart("tl-s prim_advance_exp-loop");
-  prim_advance_exp(tl.nm1,tl.n0,tl.np1,dt,compute_diagnostics);
+  prim_advance_exp(tl,dt,compute_diagnostics);
   tl.tevolve += dt;
   for (int n=1; n<params.qsplit; ++n) {
     tl.update_dynamics_levels(UpdateType::LEAPFROG);
-    prim_advance_exp(tl.nm1,tl.n0,tl.np1,dt,false);
+    prim_advance_exp(tl,dt,false);
     tl.tevolve += dt;
   }
   GPTLstop("tl-s prim_advance_exp-loop");
