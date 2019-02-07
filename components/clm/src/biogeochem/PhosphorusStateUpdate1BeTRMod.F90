@@ -148,8 +148,7 @@ contains
          ps                    => phosphorusstate_vars &
          )
 
-     ldecomp_on=.true.
-     if(present(is_decomp_on))ldecomp_on=is_decomp_on
+     ldecomp_on=.true.; if(present(is_decomp_on))ldecomp_on=is_decomp_on
       ! set time steps
       dt = real( get_step_size(), r8 )
 
@@ -180,21 +179,20 @@ contains
       end do
 
       if(ldecomp_on)then
-      ! decomposition fluxes
-      do k = 1, ndecomp_cascade_transitions
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
+        ! decomposition fluxes
+        do k = 1, ndecomp_cascade_transitions
+           do j = 1, nlevdecomp
+             ! column loop
+             do fc = 1,num_soilc
                c = filter_soilc(fc)
-
                pf%decomp_ppools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
                     pf%decomp_ppools_sourcesink_col(c,j,cascade_donor_pool(k)) - &
                     pf%decomp_cascade_ptransfer_vr_col(c,j,k) * dt
-            end do
-         end do
-      end do
-      do k = 1, ndecomp_cascade_transitions
-         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+             end do
+           end do
+        end do
+        do k = 1, ndecomp_cascade_transitions
+          if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
             do j = 1, nlevdecomp
                ! column loop
                do fc = 1,num_soilc
@@ -205,7 +203,7 @@ contains
                        (pf%decomp_cascade_ptransfer_vr_col(c,j,k) + pf%decomp_cascade_sminp_flux_vr_col(c,j,k)) * dt
                end do
             end do
-         else  ! terminal transitions
+          else  ! terminal transitions
             do j = 1, nlevdecomp
                ! column loop
                do fc = 1,num_soilc
@@ -215,8 +213,8 @@ contains
                        pf%decomp_cascade_sminp_flux_vr_col(c,j,k) * dt
                end do
             end do
-         end if
-      end do
+          end if
+        end do
       endif
       !------------------------------------------------------------------
 
@@ -441,10 +439,14 @@ contains
     type(cnstate_type)       , intent(in)    :: cnstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    logical, optional, intent(in) :: ldecomp_on
 
+    logical :: is_decomp_on
+
+    is_decomp_on = .true.; if(present(ldecomp_on))is_decomp_on=ldecomp_on
 
   call PhosphorusStateUpdate1Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-     cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
+     cnstate_vars, phosphorusflux_vars, phosphorusstate_vars, is_decomp_on)
 
   call PhosphorusStateUpdate1Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)

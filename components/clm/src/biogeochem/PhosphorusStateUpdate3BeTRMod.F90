@@ -37,7 +37,7 @@ module PhosphorusStateUpdate3BeTRMod
 contains
   !-----------------------------------------------------------------------
   subroutine PhosphorusStateUpdate3Soil(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars, is_decomp_on)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
@@ -54,6 +54,7 @@ contains
     type(phosphorusflux_type)  , intent(inout)    :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(cnstate_type)         , intent(in)    :: cnstate_vars
+    logical , optional       , intent(in)  :: is_decomp_on
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k        ! indices
@@ -65,7 +66,7 @@ contains
    real(r8):: flux_mineralization(bounds%begc:bounds%endc,1:nlevdecomp)   !! local temperary variable
    real(r8):: temp_solutionp(bounds%begc:bounds%endc,1:nlevdecomp)
    real(r8):: aa,bb,cc ! solve quadratic function
-
+   logical  :: ldecomp_on
     !-----------------------------------------------------------------------
 
     associate(&
@@ -77,7 +78,7 @@ contains
          vmax_minsurf_p_vr => veg_vp%vmax_minsurf_p_vr , &
          km_minsurf_p_vr   => veg_vp%km_minsurf_p_vr     &
          )
-
+     ldecomp_on=.true.; if(present(is_decomp_on))ldecomp_on=is_decomp_on
       ! set time steps
       dt = real( get_step_size(), r8 )
 
@@ -91,28 +92,38 @@ contains
          enddo
       enddo
 
-      do k = 1, ndecomp_cascade_transitions
-        if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-          do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-              c = filter_soilc(fc)
-              flux_mineralization(c,j) = flux_mineralization(c,j) - &
+      if(ldecomp_on)then
+        do k = 1, ndecomp_cascade_transitions
+          if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+            do j = 1, nlevdecomp
+              ! column loop
+              do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                flux_mineralization(c,j) = flux_mineralization(c,j) - &
                                     pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
+              end do
             end do
-          end do
-        else
-          do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-              c = filter_soilc(fc)
-              flux_mineralization(c,j) = flux_mineralization(c,j) + &
+          else
+            do j = 1, nlevdecomp
+              ! column loop
+              do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                flux_mineralization(c,j) = flux_mineralization(c,j) + &
                         pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
 
+              end do
             end do
-          end do
-        endif
-      end do
+          endif
+        end do
+      else
+        do j = 1, nlevdecomp
+          ! column loop
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            flux_mineralization(c,j) =
+          enddo
+        enddo
+      endif
 
       do j = 1, nlevdecomp
         ! column loop
@@ -334,7 +345,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars, ldecomp_on)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
@@ -351,9 +362,12 @@ contains
     type(phosphorusflux_type)  , intent(inout)    :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(cnstate_type)         , intent(in)    :: cnstate_vars
+    logical, optional, intent(in) :: ldecomp_on
+    logical :: is_decomp_on
 
+    is_decomp_on=.true.; if(present(ldecomp_on))is_decomp_on=ldecomp_on
   call PhosphorusStateUpdate3Soil(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars, is_decomp_on)
 
   call PhosphorusStateUpdate3Veg(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)

@@ -71,40 +71,39 @@ module EcosystemDynBeTRMod
     ! setup fluxes and parameters for plant-microbe coupling in soibgc
     !
     ! !USES:
-    use PhenologyMod            , only : Phenology, CNLitterToColumn
-    use GrowthRespMod             , only: GrowthResp
-    use CarbonStateUpdate1BeTRMod    , only : CarbonStateUpdate1,CarbonStateUpdate0
-    use NitrogenStateUpdate1BeTRMod    , only : NitrogenStateUpdate1
-    use GapMortalityMod         , only : GapMortality
-    use CarbonStateUpdate2Mod        , only : CarbonStateUpdate2, CarbonStateUpdate2h
-    use NitrogenStateUpdate2BeTRMod    , only : NitrogenStateUpdate2, NitrogenStateUpdate2h
-    use FireMod              , only: FireArea, FireFluxes
-    use CarbonStateUpdate3Mod        , only : CarbonStateUpdate3
-    use CarbonIsoFluxMod             , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
-    use C14DecayMod             , only : C14Decay, C14BombSpike
-    use WoodProductsMod         , only : WoodProducts
-    use CropType                  , only : crop_type
-    use dynHarvestMod             , only : CNHarvest
-    use clm_varpar                , only : crop_prog
-    use NitrogenDynamicsMod       , only: NitrogenLeaching
-    use CropHarvestPoolsMod     , only : CropHarvestPools
-    use PlantMicKineticsMod       , only : PlantMicKinetics_type
-    use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
-    use PhosphorusStateUpdate3Mod          , only : PhosphorusStateUpdate3
-    use NitrogenStateUpdate3BeTRMod    , only : NitrogenStateUpdate3
-    use PhosphorusStateUpdate1BeTRMod      , only : PhosphorusStateUpdate1
-    use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusAdsportion
-    use PhosphorusDynamicsMod              , only : PhosphorusLeaching, PhosphorusOcclusion,PhosphorusDesoprtion
-    use VerticalProfileMod      , only : decomp_vertprofiles
-     use SoilLittVertTranspMod, only: SoilLittVertTransp
-    use RootDynamicsMod           , only: RootDynamics
-    use PhenologyFLuxLimitMod     , only : phenology_flux_limiter
-    use abortutils          , only : endrun
-    use shr_log_mod         , only : errMsg => shr_log_errMsg
-    use EcosystemDynMod     , only : EcosystemDynNoLeaching1
-    use SoilLittDecompMod            , only: SoilLittDecompAlloc
-    use SoilLittDecompMod            , only: SoilLittDecompAlloc2
+    use PhenologyMod                     , only : Phenology, CNLitterToColumn
+    use GrowthRespMod                    , only : GrowthResp
+    use GapMortalityMod                  , only : GapMortality
+    use CarbonStateUpdate1BeTRMod        , only : CarbonStateUpdate1,CarbonStateUpdate0
+    use CarbonStateUpdate2BeTRMod        , only : CarbonStateUpdate2, CarbonStateUpdate2h
+    use CarbonStateUpdate3BeTRMod        , only : CarbonStateUpdate3
+    use NitrogenStateUpdate1BeTRMod      , only : NitrogenStateUpdate1
+    use NitrogenStateUpdate2BeTRMod      , only : NitrogenStateUpdate2, NitrogenStateUpdate2h
+    use NitrogenStateUpdate3BeTRMod      , only : NitrogenStateUpdate3
+    use PhosphorusStateUpdate1BeTRMod    , only : PhosphorusStateUpdate1
+    use PhosphorusStateUpdate2BeTRMod    , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
+    use PhosphorusStateUpdate3BeTRMod    , only : PhosphorusStateUpdate3
+    use FireMod                          , only: FireArea, FireFluxes
+    use CarbonIsoFluxMod                 , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
+    use C14DecayMod                      , only : C14Decay, C14BombSpike
+    use WoodProductsMod                  , only : WoodProducts
+    use CropType                         , only : crop_type
+    use dynHarvestMod                    , only : CNHarvest
+    use clm_varpar                       , only : crop_prog
+    use NitrogenDynamicsMod              , only : NitrogenLeaching
+    use CropHarvestPoolsMod              , only : CropHarvestPools
+    use PlantMicKineticsMod              , only : PlantMicKinetics_type
+    use PhosphorusDynamicsMod            , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusAdsportion
+    use PhosphorusDynamicsMod            , only : PhosphorusLeaching, PhosphorusOcclusion,PhosphorusDesoprtion
+    use VerticalProfileMod               , only : decomp_vertprofiles
+     use SoilLittVertTranspMod           , only : SoilLittVertTransp
+    use RootDynamicsMod                  , only : RootDynamics
+    use PhenologyFLuxLimitMod            , only : phenology_flux_limiter
+    use abortutils                       , only : endrun
+    use shr_log_mod                      , only : errMsg => shr_log_errMsg
+    use EcosystemDynMod                  , only : EcosystemDynNoLeaching1
+    use SoilLittDecompMod                , only : SoilLittDecompAlloc
+    use SoilLittDecompMod                , only : SoilLittDecompAlloc2
     implicit none
 
 
@@ -281,15 +280,15 @@ module EcosystemDynBeTRMod
        end if
 
        call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars, ldecomp_on=.true.)
+            crop_vars, carbonflux_vars, carbonstate_vars)
 
        if ( use_c13 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, ldecomp_on=.true.)
+               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, ldecomp_on=.true.)
+               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
        call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -480,6 +479,16 @@ module EcosystemDynBeTRMod
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
        call t_stopf('PhosphorusLeaching')
 
+       call t_startf('CNUpdate3')
+       call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            nitrogenflux_vars, nitrogenstate_vars)
+       call t_stopf('CNUpdate3')
+
+       call t_startf('PUpdate3')
+       call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       call t_stopf('PUpdate3')
+
   end subroutine CNEcosystemDynBeTR0
 
   !-----------------------------------------------------------------------
@@ -501,40 +510,40 @@ module EcosystemDynBeTRMod
     ! setup fluxes and parameters for plant-microbe coupling in soibgc
     !
     ! !USES:
-    use PhenologyMod            , only : Phenology, CNLitterToColumn
-    use GrowthRespMod             , only: GrowthResp
-    use CarbonStateUpdate1BeTRMod    , only : CarbonStateUpdate1,CarbonStateUpdate0
-    use NitrogenStateUpdate1BeTRMod    , only : NitrogenStateUpdate1
-    use GapMortalityMod         , only : GapMortality
-    use CarbonStateUpdate2Mod        , only : CarbonStateUpdate2, CarbonStateUpdate2h
-    use NitrogenStateUpdate2BeTRMod    , only : NitrogenStateUpdate2, NitrogenStateUpdate2h
-    use FireMod              , only: FireArea, FireFluxes
-    use CarbonStateUpdate3Mod        , only : CarbonStateUpdate3
-    use CarbonIsoFluxMod             , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
-    use C14DecayMod             , only : C14Decay, C14BombSpike
-    use WoodProductsMod         , only : WoodProducts
-    use CropType                  , only : crop_type
-    use dynHarvestMod             , only : CNHarvest
-    use clm_varpar                , only : crop_prog
-    use CropHarvestPoolsMod     , only : CropHarvestPools
-    use PlantMicKineticsMod       , only : PlantMicKinetics_type
-    use AllocationMod             , only : update_PlantMicKinetics_pars
-    use PhosphorusStateUpdate3Mod          , only : PhosphorusStateUpdate3
-    use NitrogenStateUpdate3BeTRMod    , only : NitrogenStateUpdate3
-    use PhosphorusStateUpdate1BeTRMod      , only : PhosphorusStateUpdate1
-    use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusDynamicsMod              , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusLeaching
-    use PhosphorusDynamicsMod              , only : PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
-    use NitrogenDynamicsMod       , only: NitrogenLeaching
-    use VerticalProfileMod      , only : decomp_vertprofiles
-    use RootDynamicsMod           , only: RootDynamics
-    use PhenologyFLuxLimitMod     , only : phenology_flux_limiter
-    use abortutils                , only : endrun
-    use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use EcosystemDynMod           , only : EcosystemDynNoLeaching1
-    use SoilLittVertTranspMod     , only : SoilLittVertTransp
-    use SoilLittDecompMod         , only : SoilLittDecompAlloc2
-    use BeTRSimulationALM         , only : betr_simulation_alm_type
+    use PhenologyMod                      , only : Phenology, CNLitterToColumn
+    use GrowthRespMod                     , only : GrowthResp
+    use CarbonStateUpdate1BeTRMod         , only : CarbonStateUpdate1,CarbonStateUpdate0
+    use CarbonStateUpdate2BeTRMod         , only : CarbonStateUpdate2, CarbonStateUpdate2h
+    use CarbonStateUpdate3BeTRMod         , only : CarbonStateUpdate3
+    use NitrogenStateUpdate1BeTRMod       , only : NitrogenStateUpdate1
+    use NitrogenStateUpdate2BeTRMod       , only : NitrogenStateUpdate2, NitrogenStateUpdate2h
+    use NitrogenStateUpdate3BeTRMod       , only : NitrogenStateUpdate3
+    use PhosphorusStateUpdate1BeTRMod     , only : PhosphorusStateUpdate1
+    use PhosphorusStateUpdate2BeTRMod     , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
+    use PhosphorusStateUpdate3BeTRMod     , only : PhosphorusStateUpdate3
+    use GapMortalityMod                   , only : GapMortality
+    use FireMod                           , only : FireArea, FireFluxes
+    use CarbonIsoFluxMod                  , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
+    use C14DecayMod                       , only : C14Decay, C14BombSpike
+    use WoodProductsMod                   , only : WoodProducts
+    use CropType                          , only : crop_type
+    use dynHarvestMod                     , only : CNHarvest
+    use clm_varpar                        , only : crop_prog
+    use CropHarvestPoolsMod               , only : CropHarvestPools
+    use PlantMicKineticsMod               , only : PlantMicKinetics_type
+    use AllocationMod                     , only : update_PlantMicKinetics_pars
+    use PhosphorusDynamicsMod             , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusLeaching
+    use PhosphorusDynamicsMod             , only : PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
+    use NitrogenDynamicsMod               , only : NitrogenLeaching
+    use VerticalProfileMod                , only : decomp_vertprofiles
+    use RootDynamicsMod                   , only : RootDynamics
+    use PhenologyFLuxLimitMod             , only : phenology_flux_limiter
+    use abortutils                        , only : endrun
+    use shr_log_mod                       , only : errMsg => shr_log_errMsg
+    use EcosystemDynMod                   , only : EcosystemDynNoLeaching1
+    use SoilLittVertTranspMod             , only : SoilLittVertTransp
+    use SoilLittDecompMod                 , only : SoilLittDecompAlloc2
+    use BeTRSimulationALM                 , only : betr_simulation_alm_type
     implicit none
 
 
@@ -735,10 +744,10 @@ module EcosystemDynBeTRMod
        end if
 
        call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
+            cnstate_vars, nitrogenflux_vars, nitrogenstate_vars, ldecomp_on=.false.)
 
        call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
+            cnstate_vars, phosphorusflux_vars, phosphorusstate_vars, ldecomp_on=.false.)
 
        call t_stopf('CNUpdate1')
 
@@ -923,6 +932,16 @@ module EcosystemDynBeTRMod
        call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
        call t_stopf('PhosphorusLeaching')
+
+       call t_startf('CNUpdate3')
+       call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            nitrogenflux_vars, nitrogenstate_vars)
+       call t_stopf('CNUpdate3')
+
+       call t_startf('PUpdate3')
+       call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars,phosphorusflux_vars, phosphorusstate_vars,ldecomp_on=.false.)
+       call t_stopf('PUpdate3')
 
   end subroutine CNEcosystemDynBeTR1
   !-----------------------------------------------------------------------
@@ -1582,16 +1601,6 @@ module EcosystemDynBeTRMod
 
     ! only do if ed is off
     if( .not. use_fates) then
-
-       call t_startf('CNUpdate3')
-       call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            nitrogenflux_vars, nitrogenstate_vars)
-       call t_stopf('CNUpdate3')
-
-       call t_startf('PUpdate3')
-       call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
-       call t_stopf('PUpdate3')
 
        call t_startf('CNPsum')
        call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
