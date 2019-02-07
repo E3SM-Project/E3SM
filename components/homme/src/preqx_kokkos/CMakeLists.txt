@@ -146,6 +146,7 @@ SET(PREQX_DEPS_CXX
   ${TARGET_DIR}/cxx/CamForcing.cpp
   ${TARGET_DIR}/cxx/DiagnosticsPreqx.cpp
   ${TARGET_DIR}/cxx/ElementsState.cpp
+  ${TARGET_DIR}/cxx/ElementsForcing.cpp
   ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
   ${TARGET_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp

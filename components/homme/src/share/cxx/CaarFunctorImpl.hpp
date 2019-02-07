@@ -104,6 +104,7 @@ struct CaarFunctorImpl {
                          [&](const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
+
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV), [&] (const int& ilev) {
         // pre-fill energy_grad with the pressure(_grad)-temperature part
         m_elements.m_buffers.energy_grad(kv.team_idx, 0, igp, jgp, ilev) =
@@ -124,8 +125,7 @@ struct CaarFunctorImpl {
                        m_elements.m_state.m_v(kv.ie, m_data.n0, 0, igp, jgp, ilev) +
                    m_elements.m_state.m_v(kv.ie, m_data.n0, 1, igp, jgp, ilev) *
                        m_elements.m_state.m_v(kv.ie, m_data.n0, 1, igp, jgp, ilev));
-        m_elements.m_buffers.ephi(kv.team_idx, igp, jgp, ilev) =
-            k_energy + m_elements.m_derived.m_phi(kv.ie, igp, jgp, ilev);
+        m_elements.m_buffers.ephi(kv.team_idx, igp, jgp, ilev) += k_energy;
       });
     });
     kv.team_barrier();
@@ -707,7 +707,7 @@ private:
                                                      : VECTOR_SIZE - 1);
 
         const Real phis = m_elements.m_geometry.m_phis(kv.ie, igp, jgp);
-        auto &phi = m_elements.m_derived.m_phi(kv.ie, igp, jgp, ilev);
+        auto &phi = m_elements.m_buffers.ephi(kv.team_idx, igp, jgp, ilev);
         const auto &t_v =
             m_elements.m_buffers.temperature_virt(kv.team_idx, igp, jgp, ilev);
         const auto &dp3d = m_elements.m_state.m_dp3d(kv.ie, m_data.n0, igp, jgp, ilev);
@@ -788,7 +788,7 @@ private:
 
       // Update phi with a parallel_for: phi(k)= phis + 2.0 * integration(k+1) + rgas_tv_dp_over_p(k);
       const Real phis = m_elements.m_geometry.m_phis(kv.ie, igp, jgp);
-      const auto phi = Homme::subview(m_elements.m_derived.m_phi,kv.ie, igp, jgp);
+      const auto phi = Homme::subview(m_elements.m_buffers.ephi,kv.team_idx, igp, jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&](const int level) {
         phi(level) = phis + 2.0 * integration(level) + rgas_tv_dp_over_p(level);

@@ -23,6 +23,7 @@ void Elements::init(const int num_elems, const bool consthv) {
   m_state.init(num_elems);
   m_derived.init(num_elems);
   m_buffers.init(num_elems);
+  m_forcing.init(num_elems);
 
   m_inited = true;
 }

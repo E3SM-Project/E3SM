@@ -151,7 +151,7 @@ void apply_cam_forcing(const Real &dt) {
   const Elements &elems = Context::singleton().get<Elements>();
   const TimeLevel &tl = Context::singleton().get<TimeLevel>();
 
-  state_forcing(elems.m_derived.m_ft, elems.m_derived.m_fm, tl.n0, dt, elems.m_state.m_t, elems.m_state.m_v);
+  state_forcing(elems.m_forcing.m_ft, elems.m_forcing.m_fm, tl.n0, dt, elems.m_state.m_t, elems.m_state.m_v);
 
   const SimulationParams &sim_params =
       Context::singleton().get<SimulationParams>();
@@ -169,7 +169,7 @@ void apply_cam_forcing_dynamics(const Real &dt) {
   GPTLstart("ApplyCAMForcing_dynamics");
   const Elements &elems = Context::singleton().get<Elements>();
   const TimeLevel &tl = Context::singleton().get<TimeLevel>();
-  state_forcing(elems.m_derived.m_ft, elems.m_derived.m_fm, tl.n0, dt, elems.m_state.m_t, elems.m_state.m_v);
+  state_forcing(elems.m_forcing.m_ft, elems.m_forcing.m_fm, tl.n0, dt, elems.m_state.m_t, elems.m_state.m_v);
   GPTLstop("ApplyCAMForcing_dynamics");
 }
 
