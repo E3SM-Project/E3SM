@@ -14,8 +14,12 @@ extern "C" {
                  Real* dzq, Int it, Real* prt_liq, Real* prt_sol, Int its,
                  Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
-                 Real* diag_di, Real* diag_rhoi, 
-                 bool log_predictNc);
+                 Real* diag_di, Real* diag_rhoi,
+                 bool log_predictNc,
+                 Real* pdel, Real* exner, Real* ast, Real* cmeiout, Real* prain,
+                 Real* nevapr, Real* prer_evap,
+                 Real* rflx, Real* sflx, // 1 extra column size
+                 Real* rcldm, Real* lcldm, Real* icldm);
 }
 
 namespace scream {
@@ -43,6 +47,9 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   th_old = Array2("theta at beginning of timestep, K", ncol, nlev);
   pres = Array2("pressure, Pa", ncol, nlev);
   dzq = Array2("vertical grid spacing, m", ncol, nlev);
+  pdel = Array2("pressure thickness, Pa", ncol, nlev);
+  exner = Array2("Exner expression", ncol, nlev);
+  ast = Array2("relative humidity cloud fraction", ncol, nlev);
   // Out
   prt_liq = Array1("precipitation rate, liquid  m/s", ncol);
   prt_sol = Array1("precipitation rate, solid   m/s", ncol);
@@ -52,6 +59,15 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   diag_vmi = Array2("mass-weighted fall speed of ice, m/s", ncol, nlev);
   diag_di = Array2("mean diameter of ice, m", ncol, nlev);
   diag_rhoi = Array2("bulk density of ice, kg/m", ncol, nlev);
+  cmeiout = Array2("qitend due to deposition/sublimation ", ncol, nlev);
+  prain = Array2("Total precipitation (rain + snow)", ncol, nlev);
+  nevapr = Array2("evaporation of total precipitation (rain + snow)", ncol, nlev);
+  prer_evap = Array2("evaporation of rain", ncol, nlev);
+  rflx = Array2("grid-box average rain flux (kg m^-2 s^-1), pverp", ncol, nlev+1);
+  sflx = Array2("grid-box average ice/snow flux (kg m^-2 s^-1), pverp", ncol, nlev+1);
+  rcldm = Array2("Rain cloud fraction", ncol, nlev);
+  lcldm = Array2("Liquid cloud fraction", ncol, nlev);
+  icldm = Array2("Ice cloud fraction", ncol, nlev);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -72,6 +88,10 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
   fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
+  fdipb(pdel); fdipb(exner); fdipb(ast); fdipb(cmeiout); fdipb(prain);
+  fdipb(nevapr); fdipb(prer_evap);
+  fdipb(rflx); fdipb(sflx);
+  fdipb(rcldm); fdipb(lcldm); fdipb(icldm);
 #undef fdipb
 }
 
@@ -96,7 +116,11 @@ void p3_main (const FortranData& d) {
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(),
-            d.log_predictnc);
+            d.log_predictnc,
+            d.pdel.data(), d.exner.data(), d.ast.data(), d.cmeiout.data(), d.prain.data(),
+            d.nevapr.data(), d.prer_evap.data(),
+            d.rflx.data(), d.sflx.data(),
+            d.rcldm.data(), d.lcldm.data(), d.icldm.data());
 }
 
 Int check_against_python (const FortranData& d) {

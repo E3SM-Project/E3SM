@@ -96,6 +96,8 @@ FortranData::Ptr make_mixed () {
     d.dzq(0,k) = Constants<double>::RD*T(k)/(g*d.pres(0,k))*dpres;
   }
 
+  // TODO - need data for pdel, exner, ast
+
   return dp;
 }
 

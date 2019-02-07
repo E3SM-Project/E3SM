@@ -79,7 +79,8 @@ contains
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in) bind(C)
+       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in, &
+       pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
@@ -92,12 +93,24 @@ contains
     integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it
     logical(kind=c_bool), value, intent(in) :: log_predictNc_in
 
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: pdel
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: exner
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: cmeiout
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: prain
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: nevapr
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: ast
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
+
     logical :: log_predictNc
 
     log_predictNc = log_predictNc_in
 
     call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
          pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-         diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc)
+         diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
+         pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm)
   end subroutine p3_main_c
 end module micro_p3_iso_c
