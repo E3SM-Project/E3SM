@@ -14,7 +14,6 @@ process_genf90_source_list("${genf90_files}" ${CMAKE_CURRENT_BINARY_DIR}
   share_genf90_sources)
 
 sourcelist_to_parent(share_genf90_sources)
-message("JGF ${share_genf90_sources}")
 
 list(APPEND share_sources "${share_genf90_sources}")
 
@@ -36,7 +35,7 @@ list(APPEND share_sources
 
 # end share/util
 
-add_definitions(-DCPRGNU -DPCOLS=1 -DPSUBCOLS=1 -DPLEV=1)
+add_definitions(-DPCOLS=1 -DPSUBCOLS=1 -DPLEV=1)
 
 set(P3_SRCS
   p3_f90.cpp
