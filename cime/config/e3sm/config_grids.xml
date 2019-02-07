@@ -2873,12 +2873,14 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.ais20km" ocn_grid="oQU120">
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_aave.160331.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_aave.160331.nc</map>
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_nearestdtos.160331.nc</map>
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_neareststod.160331.nc</map>
     </gridmap>
 
   </gridmaps>
