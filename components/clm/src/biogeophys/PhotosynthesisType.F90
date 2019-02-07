@@ -82,6 +82,18 @@ module PhotosynthesisType
 
      ! ED specific variables
      real(r8), pointer :: lmrcanopy_patch   (:)   ! sunlit leaf maintenance respiration rate (umol CO2/m**2/s) (ED specific)
+     ! Plant hydraulic stress specific variables
+     real(r8), pointer, public :: ac_phs_patch      (:,:,:) ! patch Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
+     real(r8), pointer, public :: aj_phs_patch      (:,:,:) ! patch RuBP-limited gross photosynthesis (umol CO2/m**2/s)
+     real(r8), pointer, public :: ap_phs_patch      (:,:,:) ! patch product-limited (C3) or CO2-limited (C4) gross photosynthesis (umol CO2/m**2/s)
+     real(r8), pointer, public :: ag_phs_patch      (:,:,:) ! patch co-limited gross leaf photosynthesis (umol CO2/m**2/s)
+     real(r8), pointer, public :: an_sun_patch      (:,:)   ! patch sunlit net leaf photosynthesis (umol CO2/m**2/s)
+     real(r8), pointer, public :: an_sha_patch      (:,:)   ! patch shaded net leaf photosynthesis (umol CO2/m**2/s)
+     real(r8), pointer, public :: vcmax_z_phs_patch (:,:,:) ! patch maximum rate of carboxylation (umol co2/m**2/s)
+     real(r8), pointer, public :: kp_z_phs_patch    (:,:,:) ! patch initial slope of CO2 response curve (C4 plants)
+     real(r8), pointer, public :: tpu_z_phs_patch   (:,:,:) ! patch triose phosphate utilization rate (umol CO2/m**2/s)
+     real(r8), pointer, public :: gs_mol_sun_patch  (:,:) ! patch sunlit leaf stomatal conductance (umol H2O/m**2/s)
+     real(r8), pointer, public :: gs_mol_sha_patch  (:,:) ! patch shaded leaf stomatal conductance (umol H2O/m**2/s)
 
    contains
 
@@ -187,6 +199,18 @@ contains
     allocate(this%psncanopy_patch   (begp:endp))           ; this%psncanopy_patch   (:)   = nan
 
     allocate(this%lmrcanopy_patch   (begp:endp))           ; this%lmrcanopy_patch   (:)   = nan
+! plant hydraulics
+    allocate(this%ac_phs_patch      (begp:endp,2,1:nlevcan)) ; this%ac_phs_patch (:,:,:) = nan
+    allocate(this%aj_phs_patch      (begp:endp,2,1:nlevcan)) ; this%aj_phs_patch (:,:,:) = nan
+    allocate(this%ap_phs_patch      (begp:endp,2,1:nlevcan)) ; this%ap_phs_patch (:,:,:) = nan
+    allocate(this%ag_phs_patch      (begp:endp,2,1:nlevcan)) ; this%ag_phs_patch (:,:,:) = nan
+    allocate(this%an_sun_patch      (begp:endp,1:nlevcan))   ; this%an_sun_patch (:,:)   = nan
+    allocate(this%an_sha_patch      (begp:endp,1:nlevcan))   ; this%an_sha_patch (:,:)   = nan
+    allocate(this%vcmax_z_phs_patch (begp:endp,2,1:nlevcan)) ; this%vcmax_z_phs_patch (:,:,:) = nan
+    allocate(this%tpu_z_phs_patch   (begp:endp,2,1:nlevcan)) ; this%tpu_z_phs_patch   (:,:,:) = nan
+    allocate(this%kp_z_phs_patch    (begp:endp,2,1:nlevcan)) ; this%kp_z_phs_patch    (:,:,:) = nan
+    allocate(this%gs_mol_sun_patch  (begp:endp,1:nlevcan))   ; this%gs_mol_sun_patch  (:,:)   = nan
+    allocate(this%gs_mol_sha_patch  (begp:endp,1:nlevcan))   ; this%gs_mol_sha_patch  (:,:)   = nan
 
   end subroutine InitAllocate
 

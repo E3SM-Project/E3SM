@@ -40,6 +40,7 @@ module WaterfluxType
      real(r8), pointer :: qflx_evap_tot_col        (:)   ! col col_qflx_evap_soi + col_qflx_evap_veg + qflx_tran_veg
      real(r8), pointer :: qflx_evap_grnd_patch     (:)   ! patch ground surface evaporation rate (mm H2O/s) [+]
      real(r8), pointer :: qflx_evap_grnd_col       (:)   ! col ground surface evaporation rate (mm H2O/s) [+]
+     real(r8), pointer :: qflx_phs_neg_col         (:)   ! col sum of negative hydraulic redistribution fluxes (mm H2O/s) [+]
      real(r8), pointer :: qflx_snwcp_liq_patch     (:)   ! patch excess rainfall due to snow capping (mm H2O /s)
      real(r8), pointer :: qflx_snwcp_liq_col       (:)   ! col excess rainfall due to snow capping (mm H2O /s)
      real(r8), pointer :: qflx_snwcp_ice_patch     (:)   ! patch excess snowfall due to snow capping (mm H2O /s)
@@ -127,6 +128,7 @@ module WaterfluxType
      real(r8), pointer :: mflx_et_col              (:,:) ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
      real(r8), pointer :: mflx_drain_col           (:,:) ! drainage from groundwater table (kg H2O /s)
      real(r8), pointer :: mflx_recharge_col        (:)   ! recharge from soil column to unconfined aquifer (kg H2O /s)
+     real(r8), pointer :: sapflow_patch (:) !plant hydraulics, (mm/s)
 
      ! Objects that help convert once-per-year dynamic land cover changes into fluxes
      ! that are dribbled throughout the year
@@ -210,6 +212,7 @@ contains
     allocate(this%qflx_evap_soi_col        (begc:endc))              ; this%qflx_evap_soi_col        (:)   = nan
     allocate(this%qflx_evap_tot_col        (begc:endc))              ; this%qflx_evap_tot_col        (:)   = nan
     allocate(this%qflx_evap_grnd_col       (begc:endc))              ; this%qflx_evap_grnd_col       (:)   = nan
+    allocate(this%qflx_phs_neg_col         (begc:endc))              ; this%qflx_phs_neg_col       (:)   = nan
     allocate(this%qflx_dew_grnd_col        (begc:endc))              ; this%qflx_dew_grnd_col        (:)   = nan
     allocate(this%qflx_dew_snow_col        (begc:endc))              ; this%qflx_dew_snow_col        (:)   = nan
     allocate(this%qflx_evap_veg_patch      (begp:endp))              ; this%qflx_evap_veg_patch      (:)   = nan
@@ -293,6 +296,7 @@ contains
     allocate(this%mflx_drain_col         (begc:endc,1:nlevgrnd))     ; this%mflx_drain_col           (:,:) = nan
     allocate(this%mflx_sub_snow_col      (begc:endc))                ; this%mflx_sub_snow_col        (:)   = nan
     allocate(this%mflx_recharge_col      (begc:endc))                ; this%mflx_recharge_col        (:)   = nan
+    allocate(this%sapflow_patch          (begp:endp))                ; this%sapflow_patch              (:) = nan
 
     this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
          bounds = bounds, &
@@ -444,6 +448,12 @@ contains
          avgflag='A', long_name='canopy evaporation', &
          ptr_patch=this%qflx_evap_can_patch, set_lake=0._r8, c2l_scale_type='urbanf')
 
+    this%sapflow_patch(begp:endp) = spval
+    call hist_addfld1d (fname='SAPFLOW', units='mm/s',  &
+         avgflag='A', long_name='sap flow', &
+         ptr_patch=this%sapflow_patch, set_lake=0._r8, c2l_scale_type='urbanf')
+    this%qflx_tran_veg_patch(begp:endp) = spval
+
     this%qflx_tran_veg_patch(begp:endp) = spval
     call hist_addfld1d (fname='QVEGT', units='mm/s',  &
          avgflag='A', long_name='canopy transpiration', &
@@ -515,6 +525,11 @@ contains
     call hist_addfld1d (fname='QDRAI_XS',  units='mm/s',  &
          avgflag='A', long_name='saturation excess drainage', &
          ptr_col=this%qflx_rsub_sat_col, c2l_scale_type='urbanf')
+    
+    this%qflx_phs_neg_col(begc:endc) = spval
+    call hist_addfld1d (fname='QPHSNEG',  units='mm/s',  &
+         avgflag='A', long_name='net negative hydraulic redistribution flux', &
+         ptr_col=this%qflx_phs_neg_col, default='inactive')
 
     ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at any
     ! given time step but only if there is at least one snow layer (for all landunits 
@@ -555,6 +570,8 @@ contains
     this%qflx_evap_grnd_col(bounds%begc:bounds%endc) = 0.0_r8
     this%qflx_dew_grnd_col (bounds%begc:bounds%endc) = 0.0_r8
     this%qflx_dew_snow_col (bounds%begc:bounds%endc) = 0.0_r8
+    
+    this%qflx_phs_neg_col(bounds%begc:bounds%endc)   = 0.0_r8
 
     this%qflx_h2osfc_surf_col(bounds%begc:bounds%endc) = 0._r8
     this%qflx_snow_melt_col(bounds%begc:bounds%endc)   = 0._r8
