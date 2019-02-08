@@ -201,6 +201,10 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
       <directive> -l select=1:mpiprocs={{ total_tasks }}:ompthreads={{ thread_count }}</directive>
     </directives>
+
+    <!-- Unknown queues use the batch directives for the regular queue -->
+    <unknown_queue_directives>regular</unknown_queue_directives>
+
     <queues>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
