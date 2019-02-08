@@ -40,7 +40,7 @@ before_script:
 - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; ln -s $(which gfortran-6) gfortran; export PATH="${PWD}:${PATH}"; fi
 
 script:
-- cmake -DSCREAM_TEST_MAX_THREADS=4 -D CMAKE_CXX_COMPILER=mpicxx -D CMAKE_BUILD_TYPE=Debug CMAKE_Fortran_COMPILER=gfortran -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D Kokkos_DIR=${PWD}/kokkos/install components/scream
+- cmake -DSCREAM_TEST_MAX_THREADS=4 -D CMAKE_CXX_COMPILER=mpicxx -D CMAKE_BUILD_TYPE=Debug -D CMAKE_Fortran_COMPILER=mpif90 -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -D Kokkos_DIR=${PWD}/kokkos/install components/scream
 - make -j 2
 - echo WARNING In Travis CI, baseline-based tests are NOT RUN.
 - echo WARNING Please run these manually against established baseline files before merging your PR.
