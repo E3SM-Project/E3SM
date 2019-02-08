@@ -48,7 +48,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing,&
+       applycamforcing_dynamics, applyCAMforcing_dynamics_dp, &
        compute_andor_apply_rhs
 
 contains
@@ -795,7 +795,7 @@ contains
 ! consistency with hydrostatic model, we assume NH perturbation pressure
 ! remains constant. this requires addign forcing to the PHI equation
 !
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
+  subroutine convert_thermo_forcing_(elem,hvcoord,n0,n0q,dt,nets,nete)
   use control_mod,        only : use_moisture
 
   implicit none
@@ -904,7 +904,7 @@ contains
      elem(ie)%derived%FPHI(:,:,:) = &
          (phi_n1 - elem(ie)%state%phinh_i(:,:,:,n0))/dt
   enddo
-  end subroutine convert_thermo_forcing
+  end subroutine convert_thermo_forcing_
 
 
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------
@@ -922,6 +922,13 @@ contains
      elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FT(:,:,:)
      elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
+!if (ie == 1 ) then
+!print *, ie,'FT', elem(ie)%derived%FT(1,1,nlev)
+!print *, ie,'FPHI', elem(ie)%derived%FPHI(1,1,nlev)
+!print *, ie,elem(ie)%state%vtheta_dp(1,1,nlev,np1)
+!print *, ie, elem(ie)%state%phinh_i(1,1,1:nlev,np1)
+!endif
+!stop
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
 

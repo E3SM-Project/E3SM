@@ -106,12 +106,12 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     endselect
   endif
 
-#ifdef MODEL_THETA_L
-  do ie=nets,nete
-!    !init from 1st timelevel
-    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,1)
-  enddo
-#endif
+!#ifdef MODEL_THETA_L
+!  do ie=nets,nete
+!!    !init from 1st timelevel
+!    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,1)
+!  enddo
+!#endif
 
 end subroutine
 
@@ -172,10 +172,10 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     elem(ie)%derived%FT = 0
     elem(ie)%derived%FM = 0
     elem(ie)%derived%FQ = 0
-#ifdef MODEL_THETA_L
-    elem(ie)%derived%FVTheta = 0
-    elem(ie)%derived%FPHI = 0
-#endif
+!#ifdef MODEL_THETA_L
+!    elem(ie)%derived%FVTheta = 0
+!    elem(ie)%derived%FPHI = 0
+!#endif
   enddo
 
   ! get forcing terms from test case

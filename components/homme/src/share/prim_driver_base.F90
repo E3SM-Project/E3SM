@@ -978,7 +978,6 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: convert_thermo_forcing
     use element_ops,        only: get_temperature
 
     implicit none
@@ -1038,7 +1037,6 @@ contains
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
-#if 0
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
       call t_startf("prim_energy_halftimes")
@@ -1049,7 +1047,6 @@ contains
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
     endif
-#endif
 
     ! initialize dp3d from ps
     do ie=nets,nete
@@ -1142,9 +1139,9 @@ contains
        enddo
     enddo
 
-#ifdef MODEL_THETA_L
-    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
-#endif
+!#ifdef MODEL_THETA_L
+!    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
+!#endif
 
     call t_stopf("prim_run_subcyle_diags")
 
@@ -1347,19 +1344,19 @@ contains
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
-    call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
     do ie = nets,nete
        call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
+    call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
 #ifndef CAM
     do ie = nets,nete
        call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
 #endif
+    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
   elseif (ftype==4) then
 #ifndef CAM
     do ie = nets,nete
@@ -1387,7 +1384,6 @@ contains
   use element_ops,        only : get_temperature, get_r_star
   use eos,                only : get_pnh_and_exner
 #endif
-  use prim_advance_mod,   only : convert_thermo_forcing
   implicit none
   type (element_t),       intent(inout) :: elem
   real (kind=real_kind),  intent(in)    :: dt
@@ -1411,8 +1407,12 @@ contains
 #endif
 
 #ifdef MODEL_THETA_L
+!below dp is recomputed again
+   do k=1,nlev
+      dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
+   enddo
    !one can set pprime=0 to hydro regime but it is not done in master
-
    !compute pnh, here only pnh is needed
    call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
@@ -1420,6 +1420,8 @@ contains
       pprime(:,:,k) = pnh(:,:,k) - &
        ( hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k))
    enddo
+   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+   tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
 #endif
 
 !OG copied omp pragmas from stepon as is
@@ -1518,7 +1520,9 @@ contains
 !continue conversion using pprime from above
      call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
 !derived%T is computed each remap step
-     tn1(:,:,:) = elem%derived%T + dt*elem%derived%FT(:,:,:)
+!giving up on derived T
+!     tn1(:,:,:) = elem%derived%T + dt*elem%derived%FT(:,:,:)
+     tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
 
      ! update pressure based on Qdp forcing
      do k=1,nlev
@@ -1541,11 +1545,12 @@ contains
 
      !finally, compute difference for FVTheta
      ! this method is using new dp, new exner, new-new r*, new t
-     elem%derived%FVTheta(:,:,:) = &
+     elem%derived%FT(:,:,:) = &
          (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
 
      elem%derived%FPHI(:,:,:) = &
          (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
+
 #endif
 
 end subroutine applyCAMforcing_tracers
