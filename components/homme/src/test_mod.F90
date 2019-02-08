@@ -108,7 +108,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
 
 #ifdef MODEL_THETA_L
   do ie=nets,nete
-    !init from 1st timelevel
+!    !init from 1st timelevel
     call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,1)
   enddo
 #endif

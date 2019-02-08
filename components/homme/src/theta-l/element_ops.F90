@@ -256,7 +256,7 @@ contains
   end subroutine
 
 
-!why is it called get, not set?
+
   subroutine get_phi(elem,phi,phi_i,hvcoord,nt,ntQ)
     implicit none
     
@@ -319,7 +319,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord)
+  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -336,23 +336,20 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  integer :: k, nt
+  integer :: k,nt,ntQ
 
-  nt = 1
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-!set vtheta
   do k=1,nlev
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
-!set phi, copy from 1st timelevel to all
-  call tests_finalize(elem,hvcoord)
+  call tests_finalize(elem,hvcoord,nt,ntQ)
 
   end subroutine set_thermostate
 
@@ -545,7 +542,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem,hvcoord,ie)
+  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -553,28 +550,28 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
+  integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,tl
+  integer :: k,tl, ntQ
   real(real_kind), dimension(np,np,nlev) :: dp, pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
-  tl = 1
-
   do k=1,nlev
-    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
+    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,ns)
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
   enddo
 
-  call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
-       elem%state%phinh_i(:,:,:,tl))
+  ntQ=1
+  call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,ns),dp,&
+       elem%state%phinh_i(:,:,:,ns))
 
   ! verify discrete hydrostatic balance
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
-       elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
+  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,ns),dp,&
+       elem%state%phinh_i(:,:,:,ns),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
@@ -583,8 +580,9 @@ contains
      endif
   enddo
   
-  do tl = 2,3
-    call copy_state(elem,1,tl)
+
+  do tl = ns+1,ne
+    call copy_state(elem,ns,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)

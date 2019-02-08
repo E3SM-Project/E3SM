@@ -23,7 +23,7 @@ use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp,iam
 use element_ops,          only: set_state, set_state_i, set_elem_state, get_state, tests_finalize,&
-     set_forcing_rayleigh_friction
+     set_forcing_rayleigh_friction, set_thermostate
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
@@ -135,7 +135,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
     enddo; enddo; enddo
 
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord)
+    call tests_finalize(elem(ie),hvcoord,1,nt)
 
   enddo
   sample_period = 1800.0 ! sec
@@ -209,7 +209,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
      enddo; enddo; enddo;
 
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord)
+    call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
 
   sample_period = 1800.0 ! sec
@@ -313,7 +313,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
 
     ! set density to ensure hydrostatic balance and save initial state
-    call tests_finalize(elem(ie),hvcoord,ie)
+    call tests_finalize(elem(ie),hvcoord,1,nt,ie)
 
   enddo
 

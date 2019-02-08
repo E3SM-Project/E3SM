@@ -1038,6 +1038,7 @@ contains
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
+#if 0
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
       call t_startf("prim_energy_halftimes")
@@ -1048,6 +1049,7 @@ contains
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
     endif
+#endif
 
     ! initialize dp3d from ps
     do ie=nets,nete
