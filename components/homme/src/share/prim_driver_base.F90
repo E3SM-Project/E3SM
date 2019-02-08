@@ -1409,26 +1409,21 @@ contains
 #endif
 
 #ifdef MODEL_THETA_L
-!preliminary work for conversion
-  if (theta_hydrostatic_mode) then
-     pprime = 0.0
-  else
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
-     enddo
-     !compute pnh, here only pnh is needed
-     call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
-          elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
-     pprime = pnh - dp
-  endif
+   !one can set pprime=0 to hydro regime but it is not done in master
+
+   !compute pnh, here only pnh is needed
+   call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
+        elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+   do k=1,nlev
+      pprime(:,:,k) = pnh(:,:,k) - &
+       ( hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k))
+   enddo
 #endif
 
 !OG copied omp pragmas from stepon as is
    if (adjustment) then 
 !if adjustment, blind copy lines in cam/stepon, NO NEGATIVITY CHECK
 
-!repeated calculation for nonhydro
 !$omp parallel do private(k)
       do k=1,nlev
          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
