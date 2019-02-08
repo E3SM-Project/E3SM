@@ -188,7 +188,9 @@ do ie=nets,nete
        end do
     end do
 
-    call set_thermostate(elem(ie),temperature,hvcoord)
+    do tl=1,timelevels
+       call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
+    enddo
 enddo
 
 
@@ -489,7 +491,9 @@ endif
        elem(ie)%state%phis(:,:) = 0.0D0
        elem(ie)%derived%fm = 0.0D0
        temperature(:,:,:)=t1(:,:,ie,:)
-       call set_thermostate(elem(ie),temperature,hvcoord)
+       do tl=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
+       enddo
 
     end do
 
