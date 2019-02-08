@@ -191,6 +191,7 @@ program prim_main
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
+  call t_startf('prim_io_init')
 #ifdef VERTICAL_INTERPOLATION
   call netcdf_interp_init(elem, hybrid, hvcoord)
 #elif defined PIO_INTERP
@@ -198,6 +199,7 @@ program prim_main
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
+  call t_stopf('prim_io_init')
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
