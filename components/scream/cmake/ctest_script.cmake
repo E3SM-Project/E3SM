@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.10)
 
 set(CTEST_BUILD_NAME "scream_unit_tests${BUILD_NAME_MOD}")
 
