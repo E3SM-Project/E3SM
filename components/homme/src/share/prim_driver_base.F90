@@ -1301,7 +1301,7 @@ contains
   subroutine applyCAMforcing_dp3d(elem,hvcoord,n0,dt_dyn,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
-  use prim_advance_mod,   only : applycamforcing_dynamics,applycamforcing_dynamics_dp
+  use prim_advance_mod,   only : applycamforcing_dynamics
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_dyn
@@ -1309,9 +1309,7 @@ contains
   integer,                intent(in)    :: n0,nets,nete
 
   call t_startf("ApplyCAMForcing")
-  if (ftype == 3) then
-    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,n0,dt_dyn,nets,nete)
-  elseif (ftype == 4) then
+  if (ftype == 4) then
     call ApplyCAMForcing_dynamics   (elem,hvcoord,n0,dt_dyn,nets,nete)
   endif
   call t_stopf("ApplyCAMForcing")
@@ -1519,9 +1517,6 @@ contains
 #ifdef MODEL_THETA_L
 !continue conversion using pprime from above
      call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
-!derived%T is computed each remap step
-!giving up on derived T
-!     tn1(:,:,:) = elem%derived%T + dt*elem%derived%FT(:,:,:)
      tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
 
      ! update pressure based on Qdp forcing
@@ -1545,7 +1540,7 @@ contains
 
      !finally, compute difference for FVTheta
      ! this method is using new dp, new exner, new-new r*, new t
-     elem%derived%FT(:,:,:) = &
+     elem%derived%FVTheta(:,:,:) = &
          (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
 
      elem%derived%FPHI(:,:,:) = &

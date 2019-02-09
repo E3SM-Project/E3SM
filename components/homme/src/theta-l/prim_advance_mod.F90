@@ -48,8 +48,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_dynamics, applyCAMforcing_dynamics_dp, &
-       compute_andor_apply_rhs
+       applycamforcing_dynamics, compute_andor_apply_rhs
 
 contains
 
@@ -919,16 +918,9 @@ contains
   integer :: k,ie
   do ie=nets,nete
 
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
      elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
-!if (ie == 1 ) then
-!print *, ie,'FT', elem(ie)%derived%FT(1,1,nlev)
-!print *, ie,'FPHI', elem(ie)%derived%FPHI(1,1,nlev)
-!print *, ie,elem(ie)%state%vtheta_dp(1,1,nlev,np1)
-!print *, ie, elem(ie)%state%phinh_i(1,1,1:nlev,np1)
-!endif
-!stop
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w_i(:,:,1:nlev,np1) = elem(ie)%state%w_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
 
@@ -938,21 +930,6 @@ contains
   enddo
   
   end subroutine applyCAMforcing_dynamics
-
-
-!----------------------------- APPLYCAMFORCING-DYNAMICS-DP ----------------------------
-
-!a dummy with error message
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
-  use hybvcoord_mod,  only: hvcoord_t
-  implicit none
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-  
-  call abortmp('Error: In applyCAMforcing_dyn theta-l model doesnt have ftype=3 option.')
-  end subroutine applyCAMforcing_dynamics_dp
 
 
 !----------------------------- ADVANCE-HYPERVIS ----------------------------
