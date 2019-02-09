@@ -9,7 +9,7 @@ use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
 use element_state,  only: timelevels
-use element_ops,    only: copy_state, get_temperature
+use element_ops,    only: copy_state
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: real_kind, rl => real_kind, iulog
@@ -104,7 +104,6 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
 
     endselect
   endif
-
 end subroutine
 
 !_______________________________________________________________________
