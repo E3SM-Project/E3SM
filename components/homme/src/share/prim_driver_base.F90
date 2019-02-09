@@ -978,7 +978,6 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use element_ops,        only: get_temperature
 
     implicit none
 
@@ -1138,10 +1137,6 @@ contains
           enddo
        enddo
     enddo
-
-!#ifdef MODEL_THETA_L
-!    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,tl%np1)
-!#endif
 
     call t_stopf("prim_run_subcyle_diags")
 
