@@ -46,7 +46,7 @@ FortranData::Ptr make_mixed () {
   // pdel is actually an input variable, but needed here to compute theta.
   for (k = 0; k < nk; ++k) d.pdel(0,k) = 1e5/double(nk);
   // exner is actually an input variable, but needed here to compute theta.
-  for (k = 0; k < nk; ++k) d.exner(0,k) = (1e5/d.pres(0,k))**(287.15/1005.0);
+  for (k = 0; k < nk; ++k) d.exner(0,k) = std::pow((1e5/d.pres(0,k)), (287.15/1005.0));
   // ast is actually an input variable, but needed here to compute theta.
   for (k = 0; k < nk; ++k) d.ast(0,k) = 1.0;
 
@@ -101,8 +101,6 @@ FortranData::Ptr make_mixed () {
     const auto dpres = phi - plo;
     d.dzq(0,k) = Constants<double>::RD*T(k)/(g*d.pres(0,k))*dpres;
   }
-
-  // TODO - need data for pdel, exner, ast
 
   return dp;
 }
