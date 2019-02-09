@@ -46,7 +46,6 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   type(timelevel_t),  intent(in)            :: tl                       ! time level sctructure
   integer,            intent(in)            :: nets,nete                ! start, end element index
-  integer                                   :: ie
  
   ! init calls for any runtype
   select case(test_case)
@@ -105,13 +104,6 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
 
     endselect
   endif
-
-!#ifdef MODEL_THETA_L
-!  do ie=nets,nete
-!!    !init from 1st timelevel
-!    call get_temperature(elem(ie),elem(ie)%derived%T,hvcoord,1)
-!  enddo
-!#endif
 
 end subroutine
 
