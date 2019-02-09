@@ -7,9 +7,9 @@
 #SBATCH -q regular
 #
 #                   init time, run time, I/O per snapshot
-#  NE=900  namelist-r100-x4.nl   512 nodes:  530s,  1h,  450s
-#  NE=1800 namelist-r100-x2.nl   1024 nodes:   IN   
-#  NE=3600 namelist-r100-x1.nl   1536 nodes: 1.1h, 5.1h, 1.1h    (geo,w,Q2,Q3 only)
+#  NE=900  namelist-r100-x4.nl   512 nodes:  530s,  1h,  450s                       2h-run: 1.3h
+#  NE=1800 namelist-r100-x2.nl   512 nodes:  0.4h, 1.9h, 891s  (geo,w,Q2,Q3 only)   2h-run: 3.5h
+#  NE=3600 namelist-r100-x1.nl   1536 nodes: 1.1h, 5.1h, 1.1h    (geo,w,Q2,Q3 only)    12h?
 #
 #
 

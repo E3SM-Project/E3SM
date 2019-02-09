@@ -42,7 +42,8 @@
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 3                         ! 0=timesteps, 1=days, 2=hours, 3=seconds
   output_frequency  = 1800                       ! 900 seconds
-  output_varnames1  ='T','ps','geo','u','v','w','Q','Q2','Q3','precl'   ! variables to write to file
+!  output_varnames1  ='T','ps','geo','u','v','w','Q','Q2','Q3','precl'   ! variables to write to file
+  output_varnames1  ='ps','geo','w','Q2','Q3'     ! variables to write to file
 !  interp_nlon       = 360
 !  interp_nlat       = 181
   interp_gridtype   = 1

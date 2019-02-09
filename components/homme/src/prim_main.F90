@@ -15,8 +15,8 @@ program prim_main
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
-  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
-  use domain_mod,       only: domain1d_t, decompose
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
+  use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
   use common_movie_mod, only: nextoutputstep

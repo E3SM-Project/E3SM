@@ -213,7 +213,7 @@ contains
     call nf_global_attribute(ncdf, 'np', np)
     call nf_global_attribute(ncdf, 'ne', ne)
 
-    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','pascals','coordinates','lat lon')
+    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'area', 'area weights','radians^2','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
