@@ -231,15 +231,17 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,n0,n0_q)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   implicit none
   
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  integer :: n0,n0_q
+  integer :: tl
 
-  elem%state%T(:,:,:,n0)=temperature(:,:,:)
+  do tl = 1,3
+     elem%state%T(:,:,:,tl)=temperature(:,:,:)
+  enddo
 
   end subroutine set_thermostate
 
@@ -391,15 +393,17 @@ contains
   end subroutine 
 
   !____________________________________________________________________
-  subroutine tests_finalize(elem,hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem,hvcoord,ie)
   implicit none
 
-  type(hvcoord_t),     intent(in)  :: hvcoord
-  type(element_t),  intent(inout)  :: elem
-  integer,             intent(in)  :: ns,ne
-  integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
+  type(hvcoord_t),     intent(in)     :: hvcoord
+  type(element_t),     intent(inout)  :: elem
+  integer, optional,   intent(in)     :: ie ! optional element index, to save initial state
+  integer                             :: tl
 
-  !do nothing
+  do tl=2,3
+    call copy_state(elem,1,tl)
+  enddo
   end subroutine tests_finalize
 
 
