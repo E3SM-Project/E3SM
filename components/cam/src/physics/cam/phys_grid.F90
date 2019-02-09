@@ -739,7 +739,7 @@ contains
        if  (twin_alg .eq. 1) then
           ! precompute clon_p_idx: index in lonlat ordering for first 
           ! occurrence of longitude corresponding to given latitude index,
-          ! used in twin option in create_chunks; used in create_chunks
+          ! used in twin option in create_chunks
           allocate( clon_p_idx(1:clon_p_tot) )
           clon_p_idx(1) = 1
           do i=2,clon_p_tot
@@ -4166,19 +4166,20 @@ logical function phys_grid_initialized ()
 !
    col_smp_mapx(:) = -1
    error = .false.
-   do i=1,ngcols_p
-      curgcol = latlon_to_dyn_gcol_map(i)
-      block_cnt = get_gcol_block_cnt_d(curgcol)
-      call get_gcol_block_d(curgcol,block_cnt,blockids,bcids)
-      do jb=1,block_cnt
-         p = get_block_owner_d(blockids(jb)) 
-         if (col_smp_mapx(i) .eq. -1) then
-            col_smp_mapx(i) = proc_smp_mapx(p)
-         elseif (col_smp_mapx(i) .ne. proc_smp_mapx(p)) then
-            error = .true.
-         endif
-      enddo
-   end do
+   do i=1,ngcols
+      if (dyn_to_latlon_gcol_map(i) .ne. -1) then
+         block_cnt = get_gcol_block_cnt_d(i)
+         call get_gcol_block_d(i,block_cnt,blockids,bcids)
+         do jb=1,block_cnt
+            p = get_block_owner_d(blockids(jb))
+            if (col_smp_mapx(i) .eq. -1) then
+               col_smp_mapx(i) = proc_smp_mapx(p)
+            elseif (col_smp_mapx(i) .ne. proc_smp_mapx(p)) then
+               error = .true.
+            endif
+         enddo
+      endif
+   enddo
    if (error) then
       write(iulog,*) "PHYS_GRID_INIT error: opt", opt, "specified, ", &
                "but vertical decomposition not limited to virtual SMP"
@@ -4186,12 +4187,24 @@ logical function phys_grid_initialized ()
    endif  
 !
    allocate( nsmpcolumns(0:nsmpx-1) )
+!
    nsmpcolumns(:) = 0
+   error = .false.
    do i=1,ngcols_p
       curgcol = latlon_to_dyn_gcol_map(i)
       smp = col_smp_mapx(curgcol)
-      nsmpcolumns(smp) = nsmpcolumns(smp) + 1
+      if (smp >= 0) then
+         nsmpcolumns(smp) = nsmpcolumns(smp) + 1
+      else
+         error = .true.
+         exit
+     endif
    end do
+   if (error) then
+      write(iulog,*) "PHYS_GRID_INIT error: no SMP found for ", &
+                     "column ", curgcol
+      call endrun()
+   endif
 !
    deallocate( col_smp_mapx )
 
@@ -4204,7 +4217,7 @@ logical function phys_grid_initialized ()
    allocate( maxcol_chks(0:nsmpx-1) )
    allocate( cid_offset (0:nsmpx-1) )
    allocate( local_cid  (0:nsmpx-1) )
-   allocate( cols(1:maxblksiz) )
+   allocate( cols     (1:maxblksiz) )
 !
 ! Options 0-3: split local dynamics blocks into chunks,
 !              using wrap-map assignment of columns and
@@ -4291,7 +4304,6 @@ logical function phys_grid_initialized ()
 !
 ! Assign columns to chunks
 !
-
       do jb=firstblock,lastblock
          p = get_block_owner_d(jb)
          smp = proc_smp_mapx(p)
