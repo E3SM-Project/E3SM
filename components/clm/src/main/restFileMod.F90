@@ -63,11 +63,11 @@ module restFileMod
   use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType       , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType       , only : col_ns
+  use ColumnDataType       , only : col_ns, col_nf
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use VegetationDataType   , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType   , only : veg_cf, c13_veg_cf, c14_veg_cf
-  use VegetationDataType   , only : veg_ns
+  use VegetationDataType   , only : veg_ns, veg_nf
   
   !
   ! !PUBLIC TYPES:
@@ -272,10 +272,11 @@ contains
        call col_cf%Restart(bounds, ncid, flag='define')
        call veg_cf%Restart(bounds, ncid, flag='define')
        
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='define')
-
-       call veg_ns%Restart(bounds, ncid, flag='define')
        call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+       call veg_ns%Restart(bounds, ncid, flag='define')
+
+       call col_nf%Restart(bounds, ncid, flag='define')
+       call veg_nf%Restart(bounds, ncid, flag='define')
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
@@ -425,10 +426,11 @@ contains
        call col_cf%Restart(bounds, ncid, flag='write')
        call veg_cf%Restart(bounds, ncid, flag='write')
 
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='write')
-
-       call veg_ns%Restart(bounds, ncid, flag='write')
        call col_ns%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+       call veg_ns%Restart(bounds, ncid, flag='write')
+
+       call col_nf%Restart(bounds, ncid, flag='write')
+       call veg_nf%Restart(bounds, ncid, flag='write')
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
@@ -680,10 +682,11 @@ contains
        call col_cf%Restart(bounds, ncid, flag='read')
        call veg_cf%Restart(bounds, ncid, flag='read')
 
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='read')
-
-       call veg_ns%Restart(bounds, ncid, flag='read')
        call col_ns%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+       call veg_ns%Restart(bounds, ncid, flag='read')
+
+       call col_nf%Restart(bounds, ncid, flag='read')
+       call veg_nf%Restart(bounds, ncid, flag='read')
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)

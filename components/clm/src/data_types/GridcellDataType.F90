@@ -135,6 +135,23 @@ module GridcellDataType
   end type gridcell_nitrogen_state
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds nitrogen flux information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_nitrogen_flux
+    ! dynamic landcover fluxes
+    real(r8), pointer :: dwt_seedn_to_leaf      (:) => null()  ! (gN/m2/s) dwt_seedn_to_leaf_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_seedn_to_deadstem  (:) => null()  ! (gN/m2/s) dwt_seedn_to_deadstem_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_conv_nflux         (:) => null()  ! (gN/m2/s) dwt_conv_nflux_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_seedn_to_npool     (:) => null()  ! (gN/m2/s) seed source to PFT level
+    real(r8), pointer :: dwt_prod10n_gain       (:) => null()  ! (gN/m2/s) addition to 10-yr wood product pool
+    real(r8), pointer :: dwt_prod100n_gain      (:) => null()  ! (gN/m2/s) addition to 100-yr wood product pool
+  contains
+    procedure, public :: Init    => grc_nf_init
+    procedure, public :: ZeroDWT => grc_nf_zerodwt
+    procedure, public :: Clean   => grc_nf_clean
+  end type gridcell_nitrogen_flux
+ 
+ !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es     ! gridcell energy state
@@ -148,6 +165,7 @@ module GridcellDataType
   type(gridcell_carbon_flux)           , public, target :: c13_grc_cf ! gridcell carbon flux (C13)
   type(gridcell_carbon_flux)           , public, target :: c14_grc_cf ! gridcell carbon flux (C14)
   type(gridcell_nitrogen_state)        , public, target :: grc_ns     ! gridcell nitrogen state
+  type(gridcell_nitrogen_flux)         , public, target :: grc_nf     ! gridcell nitrogen flux
   !------------------------------------------------------------------------
 
 contains
@@ -721,6 +739,104 @@ contains
     !------------------------------------------------------------------------
 
   end subroutine grc_ns_clean
+  
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell nitrogen flux data structure
+  !------------------------------------------------------------------------
+  subroutine grc_nf_init(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux) :: this
+    integer, intent(in) :: begg,endg
+    !------------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_nf
+    !-----------------------------------------------------------------------
+    allocate(this%dwt_seedn_to_leaf     (begg:endg)) ; this%dwt_seedn_to_leaf     (:) = nan
+    allocate(this%dwt_seedn_to_deadstem (begg:endg)) ; this%dwt_seedn_to_deadstem (:) = nan
+    allocate(this%dwt_conv_nflux        (begg:endg)) ; this%dwt_conv_nflux        (:) = nan
+    allocate(this%dwt_seedn_to_npool    (begg:endg)) ; this%dwt_seedn_to_npool    (:) = nan
+    allocate(this%dwt_prod10n_gain      (begg:endg)) ; this%dwt_prod10n_gain      (:) = nan
+    allocate(this%dwt_prod100n_gain     (begg:endg)) ; this%dwt_prod100n_gain     (:) = nan
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_nf
+    !-----------------------------------------------------------------------
+    this%dwt_seedn_to_leaf_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDN_TO_LEAF_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='seed source to patch-level leaf', &
+         ptr_gcell=this%dwt_seedn_to_leaf_grc, default='inactive')
+
+    this%dwt_seedn_to_deadstem_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDN_TO_DEADSTEM_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='seed source to patch-level deadstem', &
+         ptr_gcell=this%dwt_seedn_to_deadstem_grc, default='inactive')
+
+    this%dwt_conv_nflux_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_CONV_NFLUX_GRC', units='gN/m^2/s', &
+         avgflag='A', &
+         long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
+         ptr_gcell=this%dwt_conv_nflux_grc)
+
+    this%dwt_seedn_to_npool_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level npool', &
+         ptr_gcell=this%dwt_seedn_to_npool_grc, default='inactive')
+
+    this%dwt_prod10n_gain_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD10N_GAIN_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+         ptr_gcell=this%dwt_prod10n_gain_grc, default='inactive')
+
+    this%dwt_prod100n_gain_grc(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD100N_GAIN_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+         ptr_gcell=this%dwt_prod100n_gain_grc, default='inactive')
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of grc_nf
+    !-----------------------------------------------------------------------
+    do g = begg, endg
+       this%dwt_prod10n_gain(g)          = 0._r8
+       this%dwt_prod100n_gain(g)         = 0._r8
+    end do
+    
+  end subroutine grc_nf_init
+  
+  !-----------------------------------------------------------------------
+  subroutine grc_nf_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize flux variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(gridcell_nitrogen_flux)  :: this
+    type(bounds_type), intent(in)  :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g          ! indices
+    !-----------------------------------------------------------------------
+  
+    do g = bounds%begg, bounds%endg
+       this%dwt_seedn_to_leaf(g)     = 0._r8
+       this%dwt_seedn_to_deadstem(g) = 0._r8
+       this%dwt_conv_nflux(g)        = 0._r8
+       this%dwt_seedn_to_npool(g)    = 0._r8
+       this%dwt_prod10n_gain(g)      = 0._r8
+       this%dwt_prod100n_gain(g)     = 0._r8
+    end do
+
+  end subroutine grc_nf_zerodwt
+  
+  !------------------------------------------------------------------------
+  subroutine grc_nf_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_nitrogen_state) :: this
+    !------------------------------------------------------------------------
+  
+  end subroutine grc_nf_clean
   
 end module GridcellDataType
 

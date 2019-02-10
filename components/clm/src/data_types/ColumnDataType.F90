@@ -532,10 +532,182 @@ module ColumnDataType
   ! Define the data structure that holds nitrogen flux information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_nitrogen_flux
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    ! harvest fluxes
+    real(r8), pointer :: hrv_deadstemn_to_prod10n              (:)     => null() ! dead stem N harvest mortality to 10-year product pool (gN/m2/s)
+    real(r8), pointer :: hrv_deadstemn_to_prod100n             (:)     => null() ! dead stem N harvest mortality to 100-year product pool (gN/m2/s)
+    real(r8), pointer :: m_n_to_litr_met_fire                  (:,:)   => null() ! N from leaf, froot, xfer and storage N to litter labile N by fire (gN/m3/s) 
+    real(r8), pointer :: m_n_to_litr_cel_fire                  (:,:)   => null() ! N from leaf, froot, xfer and storage N to litter cellulose N by fire (gN/m3/s) 
+    real(r8), pointer :: m_n_to_litr_lig_fire                  (:,:)   => null() ! N from leaf, froot, xfer and storage N to litter lignin N by fire (gN/m3/s) 
+    real(r8), pointer :: harvest_n_to_litr_met_n               (:,:)   => null() ! N fluxes associated with harvest to litter metabolic pool (gN/m3/s)
+    real(r8), pointer :: harvest_n_to_litr_cel_n               (:,:)   => null() ! N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
+    real(r8), pointer :: harvest_n_to_litr_lig_n               (:,:)   => null() ! N fluxes associated with harvest to litter lignin pool (gN/m3/s)
+    real(r8), pointer :: harvest_n_to_cwdn                     (:,:)   => null() ! N fluxes associated with harvest to CWD pool (gN/m3/s)
+    real(r8), pointer :: hrv_cropn_to_prod1n                   (:)     => null() ! crop N harvest mortality to 1-yr product pool (gN/m2/s)
+    ! fire N fluxes 
+    real(r8), pointer :: m_decomp_npools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing N fire loss (gN/m3/s)
+    real(r8), pointer :: m_decomp_npools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing N fire loss (gN/m2/s)
+    real(r8), pointer :: fire_nloss                            (:)     => null() ! total column-level fire N loss (gN/m2/s)
+    real(r8), pointer :: fire_decomp_nloss                     (:)     => null() ! fire N loss from decomposable pools (gN/m2/s)
+    real(r8), pointer :: fire_nloss_p2c                        (:)     => null() ! patch2col column-level fire N loss (gN/m2/s) (p2c)
+    real(r8), pointer :: fire_mortality_n_to_cwdn              (:,:)   => null() ! N fluxes associated with fire mortality to CWD pool (gN/m3/s)
+    ! summary (diagnostic) flux variables, not involved in mass balance
+    real(r8), pointer :: wood_harvestn                         (:)     => null() ! total N losses to wood product pools (gN/m2/s) (p2c)
+    ! deposition fluxes
+    real(r8), pointer :: ndep_to_sminn                         (:)     => null() ! atmospheric N deposition to soil mineral N (gN/m2/s)
+    real(r8), pointer :: nfix_to_sminn                         (:)     => null() ! symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s) 
+    real(r8), pointer :: nfix_to_ecosysn                       (:)     => null() ! total nitrogen fixation
+    real(r8), pointer :: fert_to_sminn                         (:)     => null() ! fertilizer N to soil mineral N (gN/m2/s)
+    real(r8), pointer :: soyfixn_to_sminn                      (:)     => null() ! soybean fixation to soil mineral N (gN/m2/s)
+    ! phenology: litterfall and crop fluxes
+    real(r8), pointer :: phenology_n_to_litr_met_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
+    real(r8), pointer :: phenology_n_to_litr_cel_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
+    real(r8), pointer :: phenology_n_to_litr_lig_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
+    ! gap mortality fluxes
+    real(r8), pointer :: gap_mortality_n_to_litr_met_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter metabolic pool (gN/m3/s)
+    real(r8), pointer :: gap_mortality_n_to_litr_cel_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter cellulose pool (gN/m3/s)
+    real(r8), pointer :: gap_mortality_n_to_litr_lig_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter lignin pool (gN/m3/s)
+    real(r8), pointer :: gap_mortality_n_to_cwdn               (:,:)   => null() ! N fluxes associated with gap mortality to CWD pool (gN/m3/s)
+    ! decomposition fluxes
+    real(r8), pointer :: decomp_cascade_ntransfer_vr           (:,:,:) => null() ! vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
+    real(r8), pointer :: decomp_cascade_ntransfer              (:,:)   => null() ! vert-int (diagnostic) transfer of N from donor to receiver pool along decomp. cascade (gN/m2/s)
+    real(r8), pointer :: decomp_cascade_sminn_flux_vr          (:,:,:) => null() ! vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+    real(r8), pointer :: decomp_cascade_sminn_flux             (:,:)   => null() ! vert-int (diagnostic) mineral N flux for transition along decomposition cascade (gN/m2/s)
+    ! vertically-resolved immobilization fluxes
+    real(r8), pointer :: potential_immob_vr                    (:,:)   => null() ! vertically-resolved potential N immobilization (gN/m3/s) at each level
+    real(r8), pointer :: potential_immob                       (:)     => null() ! vert-int (diagnostic) potential N immobilization (gN/m2/s)
+    real(r8), pointer :: actual_immob_vr                       (:,:)   => null() ! vertically-resolved actual N immobilization (gN/m3/s) at each level
+    real(r8), pointer :: actual_immob                          (:)     => null() ! vert-int (diagnostic) actual N immobilization (gN/m2/s)
+    real(r8), pointer :: sminn_to_plant_vr                     (:,:)   => null() ! vertically-resolved plant uptake of soil mineral N (gN/m3/s)
+    real(r8), pointer :: sminn_to_plant                        (:)     => null() ! vert-int (diagnostic) plant uptake of soil mineral N (gN/m2/s)
+    real(r8), pointer :: supplement_to_sminn_vr                (:,:)   => null() ! vertically-resolved supplemental N supply (gN/m3/s)
+    real(r8), pointer :: supplement_to_sminn                   (:)     => null() ! vert-int (diagnostic) supplemental N supply (gN/m2/s)
+    real(r8), pointer :: gross_nmin_vr                         (:,:)   => null() ! vertically-resolved gross rate of N mineralization (gN/m3/s)
+    real(r8), pointer :: gross_nmin                            (:)     => null() ! vert-int (diagnostic) gross rate of N mineralization (gN/m2/s)
+    real(r8), pointer :: net_nmin_vr                           (:,:)   => null() ! vertically-resolved net rate of N mineralization (gN/m3/s)
+    real(r8), pointer :: net_nmin                              (:)     => null() ! vert-int (diagnostic) net rate of N mineralization (gN/m2/s)
+    real(r8), pointer :: sminn_no3_input_vr                    (:,:)   => null() ! no3 input, gN/m3/time step
+    real(r8), pointer :: sminn_nh4_input_vr                    (:,:)   => null() ! nh4 input, gN/m3/time step
+    real(r8), pointer :: sminn_no3_input                       (:)     => null() ! no3 input, gN/m2
+    real(r8), pointer :: sminn_nh4_input                       (:)     => null() ! nh4 input, gN/m2
+    real(r8), pointer :: sminn_input                           (:)     => null() ! minn input, gN/m2
+    real(r8), pointer :: bgc_npool_ext_inputs_vr               (:,:,:) => null() ! organic nitrogen input, gN/m3/time step
+    real(r8), pointer :: bgc_npool_ext_loss_vr                 (:,:,:) => null() ! extneral organic nitrogen loss, gN/m3/time step
+    real(r8), pointer :: bgc_npool_inputs                      (:,:)   => null() ! organic N input, gN/m2/time step
+    ! nitrification / denitrification fluxes
+    real(r8), pointer :: f_nit_vr                              (:,:)   => null() ! (gN/m3/s) soil nitrification flux
+    real(r8), pointer :: f_denit_vr                            (:,:)   => null() ! (gN/m3/s) soil denitrification flux
+    real(r8), pointer :: f_nit                                 (:)     => null() ! (gN/m2/s) soil nitrification flux
+    real(r8), pointer :: f_denit                               (:)     => null() ! (gN/m2/s) soil denitrification flux
+    real(r8), pointer :: pot_f_nit_vr                          (:,:)   => null() ! (gN/m3/s) potential soil nitrification flux
+    real(r8), pointer :: pot_f_denit_vr                        (:,:)   => null() ! (gN/m3/s) potential soil denitrification flux
+    real(r8), pointer :: pot_f_nit                             (:)     => null() ! (gN/m2/s) potential soil nitrification flux
+    real(r8), pointer :: pot_f_denit                           (:)     => null() ! (gN/m2/s) potential soil denitrification flux
+    real(r8), pointer :: n2_n2o_ratio_denit_vr                 (:,:)   => null() ! ratio of N2 to N2O production by denitrification [gN/gN]
+    real(r8), pointer :: f_n2o_denit_vr                        (:,:)   => null() ! flux of N2o from denitrification [gN/m^3/s]
+    real(r8), pointer :: f_n2o_denit                           (:)     => null() ! flux of N2o from denitrification [gN/m^2/s]
+    real(r8), pointer :: f_n2o_nit_vr                          (:,:)   => null() ! flux of N2o from nitrification [gN/m^3/s]
+    real(r8), pointer :: f_n2o_nit                             (:)     => null() ! flux of N2o from nitrification [gN/m^2/s]
+    ! immobilization / uptake fluxes
+    real(r8), pointer :: actual_immob_no3_vr                   (:,:)   => null() ! vertically-resolved actual immobilization of NO3 (gN/m3/s)
+    real(r8), pointer :: actual_immob_nh4_vr                   (:,:)   => null() ! vertically-resolved actual immobilization of NH4 (gN/m3/s)
+    real(r8), pointer :: smin_no3_to_plant_vr                  (:,:)   => null() ! vertically-resolved plant uptake of soil NO3 (gN/m3/s)
+    real(r8), pointer :: smin_nh4_to_plant_vr                  (:,:)   => null() ! vertically-resolved plant uptake of soil NH4 (gN/m3/s)
+    real(r8), pointer :: actual_immob_no3                      (:)     => null() ! actual immobilization of NO3 (gN/m2/s)
+    real(r8), pointer :: actual_immob_nh4                      (:)     => null() ! actual immobilization of NH4 (gN/m2/s)
+    real(r8), pointer :: smin_no3_to_plant                     (:)     => null() ! plant uptake of soil NO3 (gN/m2/s)
+    real(r8), pointer :: smin_nh4_to_plant                     (:)     => null() ! plant uptake of soil Nh4 (gN/m2/s)
+    ! leaching fluxes
+    real(r8), pointer :: smin_no3_leached_vr                   (:,:)   => null() ! vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
+    real(r8), pointer :: smin_no3_leached                      (:)     => null() ! soil mineral NO3 pool loss to leaching (gN/m2/s)
+    real(r8), pointer :: smin_no3_runoff_vr                    (:,:)   => null() ! vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
+    real(r8), pointer :: smin_no3_runoff                       (:)     => null() ! soil mineral NO3 pool loss to runoff (gN/m2/s)
+    ! nitrification /denitrification diagnostic quantities
+    real(r8), pointer :: smin_no3_massdens_vr                  (:,:)   => null() ! (ugN / g soil) soil nitrate concentration
+    real(r8), pointer :: soil_bulkdensity                      (:,:)   => null() ! (kg soil / m3) bulk density of soil
+    real(r8), pointer :: k_nitr_t_vr                           (:,:)   => null() 
+    real(r8), pointer :: k_nitr_ph_vr                          (:,:)   => null() 
+    real(r8), pointer :: k_nitr_h2o_vr                         (:,:)   => null() 
+    real(r8), pointer :: k_nitr_vr                             (:,:)   => null() 
+    real(r8), pointer :: wfps_vr                               (:,:)   => null() 
+    real(r8), pointer :: fmax_denit_carbonsubstrate_vr         (:,:)   => null() 
+    real(r8), pointer :: fmax_denit_nitrate_vr                 (:,:)   => null() 
+    real(r8), pointer :: f_denit_base_vr                       (:,:)   => null() ! nitrification and denitrification fluxes
+    real(r8), pointer :: diffus                                (:,:)   => null() ! diffusivity (m2/s)
+    real(r8), pointer :: ratio_k1                              (:,:)   => null() 
+    real(r8), pointer :: ratio_no3_co2                         (:,:)   => null() 
+    real(r8), pointer :: soil_co2_prod                         (:,:)   => null() 
+    real(r8), pointer :: fr_WFPS                               (:,:)   => null() 
+    real(r8), pointer :: r_psi                                 (:,:)   => null() 
+    real(r8), pointer :: anaerobic_frac                        (:,:)   => null() 
+    ! (old version) denitrification fluxes
+    real(r8), pointer :: sminn_to_denit_decomp_cascade_vr      (:,:,:) => null() ! vertically-resolved denitrification along decomp cascade (gN/m3/s) 
+    real(r8), pointer :: sminn_to_denit_decomp_cascade         (:,:)   => null() ! vertically-integrated (diagnostic) denitrification along decomp cascade (gN/m2/s) 
+    real(r8), pointer :: sminn_to_denit_excess_vr              (:,:)   => null() ! vertically-resolved denitrification from excess mineral N pool (gN/m3/s)
+    real(r8), pointer :: sminn_to_denit_excess                 (:)     => null() ! vertically-integrated (diagnostic) denitrification from excess mineral N pool (gN/m2/s)
+    ! (old version) leaching fluxes
+    real(r8), pointer :: sminn_leached_vr                      (:,:)   => null() ! vertically-resolved soil mineral N pool loss to leaching (gN/m3/s)
+    real(r8), pointer :: sminn_leached                         (:)     => null() ! soil mineral N pool loss to leaching (gN/m2/s)
+    ! dynamic landcover fluxes
+    real(r8), pointer :: dwt_slash_nflux                       (:)     => null() ! (gN/m2/s) conversion slash flux due to landcover change
+    real(r8), pointer :: dwt_conv_nflux                        (:)     => null() ! (gN/m2/s) conversion N flux (immediate loss to atm)
+    real(r8), pointer :: dwt_prod10n_gain                      (:)     => null() ! (gN/m2/s) addition to 10-yr wood product pool
+    real(r8), pointer :: dwt_prod100n_gain                     (:)     => null() ! (gN/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_frootn_to_litr_met_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_frootn_to_litr_cel_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_frootn_to_litr_lig_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_livecrootn_to_cwdn                (:,:)   => null() ! (gN/m3/s) live coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_deadcrootn_to_cwdn                (:,:)   => null() ! (gN/m3/s) dead coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_nloss                             (:)     => null() ! (gN/m2/s) total nitrogen loss from product pools and conversion
+    ! wood product pool loss fluxes
+    real(r8), pointer :: prod1n_loss                           (:)     => null() ! (gN/m2/s) decomposition loss from 1-yr crop product pool
+    real(r8), pointer :: prod10n_loss                          (:)     => null() ! (gN/m2/s) decomposition loss from 10-yr wood product pool
+    real(r8), pointer :: prod100n_loss                         (:)     => null() ! (gN/m2/s) decomposition loss from 100-yr wood product pool
+    real(r8), pointer :: product_nloss                         (:)     => null() ! (gN/m2/s) total wood product nitrogen loss
+    ! summary (diagnostic) flux variables, not involved in mass balance
+    real(r8), pointer :: denit                                 (:)     => null() ! total rate of denitrification (gN/m2/s)
+    real(r8), pointer :: ninputs                               (:)     => null() ! column-level N inputs (gN/m2/s)
+    real(r8), pointer :: noutputs                              (:)     => null() ! column-level N outputs (gN/m2/s)
+    real(r8), pointer :: som_n_leached                         (:)     => null() ! total SOM N loss from vertical transport (gN/m^2/s)
+    real(r8), pointer :: decomp_npools_leached                 (:,:)   => null() ! N loss from vertical transport from each decomposing N pool (gN/m^2/s)
+    real(r8), pointer :: decomp_npools_transport_tendency      (:,:,:) => null() ! N tendency due to vertical transport in decomposing N pools (gN/m^3/s)
+    ! all n pools involved in decomposition
+    real(r8), pointer :: decomp_npools_sourcesink              (:,:,:) => null() ! (gN/m3) change in decomposing n pools 
+    ! bgc interface/pflotran
+    real(r8), pointer :: plant_ndemand                         (:)     => null() ! N flux required to support initial GPP (gN/m2/s)
+    real(r8), pointer :: plant_ndemand_vr                      (:,:)   => null() ! vertically-resolved N flux required to support initial GPP (gN/m3/s)
+    real(r8), pointer :: f_ngas_decomp_vr                      (:,:)   => null() ! vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
+    real(r8), pointer :: f_ngas_decomp                         (:)     => null() ! N emission from excess mineral N pool due to mineralization (gN/m2/s)
+    real(r8), pointer :: f_ngas_nitri_vr                       (:,:)   => null() ! vertically-resolved N emission from nitrification (gN/m3/s)
+    real(r8), pointer :: f_ngas_nitri                          (:)     => null() ! vertically-resolved N emission from nitrification (gN/m2/s)
+    real(r8), pointer :: f_ngas_denit_vr                       (:,:)   => null() ! vertically-resolved N emission from denitrification (gN/m3/s)
+    real(r8), pointer :: f_ngas_denit                          (:)     => null() ! vertically-resolved N emission from denitrification (gN/m2/s)
+    real(r8), pointer :: f_n2o_soil_vr                         (:,:)   => null() ! flux of N2o from soil-N processes [gN/m^3/s]
+    real(r8), pointer :: f_n2o_soil                            (:)     => null() ! flux of N2o from soil-N processes [gN/m^2/s]
+    real(r8), pointer :: f_n2_soil_vr                          (:,:)   => null() ! flux of N2 from soil-N processes [gN/m^3/s]
+    real(r8), pointer :: f_n2_soil                             (:)     => null() ! flux of N2 from soil-N processes [gN/m^2/s]
+    real(r8), pointer :: externaln_to_decomp_npools            (:,:,:) => null() ! net N fluxes associated with litter/som-adding/removal to decomp pools (gN/m3/s)
+    real(r8), pointer :: externaln_to_decomp_delta             (:)     => null() ! summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gN/m2)
+    real(r8), pointer :: no3_net_transport_vr                  (:,:)   => null() ! net NO3 transport associated with runoff/leaching/diffusion (gN/m3/s)
+    real(r8), pointer :: nh4_net_transport_vr                  (:,:)   => null() ! net NH4 transport associated with runoff/leaching/diffusion (gN/m3/s)
+    real(r8), pointer :: col_plant_ndemand_vr                  (:,:)   => null() ! plant N demand
+    real(r8), pointer :: col_plant_nh4demand_vr                (:,:)   => null() ! plant NH4 demand
+    real(r8), pointer :: col_plant_no3demand_vr                (:,:)   => null() ! plant NO3 demand
+    real(r8), pointer :: col_plant_pdemand_vr                  (:,:)   => null() ! plant P demand
+    real(r8), pointer :: pmnf_decomp_cascade                   (:,:,:) => null() ! potential mineral N flux, from one pool to another
+    real(r8), pointer :: plant_n_uptake_flux                   (:)     => null() ! for the purpose of mass balance check  
+    real(r8), pointer :: soil_n_immob_flux                     (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: soil_n_immob_flux_vr                  (:,:)   => null() ! for the purpose of mass balance check
+    real(r8), pointer :: soil_n_grossmin_flux                  (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: plant_to_litter_nflux                 (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: plant_to_cwd_nflux                    (:)     => null() ! for the purpose of mass balance check
   contains
-    procedure, public :: Init  => init_col_nf
-    procedure, public :: Clean => clean_col_nf
+    procedure, public :: Init       => col_nf_init
+    procedure, public :: Restart    => col_nf_restart
+    procedure, public :: SetValues  => col_nf_setvalues
+    procedure, public :: ZeroDWT    => col_nf_zerodwt
+    procedure, public :: Summary    => col_nf_summary
+    procedure, public :: SummaryInt => col_nf_summaryint
+    procedure, public :: Clean      => col_nf_clean
   end type column_nitrogen_flux
   
   !-----------------------------------------------------------------------
@@ -544,8 +716,9 @@ module ColumnDataType
   type, public :: column_phosphorus_flux
     real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
   contains
-    procedure, public :: Init  => init_col_pf
-    procedure, public :: Clean => clean_col_pf
+    procedure, public :: Init     => col_pf_init
+    procedure, public :: Restart  => col_pf_restart
+    procedure, public :: Clean    => col_pf_clean
   end type column_phosphorus_flux
 
    
@@ -5970,27 +6143,1803 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column nitrogen flux data structure
   !------------------------------------------------------------------------
-  subroutine init_col_nf(this, begc, endc)
+  subroutine col_nf_init(this, begc, endc)
     !
     ! !ARGUMENTS:
     class(column_nitrogen_flux) :: this
     integer, intent(in) :: begc,endc
+    !
+    ! !LOCAL VARIABLES:
+    integer        :: k,l
+    character(10)  :: active
+    character(24)  :: fieldname
+    character(100) :: longname
+    character(8)   :: vr_suffix
+    real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
+    integer :: c
+    integer :: fc                          ! filter indices
+    integer :: num_special_col             ! number of good values in special_col filter
+    integer :: special_col(endc-begc+1)    ! special landunit filter - columns
     !------------------------------------------------------------------------
     
     !-----------------------------------------------------------------------
-    ! allocate for each member of col_ns
+    ! allocate for each member of col_nf
     !-----------------------------------------------------------------------
+    allocate(this%ndep_to_sminn                 (begc:endc))                   ; this%ndep_to_sminn	               (:)   = nan
+    allocate(this%nfix_to_sminn                 (begc:endc))                   ; this%nfix_to_sminn	               (:)   = nan
+    allocate(this%nfix_to_ecosysn               (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = nan
+    allocate(this%fert_to_sminn                 (begc:endc))                   ; this%fert_to_sminn	               (:)   = nan
+    allocate(this%soyfixn_to_sminn              (begc:endc))                   ; this%soyfixn_to_sminn               (:)   = nan
+    allocate(this%hrv_deadstemn_to_prod10n      (begc:endc))                   ; this%hrv_deadstemn_to_prod10n       (:)   = nan
+    allocate(this%hrv_deadstemn_to_prod100n     (begc:endc))                   ; this%hrv_deadstemn_to_prod100n      (:)   = nan
+    allocate(this%hrv_cropn_to_prod1n           (begc:endc))                   ; this%hrv_cropn_to_prod1n            (:)   = nan
+    allocate(this%sminn_to_plant                (begc:endc))                   ; this%sminn_to_plant	               (:)   = nan
+    allocate(this%potential_immob               (begc:endc))                   ; this%potential_immob                (:)   = nan
+    allocate(this%actual_immob                  (begc:endc))                   ; this%actual_immob                   (:)   = nan
+    allocate(this%gross_nmin                    (begc:endc))                   ; this%gross_nmin                     (:)   = nan
+    allocate(this%net_nmin                      (begc:endc))                   ; this%net_nmin                       (:)   = nan
+    allocate(this%denit                         (begc:endc))                   ; this%denit		                     (:)   = nan
+    allocate(this%supplement_to_sminn           (begc:endc))                   ; this%supplement_to_sminn            (:)   = nan
+    allocate(this%prod1n_loss                   (begc:endc))                   ; this%prod1n_loss                    (:)   = nan
+    allocate(this%prod10n_loss                  (begc:endc))                   ; this%prod10n_loss                   (:)   = nan
+    allocate(this%prod100n_loss                 (begc:endc))                   ; this%prod100n_loss	               (:)   = nan
+    allocate(this%product_nloss                 (begc:endc))                   ; this%product_nloss	               (:)   = nan
+    allocate(this%ninputs                       (begc:endc))                   ; this%ninputs                        (:)   = nan
+    allocate(this%noutputs                      (begc:endc))                   ; this%noutputs                       (:)   = nan
+    allocate(this%fire_nloss                    (begc:endc))                   ; this%fire_nloss                     (:)   = nan
+    allocate(this%fire_decomp_nloss             (begc:endc))                   ; this%fire_decomp_nloss              (:)   = nan
+    allocate(this%fire_nloss_p2c                (begc:endc))                   ; this%fire_nloss_p2c                 (:)   = nan
+    allocate(this%som_n_leached                 (begc:endc))                   ; this%som_n_leached	               (:)   = nan
+    allocate(this%m_n_to_litr_met_fire          (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_met_fire           (:,:) = nan
+    allocate(this%m_n_to_litr_cel_fire          (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_cel_fire           (:,:) = nan
+    allocate(this%m_n_to_litr_lig_fire          (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_lig_fire           (:,:) = nan
+    allocate(this%r_psi                         (begc:endc,1:nlevdecomp_full)) ; this%r_psi                          (:,:) = spval
+    allocate(this%anaerobic_frac                (begc:endc,1:nlevdecomp_full)) ; this%anaerobic_frac                 (:,:) = spval
+    allocate(this%potential_immob_vr            (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_vr             (:,:) = nan
+    allocate(this%actual_immob_vr               (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_vr                (:,:) = nan
+    allocate(this%sminn_to_plant_vr             (begc:endc,1:nlevdecomp_full)) ; this%sminn_to_plant_vr              (:,:) = nan
+    allocate(this%supplement_to_sminn_vr        (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminn_vr         (:,:) = nan
+    allocate(this%gross_nmin_vr                 (begc:endc,1:nlevdecomp_full)) ; this%gross_nmin_vr                  (:,:) = nan
+    allocate(this%net_nmin_vr                   (begc:endc,1:nlevdecomp_full)) ; this%net_nmin_vr                    (:,:) = nan
+    allocate(this%dwt_slash_nflux               (begc:endc))                   ; this%dwt_slash_nflux                (:)   = nan
+    allocate(this%dwt_conv_nflux                (begc:endc))                   ; this%dwt_conv_nflux                 (:)   = nan
+    allocate(this%dwt_prod10n_gain              (begc:endc))                   ; this%dwt_prod10n_gain               (:)   = nan
+    allocate(this%dwt_prod100n_gain             (begc:endc))                   ; this%dwt_prod100n_gain              (:)   = nan
+    allocate(this%dwt_nloss                     (begc:endc))                   ; this%dwt_nloss                      (:)   = nan
+    allocate(this%wood_harvestn                 (begc:endc))                   ; this%wood_harvestn                  (:)   = nan
+    allocate(this%dwt_frootn_to_litr_met_n      (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n       (:,:) = nan
+    allocate(this%dwt_frootn_to_litr_cel_n      (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_cel_n       (:,:) = nan
+    allocate(this%dwt_frootn_to_litr_lig_n      (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_lig_n       (:,:) = nan
+    allocate(this%dwt_livecrootn_to_cwdn        (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecrootn_to_cwdn         (:,:) = nan
+    allocate(this%dwt_deadcrootn_to_cwdn        (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootn_to_cwdn         (:,:) = nan
+    allocate(this%f_nit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_nit_vr                       (:,:) = nan
+    allocate(this%f_denit_vr                    (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = nan
+    allocate(this%smin_no3_leached_vr           (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = nan
+    allocate(this%smin_no3_leached              (begc:endc))                   ; this%smin_no3_leached               (:)   = nan
+    allocate(this%smin_no3_runoff_vr            (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr             (:,:) = nan
+    allocate(this%smin_no3_runoff               (begc:endc))                   ; this%smin_no3_runoff                (:)   = nan
+    allocate(this%pot_f_nit_vr                  (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr                   (:,:) = nan
+    allocate(this%pot_f_nit                     (begc:endc))                   ; this%pot_f_nit                      (:)   = nan
+    allocate(this%pot_f_denit_vr                (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr                 (:,:) = nan
+    allocate(this%pot_f_denit                   (begc:endc))                   ; this%pot_f_denit                    (:)   = nan
+    allocate(this%actual_immob_no3_vr           (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_no3_vr            (:,:) = nan
+    allocate(this%actual_immob_nh4_vr           (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_nh4_vr            (:,:) = nan
+    allocate(this%smin_no3_to_plant_vr          (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_to_plant_vr           (:,:) = nan
+    allocate(this%smin_nh4_to_plant_vr          (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4_to_plant_vr           (:,:) = nan
+    allocate(this%smin_no3_to_plant             (begc:endc))                   ; this%smin_no3_to_plant              (:)   = nan
+    allocate(this%smin_nh4_to_plant             (begc:endc))                   ; this%smin_nh4_to_plant              (:)   = nan
+    allocate(this%f_nit                         (begc:endc))                   ; this%f_nit                          (:)   = nan
+    allocate(this%f_denit                       (begc:endc))                   ; this%f_denit                        (:)   = nan
+    allocate(this%n2_n2o_ratio_denit_vr         (begc:endc,1:nlevdecomp_full)) ; this%n2_n2o_ratio_denit_vr          (:,:) = nan
+    allocate(this%f_n2o_denit                   (begc:endc))                   ; this%f_n2o_denit                    (:)   = nan
+    allocate(this%f_n2o_denit_vr                (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_denit_vr                 (:,:) = nan
+    allocate(this%f_n2o_nit                     (begc:endc))                   ; this%f_n2o_nit                      (:)   = nan
+    allocate(this%f_n2o_nit_vr                  (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_nit_vr                   (:,:) = nan
+    allocate(this%sminn_no3_input_vr            (begc:endc,1:nlevdecomp_full)) ; this%sminn_no3_input_vr             (:,:) = nan
+    allocate(this%sminn_nh4_input_vr            (begc:endc,1:nlevdecomp_full)) ; this%sminn_nh4_input_vr             (:,:) = nan
+    allocate(this%sminn_nh4_input               (begc:endc))                   ; this%sminn_nh4_input                (:)   = nan
+    allocate(this%sminn_no3_input               (begc:endc))                   ; this%sminn_no3_input                (:)   = nan
+    allocate(this%sminn_input                   (begc:endc))                   ; this%sminn_input                    (:)   = nan
+    allocate(this%bgc_npool_inputs              (begc:endc,ndecomp_pools))     ;this%bgc_npool_inputs                (:,:) = nan
+    allocate(this%smin_no3_massdens_vr          (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_massdens_vr           (:,:) = nan
+    allocate(this%soil_bulkdensity              (begc:endc,1:nlevdecomp_full)) ; this%soil_bulkdensity               (:,:) = nan
+    allocate(this%k_nitr_t_vr                   (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_t_vr                    (:,:) = nan
+    allocate(this%k_nitr_ph_vr                  (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_ph_vr                   (:,:) = nan
+    allocate(this%k_nitr_h2o_vr                 (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_h2o_vr                  (:,:) = nan
+    allocate(this%k_nitr_vr                     (begc:endc,1:nlevdecomp_full)) ; this%k_nitr_vr                      (:,:) = nan
+    allocate(this%wfps_vr                       (begc:endc,1:nlevdecomp_full)) ; this%wfps_vr                        (:,:) = nan
+    allocate(this%f_denit_base_vr               (begc:endc,1:nlevdecomp_full)) ; this%f_denit_base_vr                (:,:) = nan
+    allocate(this%diffus                        (begc:endc,1:nlevdecomp_full)) ; this%diffus                         (:,:) = spval
+    allocate(this%ratio_k1                      (begc:endc,1:nlevdecomp_full)) ; this%ratio_k1                       (:,:) = nan
+    allocate(this%ratio_no3_co2                 (begc:endc,1:nlevdecomp_full)) ; this%ratio_no3_co2                  (:,:) = spval
+    allocate(this%soil_co2_prod                 (begc:endc,1:nlevdecomp_full)) ; this%soil_co2_prod                  (:,:) = nan
+    allocate(this%fr_WFPS                       (begc:endc,1:nlevdecomp_full)) ; this%fr_WFPS                        (:,:) = spval
+    allocate(this%fmax_denit_carbonsubstrate_vr (begc:endc,1:nlevdecomp_full)) ; this%fmax_denit_carbonsubstrate_vr  (:,:) = nan
+    allocate(this%fmax_denit_nitrate_vr         (begc:endc,1:nlevdecomp_full)) ; this%fmax_denit_nitrate_vr          (:,:) = nan
+    allocate(this%phenology_n_to_litr_met_n     (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_met_n     (:,:) = nan
+    allocate(this%phenology_n_to_litr_cel_n     (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_cel_n     (:,:) = nan
+    allocate(this%phenology_n_to_litr_lig_n     (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_lig_n     (:,:) = nan
+    allocate(this%gap_mortality_n_to_litr_met_n (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_met_n (:,:) = nan
+    allocate(this%gap_mortality_n_to_litr_cel_n (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_cel_n (:,:) = nan
+    allocate(this%gap_mortality_n_to_litr_lig_n (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_lig_n (:,:) = nan
+    allocate(this%gap_mortality_n_to_cwdn       (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_cwdn       (:,:) = nan
+    allocate(this%fire_mortality_n_to_cwdn      (begc:endc, 1:nlevdecomp_full)) ; this%fire_mortality_n_to_cwdn      (:,:) = nan
+    allocate(this%harvest_n_to_litr_met_n       (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_met_n       (:,:) = nan
+    allocate(this%harvest_n_to_litr_cel_n       (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_cel_n       (:,:) = nan
+    allocate(this%harvest_n_to_litr_lig_n       (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_lig_n       (:,:) = nan
+    allocate(this%harvest_n_to_cwdn             (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_cwdn             (:,:) = nan
+    allocate(this%plant_ndemand                 (begc:endc))                    ; this%plant_ndemand                 (:)   = nan
+    allocate(this%plant_ndemand_vr              (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr              (:,:) = nan
+    allocate(this%f_ngas_decomp_vr              (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr              (:,:) = nan
+    allocate(this%f_ngas_nitri_vr               (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_nitri_vr               (:,:) = nan
+    allocate(this%f_ngas_denit_vr               (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_denit_vr               (:,:) = nan
+    allocate(this%f_n2o_soil_vr                 (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_soil_vr                 (:,:) = nan
+    allocate(this%f_n2_soil_vr                  (begc:endc,1:nlevdecomp_full))  ; this%f_n2_soil_vr                  (:,:) = nan
+    allocate(this%f_ngas_decomp                 (begc:endc))                    ; this%f_ngas_decomp                 (:)   = nan
+    allocate(this%f_ngas_nitri                  (begc:endc))                    ; this%f_ngas_nitri                  (:)   = nan
+    allocate(this%f_ngas_denit                  (begc:endc))                    ; this%f_ngas_denit                  (:)   = nan
+    allocate(this%f_n2o_soil                    (begc:endc))                    ; this%f_n2o_soil                    (:)   = nan
+    allocate(this%f_n2_soil                     (begc:endc))                    ; this%f_n2_soil                     (:)   = nan
+    allocate(this%externaln_to_decomp_delta     (begc:endc))                    ; this%externaln_to_decomp_delta     (:)   = spval
+    allocate(this%no3_net_transport_vr          (begc:endc,1:nlevdecomp_full))  ; this%no3_net_transport_vr          (:,:) = spval
+    allocate(this%nh4_net_transport_vr          (begc:endc,1:nlevdecomp_full))  ; this%nh4_net_transport_vr          (:,:) = spval
+    allocate(this%col_plant_ndemand_vr          (begc:endc,1:nlevdecomp))       ; this%col_plant_ndemand_vr          (:,:) = nan
+    allocate(this%col_plant_nh4demand_vr        (begc:endc,1:nlevdecomp))       ; this%col_plant_nh4demand_vr        (:,:) = nan
+    allocate(this%col_plant_no3demand_vr        (begc:endc,1:nlevdecomp))       ; this%col_plant_no3demand_vr        (:,:) = nan
+    allocate(this%col_plant_pdemand_vr          (begc:endc,1:nlevdecomp))       ; this%col_plant_pdemand_vr          (:,:) = nan
+    allocate(this%plant_n_uptake_flux           (begc:endc))                    ; this%plant_n_uptake_flux           (:)   = nan
+    allocate(this%soil_n_immob_flux             (begc:endc))                    ; this%soil_n_immob_flux	            (:)   = nan
+    allocate(this%soil_n_immob_flux_vr          (begc:endc,1:nlevdecomp))       ; this%soil_n_immob_flux_vr          (:,:) = nan
+    allocate(this%soil_n_grossmin_flux          (begc:endc))                    ; this%soil_n_grossmin_flux          (:)   = nan
+    allocate(this%actual_immob_no3              (begc:endc))                    ; this%actual_immob_no3              (:)   = nan
+    allocate(this%actual_immob_nh4              (begc:endc))                    ; this%actual_immob_nh4              (:)   = nan
+    allocate(this%smin_no3_to_plant             (begc:endc))                    ; this%smin_no3_to_plant             (:)   = nan
+    allocate(this%smin_nh4_to_plant             (begc:endc))                    ; this%smin_nh4_to_plant             (:)   = nan 
+    allocate(this%plant_to_litter_nflux         (begc:endc))                    ; this%plant_to_litter_nflux         (:)   = nan
+    allocate(this%plant_to_cwd_nflux            (begc:endc))                    ; this%plant_to_cwd_nflux            (:)   = nan
+    allocate(this%bgc_npool_ext_inputs_vr         (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_inputs_vr          (:,:,:) = nan
+    allocate(this%bgc_npool_ext_loss_vr           (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_loss_vr            (:,:,:) = nan
+    allocate(this%decomp_cascade_ntransfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ntransfer_vr      (:,:,:) = nan
+    allocate(this%decomp_cascade_sminn_flux_vr    (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_sminn_flux_vr     (:,:,:) = nan
+    allocate(this%m_decomp_npools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%m_decomp_npools_to_fire_vr       (:,:,:) = nan
+    allocate(this%decomp_cascade_ntransfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%m_decomp_npools_to_fire          (:,:)   = nan
+    allocate(this%decomp_cascade_sminn_flux       (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_ntransfer         (:,:)   = nan
+    allocate(this%m_decomp_npools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%decomp_cascade_sminn_flux        (:,:)   = nan
+    allocate(this%sminn_to_denit_decomp_cascade_vr(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%sminn_to_denit_decomp_cascade_vr (:,:,:) = nan
+    allocate(this%sminn_to_denit_decomp_cascade   (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%sminn_to_denit_decomp_cascade    (:,:)   = nan
+    allocate(this%sminn_to_denit_excess_vr        (begc:endc,1:nlevdecomp_full                              )) ; this%sminn_to_denit_excess_vr         (:,:)   = nan
+    allocate(this%sminn_to_denit_excess           (begc:endc                                                )) ; this%sminn_to_denit_excess            (:)     = nan
+    allocate(this%sminn_leached_vr                (begc:endc,1:nlevdecomp_full                              )) ; this%sminn_leached_vr                 (:,:)   = nan
+    allocate(this%sminn_leached                   (begc:endc                                                )) ; this%sminn_leached                    (:)     = nan
+    allocate(this%decomp_npools_leached           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_leached            (:,:)   = nan
+    allocate(this%decomp_npools_transport_tendency(begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_transport_tendency (:,:,:) = nan
+    allocate(this%decomp_npools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_sourcesink         (:,:,:) = nan
+    allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
+    allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = nan
     
     !-----------------------------------------------------------------------
-    ! initialize history fields for select members of col_ns
+    ! initialize history fields for select members of col_nf
     !-----------------------------------------------------------------------
+    ! add suffix if number of soil decomposition depths is greater than 1
+    if (nlevdecomp > 1) then
+       vr_suffix = "_vr"
+    else 
+       vr_suffix = ""
+    endif
+
+    this%ndep_to_sminn(begc:endc) = spval
+    call hist_addfld1d (fname='NDEP_TO_SMINN', units='gN/m^2/s', &
+         avgflag='A', long_name='atmospheric N deposition to soil mineral N', &
+         ptr_col=this%ndep_to_sminn)
+
+    this%nfix_to_sminn(begc:endc) = spval
+    call hist_addfld1d (fname='NFIX_TO_SMINN', units='gN/m^2/s', &
+         avgflag='A', long_name='symbiotic/asymbiotic N fixation to soil mineral N', &
+         ptr_col=this%nfix_to_sminn)
+
+    do k = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+          this%m_decomp_npools_to_fire(begc:endc,k) = spval
+          data1dptr => this%m_decomp_npools_to_fire(:,k)
+          fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TO_FIRE'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N fire loss'
+          call hist_addfld1d (fname=fieldname, units='gN/m^2',  &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+
+          if ( nlevdecomp_full > 1 ) then
+             this%m_decomp_npools_to_fire_vr(begc:endc,:,k) = spval
+             data2dptr => this%m_decomp_npools_to_fire_vr(:,:,k)
+             fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TO_FIRE'//trim(vr_suffix)
+             longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N fire loss'
+             call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data2dptr, default='inactive')
+          endif
+       endif
+    end do
+
+       do l = 1, ndecomp_cascade_transitions
+          if(trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))=='')exit
+          ! vertically integrated fluxes
+          !-- mineralization/immobilization fluxes (none from CWD)
+          if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+             this%decomp_cascade_sminn_flux(begc:endc,l) = spval
+             data1dptr => this%decomp_cascade_sminn_flux(:,l)
+             if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                fieldname = 'SMINN_TO_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'N_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_donor_pool(l)))
+                longname =  'mineral N flux for decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//&
+                     'to '//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))
+             else
+                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                     //'N_TO_SMINN'
+                longname =  'mineral N flux for decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))
+             endif
+             call hist_addfld1d (fname=fieldname, units='gN/m^2', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr)
+          end if
+          
+          !-- transfer fluxes (none from terminal pool, if present)
+          if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+             this%decomp_cascade_ntransfer(begc:endc,l) = spval
+             data1dptr => this%decomp_cascade_ntransfer(:,l)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'N_TO_'//&
+                  trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'N'
+             longname =  'decomp. of '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                  ' N to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' N'
+             call hist_addfld1d (fname=fieldname, units='gN/m^2',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr)
+          end if
+          
+          ! vertically resolved fluxes
+          if ( nlevdecomp_full > 1 ) then
+             !-- mineralization/immobilization fluxes (none from CWD)
+             if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+                this%decomp_cascade_sminn_flux_vr(begc:endc,:,l) = spval
+                data2dptr => this%decomp_cascade_sminn_flux_vr(:,:,l)
+                if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                   fieldname = 'SMINN_TO_'&
+                        //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'N_'//&
+                        trim(decomp_cascade_con%decomp_pool_name_short(decomp_cascade_con%cascade_donor_pool(l)))//trim(vr_suffix)
+                   longname =  'mineral N flux for decomp. of '&
+                        //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//&
+                        'to '//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))
+                else
+                   fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
+                        //'N_TO_SMINN'//trim(vr_suffix)
+                   longname =  'mineral N flux for decomp. of '&
+                        //trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))
+                endif
+                call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+             
+             !-- transfer fluxes (none from terminal pool, if present)
+             if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
+                this%decomp_cascade_ntransfer_vr(begc:endc,:,l) = spval
+                data2dptr => this%decomp_cascade_ntransfer_vr(:,:,l)
+                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'N_TO_'//&
+                     trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
+                     //'N'//trim(vr_suffix)
+                longname =  'decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                     ' N to '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_receiver_pool(l)))//' N'
+                call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+             
+          endif
+       end do
+
+    this%sminn_no3_input_vr(begc:endc,:) = spval
+    data2dptr => this%sminn_no3_input_vr(:,:)
+    fieldname='SMINN_NO3_INPUT_vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%sminn_nh4_input_vr(begc:endc,:)  = spval
+    data2dptr => this%sminn_nh4_input_vr(:,:)
+    fieldname='SMINN_NH4_INPUT_vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+    
+    do k = 1, ndecomp_pools
+      this%bgc_npool_ext_inputs_vr(begc:endc, :, k) = spval    
+      data2dptr => this%bgc_npool_ext_inputs_vr(:,:,k)
+      fieldname='BGC_NPOOL_EINPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+      longname='N input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+      call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+      this%bgc_npool_ext_loss_vr(begc:endc, :, k) = spval    
+      data2dptr => this%bgc_npool_ext_loss_vr(:,:,k)
+      fieldname='BGC_NPOOL_ELOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+      longname='N LOSS to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+      call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+        
+    enddo
+    
+    this%denit(begc:endc) = spval
+    call hist_addfld1d (fname='DENIT', units='gN/m^2/s', &
+         avgflag='A', long_name='total rate of denitrification', &
+         ptr_col=this%denit)
+
+    this%som_n_leached(begc:endc) = spval
+    call hist_addfld1d (fname='SOM_N_LEACHED', units='gN/m^2/s', &
+         avgflag='A', long_name='total flux of N from SOM pools due to leaching', &
+         ptr_col=this%som_n_leached, default='inactive')
+
+    do k = 1, ndecomp_pools
+       if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
+       if ( .not. decomp_cascade_con%is_cwd(k) ) then
+          this%decomp_npools_leached(begc:endc,k) = spval
+          data1dptr => this%decomp_npools_leached(:,k)
+          fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TO_LEACHING'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N leaching loss'
+          call hist_addfld1d (fname=fieldname, units='gN/m^2/s', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+
+          this%decomp_npools_transport_tendency(begc:endc,:,k) = spval
+          data2dptr => this%decomp_npools_transport_tendency(:,:,k)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TNDNCY_VERT_TRANSPORT'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N tendency due to vertical transport'
+          call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data2dptr)
+       end if
+    end do
+
+    if (.not. use_nitrif_denitrif) then
+       do l = 1, ndecomp_cascade_transitions
+          !-- denitrification fluxes (none from CWD)
+          if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+             this%sminn_to_denit_decomp_cascade(begc:endc,l) = spval
+             data1dptr => this%sminn_to_denit_decomp_cascade(:,l)
+             fieldname = 'SMINN_TO_DENIT_'//trim(decomp_cascade_con%cascade_step_name(l))
+             longname =  'denitrification for decomp. of '&
+                  //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                  'to '//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))
+             call hist_addfld1d (fname=fieldname, units='gN/m^2',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr)
+          endif
+
+          if ( nlevdecomp_full > 1 ) then       
+             !-- denitrification fluxes (none from CWD)
+             if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
+                this%sminn_to_denit_decomp_cascade_vr(begc:endc,:,l) = spval
+                data2dptr => this%sminn_to_denit_decomp_cascade_vr(:,:,l)
+                fieldname = 'SMINN_TO_DENIT_'//trim(decomp_cascade_con%cascade_step_name(l))//trim(vr_suffix)
+                longname =  'denitrification for decomp. of '&
+                     //trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
+                     'to '//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))
+                call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+                     avgflag='A', long_name=longname, &
+                     ptr_col=data2dptr, default='inactive')
+             endif
+          endif
+       end do
+    end if
+
+    if (.not. use_nitrif_denitrif) then
+       this%sminn_to_denit_excess(begc:endc) = spval
+       call hist_addfld1d (fname='SMINN_TO_DENIT_EXCESS', units='gN/m^2/s',  &
+            avgflag='A', long_name='denitrification from excess mineral N pool', &
+            ptr_col=this%sminn_to_denit_excess, default='inactive')
+    end if
+
+    if (.not. use_nitrif_denitrif) then
+       this%sminn_leached(begc:endc) = spval
+       call hist_addfld1d (fname='SMINN_LEACHED', units='gN/m^2/s',   &
+            avgflag='A', long_name='soil mineral N pool loss to leaching', &
+            ptr_col=this%sminn_leached)
+    end if
+
+    if (.not. use_nitrif_denitrif) then
+       if ( nlevdecomp_full > 1 ) then  
+          this%sminn_to_denit_excess_vr(begc:endc,:) = spval
+          call hist_addfld_decomp (fname='SMINN_TO_DENIT_EXCESS'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name='denitrification from excess mineral N pool', &
+               ptr_col=this%sminn_to_denit_excess_vr, default='inactive')   
+
+          this%sminn_leached_vr(begc:endc,:) = spval
+          call hist_addfld_decomp (fname='SMINN_LEACHED'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name='soil mineral N pool loss to leaching', &
+               ptr_col=this%sminn_leached_vr, default='inactive')
+       endif
+    end if
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       this%f_nit(begc:endc) = spval
+       call hist_addfld1d (fname='F_NIT', units='gN/m^2/s',  &
+            avgflag='A', long_name='nitrification flux', &
+            ptr_col=this%f_nit)
+    end if
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       this%f_denit(begc:endc) = spval
+       call hist_addfld1d (fname='F_DENIT', units='gN/m^2/s', &
+            avgflag='A', long_name='denitrification flux', &
+            ptr_col=this%f_denit)
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%pot_f_nit(begc:endc) = spval
+       call hist_addfld1d (fname='POT_F_NIT', units='gN/m^2/s', &
+            avgflag='A', long_name='potential nitrification flux', &
+            ptr_col=this%pot_f_nit)
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%pot_f_denit(begc:endc) = spval
+       call hist_addfld1d (fname='POT_F_DENIT', units='gN/m^2/s', &
+            avgflag='A', long_name='potential denitrification flux', &
+            ptr_col=this%pot_f_denit)
+    end if
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_no3_leached(begc:endc) = spval
+       call hist_addfld1d (fname='SMIN_NO3_LEACHED', units='gN/m^2/s', &
+            avgflag='A', long_name='soil NO3 pool loss to leaching', &
+            ptr_col=this%smin_no3_leached)
+    end if
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_no3_runoff(begc:endc) = spval
+       call hist_addfld1d (fname='SMIN_NO3_RUNOFF', units='gN/m^2/s', &
+            avgflag='A', long_name='soil NO3 pool loss to runoff', &
+            ptr_col=this%smin_no3_runoff)
+    end if
+       
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%f_nit_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_NIT'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='nitrification flux', &
+            ptr_col=this%f_nit_vr)
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%f_denit_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_DENIT'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='denitrification flux', &
+            ptr_col=this%f_denit_vr)
+    end if
+
+    if (use_nitrif_denitrif .and.  nlevdecomp_full > 1 ) then 
+       this%pot_f_nit_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='POT_F_NIT'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='potential nitrification flux', &
+            ptr_col=this%pot_f_nit_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif .and.  nlevdecomp_full > 1 ) then 
+       this%pot_f_denit_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='POT_F_DENIT'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='potential denitrification flux', &
+            ptr_col=this%pot_f_denit_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_no3_leached_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NO3_LEACHED'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='soil NO3 pool loss to leaching', &
+            ptr_col=this%smin_no3_leached_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_no3_runoff_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NO3_RUNOFF'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='soil NO3 pool loss to runoff', &
+            ptr_col=this%smin_no3_runoff_vr, default='inactive')
+    endif
+
+    if (use_nitrif_denitrif) then
+       this%n2_n2o_ratio_denit_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='n2_n2o_ratio_denit', units='gN/gN', type2d='levdcmp', &
+            avgflag='A', long_name='n2_n2o_ratio_denit', &
+            ptr_col=this%n2_n2o_ratio_denit_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%actual_immob_no3_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='ACTUAL_IMMOB_NO3', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='immobilization of NO3', &
+            ptr_col=this%actual_immob_no3_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%actual_immob_nh4_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='ACTUAL_IMMOB_NH4', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='immobilization of NH4', &
+            ptr_col=this%actual_immob_nh4_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_no3_to_plant_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NO3_TO_PLANT', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='plant uptake of NO3', &
+            ptr_col=this%smin_no3_to_plant_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_nh4_to_plant_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NH4_TO_PLANT', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='plant uptake of NH4', &
+            ptr_col=this%smin_nh4_to_plant_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%smin_no3_massdens_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NO3_MASSDENS', units='ugN/cm^3 soil', type2d='levdcmp', &
+            avgflag='A', long_name='SMIN_NO3_MASSDENS', &
+            ptr_col=this%smin_no3_massdens_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%k_nitr_t_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='K_NITR_T', units='unitless', type2d='levdcmp', &
+            avgflag='A', long_name='K_NITR_T', &
+            ptr_col=this%k_nitr_t_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%k_nitr_ph_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='K_NITR_PH', units='unitless', type2d='levdcmp', &
+            avgflag='A', long_name='K_NITR_PH', &
+            ptr_col=this%k_nitr_ph_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%k_nitr_h2o_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='K_NITR_H2O', units='unitless', type2d='levdcmp', &
+            avgflag='A', long_name='K_NITR_H2O', &
+            ptr_col=this%k_nitr_h2o_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%k_nitr_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='K_NITR', units='1/s', type2d='levdcmp', &
+            avgflag='A', long_name='K_NITR', &
+            ptr_col=this%k_nitr_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%wfps_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='WFPS', units='percent', type2d='levdcmp', &
+            avgflag='A', long_name='WFPS', &
+            ptr_col=this%wfps_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%fmax_denit_carbonsubstrate_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='FMAX_DENIT_CARBONSUBSTRATE', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='FMAX_DENIT_CARBONSUBSTRATE', &
+            ptr_col=this%fmax_denit_carbonsubstrate_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%fmax_denit_nitrate_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='FMAX_DENIT_NITRATE', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='FMAX_DENIT_NITRATE', &
+            ptr_col=this%fmax_denit_nitrate_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%f_denit_base_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_DENIT_BASE', units='gN/m^3/s', type2d='levdcmp', &
+            avgflag='A', long_name='F_DENIT_BASE', &
+            ptr_col=this%f_denit_base_vr, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%diffus(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='diffus', units='m^2/s', type2d='levdcmp', &
+            avgflag='A', long_name='diffusivity', &
+            ptr_col=this%diffus, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%ratio_k1(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='ratio_k1', units='none', type2d='levdcmp', &
+            avgflag='A', long_name='ratio_k1', &
+            ptr_col=this%ratio_k1, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%ratio_no3_co2(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='ratio_no3_co2', units='ratio', type2d='levdcmp', &
+            avgflag='A', long_name='ratio_no3_co2', &
+            ptr_col=this%ratio_no3_co2, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%soil_co2_prod(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='soil_co2_prod', units='ug C / g soil / day', type2d='levdcmp', &
+            avgflag='A', long_name='soil_co2_prod', &
+            ptr_col=this%soil_co2_prod, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%fr_WFPS(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='fr_WFPS', units='fraction', type2d='levdcmp', &
+            avgflag='A', long_name='fr_WFPS', &
+            ptr_col=this%fr_WFPS, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%soil_bulkdensity(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='soil_bulkdensity', units='kg/m3', type2d='levdcmp', &
+            avgflag='A', long_name='soil_bulkdensity', &
+            ptr_col=this%soil_bulkdensity, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%anaerobic_frac(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='anaerobic_frac', units='m3/m3', type2d='levdcmp', &
+            avgflag='A', long_name='anaerobic_frac', &
+            ptr_col=this%anaerobic_frac, default='inactive')
+    end if
+
+    if (use_nitrif_denitrif) then
+       this%r_psi(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='r_psi', units='m', type2d='levdcmp', &
+            avgflag='A', long_name='r_psi', &
+            ptr_col=this%r_psi, default='inactive')
+    end if
+
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%potential_immob_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='POTENTIAL_IMMOB'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='potential N immobilization', &
+            ptr_col=this%potential_immob_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%actual_immob_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='ACTUAL_IMMOB'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='actual N immobilization', &
+            ptr_col=this%actual_immob_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%sminn_to_plant_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMINN_TO_PLANT'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='plant uptake of soil mineral N', &
+            ptr_col=this%sminn_to_plant_vr, default='inactive')
+    end if
+
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%supplement_to_sminn_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SUPPLEMENT_TO_SMINN'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='supplemental N supply', &
+            ptr_col=this%supplement_to_sminn_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%gross_nmin_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='GROSS_NMIN'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='gross rate of N mineralization', &
+            ptr_col=this%gross_nmin_vr, default='inactive')
+    end if
+
+    if ((use_nitrif_denitrif .and.  nlevdecomp_full > 1) &
+       .or. (use_pflotran .and. pf_cmode)) then
+       this%net_nmin_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='NET_NMIN'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+            avgflag='A', long_name='net rate of N mineralization', &
+            ptr_col=this%net_nmin_vr, default='inactive')
+    end if
+
+    this%potential_immob(begc:endc) = spval
+    call hist_addfld1d (fname='POTENTIAL_IMMOB', units='gN/m^2/s', &
+         avgflag='A', long_name='potential N immobilization', &
+         ptr_col=this%potential_immob)
+
+    this%actual_immob(begc:endc) = spval
+    call hist_addfld1d (fname='ACTUAL_IMMOB', units='gN/m^2/s', &
+         avgflag='A', long_name='actual N immobilization', &
+         ptr_col=this%actual_immob)
+
+    this%sminn_to_plant(begc:endc) = spval
+    call hist_addfld1d (fname='SMINN_TO_PLANT', units='gN/m^2/s', &
+         avgflag='A', long_name='plant uptake of soil mineral N', &
+         ptr_col=this%sminn_to_plant)
+
+    this%supplement_to_sminn(begc:endc) = spval
+    call hist_addfld1d (fname='SUPPLEMENT_TO_SMINN', units='gN/m^2/s', &
+         avgflag='A', long_name='supplemental N supply', &
+         ptr_col=this%supplement_to_sminn)
+
+    this%gross_nmin(begc:endc) = spval
+    call hist_addfld1d (fname='GROSS_NMIN', units='gN/m^2/s', &
+         avgflag='A', long_name='gross rate of N mineralization', &
+         ptr_col=this%gross_nmin)
+
+    this%net_nmin(begc:endc) = spval
+    call hist_addfld1d (fname='NET_NMIN', units='gN/m^2/s', &
+         avgflag='A', long_name='net rate of N mineralization', &
+         ptr_col=this%net_nmin)
+
+    if (use_nitrif_denitrif) then
+       this%f_n2o_nit(begc:endc) = spval
+       call hist_addfld1d (fname='F_N2O_NIT', units='gN/m^2/s', &
+            avgflag='A', long_name='nitrification N2O flux', &
+            ptr_col=this%f_n2o_nit)
+
+       this%f_n2o_denit(begc:endc) = spval
+       call hist_addfld1d (fname='F_N2O_DENIT', units='gN/m^2/s', &
+            avgflag='A', long_name='denitrification N2O flux', &
+            ptr_col=this%f_n2o_denit)
+    end if
+
+    this%fire_nloss(begc:endc) = spval
+    call hist_addfld1d (fname='COL_FIRE_NLOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='total column-level fire N loss', &
+         ptr_col=this%fire_nloss, default='inactive')
+
+    this%fire_decomp_nloss(begc:endc) = spval
+    call hist_addfld1d (fname='DECOMP_FIRE_NLOSS', units='gN/m^2/s', &
+       avgflag='A', long_name='fire N loss from decomposable pools', &
+       ptr_col=this%fire_decomp_nloss, default='inactive')
+
+    this%dwt_slash_nflux(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_SLASH_NFLUX', units='gN/m^2/s', &
+         avgflag='A', long_name='slash N flux to litter and CWD due to land use', &
+         ptr_col=this%dwt_slash_nflux)
+
+    this%dwt_conv_nflux(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_CONV_NFLUX', units='gN/m^2/s', &
+         avgflag='A', long_name='conversion N flux (immediate loss to atm)', &
+         ptr_col=this%dwt_conv_nflux, default='inactive')
+
+    this%dwt_prod10n_gain(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_PROD10N_GAIN', units='gN/m^2/s', &
+         avgflag='A', long_name='addition to 10-yr wood product pool', &
+         ptr_col=this%dwt_prod10n_gain, default='inactive')
+
+    this%prod10n_loss(begc:endc) = spval
+    call hist_addfld1d (fname='PROD10N_LOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='loss from 10-yr wood product pool', &
+         ptr_col=this%prod10n_loss, default='inactive')
+
+    this%dwt_prod100n_gain(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_PROD100N_GAIN', units='gN/m^2/s', &
+         avgflag='A', long_name='addition to 100-yr wood product pool', &
+         ptr_col=this%dwt_prod100n_gain, default='inactive')
+
+    this%prod100n_loss(begc:endc) = spval
+    call hist_addfld1d (fname='PROD100N_LOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='loss from 100-yr wood product pool', &
+         ptr_col=this%prod100n_loss, default='inactive')
+
+    this%prod1n_loss(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1N_LOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='loss from 1-yr crop product pool', &
+         ptr_col=this%prod1n_loss, default='inactive')
+
+    this%product_nloss(begc:endc) = spval
+    call hist_addfld1d (fname='PRODUCT_NLOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='total N loss from wood product pools', &
+         ptr_col=this%product_nloss, default='inactive')
+
+    this%dwt_frootn_to_litr_met_n(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_MET_N', units='gN/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='fine root to litter due to landcover change', &
+         ptr_col=this%dwt_frootn_to_litr_met_n, default='inactive')
+
+    this%dwt_frootn_to_litr_cel_n(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_CEL_N', units='gN/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='fine root to litter due to landcover change', &
+         ptr_col=this%dwt_frootn_to_litr_cel_n, default='inactive')
+
+    this%dwt_frootn_to_litr_lig_n(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_LIG_N', units='gN/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='fine root to litter due to landcover change', &
+         ptr_col=this%dwt_frootn_to_litr_lig_n, default='inactive')
+
+    this%dwt_livecrootn_to_cwdn(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_LIVECROOTN_TO_CWDN', units='gN/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='live coarse root to CWD due to landcover change', &
+         ptr_col=this%dwt_livecrootn_to_cwdn, default='inactive')
+
+    this%dwt_deadcrootn_to_cwdn(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='DWT_DEADCROOTN_TO_CWDN', units='gN/m^2/s',  type2d='levdcmp', &
+         avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
+         ptr_col=this%dwt_deadcrootn_to_cwdn, default='inactive')
+
+    this%dwt_nloss(begc:endc) = spval
+    call hist_addfld1d (fname='DWT_NLOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='total nitrogen loss from landcover conversion', &
+         ptr_col=this%dwt_nloss, default='inactive')
+
+    if (crop_prog) then
+       this%fert_to_sminn(begc:endc) = spval
+       call hist_addfld1d (fname='FERT_TO_SMINN', units='gN/m^2/s', &
+            avgflag='A', long_name='fertilizer to soil mineral N', &
+            ptr_col=this%fert_to_sminn)
+    end if
+
+    if (crop_prog) then
+       this%soyfixn_to_sminn(begc:endc) = spval
+       call hist_addfld1d (fname='SOYFIXN_TO_SMINN', units='gN/m^2/s', &
+            avgflag='A', long_name='Soybean fixation to soil mineral N', &
+            ptr_col=this%soyfixn_to_sminn)
+    end if
+
+    this%plant_ndemand(begc:endc) = spval
+       call hist_addfld1d (fname='PLANT_NDEMAND_COL', units='gN/m^2/s', &
+            avgflag='A', long_name='N flux required to support initial GPP', &
+            ptr_col=this%plant_ndemand)
+
+    if (use_pflotran.and.pf_cmode) then
+       this%f_ngas_decomp(begc:endc) = spval
+       call hist_addfld1d (fname='F_NGAS_DECOMP', units='gN/m^2/s',  &
+             avgflag='A', long_name='N gas emission from excess mineral N pool due to mineralization', &
+             ptr_col=this%f_ngas_decomp, default='inactive')
+
+       this%f_ngas_nitri(begc:endc) = spval
+       call hist_addfld1d (fname='F_NGAS_NITRI', units='gN/m^2/s',  &
+             avgflag='A', long_name='N gas emission from nitrification', &
+             ptr_col=this%f_ngas_nitri, default='inactive')
+
+       this%f_ngas_denit(begc:endc) = spval
+       call hist_addfld1d (fname='F_NGAS_DENIT', units='gN/m^2/s',  &
+             avgflag='A', long_name='N gas emission from denitrification', &
+             ptr_col=this%f_ngas_denit, default='inactive')
+
+       this%f_n2o_soil(begc:endc) = spval
+       call hist_addfld1d (fname='F_N2O_SOIL', units='gN/m^2/s',  &
+             avgflag='A', long_name='soil n2o exchange flux', &
+             ptr_col=this%f_n2o_soil)
+
+       this%f_n2_soil(begc:endc) = spval
+       call hist_addfld1d (fname='F_N2_SOIL', units='gN/m^2/s',  &
+             avgflag='A', long_name='soil n2 exchange flux', &
+             ptr_col=this%f_n2_soil)
+
+       this%smin_nh4_to_plant(begc:endc) = spval
+       call hist_addfld1d (fname='SMIN_NH4_TO_PLANT', units='gN/m^2/s', &
+            avgflag='A', long_name='plant uptake of NH4', &
+            ptr_col=this%smin_nh4_to_plant, default='inactive')
+
+       this%smin_no3_to_plant(begc:endc) = spval
+       call hist_addfld1d (fname='SMIN_NO3_TO_PLANT', units='gN/m^2/s', &
+            avgflag='A', long_name='plant uptake of NO3', &
+            ptr_col=this%smin_no3_to_plant, default='inactive')
+
+       this%f_ngas_decomp_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_NGAS_DECOMP'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+          avgflag='A', long_name='n gas emission from excess mineral N pool due to mineralization', &
+          ptr_col=this%f_ngas_decomp_vr, default='inactive')
+
+       this%f_ngas_nitri_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_NGAS_NITRI'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+          avgflag='A', long_name='n gas emission in nitrification', &
+          ptr_col=this%f_ngas_nitri_vr, default='inactive')
+
+       this%f_ngas_denit_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_NGAS_DENIT'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+          avgflag='A', long_name='n gas emission in denitrification', &
+          ptr_col=this%f_ngas_denit_vr, default='inactive')
+
+       this%f_n2o_soil_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_N2O_SOIL'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+          avgflag='A', long_name='soil N2O exchange flux', &
+          ptr_col=this%f_n2o_soil_vr)
+
+       this%f_n2_soil_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='F_N2_SOIL'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+          avgflag='A', long_name='soil N2 exchange flux', &
+          ptr_col=this%f_n2_soil_vr)
+
+       this%plant_ndemand_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='PLANT_NDEMAND'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+          avgflag='A', long_name='plant N demand distribution via roots', &
+          ptr_col=this%plant_ndemand_vr, default='inactive')
+    end if ! if (use_pflotran.and.pf_cmode)
 
     !-----------------------------------------------------------------------
-    ! set cold-start initial values for select members of col_ns
+    ! set cold-start initial values for select members of col_nf
     !-----------------------------------------------------------------------
+    num_special_col = 0
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
     
-  end subroutine init_col_nf
+    do fc = 1,num_special_col
+       c = special_col(fc)
+       this%dwt_nloss(c) = 0._r8
+    end do
+
+    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
     
+  end subroutine col_nf_init
+    
+  !-----------------------------------------------------------------------
+  subroutine col_nf_restart (this,  bounds, ncid, flag )
+    !
+    ! !DESCRIPTION: 
+    ! Read/write restart data for column-level nitrogen fluxes
+    !
+    ! !ARGUMENTS:
+    class (column_nitrogen_flux)      :: this
+    type(bounds_type) , intent(in)    :: bounds 
+    type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
+    character(len=*)  , intent(in)    :: flag   !'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar      ! determine if variable is on initial file
+    real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    !------------------------------------------------------------------------
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       ! pot_f_nit_vr
+       if (use_vertsoilc) then
+          ptr2d => this%pot_f_nit_vr(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='pot_f_nit_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='potential soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       else
+          ptr1d => this%pot_f_nit_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='pot_f_nit_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg= 'ERROR:: pot_f_nit_vr'//' is required on an initialization dataset' )
+       end if
+       ! f_nit_vr
+       if (use_vertsoilc) then
+          ptr2d => this%f_nit_vr(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='f_nit_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
+       else
+          ptr1d => this%f_nit_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='f_nit_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='soil nitrification flux', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: f_nit_vr'//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end if
+
+    if (use_pflotran .and. pf_cmode) then
+       ! externaln_to_decomp_npools_col
+       do k = 1, ndecomp_pools
+          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_n'
+          if (use_vertsoilc) then
+             ptr2d => this%externaln_to_decomp_npools(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='net organic N adding/removal/transport to soil', units='gN/m3/s', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%externaln_to_decomp_npools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', &
+                  long_name='net organic N adding/removal/transport to soil', units='gN/m3/s', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+          !        errMsg(__FILE__, __LINE__))
+             this%externaln_to_decomp_npools(:,:,k) = 0._r8
+          end if
+       end do
+       !no3_net_transport_vr
+       if (.not.pf_hmode) then
+          if (use_vertsoilc) then
+             ptr2d => this%no3_net_transport_vr(:,:)
+             call restartvar(ncid=ncid, flag=flag, varname='no3_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='net soil NO3-N transport', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%no3_net_transport_vr(:,1)
+             call restartvar(ncid=ncid, flag=flag, varname='no3_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='net soil  NO3-N transport', units='gN/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: no3_net_transport_vr'//' is required on an initialization dataset'//&
+          !     errMsg(__FILE__, __LINE__))
+             this%no3_net_transport_vr(:,:) = 0._r8
+          end if
+       end if
+
+    end if ! if (use_pflotran .and. pf_cmode)
+
+  end subroutine col_nf_restart  
+  
+  !-----------------------------------------------------------------------
+  subroutine col_nf_setvalues ( this, num_column, filter_column, value_column)
+    !
+    ! !DESCRIPTION:
+    ! Set column-level nitrogen fluxes
+    !
+    ! !ARGUMENTS:
+    class (column_nitrogen_flux) :: this
+    integer , intent(in)         :: num_column
+    integer , intent(in)         :: filter_column(:)
+    real(r8), intent(in)         :: value_column
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fi,i,j,k,l     ! loop index
+    !------------------------------------------------------------------------
+    do j = 1, nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+
+          ! phenology: litterfall and crop fluxes associated wit
+          this%phenology_n_to_litr_met_n(i,j)        = value_column
+          this%phenology_n_to_litr_cel_n(i,j)        = value_column
+          this%phenology_n_to_litr_lig_n(i,j)        = value_column
+
+          ! gap mortality
+          this%gap_mortality_n_to_litr_met_n(i,j)    = value_column
+          this%gap_mortality_n_to_litr_cel_n(i,j)    = value_column
+          this%gap_mortality_n_to_litr_lig_n(i,j)    = value_column
+          this%gap_mortality_n_to_cwdn(i,j)          = value_column
+
+          ! fire
+          this%fire_mortality_n_to_cwdn(i,j)         = value_column
+          this%m_n_to_litr_met_fire(i,j)             = value_column
+          this%m_n_to_litr_cel_fire(i,j)             = value_column  
+          this%m_n_to_litr_lig_fire(i,j)             = value_column
+
+          ! harvest
+          this%harvest_n_to_litr_met_n(i,j)          = value_column             
+          this%harvest_n_to_litr_cel_n(i,j)          = value_column             
+          this%harvest_n_to_litr_lig_n(i,j)          = value_column             
+          this%harvest_n_to_cwdn(i,j)                = value_column  
+
+          if (.not. use_nitrif_denitrif) then
+             this%sminn_to_denit_excess_vr(i,j)      = value_column
+             this%sminn_leached_vr(i,j)              = value_column
+          else
+             this%f_nit_vr(i,j)                      = value_column
+             this%f_denit_vr(i,j)                    = value_column
+             this%smin_no3_leached_vr(i,j)           = value_column
+             this%smin_no3_runoff_vr(i,j)            = value_column 
+             this%n2_n2o_ratio_denit_vr(i,j)         = value_column
+             this%pot_f_nit_vr(i,j)                  = value_column
+             this%pot_f_denit_vr(i,j)                = value_column
+             this%actual_immob_no3_vr(i,j)           = value_column
+             this%actual_immob_nh4_vr(i,j)           = value_column
+             this%smin_no3_to_plant_vr(i,j)          = value_column
+             this%smin_nh4_to_plant_vr(i,j)          = value_column
+             this%f_n2o_denit_vr(i,j)                = value_column
+             this%f_n2o_nit_vr(i,j)                  = value_column
+
+             this%smin_no3_massdens_vr(i,j)          = value_column
+             this%k_nitr_t_vr(i,j)                   = value_column
+             this%k_nitr_ph_vr(i,j)                  = value_column
+             this%k_nitr_h2o_vr(i,j)                 = value_column
+             this%k_nitr_vr(i,j)                     = value_column 
+             this%wfps_vr(i,j)                       = value_column 
+             this%fmax_denit_carbonsubstrate_vr(i,j) = value_column 
+             this%fmax_denit_nitrate_vr(i,j)         = value_column 
+             this%f_denit_base_vr(i,j)               = value_column
+
+             this%diffus(i,j)                        = value_column
+             this%ratio_k1(i,j)                      = value_column
+             this%ratio_no3_co2(i,j)                 = value_column
+             this%soil_co2_prod(i,j)                 = value_column
+             this%fr_WFPS(i,j)                       = value_column
+             this%soil_bulkdensity(i,j)              = value_column
+
+             this%r_psi(i,j)                         = value_column
+             this%anaerobic_frac(i,j)                = value_column
+
+             ! pflotran
+             this%plant_ndemand_vr(i,j)              = value_column
+             this%f_ngas_decomp_vr(i,j)              = value_column
+             this%f_ngas_nitri_vr(i,j)               = value_column
+             this%f_ngas_denit_vr(i,j)               = value_column
+             this%f_n2o_soil_vr(i,j)                 = value_column
+             this%f_n2_soil_vr(i,j)                  = value_column
+          end if
+          this%potential_immob_vr(i,j)               = value_column
+          this%actual_immob_vr(i,j)                  = value_column
+          this%sminn_to_plant_vr(i,j)                = value_column
+          this%supplement_to_sminn_vr(i,j)           = value_column
+          this%gross_nmin_vr(i,j)                    = value_column
+          this%net_nmin_vr(i,j)                      = value_column
+          this%sminn_nh4_input_vr(i,j)               = value_column
+          this%sminn_no3_input_vr(i,j)               = value_column
+       end do
+    end do
+
+    do fi = 1,num_column
+       i = filter_column(fi)
+
+       this%ndep_to_sminn(i)             = value_column
+       this%nfix_to_sminn(i)             = value_column
+       this%nfix_to_ecosysn(i)           = value_column
+       this%fert_to_sminn(i)             = value_column
+       this%soyfixn_to_sminn(i)          = value_column
+       this%hrv_deadstemn_to_prod10n(i)  = value_column        
+       this%hrv_deadstemn_to_prod100n(i) = value_column      
+       this%hrv_cropn_to_prod1n(i)       = value_column
+       this%prod10n_loss(i)              = value_column
+       this%prod100n_loss(i)             = value_column
+       this%prod1n_loss(i)               = value_column
+       this%product_nloss(i)             = value_column
+       this%potential_immob(i)           = value_column
+       this%actual_immob(i)              = value_column
+       this%sminn_to_plant(i)            = value_column
+       this%supplement_to_sminn(i)       = value_column
+       this%gross_nmin(i)                = value_column
+       this%net_nmin(i)                  = value_column
+       this%denit(i)                     = value_column
+       if (use_nitrif_denitrif) then
+          this%f_nit(i)                  = value_column
+          this%pot_f_nit(i)              = value_column
+          this%f_denit(i)                = value_column
+          this%pot_f_denit(i)            = value_column
+          this%f_n2o_denit(i)            = value_column
+          this%f_n2o_nit(i)              = value_column
+          this%smin_no3_leached(i)       = value_column
+          this%smin_no3_runoff(i)        = value_column
+
+          this%f_ngas_decomp(i)         = value_column
+          this%f_ngas_nitri(i)          = value_column
+          this%f_ngas_denit(i)          = value_column
+          this%f_n2o_soil(i)            = value_column
+          this%f_n2_soil(i)             = value_column
+
+          this%smin_nh4_to_plant(i)      = value_column
+          this%smin_no3_to_plant(i)      = value_column          
+       else
+          this%sminn_to_denit_excess(i)  = value_column
+          this%sminn_leached(i)          = value_column
+       end if
+       this%ninputs(i)                   = value_column
+       this%noutputs(i)                  = value_column
+       this%fire_nloss(i)                = value_column
+       this%som_n_leached(i)             = value_column
+       this%sminn_input(i)               = value_column
+       this%sminn_nh4_input(i)           = value_column
+       this%sminn_no3_input(i)           = value_column
+       ! Zero p2c column fluxes
+       this%fire_nloss(i) = value_column
+       this%wood_harvestn(i) = value_column
+
+       ! bgc-interface
+       this%plant_ndemand(i) = value_column
+    end do
+
+    do k = 1, ndecomp_pools
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%decomp_npools_leached(i,k) = value_column
+          this%m_decomp_npools_to_fire(i,k) = value_column
+          this%bgc_npool_ext_inputs_vr(i,:,k) = value_column
+          this%bgc_npool_ext_loss_vr(i,:,k) = value_column          
+          this%bgc_npool_inputs(i,k) = value_column
+       end do
+    end do
+
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%m_decomp_npools_to_fire_vr(i,j,k) = value_column
+             this%decomp_npools_transport_tendency(i,j,k) = value_column
+          end do
+       end do
+    end do
+
+       do l = 1, ndecomp_cascade_transitions
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_cascade_ntransfer(i,l) = value_column
+             this%decomp_cascade_sminn_flux(i,l) = value_column
+             if (.not. use_nitrif_denitrif) then
+                this%sminn_to_denit_decomp_cascade(i,l) = value_column
+             end if
+          end do
+       end do
+
+       do l = 1, ndecomp_cascade_transitions
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_cascade_ntransfer_vr(i,j,l) = value_column
+                this%decomp_cascade_sminn_flux_vr(i,j,l) = value_column
+                if (.not. use_nitrif_denitrif) then
+                   this%sminn_to_denit_decomp_cascade_vr(i,j,l) = value_column
+                end if
+             end do
+          end do
+       end do
+
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_npools_sourcesink(i,j,k) = value_column
+          end do
+       end do
+    end do
+
+    ! pflotran
+    !------------------------------------------------------------------------
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             ! only initializing in the first time-step
+             if ( this%externaln_to_decomp_npools(i,j,k) == spval ) then
+                this%externaln_to_decomp_npools(i,j,k) = value_column
+             end if
+          end do
+       end do
+    end do
+
+    do j = 1, nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+          ! only initializing in the first time-step
+          if ( this%no3_net_transport_vr(i,j) == spval ) then
+             this%no3_net_transport_vr(i,j) = value_column
+          end if
+          if ( this%nh4_net_transport_vr(i,j) == spval ) then
+             this%nh4_net_transport_vr(i,j) = value_column
+          end if
+       end do
+    end do
+
+    do fi = 1,num_column
+       i = filter_column(fi)
+       ! only initializing in the first time-step
+       if ( this%externaln_to_decomp_delta(i) == spval ) then
+          this%externaln_to_decomp_delta(i) = value_column
+       end if
+    end do
+
+  end subroutine col_nf_setvalues
+  
+  !-----------------------------------------------------------------------
+  subroutine col_nf_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize flux variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux)    :: this
+    type(bounds_type), intent(in)  :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c,j          ! indices
+    !-----------------------------------------------------------------------
+  
+    do c = bounds%begc,bounds%endc
+       this%dwt_conv_nflux(c)        = 0._r8
+       this%dwt_prod10n_gain(c)      = 0._r8
+       this%dwt_prod100n_gain(c)     = 0._r8
+       this%dwt_slash_nflux(c)       = 0._r8
+    end do
+
+    do j = 1, nlevdecomp_full
+       do c = bounds%begc,bounds%endc
+          this%dwt_frootn_to_litr_met_n(c,j) = 0._r8
+          this%dwt_frootn_to_litr_cel_n(c,j) = 0._r8
+          this%dwt_frootn_to_litr_lig_n(c,j) = 0._r8
+          this%dwt_livecrootn_to_cwdn(c,j)   = 0._r8
+          this%dwt_deadcrootn_to_cwdn(c,j)   = 0._r8
+       end do
+    end do
+
+  end subroutine col_nf_zerodwt
+  
+  !-----------------------------------------------------------------------
+  subroutine col_nf_summary(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! Column-level nitrogen summary calculations
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux)            :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fc,c,j,k,l       ! indices
+    integer  :: nlev
+    !-----------------------------------------------------------------------
+  
+    nlev = nlevdecomp
+    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%denit(c) = 0._r8
+       this%supplement_to_sminn(c) = 0._r8
+       this%som_n_leached(c)       = 0._r8
+    end do
+    
+    if (  (.not. (use_pflotran .and. pf_cmode)) ) then
+       ! BeTR is off AND PFLOTRAN's pf_cmode is false
+       ! vertically integrate decomposing N cascade fluxes and
+       !soil mineral N fluxes associated with decomposition cascade
+       do k = 1, ndecomp_cascade_transitions
+          do j = 1,nlev
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cascade_ntransfer(c,k) = &
+                     this%decomp_cascade_ntransfer(c,k) + &
+                     this%decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j) 
+                
+                this%decomp_cascade_sminn_flux(c,k) = &
+                     this%decomp_cascade_sminn_flux(c,k) + &
+                     this%decomp_cascade_sminn_flux_vr(c,j,k) * dzsoi_decomp(j) 
+             end do
+          end do
+       end do
+       
+       if (.not. use_nitrif_denitrif) then
+          ! vertically integrate each denitrification flux
+          do l = 1, ndecomp_cascade_transitions
+             do j = 1, nlev
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%sminn_to_denit_decomp_cascade(c,l) = &
+                        this%sminn_to_denit_decomp_cascade(c,l) + &
+                        this%sminn_to_denit_decomp_cascade_vr(c,j,l) * dzsoi_decomp(j)
+                end do
+             end do
+          end do
+          ! vertically integrate bulk denitrification and  leaching flux
+          do j = 1, nlev
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%sminn_to_denit_excess(c) = &
+                     this%sminn_to_denit_excess(c) + &
+                     this%sminn_to_denit_excess_vr(c,j) * dzsoi_decomp(j)
+                
+                this%sminn_leached(c) = &
+                     this%sminn_leached(c) + &
+                     this%sminn_leached_vr(c,j) * dzsoi_decomp(j)
+             end do
+          end do
+          ! total N denitrification (DENIT)
+          do l = 1, ndecomp_cascade_transitions
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%denit(c) = &
+                     this%denit(c) + &
+                     this%sminn_to_denit_decomp_cascade(c,l)
+             end do
+          end do
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%denit(c) =  &
+                  this%denit(c) + &
+                  this%sminn_to_denit_excess(c)
+          end do
+       else
+          ! vertically integrate NO3 NH4 N2O fluxes and pools
+          do j = 1, nlev
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                
+                ! nitrification and denitrification fluxes
+                this%f_nit(c) = &
+                     this%f_nit(c) + &
+                     this%f_nit_vr(c,j) * dzsoi_decomp(j)
+                
+                this%f_denit(c) = &
+                     this%f_denit(c) + &
+                     this%f_denit_vr(c,j) * dzsoi_decomp(j)
+                
+                this%pot_f_nit(c) = &
+                     this%pot_f_nit(c) + &
+                     this%pot_f_nit_vr(c,j) * dzsoi_decomp(j)
+                
+                this%pot_f_denit(c) = &
+                     this%pot_f_denit(c) + &
+                     this%pot_f_denit_vr(c,j) * dzsoi_decomp(j)
+                
+                this%f_n2o_nit(c) = &
+                     this%f_n2o_nit(c) + &
+                     this%f_n2o_nit_vr(c,j) * dzsoi_decomp(j)
+                
+                this%f_n2o_denit(c) = &
+                     this%f_n2o_denit(c) + &
+                     this%f_n2o_denit_vr(c,j) * dzsoi_decomp(j)
+                
+                ! leaching/runoff flux
+                this%smin_no3_leached(c) = &
+                        this%smin_no3_leached(c) + &
+                        this%smin_no3_leached_vr(c,j) * dzsoi_decomp(j)
+                   
+                this%smin_no3_runoff(c) = &
+                        this%smin_no3_runoff(c) + &
+                        this%smin_no3_runoff_vr(c,j) * dzsoi_decomp(j)
+             end do
+          end do
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%denit(c) = this%f_denit(c)
+          end do
+       end if
+    end if
+
+    ! vertically integrate column-level fire N losses
+    do k = 1, ndecomp_pools
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%m_decomp_npools_to_fire(c,k) = &
+                  this%m_decomp_npools_to_fire(c,k) + &
+                  this%m_decomp_npools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
+    ! total column-level fire N losses
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%fire_nloss(c) = this%fire_nloss_p2c(c)
+    end do
+    do k = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%fire_nloss(c) = &
+               this%fire_nloss(c) + &
+               this%m_decomp_npools_to_fire(c,k)
+       end do
+    end do
+
+    ! supplementary N supplement_to_sminn
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%supplement_to_sminn(c) = &
+               this%supplement_to_sminn(c) + &
+               this%supplement_to_sminn_vr(c,j) * dzsoi_decomp(j)
+
+          this%sminn_input(c) = &
+               this%sminn_input(c) + &
+               (this%sminn_nh4_input_vr(c,j)+this%sminn_no3_input_vr(c,j))*dzsoi_decomp(j)
+
+          this%sminn_nh4_input(c) = &
+               this%sminn_nh4_input(c) + &
+               this%sminn_nh4_input_vr(c,j)*dzsoi_decomp(j)
+
+          this%sminn_no3_input(c) = &
+               this%sminn_no3_input(c) + &
+               this%sminn_no3_input_vr(c,j)*dzsoi_decomp(j)
+       end do
+    end do
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       ! column-level N losses due to landcover change
+       this%dwt_nloss(c) = &
+            this%dwt_conv_nflux(c)
+       ! total wood product N loss
+       this%product_nloss(c) = &
+            this%prod10n_loss(c) + &
+            this%prod100n_loss(c)+ &
+            this%prod1n_loss(c) 
+    end do
+
+    ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_npools_leached(c,l) = 0._r8
+       end do
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_npools_leached(c,l) = &
+                  this%decomp_npools_leached(c,l) + &
+                  this%decomp_npools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+                  
+             this%bgc_npool_inputs(c,l) = this%bgc_npool_inputs(c,l) + &
+                (this%bgc_npool_ext_inputs_vr(c,j,l)-this%bgc_npool_ext_loss_vr(c,j,l))*dzsoi_decomp(j)
+          end do
+       end do
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%som_n_leached(c) = &
+               this%som_n_leached(c) + &
+               this%decomp_npools_leached(c,l)
+       end do
+    end do
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%smin_no3_to_plant(c) = 0._r8
+       this%smin_nh4_to_plant(c) = 0._r8
+       this%plant_to_litter_nflux(c) = 0._r8
+       this%plant_to_cwd_nflux(c) = 0._r8
+       do j = 1, nlev
+          this%plant_to_litter_nflux(c) = &
+               this%plant_to_litter_nflux(c)  + &
+               this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+               this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+               this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+               this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+               this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+               this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+          this%plant_to_cwd_nflux(c) = &
+               this%plant_to_cwd_nflux(c) + &
+               this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
+               this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+       end do
+    end do
+
+    if (use_nitrif_denitrif) then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          do j = 1, nlev
+             this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + & 
+                  this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
+             this%smin_nh4_to_plant(c)= this%smin_nh4_to_plant(c) + & 
+                  this%smin_nh4_to_plant_vr(c,j) * dzsoi_decomp(j) 
+          enddo
+       enddo
+    endif
+
+    ! bgc interface & pflotran
+    if (use_clm_interface .and. (use_pflotran .and. pf_cmode)) then
+        call this%SummaryInt(this, bounds, num_soilc, filter_soilc)
+    end if
+  
+  end subroutine col_nf_summary
+  
+  !------------------------------------------------------------------------
+  subroutine col_nf_summaryint (this,bounds,num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! Column-level nitrogen flux summary for PFLOTRAN interface
+    !
+    ! !ARGUMENTS:
+    implicit none
+    class (column_nitrogen_flux)    :: this
+    type(bounds_type) ,  intent(in) :: bounds
+    integer,             intent(in) :: num_soilc       ! number of soil columns in filter
+    integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,j,l       ! indices
+    integer :: fc          ! column filter indices
+    real(r8):: dtime       ! radiation time step (seconds)
+    !------------------------------------------------------------------------
+
+    dtime = real( get_step_size(), r8 )
+    ! nitrification-denitrification rates (not yet passing out from PF, but will)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%f_nit_col(c)   = 0._r8
+       this%f_denit_col(c) = 0._r8
+       do j = 1, nlevdecomp_full
+          this%f_nit_vr_col(c,j) = 0._r8
+          this%f_nit_col(c)  = this%f_nit_col(c) + &
+                               this%f_nit_vr_col(c,j)*dzsoi_decomp(j)
+
+          this%f_denit_vr_col(c,j) = 0._r8
+          this%f_denit_col(c) = this%f_denit_col(c) + &
+                               this%f_denit_vr_col(c,j)*dzsoi_decomp(j)
+
+       end do
+       this%denit_col(c)      = this%f_denit_col(c)
+    end do
+
+    ! the following are from pflotran bgc, and vertically down to 'nlevdecomp_full'
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%f_n2_soil_col(c)    = 0._r8
+       this%f_n2o_soil_col(c)   = 0._r8
+       this%f_ngas_decomp_col(c)= 0._r8
+       this%f_ngas_nitri_col(c) = 0._r8
+       this%f_ngas_denit_col(c) = 0._r8
+       this%smin_no3_leached_col(c) = 0._r8
+       this%smin_no3_runoff_col(c)  = 0._r8
+       this%sminn_leached_col(c)    = 0._r8
+       do j = 1, nlevdecomp_full
+          ! all N2/N2O gas exchange between atm. and soil (i.e., dissolving - degassing)
+          this%f_n2_soil_col(c)  = this%f_n2_soil_col(c) + &
+                                this%f_n2_soil_vr_col(c,j)*dzsoi_decomp(j)
+          this%f_n2o_soil_col(c) = this%f_n2o_soil_col(c) + &
+                                this%f_n2o_soil_vr_col(c,j)*dzsoi_decomp(j)
+          
+          ! all N2/N2O production from soil bgc N processes (mineralization-nitrification-denitrification)
+          ! note: those are directly dissolved into aq. gas species, which would be exchanging with atm.
+          this%f_ngas_decomp_col(c) = this%f_ngas_decomp_col(c) + &
+                                   this%f_ngas_decomp_vr_col(c,j)*dzsoi_decomp(j)
+          this%f_ngas_nitri_col(c)  = this%f_ngas_nitri_col(c) + &
+                                   this%f_ngas_nitri_vr_col(c,j)*dzsoi_decomp(j)
+          this%f_ngas_denit_col(c)  = this%f_ngas_denit_col(c) + &
+                                   this%f_ngas_denit_vr_col(c,j)*dzsoi_decomp(j)
+          
+          ! leaching/runoff fluxes summed vertically
+          ! (1) if not hydroloy-coupled, advection from CLM-CN, plus diffusion from PF
+          ! (2) if hydrology-coupled, all from PF (i.e. 'no3_net_transport_vr_col');
+          this%smin_no3_leached_col(c) = this%smin_no3_leached_col(c) + &
+                                      this%no3_net_transport_vr_col(c,j) * dzsoi_decomp(j)
+          
+          if(.not. pf_hmode) then ! this is from CLM-CN's leaching subroutine
+              this%smin_no3_leached_col(c) = this%smin_no3_leached_col(c) + &
+                                      this%smin_no3_leached_vr_col(c,j) * dzsoi_decomp(j)
+              this%smin_no3_runoff_col(c)  = this%smin_no3_runoff_col(c) + &
+                                      this%smin_no3_runoff_vr_col(c,j) * dzsoi_decomp(j)
+          endif
+          
+          ! assign all no3-N leaching/runof,including diffusion from PF, to all mineral-N
+          this%sminn_leached_vr_col(c,j) = this%smin_no3_leached_vr_col(c,j) + &
+                                           this%smin_no3_runoff_vr_col(c,j) +  &
+                                      this%nh4_net_transport_vr_col(c,j) * dzsoi_decomp(j)
+          
+          this%sminn_leached_col(c) = this%sminn_leached_col(c) + &
+                                      this%sminn_leached_vr_col(c,j)*dzsoi_decomp(j)
+       end do !j = 1, nlevdecomp_full
+       ! for balance-checking
+       this%denit_col(c)     = this%f_ngas_denit_col(c)
+       this%f_n2o_nit_col(c) = this%f_ngas_decomp_col(c) + this%f_ngas_nitri_col(c)
+    end do !fc = 1,num_soilc
+    ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
+    ! first it needs to save the total column-level N rate btw plant pool and decomposible pools at previous time step
+    ! for adjusting difference when doing balance check
+
+    do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%externaln_to_decomp_delta_col(c) = 0._r8
+      do j = 1, nlevdecomp_full
+         do l = 1, ndecomp_pools
+            this%externaln_to_decomp_delta_col(c) =    &
+               this%externaln_to_decomp_delta_col(c) + &
+                 this%externaln_to_decomp_npools_col(c,j,l)*dzsoi_decomp(j)
+         end do
+
+      end do
+    end do
+
+    ! do the initialization for the following variable here.
+    ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
+    do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%externaln_to_decomp_npools_col(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+    end do
+
+    ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       do j = 1, nlevdecomp_full
+          do l = 1, ndecomp_pools
+             ! for litter C pools
+             if (l==i_met_lit) then
+                this%externaln_to_decomp_npools_col(c,j,l) =              &
+                    this%externaln_to_decomp_npools_col(c,j,l)            &
+                     + this%phenology_n_to_litr_met_n_col(c,j)            &
+                     + this%dwt_frootn_to_litr_met_n_col(c,j)             &
+                     + this%gap_mortality_n_to_litr_met_n_col(c,j)        &
+                     + this%harvest_n_to_litr_met_n_col(c,j)              &
+                     + this%m_n_to_litr_met_fire_col(c,j)                 
+             
+             elseif (l==i_cel_lit) then
+                this%externaln_to_decomp_npools_col(c,j,l) =              &
+                    this%externaln_to_decomp_npools_col(c,j,l)            &
+                     + this%phenology_n_to_litr_cel_n_col(c,j)            &
+                     + this%dwt_frootn_to_litr_cel_n_col(c,j)             &
+                     + this%gap_mortality_n_to_litr_cel_n_col(c,j)        &
+                     + this%harvest_n_to_litr_cel_n_col(c,j)              &
+                     + this%m_n_to_litr_cel_fire_col(c,j)                  
+             
+             elseif (l==i_lig_lit) then
+                this%externaln_to_decomp_npools_col(c,j,l) =              &
+                    this%externaln_to_decomp_npools_col(c,j,l)            &
+                     + this%phenology_n_to_litr_lig_n_col(c,j)            &
+                     + this%dwt_frootn_to_litr_lig_n_col(c,j)             &
+                     + this%gap_mortality_n_to_litr_lig_n_col(c,j)        &
+                     + this%harvest_n_to_litr_lig_n_col(c,j)              &
+                     + this%m_n_to_litr_lig_fire_col(c,j)                 
+             
+             ! for cwd
+             elseif (l==i_cwd) then
+                this%externaln_to_decomp_npools_col(c,j,l) =              &
+                    this%externaln_to_decomp_npools_col(c,j,l)            &
+                     + this%dwt_livecrootn_to_cwdn_col(c,j)               &
+                     + this%dwt_deadcrootn_to_cwdn_col(c,j)               &
+                     + this%gap_mortality_n_to_cwdn_col(c,j)              &
+                     + this%harvest_n_to_cwdn_col(c,j)                    &
+                     + this%fire_mortality_n_to_cwdn_col(c,j)
+             
+             end if
+
+             ! the following is the net changes of plant N to decompible N poools between time-step
+             ! in pflotran, decomposible N pools increments ARE from previous time-step (saved above);
+             ! while, in CLM-CN all plant N pools are updated with current N fluxes among plant and ground/soil.
+             ! therefore, when do balance check it is needed to adjust the time-lag of changes.
+             this%externaln_to_decomp_delta_col(c) =   &
+                         this%externaln_to_decomp_delta_col(c) - &
+                         this%externaln_to_decomp_npools_col(c,j,l)*dzsoi_decomp(j)
+
+             if (abs(this%externaln_to_decomp_npools_col(c,j,l))<=1.e-21_r8) then
+                 this%externaln_to_decomp_npools_col(c,j,l) = 0._r8
+             end if
+          end do !l = 1, ndecomp_pools
+       end do !j = 1, nlevdecomp_full
+    end do !fc = 1,num_soilc
+
+
+    ! if pflotran hydrology NOT coupled, need to do:
+    ! saving for (next time-step) possible including of RT mass-transfer in PFLOTRAN bgc coupling.
+    ! (NOT USED anymore - 04/26/2017)
+    if (.not. pf_hmode) then
+       do j = 1, nlevdecomp_full
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%no3_net_transport_vr_col(c,j) = this%smin_no3_runoff_vr_col(c,j) + &
+                                            this%smin_no3_leached_vr_col(c,j)
+          end do
+       end do
+    else
+       do j = 1, nlevdecomp_full
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%no3_net_transport_vr_col(c,j) = 0._r8
+          end do
+       end do
+    end if
+
+    ! change the sign so that it is the increments from the previous time-step (unit: g/m2/s)
+    do fc = 1, num_soilc
+       c = filter_soilc(fc)
+       this%externaln_to_decomp_delta_col(c) = -this%externaln_to_decomp_delta_col(c)
+    end do
+
+  end subroutine col_nf_summaryint
+  
   !------------------------------------------------------------------------
   subroutine clean_col_nf(this)
     !

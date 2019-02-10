@@ -51,19 +51,19 @@ module clm_instMod
   use GridcellDataType           , only : grc_es, grc_ef, grc_ws, grc_wf
   use GridcellDataType           , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType           , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use GridcellDataType           , only : grc_ns
+  use GridcellDataType           , only : grc_ns, grc_nf
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType             , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType             , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType             , only : col_ns
+  use ColumnDataType             , only : col_ns, col_nf
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
   use VegetationDataType         , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType         , only : veg_cf, c13_veg_cf, c14_veg_cf
-  use VegetationDataType         , only : veg_ns
+  use VegetationDataType         , only : veg_ns, veg_nf
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -206,7 +206,9 @@ contains
        call veg_ns%Init(begp, endp, veg_cs)
        
 
-       call nitrogenflux_vars%Init(bounds_proc)
+       call grc_nf%Init(begg, endg)
+       call col_nf%Init(begc, endc)
+       call veg_nf%Init(begp, endp)
 
        call phosphorusstate_vars%Init(bounds_proc,                    &
             veg_cs%leafc(begp:endp),                  &

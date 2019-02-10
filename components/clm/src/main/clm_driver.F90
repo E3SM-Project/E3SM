@@ -131,17 +131,18 @@ module clm_driver
   use GridcellType           , only : grc_pp
   use GridcellDataType       , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
+  use GridcellDataType       , only : grc_nf
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs  
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType         , only : col_ns  
+  use ColumnDataType         , only : col_ns, col_nf  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws, veg_wf
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs 
-  use VegetationDataType     , only : veg_ns  
+  use VegetationDataType     , only : veg_ns, veg_nf  
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -328,6 +329,8 @@ contains
        if (use_cn) then
           call t_startf('cnpinit')
 
+          call veg_cs%ZeroDwt(bounds_clump)
+
           call grc_cf%ZeroDWT(bounds_clump)
           call col_cf%ZeroDWT(bounds_clump)
           if (use_c13) then
@@ -338,12 +341,14 @@ contains
              call c14_grc_cf%ZeroDWT(bounds_clump)
              call c14_col_cf%ZeroDWT(bounds_clump)
           end if
-          call nitrogenflux_vars%ZeroDWT(bounds_clump)
+
+          call veg_ns%ZeroDWT(bounds_clump)
+
+          call grc_nf%ZeroDWT(bounds_clump)
+          call col_nf%ZeroDWT(bounds_clump)
+
           call phosphorusflux_vars%ZeroDWT(bounds_clump)
 
-          call veg_cs%ZeroDwt(bounds_clump)
-          
-          call veg_ns%ZeroDWT(bounds_clump)
           
           call phosphorusstate_vars%ZeroDWT(bounds_clump)
 
