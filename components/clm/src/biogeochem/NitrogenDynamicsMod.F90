@@ -22,10 +22,10 @@ module NitrogenDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf 
+  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns 
   use ColumnDataType      , only : nfix_timeconst  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs  
+  use VegetationDataType  , only : veg_cs, veg_ns  
   use VegetationPropertiesType  , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
@@ -269,8 +269,8 @@ contains
          qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
          qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
          
-         sminn_vr            => nitrogenstate_vars%sminn_vr_col           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
-         smin_no3_vr         => nitrogenstate_vars%smin_no3_vr_col        , & ! Input:  [real(r8) (:,:) ]                                                  
+         sminn_vr            => col_ns%sminn_vr           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
+         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
          sminn_leached_vr    => nitrogenflux_vars%sminn_leached_vr_col    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
          smin_no3_leached_vr => nitrogenflux_vars%smin_no3_leached_vr_col , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
          smin_no3_runoff_vr  => nitrogenflux_vars%smin_no3_runoff_vr_col    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
@@ -519,7 +519,7 @@ contains
          gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest                             
          croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested                  
 
-         sminn            =>  nitrogenstate_vars%sminn_col           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N                           
+         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N                           
          plant_ndemand    =>  nitrogenflux_vars%plant_ndemand_patch  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)  
          
          soyfixn          =>  nitrogenflux_vars%soyfixn_patch        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop               
@@ -661,8 +661,8 @@ contains
          nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          nfix_to_plantn        => nitrogenflux_vars%nfix_to_plantn_patch , &
          nfix_to_ecosysn       => nitrogenflux_vars%nfix_to_ecosysn_col, &
-         pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
-         benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
+         pnup_pfrootc          => veg_ns%pnup_pfrootc, &
+         benefit_pgpp_pleafc   => veg_ns%benefit_pgpp_pleafc , &
          t_soi10cm_col         => col_es%t_soi10cm       , &
          h2osoi_vol            => col_ws%h2osoi_vol       , &
          t_scalar              => col_cf%t_scalar           &

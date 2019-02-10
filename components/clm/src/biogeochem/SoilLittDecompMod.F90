@@ -36,6 +36,7 @@ module SoilLittDecompMod
   use CH4Mod                 , only : ch4_type
   use cropType               , only : crop_type
   use ColumnDataType         , only : col_cs, col_cf
+  use ColumnDataType         , only : col_ns
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
@@ -172,7 +173,7 @@ contains
          rf_decomp_cascade                =>    cnstate_vars%rf_decomp_cascade_col                     , & ! Input:  [real(r8) (:,:,:) ]  respired fraction in decomposition step (frac)
          pathfrac_decomp_cascade          =>    cnstate_vars%pathfrac_decomp_cascade_col               , & ! Input:  [real(r8) (:,:,:) ]  what fraction of C leaving a given pool passes through a given transition (frac)
 
-         decomp_npools_vr                 =>    nitrogenstate_vars%decomp_npools_vr_col                , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+         decomp_npools_vr                 =>    col_ns%decomp_npools_vr                , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
          decomp_ppools_vr                 =>    phosphorusstate_vars%decomp_ppools_vr_col              , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
          decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
@@ -703,8 +704,8 @@ contains
          phr_vr                           =>    col_cf%phr_vr                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
          fphr                             =>    col_cf%fphr                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
 
-         smin_no3_vr                      =>    nitrogenstate_vars%smin_no3_vr_col                     , &
-         smin_nh4_vr                      =>    nitrogenstate_vars%smin_nh4_vr_col                       &
+         smin_no3_vr                      =>    col_ns%smin_no3_vr                     , &
+         smin_nh4_vr                      =>    col_ns%smin_nh4_vr                       &
          )
 
       ! set time steps

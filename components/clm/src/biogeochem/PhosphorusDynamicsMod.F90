@@ -28,6 +28,7 @@ module PhosphorusDynamicsMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst
   use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_ns
   use VegetationPropertiesType      , only : veg_vp
   use clm_varctl          , only : NFIX_PTASE_plant
 
@@ -632,7 +633,7 @@ contains
          biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
          biochem_pmin_to_ecosysp_vr_col => phosphorusflux_vars%biochem_pmin_to_ecosysp_vr_col , &
          biochem_pmin_to_plant_patch    => phosphorusflux_vars%biochem_pmin_to_plant_patch , &
-         npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
+         npimbalance          => veg_ns%npimbalance     , &
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &

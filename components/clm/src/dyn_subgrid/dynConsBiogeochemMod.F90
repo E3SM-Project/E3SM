@@ -26,13 +26,18 @@ module dynConsBiogeochemMod
   use GridcellDataType         , only : grc_cf, c13_grc_cf, c14_grc_cf
   use LandunitType             , only : lun_pp                
   use ColumnType               , only : col_pp  
-  use ColumnDataType           , only : column_carbon_state
+  use ColumnDataType           , only : column_carbon_state, column_nitrogen_state
   use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf  
   use VegetationType           , only : veg_pp
   use VegetationDataType       , only : vegetation_carbon_state, vegetation_carbon_flux 
+  use VegetationDataType       , only : vegetation_nitrogen_state 
   use VegetationDataType       , only : veg_cf, c13_veg_cf, c14_veg_cf  
   use clm_varcon               , only : c3_r2, c4_r2, c14ratio
   use dynPatchStateUpdaterMod  , only : patch_state_updater_type
+  use dynSubgridAdjustmentsMod , only : dyn_veg_cs_Adjustments, dyn_col_cs_Adjustments
+  use dynSubgridAdjustmentsMod , only : dyn_veg_ns_Adjustments, dyn_col_ns_Adjustments
+  
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -56,6 +61,7 @@ contains
        veg_cs, c13_veg_cs, c14_veg_cs, &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
        nitrogenstate_vars, nitrogenflux_vars, &
+       veg_ns, &
        phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
@@ -70,7 +76,6 @@ contains
     use clm_varcon         , only : c13ratio, c14ratio
     use clm_time_manager   , only : get_step_size
     use dynPriorWeightsMod , only : prior_weights_type
-    use dynSubgridAdjustmentsMod, only : dynVegetationAdjustments
     !
     ! !ARGUMENTS:
     type(bounds_type)              , intent(in)    :: bounds        
@@ -91,6 +96,7 @@ contains
     type(carbonflux_type)          , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
+    type(vegetation_nitrogen_state), intent(inout) :: veg_ns
 
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
@@ -176,7 +182,7 @@ contains
          cf     => carbonflux_vars     , &
          c13_cf => c13_carbonflux_vars , &
          c14_cf => c14_carbonflux_vars , &
-         ns     => nitrogenstate_vars  , &
+         ns     => veg_ns  , &
          nf     => nitrogenflux_vars   ,  &
          ps     => phosphorusstate_vars  , &
          pf     => phosphorusflux_vars     &
@@ -320,7 +326,7 @@ contains
                 
                 ! pft-level carbon state variables
                 call CarbonStateVarsInit     (cs, p)
-                call NitrogenStateVarsInit   (ns, p)
+                call NitrogenStateVarsInit   (veg_ns, p)
                 call PhosphorusStateVarsInit (ps, p)
                 call CanopyStateVarsInit     (canopystate_vars, p)
                 call CNStateVarsInit         (cnstate_vars, p, c)
@@ -346,7 +352,7 @@ contains
        end if           ! is soil
     end do               ! patch loop
     
-    call dynVegetationAdjustments(    &
+    call dyn_veg_cs_Adjustments(    &
          bounds,                        &
          num_soilp_with_inactive,       &
          filter_soilp_with_inactive,    &
@@ -365,7 +371,7 @@ contains
          )
 
     if (use_c13) then
-       call dynVegetationAdjustments( &
+       call dyn_veg_cs_Adjustments( &
             bounds,                        &
             num_soilp_with_inactive,       &
             filter_soilp_with_inactive,    &
@@ -385,7 +391,7 @@ contains
     endif
 
     if (use_c14) then
-       call dynVegetationAdjustments( &
+       call dyn_veg_cs_Adjustments( &
             bounds,                        &
             num_soilp_with_inactive,       &
             filter_soilp_with_inactive,    &
@@ -404,7 +410,7 @@ contains
             )
     endif
 
-    call ns%DynamicPatchAdjustments(    &
+    call dyn_veg_ns_Adjustments(    &
          bounds,                        &
          num_soilp_with_inactive,       &
          filter_soilp_with_inactive,    &
@@ -419,7 +425,8 @@ contains
          dwt_deadcrootn_to_litter,      &
          prod10_nflux,                  &
          prod100_nflux,                 &
-         crop_product_nflux             &
+         crop_product_nflux,            &
+         veg_ns                         &
          )
 
     call ps%DynamicPatchAdjustments(    &
@@ -908,7 +915,7 @@ contains
  end subroutine CarbonStateVarsInit
 
  !-----------------------------------------------------------------------
- subroutine NitrogenStateVarsInit(ns, p)
+ subroutine NitrogenStateVarsInit(veg_ns, p)
    !
    ! !DESCRIPTION:
    ! Initializes p-th patch of nitrogenstate_type
@@ -916,34 +923,34 @@ contains
    implicit none
    !
    ! !ARGUMENT
-   type(nitrogenstate_type), intent(inout) :: ns
+   type(vegetation_nitrogen_state), intent(inout) :: veg_ns
    integer                 , intent(in)    :: p
    
-   ns%leafn_patch(p)              = 0._r8
-   ns%leafn_storage_patch(p)      = 0._r8
-   ns%leafn_xfer_patch(p)         = 0._r8
-   ns%frootn_patch(p)             = 0._r8
-   ns%frootn_storage_patch(p)     = 0._r8
-   ns%frootn_xfer_patch(p)        = 0._r8
-   ns%livestemn_patch(p)          = 0._r8
-   ns%livestemn_storage_patch(p)  = 0._r8
-   ns%livestemn_xfer_patch(p)     = 0._r8
-   ns%deadstemn_patch(p)          = 0._r8
-   ns%deadstemn_storage_patch(p)  = 0._r8
-   ns%deadstemn_xfer_patch(p)     = 0._r8
-   ns%livecrootn_patch(p)         = 0._r8
-   ns%livecrootn_storage_patch(p) = 0._r8
-   ns%livecrootn_xfer_patch(p)    = 0._r8
-   ns%deadcrootn_patch(p)         = 0._r8
-   ns%deadcrootn_storage_patch(p) = 0._r8
-   ns%deadcrootn_xfer_patch(p)    = 0._r8
-   ns%retransn_patch(p)           = 0._r8
-   ns%npool_patch(p)              = 0._r8
-   ns%ntrunc_patch(p)             = 0._r8
-   ns%dispvegn_patch(p)           = 0._r8
-   ns%storvegn_patch(p)           = 0._r8
-   ns%totvegn_patch(p)            = 0._r8
-   ns%totpftn_patch (p)           = 0._r8
+   veg_ns%leafn(p)              = 0._r8
+   veg_ns%leafn_storage(p)      = 0._r8
+   veg_ns%leafn_xfer(p)         = 0._r8
+   veg_ns%frootn(p)             = 0._r8
+   veg_ns%frootn_storage(p)     = 0._r8
+   veg_ns%frootn_xfer(p)        = 0._r8
+   veg_ns%livestemn(p)          = 0._r8
+   veg_ns%livestemn_storage(p)  = 0._r8
+   veg_ns%livestemn_xfer(p)     = 0._r8
+   veg_ns%deadstemn(p)          = 0._r8
+   veg_ns%deadstemn_storage(p)  = 0._r8
+   veg_ns%deadstemn_xfer(p)     = 0._r8
+   veg_ns%livecrootn(p)         = 0._r8
+   veg_ns%livecrootn_storage(p) = 0._r8
+   veg_ns%livecrootn_xfer(p)    = 0._r8
+   veg_ns%deadcrootn(p)         = 0._r8
+   veg_ns%deadcrootn_storage(p) = 0._r8
+   veg_ns%deadcrootn_xfer(p)    = 0._r8
+   veg_ns%retransn(p)           = 0._r8
+   veg_ns%npool(p)              = 0._r8
+   veg_ns%ntrunc(p)             = 0._r8
+   veg_ns%dispvegn(p)           = 0._r8
+   veg_ns%storvegn(p)           = 0._r8
+   veg_ns%totvegn(p)            = 0._r8
+   veg_ns%totpftn(p)            = 0._r8
 
  end subroutine NitrogenStateVarsInit
 
@@ -1126,7 +1133,7 @@ contains
  !-----------------------------------------------------------------------
  subroutine dyn_cnbal_column( bounds, clump_index, column_state_updater, &
        col_cs, c13_col_cs, c14_col_cs, &
-       nitrogenstate_vars, phosphorusstate_vars)
+       phosphorusstate_vars, col_ns)
    !
    ! !DESCRIPTION:
    ! Modify column-level state variables to maintain carbon, nitrogen
@@ -1135,7 +1142,6 @@ contains
    ! !USES:
    use dynColumnStateUpdaterMod, only : column_state_updater_type
    use dynPriorWeightsMod      , only : prior_weights_type
-   use dynSubgridAdjustmentsMod, only : dynColumnAdjustments
    use clm_varctl              , only : use_lch4
    !
    ! !ARGUMENTS:
@@ -1145,8 +1151,8 @@ contains
    type(column_carbon_state)       , intent(inout) :: col_cs
    type(column_carbon_state)       , intent(inout) :: c13_col_cs
    type(column_carbon_state)       , intent(inout) :: c14_col_cs
-   type(nitrogenstate_type)        , intent(inout) :: nitrogenstate_vars
    type(phosphorusstate_type)      , intent(inout) :: phosphorusstate_vars
+   type(column_nitrogen_state)     , intent(inout) :: col_ns
    !
    ! !LOCAL VARIABLES:
 
@@ -1157,21 +1163,21 @@ contains
          cs     => col_cs,     &
          c13_cs => c13_col_cs, &
          c14_cs => c14_col_cs, &
-         ns     => nitrogenstate_vars  , &
+         ns     => col_ns  , &
          ps     => phosphorusstate_vars  &
          )
 
-    call dynColumnAdjustments(bounds, clump_index, column_state_updater, col_cs)
+    call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, col_cs)
 
    if (use_c13) then
-      call dynColumnAdjustments(bounds, clump_index, column_state_updater, c13_col_cs)
+      call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, c13_col_cs)
    end if
 
    if (use_c14) then
-      call dynColumnAdjustments(bounds, clump_index, column_state_updater, c14_col_cs)
+      call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, c14_col_cs)
    end if
 
-   call ns%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
+   call dyn_col_ns_Adjustments(bounds, clump_index, column_state_updater, col_ns)
 
    call ps%DynamicColumnAdjustments(bounds, clump_index, column_state_updater)
 

@@ -41,8 +41,10 @@ module CNEcosystemDynBetrMod
   use dynSubgridControlMod      , only : get_do_harvest
   use ColumnDataType            , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType            , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType            , only : col_ns
   use VegetationDataType        , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType        , only : veg_cf, c13_veg_cf, c14_veg_cf
+  use VegetationDataType        , only : veg_ns
 
   implicit none
 
@@ -546,23 +548,35 @@ module CNEcosystemDynBetrMod
 
     call veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
     call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
-
     if ( use_c13 ) then
        call c13_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
        call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c13')
 
     end if
-
     if ( use_c14 ) then
        call C14_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
        call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c14')
+    end if
+
+    call veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
+    call col_cs%Summary(bounds, num_soilc, filter_soilc)
+    if ( use_c13 ) then
+       call c13_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
+       call c13_col_cs%Summary(bounds, num_soilc, filter_soilc)
+    end if
+    if ( use_c14 ) then
+       call c14_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
+       call c14_col_cs%Summary(bounds, num_soilc, filter_soilc)
+
     end if
 
     call update_plant_nutrient_buffer(bounds, col, pft, num_soilc, filter_soilc, num_soilp, filter_soilp, &
       nitrogenflux_vars, nitrogenstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
     call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-    call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+
+    call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
+    call col_ns%Summary(bounds, num_soilc, filter_soilc)
 
     call phosphorusflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
@@ -598,7 +612,7 @@ module CNEcosystemDynBetrMod
     integer :: fc, c, p
     real(r8) :: dtime
     associate(&
-         plant_n_buffer_patch        => nitrogenstate_vars%plant_n_buffer_patch            , & ! Inout:  [real(r8) (:)   ] gN/m2
+         plant_n_buffer_patch        => veg_ns%plant_n_buffer            , & ! Inout:  [real(r8) (:)   ] gN/m2
          plant_p_buffer_patch        => phosphorusstate_vars%plant_p_buffer_patch          , & ! Inout:  [real(r8) (:)   ] gN/m2
          smin_nh4_to_plant_patch     => nitrogenflux_vars%smin_nh4_to_plant_patch          , &
          smin_no3_to_plant_patch     => nitrogenflux_vars%smin_no3_to_plant_patch          , &

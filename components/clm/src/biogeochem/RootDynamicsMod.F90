@@ -12,8 +12,6 @@ module RootDynamicsMod
   use clm_varctl          , only : use_vertsoilc
   use decompMod           , only : bounds_type
   use pftvarcon           , only : noveg, npcropmin, roota_par, rootb_par, root_dmx, evergreen
-  use ColumnType          , only : col_pp 
-  use VegetationType      , only : veg_pp
   use CanopyStateType     , only: canopystate_type
   use CNStateType         , only : cnstate_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -24,6 +22,9 @@ module RootDynamicsMod
   use CropType            , only : crop_type
   use SimpleMathMod       , only : array_normalization
   use RootBiophysMod      , only : init_vegrootfr
+  use ColumnType          , only : col_pp 
+  use VegetationType      , only : veg_pp
+  use ColumnDataType      , only : col_ns
   use VegetationDataType  , only : veg_ef, veg_cs, veg_cf
 
   ! !PUBLIC TYPES:
@@ -104,7 +105,7 @@ contains
          sucsat                 => soilstate_vars%sucsat_col                   , & ! Input  :  minimum soil suction (mm)
          soilpsi                => soilstate_vars%soilpsi_col                  , & ! Input  :  soil water potential in each soil layer (MPa)
          rresis                 => energyflux_vars%rresis_patch                , & ! Input  :  [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)
-         sminn_vr               => nitrogenstate_vars%sminn_vr_col             , & ! Iniput :  [real(r8) (:,:)]  (gN/m3) soil mineral N
+         sminn_vr               => col_ns%sminn_vr             , & ! Iniput :  [real(r8) (:,:)]  (gN/m3) soil mineral N
          frootc                 => veg_cs%frootc               , & ! Input  :  [real(r8) (:)]  (gC/m2) fine root C
          hui                    => crop_vars%gddplant_patch                    , & ! Input  :  [real(r8) (:)]  =gdd since planting (gddplant)
          huigrain               => cnstate_vars%huigrain_patch                 , & ! Input  :  [real(r8) (:)]  same to reach vegetative maturity

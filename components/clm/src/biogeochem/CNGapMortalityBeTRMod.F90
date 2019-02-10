@@ -20,7 +20,7 @@ module CNGapMortalityBeTRMod
   use ColumnDataType      , only : col_cf
   use VegetationPropertiesType      , only : veg_vp
   use VegetationType      , only : veg_pp  
-  use VegetationDataType  , only : veg_cs, veg_cf  
+  use VegetationDataType  , only : veg_cs, veg_cf, veg_ns 
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -208,22 +208,22 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         nitrogenflux_vars%m_leafn_to_litter_patch(p)               = nitrogenstate_vars%leafn_patch(p)               * m &
+         nitrogenflux_vars%m_leafn_to_litter_patch(p)               = veg_ns%leafn(p)               * m &
             * gap_indicator(gid_m_leafn_to_litter)
-         nitrogenflux_vars%m_frootn_to_litter_patch(p)              = nitrogenstate_vars%frootn_patch(p)              * m &
+         nitrogenflux_vars%m_frootn_to_litter_patch(p)              = veg_ns%frootn(p)              * m &
             * gap_indicator(gid_m_frootn_to_litter)
-         nitrogenflux_vars%m_livestemn_to_litter_patch(p)           = nitrogenstate_vars%livestemn_patch(p)           * m &
+         nitrogenflux_vars%m_livestemn_to_litter_patch(p)           = veg_ns%livestemn(p)           * m &
             * gap_indicator(gid_m_livestemn_to_litter)
-         nitrogenflux_vars%m_deadstemn_to_litter_patch(p)           = nitrogenstate_vars%deadstemn_patch(p)           * m &
+         nitrogenflux_vars%m_deadstemn_to_litter_patch(p)           = veg_ns%deadstemn(p)           * m &
             * gap_indicator(gid_m_deadstemn_to_litter)
-         nitrogenflux_vars%m_livecrootn_to_litter_patch(p)          = nitrogenstate_vars%livecrootn_patch(p)          * m &
+         nitrogenflux_vars%m_livecrootn_to_litter_patch(p)          = veg_ns%livecrootn(p)          * m &
             * gap_indicator(gid_m_livecrootn_to_litter)
-         nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)          = nitrogenstate_vars%deadcrootn_patch(p)          * m &
+         nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)          = veg_ns%deadcrootn(p)          * m &
             * gap_indicator(gid_m_deadcrootn_to_litter)
 
 
          if (ivt(p) < npcropmin) then
-            nitrogenflux_vars%m_retransn_to_litter_patch(p) = nitrogenstate_vars%retransn_patch(p) * m &
+            nitrogenflux_vars%m_retransn_to_litter_patch(p) = veg_ns%retransn(p) * m &
                * gap_indicator(gid_m_retransn_to_litter)
          end if
 
@@ -235,31 +235,31 @@ contains
          end if
 
          ! storage pools
-         nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = nitrogenstate_vars%leafn_storage_patch(p)       * m &
+         nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = veg_ns%leafn_storage(p)       * m &
            * gap_indicator(gid_m_leafn_storage_to_litter)
-         nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = nitrogenstate_vars%frootn_storage_patch(p)      * m &
+         nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = veg_ns%frootn_storage(p)      * m &
            * gap_indicator(gid_m_frootn_storage_to_litter)
-         nitrogenflux_vars%m_livestemn_storage_to_litter_patch(p)   = nitrogenstate_vars%livestemn_storage_patch(p)   * m &
+         nitrogenflux_vars%m_livestemn_storage_to_litter_patch(p)   = veg_ns%livestemn_storage(p)   * m &
            * gap_indicator(gid_m_livestemn_storage_to_litter)
-         nitrogenflux_vars%m_deadstemn_storage_to_litter_patch(p)   = nitrogenstate_vars%deadstemn_storage_patch(p)   * m &
+         nitrogenflux_vars%m_deadstemn_storage_to_litter_patch(p)   = veg_ns%deadstemn_storage(p)   * m &
            * gap_indicator(gid_m_deadstemn_storage_to_litter)
-         nitrogenflux_vars%m_livecrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%livecrootn_storage_patch(p)  * m &
+         nitrogenflux_vars%m_livecrootn_storage_to_litter_patch(p)  = veg_ns%livecrootn_storage(p)  * m &
            * gap_indicator(gid_m_livecrootn_storage_to_litter)
-         nitrogenflux_vars%m_deadcrootn_storage_to_litter_patch(p)  = nitrogenstate_vars%deadcrootn_storage_patch(p)  * m &
+         nitrogenflux_vars%m_deadcrootn_storage_to_litter_patch(p)  = veg_ns%deadcrootn_storage(p)  * m &
            * gap_indicator(gid_m_deadcrootn_storage_to_litter)
 
          ! transfer pools
-         nitrogenflux_vars%m_leafn_xfer_to_litter_patch(p)          = nitrogenstate_vars%leafn_xfer_patch(p)          * m &
+         nitrogenflux_vars%m_leafn_xfer_to_litter_patch(p)          = veg_ns%leafn_xfer(p)          * m &
            * gap_indicator(gid_m_leafn_xfer_to_litter)
-         nitrogenflux_vars%m_frootn_xfer_to_litter_patch(p)         = nitrogenstate_vars%frootn_xfer_patch(p)         * m &
+         nitrogenflux_vars%m_frootn_xfer_to_litter_patch(p)         = veg_ns%frootn_xfer(p)         * m &
            * gap_indicator(gid_m_frootn_xfer_to_litter)
-         nitrogenflux_vars%m_livestemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%livestemn_xfer_patch(p)      * m &
+         nitrogenflux_vars%m_livestemn_xfer_to_litter_patch(p)      = veg_ns%livestemn_xfer(p)      * m &
            * gap_indicator(gid_m_livestemn_xfer_to_litter)
-         nitrogenflux_vars%m_deadstemn_xfer_to_litter_patch(p)      = nitrogenstate_vars%deadstemn_xfer_patch(p)      * m &
+         nitrogenflux_vars%m_deadstemn_xfer_to_litter_patch(p)      = veg_ns%deadstemn_xfer(p)      * m &
            * gap_indicator(gid_m_deadstemn_xfer_to_litter)
-         nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%livecrootn_xfer_patch(p)     * m &
+         nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = veg_ns%livecrootn_xfer(p)     * m &
            * gap_indicator(gid_m_livecrootn_xfer_to_litter)
-         nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%deadcrootn_xfer_patch(p)     * m &
+         nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = veg_ns%deadcrootn_xfer(p)     * m &
            * gap_indicator(gid_m_deadcrootn_xfer_to_litter)
 
          !------------------------------------------------------
