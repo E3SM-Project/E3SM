@@ -21,7 +21,7 @@ module CNNitrifDenitrifMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ch4Mod              , only : ch4_type
   use ColumnType          , only : col_pp 
-  use ColumnDataType      , only : col_es, col_ws, col_cf  
+  use ColumnDataType      , only : col_es, col_ws, col_cf, col_ns  
   !
   implicit none
   save
@@ -180,8 +180,8 @@ contains
          w_scalar                      =>    col_cf%w_scalar                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp                    
          t_scalar                      =>    col_cf%t_scalar                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp                   
 
-         smin_nh4_vr                   =>    nitrogenstate_vars%smin_nh4_vr_col                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool                   
-         smin_no3_vr                   =>    nitrogenstate_vars%smin_no3_vr_col                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool                   
+         smin_nh4_vr                   =>    col_ns%smin_nh4_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool                   
+         smin_no3_vr                   =>    col_ns%smin_no3_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool                   
 
          r_psi                         =>    nitrogenflux_vars%r_psi_col                         , & ! Output:  [real(r8) (:,:)  ]                                                  
          anaerobic_frac                =>    nitrogenflux_vars%anaerobic_frac_col                , & ! Output:  [real(r8) (:,:)  ]                                                  

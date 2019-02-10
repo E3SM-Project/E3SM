@@ -136,10 +136,12 @@ module clm_driver
   use ColumnType             , only : col_pp 
   use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs  
-  use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf  
+  use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType         , only : col_ns  
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es, veg_ws, veg_wf
-  use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs   
+  use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs 
+  use VegetationDataType     , only : veg_ns  
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -341,20 +343,22 @@ contains
 
           call veg_cs%ZeroDwt(bounds_clump)
           
-          call nitrogenstate_vars%ZeroDWT(bounds_clump)
+          call veg_ns%ZeroDWT(bounds_clump)
+          
           call phosphorusstate_vars%ZeroDWT(bounds_clump)
 
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-
           call col_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call nitrogenstate_vars%Summary(bounds_clump, &
+          call veg_ns%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
-
+               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+          call col_ns%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
+          
           call phosphorusstate_vars%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp)
@@ -406,13 +410,14 @@ contains
                 call veg_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-
                 call col_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc)
 
-                call nitrogenstate_vars%Summary(bounds_clump, &
+                call veg_ns%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp)
+                     filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+                call col_ns%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
 
                 call phosphorusstate_vars%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -468,17 +473,18 @@ contains
        if (use_cn) then
           call t_startf('begcnpbal')
 
-          ! call veg_cs summary before col_cs summary, for p2c
+          ! call veg summary before col summary, for p2c
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-
           call col_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call nitrogenstate_vars%Summary(bounds_clump, &
+          call veg_ns%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp)
+               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+          call col_ns%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
 
           call phosphorusstate_vars%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &

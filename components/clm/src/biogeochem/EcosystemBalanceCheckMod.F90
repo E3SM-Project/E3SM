@@ -36,9 +36,9 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use clm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
-  use GridcellDataType    , only : gridcell_carbon_state, grc_cf
+  use GridcellDataType    , only : gridcell_carbon_state, grc_cf, grc_ns
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state, col_cf 
+  use ColumnDataType      , only : column_carbon_state, col_cf, col_ns 
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf
   
@@ -120,8 +120,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                         & 
-         totcoln   => nitrogenstate_vars%totcoln_col , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
-         col_begnb => nitrogenstate_vars%begnb_col     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         totcoln   => col_ns%totcoln , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
+         col_begnb => col_ns%begnb     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          )
 
       ! calculate beginning column-level nitrogen balance, for mass conservation check
@@ -322,7 +322,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                             &
-         totcoln                   =>    nitrogenstate_vars%totcoln_col                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         totcoln                   =>    col_ns%totcoln                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
          ndep_to_sminn             =>    nitrogenflux_vars%ndep_to_sminn_col             , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
          nfix_to_sminn             =>    nitrogenflux_vars%nfix_to_sminn_col             , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          nfix_to_ecosysn           =>    nitrogenflux_vars%nfix_to_ecosysn_col           , &
@@ -344,9 +344,9 @@ contains
          col_decompn_delta         =>    nitrogenflux_vars%externaln_to_decomp_delta_col , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
          col_ninputs               =>    nitrogenflux_vars%ninputs_col                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
          col_noutputs              =>    nitrogenflux_vars%noutputs_col                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
-         col_begnb                 =>    nitrogenstate_vars%begnb_col                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
-         col_endnb                 =>    nitrogenstate_vars%endnb_col                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb                 =>    nitrogenstate_vars%errnb_col                      & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         col_endnb                 =>    col_ns%endnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
+         col_errnb                 =>    col_ns%errnb                      & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
          )
 
       ! set time steps
@@ -700,8 +700,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                         &
-         totcoln   => nitrogenstate_vars%totcoln_col , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
-         begnb_grc => nitrogenstate_vars%begnb_grc     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         totcoln   => col_ns%totcoln , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         begnb_grc => grc_ns%begnb     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          )
 
       call c2g( bounds = bounds, &
@@ -856,15 +856,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
-         totcoln                   =>    nitrogenstate_vars%totcoln_col              , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
+         totcoln                   =>    col_ns%totcoln              , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
          dwt_prod10n_gain_grc      =>    nitrogenflux_vars%dwt_prod10n_gain_grc      , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_prod100n_gain_grc     =>    nitrogenflux_vars%dwt_prod100n_gain_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_conv_nflux_grc        =>    nitrogenflux_vars%dwt_conv_nflux_grc        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_leaf_grc     =>    nitrogenflux_vars%dwt_seedn_to_leaf_grc     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_deadstem_grc =>    nitrogenflux_vars%dwt_seedn_to_deadstem_grc , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         begnb_grc                 =>    nitrogenstate_vars%begnb_grc                , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         endnb_grc                 =>    nitrogenstate_vars%endnb_grc                , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
-         errnb_grc                 =>    nitrogenstate_vars%errnb_grc                  & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
+         begnb_grc                 =>    grc_ns%begnb                , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         endnb_grc                 =>    grc_ns%endnb                , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
+         errnb_grc                 =>    grc_ns%errnb                  & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
          )
 
       ! set time steps

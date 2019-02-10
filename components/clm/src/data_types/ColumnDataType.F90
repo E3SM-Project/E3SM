@@ -23,8 +23,8 @@ module ColumnDataType
   use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
   use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
-  use clm_varctl      , only : hist_wrtch4diag
-  use clm_varctl      ,  only : get_carbontag
+  use clm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
+  use clm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use ch4varcon       , only : allowlakeprod
   use clm_time_manager, only : is_restart, get_nstep
   use clm_time_manager, only : is_first_step, get_step_size
@@ -213,10 +213,68 @@ module ColumnDataType
   ! Define the data structure that holds nitrogen state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_nitrogen_state
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: decomp_npools_vr         (:,:,:) => null() ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
+    real(r8), pointer :: decomp_npools            (:,:)   => null() ! (gN/m2)  decomposing (litter, cwd, soil) N pools
+    real(r8), pointer :: decomp_npools_1m         (:,:)   => null() ! (gN/m2)  diagnostic: decomposing (litter, cwd, soil) N pools to 1 meter
+    real(r8), pointer :: ntrunc_vr                (:,:)   => null() ! (gN/m3) vertically-resolved column-level sink for N truncation
+    real(r8), pointer :: sminn_vr                 (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral N
+    real(r8), pointer :: smin_no3_vr              (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral NO3
+    real(r8), pointer :: smin_nh4_vr              (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral NH4
+    real(r8), pointer :: smin_nh4sorb_vr          (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+    real(r8), pointer :: smin_no3                 (:)     => null() ! (gN/m2) soil mineral NO3 pool
+    real(r8), pointer :: smin_nh4                 (:)     => null() ! (gN/m2) soil mineral NH4 pool
+    real(r8), pointer :: smin_nh4sorb             (:)     => null() ! (gN/m2) soil mineral NH4 pool absorbed
+    real(r8), pointer :: sminn                    (:)     => null() ! (gN/m2) soil mineral N
+    real(r8), pointer :: ntrunc                   (:)     => null() ! (gN/m2) column-level sink for N truncation
+    real(r8), pointer :: cwdn                     (:)     => null() ! (gN/m2) Diagnostic: coarse woody debris N
+    real(r8), pointer :: totlitn                  (:)     => null() ! (gN/m2) total litter nitrogen
+    real(r8), pointer :: totsomn                  (:)     => null() ! (gN/m2) total soil organic matter nitrogen
+    real(r8), pointer :: totlitn_1m               (:)     => null() ! (gN/m2) total litter nitrogen to 1 meter
+    real(r8), pointer :: totsomn_1m               (:)     => null() ! (gN/m2) total soil organic matter nitrogen to 1 meter
+    real(r8), pointer :: totecosysn               (:)     => null() ! (gN/m2) total ecosystem nitrogen, incl veg 
+    real(r8), pointer :: totcoln                  (:)     => null() ! (gN/m2) total column nitrogen, incl veg
+    real(r8), pointer :: totabgn                  (:)     => null() ! (gN/m2)
+    real(r8), pointer :: totblgn                  (:)     => null() ! (gN/m2) total below ground nitrogen
+    real(r8), pointer :: totvegn                  (:)     => null() ! (gN/m2) total vegetation nitrogen (p2c)
+    real(r8), pointer :: totpftn                  (:)     => null() ! (gN/m2) total pft-level nitrogen (p2c)
+    real(r8), pointer :: plant_n_buffer           (:)     => null() ! (gN/m2) col-level abstract N storage
+    real(r8), pointer :: plant_nbuffer            (:)     => null() ! (gN/m2) plant nitrogen buffer, (gN/m2), used to exchange info with betr 
+    real(r8), pointer :: seedn                    (:)     => null() ! (gN/m2) column-level pool for seeding new Patches
+    real(r8), pointer :: cropseedn_deficit        (:)     => null() ! (gN/m2) column-level pool for seed N deficit (negative pool)
+    real(r8), pointer :: prod1n                   (:)     => null() ! (gN/m2) crop product N pool, 1-year lifespan
+    real(r8), pointer :: prod10n                  (:)     => null() ! (gN/m2) wood product N pool, 10-year lifespan
+    real(r8), pointer :: prod100n                 (:)     => null() ! (gN/m2) wood product N pool, 100-year lifespan
+    real(r8), pointer :: totprodn                 (:)     => null() ! (gN/m2) total wood product N
+    real(r8), pointer :: dyn_nbal_adjustments     (:)     => null() ! (gN/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: totpftn_beg              (:)     => null() 
+    real(r8), pointer :: totpftn_end              (:)     => null() 
+    real(r8), pointer :: cwdn_beg                 (:)     => null() 
+    real(r8), pointer :: cwdn_end                 (:)     => null() 
+    real(r8), pointer :: totlitn_beg              (:)     => null() 
+    real(r8), pointer :: totlitn_end              (:)     => null() 
+    real(r8), pointer :: totsomn_beg              (:)     => null() 
+    real(r8), pointer :: totsomn_end              (:)     => null() 
+    real(r8), pointer :: sminn_beg                (:)     => null() 
+    real(r8), pointer :: sminn_end                (:)     => null() 
+    real(r8), pointer :: smin_no3_beg             (:)     => null() 
+    real(r8), pointer :: smin_no3_end             (:)     => null() 
+    real(r8), pointer :: smin_nh4_beg             (:)     => null() 
+    real(r8), pointer :: smin_nh4_end             (:)     => null() 
+    real(r8), pointer :: totprodn_beg             (:)     => null() 
+    real(r8), pointer :: totprodn_end             (:)     => null() 
+    real(r8), pointer :: seedn_beg                (:)     => null() 
+    real(r8), pointer :: seedn_end                (:)     => null() 
+    real(r8), pointer :: ntrunc_beg               (:)     => null() 
+    real(r8), pointer :: ntrunc_end               (:)     => null() 
+    real(r8), pointer :: begnb                    (:)     => null() ! col nitrogen mass, beginning of time step (gN/m**2)
+    real(r8), pointer :: endnb                    (:)     => null() ! col nitrogen mass, end of time step (gN/m**2)
+    real(r8), pointer :: errnb                    (:)     => null() ! colnitrogen balance error for the timestep (gN/m**2)
   contains
-    procedure, public :: Init  => col_ns_init
-    procedure, public :: Clean => col_ns_clean
+    procedure, public :: Init       => col_ns_init
+    procedure, public :: Restart    => col_ns_restart
+    procedure, public :: SetValues  => col_ns_setvalues
+    procedure, public :: Summary    => col_ns_summary
+    procedure, public :: Clean      => col_ns_clean
   end type column_nitrogen_state
   
   !-----------------------------------------------------------------------
@@ -494,6 +552,7 @@ module ColumnDataType
   !-----------------------------------------------------------------------
   ! declare the public instances of column-level data types
   !-----------------------------------------------------------------------
+  ! State types 
   type(column_energy_state)          , public, target :: col_es     ! column energy state
   type(column_water_state)           , public, target :: col_ws     ! column water state
   type(column_carbon_state)          , public, target :: col_cs     ! column carbon state
@@ -501,6 +560,7 @@ module ColumnDataType
   type(column_carbon_state)          , public, target :: c14_col_cs ! column carbon state (C14)
   type(column_nitrogen_state)        , public, target :: col_ns     ! column nitrogen state
   type(column_phosphorus_state)      , public, target :: col_ps     ! column phosphorus state
+  ! Flux types 
   type(column_energy_flux)           , public, target :: col_ef     ! column energy flux
   type(column_water_flux)            , public, target :: col_wf     ! column water flux
   type(column_carbon_flux)           , public, target :: col_cf     ! column carbon flux
@@ -2539,25 +2599,945 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column nitrogen state data structure
   !------------------------------------------------------------------------
-  subroutine col_ns_init(this, begc, endc)
+  subroutine col_ns_init(this, begc, endc, col_cs)
     !
     ! !ARGUMENTS:
-    class(column_nitrogen_state) :: this
-    integer, intent(in) :: begc,endc
+    class(column_nitrogen_state)          :: this
+    integer, intent(in)                   :: begc,endc
+    type(column_carbon_state), intent(in) :: col_cs
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: c,l,j,k,fc
+    integer           :: num_special_col           ! number of good values in special_col filter
+    integer           :: special_col (endc-begc+1) ! special landunit filter - columns
+    character(24)     :: fieldname
+    character(100)    :: longname
+    character(8)      :: vr_suffix
+    real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
+    real(r8), pointer :: data2dptr(:,:) ! temp. pointer for slicing larger arrays
     !------------------------------------------------------------------------
     
     !-----------------------------------------------------------------------
     ! allocate for each member of col_ns
     !-----------------------------------------------------------------------
-    
+
+    allocate(this%decomp_npools_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_npools_vr(:,:,:) = nan
+    allocate(this%ntrunc_vr             (begc:endc,1:nlevdecomp_full))   ; this%ntrunc_vr             (:,:) = nan
+    allocate(this%sminn_vr              (begc:endc,1:nlevdecomp_full))   ; this%sminn_vr              (:,:) = nan
+    allocate(this%smin_no3_vr           (begc:endc,1:nlevdecomp_full))   ; this%smin_no3_vr           (:,:) = nan
+    allocate(this%smin_nh4_vr           (begc:endc,1:nlevdecomp_full))   ; this%smin_nh4_vr           (:,:) = nan
+    allocate(this%smin_nh4sorb_vr       (begc:endc,1:nlevdecomp_full))   ; this%smin_nh4sorb_vr       (:,:) = nan
+    allocate(this%decomp_npools         (begc:endc,1:ndecomp_pools))     ; this%decomp_npools         (:,:) = nan
+    allocate(this%decomp_npools_1m      (begc:endc,1:ndecomp_pools))     ; this%decomp_npools_1m      (:,:) = nan
+    allocate(this%smin_no3              (begc:endc))                     ; this%smin_no3              (:)   = nan
+    allocate(this%smin_nh4              (begc:endc))                     ; this%smin_nh4              (:)   = nan
+    allocate(this%smin_nh4sorb          (begc:endc))                     ; this%smin_nh4sorb          (:)   = nan
+    allocate(this%sminn                 (begc:endc))                     ; this%sminn                 (:)   = nan
+    allocate(this%ntrunc                (begc:endc))                     ; this%ntrunc                (:)   = nan
+    allocate(this%cwdn                  (begc:endc))                     ; this%cwdn                  (:)   = nan
+    allocate(this%totlitn               (begc:endc))                     ; this%totlitn               (:)   = nan
+    allocate(this%totsomn               (begc:endc))                     ; this%totsomn               (:)   = nan
+    allocate(this%totlitn_1m            (begc:endc))                     ; this%totlitn_1m            (:)   = nan
+    allocate(this%totsomn_1m            (begc:endc))                     ; this%totsomn_1m            (:)   = nan
+    allocate(this%totecosysn            (begc:endc))                     ; this%totecosysn            (:)   = nan
+    allocate(this%totcoln               (begc:endc))                     ; this%totcoln               (:)   = nan
+    allocate(this%totabgn               (begc:endc))                     ; this%totabgn               (:)   = nan
+    allocate(this%totblgn               (begc:endc))                     ; this%totblgn               (:)   = nan
+    allocate(this%totvegn               (begc:endc))                     ; this%totvegn               (:)   = nan
+    allocate(this%totpftn               (begc:endc))                     ; this%totpftn               (:)   = nan
+    allocate(this%plant_n_buffer        (begc:endc))                     ; this%plant_n_buffer        (:)   = nan
+    allocate(this%plant_nbuffer         (begc:endc))                     ; this%plant_nbuffer         (:)   = nan
+    allocate(this%seedn                 (begc:endc))                     ; this%seedn                 (:)   = nan
+    allocate(this%cropseedn_deficit     (begc:endc))                     ; this%cropseedn_deficit     (:)   = nan
+    allocate(this%prod1n                (begc:endc))                     ; this%prod1n                (:)   = nan
+    allocate(this%prod10n               (begc:endc))                     ; this%prod10n               (:)   = nan
+    allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = nan
+    allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = nan
+    allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = nan
+    allocate(this%totpftn_beg           (begc:endc))                     ; this%totpftn_beg           (:)   = nan
+    allocate(this%totpftn_end           (begc:endc))                     ; this%totpftn_end           (:)   = nan
+    allocate(this%cwdn_beg              (begc:endc))                     ; this%cwdn_beg              (:)   = nan
+    allocate(this%cwdn_end              (begc:endc))                     ; this%cwdn_end              (:)   = nan
+    allocate(this%totlitn_beg           (begc:endc))                     ; this%totlitn_beg           (:)   = nan
+    allocate(this%totlitn_end           (begc:endc))                     ; this%totlitn_end           (:)   = nan
+    allocate(this%totsomn_beg           (begc:endc))                     ; this%totsomn_beg           (:)   = nan
+    allocate(this%totsomn_end           (begc:endc))                     ; this%totsomn_end           (:)   = nan
+    allocate(this%sminn_beg             (begc:endc))                     ; this%sminn_beg             (:)   = nan
+    allocate(this%sminn_end             (begc:endc))                     ; this%sminn_end             (:)   = nan
+    allocate(this%smin_no3_beg          (begc:endc))                     ; this%smin_no3_beg          (:)   = nan
+    allocate(this%smin_no3_end          (begc:endc))                     ; this%smin_no3_end          (:)   = nan
+    allocate(this%smin_nh4_beg          (begc:endc))                     ; this%smin_nh4_beg          (:)   = nan
+    allocate(this%smin_nh4_end          (begc:endc))                     ; this%smin_nh4_end          (:)   = nan
+    allocate(this%totprodn_beg          (begc:endc))                     ; this%totprodn_beg          (:)   = nan
+    allocate(this%totprodn_end          (begc:endc))                     ; this%totprodn_end          (:)   = nan
+    allocate(this%seedn_beg             (begc:endc))                     ; this%seedn_beg             (:)   = nan
+    allocate(this%seedn_end             (begc:endc))                     ; this%seedn_end             (:)   = nan
+    allocate(this%ntrunc_beg            (begc:endc))                     ; this%ntrunc_beg            (:)   = nan
+    allocate(this%ntrunc_end            (begc:endc))                     ; this%ntrunc_end            (:)   = nan
+    allocate(this%begnb                 (begc:endc))                     ; this%begnb                 (:)   = nan
+    allocate(this%endnb                 (begc:endc))                     ; this%endnb                 (:)   = nan
+    allocate(this%errnb                 (begc:endc))                     ; this%errnb                 (:)   = nan
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ns
     !-----------------------------------------------------------------------
+    if ( nlevdecomp_full > 1 ) then
+       this%decomp_npools_vr(begc:endc,:,:) = spval
+       this%decomp_npools_1m(begc:endc,:) = spval
+    end if
+    this%decomp_npools(begc:endc,:) = spval
+    do l  = 1, ndecomp_pools
+       if ( nlevdecomp_full > 1 ) then
+          data2dptr => this%decomp_npools_vr(:,:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N_vr'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' N (vertically resolved)'
+          call hist_addfld2d (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data2dptr)
+       endif
+
+       data1dptr => this%decomp_npools(:,l)
+       fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N'
+       longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' N'
+       call hist_addfld1d (fname=fieldname, units='gN/m^2', &
+            avgflag='A', long_name=longname, &
+            ptr_col=data1dptr)
+
+       if ( nlevdecomp_full > 1 ) then
+          data1dptr => this%decomp_npools_1m(:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N_1m'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' N to 1 meter'
+          call hist_addfld1d (fname=fieldname, units='gN/m^2', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default = 'inactive')
+       endif
+    end do
+
+    if ( nlevdecomp_full > 1 ) then
+
+       this%sminn(begc:endc) = spval
+       call hist_addfld1d (fname='SMINN', units='gN/m^2', &
+            avgflag='A', long_name='soil mineral N', &
+            ptr_col=this%sminn)
+
+       this%totlitn_1m(begc:endc) = spval
+       call hist_addfld1d (fname='TOTLITN_1m', units='gN/m^2', &
+            avgflag='A', long_name='total litter N to 1 meter', &
+            ptr_col=this%totlitn_1m, default='inactive')
+
+       this%totsomn_1m(begc:endc) = spval
+       call hist_addfld1d (fname='TOTSOMN_1m', units='gN/m^2', &
+            avgflag='A', long_name='total soil organic matter N to 1 meter', &
+            ptr_col=this%totsomn_1m, default='inactive')
+    endif
+
+    this%ntrunc(begc:endc) = spval
+    call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
+         avgflag='A', long_name='column-level sink for N truncation', &
+         ptr_col=this%ntrunc, default='inactive')
+
+    ! add suffix if number of soil decomposition depths is greater than 1
+    if (nlevdecomp > 1) then
+       vr_suffix = "_vr"
+    else 
+       vr_suffix = ""
+    endif
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       this%smin_no3_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NO3'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral NO3 (vert. res.)', &
+            ptr_col=this%smin_no3_vr)
+
+       this%smin_nh4_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NH4'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral NH4 (vert. res.)', &
+            ptr_col=this%smin_nh4_vr)
+
+       ! pflotran
+       if(use_pflotran .and. pf_cmode) then
+          this%smin_nh4sorb_vr(begc:endc,:) = spval
+          call hist_addfld_decomp (fname='SMIN_NH4SORB'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral NH4 absorbed (vert. res.)', &
+            ptr_col=this%smin_nh4sorb_vr)
+       end if
+
+       if ( nlevdecomp_full > 1 ) then
+          this%smin_no3(begc:endc) = spval
+          call hist_addfld1d (fname='SMIN_NO3', units='gN/m^2', &
+               avgflag='A', long_name='soil mineral NO3', &
+               ptr_col=this%smin_no3)
+
+          this%smin_nh4(begc:endc) = spval
+          call hist_addfld1d (fname='SMIN_NH4', units='gN/m^2', &
+               avgflag='A', long_name='soil mineral NH4', &
+               ptr_col=this%smin_nh4)
+
+          ! pflotran
+          if(use_pflotran .and. pf_cmode) then
+            this%smin_nh4sorb(begc:endc) = spval
+            call hist_addfld1d (fname='SMIN_NH4SORB', units='gN/m^2', &
+               avgflag='A', long_name='soil mineral NH4 absorbed', &
+               ptr_col=this%smin_nh4sorb)
+          end if
+       end if
+
+       this%sminn_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral N', &
+            ptr_col=this%sminn_vr, default = 'inactive')
+    else
+       this%sminn_vr(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral N', &
+            ptr_col=this%sminn_vr)
+    end if
+
+    this%totlitn(begc:endc) = spval
+    call hist_addfld1d (fname='TOTLITN', units='gN/m^2', &
+         avgflag='A', long_name='total litter N', &
+         ptr_col=this%totlitn)
+
+    this%totsomn(begc:endc) = spval
+    call hist_addfld1d (fname='TOTSOMN', units='gN/m^2', &
+         avgflag='A', long_name='total soil organic matter N', &
+         ptr_col=this%totsomn)
+
+    this%totecosysn(begc:endc) = spval
+    call hist_addfld1d (fname='TOTECOSYSN', units='gN/m^2', &
+         avgflag='A', long_name='total ecosystem N but excl product pools', &
+         ptr_col=this%totecosysn)
+
+    this%totcoln(begc:endc) = spval
+    call hist_addfld1d (fname='TOTCOLN', units='gN/m^2', &
+         avgflag='A', long_name='total column-level N but excl product pools', &
+         ptr_col=this%totcoln)
+
+    this%seedn(begc:endc) = spval
+    call hist_addfld1d (fname='SEEDN', units='gN/m^2', &
+         avgflag='A', long_name='pool for seeding new PFTs ', &
+         ptr_col=this%seedn, default='inactive')
+
+    this%prod10n(begc:endc) = spval
+    call hist_addfld1d (fname='PROD10N', units='gN/m^2', &
+         avgflag='A', long_name='10-yr wood product N', &
+         ptr_col=this%prod10n, default='inactive')
+
+    this%prod100n(begc:endc) = spval
+    call hist_addfld1d (fname='PROD100N', units='gN/m^2', &
+         avgflag='A', long_name='100-yr wood product N', &
+         ptr_col=this%prod100n, default='inactive')
+
+    this%prod1n(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1N', units='gN/m^2', &
+         avgflag='A', long_name='1-yr crop product N', &
+         ptr_col=this%prod1n, default='inactive')
+
+    this%totprodn(begc:endc) = spval
+    call hist_addfld1d (fname='TOTPRODN', units='gN/m^2', &
+         avgflag='A', long_name='total wood product N', &
+         ptr_col=this%totprodn, default='inactive')
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ns
     !-----------------------------------------------------------------------
+
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+
+          ! column nitrogen state variables
+          this%ntrunc(c) = 0._r8
+          this%sminn(c) = 0._r8
+          do j = 1, nlevdecomp
+             do k = 1, ndecomp_pools
+                this%decomp_npools_vr(c,j,k) = col_cs%decomp_cpools_vr(c,j,k) / decomp_cascade_con%initial_cn_ratio(k)
+             end do
+             this%sminn_vr(c,j) = 0._r8
+             this%ntrunc_vr(c,j) = 0._r8
+          end do
+          if ( nlevdecomp > 1 ) then
+             do j = nlevdecomp+1, nlevdecomp_full
+                do k = 1, ndecomp_pools
+                   this%decomp_npools_vr(c,j,k) = 0._r8
+                end do
+                this%sminn_vr(c,j) = 0._r8
+                this%ntrunc_vr(c,j) = 0._r8
+             end do
+          end if
+          do k = 1, ndecomp_pools
+             this%decomp_npools(c,k)    = col_cs%decomp_cpools(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
+             this%decomp_npools_1m(c,k) = col_cs%decomp_cpools_1m(c,k) / decomp_cascade_con%initial_cn_ratio(k)
+          end do
+          if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+             do j = 1, nlevdecomp_full
+                this%smin_nh4_vr(c,j) = 0._r8
+                this%smin_no3_vr(c,j) = 0._r8
+                if(use_pflotran .and. pf_cmode) then
+                    this%smin_nh4sorb_vr(c,j) = 0._r8
+                end if
+             end do
+             this%smin_nh4(c) = 0._r8
+             this%smin_no3(c) = 0._r8
+             if(use_pflotran .and. pf_cmode) then
+                this%smin_nh4sorb(c) = 0._r8
+             end if
+          end if
+          this%totlitn(c)    = 0._r8
+          this%totsomn(c)    = 0._r8
+          this%totlitn_1m(c) = 0._r8
+          this%totsomn_1m(c) = 0._r8
+          this%totecosysn(c) = 0._r8
+          this%totcoln(c)    = 0._r8
+          this%cwdn(c)       = 0._r8
+
+          ! dynamic landcover state variables
+          this%seedn(c)         = 0._r8
+          this%prod1n(c)        = 0._r8
+          this%prod10n(c)       = 0._r8
+          this%prod100n(c)      = 0._r8
+          this%totprodn(c)      = 0._r8
+          this%cropseedn_deficit(c) = 0._r8
+       end if
+    end do
+
+    ! now loop through special filters and explicitly set the variables that
+    ! have to be in place for biogeophysics
+
+    num_special_col = 0
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
+    
+    do fc = 1,num_special_col
+       c = special_col(fc)
+
+       this%seedn(c)    = 0._r8
+       this%prod1n(c)   = 0._r8
+       this%prod10n(c)  = 0._r8	  
+       this%prod100n(c) = 0._r8	  
+       this%totprodn(c) = 0._r8	
+       this%cropseedn_deficit(c) = 0._r8
+    end do
+
+    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+  
   end subroutine col_ns_init
     
+  !------------------------------------------------------------------------
+  subroutine col_ns_restart ( this,  bounds, ncid, flag, cnstate_vars )
+    !
+    ! !DESCRIPTION: 
+    ! Read/write CN restart data for nitrogen state
+    !
+    ! !ARGUMENTS:
+    class (column_nitrogen_state)              :: this
+    type(bounds_type)          , intent(in)    :: bounds 
+    type(file_desc_t)          , intent(inout) :: ncid   
+    character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer            :: i,j,k,l,c
+    logical            :: readvar
+    integer            :: idata
+    logical            :: exit_spinup = .false.
+    logical            :: enter_spinup = .false.
+    real(r8)           :: m, m_veg          ! multiplier for the exit_spinup code
+    real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    character(len=128) :: varname    ! temporary
+    integer            :: itemp      ! temporary 
+    integer , pointer  :: iptemp(:)  ! pointer to memory to be allocated
+    ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
+    integer            :: restart_file_spinup_state 
+    ! flags for comparing the model and restart decomposition cascades
+    integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    !------------------------------------------------------------------------
+
+    ! sminn
+    if (use_vertsoilc) then
+       ptr2d => this%sminn_vr
+       call restartvar(ncid=ncid, flag=flag, varname="sminn_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    else
+       ptr1d => this%sminn_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="sminn", xtype=ncd_double,  &
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+    end if
+    if (flag=='read' .and. .not. readvar) then
+       call endrun(msg='ERROR::'//trim(varname)//' is required on an initialization dataset'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
+    ! decomposing N pools
+    do k = 1, ndecomp_pools
+       varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'n'
+       if (use_vertsoilc) then
+          ptr2d => this%decomp_npools_vr(:,:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
+       else
+          ptr1d => this%decomp_npools_vr(:,1,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='column', &
+               long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+    if (use_vertsoilc) then
+       ptr2d => this%ntrunc_vr
+       call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    else
+       ptr1d => this%ntrunc_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc", xtype=ncd_double,  &
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+    end if
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       ! smin_no3_vr
+       if (use_vertsoilc) then
+          ptr2d => this%smin_no3_vr(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_no3_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       else
+          ptr1d => this%smin_no3_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_no3', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg= 'ERROR:: smin_no3_vr'//' is required on an initialization dataset' )
+       end if
+    end if
+
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       ! smin_nh4
+       if (use_vertsoilc) then
+          ptr2d => this%smin_nh4_vr(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_nh4_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
+       else
+          ptr1d => this%smin_nh4_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_nh4', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg= 'ERROR:: smin_nh4_vr'//' is required on an initialization dataset' )
+       end if
+    end if
+
+    ! pflotran: smin_nh4sorb
+    if (use_pflotran .and. pf_cmode) then
+       if (use_vertsoilc) then
+          ptr2d => this%smin_nh4sorb_vr(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_nh4sorb_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+        else
+          ptr1d => this%smin_nh4sorb_vr(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_nh4sorb', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg= 'ERROR:: smin_nh4sorb_vr'//' is required on an initialization dataset' )
+       end if
+    end if
+
+    ! Set the integrated sminn based on sminn_vr, as is done in CNSummaryMod (this may
+    ! not be the most appropriate method or place to do this)
+
+    this%sminn(bounds%begc:bounds%endc) = 0._r8
+    do j = 1, nlevdecomp
+       do c = bounds%begc, bounds%endc
+          this%sminn(c) = &
+               this%sminn(c) + &
+               this%sminn_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+
+    call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%totcoln) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='seedn', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%seedn) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod10n', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod10n) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod100n', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod100n) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod1n', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod1n)
+
+    ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
+    ! matches what the restart file was generated with.  
+    ! add info about the SOM decomposition cascade
+
+    if (use_century_decomp) then
+       decomp_cascade_state = 1
+    else
+       decomp_cascade_state = 0
+    end if
+    ! add info about the nitrification / denitrification state
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       decomp_cascade_state = decomp_cascade_state + 10
+    end if
+    if (flag == 'write') itemp = decomp_cascade_state    
+    call restartvar(ncid=ncid, flag=flag, varname='decomp_cascade_state', xtype=ncd_int,  &
+         long_name='BGC of the model that wrote this restart file:' &
+         // '  1s column: 0 = CLM-CN cascade, 1 = Century cascade;' &
+         // ' 10s column: 0 = CLM-CN denitrification, 10 = Century denitrification', units='', &
+         interpinic_flag='skip', readvar=readvar, data=itemp)
+    if (flag=='read') then
+       if (.not. readvar) then
+          ! assume, for sake of backwards compatibility, that if decomp_cascade_state 
+          ! is not in the restart file, then the current model state is the same as 
+          ! the prior model state
+          restart_file_decomp_cascade_state = decomp_cascade_state
+          if ( masterproc ) write(iulog,*) ' CNRest: WARNING!  Restart file does not ' &
+               // ' contain info on decomp_cascade_state used to generate the restart file.  '
+          if ( masterproc ) write(iulog,*) '   Assuming the same as current setting: ', decomp_cascade_state
+       else
+          restart_file_decomp_cascade_state = itemp  
+          if (decomp_cascade_state /= restart_file_decomp_cascade_state ) then
+             if ( masterproc ) then
+                write(iulog,*) 'CNRest: ERROR--the decomposition cascade differs between the current ' &
+                     // ' model state and the model that wrote the restart file. '
+                write(iulog,*) 'The model will be horribly out of equilibrium until after a lengthy spinup. '
+                write(iulog,*) 'Stopping here since this is probably an error in configuring the run. '
+                write(iulog,*) 'If you really wish to proceed, then override by setting '
+                write(iulog,*) 'override_bgc_restart_mismatch_dump to .true. in the namelist'
+                if ( .not. override_bgc_restart_mismatch_dump ) then
+                   call endrun(msg= ' CNRest: Stopping. Decomposition cascade mismatch error.'//&
+                        errMsg(__FILE__, __LINE__))
+                endif
+             endif
+          endif
+       end if
+    end if
+
+    !--------------------------------
+    ! Spinup state
+    !--------------------------------
+    ! note that write is handled by column_carbon_state
+    !
+    if (flag == 'read') then
+       call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
+            long_name='Spinup state of the model that wrote this restart file: ' &
+            // ' 0 = normal model mode, 1 = AD spinup', units='', &
+            interpinic_flag='copy', readvar=readvar,  data=idata)
+       if (readvar) then
+          restart_file_spinup_state = idata
+       else
+          ! assume, for sake of backwards compatibility, that if spinup_state is not in 
+          ! the restart file then current model state is the same as prior model state
+          restart_file_spinup_state = spinup_state
+          if ( masterproc ) then
+             write(iulog,*) ' WARNING!  Restart file does not contain info ' &
+                  // ' on spinup state used to generate the restart file. '
+             write(iulog,*) '   Assuming the same as current setting: ', spinup_state
+          end if
+       end if
+    end if
+
+    if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
+       if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
+          if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools out of AD spinup mode'
+          exit_spinup = .true.
+       else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
+          if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools into AD spinup mode'
+          enter_spinup = .true.
+       else
+          call endrun(msg=' Error in entering/exiting spinup.  spinup_state ' &
+               // ' != restart_file_spinup_state, but do not know what to do'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+       if (get_nstep() >= 2) then
+          call endrun(msg=' Error in entering/exiting spinup - should occur only when nstep = 1'//&
+               errMsg(__FILE__, __LINE__))
+       endif
+       do k = 1, ndecomp_pools
+          do c = bounds%begc, bounds%endc
+             do j = 1, nlevdecomp
+                if ( exit_spinup ) then
+		             m = decomp_cascade_con%spinup_factor(k)
+                   if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c,j)
+                else if ( enter_spinup ) then 
+                   m = 1. / decomp_cascade_con%spinup_factor(k)
+		             if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
+                end if 
+                this%decomp_npools_vr(c,j,k) = this%decomp_npools_vr(c,j,k) * m
+             end do
+          end do
+       end do
+    end if
+   
+  end subroutine col_ns_restart
+  
+  !-----------------------------------------------------------------------
+  subroutine col_ns_setvalues ( this, num_column, filter_column, value_column)
+    !
+    ! !DESCRIPTION:
+    ! Set column-level nitrogen state variables
+    !
+    ! !ARGUMENTS:
+    class (column_nitrogen_state) :: this
+    integer , intent(in) :: num_column
+    integer , intent(in) :: filter_column(:)
+    real(r8), intent(in) :: value_column
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fi,i     ! loop index
+    integer :: j,k      ! indices
+    !------------------------------------------------------------------------
+
+    do fi = 1,num_column
+       i = filter_column(fi)
+
+       this%sminn(i)       = value_column
+       this%ntrunc(i)      = value_column
+       this%cwdn(i)        = value_column
+       if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+          this%smin_no3(i) = value_column
+          this%smin_nh4(i) = value_column
+          if(use_pflotran .and. pf_cmode) then
+             this%smin_nh4sorb(i) = value_column
+          end if
+       end if
+       this%totlitn(i)     = value_column
+       this%totsomn(i)     = value_column
+       this%totecosysn(i)  = value_column
+       this%totcoln(i)     = value_column
+       this%totsomn_1m(i)  = value_column
+       this%totlitn_1m(i)  = value_column
+    end do
+
+    do j = 1,nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%sminn_vr(i,j)       = value_column
+          this%ntrunc_vr(i,j)      = value_column
+          if (use_nitrif_denitrif  .or. (use_pflotran .and. pf_cmode)) then
+             this%smin_no3_vr(i,j) = value_column
+             this%smin_nh4_vr(i,j) = value_column
+             if(use_pflotran .and. pf_cmode) then
+               this%smin_nh4sorb_vr(i,j) = value_column
+             end if
+          end if
+       end do
+    end do
+
+    ! column and decomp_pools
+    do k = 1, ndecomp_pools
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%decomp_npools(i,k)    = value_column
+          this%decomp_npools_1m(i,k) = value_column
+       end do
+    end do
+
+    ! column levdecomp, and decomp_pools
+    do j = 1,nlevdecomp_full
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_npools_vr(i,j,k) = value_column
+          end do
+       end do
+    end do
+
+  end subroutine col_ns_setvalues
+
+  !-----------------------------------------------------------------------
+  subroutine col_ns_summary(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !ARGUMENTS:
+    class (column_nitrogen_state)  :: this
+    type(bounds_type) , intent(in) :: bounds  
+    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c,p,j,k,l   ! indices
+    integer  :: fp,fc       ! lake filter indices
+    real(r8) :: maxdepth    ! depth to integrate soil variables
+    integer  :: nlev
+    !-----------------------------------------------------------------------
+
+    ! vertically integrate NO3 NH4 N2O pools
+    nlev = nlevdecomp
+    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+    
+    if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%smin_no3(c) = 0._r8
+          this%smin_nh4(c) = 0._r8
+          if(use_pflotran .and. pf_cmode) then
+             this%smin_nh4sorb(c) = 0._r8
+          end if
+       end do
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%smin_no3(c) = &
+                  this%smin_no3(c) + &
+                  this%smin_no3_vr(c,j) * dzsoi_decomp(j)
+             
+             this%smin_nh4(c) = &
+                  this%smin_nh4(c) + &
+                  this%smin_nh4_vr(c,j) * dzsoi_decomp(j)
+             if(use_pflotran .and. pf_cmode) then
+                this%smin_nh4sorb(c) = &
+                  this%smin_nh4sorb(c) + &
+                  this%smin_nh4sorb_vr(c,j) * dzsoi_decomp(j)
+             end if
+           end do 
+        end do
+    
+     end if
+    
+    ! vertically integrate each of the decomposing N pools
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_npools(c,l) = 0._r8
+       end do
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_npools(c,l) = &
+                  this%decomp_npools(c,l) + &
+                  this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+    
+    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+    if ( nlevdecomp > 1) then
+    
+       do l = 1, ndecomp_pools
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_npools_1m(c,l) = 0._r8
+          end do
+       end do
+    
+       ! vertically integrate each of the decomposing n pools to 1 meter
+       maxdepth = 1._r8
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp
+             if ( zisoi(j) <= maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_npools_1m(c,l) = &
+                        this%decomp_npools_1m(c,l) + &
+                        this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+                end do
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_npools_1m(c,l) = &
+                        this%decomp_npools_1m(c,l) + &
+                        this%decomp_npools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+                end do
+             endif
+          end do
+       end do
+       
+       ! total litter nitrogen to 1 meter (TOTLITN_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totlitn_1m(c) = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totlitn_1m(c) = &
+                     this%totlitn_1m(c) + &
+                     this%decomp_npools_1m(c,l)
+             end do
+          end if
+       end do
+       
+       ! total soil organic matter nitrogen to 1 meter (TOTSOMN_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totsomn_1m(c) = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_soil(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totsomn_1m(c) = &
+                     this%totsomn_1m(c) + &
+                     this%decomp_npools_1m(c,l)
+             end do
+          end if
+       end do
+       
+    endif
+    
+    ! total litter nitrogen (TOTLITN)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlitn(c)    = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_litter(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totlitn(c) = &
+                  this%totlitn(c) + &
+                  this%decomp_npools(c,l)
+          end do
+       end if
+    end do
+    
+    ! total soil organic matter nitrogen (TOTSOMN)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totsomn(c)    = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_soil(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totsomn(c) = &
+                  this%totsomn(c) + &
+                  this%decomp_npools(c,l)
+          end do
+       end if
+    end do
+    
+    ! total cwdn
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%cwdn(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_cwd(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%cwdn(c) = &
+                  this%cwdn(c) + &
+                  this%decomp_npools(c,l)
+          end do
+       end if
+    end do
+    
+    ! total sminn
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%sminn(c)      = 0._r8
+    end do
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%sminn(c) = &
+               this%sminn(c) + &
+               this%sminn_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+    
+    ! total col_ntrunc
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%ntrunc(c) = 0._r8
+    end do
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%ntrunc(c) = &
+               this%ntrunc(c) + &
+               this%ntrunc_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+    
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+    
+       ! total wood product nitrogen
+       this%totprodn(c) = &
+            this%prod1n(c) + &
+            this%prod10n(c) + &
+            this%prod100n(c)	 
+    
+       ! total ecosystem nitrogen, including veg (TOTECOSYSN)
+       this%totecosysn(c) = &
+            this%cwdn(c) + &
+            this%totlitn(c) + &
+            this%totsomn(c) + &
+            this%sminn(c) + &
+            this%totprodn(c) + &
+            this%totvegn(c)
+    
+       ! total column nitrogen, including pft (TOTCOLN)
+       this%totcoln(c) = &
+            this%totpftn(c) + &
+            this%cwdn(c) + &
+            this%totlitn(c) + &
+            this%totsomn(c) + &
+            this%sminn(c) + &
+            this%prod1n(c) + &
+            this%ntrunc(c)+ &
+            this%plant_n_buffer(c) + &
+            this%cropseedn_deficit(c)
+            
+       this%totabgn (c) =  &
+            this%totpftn(c) + &
+            this%totprodn(c) + &
+            this%seedn(c) + &
+            this%ntrunc(c)+ &
+            this%plant_n_buffer(c) 
+    
+       this%totblgn(c) = &
+            this%cwdn(c) + &
+            this%totlitn(c) + &
+            this%totsomn(c) + &
+            this%sminn(c) 
+    end do
+    
+  end subroutine col_ns_summary
+
   !------------------------------------------------------------------------
   subroutine col_ns_clean(this)
     !
@@ -4997,6 +5977,18 @@ contains
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
     
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_ns
+    !-----------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_ns
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_ns
+    !-----------------------------------------------------------------------
+    
   end subroutine init_col_nf
     
   !------------------------------------------------------------------------
@@ -5018,6 +6010,18 @@ contains
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
     
+    
+    !-----------------------------------------------------------------------
+    ! allocate for each member of col_ns
+    !-----------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of col_ns
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_ns
+    !-----------------------------------------------------------------------
   end subroutine init_col_pf
     
   !------------------------------------------------------------------------

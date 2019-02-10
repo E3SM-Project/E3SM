@@ -35,7 +35,7 @@ module  PhotosynthesisMod
   use pftvarcon           , only : noveg
   use SharedParamsMod     , only : ParamsShareInst
   use TopounitDataType    , only : top_as
-  use VegetationDataType  , only : veg_es  
+  use VegetationDataType  , only : veg_es, veg_ns  
   
   !
   implicit none
@@ -268,9 +268,9 @@ contains
          mbb           => photosyns_vars%mbb_patch                 , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
          rh_leaf       => photosyns_vars%rh_leaf_patch             , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)                   
          
-         leafn         => nitrogenstate_vars%leafn_patch           , &
-         leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
-         leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
+         leafn         => veg_ns%leafn           , &
+         leafn_storage => veg_ns%leafn_storage   , &
+         leafn_xfer    => veg_ns%leafn_xfer      , &
          leafp         => phosphorusstate_vars%leafp_patch         , &
          leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
          leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &

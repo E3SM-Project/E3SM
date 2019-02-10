@@ -28,9 +28,9 @@ module CNAllocationBeTRMod
   use VegetationPropertiesType, only : veg_vp
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_cf  
+  use ColumnDataType      , only : col_cf, col_ns  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs
+  use VegetationDataType  , only : veg_cs, veg_ns
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   
   ! bgc interface & pflotran module switches
@@ -471,10 +471,10 @@ contains
          cpool_to_grainc              => veg_cf%cpool_to_grainc                 , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
          cpool_to_grainc_storage      => veg_cf%cpool_to_grainc_storage         , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
 
-         sminn_vr                     => nitrogenstate_vars%sminn_vr_col                       , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
-         retransn                     => nitrogenstate_vars%retransn_patch                     , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant pool of retranslocated N
-         smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4
-         smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3
+         sminn_vr                     => col_ns%sminn_vr                       , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
+         retransn                     => veg_ns%retransn                     , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant pool of retranslocated N
+         smin_nh4_vr                  => col_ns%smin_nh4_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4
+         smin_no3_vr                  => col_ns%smin_no3_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3
 
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch                 , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                  , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
@@ -563,7 +563,7 @@ contains
          slatop                       => veg_vp%slatop                                     , &
          t_scalar                     => col_cf%t_scalar                          , &
          w_scalar                     => col_cf%w_scalar                          , &
-         leafn                        => nitrogenstate_vars%leafn_patch                          &
+         leafn                        => veg_ns%leafn                          &
          )
       secondp_vr                   => phosphorusstate_vars%secondp_vr_col
       leafp                        => phosphorusstate_vars%leafp_patch
@@ -584,7 +584,7 @@ contains
       secondp_to_labilep_vr_col    => phosphorusflux_vars%secondp_to_labilep_vr_col
       labilep_to_secondp_vr_col    => phosphorusflux_vars%labilep_to_secondp_vr_col
       labilep_vr                   => phosphorusstate_vars%labilep_vr_col
-      benefit_pgpp_pleafc          => nitrogenstate_vars%benefit_pgpp_pleafc_patch
+      benefit_pgpp_pleafc          => veg_ns%benefit_pgpp_pleafc
 
       ! for debug
       plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux
@@ -1020,9 +1020,9 @@ contains
      leafc_storage                => veg_cs%leafc_storage             , &
      leafc_xfer                   => veg_cs%leafc_xfer                , &
      t_scalar                     => col_cf%t_scalar                     , &
-     leafn                        => nitrogenstate_vars%leafn_patch                   , &
-     leafn_storage                => nitrogenstate_vars%leafn_storage_patch           , &
-     leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch              , &
+     leafn                        => veg_ns%leafn                   , &
+     leafn_storage                => veg_ns%leafn_storage           , &
+     leafn_xfer                   => veg_ns%leafn_xfer              , &
      leafp                        => phosphorusstate_vars%leafp_patch                 , &
      leafp_storage                => phosphorusstate_vars%leafp_storage_patch         , &
      leafp_xfer                   => phosphorusstate_vars%leafp_xfer_patch              &
@@ -1224,8 +1224,8 @@ contains
          cpool_to_grainc              => veg_cf%cpool_to_grainc               , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
          cpool_to_grainc_storage      => veg_cf%cpool_to_grainc_storage       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
 
-         npool                        => nitrogenstate_vars%npool_patch                      , & ! Input:  [real(r8) (:)   ]  (gN/m3) plant N pool storage
-         plant_n_buffer_patch        => nitrogenstate_vars%plant_n_buffer_patch            , & ! Inout:  [real(r8) (:)   ] gN/m2
+         npool                        => veg_ns%npool                      , & ! Input:  [real(r8) (:)   ]  (gN/m3) plant N pool storage
+         plant_n_buffer_patch        => veg_ns%plant_n_buffer            , & ! Inout:  [real(r8) (:)   ] gN/m2
 
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
@@ -1268,14 +1268,14 @@ contains
 
          avail_retransn               => nitrogenflux_vars%avail_retransn_patch                , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
          avail_retransp               => phosphorusflux_vars%avail_retransp_patch              , & ! Output: [real(r8) (:)   ]  P flux available from retranslocation pool (gP/m2/s)
-         retransn                     => nitrogenstate_vars%retransn_patch                     , &
+         retransn                     => veg_ns%retransn                     , &
          retransp                     => phosphorusstate_vars%retransp_patch                   , &
          plant_p_buffer_patch         => phosphorusstate_vars%plant_p_buffer_patch             , & ! Inout:  [real(r8) (:)   ] gN/m2
 
          laisun                       => canopystate_vars%laisun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index
          laisha                       => canopystate_vars%laisha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index
          leafc                        => veg_cs%leafc                          , &
-         leafn                        => nitrogenstate_vars%leafn_patch                        , &
+         leafn                        => veg_ns%leafn                        , &
          leafp                        => phosphorusstate_vars%leafp_patch                      , &
          supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col          , &
          supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col        , &
@@ -1285,8 +1285,8 @@ contains
 !         plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux               , &
          leafc_storage                => veg_cs%leafc_storage                  , &
          leafc_xfer                   => veg_cs%leafc_xfer                     , &
-         leafn_storage                => nitrogenstate_vars%leafn_storage_patch                , &
-         leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch                   , &
+         leafn_storage                => veg_ns%leafn_storage                , &
+         leafn_xfer                   => veg_ns%leafn_xfer                   , &
          leafp_storage                => phosphorusstate_vars%leafp_storage_patch              , &
          leafp_xfer                   => phosphorusstate_vars%leafp_xfer_patch                 , &
          annsum_potential_gpp         => cnstate_vars%annsum_potential_gpp_patch               , &

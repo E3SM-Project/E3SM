@@ -24,7 +24,7 @@ module MaintenanceRespMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnDataType      , only : col_es
   use VegetationType      , only : veg_pp                
-  use VegetationDataType  , only : veg_es, veg_cs, veg_cf
+  use VegetationDataType  , only : veg_es, veg_cs, veg_cf, veg_ns
   !
   implicit none
   save
@@ -132,10 +132,10 @@ contains
          grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]                                                    
          xr             =>    veg_cf%xr              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
 
-         frootn         =>    nitrogenstate_vars%frootn_patch       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
-         livestemn      =>    nitrogenstate_vars%livestemn_patch    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
-         livecrootn     =>    nitrogenstate_vars%livecrootn_patch   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
-         grainn         =>    nitrogenstate_vars%grainn_patch         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
+         frootn         =>    veg_ns%frootn       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
+         livestemn      =>    veg_ns%livestemn    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
+         livecrootn     =>    veg_ns%livecrootn   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
+         grainn         =>    veg_ns%grainn         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
          )
 
       ! base rate for maintenance respiration is from:

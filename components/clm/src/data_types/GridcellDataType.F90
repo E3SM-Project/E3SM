@@ -121,6 +121,20 @@ module GridcellDataType
   end type gridcell_carbon_flux
   
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds nitrogen state information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_nitrogen_state
+    real(r8), pointer :: seedn          (:) => null()   ! (gNm2) nitrogen pool for seeding new PFTs via dynamic landcover
+    real(r8), pointer :: begnb          (:) => null()   ! (gNm2) nitrogen mass, beginning of time step
+    real(r8), pointer :: endnb          (:) => null()   ! (gNm2) nitrogen mass, end of time step 
+    real(r8), pointer :: errnb          (:) => null()   ! (gNm2) nitrogen balance error for the timestep
+
+  contains
+    procedure, public :: Init    => grc_ns_init
+    procedure, public :: Clean   => grc_ns_clean
+  end type gridcell_nitrogen_state
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es     ! gridcell energy state
@@ -133,6 +147,7 @@ module GridcellDataType
   type(gridcell_carbon_flux)           , public, target :: grc_cf     ! gridcell carbon flux
   type(gridcell_carbon_flux)           , public, target :: c13_grc_cf ! gridcell carbon flux (C13)
   type(gridcell_carbon_flux)           , public, target :: c14_grc_cf ! gridcell carbon flux (C14)
+  type(gridcell_nitrogen_state)        , public, target :: grc_ns     ! gridcell nitrogen state
   !------------------------------------------------------------------------
 
 contains
@@ -659,7 +674,54 @@ contains
 
   end subroutine grc_cf_clean
 
+  !------------------------------------------------------------------------
+  ! Subroutines to initialize and clean gridcell nitrogen state data structure
+  !------------------------------------------------------------------------
+  subroutine grc_ns_init(this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_nitrogen_state) :: this
+    integer, intent(in) :: begg,endg
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g
+    !------------------------------------------------------------------------
 
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_ns
+    !-----------------------------------------------------------------------
+    allocate(this%seedn   (begg:endg));     this%seedn   (:) = nan
+    allocate(this%begnb   (begg:endg));     this%begnb   (:) = nan
+    allocate(this%endnb   (begg:endg));     this%endnb   (:) = nan
+    allocate(this%errnb   (begg:endg));     this%errnb   (:) = nan
+
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_cf
+    !-----------------------------------------------------------------------
+    this%seedn(begg:endg) = spval
+    call hist_addfld1d (fname='SEEDN_GRC', units='gN/m^2', &
+         avgflag='A', long_name='pool for seeding new PFTs ', &
+         ptr_gcell=this%seedn, default='inactive')
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of grc_cf
+    !-----------------------------------------------------------------------
+    do g = begg, endg
+       this%seedn(g) = 0._r8
+    end do
+
+
+  end subroutine grc_ns_init
+  
+  !------------------------------------------------------------------------
+  subroutine grc_ns_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_nitrogen_state) :: this
+    !------------------------------------------------------------------------
+
+  end subroutine grc_ns_clean
+  
 end module GridcellDataType
 
   

@@ -15,8 +15,10 @@ module PrecisionControlMod
   use PhosphorusStateType , only : phosphorusstate_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType      , only : col_ns
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
+  use VegetationDataType  , only : veg_ns
 
   !
   implicit none
@@ -119,8 +121,8 @@ contains
             if (abs(vcsv2%leafc(p)) < ccrit) then
                pc = pc + vcsv2%leafc(p)
                vcsv2%leafc(p) = 0._r8
-               pn = pn + ns%leafn_patch(p)
-               ns%leafn_patch(p) = 0._r8
+               pn = pn + veg_ns%leafn(p)
+               veg_ns%leafn(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%leafc(p)
                   c13vcsv2%leafc(p) = 0._r8
@@ -138,8 +140,8 @@ contains
             if (abs(vcsv2%leafc_storage(p)) < ccrit) then
                pc = pc + vcsv2%leafc_storage(p)
                vcsv2%leafc_storage(p) = 0._r8
-               pn = pn + ns%leafn_storage_patch(p)
-               ns%leafn_storage_patch(p) = 0._r8
+               pn = pn + veg_ns%leafn_storage(p)
+               veg_ns%leafn_storage(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%leafc_storage(p)
                   c13vcsv2%leafc_storage(p) = 0._r8
@@ -157,8 +159,8 @@ contains
             if (abs(vcsv2%leafc_xfer(p)) < ccrit) then
                pc = pc + vcsv2%leafc_xfer(p)
                vcsv2%leafc_xfer(p) = 0._r8
-               pn = pn + ns%leafn_xfer_patch(p)
-               ns%leafn_xfer_patch(p) = 0._r8
+               pn = pn + veg_ns%leafn_xfer(p)
+               veg_ns%leafn_xfer(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%leafc_xfer(p)
                   c13vcsv2%leafc_xfer(p) = 0._r8
@@ -176,8 +178,8 @@ contains
             if (abs(vcsv2%frootc(p)) < ccrit) then
                pc = pc + vcsv2%frootc(p)
                vcsv2%frootc(p) = 0._r8
-               pn = pn + ns%frootn_patch(p)
-               ns%frootn_patch(p) = 0._r8
+               pn = pn + veg_ns%frootn(p)
+               veg_ns%frootn(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%frootc(p)
                   c13vcsv2%frootc(p) = 0._r8
@@ -195,8 +197,8 @@ contains
             if (abs(vcsv2%frootc_storage(p)) < ccrit) then
                pc = pc + vcsv2%frootc_storage(p)
                vcsv2%frootc_storage(p) = 0._r8
-               pn = pn + ns%frootn_storage_patch(p)
-               ns%frootn_storage_patch(p) = 0._r8
+               pn = pn + veg_ns%frootn_storage(p)
+               veg_ns%frootn_storage(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%frootc_storage(p)
                   c13vcsv2%frootc_storage(p) = 0._r8
@@ -214,8 +216,8 @@ contains
             if (abs(vcsv2%frootc_xfer(p)) < ccrit) then
                pc = pc + vcsv2%frootc_xfer(p)
                vcsv2%frootc_xfer(p) = 0._r8
-               pn = pn + ns%frootn_xfer_patch(p)
-               ns%frootn_xfer_patch(p) = 0._r8
+               pn = pn + veg_ns%frootn_xfer(p)
+               veg_ns%frootn_xfer(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%frootc_xfer(p)
                   c13vcsv2%frootc_xfer(p) = 0._r8
@@ -234,8 +236,8 @@ contains
                if (abs(vcsv2%grainc(p)) < ccrit) then
                   pc = pc + vcsv2%grainc(p)
                   vcsv2%grainc(p) = 0._r8
-                  pn = pn + ns%grainn_patch(p)
-                  ns%grainn_patch(p) = 0._r8
+                  pn = pn + veg_ns%grainn(p)
+                  veg_ns%grainn(p) = 0._r8
                   pp = pp + ps%grainp_patch(p)
                   ps%grainp_patch(p) = 0._r8
                end if
@@ -244,8 +246,8 @@ contains
                if (abs(vcsv2%grainc_storage(p)) < ccrit) then
                   pc = pc + vcsv2%grainc_storage(p)
                   vcsv2%grainc_storage(p) = 0._r8
-                  pn = pn + ns%grainn_storage_patch(p)
-                  ns%grainn_storage_patch(p) = 0._r8
+                  pn = pn + veg_ns%grainn_storage(p)
+                  veg_ns%grainn_storage(p) = 0._r8
                   pp = pp + ps%grainp_storage_patch(p)
                   ps%grainp_storage_patch(p) = 0._r8
                end if
@@ -254,8 +256,8 @@ contains
                if (abs(vcsv2%grainc_xfer(p)) < ccrit) then
                   pc = pc + vcsv2%grainc_xfer(p)
                   vcsv2%grainc_xfer(p) = 0._r8
-                  pn = pn + ns%grainn_xfer_patch(p)
-                  ns%grainn_xfer_patch(p) = 0._r8
+                  pn = pn + veg_ns%grainn_xfer(p)
+                  veg_ns%grainn_xfer(p) = 0._r8
                   pp = pp + ps%grainp_xfer_patch(p)
                   ps%grainp_xfer_patch(p) = 0._r8
                end if
@@ -265,8 +267,8 @@ contains
             if (abs(vcsv2%livestemc(p)) < ccrit) then
                pc = pc + vcsv2%livestemc(p)
                vcsv2%livestemc(p) = 0._r8
-               pn = pn + ns%livestemn_patch(p)
-               ns%livestemn_patch(p) = 0._r8
+               pn = pn + veg_ns%livestemn(p)
+               veg_ns%livestemn(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%livestemc(p)
                   c13vcsv2%livestemc(p) = 0._r8
@@ -284,8 +286,8 @@ contains
             if (abs(vcsv2%livestemc_storage(p)) < ccrit) then
                pc = pc + vcsv2%livestemc_storage(p)
                vcsv2%livestemc_storage(p) = 0._r8
-               pn = pn + ns%livestemn_storage_patch(p)
-               ns%livestemn_storage_patch(p) = 0._r8
+               pn = pn + veg_ns%livestemn_storage(p)
+               veg_ns%livestemn_storage(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%livestemc_storage(p)
                   c13vcsv2%livestemc_storage(p) = 0._r8
@@ -303,8 +305,8 @@ contains
             if (abs(vcsv2%livestemc_xfer(p)) < ccrit) then
                pc = pc + vcsv2%livestemc_xfer(p)
                vcsv2%livestemc_xfer(p) = 0._r8
-               pn = pn + ns%livestemn_xfer_patch(p)
-               ns%livestemn_xfer_patch(p) = 0._r8
+               pn = pn + veg_ns%livestemn_xfer(p)
+               veg_ns%livestemn_xfer(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%livestemc_xfer(p)
                   c13vcsv2%livestemc_xfer(p) = 0._r8
@@ -322,8 +324,8 @@ contains
             if (abs(vcsv2%deadstemc(p)) < ccrit) then
                pc = pc + vcsv2%deadstemc(p)
                vcsv2%deadstemc(p) = 0._r8
-               pn = pn + ns%deadstemn_patch(p)
-               ns%deadstemn_patch(p) = 0._r8
+               pn = pn + veg_ns%deadstemn(p)
+               veg_ns%deadstemn(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%deadstemc(p)
                   c13vcsv2%deadstemc(p) = 0._r8
@@ -341,8 +343,8 @@ contains
             if (abs(vcsv2%deadstemc_storage(p)) < ccrit) then
                pc = pc + vcsv2%deadstemc_storage(p)
                vcsv2%deadstemc_storage(p) = 0._r8
-               pn = pn + ns%deadstemn_storage_patch(p)
-               ns%deadstemn_storage_patch(p) = 0._r8
+               pn = pn + veg_ns%deadstemn_storage(p)
+               veg_ns%deadstemn_storage(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%deadstemc_storage(p)
                   c13vcsv2%deadstemc_storage(p) = 0._r8
@@ -360,8 +362,8 @@ contains
             if (abs(vcsv2%deadstemc_xfer(p)) < ccrit) then
                pc = pc + vcsv2%deadstemc_xfer(p)
                vcsv2%deadstemc_xfer(p) = 0._r8
-               pn = pn + ns%deadstemn_xfer_patch(p)
-               ns%deadstemn_xfer_patch(p) = 0._r8
+               pn = pn + veg_ns%deadstemn_xfer(p)
+               veg_ns%deadstemn_xfer(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%deadstemc_xfer(p)
                   c13vcsv2%deadstemc_xfer(p) = 0._r8
@@ -379,8 +381,8 @@ contains
             if (abs(vcsv2%livecrootc(p)) < ccrit) then
                pc = pc + vcsv2%livecrootc(p)
                vcsv2%livecrootc(p) = 0._r8
-               pn = pn + ns%livecrootn_patch(p)
-               ns%livecrootn_patch(p) = 0._r8
+               pn = pn + veg_ns%livecrootn(p)
+               veg_ns%livecrootn(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%livecrootc(p)
                   c13vcsv2%livecrootc(p) = 0._r8
@@ -398,8 +400,8 @@ contains
             if (abs(vcsv2%livecrootc_storage(p)) < ccrit) then
                pc = pc + vcsv2%livecrootc_storage(p)
                vcsv2%livecrootc_storage(p) = 0._r8
-               pn = pn + ns%livecrootn_storage_patch(p)
-               ns%livecrootn_storage_patch(p) = 0._r8
+               pn = pn + veg_ns%livecrootn_storage(p)
+               veg_ns%livecrootn_storage(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%livecrootc_storage(p)
                   c13vcsv2%livecrootc_storage(p) = 0._r8
@@ -417,8 +419,8 @@ contains
             if (abs(vcsv2%livecrootc_xfer(p)) < ccrit) then
                pc = pc + vcsv2%livecrootc_xfer(p)
                vcsv2%livecrootc_xfer(p) = 0._r8
-               pn = pn + ns%livecrootn_xfer_patch(p)
-               ns%livecrootn_xfer_patch(p) = 0._r8
+               pn = pn + veg_ns%livecrootn_xfer(p)
+               veg_ns%livecrootn_xfer(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%livecrootc_xfer(p)
                   c13vcsv2%livecrootc_xfer(p) = 0._r8
@@ -436,8 +438,8 @@ contains
             if (abs(vcsv2%deadcrootc(p)) < ccrit) then
                pc = pc + vcsv2%deadcrootc(p)
                vcsv2%deadcrootc(p) = 0._r8
-               pn = pn + ns%deadcrootn_patch(p)
-               ns%deadcrootn_patch(p) = 0._r8
+               pn = pn + veg_ns%deadcrootn(p)
+               veg_ns%deadcrootn(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%deadcrootc(p)
                   c13vcsv2%deadcrootc(p) = 0._r8
@@ -455,8 +457,8 @@ contains
             if (abs(vcsv2%deadcrootc_storage(p)) < ccrit) then
                pc = pc + vcsv2%deadcrootc_storage(p)
                vcsv2%deadcrootc_storage(p) = 0._r8
-               pn = pn + ns%deadcrootn_storage_patch(p)
-               ns%deadcrootn_storage_patch(p) = 0._r8
+               pn = pn + veg_ns%deadcrootn_storage(p)
+               veg_ns%deadcrootn_storage(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%deadcrootc_storage(p)
                   c13vcsv2%deadcrootc_storage(p) = 0._r8
@@ -474,8 +476,8 @@ contains
             if (abs(vcsv2%deadcrootc_xfer(p)) < ccrit) then
                pc = pc + vcsv2%deadcrootc_xfer(p)
                vcsv2%deadcrootc_xfer(p) = 0._r8
-               pn = pn + ns%deadcrootn_xfer_patch(p)
-               ns%deadcrootn_xfer_patch(p) = 0._r8
+               pn = pn + veg_ns%deadcrootn_xfer(p)
+               veg_ns%deadcrootn_xfer(p) = 0._r8
                if ( use_c13 ) then
                   pc13 = pc13 + c13vcsv2%deadcrootc_xfer(p)
                   c13vcsv2%deadcrootc_xfer(p) = 0._r8
@@ -540,9 +542,9 @@ contains
             end if
 
             ! retransn (N only)
-            if (abs(ns%retransn_patch(p)) < ncrit) then
-               pn = pn + ns%retransn_patch(p)
-               ns%retransn_patch(p) = 0._r8
+            if (abs(veg_ns%retransn(p)) < ncrit) then
+               pn = pn + veg_ns%retransn(p)
+               veg_ns%retransn(p) = 0._r8
             end if
 
             ! retransp (P only)
@@ -552,9 +554,9 @@ contains
             end if
 
             ! npool (N only)
-            if (abs(ns%npool_patch(p)) < ncrit) then
-               pn = pn + ns%npool_patch(p)
-               ns%npool_patch(p) = 0._r8
+            if (abs(veg_ns%npool(p)) < ncrit) then
+               pn = pn + veg_ns%npool(p)
+               veg_ns%npool(p) = 0._r8
             end if
 
             ! ppool (P only)
@@ -564,7 +566,7 @@ contains
             end if
 
             vcsv2%ctrunc(p) = vcsv2%ctrunc(p) + pc
-            ns%ntrunc_patch(p) = ns%ntrunc_patch(p) + pn
+            veg_ns%ntrunc(p) = veg_ns%ntrunc(p) + pn
             ps%ptrunc_patch(p) = ps%ptrunc_patch(p) + pp
 
             if ( use_c13 ) then
@@ -602,8 +604,8 @@ contains
                      cc = cc + csv2%decomp_cpools_vr(c,j,k)
                      csv2%decomp_cpools_vr(c,j,k) = 0._r8
                      if (.not.use_fates) then
-                        cn = cn + ns%decomp_npools_vr_col(c,j,k)
-                        ns%decomp_npools_vr_col(c,j,k) = 0._r8
+                        cn = cn + col_ns%decomp_npools_vr(c,j,k)
+                        col_ns%decomp_npools_vr(c,j,k) = 0._r8
                      endif
                      if ( use_c13 ) then
                         cc13 = cc13 + c13csv2%decomp_cpools_vr(c,j,k)
@@ -622,7 +624,7 @@ contains
 
                csv2%ctrunc_vr(c,j) = csv2%ctrunc_vr(c,j) + cc
                if (.not.use_fates) then
-                  ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
+                  col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn
                endif
                if ( use_c13 ) then
                   c13csv2%ctrunc_vr(c,j) = c13csv2%ctrunc_vr(c,j) + cc13
@@ -640,18 +642,18 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                do j = 1,nlevdecomp_full
-                  if (abs(ns%smin_no3_vr_col(c,j)) < ncrit/1e4_r8) then
-                     if ( ns%smin_no3_vr_col(c,j)  < 0._r8 ) then
+                  if (abs(col_ns%smin_no3_vr(c,j)) < ncrit/1e4_r8) then
+                     if ( col_ns%smin_no3_vr(c,j)  < 0._r8 ) then
                         write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'
-                        write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', ns%smin_no3_vr_col(c,j), c, j
-                        ns%smin_no3_vr_col(c,j) = 0._r8
+                        write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', col_ns%smin_no3_vr(c,j), c, j
+                        col_ns%smin_no3_vr(c,j) = 0._r8
                      endif
                   end if
-                  if (abs(ns%smin_nh4_vr_col(c,j)) < ncrit/1e4_r8) then
-                     if ( ns%smin_nh4_vr_col(c,j)  < 0._r8 ) then
+                  if (abs(col_ns%smin_nh4_vr(c,j)) < ncrit/1e4_r8) then
+                     if ( col_ns%smin_nh4_vr(c,j)  < 0._r8 ) then
                         write(iulog, *) '-10^-12 < smin_nh4 < 0. resetting to zero.'
-                        write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', ns%smin_nh4_vr_col(c,j), c, j
-                        ns%smin_nh4_vr_col(c,j) = 0._r8
+                        write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', col_ns%smin_nh4_vr(c,j), c, j
+                        col_ns%smin_nh4_vr(c,j) = 0._r8
                      endif
                   end if
                end do
@@ -683,13 +685,13 @@ contains
                   cn_eca = 0.0_r8
                   do l = 1,ndecomp_pools
                      if ( csv2%decomp_cpools_vr(c,j,l) > 0.0_r8 .and.  &
-                          abs(csv2%decomp_cpools_vr(c,j,l) / ns%decomp_npools_vr_col(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
+                          abs(csv2%decomp_cpools_vr(c,j,l) / col_ns%decomp_npools_vr(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
                           .and. (.not. floating_cn_ratio_decomp_pools(l)) ) then
-                        cn_eca = cn_eca - ( csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l) - ns%decomp_npools_vr_col(c,j,l) )
-                        ns%decomp_npools_vr_col(c,j,l) = csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l)
+                        cn_eca = cn_eca - ( csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l) - col_ns%decomp_npools_vr(c,j,l) )
+                        col_ns%decomp_npools_vr(c,j,l) = csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l)
                      end if
                   end do
-                  ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn_eca
+                  col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn_eca
                end do
              end do
 
@@ -702,12 +704,12 @@ contains
                   cn_eca = 0.0_r8
                   cp_eca = 0.0_r8
                   do l = 1,ndecomp_pools
-                     if ( ns%decomp_npools_vr_col(c,j,l) < 0.0_r8 .and. floating_cn_ratio_decomp_pools(l) ) then
-                        if ( abs(ns%decomp_npools_vr_col(c,j,l))  < ncrit ) then
-                           cn_eca = cn_eca - ncrit + ns%decomp_npools_vr_col(c,j,l)
-                           ns%decomp_npools_vr_col(c,j,l) = ncrit
+                     if ( col_ns%decomp_npools_vr(c,j,l) < 0.0_r8 .and. floating_cn_ratio_decomp_pools(l) ) then
+                        if ( abs(col_ns%decomp_npools_vr(c,j,l))  < ncrit ) then
+                           cn_eca = cn_eca - ncrit + col_ns%decomp_npools_vr(c,j,l)
+                           col_ns%decomp_npools_vr(c,j,l) = ncrit
                         else
-                           write(iulog, "(A,2I8,E8.1)") 'error decomp_npools is negative: ',j,l,ns%decomp_npools_vr_col(c,j,l)
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_npools is negative: ',j,l,col_ns%decomp_npools_vr(c,j,l)
                            call endrun(msg=errMsg(__FILE__, __LINE__))
                         end if
                      end if
@@ -723,7 +725,7 @@ contains
 
                   end do
 
-                  ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn_eca
+                  col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn_eca
                   ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp_eca
 
                end do
@@ -731,14 +733,14 @@ contains
 
             do fp = 1,num_soilp
                p = filter_soilp(fp)
-               if (ns%retransn_patch(p) < 0._r8) then
+               if (veg_ns%retransn(p) < 0._r8) then
                   write(iulog, *) 'error retransn_patch is negative: ',p
-                  write(iulog, *) 'retransn_patch: ', ns%retransn_patch(p)
+                  write(iulog, *) 'retransn_patch: ', veg_ns%retransn(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
-               if (ns%npool_patch(p) < 0._r8) then
+               if (veg_ns%npool(p) < 0._r8) then
                   write(iulog, *) 'error npool_patch is negative: ',p
-                  write(iulog, *) 'npool_patch: ', ns%npool_patch(p)
+                  write(iulog, *) 'npool_patch: ', veg_ns%npool(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
                if (ps%retransp_patch(p) < 0._r8) then

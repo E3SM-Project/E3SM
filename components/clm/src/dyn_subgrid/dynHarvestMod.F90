@@ -30,7 +30,7 @@ module dynHarvestMod
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_cf  
   use VegetationType        , only : veg_pp                
-  use VegetationDataType    , only : veg_cs, veg_cf  
+  use VegetationDataType    , only : veg_cs, veg_cf, veg_ns  
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -236,26 +236,26 @@ contains
    gresp_xfer                          =>    veg_cs%gresp_xfer                              , & ! Input:  [real(r8) (:)]  (gC/m2) growth respiration transfer               
    cpool                               =>    veg_cs%cpool                                   , & ! Input:  [real(r8) (:)]  (gC/m2) Plant C storage
 
-   leafn                               =>    nitrogenstate_vars%leafn_patch                                   , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N                                    
-   frootn                              =>    nitrogenstate_vars%frootn_patch                                  , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N                               
-   livestemn                           =>    nitrogenstate_vars%livestemn_patch                               , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N                               
-   deadstemn                           =>    nitrogenstate_vars%deadstemn_patch                               , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N                               
-   livecrootn                          =>    nitrogenstate_vars%livecrootn_patch                              , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N                        
-   deadcrootn                          =>    nitrogenstate_vars%deadcrootn_patch                              , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N                        
-   retransn                            =>    nitrogenstate_vars%retransn_patch                                , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of retranslocated N            
-   npool                               =>    nitrogenstate_vars%npool_patch                                   , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of stored N 
-   leafn_storage                       =>    nitrogenstate_vars%leafn_storage_patch                           , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N storage                            
-   frootn_storage                      =>    nitrogenstate_vars%frootn_storage_patch                          , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N storage                       
-   livestemn_storage                   =>    nitrogenstate_vars%livestemn_storage_patch                       , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N storage                       
-   deadstemn_storage                   =>    nitrogenstate_vars%deadstemn_storage_patch                       , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N storage                       
-   livecrootn_storage                  =>    nitrogenstate_vars%livecrootn_storage_patch                      , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N storage                
-   deadcrootn_storage                  =>    nitrogenstate_vars%deadcrootn_storage_patch                      , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N storage                
-   leafn_xfer                          =>    nitrogenstate_vars%leafn_xfer_patch                              , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N transfer                           
-   frootn_xfer                         =>    nitrogenstate_vars%frootn_xfer_patch                             , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N transfer                      
-   livestemn_xfer                      =>    nitrogenstate_vars%livestemn_xfer_patch                          , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N transfer                      
-   deadstemn_xfer                      =>    nitrogenstate_vars%deadstemn_xfer_patch                          , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N transfer                      
-   livecrootn_xfer                     =>    nitrogenstate_vars%livecrootn_xfer_patch                         , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N transfer               
-   deadcrootn_xfer                     =>    nitrogenstate_vars%deadcrootn_xfer_patch                         , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N transfer               
+   leafn                               =>    veg_ns%leafn                                   , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N                                    
+   frootn                              =>    veg_ns%frootn                                  , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N                               
+   livestemn                           =>    veg_ns%livestemn                               , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N                               
+   deadstemn                           =>    veg_ns%deadstemn                               , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N                               
+   livecrootn                          =>    veg_ns%livecrootn                              , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N                        
+   deadcrootn                          =>    veg_ns%deadcrootn                              , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N                        
+   retransn                            =>    veg_ns%retransn                                , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of retranslocated N            
+   npool                               =>    veg_ns%npool                                   , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of stored N 
+   leafn_storage                       =>    veg_ns%leafn_storage                           , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N storage                            
+   frootn_storage                      =>    veg_ns%frootn_storage                          , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N storage                       
+   livestemn_storage                   =>    veg_ns%livestemn_storage                       , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N storage                       
+   deadstemn_storage                   =>    veg_ns%deadstemn_storage                       , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N storage                       
+   livecrootn_storage                  =>    veg_ns%livecrootn_storage                      , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N storage                
+   deadcrootn_storage                  =>    veg_ns%deadcrootn_storage                      , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N storage                
+   leafn_xfer                          =>    veg_ns%leafn_xfer                              , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N transfer                           
+   frootn_xfer                         =>    veg_ns%frootn_xfer                             , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N transfer                      
+   livestemn_xfer                      =>    veg_ns%livestemn_xfer                          , & ! Input:  [real(r8) (:)]  (gN/m2) live stem N transfer                      
+   deadstemn_xfer                      =>    veg_ns%deadstemn_xfer                          , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N transfer                      
+   livecrootn_xfer                     =>    veg_ns%livecrootn_xfer                         , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N transfer               
+   deadcrootn_xfer                     =>    veg_ns%deadcrootn_xfer                         , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N transfer               
    
    ! add phosphorus
    leafp                               =>    phosphorusstate_vars%leafp_patch                                   , & ! Input:  [real(r8) (:)]  (gP/m2) leaf P                                    
