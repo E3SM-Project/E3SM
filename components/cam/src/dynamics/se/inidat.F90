@@ -30,7 +30,7 @@ contains
 
 
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-    use dyn_comp,      only: dyn_import_t
+    use dyn_comp,      only: dyn_import_t, hvcoord
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
@@ -218,7 +218,7 @@ contains
 
     do ie=1,nelemd
 #ifdef MODEL_THETA_L
-       elem(ie)%derived%T=0.0_r8
+       elem(ie)%derived%FT=0.0_r8
 #else
        elem(ie)%state%T=0.0_r8
 #endif
@@ -226,7 +226,7 @@ contains
        do j = 1, np
           do i = 1, np
 #ifdef MODEL_THETA_L
-             elem(ie)%derived%T(i,j,:) = tmp(indx,:,ie)
+             elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
              !no scm in theta-l yet
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
@@ -274,7 +274,7 @@ contains
               endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
 #ifdef MODEL_THETA_L
-              elem(ie)%derived%T(i,j,k) = elem(ie)%derived%T(i,j,k)*(D1_0 + pertval)
+              elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
 #else
               elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
 #endif
@@ -486,7 +486,7 @@ contains
         kptr=kptr+1
         call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
         kptr=kptr+2*nlev
-        call edgeVpack(edge, elem(ie)%derived%T(:,:,:),nlev,kptr,ie)
+        call edgeVpack(edge, elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
         kptr=kptr+nlev
         call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
       end do
@@ -516,7 +516,7 @@ contains
         kptr=kptr+1
         call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
         kptr=kptr+2*nlev
-        call edgeVunpack(edge, elem(ie)%derived%T(:,:,:,tl),nlev,kptr,ie)
+        call edgeVunpack(edge, elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
         kptr=kptr+nlev
         call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
       end do
@@ -539,7 +539,9 @@ contains
 !$omp parallel do private(ie, t, m_cnst)
     do ie=1,nelemd
 #ifdef MODEL_THETA_L
-       call set_thermostate(elem(ie),elem(ie)%derived%T,hvcoord)
+       call set_thermostate(elem(ie),elem(ie)%derived%FT,hvcoord)
+       !reset FT?
+       elem(ie)%derived%FT = 0.0
 #else
        do t=2,3
           elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,tl)

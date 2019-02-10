@@ -222,13 +222,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use dimensions_mod, only: nlev, nelemd, np, npsq
    use dp_coupling,    only: p_d_coupling
    use parallel_mod,   only: par
-   use dyn_comp,       only: TimeLevel
+   use dyn_comp,       only: TimeLevel, hvcoord
    
    use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
-   use prim_advance_mod,only: applyCAMforcing_tracers
+   use prim_driver_base,only: applyCAMforcing_tracers
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)

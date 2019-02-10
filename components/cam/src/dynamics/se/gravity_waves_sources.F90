@@ -112,6 +112,7 @@ CONTAINS
     use dyn_comp, only : hvcoord
     use spmd_utils,      only : iam 
     use parallel_mod,    only : par 
+    use element_ops,     only : get_temperature
     implicit none
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
@@ -137,11 +138,7 @@ CONTAINS
           
           ! pressure at mid points
           p(:,:)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-#ifdef MODEL_THETA_L          
-          temperature(:,:,k) = elem(ie)%derived%T(:,:,k)
-#else
-          temperature(:,:,k) = elem(ie)%state%T(:,:,k,tl)
-#endif
+          call get_temperature(elem(ie),temperature,hvcoord,tl)
           theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
           gradth(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
           

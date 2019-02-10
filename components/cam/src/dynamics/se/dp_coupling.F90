@@ -42,7 +42,7 @@ CONTAINS
     use viscosity_mod,  only: compute_zeta_C0
     use cam_abortutils,     only: endrun
     use gravity_waves_sources, only: gws_src_fnct
-    use dyn_comp,       only: frontgf_idx, frontga_idx
+    use dyn_comp,       only: frontgf_idx, frontga_idx, hvcoord
     use phys_control,   only: use_gw_front
     implicit none
 !-----------------------------------------------------------------------
@@ -87,6 +87,7 @@ CONTAINS
 
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
+    real (kind=real_kind)    :: temperature(np,np,nlev) 
     !----------------------------------------------------------------------
 
     nullify(pbuf_chnk)
@@ -113,11 +114,10 @@ CONTAINS
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
-#ifdef MODEL_THETA_L
-          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%T(:,:,:), T_tmp(1:ncols,:,ie))
-#else
-          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
-#endif
+
+          call get_temperature(elem(ie),temperature,hvcoord,tl_f)
+          call UniquePoints(elem(ie)%idxP, nlev, temperature, T_tmp(1:ncols,:,ie))
+
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
 

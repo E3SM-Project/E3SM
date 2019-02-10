@@ -36,7 +36,9 @@ module prim_advance_mod
   use prim_si_mod,        only: preq_vertadv_v1
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
+#ifndef CAM
   use test_mod,           only: set_prescribed_wind
+#endif
   use viscosity_theta,    only: biharmonic_wk_theta
 
 #ifdef TRILINOS

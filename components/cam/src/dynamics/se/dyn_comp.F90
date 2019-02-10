@@ -214,7 +214,7 @@ CONTAINS
 
 
   subroutine dyn_init2(dyn_in)
-    use dimensions_mod,   only: nlev, nelemd
+    use dimensions_mod,   only: nlev, nelemd, np
     use prim_driver_mod,  only: prim_init2
     use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
@@ -225,9 +225,7 @@ CONTAINS
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use cam_instance,     only: inst_index
-#ifdef MODEL_THETA_L
     use element_ops,      only: set_thermostate
-#endif
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
@@ -284,14 +282,9 @@ CONTAINS
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
-#ifdef MODEL_THETA_L
-                elem(ie)%derived%T(:,:,:) = Tinit
-                do tlev=1,3
-                   call set_thermostate(elem(ie),elem(ie)%derived%T,hvcoord)
-                enddo
-#else
-                elem(ie)%state%T(:,:,:,:) = Tinit 
-#endif                      
+
+                temperature(:,:,:)=0.0_r8
+                call set_thermostate(elem(ie),temperature,hvcoord)
 
              end do
           end if
