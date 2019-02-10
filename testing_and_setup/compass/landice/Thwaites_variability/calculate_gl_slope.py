@@ -3,6 +3,14 @@
 Script to compare some scalar values from different runs of Thwaites melt variability experiment.
 '''
 
+
+# Parse options
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option("-r", dest="read", action="store_true", help="read and process data", metavar="FILE")
+options, args = parser.parse_args()
+
+
 import sys
 import os
 import netCDF4
@@ -11,6 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal
 from matplotlib import cm
+import pickle
 
 
 outfname = 'output.nc'
@@ -23,7 +32,6 @@ for r in special_runs:
    if r in runs:
       runs.remove(r)
 #      runs.insert(0, r)
-
 print "Will process the following directories: ", runs
 
 # ----- needed functions ----
@@ -114,7 +122,15 @@ for run in runs:
    print "Processing run: " + run
 
    # Build a list that contains all run data objects
-   runData[run] = modelRun(run)
+   if options.read:
+      runData[run] = modelRun(run)
+      file_pi = open(run + '/' +'calc_gl_data.pi', 'w') 
+      pickle.dump(runData[run], file_pi)
+      file_pi.close()
+   else:
+      file_pi = open(run + '/' +'calc_gl_data.pi', 'r') 
+      runData[run] = pickle.load(file_pi)
+      file_pi.close()
 
    # Populate each run into its group for ensemble runs (not for controls)
    if 'amp' in run:
