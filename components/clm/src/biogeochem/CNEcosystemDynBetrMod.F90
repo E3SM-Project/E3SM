@@ -41,10 +41,10 @@ module CNEcosystemDynBetrMod
   use dynSubgridControlMod      , only : get_do_harvest
   use ColumnDataType            , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType            , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType            , only : col_ns
+  use ColumnDataType            , only : col_ns, col_nf
   use VegetationDataType        , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType        , only : veg_cf, c13_veg_cf, c14_veg_cf
-  use VegetationDataType        , only : veg_ns
+  use VegetationDataType        , only : veg_ns, veg_nf
 
   implicit none
 
@@ -159,9 +159,9 @@ module CNEcosystemDynBetrMod
           call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
           call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        end if
-       call nitrogenflux_vars%SetValues( &
-            num_soilp, filter_soilp, 0._r8, &
-            num_soilc, filter_soilc, 0._r8)
+       
+       call col_nf%SetValues (num_soilc, filter_soilc, 0._r8)
+       call veg_nf%SetValues (num_soilp, filter_soilp, 0._r8)
 
        call phosphorusflux_vars%SetValues( &
             num_soilp, filter_soilp, 0._r8, &
@@ -573,7 +573,8 @@ module CNEcosystemDynBetrMod
     call update_plant_nutrient_buffer(bounds, col, pft, num_soilc, filter_soilc, num_soilp, filter_soilp, &
       nitrogenflux_vars, nitrogenstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
-    call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    call veg_nf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
+    call col_nf%Summary(bounds, num_soilc, filter_soilc)
 
     call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
     call col_ns%Summary(bounds, num_soilc, filter_soilc)
