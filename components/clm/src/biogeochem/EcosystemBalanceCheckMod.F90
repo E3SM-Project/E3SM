@@ -262,7 +262,7 @@ contains
       if (.not. use_fates) then
          if (err_found) then
             c = err_index
-            write(iulog,*)'column cbalance error = ', col_errcb(c), c
+            write(iulog,*)'column cbalance error = ', col_errcb(c), c, get_nstep()
             write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
             write(iulog,*)'input                 = ',col_cinputs*dt
             write(iulog,*)'output                = ',col_coutputs*dt

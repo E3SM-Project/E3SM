@@ -133,7 +133,6 @@ contains
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-      
             !! read in monthly rate is converted to that in half hour
             r_weather_c = r_weather( isoilorder(c) )
             rr=-log(1._r8-r_weather_c)
@@ -206,7 +205,6 @@ contains
             r_adsorp_c = r_adsorp( isoilorder(c) )
             rr=-log(1._r8-r_adsorp_c)
             r_adsorp_c = 1._r8-exp(-rr*dtd)
-
             if(labilep(c,j) > 0._r8)then
                labilep_to_secondp(c,j) = ( labilep(c,j) )*r_adsorp_c/dt
             else

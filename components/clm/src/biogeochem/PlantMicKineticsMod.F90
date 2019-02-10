@@ -74,14 +74,14 @@ implicit none
      allocate(this%plant_eff_pcompet_b_vr_patch(begp:endp,1:nlevdecomp_full)); this%plant_eff_pcompet_b_vr_patch(:,:)=nan
      allocate(this%decomp_eff_ncompet_b_vr_col(begc:endc,1:nlevdecomp_full)); this%decomp_eff_ncompet_b_vr_col(:,:) = nan
      allocate(this%decomp_eff_pcompet_b_vr_col(begc:endc,1:nlevdecomp_full)); this%decomp_eff_pcompet_b_vr_col(:,:) = nan
-     allocate(this%minsurf_p_compet_vr_col(begc:endc,1:nlevdecomp_full)); this%minsurf_p_compet_vr_col(:,:) = nan
+     allocate(this%minsurf_p_compet_vr_col(begc:endc,1:nlevdecomp_full)); this%minsurf_p_compet_vr_col(:,:) = 0._r8
      allocate(this%den_eff_ncompet_b_vr_col(begc:endc,1:nlevdecomp_full)); this%den_eff_ncompet_b_vr_col(:,:) = nan
      allocate(this%nit_eff_ncompet_b_vr_col(begc:endc,1:nlevdecomp_full)); this%nit_eff_ncompet_b_vr_col(:,:) = nan
-     allocate(this%minsurf_nh4_compet_vr_col(begc:endc, 1:nlevdecomp_full)); this%minsurf_nh4_compet_vr_col(:,:) = nan
+     allocate(this%minsurf_nh4_compet_vr_col(begc:endc, 1:nlevdecomp_full)); this%minsurf_nh4_compet_vr_col(:,:) = 0._r8
 
      allocate(this%vmax_minsurf_p_vr_col(begc:endc, 1:nlevdecomp_full)); this%vmax_minsurf_p_vr_col(:,:) = nan
-     allocate(this%km_minsurf_p_vr_col(begc:endc,1:nlevdecomp_full)); this%km_minsurf_p_vr_col(:,:) = nan
-     allocate(this%km_minsurf_nh4_vr_col(begc:endc,1:nlevdecomp_full)); this%km_minsurf_nh4_vr_col(:,:)=nan
+     allocate(this%km_minsurf_p_vr_col(begc:endc,1:nlevdecomp_full)); this%km_minsurf_p_vr_col(:,:) = 0._r8
+     allocate(this%km_minsurf_nh4_vr_col(begc:endc,1:nlevdecomp_full)); this%km_minsurf_nh4_vr_col(:,:)=0._r8
      allocate(this%km_decomp_nh4_vr_col(begc:endc, 1:nlevdecomp_full)); this%km_decomp_nh4_vr_col(:,:) = nan
      allocate(this%km_decomp_no3_vr_col(begc:endc,1:nlevdecomp_full)); this%km_decomp_no3_vr_col(:,:) = nan
      allocate(this%km_decomp_p_vr_col(begc:endc,1:nlevdecomp_full)); this%km_decomp_p_vr_col(:,:) = nan

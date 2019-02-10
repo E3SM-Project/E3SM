@@ -1488,7 +1488,7 @@ contains
 
     do fi = 1,num_column
        i = filter_column(fi)
-
+       this%dyn_pbal_adjustments_col(i) = value_column
        this%sminp_col(i)       = value_column
        this%solutionp_col(i)   = value_column
        this%labilep_col(i)     = value_column
@@ -1645,10 +1645,10 @@ contains
         this%totpftp_patch(bounds%begp:bounds%endp), &
         this%totpftp_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
+   cropseedp_deficit_col(:)=0._r8
+   if (crop_prog)  call p2c(bounds, num_soilc, filter_soilc, &
         this%cropseedp_deficit_patch(bounds%begp:bounds%endp), &
         cropseedp_deficit_col(bounds%begc:bounds%endc))
-
    ! vertically integrate soil mineral P pools
 
    do fc = 1,num_soilc
@@ -2276,7 +2276,7 @@ contains
     begc = bounds%begc
     endc = bounds%endc
 
-    !this%dyn_pbal_adjustments_col(begc:endc) = 0._r8
+    this%dyn_pbal_adjustments_col(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp

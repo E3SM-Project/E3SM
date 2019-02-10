@@ -127,7 +127,7 @@ module EcosystemDynBeTRMod
     type(nitrogenflux_type)          , intent(inout) :: nitrogenflux_vars
     type(nitrogenstate_type)         , intent(inout) :: nitrogenstate_vars
     type(atm2lnd_type)               , intent(in)    :: atm2lnd_vars
-    type(waterstate_type)            , intent(in)    :: waterstate_vars
+    type(waterstate_type)            , intent(inout) :: waterstate_vars
     type(waterflux_type)             , intent(in)    :: waterflux_vars
     type(canopystate_type)           , intent(in)    :: canopystate_vars
     type(soilstate_type)             , intent(inout) :: soilstate_vars
@@ -503,7 +503,7 @@ module EcosystemDynBeTRMod
          canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
          dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars, &
          PlantMicKinetics_vars, ch4_vars,                                &
-         phosphorusflux_vars, phosphorusstate_vars, ep_betr)
+         phosphorusflux_vars, phosphorusstate_vars, ep_betr, soil_water_retention_curve)
 
     ! Description:
     ! Update vegetation related state variables and
@@ -544,6 +544,7 @@ module EcosystemDynBeTRMod
     use SoilLittVertTranspMod             , only : SoilLittVertTransp
     use SoilLittDecompMod                 , only : SoilLittDecompAlloc2
     use BeTRSimulationALM                 , only : betr_simulation_alm_type
+    use SoilWaterRetentionCurveMod        , only : soil_water_retention_curve_type
     implicit none
 
 
@@ -569,7 +570,7 @@ module EcosystemDynBeTRMod
     type(nitrogenflux_type)          , intent(inout) :: nitrogenflux_vars
     type(nitrogenstate_type)         , intent(inout) :: nitrogenstate_vars
     type(atm2lnd_type)               , intent(in)    :: atm2lnd_vars
-    type(waterstate_type)            , intent(in)    :: waterstate_vars
+    type(waterstate_type)            , intent(inout) :: waterstate_vars
     type(waterflux_type)             , intent(in)    :: waterflux_vars
     type(canopystate_type)           , intent(in)    :: canopystate_vars
     type(soilstate_type)             , intent(inout) :: soilstate_vars
@@ -583,7 +584,8 @@ module EcosystemDynBeTRMod
     type(PlantMicKinetics_type)      , intent(inout) :: PlantMicKinetics_vars
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
-    class(betr_simulation_alm_type)  , intent(inout):: ep_betr
+    class(betr_simulation_alm_type)  , intent(inout) :: ep_betr
+    class(soil_water_retention_curve_type) , intent(in) :: soil_water_retention_curve
 
     call t_startf('EcosystemDynNoLeaching1')
     call EcosystemDynNoLeaching1(bounds,                                  &
@@ -607,6 +609,10 @@ module EcosystemDynBeTRMod
         cnstate_vars, carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, &
         nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars, &
         PlantMicKinetics_vars)
+
+      call ep_betr%CalcSmpL(bounds, 1, nlevsoi, num_soilc, filter_soilc, &
+            temperature_vars%t_soisno_col(bounds%begc:bounds%endc,1:nlevsoi), &
+            soilstate_vars, waterstate_vars, soil_water_retention_curve)
 
       call ep_betr%BeTRSetBiophysForcing(bounds, col, pft, 1, nlevsoi, &
          waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
@@ -1457,6 +1463,7 @@ module EcosystemDynBeTRMod
     type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type),intent(inout) :: phosphorusstate_vars
 
+    print*,'CNFluxStateBetr2Summary'
     call t_startf('CNsumBetr')
 
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -1598,7 +1605,7 @@ module EcosystemDynBeTRMod
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
 
     !-----------------------------------------------------------------------
-
+    print*,'CNFluxStateBeTR1Summary'
     ! only do if ed is off
     if( .not. use_fates) then
 

@@ -92,8 +92,10 @@ contains
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
+    use clm_instMod              , only : ep_betr
     use tracer_varcon            , only : is_active_betr_bgc                                         
-    
+    use decompMod                , only : bounds_type, get_proc_bounds 
+    use ALMBeTRNLMod             , only : do_betr_bgc_type
     !
     ! !ARGUMENTS:
     implicit none
@@ -104,6 +106,7 @@ contains
     type(file_desc_t)  :: ncid  ! pio netCDF file id
     integer            :: dimid ! netCDF dimension id
     integer            :: npft  ! number of pfts on pft-physiology file
+    type(bounds_type) :: bounds_proc 
     !-----------------------------------------------------------------------
 
     if (masterproc) then
@@ -119,6 +122,8 @@ contains
     if(use_betr)then
     !  the following will be replaced with something more general. Jinyun Tang
     !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
+      call get_proc_bounds(bounds_proc)
+      call ep_betr%readParams(bounds_proc)
     endif
 
     !
@@ -128,7 +133,7 @@ contains
     if ( (use_cn .or. use_fates) ) then
 
        call readCNAllocParams(ncid)
-       if(.not. is_active_betr_bgc) then
+       if(.not. do_betr_bgc_type('type2_bgc')) then
          call readSoilLittDecompParams(ncid)
          if (use_century_decomp) then
             call readDecompBGCParams(ncid)
@@ -145,7 +150,7 @@ contains
          if (use_lch4) then
             call readCH4Params (ncid)
          end if
-      endif
+       endif
     end if
 
     if (use_cn) then

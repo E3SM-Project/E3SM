@@ -4379,6 +4379,7 @@ contains
     plant_no3_km_vr_patch => PlantMicKinetics_vars%plant_no3_km_vr_patch, &
     plant_p_km_vr_patch => PlantMicKinetics_vars%plant_p_km_vr_patch, &
     decomp_eff_ncompet_b_vr_col => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
+    decomp_eff_pcompet_b_vr_col => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
     nit_eff_ncompet_b_vr_col => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
     den_eff_ncompet_b_vr_col => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
     km_nit_nh4_vr_col => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
@@ -4429,6 +4430,7 @@ contains
          enddo
          !decomposers, nitrifiers and denitrifiers share the same microbial biomass
          decomp_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
+         decomp_eff_pcompet_b_vr_col(c,j)=decomp_eff_ncompet_b_vr_col(c,j)
          nit_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
          den_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
          km_nit_nh4_vr_col(c,j)=km_nit
@@ -4436,7 +4438,7 @@ contains
          !watch out how sorption-desorption is done
          km_minsurf_p_vr_col(c,j)=km_minsurf_p_vr(isoilorder(c),j)
          vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
-
+ 
          dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr_col(c,j) + primp_to_labilep_vr_col(c,j) +&
                         pdep_to_sminp(c)*ndep_prof(c,j) - col_plant_pdemand_vr(c,j)
          dlabp_dt_vr_col(c,j) = labilep_vr(c,j)/dt

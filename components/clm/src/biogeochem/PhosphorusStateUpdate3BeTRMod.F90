@@ -67,6 +67,7 @@ contains
    real(r8):: temp_solutionp(bounds%begc:bounds%endc,1:nlevdecomp)
    real(r8):: aa,bb,cc ! solve quadratic function
    logical  :: ldecomp_on
+   real(r8), parameter :: tiny_val=1.e-14_r8
     !-----------------------------------------------------------------------
 
     associate(&
@@ -148,14 +149,14 @@ contains
                pf%secondp_to_labilep_vr_col(c,j)*dt + pf%supplement_to_sminp_vr_col(c,j)*dt - &
                pf%sminp_to_plant_vr_col(c,j)*dt - pf%labilep_to_secondp_vr_col(c,j)*dt - &
               pf%sminp_leached_vr_col(c,j)*dt ))
-
+          print*,'temp_solutionp',temp_solutionp(c,j)
           if (temp_solutionp(c,j) < 0.0_r8) then
              pf%labilep_to_secondp_vr_col(c,j) = pf%labilep_to_secondp_vr_col(c,j)/ &
-                   (pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))* &
+                   (pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j)+tiny_val)* &
                    (temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + &
                    pf%sminp_leached_vr_col(c,j)*dt) /dt
              pf%sminp_leached_vr_col(c,j) = pf%sminp_leached_vr_col(c,j)/ &
-                            (pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))* &
+                            (pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j)+tiny_val)* &
                             (temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + &
                             pf%sminp_leached_vr_col(c,j)*dt) /dt
              temp_solutionp(c,j) = 0.0_r8

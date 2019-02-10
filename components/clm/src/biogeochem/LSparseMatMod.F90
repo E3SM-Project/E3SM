@@ -294,9 +294,9 @@ contains
     errinfo=0
     do j = 1, nprimvars
        yt = ystate(j) + (p_dt(j)+d_dt(j))*dtime
-       if(yt<tiny_val)then
+       if(yt<tiny_val .and. d_dt(j)<0._r8)then
           tmp = dtime*d_dt(j)
-          pscal(j) = -(p_dt(j)*dtime+max(ystate(j),0._r8))/tmp*p_par
+          pscal(j) = -(max(p_dt(j),0._r8)*dtime+max(ystate(j),0._r8))/tmp*p_par
           if(abs(pscal(j))<1.e-14)pscal(j)=0._r8
           lneg=.true.
           if(pscal(j)<0._r8)then

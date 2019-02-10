@@ -2216,6 +2216,7 @@ contains
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
+       this%col_plant_pdemand_vr(c,:)=0._r8
     end do
 
     ! Set patch filters
@@ -2625,12 +2626,12 @@ contains
        this%hrv_nloss_litter(i)                          = value_patch
        this%sen_nloss_litter(i)                          = value_patch
        this%crop_seedn_to_leaf_patch(i)                  = value_patch
+       this%livestemn_to_litter_patch(i)              = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemn_to_litter_patch(i)              = value_patch
           this%grainn_to_food_patch(i)                   = value_patch
           this%grainn_xfer_to_grainn_patch(i)            = value_patch
           this%npool_to_grainn_patch(i)                  = value_patch

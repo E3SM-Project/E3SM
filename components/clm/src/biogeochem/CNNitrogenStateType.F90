@@ -1468,7 +1468,7 @@ contains
 
     do fi = 1,num_column
        i = filter_column(fi)
-
+       this%dyn_nbal_adjustments_col(i) = value_column
        this%sminn_col(i)       = value_column
        this%ntrunc_col(i)      = value_column
        this%cwdn_col(i)        = value_column
@@ -1635,10 +1635,10 @@ contains
         this%totpftn_patch(bounds%begp:bounds%endp), &
         this%totpftn_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
+   cropseedn_deficit_col(:)=0._r8
+   if (crop_prog)  call p2c(bounds, num_soilc, filter_soilc, &
         this%cropseedn_deficit_patch(bounds%begp:bounds%endp), &
         cropseedn_deficit_col(bounds%begc:bounds%endc))
-
    ! vertically integrate NO3 NH4 N2O pools
    nlev = nlevdecomp
    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
@@ -2265,7 +2265,7 @@ contains
     begc = bounds%begc
     endc = bounds%endc
 
-    !this%dyn_nbal_adjustments_col(begc:endc) = 0._r8
+    this%dyn_nbal_adjustments_col(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp

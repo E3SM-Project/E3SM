@@ -122,6 +122,7 @@ module clm_driver
   use clm_instMod            , only : soil_water_retention_curve
   use clm_instMod            , only : chemstate_vars
   use clm_instMod            , only : alm_fates
+  use ALMbetrNLMod           , only : do_betr_bgc_type
   use clm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR1, CNFluxStateBeTR1Summary
@@ -155,6 +156,7 @@ module clm_driver
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
   use clm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use clm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
+
 
   !
   ! !PUBLIC TYPES:
@@ -851,10 +853,10 @@ contains
        if(use_betr)then
          !right now betr bgc is intended only for non-ed mode
 
-         if(ep_betr%do_bgc_type('bgc'))then
+         if(do_betr_bgc_type('bgc'))then
            !this returns the plant nutrient demand to soil bgc
            !this returns the plant nutrient demand to soil bgc
-           if(ep_betr%do_bgc_type('type0_bgc')) &
+           if(do_betr_bgc_type('type0_bgc')) &
            call CNEcosystemDynBeTR0(bounds_clump,                               &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
@@ -869,7 +871,7 @@ contains
                  PlantMicKinetics_vars, ch4_vars,                               &
                  phosphorusflux_vars, phosphorusstate_vars)
 
-           if(ep_betr%do_bgc_type('type1_bgc')) &
+           if(do_betr_bgc_type('type1_bgc')) &
            call CNEcosystemDynBeTR1(bounds_clump, col_pp, veg_pp,               &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
@@ -882,9 +884,9 @@ contains
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars,  ch4_vars,                              &
-                 phosphorusflux_vars, phosphorusstate_vars, ep_betr)
+                 phosphorusflux_vars, phosphorusstate_vars, ep_betr,soil_water_retention_curve)
 
-           if(ep_betr%do_bgc_type('type2_bgc')) &
+           if(do_betr_bgc_type('type2_bgc')) &
            call CNEcosystemDynBeTR2(bounds_clump,                               &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
@@ -905,10 +907,9 @@ contains
                   cnstate_vars, carbonflux_vars)
          endif
        endif
-
          ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
        if (.not. use_fates) then
-         if( .not. ep_betr%do_bgc_type('bgc')) then
+         if( .not. do_betr_bgc_type('bgc')) then
            if (use_cn) then
 
              ! fully prognostic canopy structure and C-N biogeochemistry
@@ -1057,7 +1058,7 @@ contains
              chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
              cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
 
-           if(ep_betr%do_bgc_type('type2_bgc'))then
+           if(do_betr_bgc_type('type2_bgc'))then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
                filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
                carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, &
@@ -1128,7 +1129,7 @@ contains
           call t_stopf('betr balchk')
           call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
 
-          if(ep_betr%do_bgc_type('type1_bgc') .or. ep_betr%do_bgc_type('type2_bgc'))then
+          if(do_betr_bgc_type('type1_bgc') .or. do_betr_bgc_type('type2_bgc'))then
 
             !extract nitrogen pool and flux from betr
             call ep_betr%PlantSoilBGCRecv(bounds_clump, col_pp, veg_pp, filter(nc)%num_soilc, filter(nc)%soilc,&
@@ -1137,7 +1138,7 @@ contains
                nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
           endif
 
-          if(ep_betr%do_bgc_type('type0_bgc') .or. ep_betr%do_bgc_type('type1_bgc'))then
+          if(do_betr_bgc_type('type0_bgc') .or. do_betr_bgc_type('type1_bgc'))then
             !summarize total column nitrogen and carbon
             call CNFluxStateBeTR1Summary(bounds_clump, col_pp, veg_pp, &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
@@ -1154,7 +1155,7 @@ contains
                  phosphorusflux_vars, phosphorusstate_vars)
           endif
 
-          if(ep_betr%do_bgc_type('type2_bgc'))then
+          if(do_betr_bgc_type('type2_bgc'))then
             !summarize total column nitrogen and carbon
             call CNFluxStateBeTR2Summary(bounds_clump, col_pp, veg_pp,         &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
@@ -1213,7 +1214,7 @@ contains
 
           if (use_cn) then
 
-            if (.not. ep_betr%do_bgc_type('bgc'))then
+            if (.not. do_betr_bgc_type('bgc'))then
              ! FIX(SPM,032414) there are use_fates checks in this routine...be consistent
              ! (see comment above re: no leaching
                call EcosystemDynLeaching(bounds_clump,                &

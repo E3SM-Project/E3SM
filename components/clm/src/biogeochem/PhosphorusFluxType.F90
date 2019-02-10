@@ -2093,12 +2093,12 @@ contains
        this%hrv_ploss_litter(i)                          = value_patch
        this%sen_ploss_litter(i)                          = value_patch
        this%sminp_to_plant_trans_patch(i)                = value_patch
+       this%livestemp_to_litter_patch(i)                 = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemp_to_litter_patch(i)              = value_patch
           this%grainp_to_food_patch(i)                   = value_patch
           this%grainp_xfer_to_grainp_patch(i)            = value_patch
           this%ppool_to_grainp_patch(i)                  = value_patch

@@ -3115,10 +3115,9 @@ contains
          this%totvegc_abg_patch(bounds%begp:bounds%endp), &
          this%totvegc_abg_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
+    if (crop_prog)  call p2c(bounds, num_soilc, filter_soilc, &
          this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
          cropseedc_deficit_col(bounds%begc:bounds%endc))
-
     ! column level summary
 
      nlev = nlevdecomp
