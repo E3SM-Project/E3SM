@@ -144,7 +144,6 @@ contains
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
 
     !-----------------------------------------------------------------------
-    print*,'EcosystemDynLeaching',get_nstep()
     ! only do if ed is off
     if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then
@@ -205,15 +204,12 @@ contains
 
        call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
-       print*,'summary c'
-       call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'leachi1')
+       call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        if ( use_c13 ) then
-          print*,'c13'
           call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
           call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        end if
        if ( use_c14 ) then
-          print*,'c14'
           call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
           call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        end if
@@ -227,7 +223,6 @@ contains
        call t_stopf('CNPsum')
 
     end if !end of if not use_fates block
-    print*,'end EcosystemDynLeaching'
   end subroutine EcosystemDynLeaching
 
 
@@ -459,7 +454,6 @@ contains
        call t_stopf('CNAllocation - phase-1')
 
     end if !end of if not use_fates block
-
   end subroutine EcosystemDynNoLeaching1
 
 !-------------------------------------------------------------------------------------------------
@@ -553,7 +547,6 @@ contains
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
 
     !-----------------------------------------------------------------------
-
     ! Call the main CN routines
     ! only do if ed is off
     if( .not. use_fates ) then
@@ -586,7 +579,6 @@ contains
        !----------------------------------------------------------------
        call t_stopf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
-
        !--------------------------------------------
        ! Phenology
        !--------------------------------------------
@@ -637,7 +629,6 @@ contains
        !--------------------------------------------
        ! CNUpdate0
        !--------------------------------------------
-
        call t_startf('CNUpdate0')
        call CarbonStateUpdate0(&
             num_soilp, filter_soilp, &

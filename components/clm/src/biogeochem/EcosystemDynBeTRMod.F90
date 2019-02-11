@@ -1463,7 +1463,6 @@ module EcosystemDynBeTRMod
     type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type),intent(inout) :: phosphorusstate_vars
 
-    print*,'CNFluxStateBetr2Summary'
     call t_startf('CNsumBetr')
 
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -1471,7 +1470,7 @@ module EcosystemDynBeTRMod
 
     call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
 
-    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'CNFluxStateBetr2Summary')
     if ( use_c13 ) then
        call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
 
@@ -1605,7 +1604,6 @@ module EcosystemDynBeTRMod
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
 
     !-----------------------------------------------------------------------
-    print*,'CNFluxStateBeTR1Summary'
     ! only do if ed is off
     if( .not. use_fates) then
 

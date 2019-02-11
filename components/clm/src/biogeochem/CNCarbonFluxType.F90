@@ -455,10 +455,13 @@ module CNCarbonFluxType
      procedure , public  :: Summary
      procedure , public  :: summary_cflux_for_ch4
      procedure , public  :: summary_bgc_cascade
+     procedure , public  :: summary_phenoloy_litter
+     procedure , public  :: summary_sinksource
      procedure , public  :: summary_rr
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
+     
      ! bgc & pflotran interface
      procedure , private :: CSummary_interface
   end type carbonflux_type
@@ -5285,6 +5288,7 @@ contains
        end if
     enddo
 
+    call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     if(.not. (use_pflotran .and. pf_cmode)) then
       !following code is also duplicated in summary_bgc_cascade
       !one should consider avoiding this.
@@ -5297,7 +5301,6 @@ contains
       enddo
     endif
 
-    call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
@@ -5870,5 +5873,67 @@ end subroutine CSummary_interface
     end associate
   end subroutine summary_cflux_for_ch4
 
+    !-----------------------------------------------------------------------
+  subroutine summary_phenoloy_litter(this, bounds, num_soilc, filter_soilc,loc)
 
+  use clm_time_manager, only: get_step_size
+  implicit none
+
+    !
+    ! !ARGUMENTS:
+    class (carbonflux_type), intent(inout) :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    character(len=*), optional, intent(in) :: loc
+
+    integer :: c, fc,j
+    real(r8) :: phenology_c_to_litr(bounds%begc:bounds%endc)
+
+    print*,'------------------------'
+    if(present(loc))print*,loc
+    phenology_c_to_litr(:)=0._r8
+    do j = 1, nlevdecomp
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        phenology_c_to_litr(c)=phenology_c_to_litr(c)+ &
+           (this%phenology_c_to_litr_met_c_col(c,j) + &
+           this%phenology_c_to_litr_cel_c_col(c,j) + &
+           this%phenology_c_to_litr_lig_c_col(c,j))* dzsoi_decomp(j)  
+           
+      enddo
+   enddo
+
+   do fc = 1, num_soilc
+     c = filter_soilc(fc)
+     print*,phenology_c_to_litr(c)*get_step_size()
+   enddo
+  end subroutine summary_phenoloy_litter
+    !-----------------------------------------------------------------------
+
+  subroutine  summary_sinksource(this, bounds, num_soilc, filter_soilc, loc)
+
+  implicit none
+    class (carbonflux_type), intent(inout) :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    character(len=*), optional, intent(in) :: loc
+
+    integer :: c, fc,j, l
+    real(r8) :: total_sinksource(bounds%begc:bounds%endc)
+
+    if(present(loc))print*,'loc ',loc
+    total_sinksource(:)=0._r8
+    
+    do l = 1, ndecomp_pools
+      do j = 1, nlevdecomp_full
+        do fc = 1, num_soilc
+          c = filter_soilc(fc)
+          total_sinksource(c)=total_sinksource(c)+this%decomp_cpools_sourcesink_col(c,j,l)*dzsoi_decomp(j)
+        enddo
+      enddo
+    enddo
+    print*,'total sink source', total_sinksource(c)
+  end subroutine  summary_sinksource
 end module CNCarbonFluxType

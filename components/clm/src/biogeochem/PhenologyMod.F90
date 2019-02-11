@@ -291,8 +291,6 @@ contains
 
     ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
 
-!    call CNLitterToColumn(num_soilc, filter_soilc, &
-!         cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 
   end subroutine Phenology
 

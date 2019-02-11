@@ -2997,14 +2997,14 @@ contains
   end subroutine ZeroDwt
 
   !-----------------------------------------------------------------------
-  subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, loc)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform patch and column-level carbon summary calculations
     !
     ! !USES:
     use clm_varctl       , only: iulog
-    use clm_time_manager , only: get_step_size
+    use clm_time_manager , only: get_step_size,get_nstep
     use clm_varcon       , only: secspday
     use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
     !
@@ -3014,7 +3014,8 @@ contains
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patchesa
+    character(len=*), optional, intent(in) :: loc
     !
     ! !LOCAL VARIABLES:
     real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
@@ -3024,9 +3025,8 @@ contains
     integer  :: nlev
     real(r8) :: cropseedc_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
-
-    ! calculate patch -level summary of carbon state
-
+    
+    if(present(loc))print*,'loc ',trim(loc)
     if (use_fates) return
 
     do fp = 1,num_soilp
@@ -3115,6 +3115,7 @@ contains
          this%totvegc_abg_patch(bounds%begp:bounds%endp), &
          this%totvegc_abg_col(bounds%begc:bounds%endc))
 
+    cropseedc_deficit_col(:)=0._r8
     if (crop_prog)  call p2c(bounds, num_soilc, filter_soilc, &
          this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
          cropseedc_deficit_col(bounds%begc:bounds%endc))
