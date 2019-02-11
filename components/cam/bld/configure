@@ -150,7 +150,7 @@ OPTIONS
      -pbl <name>        Specify the PBL option [uw | hb | hbr].
      -pcols <n>         Set maximum number of columns in a chunk to <n>.
      -pergro            Switch enables building CAM for perturbation growth tests.
-     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic].  Default: cam5.4
+     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic | q3d].  Default: cam5.4
      -prog_species <list>Comma-separate list of prognostic mozart species packages.
                         Currently available: DST,SSLT,SO4,GHG,OC,BC,CARBON16
      -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
@@ -446,6 +446,9 @@ if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
 }
 elsif ($phys_pkg eq 'cam5') {
     $chem_pkg = 'trop_mam3';
+}
+elsif ($phys_pkg eq 'q3d') {
+    $chem_pkg = 'none';
 }
 
 # Allow the user to override the default chemistry via the commandline.
@@ -1067,7 +1070,7 @@ if ($rad_pkg eq 'camrt') {
 } elsif ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
 
     # The rrtmg package doesn't work with the CAM3 prescribed aerosols
-    if ($phys_pkg eq 'cam3') {
+    if ($phys_pkg eq 'cam3'|| ($phys_pkg eq 'q3d'))  {
         die "configure ERROR: radiation package: $rad_pkg is not compatible\n".
             "                 with physics package $phys_pkg\n";
     }
@@ -1303,7 +1306,7 @@ else {
 	if ($phys_pkg eq 'cam3' or $phys_pkg eq 'cam4') {
 	    $cfg_ref->set('nlev', 26);
 	}
-        elsif ($phys_pkg eq 'cam5.4') {
+        elsif ($phys_pkg eq 'cam5.4' or $phys_pkg eq 'q3d') {
 	    $cfg_ref->set('nlev', 32);
         }
     }
@@ -1516,6 +1519,12 @@ else {
         if ($unicon) {
             $nadv += 5;
             if ($print>=2) { print "Advected constituents added by UNICON: 5$eol"; }
+        }
+
+        # Q3D tracers
+        if ($phys_pkg eq 'q3d') {
+            $nadv += 5;
+            if ($print>=2) { print "Advected constituents added by Q3D: 5$eol"; }
         }
 
     }
@@ -1960,7 +1969,7 @@ if (!$ccsm_seq){
 # F2003 definition turns on standard-conforming method of causing edge
 # buffers to overlap. This method works in all CAM compilers, but fails
 # on some older compilers used by HOMME standalone.
-if ($dyn_pkg eq 'se') {
+if ($dyn_pkg eq 'se' or $dyn_pkg eq 'se-cslam') {
     my $csnp = $cfg_ref->get('csnp');
     $cfg_cppdefs .= " -DNP=$csnp -DNC=4 -DHAVE_F2003_PTR_BND_REMAP";
     if ($smp eq 'ON') {
@@ -1991,7 +2000,7 @@ if ($dyn_pkg eq 'fv') { $cfg_cppdefs .= " -DSTAGGERED "; }
 if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
 
 # Spectral Element dycore
-if($dyn_pkg eq 'se'){
+if($dyn_pkg eq 'se' or $dyn_pkg eq 'se-cslam'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
     $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
 }
@@ -2786,6 +2795,21 @@ sub write_filepath
        print $fh "$camsrcdir/cam/src/physics/silhs\n";
     }
 
+    # Q3D
+    if ($phys_pkg eq 'q3d') {
+      print $fh "$camsrcdir/cam/src/physics/q3d\n";
+      # Add simple physics to get stub radiation interfaces
+      print $fh "$camsrcdir/cam/src/physics/simple\n";
+      # Add special SE q3d coupling code
+      print $fh "$camsrcdir/cam/src/dynamics/se/q3d\n";
+      # Add GQ3D directories
+      print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE\n";
+      print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/CDECKS\n";
+      print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/RRTMG\n";
+      print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/RRTMG/RAD_RRTM_CFMIP\n";
+      print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/VVM\n";
+    }
+
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
       print $fh "$camsrcdir/homme/src/share\n";
@@ -3141,7 +3165,7 @@ sub set_horiz_grid
     elsif ( $dyn_pkg eq 'fvcubed' ) {
         $cfg_ref->set('csnp', $a{'csnp'});
     }
-    elsif ( $dyn_pkg eq 'se' ) {
+    elsif ( $dyn_pkg eq 'se' or $dyn_pkg eq 'se-cslam') {
 	$cfg_ref->set('csne', $a{'csne'});
 	$cfg_ref->set('csnp', $a{'csnp'});
 	# needed for cice configure script.  sets nlat=1 and nlon=ncol
