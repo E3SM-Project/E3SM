@@ -89,7 +89,7 @@ CONTAINS
     use time_manager, only: get_curr_time
     use parallel_mod, only: par
     use hycoef, only: write_restart_hycoef
-
+    use cam_abortutils,   only: endrun
 
     implicit none
     type(file_desc_t) :: File
