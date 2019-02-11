@@ -166,6 +166,13 @@ plt.ylabel('slope')
 plt.grid()
 
 
+fig = plt.figure(2, facecolor='w')
+axGAslope2 = fig.add_subplot(1, 1, 1)
+plt.xlabel('change in GA from initial')
+plt.ylabel('mean slope at GL')
+plt.grid()
+
+
 
 # --- Define colors for lines ---
 colors = []
@@ -203,5 +210,6 @@ for run in runs:
    ax1.plot(thisRun.GA, '.', color=color)
    ax2.plot(thisRun.mnGLslope, '.', color=color)
    axGAslope.plot(thisRun.GA, thisRun.mnGLslope, '.', color=color)
+   axGAslope2.plot(thisRun.GA[0]-thisRun.GA, thisRun.mnGLslope, '.', color=color, markersize=2)
 
 plt.show()
