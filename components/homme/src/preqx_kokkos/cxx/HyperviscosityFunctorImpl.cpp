@@ -19,7 +19,7 @@ HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& pa
  , m_data       (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
 {
-  m_sphere_ops.setup(elements,Context::singleton().get<ReferenceElement>());
+  m_sphere_ops.setup(elements.m_geometry,Context::singleton().get<ReferenceElement>());
 
   // Sanity check
   assert(params.params_set);

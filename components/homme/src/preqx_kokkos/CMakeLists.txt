@@ -18,6 +18,7 @@ SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS
+  ${TARGET_DIR}/cxx
   ${PIO_INCLUDE_DIRS}
   ${UTILS_TIMING_DIR}
   ${UTILS_TIMING_SRC_DIR}
@@ -142,6 +143,7 @@ SET(PREQX_DEPS_F90
 
 SET(PREQX_DEPS_CXX
   ${TARGET_DIR}/cxx/ElementsState.cpp
+  ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
   ${SRC_SHARE_DIR}/cxx/CamForcing.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp
@@ -156,7 +158,6 @@ SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
   ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctorImpl.cpp
   ${SRC_SHARE_DIR}/cxx/ReferenceElement.cpp
   ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
