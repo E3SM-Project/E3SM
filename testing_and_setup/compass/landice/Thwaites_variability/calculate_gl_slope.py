@@ -7,7 +7,7 @@ Script to compare some scalar values from different runs of Thwaites melt variab
 # Parse options
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option("-r", dest="read", action="store_true", help="read and process data", metavar="FILE")
+parser.add_option("-p", dest="process", action="store_true", help="read and process data", metavar="FILE")
 options, args = parser.parse_args()
 
 
@@ -96,21 +96,27 @@ class modelRun:
 
       self.mnGLslope = np.zeros((nt,))
       self.GA = np.zeros((nt,))
+      self.mnGLmelt = np.zeros((nt,))
+      self.mnGLdepth = np.zeros((nt,))
+      self.time = np.zeros((nt,))
       for t in range(nt):
          print t
          usrf = f.variables['upperSurface'][t,:]
          edgeMask = f.variables['edgeMask'][t,:]
          cellMask = f.variables['cellMask'][t,:]
          thk = f.variables['thickness'][t,:]
+         melt = f.variables['floatingBasalMassBal'][t,:]
          ind = np.where(edgeMask&256>0)[0]
-         slpCnt = 0
-         slpSum = 0.0
          for i in range(len(ind)):
-             c1 = cone[ind[i]-1,0]
-             c2 = cone[ind[i]-1,1]
-             slp = np.absolute( (usrf[c1-1] - usrf[c2-1]) / dcEdge[ind[i]-1] )
-             slpSum += slp
-         self.mnGLslope[t] += slpSum / len(ind)
+             c1 = cone[ind[i]-1,0]-1 # in python 0-based 
+             c2 = cone[ind[i]-1,1]-1 # in python 0-based
+             slp = np.absolute( (usrf[c1] - usrf[c2]) / dcEdge[ind[i]-1] )
+             self.mnGLslope[t] += slp # accumulate for mean calc below
+             self.mnGLmelt[t] += -1.0 * min(melt[c1], melt[c2]) # get the melt rate on the floating side of the GL (the grounded side will be 0)
+             self.mnGLdepth[t] += (topg[c1] + topg[c2])/2.0 # approx GL depth here by avg of two neighboring cells TODO: improve this
+         self.mnGLslope[t] /= len(ind)  # calc mean
+         self.mnGLmelt[t] /= len(ind)
+         self.mnGLdepth[t] /= len(ind)
          self.GA[t] = (areaCell[:] * (910.0/1028.0 * thk > -1.0 * topg)).sum()
 
 # ================
@@ -122,7 +128,7 @@ for run in runs:
    print "Processing run: " + run
 
    # Build a list that contains all run data objects
-   if options.read:
+   if options.process:
       runData[run] = modelRun(run)
       file_pi = open(run + '/' +'calc_gl_data.pi', 'w') 
       pickle.dump(runData[run], file_pi)
@@ -165,13 +171,31 @@ plt.xlabel('GA')
 plt.ylabel('slope')
 plt.grid()
 
-
+# ------
 fig = plt.figure(2, facecolor='w')
 axGAslope2 = fig.add_subplot(1, 1, 1)
 plt.xlabel('change in GA from initial')
 plt.ylabel('mean slope at GL')
 plt.grid()
 
+
+# -----
+fig = plt.figure(3, facecolor='w')
+nrow = 2; ncol = 2
+axGLslope = fig.add_subplot(nrow, ncol, 1)
+plt.xlabel('time (yr)')
+plt.ylabel('mean slope at GL')
+plt.grid()
+
+axGLmelt = fig.add_subplot(nrow, ncol, 2)
+plt.xlabel('time (yr)')
+plt.ylabel('mean melt at GL')
+plt.grid()
+
+axGLdepth = fig.add_subplot(nrow, ncol, 3)
+plt.xlabel('time (yr)')
+plt.ylabel('mean depth at GL')
+plt.grid()
 
 
 # --- Define colors for lines ---
@@ -211,5 +235,8 @@ for run in runs:
    ax2.plot(thisRun.mnGLslope, '.', color=color)
    axGAslope.plot(thisRun.GA, thisRun.mnGLslope, '.', color=color)
    axGAslope2.plot(thisRun.GA[0]-thisRun.GA, thisRun.mnGLslope, '.', color=color, markersize=2)
-
+   #fig 3
+   axGLslope.plot(thisRun.yrs, thisRun.mnGLslope, color=color)
+   axGLmelt.plot(thisRun.yrs, thisRun.mnGLmelt, color=color)
+   axGLdepth.plot(thisRun.yrs, thisRun.mnGLdepth, color=color)
 plt.show()
