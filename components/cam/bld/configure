@@ -761,6 +761,10 @@ if (defined $opts{'dyn'}) {
 
 my $dyn_pkg = $cfg_ref->get('dyn');
 
+if ($phys_pkg eq 'q3d') {
+    $dyn_pkg eq 'se-clam';
+}
+
 if ($print>=2) { print "Dynamics package: $dyn_pkg$eol"; }
 
 
@@ -2000,7 +2004,7 @@ if ($dyn_pkg eq 'fv') { $cfg_cppdefs .= " -DSTAGGERED "; }
 if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
 
 # Spectral Element dycore
-if($dyn_pkg eq 'se' or $dyn_pkg eq 'se-cslam'){
+if ($dyn_pkg eq 'se' or $dyn_pkg eq 'se-cslam'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
     $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
 }
@@ -2801,7 +2805,7 @@ sub write_filepath
       # Add simple physics to get stub radiation interfaces
       print $fh "$camsrcdir/cam/src/physics/simple\n";
       # Add special SE q3d coupling code
-      print $fh "$camsrcdir/cam/src/dynamics/se/q3d\n";
+      print $fh "$camsrcdir/cam/src/dynamics/se-cslam/q3d\n";
       # Add GQ3D directories
       print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE\n";
       print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/CDECKS\n";
