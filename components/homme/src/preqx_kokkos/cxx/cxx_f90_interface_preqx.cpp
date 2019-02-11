@@ -6,7 +6,7 @@
 
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
-#include "Diagnostics.hpp"
+#include "DiagnosticsPreqx.hpp"
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
@@ -301,7 +301,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
   Elements& elements = Context::singleton().get<Elements> ();
-  Diagnostics& diagnostics = Context::singleton().create<Diagnostics> ();
+  DiagnosticsPreqx& diagnostics = Context::singleton().create_with_base<DiagnosticsBase,DiagnosticsPreqx> ();
 
   diagnostics.init(elements.num_elems(), elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_iener_wet_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);

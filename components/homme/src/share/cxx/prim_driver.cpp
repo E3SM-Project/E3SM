@@ -6,7 +6,7 @@
 
 
 #include "Context.hpp"
-#include "Diagnostics.hpp"
+#include "DiagnosticsBase.hpp"
 #include "Elements.hpp"
 #include "Tracers.hpp"
 #include "HybridVCoord.hpp"
@@ -58,7 +58,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
 
   if (compute_diagnostics) {
-    Diagnostics& diags = Context::singleton().get<Diagnostics>();
+    DiagnosticsBase& diags = Context::singleton().get<DiagnosticsBase>();
     diags.prim_diag_scalars(true,2);
     diags.prim_energy_halftimes(true,2);
   }
@@ -82,7 +82,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
 
   if (compute_diagnostics) {
-    Diagnostics& diags = Context::singleton().get<Diagnostics>();
+    DiagnosticsBase& diags = Context::singleton().get<DiagnosticsBase>();
     diags.prim_energy_halftimes(true,0);
     diags.prim_diag_scalars(true,0);
   }
@@ -138,7 +138,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   update_q(tl.np1_qdp,tl.np1);
 
   if (compute_diagnostics) {
-    Diagnostics& diags = Context::singleton().get<Diagnostics>();
+    DiagnosticsBase& diags = Context::singleton().get<DiagnosticsBase>();
     diags.prim_diag_scalars(false,1);
     diags.prim_energy_halftimes(false,1);
   }

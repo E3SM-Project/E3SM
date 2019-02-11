@@ -144,12 +144,13 @@ SET(PREQX_DEPS_F90
 SET(PREQX_DEPS_CXX
   ${TARGET_DIR}/cxx/cxx_f90_interface_preqx.cpp
   ${TARGET_DIR}/cxx/CamForcing.cpp
+  ${TARGET_DIR}/cxx/DiagnosticsPreqx.cpp
   ${TARGET_DIR}/cxx/ElementsState.cpp
   ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
   ${TARGET_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/Diagnostics.cpp
+  ${SRC_SHARE_DIR}/cxx/DiagnosticsBase.cpp
   ${SRC_SHARE_DIR}/cxx/Elements.cpp
   ${SRC_SHARE_DIR}/cxx/ElementsBuffers.cpp
   ${SRC_SHARE_DIR}/cxx/ElementsDerivedState.cpp
