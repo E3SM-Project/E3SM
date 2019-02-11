@@ -8,6 +8,7 @@
 #define HOMMEXX_CAAR_FUNCTOR_HPP
 
 #include "Types.hpp"
+#include "RKStageData.hpp"
 #include <memory>
 
 namespace Homme {
@@ -37,22 +38,14 @@ public:
   void
   init_boundary_exchanges(const std::shared_ptr<BuffersManager> &bm_exchange);
 
-  void set_n0_qdp(const int n0_qdp);
-
-  void set_rk_stage_data(const int nm1, const int n0, const int np1,
-                         const Real dt, const Real eta_ave_w,
-                         const bool compute_diagnostics);
+  void set_rk_stage_data(const RKStageData& data);
 
   void run();
 
-  void run(const int nm1, const int n0, const int np1, const Real dt,
-           const Real eta_ave_w, const bool compute_diagnostics);
+  void run(const RKStageData& data);
 
 private:
   std::unique_ptr<CaarFunctorImpl> m_caar_impl;
-
-  // Setup the policies
-  Kokkos::TeamPolicy<ExecSpace, void> m_policy;
 };
 
 } // Namespace Homme

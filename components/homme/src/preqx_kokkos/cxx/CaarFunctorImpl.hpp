@@ -11,8 +11,9 @@
 #include "Elements.hpp"
 #include "Tracers.hpp"
 #include "HybridVCoord.hpp"
-#include "ReferenceElement.hpp"
 #include "KernelVariables.hpp"
+#include "ReferenceElement.hpp"
+#include "RKStageData.hpp"
 #include "SphereOperators.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
@@ -29,24 +30,10 @@ namespace Homme {
 
 struct CaarFunctorImpl {
 
-  struct CaarData {
-    CaarData (const int rsplit_in) : rsplit(rsplit_in) {}
-    int       nm1;
-    int       n0;
-    int       np1;
-    int       n0_qdp;
-
-    Real      dt;
-    Real      eta_ave_w;
-
-    const int rsplit;
-
-    bool      compute_diagnostics;
-  };
-
   using deriv_type = ReferenceElement::deriv_type;
 
-  CaarData              m_data;
+  RKStageData           m_data;
+  const int             m_rsplit;
   const HybridVCoord    m_hvcoord;
   const Elements        m_elements;
   const Tracers         m_tracers;
@@ -54,19 +41,24 @@ struct CaarFunctorImpl {
 
   SphereOperators       m_sphere_ops;
 
+  // Policies
+  Kokkos::TeamPolicy<ExecSpace, void> m_policy;
+
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
   CaarFunctorImpl(const Elements &elements, const Tracers &tracers,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, 
                   const int rsplit)
-      : m_data(rsplit)
+      : m_rsplit(rsplit)
       , m_hvcoord(hvcoord)
       , m_elements(elements)
       , m_tracers(tracers)
       , m_deriv(ref_FE.get_deriv())
-      , m_sphere_ops(sphere_ops) {
-    // Nothing to be done here
+      , m_sphere_ops(sphere_ops)
+      , m_policy (Homme::get_default_team_policy<ExecSpace>(elements.num_elems())) {
+    // Make sure the buffers in sph op are large enough for this functor's needs
+    m_sphere_ops.allocate_buffers(m_policy);
   }
 
   void init_boundary_exchanges (const std::shared_ptr<BuffersManager>& bm_exchange) {
@@ -82,18 +74,31 @@ struct CaarFunctorImpl {
     }
   }
 
-  void set_n0_qdp (const int n0_qdp) { m_data.n0_qdp = n0_qdp; }
+  void set_rk_stage_data (const RKStageData& data) {
+    m_data = data;
+  }
 
-  void set_rk_stage_data (const int nm1, const int n0,   const int np1,
-                          const Real dt, const Real eta_ave_w,
-                          const bool compute_diagnostics) {
-    m_data.nm1 = nm1;
-    m_data.n0  = n0;
-    m_data.np1 = np1;
-    m_data.dt  = dt;
+  void run () const {
+    // Run functor
+    profiling_resume();
+    GPTLstart("caar compute");
+    Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
+    ExecSpace::fence();
+    GPTLstop("caar compute");
+    profiling_pause();
+  }
 
-    m_data.eta_ave_w = eta_ave_w;
-    m_data.compute_diagnostics = compute_diagnostics;
+  void run (const RKStageData& data)
+  {
+    set_rk_stage_data(data);
+
+    profiling_resume();
+    GPTLstart("caar compute");
+    Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
+    ExecSpace::fence();
+    GPTLstop("caar compute");
+    start_timer("caar_bexchV");
+    m_bes[data.np1]->exchange(m_elements.m_geometry.m_rspheremp);
   }
 
   // Depends on PHI (after preq_hydrostatic), PECND
@@ -138,7 +143,7 @@ struct CaarFunctorImpl {
   // Depends on pressure, PHI, U_current, V_current, METDET,
   // D, DINV, U, V, FCOR, SPHEREMP, T_v, ETA_DPDN
   KOKKOS_INLINE_FUNCTION void compute_phase_3(KernelVariables &kv) const {
-    if (m_data.rsplit == 0) {
+    if (m_rsplit == 0) {
       // vertical Eulerian
       assign_zero_to_sdot_sum(kv);
       compute_eta_dot_dpdn_vertadv_euler(kv);
@@ -192,7 +197,7 @@ struct CaarFunctorImpl {
         Homme::subview(m_elements.m_state.m_v, kv.ie, m_data.n0),
         Homme::subview(m_elements.m_buffers.vorticity, kv.team_idx));
 
-    const bool rsplit_gt0 = m_data.rsplit > 0;
+    const bool rsplit_gt0 = m_rsplit > 0;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int idx) {
       const int igp = idx / NP;
@@ -437,7 +442,7 @@ struct CaarFunctorImpl {
         Homme::subview(m_elements.m_state.m_t, kv.ie, m_data.n0),
         Homme::subview(m_elements.m_buffers.temperature_grad, kv.team_idx));
 
-    const bool rsplit_gt0 = m_data.rsplit > 0;
+    const bool rsplit_gt0 = m_rsplit > 0;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int idx) {
       const int igp = idx / NP;

@@ -116,21 +116,20 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
 
   // Create the functor
   CaarFunctor& functor = Context::singleton().get<CaarFunctor>();
-  functor.set_n0_qdp(tl.n0_qdp);
 
   // ===================== RK STAGES ===================== //
 
   // Stage 1: u1 = u0 + dt/5 RHS(u0),          t_rhs = t
-  functor.run(tl.n0,tl.n0,tl.nm1,dt/5.0,eta_ave_w/4.0,compute_diagnostics);
+  functor.run(RKStageData(tl.n0,tl.n0,tl.nm1,tl.n0_qdp,dt/5.0,eta_ave_w/4.0,compute_diagnostics));
 
   // Stage 2: u2 = u0 + dt/5 RHS(u1),          t_rhs = t + dt/5
-  functor.run(tl.n0,tl.nm1,tl.np1,dt/5.0,0.0,false);
+  functor.run(RKStageData(tl.n0,tl.nm1,tl.np1,tl.n0_qdp,dt/5.0,0.0,false));
 
   // Stage 3: u3 = u0 + dt/3 RHS(u2),          t_rhs = t + dt/5 + dt/5
-  functor.run(tl.n0,tl.np1,tl.np1,dt/3.0,0.0,false);
+  functor.run(RKStageData(tl.n0,tl.np1,tl.np1,tl.n0_qdp,dt/3.0,0.0,false));
 
   // Stage 4: u4 = u0 + 2dt/3 RHS(u3),         t_rhs = t + dt/5 + dt/5 + dt/3
-  functor.run(tl.n0,tl.np1,tl.np1,2.0*dt/3.0,0.0,false);
+  functor.run(RKStageData(tl.n0,tl.np1,tl.np1,tl.n0_qdp,2.0*dt/3.0,0.0,false));
 
   // Compute (5u1-u0)/4 and store it in timelevel nm1
   {
@@ -155,7 +154,7 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
   ExecSpace::fence();
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
-  functor.run(tl.nm1,tl.np1,tl.np1,3.0*dt/4.0,3.0*eta_ave_w/4.0,false);
+  functor.run(RKStageData(tl.nm1,tl.np1,tl.np1,tl.n0_qdp,3.0*dt/4.0,3.0*eta_ave_w/4.0,false));
   GPTLstop("tl-ae U3-5stage_timestep");
 }
 
