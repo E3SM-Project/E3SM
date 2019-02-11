@@ -20,7 +20,7 @@ module WoodProductsMod
   
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns, col_nf
+  use ColumnDataType      , only : col_ns, col_nf, col_ps
 
   !
   implicit none
@@ -94,8 +94,8 @@ contains
        col_nf%prod10n_loss(c)    = col_ns%prod10n(c)    * kprod10
        col_nf%prod100n_loss(c)   = col_ns%prod100n(c)   * kprod100
 
-       pf%prod10p_loss_col(c)    = ps%prod10p_col(c)    * kprod10
-       pf%prod100p_loss_col(c)   = ps%prod100p_col(c)   * kprod100
+       pf%prod10p_loss_col(c)    = col_ps%prod10p(c)    * kprod10
+       pf%prod100p_loss_col(c)   = col_ps%prod100p(c)   * kprod100
     end do
 
     ! set time steps
@@ -150,12 +150,12 @@ contains
             + col_nf%hrv_deadstemn_to_prod100n(c)*dt        & ! from harvest
             - col_nf%prod100n_loss(c)*dt                      ! from decomposition
 
-       ps%prod10p_col(c)    = ps%prod10p_col(c)             &
+       col_ps%prod10p(c)    = col_ps%prod10p(c)             &
             + pf%dwt_prod10p_gain_col(c)*dt                 & ! from landcover change
             + pf%hrv_deadstemp_to_prod10p_col(c)*dt         & ! from harvest
             - pf%prod10p_loss_col(c)*dt                       ! from decomposition
 
-       ps%prod100p_col(c)   = ps%prod100p_col(c)            &
+       col_ps%prod100p(c)   = col_ps%prod100p(c)            &
             + pf%dwt_prod100p_gain_col(c)*dt                & ! from landcover change
             + pf%hrv_deadstemp_to_prod100p_col(c)*dt        & ! from harvest
             - pf%prod100p_loss_col(c)*dt                      ! from decomposition

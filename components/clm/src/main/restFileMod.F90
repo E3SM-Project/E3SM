@@ -64,10 +64,12 @@ module restFileMod
   use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType       , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType       , only : col_ns, col_nf
+  use ColumnDataType       , only : col_ps, col_pf
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use VegetationDataType   , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType   , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType   , only : veg_ns, veg_nf
+  use VegetationDataType   , only : veg_ps, veg_pf
   
   !
   ! !PUBLIC TYPES:
@@ -278,8 +280,10 @@ contains
        call col_nf%Restart(bounds, ncid, flag='define')
        call veg_nf%Restart(bounds, ncid, flag='define')
 
+       call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+       call veg_ps%Restart(bounds, ncid, flag='define')
+
        call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
 
        call crop_vars%Restart(bounds, ncid, flag='define')
 
@@ -432,8 +436,10 @@ contains
        call col_nf%Restart(bounds, ncid, flag='write')
        call veg_nf%Restart(bounds, ncid, flag='write')
 
+       call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+       call veg_ps%Restart(bounds, ncid, flag='write')
+
        call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
 
        call crop_vars%Restart(bounds, ncid, flag='write')
     end if
@@ -688,8 +694,10 @@ contains
        call col_nf%Restart(bounds, ncid, flag='read')
        call veg_nf%Restart(bounds, ncid, flag='read')
 
+       call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+       call veg_ps%Restart(bounds, ncid, flag='read')
+
        call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
 
        call crop_vars%Restart(bounds, ncid, flag='read')
     end if

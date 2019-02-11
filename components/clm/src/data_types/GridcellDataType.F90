@@ -151,7 +151,30 @@ module GridcellDataType
     procedure, public :: Clean   => grc_nf_clean
   end type gridcell_nitrogen_flux
  
- !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds phosphorus state information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_phosphorus_state
+    real(r8), pointer :: seedp                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
+    real(r8), pointer :: begpb                    (:)     ! phosphorus mass, beginning of time step (gP/m**2)
+    real(r8), pointer :: endpb                    (:)     ! phosphorus mass, end of time step (gP/m**2)
+    real(r8), pointer :: errpb                    (:)     ! phosphorus balance error for the timestep (gP/m**2)
+  contains
+    procedure, public :: Init    => grc_ps_init
+    procedure, public :: Clean   => grc_ps_clean
+  end type gridcell_phosphorus_state
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds phosphorus flux information at the gridcell level.
+  !-----------------------------------------------------------------------
+  type, public :: gridcell_phosphorus_flux
+    real(r8), pointer :: xxx                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
+  contains
+    procedure, public :: Init    => grc_pf_init
+    procedure, public :: Clean   => grc_pf_clean
+  end type gridcell_phosphorus_flux
+  
+  !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
   type(gridcell_energy_state)          , public, target :: grc_es     ! gridcell energy state
@@ -166,6 +189,8 @@ module GridcellDataType
   type(gridcell_carbon_flux)           , public, target :: c14_grc_cf ! gridcell carbon flux (C14)
   type(gridcell_nitrogen_state)        , public, target :: grc_ns     ! gridcell nitrogen state
   type(gridcell_nitrogen_flux)         , public, target :: grc_nf     ! gridcell nitrogen flux
+  type(gridcell_phosphorus_state)      , public, target :: grc_ps     ! gridcell phosphorus state
+  type(gridcell_phosphorus_flux)       , public, target :: grc_pf     ! gridcell phosphorus flux
   !------------------------------------------------------------------------
 
 contains
@@ -840,6 +865,84 @@ contains
     !------------------------------------------------------------------------
   
   end subroutine grc_nf_clean
+  
+  subroutine grc_ps_init (this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_phosphorus_state) :: this
+    integer, intent(in) :: begg,endg
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g
+    !------------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_ps
+    !-----------------------------------------------------------------------
+    allocate(this%seedp   (begg:endg)) ; this%seedp   (:) = nan
+    allocate(this%begpb   (begg:endg)) ; this%begpb   (:) = nan
+    allocate(this%endpb   (begg:endg)) ; this%endpb   (:) = nan
+    allocate(this%errpb   (begg:endg)) ; this%errpb   (:) = nan
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_ps
+    !-----------------------------------------------------------------------
+    this%seedp(begg:endg) = spval
+    call hist_addfld1d (fname='SEEDP_GRC', units='gP/m^2', &
+         avgflag='A', long_name='P pool for seeding new PFTs ', &
+         ptr_gcell=this%seedp, default='inactive')
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of grc_ps
+    !------------------------------------------------------------------------
+    do g = begg, endg
+       this%seedp(g) = 0._r8
+    end do
+
+  
+  end subroutine grc_ps_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_ps_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_phosphorus_state) :: this
+    !------------------------------------------------------------------------
+  
+  end subroutine grc_ps_clean
+
+  subroutine grc_pf_init (this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_phosphorus_flux) :: this
+    integer, intent(in) :: begg,endg
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g
+    !------------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! allocate for each member of grc_ps
+    !-----------------------------------------------------------------------
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of grc_ps
+    !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of grc_ps
+    !------------------------------------------------------------------------
+  
+  end subroutine grc_pf_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_pf_clean(this)
+    !
+    ! !ARGUMENTS:
+    class(gridcell_phosphorus_flux) :: this
+    !------------------------------------------------------------------------
+  
+  end subroutine grc_pf_clean
   
 end module GridcellDataType
 

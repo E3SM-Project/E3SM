@@ -30,6 +30,10 @@ module PhosphorusStateUpdate1Mod
   use decompMod              , only : bounds_type
   use clm_varcon             , only : dzsoi_decomp
   use clm_varctl             , only : use_fates
+  use GridcellDataType       , only : grc_ps
+  use ColumnDataType         , only : col_ps
+  use VegetationDataType     , only : veg_ps
+  
   !
   implicit none
   save
@@ -74,7 +78,7 @@ contains
       if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
-            ps%seedp_grc(g) = ps%seedp_grc(g) &
+            grc_ps%seedp(g) = grc_ps%seedp(g) &
                  - pf%dwt_seedp_to_leaf_grc(g)     * dt &
                  - pf%dwt_seedp_to_deadstem_grc(g) * dt &
                  - pf%dwt_seedp_to_ppool_grc(g)    * dt
@@ -84,13 +88,13 @@ contains
             do fc = 1, num_soilc_with_inactive
                c = filter_soilc_with_inactive(fc)
 
-               ps%decomp_ppools_vr_col(c,j,i_met_lit) = ps%decomp_ppools_vr_col(c,j,i_met_lit) + &
+               col_ps%decomp_ppools_vr(c,j,i_met_lit) = col_ps%decomp_ppools_vr(c,j,i_met_lit) + &
                     pf%dwt_frootp_to_litr_met_p_col(c,j) * dt
-               ps%decomp_ppools_vr_col(c,j,i_cel_lit) = ps%decomp_ppools_vr_col(c,j,i_cel_lit) + &
+               col_ps%decomp_ppools_vr(c,j,i_cel_lit) = col_ps%decomp_ppools_vr(c,j,i_cel_lit) + &
                     pf%dwt_frootp_to_litr_cel_p_col(c,j) * dt
-               ps%decomp_ppools_vr_col(c,j,i_lig_lit) = ps%decomp_ppools_vr_col(c,j,i_lig_lit) + &
+               col_ps%decomp_ppools_vr(c,j,i_lig_lit) = col_ps%decomp_ppools_vr(c,j,i_lig_lit) + &
                     pf%dwt_frootp_to_litr_lig_p_col(c,j) * dt
-               ps%decomp_ppools_vr_col(c,j,i_cwd) = ps%decomp_ppools_vr_col(c,j,i_cwd) + &
+               col_ps%decomp_ppools_vr(c,j,i_cwd) = col_ps%decomp_ppools_vr(c,j,i_cwd) + &
                     ( pf%dwt_livecrootp_to_cwdp_col(c,j) + pf%dwt_deadcrootp_to_cwdp_col(c,j) ) * dt
 
             end do
@@ -224,7 +228,7 @@ contains
                .and. fert_type(c) == 2 &
                .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                do j = 1, nlevdecomp
-                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+                  col_ps%solutionp_vr(c,j) = col_ps%solutionp_vr(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
                end do
             end if
          end do
@@ -237,132 +241,132 @@ contains
          p = filter_soilp(fp)
 
          ! phenology: transfer growth fluxes
-         ps%leafp_patch(p)       = ps%leafp_patch(p)       + pf%leafp_xfer_to_leafp_patch(p)*dt
-         ps%leafp_xfer_patch(p)  = ps%leafp_xfer_patch(p)  - pf%leafp_xfer_to_leafp_patch(p)*dt
-         ps%frootp_patch(p)      = ps%frootp_patch(p)      + pf%frootp_xfer_to_frootp_patch(p)*dt
-         ps%frootp_xfer_patch(p) = ps%frootp_xfer_patch(p) - pf%frootp_xfer_to_frootp_patch(p)*dt
+         veg_ps%leafp(p)       = veg_ps%leafp(p)       + pf%leafp_xfer_to_leafp_patch(p)*dt
+         veg_ps%leafp_xfer(p)  = veg_ps%leafp_xfer(p)  - pf%leafp_xfer_to_leafp_patch(p)*dt
+         veg_ps%frootp(p)      = veg_ps%frootp(p)      + pf%frootp_xfer_to_frootp_patch(p)*dt
+         veg_ps%frootp_xfer(p) = veg_ps%frootp_xfer(p) - pf%frootp_xfer_to_frootp_patch(p)*dt
 
          if (woody(ivt(p)) == 1.0_r8) then
-            ps%livestemp_patch(p)       = ps%livestemp_patch(p)       + pf%livestemp_xfer_to_livestemp_patch(p)*dt
-            ps%livestemp_xfer_patch(p)  = ps%livestemp_xfer_patch(p)  - pf%livestemp_xfer_to_livestemp_patch(p)*dt
-            ps%deadstemp_patch(p)       = ps%deadstemp_patch(p)       + pf%deadstemp_xfer_to_deadstemp_patch(p)*dt
-            ps%deadstemp_xfer_patch(p)  = ps%deadstemp_xfer_patch(p)  - pf%deadstemp_xfer_to_deadstemp_patch(p)*dt
-            ps%livecrootp_patch(p)      = ps%livecrootp_patch(p)      + pf%livecrootp_xfer_to_livecrootp_patch(p)*dt
-            ps%livecrootp_xfer_patch(p) = ps%livecrootp_xfer_patch(p) - pf%livecrootp_xfer_to_livecrootp_patch(p)*dt
-            ps%deadcrootp_patch(p)      = ps%deadcrootp_patch(p)      + pf%deadcrootp_xfer_to_deadcrootp_patch(p)*dt
-            ps%deadcrootp_xfer_patch(p) = ps%deadcrootp_xfer_patch(p) - pf%deadcrootp_xfer_to_deadcrootp_patch(p)*dt
+            veg_ps%livestemp(p)       = veg_ps%livestemp(p)       + pf%livestemp_xfer_to_livestemp_patch(p)*dt
+            veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p)  - pf%livestemp_xfer_to_livestemp_patch(p)*dt
+            veg_ps%deadstemp(p)       = veg_ps%deadstemp(p)       + pf%deadstemp_xfer_to_deadstemp_patch(p)*dt
+            veg_ps%deadstemp_xfer(p)  = veg_ps%deadstemp_xfer(p)  - pf%deadstemp_xfer_to_deadstemp_patch(p)*dt
+            veg_ps%livecrootp(p)      = veg_ps%livecrootp(p)      + pf%livecrootp_xfer_to_livecrootp_patch(p)*dt
+            veg_ps%livecrootp_xfer(p) = veg_ps%livecrootp_xfer(p) - pf%livecrootp_xfer_to_livecrootp_patch(p)*dt
+            veg_ps%deadcrootp(p)      = veg_ps%deadcrootp(p)      + pf%deadcrootp_xfer_to_deadcrootp_patch(p)*dt
+            veg_ps%deadcrootp_xfer(p) = veg_ps%deadcrootp_xfer(p) - pf%deadcrootp_xfer_to_deadcrootp_patch(p)*dt
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
-            ps%livestemp_patch(p)       = ps%livestemp_patch(p)      + pf%livestemp_xfer_to_livestemp_patch(p)*dt
-            ps%livestemp_xfer_patch(p)  = ps%livestemp_xfer_patch(p) - pf%livestemp_xfer_to_livestemp_patch(p)*dt
-            ps%grainp_patch(p)          = ps%grainp_patch(p)         + pf%grainp_xfer_to_grainp_patch(p)*dt
-            ps%grainp_xfer_patch(p)     = ps%grainp_xfer_patch(p)    - pf%grainp_xfer_to_grainp_patch(p)*dt
+            veg_ps%livestemp(p)       = veg_ps%livestemp(p)      + pf%livestemp_xfer_to_livestemp_patch(p)*dt
+            veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p) - pf%livestemp_xfer_to_livestemp_patch(p)*dt
+            veg_ps%grainp(p)          = veg_ps%grainp(p)         + pf%grainp_xfer_to_grainp_patch(p)*dt
+            veg_ps%grainp_xfer(p)     = veg_ps%grainp_xfer(p)    - pf%grainp_xfer_to_grainp_patch(p)*dt
          end if
 
          ! phenology: litterfall and retranslocation fluxes
-         ps%leafp_patch(p)    = ps%leafp_patch(p)    - pf%leafp_to_litter_patch(p)*dt
-         ps%frootp_patch(p)   = ps%frootp_patch(p)   - pf%frootp_to_litter_patch(p)*dt
-         ps%leafp_patch(p)    = ps%leafp_patch(p)    - pf%leafp_to_retransp_patch(p)*dt
-         ps%retransp_patch(p) = ps%retransp_patch(p) + pf%leafp_to_retransp_patch(p)*dt
+         veg_ps%leafp(p)    = veg_ps%leafp(p)    - pf%leafp_to_litter_patch(p)*dt
+         veg_ps%frootp(p)   = veg_ps%frootp(p)   - pf%frootp_to_litter_patch(p)*dt
+         veg_ps%leafp(p)    = veg_ps%leafp(p)    - pf%leafp_to_retransp_patch(p)*dt
+         veg_ps%retransp(p) = veg_ps%retransp(p) + pf%leafp_to_retransp_patch(p)*dt
 
          ! live wood turnover and retranslocation fluxes
          if (woody(ivt(p)) == 1._r8) then
-            ps%livestemp_patch(p)  = ps%livestemp_patch(p)  - pf%livestemp_to_deadstemp_patch(p)*dt
-            ps%deadstemp_patch(p)  = ps%deadstemp_patch(p)  + pf%livestemp_to_deadstemp_patch(p)*dt
-            ps%livestemp_patch(p)  = ps%livestemp_patch(p)  - pf%livestemp_to_retransp_patch(p)*dt
-            ps%retransp_patch(p)   = ps%retransp_patch(p)   + pf%livestemp_to_retransp_patch(p)*dt
-            ps%livecrootp_patch(p) = ps%livecrootp_patch(p) - pf%livecrootp_to_deadcrootp_patch(p)*dt
-            ps%deadcrootp_patch(p) = ps%deadcrootp_patch(p) + pf%livecrootp_to_deadcrootp_patch(p)*dt
-            ps%livecrootp_patch(p) = ps%livecrootp_patch(p) - pf%livecrootp_to_retransp_patch(p)*dt
-            ps%retransp_patch(p)   = ps%retransp_patch(p)   + pf%livecrootp_to_retransp_patch(p)*dt
+            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - pf%livestemp_to_deadstemp_patch(p)*dt
+            veg_ps%deadstemp(p)  = veg_ps%deadstemp(p)  + pf%livestemp_to_deadstemp_patch(p)*dt
+            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - pf%livestemp_to_retransp_patch(p)*dt
+            veg_ps%retransp(p)   = veg_ps%retransp(p)   + pf%livestemp_to_retransp_patch(p)*dt
+            veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - pf%livecrootp_to_deadcrootp_patch(p)*dt
+            veg_ps%deadcrootp(p) = veg_ps%deadcrootp(p) + pf%livecrootp_to_deadcrootp_patch(p)*dt
+            veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - pf%livecrootp_to_retransp_patch(p)*dt
+            veg_ps%retransp(p)   = veg_ps%retransp(p)   + pf%livecrootp_to_retransp_patch(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
-            ps%frootp_patch(p)     = ps%frootp_patch(p)     - pf%frootp_to_retransp_patch(p)*dt
-            ps%retransp_patch(p)   = ps%retransp_patch(p)   + pf%frootp_to_retransp_patch(p)*dt
-            ps%livestemp_patch(p)  = ps%livestemp_patch(p)  - pf%livestemp_to_litter_patch(p)*dt
-            ps%livestemp_patch(p)  = ps%livestemp_patch(p)  - pf%livestemp_to_retransp_patch(p)*dt
-            ps%retransp_patch(p)   = ps%retransp_patch(p)   + pf%livestemp_to_retransp_patch(p)*dt
-            ps%grainp_patch(p)     = ps%grainp_patch(p)     - pf%grainp_to_food_patch(p)*dt
+            veg_ps%frootp(p)     = veg_ps%frootp(p)     - pf%frootp_to_retransp_patch(p)*dt
+            veg_ps%retransp(p)   = veg_ps%retransp(p)   + pf%frootp_to_retransp_patch(p)*dt
+            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - pf%livestemp_to_litter_patch(p)*dt
+            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - pf%livestemp_to_retransp_patch(p)*dt
+            veg_ps%retransp(p)   = veg_ps%retransp(p)   + pf%livestemp_to_retransp_patch(p)*dt
+            veg_ps%grainp(p)     = veg_ps%grainp(p)     - pf%grainp_to_food_patch(p)*dt
 
-            ps%cropseedp_deficit_patch(p) = ps%cropseedp_deficit_patch(p) &
+            veg_ps%cropseedp_deficit(p) = veg_ps%cropseedp_deficit(p) &
                  - pf%crop_seedp_to_leaf_patch(p) * dt
          end if
 
          ! uptake from soil mineral N pool
-         ps%ppool_patch(p) = &
-              ps%ppool_patch(p) + pf%sminp_to_ppool_patch(p)*dt
-         if (nu_com .ne. 'RD') ps%ppool_patch(p) = ps%ppool_patch(p) + pf%supplement_to_plantp(p)*dt
-         if (NFIX_PTASE_plant) ps%ppool_patch(p) = ps%ppool_patch(p) + pf%biochem_pmin_to_plant_patch(p)*dt
+         veg_ps%ppool(p) = &
+              veg_ps%ppool(p) + pf%sminp_to_ppool_patch(p)*dt
+         if (nu_com .ne. 'RD') veg_ps%ppool(p) = veg_ps%ppool(p) + pf%supplement_to_plantp(p)*dt
+         if (NFIX_PTASE_plant) veg_ps%ppool(p) = veg_ps%ppool(p) + pf%biochem_pmin_to_plant_patch(p)*dt
 
          ! deployment from retranslocation pool
-         ps%ppool_patch(p)    = ps%ppool_patch(p)    + pf%retransp_to_ppool_patch(p)*dt
-         ps%retransp_patch(p) = ps%retransp_patch(p) - pf%retransp_to_ppool_patch(p)*dt
+         veg_ps%ppool(p)    = veg_ps%ppool(p)    + pf%retransp_to_ppool_patch(p)*dt
+         veg_ps%retransp(p) = veg_ps%retransp(p) - pf%retransp_to_ppool_patch(p)*dt
 
          ! allocation fluxes
-         ps%ppool_patch(p)           = ps%ppool_patch(p)          - pf%ppool_to_leafp_patch(p)*dt
-         ps%leafp_patch(p)           = ps%leafp_patch(p)          + pf%ppool_to_leafp_patch(p)*dt
-         ps%ppool_patch(p)           = ps%ppool_patch(p)          - pf%ppool_to_leafp_storage_patch(p)*dt
-         ps%leafp_storage_patch(p)   = ps%leafp_storage_patch(p)  + pf%ppool_to_leafp_storage_patch(p)*dt
-         ps%ppool_patch(p)           = ps%ppool_patch(p)          - pf%ppool_to_frootp_patch(p)*dt
-         ps%frootp_patch(p)          = ps%frootp_patch(p)         + pf%ppool_to_frootp_patch(p)*dt
-         ps%ppool_patch(p)           = ps%ppool_patch(p)          - pf%ppool_to_frootp_storage_patch(p)*dt
-         ps%frootp_storage_patch(p)  = ps%frootp_storage_patch(p) + pf%ppool_to_frootp_storage_patch(p)*dt
+         veg_ps%ppool(p)           = veg_ps%ppool(p)          - pf%ppool_to_leafp_patch(p)*dt
+         veg_ps%leafp(p)           = veg_ps%leafp(p)          + pf%ppool_to_leafp_patch(p)*dt
+         veg_ps%ppool(p)           = veg_ps%ppool(p)          - pf%ppool_to_leafp_storage_patch(p)*dt
+         veg_ps%leafp_storage(p)   = veg_ps%leafp_storage(p)  + pf%ppool_to_leafp_storage_patch(p)*dt
+         veg_ps%ppool(p)           = veg_ps%ppool(p)          - pf%ppool_to_frootp_patch(p)*dt
+         veg_ps%frootp(p)          = veg_ps%frootp(p)         + pf%ppool_to_frootp_patch(p)*dt
+         veg_ps%ppool(p)           = veg_ps%ppool(p)          - pf%ppool_to_frootp_storage_patch(p)*dt
+         veg_ps%frootp_storage(p)  = veg_ps%frootp_storage(p) + pf%ppool_to_frootp_storage_patch(p)*dt
 
          if (woody(ivt(p)) == 1._r8) then
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_livestemp_patch(p)*dt
-            ps%livestemp_patch(p)          = ps%livestemp_patch(p)          + pf%ppool_to_livestemp_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_livestemp_storage_patch(p)*dt
-            ps%livestemp_storage_patch(p)  = ps%livestemp_storage_patch(p)  + pf%ppool_to_livestemp_storage_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_deadstemp_patch(p)*dt
-            ps%deadstemp_patch(p)          = ps%deadstemp_patch(p)          + pf%ppool_to_deadstemp_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_deadstemp_storage_patch(p)*dt
-            ps%deadstemp_storage_patch(p)  = ps%deadstemp_storage_patch(p)  + pf%ppool_to_deadstemp_storage_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_livecrootp_patch(p)*dt
-            ps%livecrootp_patch(p)         = ps%livecrootp_patch(p)         + pf%ppool_to_livecrootp_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_livecrootp_storage_patch(p)*dt
-            ps%livecrootp_storage_patch(p) = ps%livecrootp_storage_patch(p) + pf%ppool_to_livecrootp_storage_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_deadcrootp_patch(p)*dt
-            ps%deadcrootp_patch(p)         = ps%deadcrootp_patch(p)         + pf%ppool_to_deadcrootp_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_deadcrootp_storage_patch(p)*dt
-            ps%deadcrootp_storage_patch(p) = ps%deadcrootp_storage_patch(p) + pf%ppool_to_deadcrootp_storage_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_livestemp_patch(p)*dt
+            veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + pf%ppool_to_livestemp_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_livestemp_storage_patch(p)*dt
+            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  + pf%ppool_to_livestemp_storage_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_deadstemp_patch(p)*dt
+            veg_ps%deadstemp(p)          = veg_ps%deadstemp(p)          + pf%ppool_to_deadstemp_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_deadstemp_storage_patch(p)*dt
+            veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  + pf%ppool_to_deadstemp_storage_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_livecrootp_patch(p)*dt
+            veg_ps%livecrootp(p)         = veg_ps%livecrootp(p)         + pf%ppool_to_livecrootp_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_livecrootp_storage_patch(p)*dt
+            veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) + pf%ppool_to_livecrootp_storage_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_deadcrootp_patch(p)*dt
+            veg_ps%deadcrootp(p)         = veg_ps%deadcrootp(p)         + pf%ppool_to_deadcrootp_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_deadcrootp_storage_patch(p)*dt
+            veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) + pf%ppool_to_deadcrootp_storage_patch(p)*dt
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_livestemp_patch(p)*dt
-            ps%livestemp_patch(p)          = ps%livestemp_patch(p)          + pf%ppool_to_livestemp_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_livestemp_storage_patch(p)*dt
-            ps%livestemp_storage_patch(p)  = ps%livestemp_storage_patch(p)  + pf%ppool_to_livestemp_storage_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_grainp_patch(p)*dt
-            ps%grainp_patch(p)             = ps%grainp_patch(p)             + pf%ppool_to_grainp_patch(p)*dt
-            ps%ppool_patch(p)              = ps%ppool_patch(p)              - pf%ppool_to_grainp_storage_patch(p)*dt
-            ps%grainp_storage_patch(p)     = ps%grainp_storage_patch(p)     + pf%ppool_to_grainp_storage_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_livestemp_patch(p)*dt
+            veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + pf%ppool_to_livestemp_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_livestemp_storage_patch(p)*dt
+            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  + pf%ppool_to_livestemp_storage_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_grainp_patch(p)*dt
+            veg_ps%grainp(p)             = veg_ps%grainp(p)             + pf%ppool_to_grainp_patch(p)*dt
+            veg_ps%ppool(p)              = veg_ps%ppool(p)              - pf%ppool_to_grainp_storage_patch(p)*dt
+            veg_ps%grainp_storage(p)     = veg_ps%grainp_storage(p)     + pf%ppool_to_grainp_storage_patch(p)*dt
          end if
 
          ! move storage pools into transfer pools
-         ps%leafp_storage_patch(p)  = ps%leafp_storage_patch(p)  - pf%leafp_storage_to_xfer_patch(p)*dt
-         ps%leafp_xfer_patch(p)     = ps%leafp_xfer_patch(p)     + pf%leafp_storage_to_xfer_patch(p)*dt
-         ps%frootp_storage_patch(p) = ps%frootp_storage_patch(p) - pf%frootp_storage_to_xfer_patch(p)*dt
-         ps%frootp_xfer_patch(p)    = ps%frootp_xfer_patch(p)    + pf%frootp_storage_to_xfer_patch(p)*dt
+         veg_ps%leafp_storage(p)  = veg_ps%leafp_storage(p)  - pf%leafp_storage_to_xfer_patch(p)*dt
+         veg_ps%leafp_xfer(p)     = veg_ps%leafp_xfer(p)     + pf%leafp_storage_to_xfer_patch(p)*dt
+         veg_ps%frootp_storage(p) = veg_ps%frootp_storage(p) - pf%frootp_storage_to_xfer_patch(p)*dt
+         veg_ps%frootp_xfer(p)    = veg_ps%frootp_xfer(p)    + pf%frootp_storage_to_xfer_patch(p)*dt
 
          if (woody(ivt(p)) == 1._r8) then
-            ps%livestemp_storage_patch(p)  = ps%livestemp_storage_patch(p)  - pf%livestemp_storage_to_xfer_patch(p)*dt
-            ps%livestemp_xfer_patch(p)     = ps%livestemp_xfer_patch(p)     + pf%livestemp_storage_to_xfer_patch(p)*dt
-            ps%deadstemp_storage_patch(p)  = ps%deadstemp_storage_patch(p)  - pf%deadstemp_storage_to_xfer_patch(p)*dt
-            ps%deadstemp_xfer_patch(p)     = ps%deadstemp_xfer_patch(p)     + pf%deadstemp_storage_to_xfer_patch(p)*dt
-            ps%livecrootp_storage_patch(p) = ps%livecrootp_storage_patch(p) - pf%livecrootp_storage_to_xfer_patch(p)*dt
-            ps%livecrootp_xfer_patch(p)    = ps%livecrootp_xfer_patch(p)    + pf%livecrootp_storage_to_xfer_patch(p)*dt
-            ps%deadcrootp_storage_patch(p) = ps%deadcrootp_storage_patch(p) - pf%deadcrootp_storage_to_xfer_patch(p)*dt
-            ps%deadcrootp_xfer_patch(p)    = ps%deadcrootp_xfer_patch(p)    + pf%deadcrootp_storage_to_xfer_patch(p)*dt
+            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  - pf%livestemp_storage_to_xfer_patch(p)*dt
+            veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)     + pf%livestemp_storage_to_xfer_patch(p)*dt
+            veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  - pf%deadstemp_storage_to_xfer_patch(p)*dt
+            veg_ps%deadstemp_xfer(p)     = veg_ps%deadstemp_xfer(p)     + pf%deadstemp_storage_to_xfer_patch(p)*dt
+            veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) - pf%livecrootp_storage_to_xfer_patch(p)*dt
+            veg_ps%livecrootp_xfer(p)    = veg_ps%livecrootp_xfer(p)    + pf%livecrootp_storage_to_xfer_patch(p)*dt
+            veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) - pf%deadcrootp_storage_to_xfer_patch(p)*dt
+            veg_ps%deadcrootp_xfer(p)    = veg_ps%deadcrootp_xfer(p)    + pf%deadcrootp_storage_to_xfer_patch(p)*dt
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
-            ps%livestemp_storage_patch(p)  = ps%livestemp_storage_patch(p) - pf%livestemp_storage_to_xfer_patch(p)*dt
-            ps%livestemp_xfer_patch(p)     = ps%livestemp_xfer_patch(p)    + pf%livestemp_storage_to_xfer_patch(p)*dt
-            ps%grainp_storage_patch(p)     = ps%grainp_storage_patch(p)    - pf%grainp_storage_to_xfer_patch(p)*dt
-            ps%grainp_xfer_patch(p)        = ps%grainp_xfer_patch(p)       + pf%grainp_storage_to_xfer_patch(p)*dt
+            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p) - pf%livestemp_storage_to_xfer_patch(p)*dt
+            veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)    + pf%livestemp_storage_to_xfer_patch(p)*dt
+            veg_ps%grainp_storage(p)     = veg_ps%grainp_storage(p)    - pf%grainp_storage_to_xfer_patch(p)*dt
+            veg_ps%grainp_xfer(p)        = veg_ps%grainp_xfer(p)       + pf%grainp_storage_to_xfer_patch(p)*dt
          end if
 
       end do

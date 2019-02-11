@@ -37,9 +37,11 @@ module EcosystemDynMod
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType      , only : col_ns, col_nf
+  use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType  , only : veg_ns, veg_nf
+  use VegetationDataType  , only : veg_ps, veg_pf
   
   ! bgc interface & pflotran
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
@@ -247,8 +249,9 @@ contains
        call col_ns%Summary(bounds, num_soilc, filter_soilc)
 
        call phosphorusflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-
+       
+       call veg_ps%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
+       call col_ps%Summary(bounds, num_soilc, filter_soilc)
 
        call t_stopf('CNPsum')
 

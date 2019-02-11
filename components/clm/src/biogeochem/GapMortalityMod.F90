@@ -21,6 +21,7 @@ module GapMortalityMod
   use ColumnDataType      , only : col_cf, col_nf  
   use VegetationType      , only : veg_pp                
   use VegetationDataType  , only : veg_cs, veg_cf, veg_ns, veg_nf  
+  use VegetationDataType  , only : veg_ps  
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -259,39 +260,39 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = phosphorusstate_vars%leafp_patch(p)               * m
-         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = phosphorusstate_vars%frootp_patch(p)              * m
-         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = phosphorusstate_vars%livestemp_patch(p)           * m
-         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = phosphorusstate_vars%deadstemp_patch(p)           * m
-         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = phosphorusstate_vars%livecrootp_patch(p)          * m
-         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = phosphorusstate_vars%deadcrootp_patch(p)          * m
+         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = veg_ps%leafp(p)               * m
+         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = veg_ps%frootp(p)              * m
+         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = veg_ps%livestemp(p)           * m
+         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = veg_ps%deadstemp(p)           * m
+         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = veg_ps%livecrootp(p)          * m
+         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = veg_ps%deadcrootp(p)          * m
          if (ivt(p) < npcropmin) then
-            phosphorusflux_vars%m_retransp_to_litter_patch(p) = phosphorusstate_vars%retransp_patch(p) * m
+            phosphorusflux_vars%m_retransp_to_litter_patch(p) = veg_ps%retransp(p) * m
          end if
-         phosphorusflux_vars%m_ppool_to_litter_patch(p)               = phosphorusstate_vars%ppool_patch(p)               * m
+         phosphorusflux_vars%m_ppool_to_litter_patch(p)               = veg_ps%ppool(p)               * m
 
          if (spinup_state >= 1) then
-           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m &
+           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = veg_ps%deadstemp(p)  * m &
                 * spinup_mortality_factor
-           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = phosphorusstate_vars%deadcrootp_patch(p) * m &
+           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = veg_ps%deadcrootp(p) * m &
                 * spinup_mortality_factor
          end if
            
          ! storage pools
-         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = phosphorusstate_vars%leafp_storage_patch(p)       * m
-         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = phosphorusstate_vars%frootp_storage_patch(p)      * m
-         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = phosphorusstate_vars%livestemp_storage_patch(p)   * m
-         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = phosphorusstate_vars%deadstemp_storage_patch(p)   * m
-         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%livecrootp_storage_patch(p)  * m
-         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%deadcrootp_storage_patch(p)  * m
+         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = veg_ps%leafp_storage(p)       * m
+         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = veg_ps%frootp_storage(p)      * m
+         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = veg_ps%livestemp_storage(p)   * m
+         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = veg_ps%deadstemp_storage(p)   * m
+         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = veg_ps%livecrootp_storage(p)  * m
+         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = veg_ps%deadcrootp_storage(p)  * m
 
          ! transfer pools
-         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = phosphorusstate_vars%leafp_xfer_patch(p)          * m
-         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = phosphorusstate_vars%frootp_xfer_patch(p)         * m
-         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%livestemp_xfer_patch(p)      * m
-         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%deadstemp_xfer_patch(p)      * m
-         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%livecrootp_xfer_patch(p)     * m
-         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%deadcrootp_xfer_patch(p)     * m
+         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = veg_ps%leafp_xfer(p)          * m
+         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = veg_ps%frootp_xfer(p)         * m
+         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = veg_ps%livestemp_xfer(p)      * m
+         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = veg_ps%deadstemp_xfer(p)      * m
+         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = veg_ps%livecrootp_xfer(p)     * m
+         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = veg_ps%deadcrootp_xfer(p)     * m
 
          ! added by F. Li and S. Levis
          if (use_cndv) then

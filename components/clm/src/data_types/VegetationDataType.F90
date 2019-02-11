@@ -35,6 +35,7 @@ module VegetationDataType
   use ColumnDataType            , only : col_es
   use ColumnDataType            , only : column_carbon_state, column_carbon_flux
   use ColumnDataType            , only : column_nitrogen_state, column_nitrogen_flux
+  use ColumnDataType            , only : column_phosphorus_state, column_phosphorus_flux
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -248,10 +249,46 @@ module VegetationDataType
   ! Define the data structure that holds phosphorus state information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_phosphorus_state
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: grainp                 (:)     ! (gP/m2) grain P (crop)
+    real(r8), pointer :: grainp_storage         (:)     ! (gP/m2) grain P storage (crop)
+    real(r8), pointer :: grainp_xfer            (:)     ! (gP/m2) grain P transfer (crop)
+    real(r8), pointer :: leafp                  (:)     ! (gP/m2) leaf P 
+    real(r8), pointer :: leafp_storage          (:)     ! (gP/m2) leaf P storage
+    real(r8), pointer :: leafp_xfer             (:)     ! (gP/m2) leaf P transfer
+    real(r8), pointer :: frootp                 (:)     ! (gP/m2) fine root P
+    real(r8), pointer :: frootp_storage         (:)     ! (gP/m2) fine root P storage
+    real(r8), pointer :: frootp_xfer            (:)     ! (gP/m2) fine root P transfer
+    real(r8), pointer :: livestemp              (:)     ! (gP/m2) live stem P
+    real(r8), pointer :: livestemp_storage      (:)     ! (gP/m2) live stem P storage
+    real(r8), pointer :: livestemp_xfer         (:)     ! (gP/m2) live stem P transfer
+    real(r8), pointer :: deadstemp              (:)     ! (gP/m2) dead stem P
+    real(r8), pointer :: deadstemp_storage      (:)     ! (gP/m2) dead stem P storage
+    real(r8), pointer :: deadstemp_xfer         (:)     ! (gP/m2) dead stem P transfer
+    real(r8), pointer :: livecrootp             (:)     ! (gP/m2) live coarse root P
+    real(r8), pointer :: livecrootp_storage     (:)     ! (gP/m2) live coarse root P storage
+    real(r8), pointer :: livecrootp_xfer        (:)     ! (gP/m2) live coarse root P transfer
+    real(r8), pointer :: deadcrootp             (:)     ! (gP/m2) dead coarse root P
+    real(r8), pointer :: deadcrootp_storage     (:)     ! (gP/m2) dead coarse root P storage
+    real(r8), pointer :: deadcrootp_xfer        (:)     ! (gP/m2) dead coarse root P transfer
+    real(r8), pointer :: retransp               (:)     ! (gP/m2) plant pool of retranslocated P
+    real(r8), pointer :: ppool                  (:)     ! (gP/m2) temporary plant P pool
+    real(r8), pointer :: ptrunc                 (:)     ! (gP/m2) pft-level sink for P truncation
+    real(r8), pointer :: plant_p_buffer         (:)     ! (gP/m2) pft-level abstract p storage
+    real(r8), pointer :: cropseedp_deficit      (:)     ! (gP/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
+    real(r8), pointer :: dispvegp               (:)     ! (gP/m2) displayed veg phosphorus, excluding storage
+    real(r8), pointer :: storvegp               (:)     ! (gP/m2) stored vegetation phosphorus
+    real(r8), pointer :: totvegp                (:)     ! (gP/m2) total vegetation phosphorus
+    real(r8), pointer :: totpftp                (:)     ! (gP/m2) total pft-level phosphorus
+    real(r8), pointer :: begpb                  (:)     ! phosphorus mass, beginning of time step (gP/m**2)
+    real(r8), pointer :: endpb                  (:)     ! phosphorus mass, end of time step (gP/m**2)
+    real(r8), pointer :: errpb                  (:)     ! phosphorus balance error for the timestep (gP/m**2)
   contains
-    procedure, public :: Init  => veg_ps_init
-    procedure, public :: Clean => veg_ps_clean
+    procedure, public :: Init      => veg_ps_init
+    procedure, public :: Restart   => veg_ps_restart
+    procedure, public :: SetValues => veg_ps_setvalues
+    procedure, public :: ZeroDWT   => veg_ps_zerodwt
+    procedure, public :: Summary   => veg_ps_summary
+    procedure, public :: Clean     => veg_ps_clean
   end type vegetation_phosphorus_state
 
   !-----------------------------------------------------------------------
@@ -4136,15 +4173,643 @@ module VegetationDataType
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation phosphorus state data structure
   !------------------------------------------------------------------------
-  subroutine veg_ps_init(this, begp, endp)
+  subroutine veg_ps_init(this, begp, endp, veg_cs)
     !
     ! !ARGUMENTS:
-    class(vegetation_phosphorus_state) :: this
-    integer, intent(in) :: begp,endp
+    class(vegetation_phosphorus_state)        :: this
+    integer, intent(in)                       :: begp,endp
+    type(vegetation_carbon_state), intent(in) :: veg_cs
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fp,l,p                      ! indices
+    integer :: num_special_patch           ! number of good values in special_patch filter
+    integer :: special_patch (endp-begp+1) ! special landunit filter - patches
     !------------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+    ! allocate for each member of veg_ps
+    !-----------------------------------------------------------------------
+    allocate(this%grainp             (begp:endp)) ; this%grainp             (:) = nan     
+    allocate(this%grainp_storage     (begp:endp)) ; this%grainp_storage     (:) = nan
+    allocate(this%grainp_xfer        (begp:endp)) ; this%grainp_xfer        (:) = nan     
+    allocate(this%leafp              (begp:endp)) ; this%leafp              (:) = nan
+    allocate(this%leafp_storage      (begp:endp)) ; this%leafp_storage      (:) = nan     
+    allocate(this%leafp_xfer         (begp:endp)) ; this%leafp_xfer         (:) = nan     
+    allocate(this%frootp             (begp:endp)) ; this%frootp             (:) = nan
+    allocate(this%frootp_storage     (begp:endp)) ; this%frootp_storage     (:) = nan     
+    allocate(this%frootp_xfer        (begp:endp)) ; this%frootp_xfer        (:) = nan     
+    allocate(this%livestemp          (begp:endp)) ; this%livestemp          (:) = nan
+    allocate(this%livestemp_storage  (begp:endp)) ; this%livestemp_storage  (:) = nan
+    allocate(this%livestemp_xfer     (begp:endp)) ; this%livestemp_xfer     (:) = nan
+    allocate(this%deadstemp          (begp:endp)) ; this%deadstemp          (:) = nan
+    allocate(this%deadstemp_storage  (begp:endp)) ; this%deadstemp_storage  (:) = nan
+    allocate(this%deadstemp_xfer     (begp:endp)) ; this%deadstemp_xfer     (:) = nan
+    allocate(this%livecrootp         (begp:endp)) ; this%livecrootp         (:) = nan
+    allocate(this%livecrootp_storage (begp:endp)) ; this%livecrootp_storage (:) = nan
+    allocate(this%livecrootp_xfer    (begp:endp)) ; this%livecrootp_xfer    (:) = nan
+    allocate(this%deadcrootp         (begp:endp)) ; this%deadcrootp         (:) = nan
+    allocate(this%deadcrootp_storage (begp:endp)) ; this%deadcrootp_storage (:) = nan
+    allocate(this%deadcrootp_xfer    (begp:endp)) ; this%deadcrootp_xfer    (:) = nan
+    allocate(this%retransp           (begp:endp)) ; this%retransp           (:) = nan
+    allocate(this%ppool              (begp:endp)) ; this%ppool              (:) = nan
+    allocate(this%ptrunc             (begp:endp)) ; this%ptrunc             (:) = nan
+    allocate(this%dispvegp           (begp:endp)) ; this%dispvegp           (:) = nan
+    allocate(this%storvegp           (begp:endp)) ; this%storvegp           (:) = nan
+    allocate(this%totvegp            (begp:endp)) ; this%totvegp            (:) = nan
+    allocate(this%totpftp            (begp:endp)) ; this%totpftp            (:) = nan
+    allocate(this%plant_p_buffer     (begp:endp)) ; this%plant_p_buffer     (:) = nan
+    allocate(this%cropseedp_deficit  (begp:endp)) ; this%cropseedp_deficit  (:) = nan
+    allocate(this%begpb              (begp:endp)) ; this%begpb              (:) = nan
+    allocate(this%endpb              (begp:endp)) ; this%endpb              (:) = nan
+    allocate(this%errpb              (begp:endp)) ; this%errpb              (:) = nan
+    
+    !-----------------------------------------------------------------------
+    ! initialize history fields for select members of veg_ps
+    !-----------------------------------------------------------------------
+    if (crop_prog) then
+       this%grainp(begp:endp) = spval
+       call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
+            avgflag='A', long_name='grain P', &
+            ptr_patch=this%grainp, default='inactive')
+
+       this%cropseedp_deficit(begp:endp) = spval
+       call hist_addfld1d (fname='CROPSEEDP_DEFICIT', units='gP/m^2', &
+            avgflag='A', long_name='P used for crop seed that needs to be repaid', &
+            ptr_patch=this%cropseedp_deficit)
+    end if
+
+    this%leafp(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP', units='gP/m^2', &
+         avgflag='A', long_name='leaf P', &
+         ptr_patch=this%leafp)
+
+    this%leafp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP_STORAGE', units='gP/m^2', &
+         avgflag='A', long_name='leaf P storage', &
+         ptr_patch=this%leafp_storage, default='inactive')
+
+    this%leafp_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP_XFER', units='gP/m^2', &
+         avgflag='A', long_name='leaf P transfer', &
+         ptr_patch=this%leafp_xfer, default='inactive')
+
+    this%frootp(begp:endp) = spval
+    call hist_addfld1d (fname='FROOTP', units='gP/m^2', &
+         avgflag='A', long_name='fine root P', &
+         ptr_patch=this%frootp)
+
+    this%frootp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='FROOTP_STORAGE', units='gP/m^2', &
+         avgflag='A', long_name='fine root P storage', &
+         ptr_patch=this%frootp_storage, default='inactive')
+
+    this%frootp_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='FROOTP_XFER', units='gP/m^2', &
+         avgflag='A', long_name='fine root P transfer', &
+         ptr_patch=this%frootp_xfer, default='inactive')
+
+    this%livestemp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP', units='gP/m^2', &
+         avgflag='A', long_name='live stem P', &
+         ptr_patch=this%livestemp)
+
+    this%livestemp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP_STORAGE', units='gP/m^2', &
+         avgflag='A', long_name='live stem P storage', &
+         ptr_patch=this%livestemp_storage, default='inactive')
+
+    this%livestemp_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP_XFER', units='gP/m^2', &
+         avgflag='A', long_name='live stem P transfer', &
+         ptr_patch=this%livestemp_xfer, default='inactive')
+
+    this%deadstemp(begp:endp) = spval
+    call hist_addfld1d (fname='DEADSTEMP', units='gP/m^2', &
+         avgflag='A', long_name='dead stem P', &
+         ptr_patch=this%deadstemp)
+
+    this%deadstemp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='DEADSTEMP_STORAGE', units='gP/m^2', &
+         avgflag='A', long_name='dead stem P storage', &
+         ptr_patch=this%deadstemp_storage, default='inactive')
+
+    this%deadstemp_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='DEADSTEMP_XFER', units='gP/m^2', &
+         avgflag='A', long_name='dead stem P transfer', &
+         ptr_patch=this%deadstemp_xfer, default='inactive')
+
+    this%livecrootp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP', units='gP/m^2', &
+         avgflag='A', long_name='live coarse root P', &
+         ptr_patch=this%livecrootp)
+
+    this%livecrootp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP_STORAGE', units='gP/m^2', &
+         avgflag='A', long_name='live coarse root P storage', &
+         ptr_patch=this%livecrootp_storage, default='inactive')
+
+    this%livecrootp_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP_XFER', units='gP/m^2', &
+         avgflag='A', long_name='live coarse root P transfer', &
+         ptr_patch=this%livecrootp_xfer, default='inactive')
+
+    this%deadcrootp(begp:endp) = spval
+    call hist_addfld1d (fname='DEADCROOTP', units='gP/m^2', &
+         avgflag='A', long_name='dead coarse root P', &
+         ptr_patch=this%deadcrootp)
+
+    this%deadcrootp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='DEADCROOTP_STORAGE', units='gP/m^2', &
+         avgflag='A', long_name='dead coarse root P storage', &
+         ptr_patch=this%deadcrootp_storage, default='inactive')
+
+    this%deadcrootp_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='DEADCROOTP_XFER', units='gP/m^2', &
+         avgflag='A', long_name='dead coarse root P transfer', &
+         ptr_patch=this%deadcrootp_xfer, default='inactive')
+
+    this%retransp(begp:endp) = spval
+    call hist_addfld1d (fname='RETRANSP', units='gP/m^2', &
+         avgflag='A', long_name='plant pool of retranslocated P', &
+         ptr_patch=this%retransp)
+
+    this%ppool(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
+         avgflag='A', long_name='temporary plant P pool', &
+         ptr_patch=this%ppool, default='inactive')
+
+    this%ptrunc(begp:endp) = spval
+    call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
+         avgflag='A', long_name='pft-level sink for P truncation', &
+         ptr_patch=this%ptrunc, default='inactive')
+
+    this%dispvegp(begp:endp) = spval
+    call hist_addfld1d (fname='DISPVEGP', units='gP/m^2', &
+         avgflag='A', long_name='displayed vegetation phosphorus', &
+         ptr_patch=this%dispvegp)
+
+    this%storvegp(begp:endp) = spval
+    call hist_addfld1d (fname='STORVEGP', units='gP/m^2', &
+         avgflag='A', long_name='stored vegetation phosphorus', &
+         ptr_patch=this%storvegp)
+
+    this%totvegp(begp:endp) = spval
+    call hist_addfld1d (fname='TOTVEGP', units='gP/m^2', &
+         avgflag='A', long_name='total vegetation phosphorus', &
+         ptr_patch=this%totvegp)
+
+    this%totpftp(begp:endp) = spval
+    call hist_addfld1d (fname='TOTPFTP', units='gP/m^2', &
+         avgflag='A', long_name='total PFT-level phosphorus', &
+         ptr_patch=this%totpftp)
+
+    this%plant_p_buffer(begp:endp) = spval
+    call hist_addfld1d (fname='PLANTP_BUFFER', units='gP/m^2', &
+            avgflag='A', long_name='plant phosphorus stored as buffer', &
+            ptr_col=this%plant_p_buffer,default='inactive')
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of veg_ps
+    !------------------------------------------------------------------------
+    num_special_patch = 0
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
+          num_special_patch = num_special_patch + 1
+          special_patch(num_special_patch) = p
+       end if
+    end do
+    
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+
+          if (veg_pp%itype(p) == noveg) then
+             this%leafp(p) = 0._r8
+             this%leafp_storage(p) = 0._r8
+          else
+             this%leafp(p)         = veg_cs%leafc(p)  / veg_vp%leafcp(veg_pp%itype(p))
+             this%leafp_storage(p) = veg_cs%leafc_storage(p) / veg_vp%leafcp(veg_pp%itype(p))
+          end if
+
+          this%leafp_xfer(p)        = 0._r8
+          if ( crop_prog )then
+             this%grainp(p)            = 0._r8
+             this%grainp_storage(p)    = 0._r8
+             this%grainp_xfer(p)       = 0._r8
+             this%cropseedp_deficit(p) = 0._r8
+          end if
+          this%frootp(p)            = 0._r8
+          this%frootp_storage(p)    = 0._r8
+          this%frootp_xfer(p)       = 0._r8
+          this%livestemp(p)         = 0._r8
+          this%livestemp_storage(p) = 0._r8
+          this%livestemp_xfer(p)    = 0._r8
+
+          ! tree types need to be initialized with some stem mass so that
+          ! roughness length is not zero in canopy flux calculation
+
+          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+             this%deadstemp(p) = veg_cs%deadstemc(p) / veg_vp%deadwdcp(veg_pp%itype(p))
+          else
+             this%deadstemp(p) = 0._r8
+          end if
+          
+          if (nu_com .ne. 'RD') then
+              ! ECA competition calculate root NP uptake as a function of fine root biomass
+              ! better to initialize root CNP pools with a non-zero value
+              if (veg_pp%itype(p) .ne. noveg) then
+                 this%frootp(p) = veg_cs%frootc(p) / veg_vp%frootcp(veg_pp%itype(p))
+                 this%frootp_storage(p) = veg_cs%frootc_storage(p) / veg_vp%frootcp(veg_pp%itype(p))
+              end if
+          end if
+           
+          this%deadstemp_storage(p)  = 0._r8
+          this%deadstemp_xfer(p)     = 0._r8
+          this%livecrootp(p)         = 0._r8
+          this%livecrootp_storage(p) = 0._r8
+          this%livecrootp_xfer(p)    = 0._r8
+          this%deadcrootp(p)         = 0._r8
+          this%deadcrootp_storage(p) = 0._r8
+          this%deadcrootp_xfer(p)    = 0._r8
+          this%retransp(p)           = 0._r8
+          this%ppool(p)              = 0._r8
+          if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then
+              this%ppool(p)          = 1.0_r8
+          end if
+          this%ptrunc(p)             = 0._r8
+          this%dispvegp(p)           = 0._r8
+          this%storvegp(p)           = 0._r8
+          this%totvegp(p)            = 0._r8
+          this%totpftp(p)            = 0._r8
+       end if
+       this%plant_p_buffer(p)= 1.e-4_r8 
+    end do
+    
+    call this%SetValues (num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
     
   end subroutine veg_ps_init
     
+  !-----------------------------------------------------------------------
+  subroutine veg_ps_restart ( this,  bounds, ncid, flag)
+    !
+    ! !DESCRIPTION: 
+    ! Read/write vegetation-level phosphorus state restart data 
+    !
+    ! !ARGUMENTS:
+    class (vegetation_phosphorus_state)        :: this
+    type(bounds_type)          , intent(in)    :: bounds 
+    type(file_desc_t)          , intent(inout) :: ncid   
+    character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
+    !
+    ! !LOCAL VARIABLES:
+    integer            :: i,j,k,l,c,a,b,d
+    logical            :: readvar
+    integer            :: idata
+    logical            :: exit_spinup = .false.
+    logical            :: enter_spinup = .false.
+    real(r8)           :: m, m_veg         ! multiplier for the exit_spinup code
+    real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    character(len=128) :: varname    ! temporary
+    integer            :: itemp      ! temporary 
+    integer , pointer  :: iptemp(:)  ! pointer to memory to be allocated
+    ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
+    integer            :: restart_file_spinup_state 
+    ! flags for comparing the model and restart decomposition cascades
+    integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    real(r8)           :: smax_c, ks_sorption_c
+    real(r8)           :: rootfr(1:nlevdecomp)
+    real(r8)           :: pinit_prof(1:nlevdecomp)
+    real(r8)           :: rootfr_tot
+    !------------------------------------------------------------------------
+    call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%leafp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='leafp_storage', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%leafp_storage) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='leafp_xfer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%leafp_xfer) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='frootp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%frootp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='frootp_storage', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%frootp_storage) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='frootp_xfer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%frootp_xfer) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='livestemp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%livestemp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='livestemp_storage', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%livestemp_storage) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='livestemp_xfer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%livestemp_xfer) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='deadstemp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%deadstemp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='deadstemp_storage', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_storage) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='deadstemp_xfer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_xfer) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='livecrootp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%livecrootp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='livecrootp_storage', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_storage) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='livecrootp_xfer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_xfer) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='deadcrootp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_storage', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_storage) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_xfer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_xfer) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='retransp', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%retransp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='ppool', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%ppool) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='pft_ptrunc', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%ptrunc) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='plant_p_buffer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_p_buffer)
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag,  varname='grainp', xtype=ncd_double,  &
+            dim1name='pft',    long_name='grain P', units='gP/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%grainp)
+
+       call restartvar(ncid=ncid, flag=flag,  varname='grainp_storage', xtype=ncd_double,  &
+            dim1name='pft',    long_name='grain P storage', units='gP/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%grainp_storage)
+
+       call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer', xtype=ncd_double,  &
+            dim1name='pft',    long_name='grain P transfer', units='gP/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer)
+    end if
+
+    !--------------------------------
+    ! Spinup state
+    !--------------------------------
+    ! Do nothing for write
+    ! Note that the call to write spinup_state out was done in CNCarbonStateType and
+    ! cannot be called again because it will try to define the variable twice
+    ! when the flag below is set to define
+    if (flag == 'read') then
+       call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
+            long_name='Spinup state of the model that wrote this restart file: ' &
+            // ' 0 = normal model mode, 1 = AD spinup', units='', &
+            interpinic_flag='copy', readvar=readvar,  data=idata)
+       if (readvar) then
+          restart_file_spinup_state = idata
+       else
+          ! assume, for sake of backwards compatibility, that if spinup_state is not in 
+          ! the restart file then current model state is the same as prior model state
+          restart_file_spinup_state = spinup_state
+          if ( masterproc ) then
+             write(iulog,*) ' WARNING!  Restart file does not contain info ' &
+                  // ' on spinup state used to generate the restart file. '
+             write(iulog,*) '   Assuming the same as current setting: ', spinup_state
+          end if
+       end if
+    end if
+    if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
+       if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
+          if ( masterproc ) write(iulog,*) ' Phosphorus State Restart: taking pools out of AD spinup mode'
+          exit_spinup = .true.
+       else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
+          if ( masterproc ) write(iulog,*) ' Phosphorus State Restart: taking pools into AD spinup mode'
+          enter_spinup = .true.
+       else
+          call endrun(msg=' Error in entering/exiting spinup.  spinup_state ' &
+               // ' != restart_file_spinup_state, but do not know what to do'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+       if (get_nstep() >= 2) then
+          call endrun(msg=' Error in entering/exiting spinup - should occur only when nstep = 1'//&
+               errMsg(__FILE__, __LINE__))
+       endif
+       do i = bounds%begp, bounds%endp
+          if (exit_spinup) then
+             m_veg = spinup_mortality_factor
+          else if (enter_spinup) then
+             m_veg = 1._r8 / spinup_mortality_factor
+          end if
+          this%deadstemp(i)  = this%deadstemp(i) * m_veg
+          this%deadcrootp(i) = this%deadcrootp(i) * m_veg
+          if (nu_com == 'RD' .and. exit_spinup) then
+             !Initialize plant P storage pool when exiting spinup from CN only mode 
+             if (this%ppool(i) .lt. this%leafp(i)) then 
+                this%ppool(i) = this%leafp(i)
+             else if (this%ppool(i) .lt. this%leafp_storage(i)) then 
+                this%ppool(i) = this%leafp_storage(i)
+             end if
+          end if
+       end do
+    end if
+  
+  end subroutine veg_ps_restart
+  
+  !-----------------------------------------------------------------------
+  subroutine veg_ps_setvalues ( this, num_patch, filter_patch, value_patch)
+    !
+    ! !DESCRIPTION:
+    ! Set phosphorus state variables, column-level
+    !
+    ! !ARGUMENTS:
+    class (vegetation_phosphorus_state) :: this
+    integer , intent(in)                :: num_patch
+    integer , intent(in)                :: filter_patch(:)
+    real(r8), intent(in)                :: value_patch
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fi,i     ! loop index
+    integer :: j,k      ! indices
+    !------------------------------------------------------------------------
+    do fi = 1,num_patch
+       i = filter_patch(fi)
+
+       this%leafp(i)              = value_patch
+       this%leafp_storage(i)      = value_patch
+       this%leafp_xfer(i)         = value_patch
+       this%frootp(i)             = value_patch
+       this%frootp_storage(i)     = value_patch
+       this%frootp_xfer(i)        = value_patch
+       this%livestemp(i)          = value_patch
+       this%livestemp_storage(i)  = value_patch
+       this%livestemp_xfer(i)     = value_patch
+       this%deadstemp(i)          = value_patch
+       this%deadstemp_storage(i)  = value_patch
+       this%deadstemp_xfer(i)     = value_patch
+       this%livecrootp(i)         = value_patch
+       this%livecrootp_storage(i) = value_patch
+       this%livecrootp_xfer(i)    = value_patch
+       this%deadcrootp(i)         = value_patch
+       this%deadcrootp_storage(i) = value_patch
+       this%deadcrootp_xfer(i)    = value_patch
+       this%retransp(i)           = value_patch
+       this%ppool(i)              = value_patch
+       this%ptrunc(i)             = value_patch
+       this%dispvegp(i)           = value_patch
+       this%storvegp(i)           = value_patch
+       this%totvegp(i)            = value_patch
+       this%totpftp(i)            = value_patch
+    end do
+
+    if ( crop_prog )then
+       do fi = 1,num_patch
+          i = filter_patch(fi)
+          this%grainp(i)            = value_patch
+          this%grainp_storage(i)    = value_patch
+          this%grainp_xfer(i)       = value_patch
+          this%cropseedp_deficit(i) = value_patch
+       end do
+    end if
+
+  end subroutine veg_ps_setvalues
+  
+  !-----------------------------------------------------------------------
+  subroutine veg_ps_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(vegetation_phosphorus_state) :: this
+    type(bounds_type), intent(in)      :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p          ! indices
+    !-----------------------------------------------------------------------
+
+    do p = bounds%begp,bounds%endp
+       this%dispvegp(p) = 0._r8
+       this%storvegp(p) = 0._r8
+       this%totvegp(p)  = 0._r8
+       this%totpftp(p)  = 0._r8
+    end do
+
+  end subroutine veg_ps_zerodwt
+
+  !-----------------------------------------------------------------------
+  subroutine veg_ps_summary (this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
+    !
+    ! !ARGUMENTS:
+    class (vegetation_phosphorus_state) :: this
+    type(bounds_type) , intent(in)      :: bounds  
+    integer           , intent(in)      :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in)      :: filter_soilc(:) ! filter for soil columns
+    integer           , intent(in)      :: num_soilp       ! number of soil patches in filter
+    integer           , intent(in)      :: filter_soilp(:) ! filter for soil patches
+    type(column_phosphorus_state), intent(inout) :: col_ps
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p        ! indices
+    integer  :: fp       ! lake filter indices
+    !-----------------------------------------------------------------------
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+
+       ! displayed vegetation phosphorus, excluding storage (DISPVEGN)
+       this%dispvegp(p) = &
+            this%leafp(p)      + &
+            this%frootp(p)     + &
+            this%livestemp(p)  + &
+            this%deadstemp(p)  + &
+            this%livecrootp(p) + &
+            this%deadcrootp(p)
+       
+      ! stored vegetation phosphorus, including retranslocated N pool (STORVEGN)
+      this%storvegp(p) = &
+           this%leafp_storage(p)      + &
+           this%frootp_storage(p)     + &
+           this%livestemp_storage(p)  + &
+           this%deadstemp_storage(p)  + &
+           this%livecrootp_storage(p) + &
+           this%deadcrootp_storage(p) + &
+           this%leafp_xfer(p)         + &
+           this%frootp_xfer(p)        + &
+           this%livestemp_xfer(p)     + &
+           this%deadstemp_xfer(p)     + &
+           this%livecrootp_xfer(p)    + &
+           this%deadcrootp_xfer(p)    + &
+           this%ppool(p)              + &
+           this%retransp(p)
+
+      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+         this%dispvegp(p) = &
+              this%dispvegp(p) + &
+              this%grainp(p)
+
+         this%storvegp(p) = &
+              this%storvegp(p) + &
+              this%grainp_storage(p)     + &
+              this%grainp_xfer(p)
+      end if
+
+      ! total vegetation phosphorus (TOTVEGN)
+      this%totvegp(p) = &
+           this%dispvegp(p) + &
+           this%storvegp(p)
+
+      ! total pft-level carbon (add pft_ntrunc)
+      this%totpftp(p) = &
+           this%totvegp(p) + &
+           this%ptrunc(p)
+
+   end do
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%totvegp(bounds%begp:bounds%endp), &
+        col_ps%totvegp(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%totpftp(bounds%begp:bounds%endp), &
+        col_ps%totpftp(bounds%begc:bounds%endc))
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%cropseedp_deficit(bounds%begp:bounds%endp), &
+        col_ps%cropseedp_deficit(bounds%begc:bounds%endc))
+
+  end subroutine veg_ps_summary
+  
   !------------------------------------------------------------------------
   subroutine veg_ps_clean(this)
     !

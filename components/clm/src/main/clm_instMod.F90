@@ -52,6 +52,7 @@ module clm_instMod
   use GridcellDataType           , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType           , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType           , only : grc_ns, grc_nf
+  use GridcellDataType           , only : grc_ps, grc_pf
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
@@ -59,11 +60,13 @@ module clm_instMod
   use ColumnDataType             , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType             , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType             , only : col_ns, col_nf
+  use ColumnDataType             , only : col_ps, col_pf
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
   use VegetationDataType         , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType         , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType         , only : veg_ns, veg_nf
+  use VegetationDataType         , only : veg_ps, veg_pf
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
@@ -205,20 +208,13 @@ contains
        call col_ns%Init(begc, endc, col_cs)
        call veg_ns%Init(begp, endp, veg_cs)
        
-
        call grc_nf%Init(begg, endg)
        call col_nf%Init(begc, endc)
        call veg_nf%Init(begp, endp)
 
-       call phosphorusstate_vars%Init(bounds_proc,                    &
-            veg_cs%leafc(begp:endp),                  &
-            veg_cs%leafc_storage(begp:endp),          &
-            veg_cs%frootc(begp:endp),                 &
-            veg_cs%frootc_storage(begp:endp),         &
-            veg_cs%deadstemc(begp:endp),              &
-            col_cs%decomp_cpools_vr(begc:endc, 1:, 1:), &
-            col_cs%decomp_cpools(begc:endc, 1:),        &
-            col_cs%decomp_cpools_1m(begc:endc, 1:))
+       call grc_ps%Init(begg, endg)
+       call col_ps%Init(begc, endc, col_cs)
+       call veg_ps%Init(begp, endp, veg_cs)
 
        call phosphorusflux_vars%Init(bounds_proc)
 

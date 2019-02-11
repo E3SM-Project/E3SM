@@ -32,6 +32,7 @@ module clm_interface_funcsMod
   use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf 
   use ColumnDataType        , only : col_cs, col_cf
   use ColumnDataType        , only : col_ns, col_nf
+  use ColumnDataType        , only : col_ps, col_pf
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -525,17 +526,17 @@ contains
     associate ( &
        decomp_cpools_vr=> col_cs%decomp_cpools_vr     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
        decomp_npools_vr=> col_ns%decomp_npools_vr   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-       decomp_ppools_vr=> phosphorusstate_vars%decomp_ppools_vr_col , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+       decomp_ppools_vr=> col_ps%decomp_ppools_vr , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
        smin_no3_vr     => col_ns%smin_no3_vr        , & ! (gN/m3) vertically-resolved soil mineral NO3
        smin_nh4_vr     => col_ns%smin_nh4_vr        , & ! (gN/m3) vertically-resolved soil mineral NH4
        smin_nh4sorb_vr => col_ns%smin_nh4sorb_vr    , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
        !
-       solutionp_vr    => phosphorusstate_vars%solutionp_vr_col     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
-       labilep_vr      => phosphorusstate_vars%labilep_vr_col       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
-       secondp_vr      => phosphorusstate_vars%secondp_vr_col       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-       sminp_vr        => phosphorusstate_vars%sminp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
-       occlp_vr        => phosphorusstate_vars%occlp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
-       primp_vr        => phosphorusstate_vars%primp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
+       solutionp_vr    => col_ps%solutionp_vr     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+       labilep_vr      => col_ps%labilep_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+       secondp_vr      => col_ps%secondp_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+       sminp_vr        => col_ps%sminp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
+       occlp_vr        => col_ps%occlp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+       primp_vr        => col_ps%primp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
        !
        forc_pco2             => atm2lnd_vars%forc_pco2_grc               , & ! partial pressure co2 (Pa)
        forc_pch4             => atm2lnd_vars%forc_pch4_grc               , & ! partial pressure ch4 (Pa)
@@ -901,7 +902,7 @@ contains
     associate ( &
        decomp_cpools_vr             => col_cs%decomp_cpools_vr           , &
        decomp_npools_vr             => col_ns%decomp_npools_vr         , &
-       decomp_ppools_vr             => phosphorusstate_vars%decomp_ppools_vr_col         &
+       decomp_ppools_vr             => col_ps%decomp_ppools_vr         &
     )
 ! ------------------------------------------------------------------------
 !
@@ -949,12 +950,12 @@ contains
      smin_nh4_vr        => col_ns%smin_nh4_vr        , &
      smin_nh4sorb_vr    => col_ns%smin_nh4sorb_vr    , &
 
-     solutionp_vr       => phosphorusstate_vars%solutionp_vr_col     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
-     labilep_vr         => phosphorusstate_vars%labilep_vr_col       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
-     secondp_vr         => phosphorusstate_vars%secondp_vr_col       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-     sminp_vr           => phosphorusstate_vars%sminp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + second
-     occlp_vr           => phosphorusstate_vars%occlp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
-     primp_vr           => phosphorusstate_vars%primp_vr_col           & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
+     solutionp_vr       => col_ps%solutionp_vr     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+     labilep_vr         => col_ps%labilep_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+     secondp_vr         => col_ps%secondp_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+     sminp_vr           => col_ps%sminp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + second
+     occlp_vr           => col_ps%occlp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+     primp_vr           => col_ps%primp_vr           & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
 
      )
 ! ------------------------------------------------------------------------
@@ -1452,18 +1453,18 @@ contains
     associate(&
         decomp_cpools_vr        => col_cs%decomp_cpools_vr        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
         decomp_npools_vr        => col_ns%decomp_npools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-        decomp_ppools_vr        => phosphorusstate_vars%decomp_ppools_vr_col    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+        decomp_ppools_vr        => col_ps%decomp_ppools_vr    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
         smin_no3_vr             => col_ns%smin_no3_vr           , &      ! (gN/m3) vertically-resolved soil mineral NO3
         smin_nh4_vr             => col_ns%smin_nh4_vr           , &      ! (gN/m3) vertically-resolved soil mineral NH4
         smin_nh4sorb_vr         => col_ns%smin_nh4sorb_vr       , &      ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
 
-        solutionp_vr            => phosphorusstate_vars%solutionp_vr_col        , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
-        labilep_vr              => phosphorusstate_vars%labilep_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
-        secondp_vr              => phosphorusstate_vars%secondp_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-        sminp_vr                => phosphorusstate_vars%sminp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
-        occlp_vr                => phosphorusstate_vars%occlp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
-        primp_vr                => phosphorusstate_vars%primp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
+        solutionp_vr            => col_ps%solutionp_vr        , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+        labilep_vr              => col_ps%labilep_vr          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+        secondp_vr              => col_ps%secondp_vr          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+        sminp_vr                => col_ps%sminp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
+        occlp_vr                => col_ps%occlp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+        primp_vr                => col_ps%primp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
         !
         plant_ndemand_col       => col_nf%plant_ndemand          , &
         plant_pdemand_col       => phosphorusflux_vars%plant_pdemand_col        , &

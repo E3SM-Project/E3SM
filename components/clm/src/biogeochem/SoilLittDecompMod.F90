@@ -37,6 +37,8 @@ module SoilLittDecompMod
   use cropType               , only : crop_type
   use ColumnDataType         , only : col_cs, col_cf
   use ColumnDataType         , only : col_ns, col_nf
+  use ColumnDataType         , only : col_ps, col_pf
+  use VegetationDataType     , only : veg_ps, veg_pf
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
@@ -174,7 +176,7 @@ contains
          pathfrac_decomp_cascade          =>    cnstate_vars%pathfrac_decomp_cascade_col               , & ! Input:  [real(r8) (:,:,:) ]  what fraction of C leaving a given pool passes through a given transition (frac)
 
          decomp_npools_vr                 =>    col_ns%decomp_npools_vr                , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-         decomp_ppools_vr                 =>    phosphorusstate_vars%decomp_ppools_vr_col              , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+         decomp_ppools_vr                 =>    col_ps%decomp_ppools_vr              , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
          decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
 
@@ -918,11 +920,9 @@ contains
    end do
 
    ! pflotran not yet support phosphous cycle
-   if (cnallocate_carbon_only() .or. &
-       cnallocate_carbonnitrogen_only() ) then
-      call phosphorusstate_vars%SetValues (                                     &
-         num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8,   &
-         num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8  )
+   if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then
+      call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)      
 
       call phosphorusflux_vars%SetValues (                                      &
          num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8,   &

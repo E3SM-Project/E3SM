@@ -15,10 +15,10 @@ module PrecisionControlMod
   use PhosphorusStateType , only : phosphorusstate_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
-  use ColumnDataType      , only : col_ns
+  use ColumnDataType      , only : col_ns, col_ps
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
-  use VegetationDataType  , only : veg_ns
+  use VegetationDataType  , only : veg_ns, veg_ps
 
   !
   implicit none
@@ -132,8 +132,8 @@ contains
                   c14vcsv2%leafc(p) = 0._r8
                endif
 
-               pp = pp + ps%leafp_patch(p)
-               ps%leafp_patch(p) = 0._r8
+               pp = pp + veg_ps%leafp(p)
+               veg_ps%leafp(p) = 0._r8
             end if
 
             ! leaf storage C and N
@@ -151,8 +151,8 @@ contains
                   c14vcsv2%leafc_storage(p) = 0._r8
                endif
 
-               pp = pp + ps%leafp_storage_patch(p)
-               ps%leafp_storage_patch(p) = 0._r8
+               pp = pp + veg_ps%leafp_storage(p)
+               veg_ps%leafp_storage(p) = 0._r8
             end if
 
             ! leaf transfer C and N
@@ -170,8 +170,8 @@ contains
                   c14vcsv2%leafc_xfer(p) = 0._r8
                endif
 
-               pp = pp + ps%leafp_xfer_patch(p)
-               ps%leafp_xfer_patch(p) = 0._r8
+               pp = pp + veg_ps%leafp_xfer(p)
+               veg_ps%leafp_xfer(p) = 0._r8
             end if
 
             ! froot C and N
@@ -189,8 +189,8 @@ contains
                   c14vcsv2%frootc(p) = 0._r8
                endif
 
-               pp = pp + ps%frootp_patch(p)
-               ps%frootp_patch(p) = 0._r8
+               pp = pp + veg_ps%frootp(p)
+               veg_ps%frootp(p) = 0._r8
             end if
 
             ! froot storage C and N
@@ -208,8 +208,8 @@ contains
                   c14vcsv2%frootc_storage(p) = 0._r8
                endif
 
-               pp = pp + ps%frootp_storage_patch(p)
-               ps%frootp_storage_patch(p) = 0._r8
+               pp = pp + veg_ps%frootp_storage(p)
+               veg_ps%frootp_storage(p) = 0._r8
             end if
 
             ! froot transfer C and N
@@ -227,8 +227,8 @@ contains
                   c14vcsv2%frootc_xfer(p) = 0._r8
                endif
 
-               pp = pp + ps%frootp_xfer_patch(p)
-               ps%frootp_xfer_patch(p) = 0._r8
+               pp = pp + veg_ps%frootp_xfer(p)
+               veg_ps%frootp_xfer(p) = 0._r8
             end if
 
             if ( crop_prog .and. veg_pp%itype(p) >= nc3crop )then
@@ -238,8 +238,8 @@ contains
                   vcsv2%grainc(p) = 0._r8
                   pn = pn + veg_ns%grainn(p)
                   veg_ns%grainn(p) = 0._r8
-                  pp = pp + ps%grainp_patch(p)
-                  ps%grainp_patch(p) = 0._r8
+                  pp = pp + veg_ps%grainp(p)
+                  veg_ps%grainp(p) = 0._r8
                end if
 
                ! grain storage C and N
@@ -248,8 +248,8 @@ contains
                   vcsv2%grainc_storage(p) = 0._r8
                   pn = pn + veg_ns%grainn_storage(p)
                   veg_ns%grainn_storage(p) = 0._r8
-                  pp = pp + ps%grainp_storage_patch(p)
-                  ps%grainp_storage_patch(p) = 0._r8
+                  pp = pp + veg_ps%grainp_storage(p)
+                  veg_ps%grainp_storage(p) = 0._r8
                end if
 
                ! grain transfer C and N
@@ -258,8 +258,8 @@ contains
                   vcsv2%grainc_xfer(p) = 0._r8
                   pn = pn + veg_ns%grainn_xfer(p)
                   veg_ns%grainn_xfer(p) = 0._r8
-                  pp = pp + ps%grainp_xfer_patch(p)
-                  ps%grainp_xfer_patch(p) = 0._r8
+                  pp = pp + veg_ps%grainp_xfer(p)
+                  veg_ps%grainp_xfer(p) = 0._r8
                end if
             end if
 
@@ -278,8 +278,8 @@ contains
                   c14vcsv2%livestemc(p) = 0._r8
                endif
 
-               pp = pp + ps%livestemp_patch(p)
-               ps%livestemp_patch(p) = 0._r8
+               pp = pp + veg_ps%livestemp(p)
+               veg_ps%livestemp(p) = 0._r8
             end if
 
             ! livestem storage C and N
@@ -297,8 +297,8 @@ contains
                   c14vcsv2%livestemc_storage(p) = 0._r8
                endif
 
-               pp = pp + ps%livestemp_storage_patch(p)
-               ps%livestemp_storage_patch(p) = 0._r8
+               pp = pp + veg_ps%livestemp_storage(p)
+               veg_ps%livestemp_storage(p) = 0._r8
             end if
 
             ! livestem transfer C and N
@@ -316,8 +316,8 @@ contains
                   c14vcsv2%livestemc_xfer(p) = 0._r8
                endif
 
-               pp = pp + ps%livestemp_xfer_patch(p)
-               ps%livestemp_xfer_patch(p) = 0._r8
+               pp = pp + veg_ps%livestemp_xfer(p)
+               veg_ps%livestemp_xfer(p) = 0._r8
             end if
 
             ! deadstem C and N
@@ -335,8 +335,8 @@ contains
                   c14vcsv2%deadstemc(p) = 0._r8
                endif
 
-               pp = pp + ps%deadstemp_patch(p)
-               ps%deadstemp_patch(p) = 0._r8
+               pp = pp + veg_ps%deadstemp(p)
+               veg_ps%deadstemp(p) = 0._r8
             end if
 
             ! deadstem storage C and N
@@ -354,8 +354,8 @@ contains
                   c14vcsv2%deadstemc_storage(p) = 0._r8
                endif
 
-               pp = pp + ps%deadstemp_storage_patch(p)
-               ps%deadstemp_storage_patch(p) = 0._r8
+               pp = pp + veg_ps%deadstemp_storage(p)
+               veg_ps%deadstemp_storage(p) = 0._r8
             end if
 
             ! deadstem transfer C and N
@@ -373,8 +373,8 @@ contains
                   c14vcsv2%deadstemc_xfer(p) = 0._r8
                endif
 
-               pp = pp + ps%deadstemp_xfer_patch(p)
-               ps%deadstemp_xfer_patch(p) = 0._r8
+               pp = pp + veg_ps%deadstemp_xfer(p)
+               veg_ps%deadstemp_xfer(p) = 0._r8
             end if
 
             ! livecroot C and N
@@ -392,8 +392,8 @@ contains
                   c14vcsv2%livecrootc(p) = 0._r8
                endif
 
-               pp = pp + ps%livecrootp_patch(p)
-               ps%livecrootp_patch(p) = 0._r8
+               pp = pp + veg_ps%livecrootp(p)
+               veg_ps%livecrootp(p) = 0._r8
             end if
 
             ! livecroot storage C and N
@@ -411,8 +411,8 @@ contains
                   c14vcsv2%livecrootc_storage(p) = 0._r8
                endif
 
-               pp = pp + ps%livecrootp_storage_patch(p)
-               ps%livecrootp_storage_patch(p) = 0._r8
+               pp = pp + veg_ps%livecrootp_storage(p)
+               veg_ps%livecrootp_storage(p) = 0._r8
             end if
 
             ! livecroot transfer C and N
@@ -430,8 +430,8 @@ contains
                   c14vcsv2%livecrootc_xfer(p) = 0._r8
                endif
 
-               pp = pp + ps%livecrootp_xfer_patch(p)
-               ps%livecrootp_xfer_patch(p) = 0._r8
+               pp = pp + veg_ps%livecrootp_xfer(p)
+               veg_ps%livecrootp_xfer(p) = 0._r8
             end if
 
             ! deadcroot C and N
@@ -449,8 +449,8 @@ contains
                   c14vcsv2%deadcrootc(p) = 0._r8
                endif
 
-               pp = pp + ps%deadcrootp_patch(p)
-               ps%deadcrootp_patch(p) = 0._r8
+               pp = pp + veg_ps%deadcrootp(p)
+               veg_ps%deadcrootp(p) = 0._r8
             end if
 
             ! deadcroot storage C and N
@@ -468,8 +468,8 @@ contains
                   c14vcsv2%deadcrootc_storage(p) = 0._r8
                endif
 
-               pp = pp + ps%deadcrootp_storage_patch(p)
-               ps%deadcrootp_storage_patch(p) = 0._r8
+               pp = pp + veg_ps%deadcrootp_storage(p)
+               veg_ps%deadcrootp_storage(p) = 0._r8
             end if
 
             ! deadcroot transfer C and N
@@ -487,8 +487,8 @@ contains
                   c14vcsv2%deadcrootc_xfer(p) = 0._r8
                endif
 
-               pp = pp + ps%deadcrootp_xfer_patch(p)
-               ps%deadcrootp_xfer_patch(p) = 0._r8
+               pp = pp + veg_ps%deadcrootp_xfer(p)
+               veg_ps%deadcrootp_xfer(p) = 0._r8
             end if
 
             ! gresp_storage (C only)
@@ -548,9 +548,9 @@ contains
             end if
 
             ! retransp (P only)
-            if (abs(ps%retransp_patch(p)) < pcrit) then
-               pp = pp + ps%retransp_patch(p)
-               ps%retransp_patch(p) = 0._r8
+            if (abs(veg_ps%retransp(p)) < pcrit) then
+               pp = pp + veg_ps%retransp(p)
+               veg_ps%retransp(p) = 0._r8
             end if
 
             ! npool (N only)
@@ -560,14 +560,14 @@ contains
             end if
 
             ! ppool (P only)
-            if (abs(ps%ppool_patch(p)) < pcrit) then
-               pp = pp + ps%ppool_patch(p)
-               ps%ppool_patch(p) = 0._r8
+            if (abs(veg_ps%ppool(p)) < pcrit) then
+               pp = pp + veg_ps%ppool(p)
+               veg_ps%ppool(p) = 0._r8
             end if
 
             vcsv2%ctrunc(p) = vcsv2%ctrunc(p) + pc
             veg_ns%ntrunc(p) = veg_ns%ntrunc(p) + pn
-            ps%ptrunc_patch(p) = ps%ptrunc_patch(p) + pp
+            veg_ps%ptrunc(p) = veg_ps%ptrunc(p) + pp
 
             if ( use_c13 ) then
                c13vcsv2%ctrunc(p) = c13vcsv2%ctrunc(p) + pc13
@@ -669,12 +669,12 @@ contains
             !      do l = 1,ndecomp_pools
             !         if (abs(csv2%decomp_cpools_vr(c,j,k)) < ccrit) then
             !            if (.not.use_fates) then
-            !               cp_eca = cp_eca + ps%decomp_ppools_vr_col(c,j,k)
-            !               ps%decomp_ppools_vr_col(c,j,k) = 0._r8
+            !               cp_eca = cp_eca + col_ps%decomp_ppools_vr(c,j,k)
+            !               col_ps%decomp_ppools_vr(c,j,k) = 0._r8
             !            endif
             !         endif
             !      end do
-            !      ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp_eca
+            !      col_ps%ptrunc_vr(c,j) = col_ps%ptrunc_vr(c,j) + cp_eca
             !   end do
             !end do
 
@@ -713,12 +713,12 @@ contains
                            call endrun(msg=errMsg(__FILE__, __LINE__))
                         end if
                      end if
-                     if ( ps%decomp_ppools_vr_col(c,j,l)  < 0.0_r8 .and. floating_cp_ratio_decomp_pools(l) ) then
-                        if ( abs(ps%decomp_ppools_vr_col(c,j,l))  < ncrit/1e4_r8 ) then
-                           cp_eca = cp_eca - ncrit/1e4_r8 + ps%decomp_ppools_vr_col(c,j,l)
-                           ps%decomp_ppools_vr_col(c,j,l) = ncrit/1e4_r8
+                     if ( col_ps%decomp_ppools_vr(c,j,l)  < 0.0_r8 .and. floating_cp_ratio_decomp_pools(l) ) then
+                        if ( abs(col_ps%decomp_ppools_vr(c,j,l))  < ncrit/1e4_r8 ) then
+                           cp_eca = cp_eca - ncrit/1e4_r8 + col_ps%decomp_ppools_vr(c,j,l)
+                           col_ps%decomp_ppools_vr(c,j,l) = ncrit/1e4_r8
                          else 
-                           write(iulog, "(A,2I8,E8.1)") 'error decomp_ppools is negative: ',j,l,ps%decomp_ppools_vr_col(c,j,l)
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_ppools is negative: ',j,l,col_ps%decomp_ppools_vr(c,j,l)
                            call endrun(msg=errMsg(__FILE__, __LINE__))
                          end if
                      end if
@@ -726,7 +726,7 @@ contains
                   end do
 
                   col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn_eca
-                  ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp_eca
+                  col_ps%ptrunc_vr(c,j) = col_ps%ptrunc_vr(c,j) + cp_eca
 
                end do
             end do
@@ -743,14 +743,14 @@ contains
                   write(iulog, *) 'npool_patch: ', veg_ns%npool(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
-               if (ps%retransp_patch(p) < 0._r8) then
+               if (veg_ps%retransp(p) < 0._r8) then
                   write(iulog, *) 'error retransp_patch is negative: ',p
-                  write(iulog, *) 'retransp_patch: ', ps%retransp_patch(p)
+                  write(iulog, *) 'retransp_patch: ', veg_ps%retransp(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
-               if (ps%ppool_patch(p) < 0._r8) then
+               if (veg_ps%ppool(p) < 0._r8) then
                   write(iulog, *) 'error ppool_patch is negative: ',p
-                  write(iulog, *) 'ppool_patch: ', ps%ppool_patch(p)
+                  write(iulog, *) 'ppool_patch: ', veg_ps%ppool(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
             end do
