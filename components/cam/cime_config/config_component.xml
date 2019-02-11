@@ -106,6 +106,8 @@
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
       <value compset="_AQP1"          >-ocn aquaplanet</value>              
       <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <!-- Q3D -->
+      <value compset="CAM%Q3D">-phys q3d</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -317,6 +319,12 @@
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM4.*_BGC%B"></desc>
+  <!--
+    ===============
+     Q3D
+    ===============
+   -->
+    <desc option="Q3D"          >CAM with Q3D physics package:</desc>
   </description>
 
   <help>
