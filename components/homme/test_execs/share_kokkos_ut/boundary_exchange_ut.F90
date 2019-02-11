@@ -78,9 +78,9 @@ contains
 
   end subroutine init_cube_geometry_f90
 
-  subroutine init_connectivity_f90 (num_min_max_fields_1d_in,num_scalar_fields_2d,num_scalar_fields_3d,num_vector_fields_3d,vector_dim) bind(c)
+  subroutine init_connectivity_f90 (num_min_max_fields_1d_in,num_scalar_fields_2d,num_scalar_fields_3d,num_scalar_fields_3d_int,num_vector_fields_3d,vector_dim) bind(c)
     use iso_c_binding,  only : c_int
-    use dimensions_mod, only : nelem, nelemd, nlev, qsize
+    use dimensions_mod, only : nelem, nelemd, nlev, nlevp, qsize
     use edge_mod_base,  only : initEdgeBuffer, initEdgeSBuffer
     use element_mod,    only : allocate_element_desc
     use metagraph_mod,  only : initMetaGraph, LocalElemCount
@@ -90,7 +90,7 @@ contains
     !
     ! Inputs
     !
-    integer(kind=c_int), intent(in) :: num_min_max_fields_1d_in, num_scalar_fields_2d, num_scalar_fields_3d, num_vector_fields_3d, vector_dim
+    integer(kind=c_int), intent(in) :: num_min_max_fields_1d_in, num_scalar_fields_2d, num_scalar_fields_3d, num_scalar_fields_3d_int, num_vector_fields_3d, vector_dim
     !
     ! Locals
     !
@@ -119,7 +119,7 @@ contains
     allocate (Schedule(1))
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex)
 
-    call initEdgeBuffer(par,edge,elem,num_scalar_fields_2d + num_scalar_fields_3d*nlev + vector_dim*num_vector_fields_3d*nlev)
+    call initEdgeBuffer(par,edge,elem,num_scalar_fields_2d + num_scalar_fields_3d*nlev + num_scalar_fields_3d_int*nlevp + vector_dim*num_vector_fields_3d*nlev)
     num_min_max_fields_1d = num_min_max_fields_1d_in
     call initEdgeSBuffer(par,edgeMinMax,elem,num_min_max_fields_1d*nlev*2)
 
@@ -183,12 +183,13 @@ contains
     call finalize_connectivity()
   end subroutine init_c_connectivity_f90
 
-  subroutine boundary_exchange_test_f90 (field_min_1d_ptr, field_max_1d_ptr,       &
-                                         field_2d_ptr, field_3d_ptr, field_4d_ptr, &
-                                         inner_dim_4d, num_time_levels,            &
+  subroutine boundary_exchange_test_f90 (field_min_1d_ptr, field_max_1d_ptr,      &
+                                         field_2d_ptr, field_3d_ptr,              &
+                                         field_3d_int_ptr, field_4d_ptr,          &
+                                         inner_dim_4d, num_time_levels,           &
                                          idim_2d, idim_3d, idim_4d, minmax_split) bind(c)
     use iso_c_binding,      only : c_ptr, c_f_pointer, c_int
-    use dimensions_mod,     only : np, nlev, nelemd, qsize
+    use dimensions_mod,     only : np, nlev, nlevp, nelemd, qsize
     use edge_mod_base,      only : edgevpack, edgevunpack
     use bndry_mod,          only : bndry_exchangev
     use viscosity_base,     only : neighbor_minmax, neighbor_minmax_start, neighbor_minmax_finish
@@ -196,7 +197,7 @@ contains
     ! Inputs
     !
     type (c_ptr), intent(in) :: field_min_1d_ptr, field_max_1d_ptr
-    type (c_ptr), intent(in) :: field_2d_ptr, field_3d_ptr, field_4d_ptr
+    type (c_ptr), intent(in) :: field_2d_ptr, field_3d_ptr, field_3d_int_ptr, field_4d_ptr
     integer (kind=c_int), intent(in) :: inner_dim_4d, num_time_levels
     integer (kind=c_int), intent(in) :: idim_2d, idim_3d, idim_4d
     integer (kind=c_int), intent(in) :: minmax_split
@@ -207,6 +208,7 @@ contains
     real (kind=real_kind), dimension(:,:,:),       pointer :: field_max_1d
     real (kind=real_kind), dimension(:,:,:,:),     pointer :: field_2d
     real (kind=real_kind), dimension(:,:,:,:,:),   pointer :: field_3d
+    real (kind=real_kind), dimension(:,:,:,:,:),   pointer :: field_3d_int
     real (kind=real_kind), dimension(:,:,:,:,:,:), pointer :: field_4d
     integer :: ie, kptr
 
@@ -214,6 +216,7 @@ contains
     call c_f_pointer(field_max_1d_ptr, field_max_1d, [nlev,num_min_max_fields_1d,nelemd])
     call c_f_pointer(field_2d_ptr,     field_2d,     [np,np,num_time_levels,nelemd])
     call c_f_pointer(field_3d_ptr,     field_3d,     [np,np,nlev,num_time_levels,nelemd])
+    call c_f_pointer(field_3d_int_ptr, field_3d_int, [np,np,nlevp,num_time_levels,nelemd])
     call c_f_pointer(field_4d_ptr,     field_4d,     [np,np,nlev,inner_dim_4d,num_time_levels,nelemd])
 
     ! Perform 'standard' 2d/3d boundary exchange
@@ -225,6 +228,9 @@ contains
       call edgeVpack(edge,field_3d(:,:,:,idim_3d,ie),nlev,kptr,ie)
 
       kptr = 1 + nlev
+      call edgeVpack(edge,field_3d_int(:,:,:,idim_3d,ie),nlevp,kptr,ie)
+
+      kptr = 1 + nlev + nlevp
       call edgeVpack(edge,field_4d(:,:,:,:,idim_4d,ie),inner_dim_4d*nlev,kptr,ie)
     enddo
 
@@ -238,6 +244,9 @@ contains
       call edgeVunpack(edge,field_3d(:,:,:,idim_3d,ie),nlev,kptr,ie)
 
       kptr = 1 + nlev
+      call edgeVunpack(edge,field_3d_int(:,:,:,idim_3d,ie),nlevp,kptr,ie)
+
+      kptr = 1 + nlev + nlevp
       call edgeVunpack(edge,field_4d(:,:,:,:,idim_4d,ie),inner_dim_4d*nlev,kptr,ie)
     enddo
 

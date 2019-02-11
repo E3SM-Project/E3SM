@@ -58,10 +58,10 @@ void BuffersManager::set_connectivity (std::shared_ptr<Connectivity> connectivit
   m_connectivity = connectivity;
 }
 
-bool BuffersManager::check_views_capacity (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields) const
+bool BuffersManager::check_views_capacity (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields, const int num_3d_interface_fields) const
 {
   size_t mpi_buffer_size, local_buffer_size;
-  required_buffer_sizes (num_1d_fields, num_2d_fields, num_3d_fields, mpi_buffer_size, local_buffer_size);
+  required_buffer_sizes (num_1d_fields, num_2d_fields, num_3d_fields, num_3d_interface_fields, mpi_buffer_size, local_buffer_size);
 
   return (mpi_buffer_size<=m_mpi_buffer_size) &&
          (local_buffer_size<=m_local_buffer_size);
@@ -161,9 +161,10 @@ void BuffersManager::update_requested_sizes (typename std::map<BoundaryExchange*
   const int num_1d_fields = customer.first->get_num_1d_fields();
   const int num_2d_fields = customer.first->get_num_2d_fields();
   const int num_3d_fields = customer.first->get_num_3d_fields();
+  const int num_3d_int_fields = customer.first->get_num_3d_int_fields();
 
   // Compute the requested buffers sizes and compare with stored ones
-  required_buffer_sizes (num_1d_fields, num_2d_fields, num_3d_fields, customer.second.mpi_buffer_size, customer.second.local_buffer_size);
+  required_buffer_sizes (num_1d_fields, num_2d_fields, num_3d_fields, num_3d_int_fields, customer.second.mpi_buffer_size, customer.second.local_buffer_size);
   if (customer.second.mpi_buffer_size>m_mpi_buffer_size) {
     // Update the total
     m_mpi_buffer_size = customer.second.mpi_buffer_size;
@@ -181,7 +182,8 @@ void BuffersManager::update_requested_sizes (typename std::map<BoundaryExchange*
   }
 }
 
-void BuffersManager::required_buffer_sizes (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields,
+void BuffersManager::required_buffer_sizes (const int num_1d_fields, const int num_2d_fields,
+                                            const int num_3d_fields, const int num_3d_interface_fields,
                                             size_t& mpi_buffer_size, size_t& local_buffer_size) const
 {
   mpi_buffer_size = local_buffer_size = 0;
@@ -190,8 +192,9 @@ void BuffersManager::required_buffer_sizes (const int num_1d_fields, const int n
   // Note: for 2d/3d fields, we have 1 Real per GP (per level, in 3d). For 1d fields,
   //       we have 2 Real per level (max and min over element).
   int elem_buf_size[2];
-  elem_buf_size[etoi(ConnectionKind::CORNER)] = num_1d_fields*2*NUM_LEV*VECTOR_SIZE + (num_2d_fields + num_3d_fields*NUM_LEV*VECTOR_SIZE) * 1;
-  elem_buf_size[etoi(ConnectionKind::EDGE)]   = num_1d_fields*2*NUM_LEV*VECTOR_SIZE + (num_2d_fields + num_3d_fields*NUM_LEV*VECTOR_SIZE) * NP;
+  const int pt_buf_size = num_2d_fields + num_3d_fields*NUM_LEV*VECTOR_SIZE + num_3d_interface_fields*NUM_LEV_P*VECTOR_SIZE;
+  elem_buf_size[etoi(ConnectionKind::CORNER)] = num_1d_fields*2*NUM_LEV*VECTOR_SIZE + pt_buf_size * 1;
+  elem_buf_size[etoi(ConnectionKind::EDGE)]   = num_1d_fields*2*NUM_LEV*VECTOR_SIZE + pt_buf_size * NP;
 
   // Compute the requested buffers sizes and compare with stored ones
   mpi_buffer_size += elem_buf_size[etoi(ConnectionKind::CORNER)] * m_connectivity->get_num_connections<HostMemSpace>(ConnectionSharing::SHARED,ConnectionKind::CORNER);
