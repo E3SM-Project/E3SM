@@ -304,6 +304,12 @@
     <lname>SCAM_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>   
 
+  <!-- Q3D compsets -->
+  <compset>
+    <alias>FQ3D</alias>
+    <lname>2000_CAM%Q3D_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE"> 

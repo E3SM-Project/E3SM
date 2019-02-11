@@ -109,6 +109,8 @@
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
       <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <!-- Q3D -->
+      <value compset="CAM%Q3D">-phys q3d</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -336,6 +338,7 @@
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
+    <desc option="Q3D"          >CAM with Q3D physics package:</desc>
   </description>
 
   <help>
