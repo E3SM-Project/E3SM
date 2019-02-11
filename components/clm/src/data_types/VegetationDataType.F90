@@ -13,6 +13,7 @@ module VegetationDataType
   use abortutils      , only : endrun
   use clm_time_manager, only : is_restart, get_nstep
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
+  use clm_varpar      , only : nlevdecomp
   use clm_varcon      , only : spval, ispval, sb
   use clm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
@@ -670,6 +671,7 @@ module VegetationDataType
     real(r8), pointer :: hrv_grainn_to_prod1n                (:)   => null()  ! crop grain N harvested (gN/m2/s)
     real(r8), pointer :: hrv_cropn_to_prod1n                 (:)   => null()  ! total amount of crop N harvested (gN/m2/s)
     ! fire N fluxes 
+    real(r8), pointer :: m_leafn_to_fire                     (:)   => null()  ! (gN/m2/s) fire N emissions from leafn            
     real(r8), pointer :: m_leafn_storage_to_fire             (:)   => null()  ! (gN/m2/s) fire N emissions from leafn_storage            
     real(r8), pointer :: m_leafn_xfer_to_fire                (:)   => null()  ! (gN/m2/s) fire N emissions from leafn_xfer     
     real(r8), pointer :: m_livestemn_to_fire                 (:)   => null()  ! (gN/m2/s) fire N emissions from livestemn 
@@ -8081,11 +8083,6 @@ module VegetationDataType
     ! initialize history fields for select members of veg_nf
     !-----------------------------------------------------------------------
     ! add suffix if number of soil decomposition depths is greater than 1
-    if (nlevdecomp > 1) then
-       vr_suffix = "_vr"
-    else 
-       vr_suffix = ""
-    endif
 
     this%m_leafn_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_LEAFN_TO_LITTER', units='gN/m^2/s', &
@@ -8847,7 +8844,7 @@ module VegetationDataType
 
     if ( crop_prog )then
        do fi = 1,num_patch
-          i = filter(fi)
+          i = filter_patch(fi)
           this%livestemn_to_litter(i)              = value_patch
           this%grainn_to_food(i)                   = value_patch
           this%grainn_xfer_to_grainn(i)            = value_patch

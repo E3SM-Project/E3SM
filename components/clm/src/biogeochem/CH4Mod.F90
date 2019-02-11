@@ -38,7 +38,7 @@ module CH4Mod
   use TopounitDataType   , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp
-  use ColumnDataType     , only : col_es, col_ws, col_wf, col_cf              
+  use ColumnDataType     , only : col_es, col_ws, col_wf, col_cf, col_nf              
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_wf, veg_cs, veg_cf
   
@@ -1978,7 +1978,7 @@ contains
          col_rr         =>    col_cf%rr             , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
          fphr           =>    col_cf%fphr           , & ! Input:  [real(r8) (:,:)  ]  fraction of potential heterotrophic respiration 
 
-         pot_f_nit_vr   =>    nitrogenflux_vars%pot_f_nit_vr_col , & ! Input:  [real(r8) (:,:)  ]  (gN/m3/s) potential soil nitrification flux     
+         pot_f_nit_vr   =>    col_nf%pot_f_nit_vr , & ! Input:  [real(r8) (:,:)  ]  (gN/m3/s) potential soil nitrification flux     
 
          watsat         =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)  
          rootfr         =>    soilstate_vars%rootfr_patch        , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi) 

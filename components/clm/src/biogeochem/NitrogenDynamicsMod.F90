@@ -22,10 +22,10 @@ module NitrogenDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns 
+  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf 
   use ColumnDataType      , only : nfix_timeconst  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs, veg_ns  
+  use VegetationDataType  , only : veg_cs, veg_ns, veg_nf  
   use VegetationPropertiesType  , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
@@ -138,7 +138,7 @@ contains
     
     associate(& 
          forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
-         ndep_to_sminn =>  nitrogenflux_vars%ndep_to_sminn_col   & ! Output: [real(r8) (:)]                                                    
+         ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]                                                    
          )
       
       ! Loop through columns
@@ -187,7 +187,7 @@ contains
          qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
          
          qflx_evap_veg  => col_wf%qflx_evap_veg    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
-         nfix_to_sminn  => nitrogenflux_vars%nfix_to_sminn_col   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+         nfix_to_sminn  => col_nf%nfix_to_sminn   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
       dayspyr = get_days_per_year()
@@ -271,9 +271,9 @@ contains
          
          sminn_vr            => col_ns%sminn_vr           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
          smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
-         sminn_leached_vr    => nitrogenflux_vars%sminn_leached_vr_col    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
-         smin_no3_leached_vr => nitrogenflux_vars%smin_no3_leached_vr_col , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
-         smin_no3_runoff_vr  => nitrogenflux_vars%smin_no3_runoff_vr_col    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
+         sminn_leached_vr    => col_nf%sminn_leached_vr    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
+         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
+         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
          )
 
       ! set time steps
@@ -463,8 +463,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&   
-         fert          =>    nitrogenflux_vars%fert_patch          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)                
-         fert_to_sminn =>    nitrogenflux_vars%fert_to_sminn_col   & ! Output: [real(r8) (:)]                                                    
+         fert          =>    veg_nf%fert          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)                
+         fert_to_sminn =>    col_nf%fert_to_sminn   & ! Output: [real(r8) (:)]                                                    
          )
       
       call p2c(bounds, num_soilc, filter_soilc, &
@@ -520,10 +520,10 @@ contains
          croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested                  
 
          sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N                           
-         plant_ndemand    =>  nitrogenflux_vars%plant_ndemand_patch  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)  
+         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)  
          
-         soyfixn          =>  nitrogenflux_vars%soyfixn_patch        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop               
-         soyfixn_to_sminn =>  nitrogenflux_vars%soyfixn_to_sminn_col   & ! Output: [real(r8) (:) ]                                                    
+         soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop               
+         soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]                                                    
          )
 
       sminnthreshold1 = 30._r8
@@ -658,9 +658,9 @@ contains
          vmax_nfix             => veg_vp%vmax_nfix                 , &
          km_nfix               => veg_vp%km_nfix                   , &
          frootc                => veg_cs%frootc        , &
-         nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
-         nfix_to_plantn        => nitrogenflux_vars%nfix_to_plantn_patch , &
-         nfix_to_ecosysn       => nitrogenflux_vars%nfix_to_ecosysn_col, &
+         nfix_to_sminn         => col_nf%nfix_to_sminn  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
+         nfix_to_plantn        => veg_nf%nfix_to_plantn , &
+         nfix_to_ecosysn       => col_nf%nfix_to_ecosysn, &
          pnup_pfrootc          => veg_ns%pnup_pfrootc, &
          benefit_pgpp_pleafc   => veg_ns%benefit_pgpp_pleafc , &
          t_soi10cm_col         => col_es%t_soi10cm       , &

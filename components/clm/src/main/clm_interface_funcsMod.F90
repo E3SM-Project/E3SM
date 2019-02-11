@@ -31,7 +31,7 @@ module clm_interface_funcsMod
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_es, col_ef, col_ws, col_wf 
   use ColumnDataType        , only : col_cs, col_cf
-  use ColumnDataType        , only : col_ns
+  use ColumnDataType        , only : col_ns, col_nf
   use VegetationType        , only : veg_pp
 
   use decompMod             , only : bounds_type
@@ -642,28 +642,28 @@ contains
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
       externalc_to_decomp_cpools_vr    => col_cf%externalc_to_decomp_cpools        , &
-      externaln_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col      , &
+      externaln_to_decomp_npools_vr    => col_nf%externaln_to_decomp_npools      , &
       externalp_to_decomp_ppools_vr    => phosphorusflux_vars%externalp_to_decomp_ppools_col    , &
       t_scalar                         => col_cf%t_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
       w_scalar                         => col_cf%w_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
       o_scalar                         => col_cf%o_scalar                          , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
       ! inorg. nitrogen source
-      ndep_to_sminn                    => nitrogenflux_vars%ndep_to_sminn_col                   , &
-      nfix_to_sminn                    => nitrogenflux_vars%nfix_to_sminn_col                   , &
-      fert_to_sminn                    => nitrogenflux_vars%fert_to_sminn_col                   , &
-      soyfixn_to_sminn                 => nitrogenflux_vars%soyfixn_to_sminn_col                , &
-      supplement_to_sminn_vr           => nitrogenflux_vars%supplement_to_sminn_vr_col          , &
+      ndep_to_sminn                    => col_nf%ndep_to_sminn                   , &
+      nfix_to_sminn                    => col_nf%nfix_to_sminn                   , &
+      fert_to_sminn                    => col_nf%fert_to_sminn                   , &
+      soyfixn_to_sminn                 => col_nf%soyfixn_to_sminn                , &
+      supplement_to_sminn_vr           => col_nf%supplement_to_sminn_vr          , &
       !
       nfixation_prof                   => cnstate_vars%nfixation_prof_col                       , &
       ndep_prof                        => cnstate_vars%ndep_prof_col                            , &
 
       decomp_k_scalar                  => cnstate_vars%scalaravg_col                            , &
 
-      no3_net_transport_vr             => nitrogenflux_vars%no3_net_transport_vr_col            , &
-      nh4_net_transport_vr             => nitrogenflux_vars%nh4_net_transport_vr_col            , &
-      col_plant_ndemand_vr             => nitrogenflux_vars%plant_ndemand_vr_col                , &
+      no3_net_transport_vr             => col_nf%no3_net_transport_vr            , &
+      nh4_net_transport_vr             => col_nf%nh4_net_transport_vr            , &
+      col_plant_ndemand_vr             => col_nf%plant_ndemand_vr                , &
 
-      plant_ndemand_col                => nitrogenflux_vars%plant_ndemand_col                   , &
+      plant_ndemand_col                => col_nf%plant_ndemand                   , &
       plant_pdemand_col                => phosphorusflux_vars%plant_pdemand_col                 , &
 
       col_plant_pdemand_vr             => phosphorusflux_vars%plant_pdemand_vr_col              , &
@@ -1003,7 +1003,7 @@ contains
 
     associate ( &
      decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
-     decomp_npools_sourcesink_vr  => nitrogenflux_vars%decomp_npools_sourcesink_col  , &
+     decomp_npools_sourcesink_vr  => col_nf%decomp_npools_sourcesink  , &
      decomp_ppools_sourcesink_vr  => phosphorusflux_vars%decomp_ppools_sourcesink_col  &
      )
 
@@ -1049,13 +1049,13 @@ contains
      decomp_cascade_hr_vr_col         => col_cf%decomp_cascade_hr_vr                   , &
 
      decomp_cascade_ctransfer_vr_col  => col_cf%decomp_cascade_ctransfer_vr            , &
-     decomp_cascade_ntransfer_vr_col  => nitrogenflux_vars%decomp_cascade_ntransfer_vr_col          , &
+     decomp_cascade_ntransfer_vr_col  => col_nf%decomp_cascade_ntransfer_vr          , &
      decomp_cascade_ptransfer_vr_col  => phosphorusflux_vars%decomp_cascade_ptransfer_vr_col        , &
 
-     decomp_cascade_sminn_flux_vr_col => nitrogenflux_vars%decomp_cascade_sminn_flux_vr_col         , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+     decomp_cascade_sminn_flux_vr_col => col_nf%decomp_cascade_sminn_flux_vr         , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
      decomp_cascade_sminp_flux_vr_col => phosphorusflux_vars%decomp_cascade_sminp_flux_vr_col       , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
 
-     sminn_to_denit_decomp_cascade_vr_col => nitrogenflux_vars%sminn_to_denit_decomp_cascade_vr_col   & ! Output: [real(r8) (:,:,:) ]
+     sminn_to_denit_decomp_cascade_vr_col => col_nf%sminn_to_denit_decomp_cascade_vr   & ! Output: [real(r8) (:,:,:) ]
      )
 
     do fc = 1, num_soilc
@@ -1107,25 +1107,25 @@ contains
      fpi_p                        => cnstate_vars%fpi_p_col                          , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
      fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                       , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
 
-     potential_immob              => nitrogenflux_vars%potential_immob_col           , & ! Output: [real(r8) (:)   ]
-     actual_immob                 => nitrogenflux_vars%actual_immob_col              , & ! Output: [real(r8) (:)   ]
-     sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col            , & ! Output: [real(r8) (:)   ]
+     potential_immob              => col_nf%potential_immob           , & ! Output: [real(r8) (:)   ]
+     actual_immob                 => col_nf%actual_immob              , & ! Output: [real(r8) (:)   ]
+     sminn_to_plant               => col_nf%sminn_to_plant            , & ! Output: [real(r8) (:)   ]
 
-     sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col         , &
-     smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col      , &
-     smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col      , &
-     potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col        , &
-     actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col           , &
-     actual_immob_no3_vr          => nitrogenflux_vars%actual_immob_no3_vr_col       , & ! Output: [real(r8) (:,:) ]
-     actual_immob_nh4_vr          => nitrogenflux_vars%actual_immob_nh4_vr_col       , & ! Output: [real(r8) (:,:) ]
-     gross_nmin_vr                => nitrogenflux_vars%gross_nmin_vr_col             , &
-     net_nmin_vr                  => nitrogenflux_vars%net_nmin_vr_col               , & ! Output: [real(r8) (:,:)   ]
+     sminn_to_plant_vr            => col_nf%sminn_to_plant_vr         , &
+     smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr      , &
+     smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr      , &
+     potential_immob_vr           => col_nf%potential_immob_vr        , &
+     actual_immob_vr              => col_nf%actual_immob_vr           , &
+     actual_immob_no3_vr          => col_nf%actual_immob_no3_vr       , & ! Output: [real(r8) (:,:) ]
+     actual_immob_nh4_vr          => col_nf%actual_immob_nh4_vr       , & ! Output: [real(r8) (:,:) ]
+     gross_nmin_vr                => col_nf%gross_nmin_vr             , &
+     net_nmin_vr                  => col_nf%net_nmin_vr               , & ! Output: [real(r8) (:,:)   ]
 
-     sminn_to_denit_excess_vr     => nitrogenflux_vars%sminn_to_denit_excess_vr_col  , & ! Output: [real(r8) (:,:) ]
-     supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col    , & ! Output: [real(r8) (:,:) ]
+     sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr  , & ! Output: [real(r8) (:,:) ]
+     supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr    , & ! Output: [real(r8) (:,:) ]
 
-     no3_net_transport_vr         => nitrogenflux_vars%no3_net_transport_vr_col      , & ! Output: updated from PF, if coupled
-     nh4_net_transport_vr         => nitrogenflux_vars%nh4_net_transport_vr_col      , & ! Output: updated from PF, if coupled
+     no3_net_transport_vr         => col_nf%no3_net_transport_vr      , & ! Output: updated from PF, if coupled
+     nh4_net_transport_vr         => col_nf%nh4_net_transport_vr      , & ! Output: updated from PF, if coupled
 
      potential_immob_p            => phosphorusflux_vars%potential_immob_p_col       , & ! Output: [real(r8) (:)   ]
      actual_immob_p               => phosphorusflux_vars%actual_immob_p_col          , & ! Output: [real(r8) (:)   ]
@@ -1208,13 +1208,13 @@ contains
     character(len=256) :: subname = "update_bgc_flux_nitdenit"
 
     associate ( &
-         pot_f_nit_vr                 => nitrogenflux_vars%pot_f_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
-         pot_f_denit_vr               => nitrogenflux_vars%pot_f_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
-         f_nit_vr                     => nitrogenflux_vars%f_nit_vr_col                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
-         f_denit_vr                   => nitrogenflux_vars%f_denit_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
-         n2_n2o_ratio_denit_vr        => nitrogenflux_vars%n2_n2o_ratio_denit_vr_col         , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
-         f_n2o_denit_vr               => nitrogenflux_vars%f_n2o_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
-         f_n2o_nit_vr                 => nitrogenflux_vars%f_n2o_nit_vr_col                    & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
+         pot_f_nit_vr                 => col_nf%pot_f_nit_vr                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+         pot_f_denit_vr               => col_nf%pot_f_denit_vr                , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
+         f_nit_vr                     => col_nf%f_nit_vr                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
+         f_denit_vr                   => col_nf%f_denit_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
+         n2_n2o_ratio_denit_vr        => col_nf%n2_n2o_ratio_denit_vr         , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         f_n2o_denit_vr               => col_nf%f_n2o_denit_vr                , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
+         f_n2o_nit_vr                 => col_nf%f_n2o_nit_vr                    & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
     )
 
     do fc = 1, num_soilc
@@ -1255,11 +1255,11 @@ contains
     associate ( &
      hr_vr                        => col_cf%hr_vr              , &
      f_co2_soil_vr                => col_cf%f_co2_soil_vr      , &
-     f_n2o_soil_vr                => nitrogenflux_vars%f_n2o_soil_vr_col    , &
-     f_n2_soil_vr                 => nitrogenflux_vars%f_n2_soil_vr_col     , &
-     f_ngas_decomp_vr             => nitrogenflux_vars%f_ngas_decomp_vr_col , &
-     f_ngas_nitri_vr              => nitrogenflux_vars%f_ngas_nitri_vr_col  , &
-     f_ngas_denit_vr              => nitrogenflux_vars%f_ngas_denit_vr_col    &
+     f_n2o_soil_vr                => col_nf%f_n2o_soil_vr    , &
+     f_n2_soil_vr                 => col_nf%f_n2_soil_vr     , &
+     f_ngas_decomp_vr             => col_nf%f_ngas_decomp_vr , &
+     f_ngas_nitri_vr              => col_nf%f_ngas_nitri_vr  , &
+     f_ngas_denit_vr              => col_nf%f_ngas_denit_vr    &
      )
 ! ------------------------------------------------------------------------
     do fc = 1,num_soilc
@@ -1465,7 +1465,7 @@ contains
         occlp_vr                => phosphorusstate_vars%occlp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
         primp_vr                => phosphorusstate_vars%primp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
         !
-        plant_ndemand_col       => nitrogenflux_vars%plant_ndemand_col          , &
+        plant_ndemand_col       => col_nf%plant_ndemand          , &
         plant_pdemand_col       => phosphorusflux_vars%plant_pdemand_col        , &
         !
         !alt_indx                => canopystate_vars%alt_indx_col                , & ! Input:  [integer  (:)     ]  current depth of thaw
@@ -1585,24 +1585,24 @@ contains
          fpi_p                        => cnstate_vars%fpi_p_col                                         , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
          fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                                      , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
 
-         potential_immob              => nitrogenflux_vars%potential_immob_col                          , & ! Output: [real(r8) (:)   ]
-         actual_immob                 => nitrogenflux_vars%actual_immob_col                             , & ! Output: [real(r8) (:)   ]
-         sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                           , & ! Output: [real(r8) (:)   ]
-         sminn_to_denit_excess_vr     => nitrogenflux_vars%sminn_to_denit_excess_vr_col                 , & ! Output: [real(r8) (:,:) ]
-         pot_f_nit_vr                 => nitrogenflux_vars%pot_f_nit_vr_col                             , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
-         pot_f_denit_vr               => nitrogenflux_vars%pot_f_denit_vr_col                           , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
-         f_nit_vr                     => nitrogenflux_vars%f_nit_vr_col                                 , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
-         f_denit_vr                   => nitrogenflux_vars%f_denit_vr_col                               , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
-         actual_immob_no3_vr          => nitrogenflux_vars%actual_immob_no3_vr_col                      , & ! Output: [real(r8) (:,:) ]
-         actual_immob_nh4_vr          => nitrogenflux_vars%actual_immob_nh4_vr_col                      , & ! Output: [real(r8) (:,:) ]
-         smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col                     , & ! Output: [real(r8) (:,:) ]
-         smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col                     , & ! Output: [real(r8) (:,:) ]
-         n2_n2o_ratio_denit_vr        => nitrogenflux_vars%n2_n2o_ratio_denit_vr_col                    , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
-         f_n2o_denit_vr               => nitrogenflux_vars%f_n2o_denit_vr_col                           , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
-         f_n2o_nit_vr                 => nitrogenflux_vars%f_n2o_nit_vr_col                             , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
-         supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col                   , & ! Output: [real(r8) (:,:) ]
-         sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col                        , & ! Output: [real(r8) (:,:) ]
-         actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col                          , & ! Output: [real(r8) (:,:) ]
+         potential_immob              => col_nf%potential_immob                          , & ! Output: [real(r8) (:)   ]
+         actual_immob                 => col_nf%actual_immob                             , & ! Output: [real(r8) (:)   ]
+         sminn_to_plant               => col_nf%sminn_to_plant                           , & ! Output: [real(r8) (:)   ]
+         sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr                 , & ! Output: [real(r8) (:,:) ]
+         pot_f_nit_vr                 => col_nf%pot_f_nit_vr                             , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+         pot_f_denit_vr               => col_nf%pot_f_denit_vr                           , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
+         f_nit_vr                     => col_nf%f_nit_vr                                 , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
+         f_denit_vr                   => col_nf%f_denit_vr                               , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
+         actual_immob_no3_vr          => col_nf%actual_immob_no3_vr                      , & ! Output: [real(r8) (:,:) ]
+         actual_immob_nh4_vr          => col_nf%actual_immob_nh4_vr                      , & ! Output: [real(r8) (:,:) ]
+         smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr                     , & ! Output: [real(r8) (:,:) ]
+         smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr                     , & ! Output: [real(r8) (:,:) ]
+         n2_n2o_ratio_denit_vr        => col_nf%n2_n2o_ratio_denit_vr                    , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         f_n2o_denit_vr               => col_nf%f_n2o_denit_vr                           , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
+         f_n2o_nit_vr                 => col_nf%f_n2o_nit_vr                             , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
+         supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr                   , & ! Output: [real(r8) (:,:) ]
+         sminn_to_plant_vr            => col_nf%sminn_to_plant_vr                        , & ! Output: [real(r8) (:,:) ]
+         actual_immob_vr              => col_nf%actual_immob_vr                          , & ! Output: [real(r8) (:,:) ]
 
          potential_immob_p            => phosphorusflux_vars%potential_immob_p_col                      , & ! Output: [real(r8) (:)   ]
          actual_immob_p               => phosphorusflux_vars%actual_immob_p_col                         , & ! Output: [real(r8) (:)   ]
@@ -1611,14 +1611,14 @@ contains
          sminp_to_plant_vr            => phosphorusflux_vars%sminp_to_plant_vr_col                      , & ! Output: [real(r8) (:,:) ]
          actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col                      , & ! Output: [real(r8) (:,:) ]
 
-         decomp_cascade_ntransfer_vr      =>    nitrogenflux_vars%decomp_cascade_ntransfer_vr_col       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
-         decomp_cascade_sminn_flux_vr     =>    nitrogenflux_vars%decomp_cascade_sminn_flux_vr_col      , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
-         potential_immob_vr               =>    nitrogenflux_vars%potential_immob_vr_col                , & ! Output: [real(r8) (:,:)   ]
-         sminn_to_denit_decomp_cascade_vr =>    nitrogenflux_vars%sminn_to_denit_decomp_cascade_vr_col  , & ! Output: [real(r8) (:,:,:) ]
-         gross_nmin_vr                    =>    nitrogenflux_vars%gross_nmin_vr_col                     , & ! Output: [real(r8) (:,:)   ]
-         net_nmin_vr                      =>    nitrogenflux_vars%net_nmin_vr_col                       , & ! Output: [real(r8) (:,:)   ]
-         gross_nmin                       =>    nitrogenflux_vars%gross_nmin_col                        , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)
-         net_nmin                         =>    nitrogenflux_vars%net_nmin_col                          , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
+         decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
+         decomp_cascade_sminn_flux_vr     =>    col_nf%decomp_cascade_sminn_flux_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+         potential_immob_vr               =>    col_nf%potential_immob_vr                , & ! Output: [real(r8) (:,:)   ]
+         sminn_to_denit_decomp_cascade_vr =>    col_nf%sminn_to_denit_decomp_cascade_vr  , & ! Output: [real(r8) (:,:,:) ]
+         gross_nmin_vr                    =>    col_nf%gross_nmin_vr                     , & ! Output: [real(r8) (:,:)   ]
+         net_nmin_vr                      =>    col_nf%net_nmin_vr                       , & ! Output: [real(r8) (:,:)   ]
+         gross_nmin                       =>    col_nf%gross_nmin                        , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)
+         net_nmin                         =>    col_nf%net_nmin                          , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
 
          ! add phosphorus
          decomp_cascade_ptransfer_vr      =>    phosphorusflux_vars%decomp_cascade_ptransfer_vr_col     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
