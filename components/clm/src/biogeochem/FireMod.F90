@@ -47,8 +47,10 @@ module FireMod
   use TopounitDataType       , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es, col_ws, col_cs, col_cf, col_ns, col_nf 
+  use ColumnDataType         , only : col_ps 
   use VegetationType         , only : veg_pp                
   use VegetationDataType     , only : veg_cs, veg_cf, veg_ns, veg_nf  
+  use VegetationDataType     , only : veg_ps  
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
@@ -836,27 +838,27 @@ contains
         retransn                            =>    veg_ns%retransn                           , & ! Input:  [real(r8) (:)     ]  (gN/m2) plant pool of retranslocated N            
         npool                               =>    veg_ns%npool                              , & ! Input:  [real(r8) (:)     ]  (gN/m2) plant pool of stored N  
         ! add phosphorus state variables - X.YANG
-        decomp_ppools_vr                    =>    phosphorusstate_vars%decomp_ppools_vr_col                     , & ! Input:  [real(r8) (:,:,:) ]  (gP/m3)  VR decomp. (litter, cwd, soil)
-        leafp                               =>    phosphorusstate_vars%leafp_patch                              , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P                                    
-        leafp_storage                       =>    phosphorusstate_vars%leafp_storage_patch                      , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P storage                            
-        leafp_xfer                          =>    phosphorusstate_vars%leafp_xfer_patch                         , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P transfer                           
-        livestemp                           =>    phosphorusstate_vars%livestemp_patch                          , & ! Input:  [real(r8) (:)     ]  (gP/m2) live stem P                               
-        livestemp_storage                   =>    phosphorusstate_vars%livestemp_storage_patch                  , & ! Input:  [real(r8) (:)     ]  (gP/m2) live stem P storage                       
-        livestemp_xfer                      =>    phosphorusstate_vars%livestemp_xfer_patch                     , & ! Input:  [real(r8) (:)     ]  (gP/m2) live stem P transfer                      
-        deadstemp                           =>    phosphorusstate_vars%deadstemp_patch                          , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead stem P                               
-        deadstemp_storage                   =>    phosphorusstate_vars%deadstemp_storage_patch                  , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead stem P storage                       
-        deadstemp_xfer                      =>    phosphorusstate_vars%deadstemp_xfer_patch                     , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead stem P transfer                      
-        frootp                              =>    phosphorusstate_vars%frootp_patch                             , & ! Input:  [real(r8) (:)     ]  (gP/m2) fine root P                               
-        frootp_storage                      =>    phosphorusstate_vars%frootp_storage_patch                     , & ! Input:  [real(r8) (:)     ]  (gP/m2) fine root P storage                       
-        frootp_xfer                         =>    phosphorusstate_vars%frootp_xfer_patch                        , & ! Input:  [real(r8) (:)     ]  (gP/m2) fine root P transfer                      
-        livecrootp                          =>    phosphorusstate_vars%livecrootp_patch                         , & ! Input:  [real(r8) (:)     ]  (gP/m2) live coarse root P                        
-        livecrootp_storage                  =>    phosphorusstate_vars%livecrootp_storage_patch                 , & ! Input:  [real(r8) (:)     ]  (gP/m2) live coarse root P storage                
-        livecrootp_xfer                     =>    phosphorusstate_vars%livecrootp_xfer_patch                    , & ! Input:  [real(r8) (:)     ]  (gP/m2) live coarse root P transfer               
-        deadcrootp                          =>    phosphorusstate_vars%deadcrootp_patch                         , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P                        
-        deadcrootp_storage                  =>    phosphorusstate_vars%deadcrootp_storage_patch                 , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P storage                
-        deadcrootp_xfer                     =>    phosphorusstate_vars%deadcrootp_xfer_patch                    , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P transfer               
-        retransp                            =>    phosphorusstate_vars%retransp_patch                           , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of retranslocated P            
-        ppool                               =>    phosphorusstate_vars%ppool_patch                              , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of storage P            
+        decomp_ppools_vr                    =>    col_ps%decomp_ppools_vr                     , & ! Input:  [real(r8) (:,:,:) ]  (gP/m3)  VR decomp. (litter, cwd, soil)
+        leafp                               =>    veg_ps%leafp                              , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P                                    
+        leafp_storage                       =>    veg_ps%leafp_storage                      , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P storage                            
+        leafp_xfer                          =>    veg_ps%leafp_xfer                         , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P transfer                           
+        livestemp                           =>    veg_ps%livestemp                          , & ! Input:  [real(r8) (:)     ]  (gP/m2) live stem P                               
+        livestemp_storage                   =>    veg_ps%livestemp_storage                  , & ! Input:  [real(r8) (:)     ]  (gP/m2) live stem P storage                       
+        livestemp_xfer                      =>    veg_ps%livestemp_xfer                     , & ! Input:  [real(r8) (:)     ]  (gP/m2) live stem P transfer                      
+        deadstemp                           =>    veg_ps%deadstemp                          , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead stem P                               
+        deadstemp_storage                   =>    veg_ps%deadstemp_storage                  , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead stem P storage                       
+        deadstemp_xfer                      =>    veg_ps%deadstemp_xfer                     , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead stem P transfer                      
+        frootp                              =>    veg_ps%frootp                             , & ! Input:  [real(r8) (:)     ]  (gP/m2) fine root P                               
+        frootp_storage                      =>    veg_ps%frootp_storage                     , & ! Input:  [real(r8) (:)     ]  (gP/m2) fine root P storage                       
+        frootp_xfer                         =>    veg_ps%frootp_xfer                        , & ! Input:  [real(r8) (:)     ]  (gP/m2) fine root P transfer                      
+        livecrootp                          =>    veg_ps%livecrootp                         , & ! Input:  [real(r8) (:)     ]  (gP/m2) live coarse root P                        
+        livecrootp_storage                  =>    veg_ps%livecrootp_storage                 , & ! Input:  [real(r8) (:)     ]  (gP/m2) live coarse root P storage                
+        livecrootp_xfer                     =>    veg_ps%livecrootp_xfer                    , & ! Input:  [real(r8) (:)     ]  (gP/m2) live coarse root P transfer               
+        deadcrootp                          =>    veg_ps%deadcrootp                         , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P                        
+        deadcrootp_storage                  =>    veg_ps%deadcrootp_storage                 , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P storage                
+        deadcrootp_xfer                     =>    veg_ps%deadcrootp_xfer                    , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P transfer               
+        retransp                            =>    veg_ps%retransp                           , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of retranslocated P            
+        ppool                               =>    veg_ps%ppool                              , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of storage P            
 
         fire_mortality_c_to_cwdc            =>    col_cf%fire_mortality_c_to_cwdc                , & ! Input:  [real(r8) (:,:)   ]  C flux fire mortality to CWD (gC/m3/s)
         somc_fire                           =>    col_cf%somc_fire                               , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) fire C emissions due to peat burning

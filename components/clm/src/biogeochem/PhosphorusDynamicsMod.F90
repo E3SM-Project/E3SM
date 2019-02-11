@@ -26,7 +26,7 @@ module PhosphorusDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst
+  use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst, col_ps
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns
   use VegetationPropertiesType      , only : veg_vp
@@ -120,7 +120,7 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                 ,&
-         primp          => phosphorusstate_vars%primp_vr_col       ,& 
+         primp          => col_ps%primp_vr       ,& 
          primp_to_labilep => phosphorusflux_vars%primp_to_labilep_vr_col  &         
 
          )
@@ -187,8 +187,8 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                 ,&
-         solutionp   => phosphorusstate_vars%solutionp_vr_col      ,&
-         labilep     => phosphorusstate_vars%labilep_vr_col        ,&
+         solutionp   => col_ps%solutionp_vr      ,&
+         labilep     => col_ps%labilep_vr        ,&
          labilep_to_secondp => phosphorusflux_vars%labilep_to_secondp_vr_col &
 
          )
@@ -256,7 +256,7 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder              ,&
-         secondp     => phosphorusstate_vars%secondp_vr_col     ,&
+         secondp     => col_ps%secondp_vr     ,&
          secondp_to_labilep => phosphorusflux_vars%secondp_to_labilep_vr_col &
 
          )
@@ -325,7 +325,7 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                      ,&
-         secondp     => phosphorusstate_vars%secondp_vr_col             ,&
+         secondp     => col_ps%secondp_vr             ,&
          secondp_to_occlp => phosphorusflux_vars%secondp_to_occlp_vr_col &
 
          )
@@ -398,7 +398,7 @@ contains
          qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
          qflx_surf           => col_wf%qflx_surf              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
 
-         solutionp_vr            => phosphorusstate_vars%solutionp_vr_col           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N                          
+         solutionp_vr            => col_ps%solutionp_vr           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N                          
          sminp_leached_vr    => phosphorusflux_vars%sminp_leached_vr_col     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)            
          )
 
@@ -520,7 +520,7 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                            ,&
-         decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col    ,&
+         decomp_ppools_vr_col => col_ps%decomp_ppools_vr    ,&
   
          biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col  ,&
          biochem_pmin_vr_col  => phosphorusflux_vars%biochem_pmin_vr_col      ,&
@@ -637,7 +637,7 @@ contains
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
-         decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
+         decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
          lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &

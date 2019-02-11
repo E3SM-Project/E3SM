@@ -40,9 +40,8 @@ module dynSubgridDriverMod
   use filterMod           , only : filter, filter_inactive_and_active
 
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
-  use ColumnDataType      , only : column_carbon_state, col_cf, col_ns
-  
-  use VegetationDataType  , only : vegetation_carbon_state, veg_ns
+  use ColumnDataType      , only : column_carbon_state, col_cf, col_ns, col_ps
+  use VegetationDataType  , only : vegetation_carbon_state, veg_ns, veg_ps
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -323,7 +322,7 @@ contains
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
                nitrogenstate_vars, nitrogenflux_vars, &
                veg_ns, &
-               phosphorusstate_vars,phosphorusflux_vars)
+               phosphorusstate_vars,phosphorusflux_vars, veg_ps)
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
@@ -339,7 +338,7 @@ contains
 
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
-               phosphorusstate_vars, col_ns )
+               phosphorusstate_vars, col_ns, col_ps )
        end if
 
     end do

@@ -35,7 +35,7 @@ module  PhotosynthesisMod
   use pftvarcon           , only : noveg
   use SharedParamsMod     , only : ParamsShareInst
   use TopounitDataType    , only : top_as
-  use VegetationDataType  , only : veg_es, veg_ns  
+  use VegetationDataType  , only : veg_es, veg_ns, veg_ps  
   
   !
   implicit none
@@ -271,9 +271,9 @@ contains
          leafn         => veg_ns%leafn           , &
          leafn_storage => veg_ns%leafn_storage   , &
          leafn_xfer    => veg_ns%leafn_xfer      , &
-         leafp         => phosphorusstate_vars%leafp_patch         , &
-         leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
-         leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
+         leafp         => veg_ps%leafp         , &
+         leafp_storage => veg_ps%leafp_storage , &
+         leafp_xfer    => veg_ps%leafp_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                            &
          )

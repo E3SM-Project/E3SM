@@ -19,6 +19,7 @@ module CropHarvestPoolsMod
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType      , only : col_ns, col_nf
+  use ColumnDataType      , only : col_ps, col_pf
   !
   implicit none
   save
@@ -82,7 +83,7 @@ contains
        endif
 
        col_nf%prod1n_loss(c)    = col_ns%prod1n(c)    * kprod1
-       phosphorusflux_vars%prod1p_loss_col(c)  = phosphorusstate_vars%prod1p_col(c)  * kprod1
+       phosphorusflux_vars%prod1p_loss_col(c)  = col_ps%prod1p(c)  * kprod1
     end do
 
     ! set time steps
@@ -108,7 +109,7 @@ contains
 
        col_ns%prod1n(c)    = col_ns%prod1n(c)    + &
             col_nf%hrv_cropn_to_prod1n(c)*dt
-       phosphorusstate_vars%prod1p_col(c)    = phosphorusstate_vars%prod1p_col(c)    + &
+       col_ps%prod1p(c)    = col_ps%prod1p(c)    + &
             phosphorusflux_vars%hrv_cropp_to_prod1p_col(c)*dt
 
        ! fluxes out of wood product pools, from decomposition
@@ -127,7 +128,7 @@ contains
 
        col_ns%prod1n(c)    = col_ns%prod1n(c)    - &
             col_nf%prod1n_loss(c)*dt
-       phosphorusstate_vars%prod1p_col(c)  = phosphorusstate_vars%prod1p_col(c)  - &
+       col_ps%prod1p(c)  = col_ps%prod1p(c)  - &
             phosphorusflux_vars%prod1p_loss_col(c)*dt
 
     end do ! end of column loop

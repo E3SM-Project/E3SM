@@ -23,6 +23,8 @@ module PhosphorusStateUpdate3Mod
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp 
+  use ColumnDataType      , only : col_ps
+  use VegetationDataType  , only : veg_ps
   !
   implicit none
   save
@@ -93,7 +95,7 @@ contains
         do j = 1, nlevdecomp
           do fc = 1,num_soilc
             c = filter_soilc(fc)
-            ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - pf%primp_to_labilep_vr_col(c,j) *dt &
+            col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j) - pf%primp_to_labilep_vr_col(c,j) *dt &
                  + pf%pdep_to_sminp_col(c)*dt * pdep_prof(c,j)
           end do
         enddo
@@ -138,15 +140,15 @@ contains
                ! assign read in parameter values
                smax_c = smax( isoilorder(c) )
                ks_sorption_c = ks_sorption( isoilorder(c) )
-               temp_solutionp(c,j) = ps%solutionp_vr_col(c,j)
-               ps%solutionp_vr_col(c,j)      = ps%solutionp_vr_col(c,j)  + ( flux_mineralization(c,j) &
+               temp_solutionp(c,j) = col_ps%solutionp_vr(c,j)
+               col_ps%solutionp_vr(c,j)      = col_ps%solutionp_vr(c,j)  + ( flux_mineralization(c,j) &
                     + pf%primp_to_labilep_vr_col(c,j)*dt &
                     + pf%secondp_to_labilep_vr_col(c,j)*dt &
                     + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt&
                     - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
-                    (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
+                    (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
 
-               ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + ((smax_c*ks_sorption_c)&
+               col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) + ((smax_c*ks_sorption_c)&
                     /(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                     ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + pf%secondp_to_labilep_vr_col(c,j)*dt &
                     + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
@@ -157,7 +159,7 @@ contains
                                 + pf%secondp_to_labilep_vr_col(c,j) &
                                 + pf%supplement_to_sminp_vr_col(c,j) - pf%sminp_to_plant_vr_col(c,j) &
                                 - pf%labilep_to_secondp_vr_col(c,j) - pf%sminp_leached_vr_col(c,j) ) / &
-                                (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
+                                (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
             
                 pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                              ( flux_mineralization(c,j)/dt + pf%primp_to_labilep_vr_col(c,j) + pf%secondp_to_labilep_vr_col(c,j) &
@@ -170,12 +172,12 @@ contains
           do j = 1, nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                ps%solutionp_vr_col_prev(c,j) = ps%solutionp_vr_col(c,j)
-                ps%labilep_vr_col_prev(c,j) = ps%labilep_vr_col(c,j)
+                col_ps%solutionp_vr_prev(c,j) = col_ps%solutionp_vr(c,j)
+                col_ps%labilep_vr_prev(c,j) = col_ps%labilep_vr(c,j)
 
                 smax_c = vmax_minsurf_p_vr(isoilorder(c),j)
                 ks_sorption_c = km_minsurf_p_vr(isoilorder(c),j)
-                temp_solutionp(c,j) = ( ps%solutionp_vr_col(c,j) + ps%labilep_vr_col(c,j) + &
+                temp_solutionp(c,j) = ( col_ps%solutionp_vr(c,j) + col_ps%labilep_vr(c,j) + &
                             (flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + &
                             pf%secondp_to_labilep_vr_col(c,j)*dt + pf%supplement_to_sminp_vr_col(c,j)*dt - &
                             pf%sminp_to_plant_vr_col(c,j)*dt - pf%labilep_to_secondp_vr_col(c,j)*dt - &
@@ -191,8 +193,8 @@ contains
                             (temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + &
                             pf%sminp_leached_vr_col(c,j)*dt) /dt
                        temp_solutionp(c,j) = 0.0_r8
-                       ps%solutionp_vr_col(c,j) = 0.0_r8
-                       ps%labilep_vr_col(c,j) = 0.0_r8
+                       col_ps%solutionp_vr(c,j) = 0.0_r8
+                       col_ps%labilep_vr(c,j) = 0.0_r8
                  else
                        ! sorbp = smax*solutionp/(ks+solutionp)
                        ! sorbp + solutionp = smax*solutionp/(ks+solutionp) + solutionp = total p pool after competition
@@ -200,12 +202,12 @@ contains
                        aa = 1;
                        bb = smax_c + ks_sorption_c - temp_solutionp(c,j)
                        cc = -1.0_r8 * ks_sorption_c *  temp_solutionp(c,j)
-                       ps%solutionp_vr_col(c,j)  = (-bb+(bb*bb-4.0_r8*aa*cc)**0.5_r8)/(2.0_r8*aa)
-                       ps%labilep_vr_col(c,j) = temp_solutionp(c,j) - ps%solutionp_vr_col(c,j)
+                       col_ps%solutionp_vr(c,j)  = (-bb+(bb*bb-4.0_r8*aa*cc)**0.5_r8)/(2.0_r8*aa)
+                       col_ps%labilep_vr(c,j) = temp_solutionp(c,j) - col_ps%solutionp_vr(c,j)
                  end if
 
-                 ps%solutionp_vr_col_cur(c,j) = ps%solutionp_vr_col(c,j)
-                 ps%labilep_vr_col_cur(c,j) = ps%labilep_vr_col(c,j)
+                 col_ps%solutionp_vr_cur(c,j) = col_ps%solutionp_vr(c,j)
+                 col_ps%labilep_vr_cur(c,j) = col_ps%labilep_vr(c,j)
               enddo
            enddo
          end if
@@ -216,7 +218,7 @@ contains
                 c = filter_soilc(fc)
                 do l = 1, ndecomp_pools
 
-                   ps%decomp_ppools_vr_col(c,j,l) = ps%decomp_ppools_vr_col(c,j,l)- pf%biochem_pmin_ppools_vr_col(c,j,l)*dt
+                   col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l)- pf%biochem_pmin_ppools_vr_col(c,j,l)*dt
 
                 end do
              end do
@@ -227,20 +229,20 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               ps%secondp_vr_col_prev(c,j) = ps%secondp_vr_col(c,j)
-               ps%occlp_vr_col_prev(c,j)   = ps%occlp_vr_col(c,j)
-               ps%primp_vr_col_prev(c,j)   = ps%primp_vr_col(c,j)
+               col_ps%secondp_vr_prev(c,j) = col_ps%secondp_vr(c,j)
+               col_ps%occlp_vr_prev(c,j)   = col_ps%occlp_vr(c,j)
+               col_ps%primp_vr_prev(c,j)   = col_ps%primp_vr(c,j)
 
-               ps%secondp_vr_col(c,j) = ps%secondp_vr_col(c,j) + ( pf%labilep_to_secondp_vr_col(c,j) &
+               col_ps%secondp_vr(c,j) = col_ps%secondp_vr(c,j) + ( pf%labilep_to_secondp_vr_col(c,j) &
                     - pf%secondp_to_labilep_vr_col(c,j) &
                                      - pf%secondp_to_occlp_vr_col(c,j) )*dt
-               ps%occlp_vr_col(c,j)   = ps%occlp_vr_col(c,j) + ( pf%secondp_to_occlp_vr_col(c,j) ) * dt
-               ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt + pf%pdep_to_sminp_col(c)*dt &
+               col_ps%occlp_vr(c,j)   = col_ps%occlp_vr(c,j) + ( pf%secondp_to_occlp_vr_col(c,j) ) * dt
+               col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt + pf%pdep_to_sminp_col(c)*dt &
                     * pdep_prof(c,j)
 
-               ps%secondp_vr_col_cur(c,j) = ps%secondp_vr_col(c,j)
-               ps%occlp_vr_col_cur(c,j)   = ps%occlp_vr_col(c,j)
-               ps%primp_vr_col_cur(c,j)   = ps%primp_vr_col(c,j)
+               col_ps%secondp_vr_cur(c,j) = col_ps%secondp_vr(c,j)
+               col_ps%occlp_vr_cur(c,j)   = col_ps%occlp_vr(c,j)
+               col_ps%primp_vr_cur(c,j)   = col_ps%primp_vr(c,j)
             end do
          enddo
          
@@ -252,11 +254,11 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col_prev(c,j)
-                  ps%labilep_vr_col(c,j) = ps%labilep_vr_col_prev(c,j)
-                  ps%secondp_vr_col(c,j) = ps%secondp_vr_col_prev(c,j)
-                  ps%occlp_vr_col(c,j)   = ps%occlp_vr_col_prev(c,j)
-                  ps%primp_vr_col(c,j)   = ps%primp_vr_col_prev(c,j)
+                  col_ps%solutionp_vr(c,j) = col_ps%solutionp_vr_prev(c,j)
+                  col_ps%labilep_vr(c,j) = col_ps%labilep_vr_prev(c,j)
+                  col_ps%secondp_vr(c,j) = col_ps%secondp_vr_prev(c,j)
+                  col_ps%occlp_vr(c,j)   = col_ps%occlp_vr_prev(c,j)
+                  col_ps%primp_vr(c,j)   = col_ps%primp_vr_prev(c,j)
                end do
             end do
          end if
@@ -268,12 +270,12 @@ contains
 
             ! column level phosphorus fluxes from fire
             ! pft-level wood to column-level CWD (uncombusted wood)
-            ps%decomp_ppools_vr_col(c,j,i_cwd) = ps%decomp_ppools_vr_col(c,j,i_cwd) + pf%fire_mortality_p_to_cwdp_col(c,j) * dt
+            col_ps%decomp_ppools_vr(c,j,i_cwd) = col_ps%decomp_ppools_vr(c,j,i_cwd) + pf%fire_mortality_p_to_cwdp_col(c,j) * dt
 
             ! pft-level wood to column-level litter (uncombusted wood)
-            ps%decomp_ppools_vr_col(c,j,i_met_lit) = ps%decomp_ppools_vr_col(c,j,i_met_lit) + pf%m_p_to_litr_met_fire_col(c,j)* dt
-            ps%decomp_ppools_vr_col(c,j,i_cel_lit) = ps%decomp_ppools_vr_col(c,j,i_cel_lit) + pf%m_p_to_litr_cel_fire_col(c,j)* dt
-            ps%decomp_ppools_vr_col(c,j,i_lig_lit) = ps%decomp_ppools_vr_col(c,j,i_lig_lit) + pf%m_p_to_litr_lig_fire_col(c,j)* dt
+            col_ps%decomp_ppools_vr(c,j,i_met_lit) = col_ps%decomp_ppools_vr(c,j,i_met_lit) + pf%m_p_to_litr_met_fire_col(c,j)* dt
+            col_ps%decomp_ppools_vr(c,j,i_cel_lit) = col_ps%decomp_ppools_vr(c,j,i_cel_lit) + pf%m_p_to_litr_cel_fire_col(c,j)* dt
+            col_ps%decomp_ppools_vr(c,j,i_lig_lit) = col_ps%decomp_ppools_vr(c,j,i_lig_lit) + pf%m_p_to_litr_lig_fire_col(c,j)* dt
          end do ! end of column loop
       end do
 
@@ -283,7 +285,7 @@ contains
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               ps%decomp_ppools_vr_col(c,j,l) = ps%decomp_ppools_vr_col(c,j,l) - pf%m_decomp_ppools_to_fire_vr_col(c,j,l) * dt
+               col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - pf%m_decomp_ppools_to_fire_vr_col(c,j,l) * dt
             end do
          end do
       end do
@@ -295,56 +297,56 @@ contains
          p = filter_soilp(fp)
 
          !from fire displayed pools
-         ps%leafp_patch(p)              =  ps%leafp_patch(p)      - pf%m_leafp_to_fire_patch(p)      * dt
-         ps%frootp_patch(p)             =  ps%frootp_patch(p)     - pf%m_frootp_to_fire_patch(p)     * dt
-         ps%livestemp_patch(p)          =  ps%livestemp_patch(p)  - pf%m_livestemp_to_fire_patch(p)  * dt
-         ps%deadstemp_patch(p)          =  ps%deadstemp_patch(p)  - pf%m_deadstemp_to_fire_patch(p)  * dt
-         ps%livecrootp_patch(p)         =  ps%livecrootp_patch(p) - pf%m_livecrootp_to_fire_patch(p) * dt
-         ps%deadcrootp_patch(p)         =  ps%deadcrootp_patch(p) - pf%m_deadcrootp_to_fire_patch(p) * dt
+         veg_ps%leafp(p)              =  veg_ps%leafp(p)      - pf%m_leafp_to_fire_patch(p)      * dt
+         veg_ps%frootp(p)             =  veg_ps%frootp(p)     - pf%m_frootp_to_fire_patch(p)     * dt
+         veg_ps%livestemp(p)          =  veg_ps%livestemp(p)  - pf%m_livestemp_to_fire_patch(p)  * dt
+         veg_ps%deadstemp(p)          =  veg_ps%deadstemp(p)  - pf%m_deadstemp_to_fire_patch(p)  * dt
+         veg_ps%livecrootp(p)         =  veg_ps%livecrootp(p) - pf%m_livecrootp_to_fire_patch(p) * dt
+         veg_ps%deadcrootp(p)         =  veg_ps%deadcrootp(p) - pf%m_deadcrootp_to_fire_patch(p) * dt
 
-         ps%leafp_patch(p)              =  ps%leafp_patch(p)      - pf%m_leafp_to_litter_fire_patch(p)           * dt
-         ps%frootp_patch(p)             =  ps%frootp_patch(p)     - pf%m_frootp_to_litter_fire_patch(p)          * dt
-         ps%livestemp_patch(p)          =  ps%livestemp_patch(p)  - pf%m_livestemp_to_litter_fire_patch(p)       * dt
-         ps%deadstemp_patch(p)          =  ps%deadstemp_patch(p)  - pf%m_deadstemp_to_litter_fire_patch(p)       * dt
-         ps%livecrootp_patch(p)         =  ps%livecrootp_patch(p) - pf%m_livecrootp_to_litter_fire_patch(p)      * dt
-         ps%deadcrootp_patch(p)         =  ps%deadcrootp_patch(p) - pf%m_deadcrootp_to_litter_fire_patch(p)      * dt
+         veg_ps%leafp(p)              =  veg_ps%leafp(p)      - pf%m_leafp_to_litter_fire_patch(p)           * dt
+         veg_ps%frootp(p)             =  veg_ps%frootp(p)     - pf%m_frootp_to_litter_fire_patch(p)          * dt
+         veg_ps%livestemp(p)          =  veg_ps%livestemp(p)  - pf%m_livestemp_to_litter_fire_patch(p)       * dt
+         veg_ps%deadstemp(p)          =  veg_ps%deadstemp(p)  - pf%m_deadstemp_to_litter_fire_patch(p)       * dt
+         veg_ps%livecrootp(p)         =  veg_ps%livecrootp(p) - pf%m_livecrootp_to_litter_fire_patch(p)      * dt
+         veg_ps%deadcrootp(p)         =  veg_ps%deadcrootp(p) - pf%m_deadcrootp_to_litter_fire_patch(p)      * dt
 
          ! storage pools
-         ps%leafp_storage_patch(p)      =  ps%leafp_storage_patch(p)      - pf%m_leafp_storage_to_fire_patch(p)      * dt
-         ps%frootp_storage_patch(p)     =  ps%frootp_storage_patch(p)     - pf%m_frootp_storage_to_fire_patch(p)     * dt
-         ps%livestemp_storage_patch(p)  =  ps%livestemp_storage_patch(p)  - pf%m_livestemp_storage_to_fire_patch(p)  * dt
-         ps%deadstemp_storage_patch(p)  =  ps%deadstemp_storage_patch(p)  - pf%m_deadstemp_storage_to_fire_patch(p)  * dt
-         ps%livecrootp_storage_patch(p) =  ps%livecrootp_storage_patch(p) - pf%m_livecrootp_storage_to_fire_patch(p) * dt
-         ps%deadcrootp_storage_patch(p) =  ps%deadcrootp_storage_patch(p) - pf%m_deadcrootp_storage_to_fire_patch(p) * dt
+         veg_ps%leafp_storage(p)      =  veg_ps%leafp_storage(p)      - pf%m_leafp_storage_to_fire_patch(p)      * dt
+         veg_ps%frootp_storage(p)     =  veg_ps%frootp_storage(p)     - pf%m_frootp_storage_to_fire_patch(p)     * dt
+         veg_ps%livestemp_storage(p)  =  veg_ps%livestemp_storage(p)  - pf%m_livestemp_storage_to_fire_patch(p)  * dt
+         veg_ps%deadstemp_storage(p)  =  veg_ps%deadstemp_storage(p)  - pf%m_deadstemp_storage_to_fire_patch(p)  * dt
+         veg_ps%livecrootp_storage(p) =  veg_ps%livecrootp_storage(p) - pf%m_livecrootp_storage_to_fire_patch(p) * dt
+         veg_ps%deadcrootp_storage(p) =  veg_ps%deadcrootp_storage(p) - pf%m_deadcrootp_storage_to_fire_patch(p) * dt
 
-         ps%leafp_storage_patch(p)      =  ps%leafp_storage_patch(p)      - pf%m_leafp_storage_to_litter_fire_patch(p)      * dt
-         ps%frootp_storage_patch(p)     =  ps%frootp_storage_patch(p)     - pf%m_frootp_storage_to_litter_fire_patch(p)     * dt
-         ps%livestemp_storage_patch(p)  =  ps%livestemp_storage_patch(p)  - pf%m_livestemp_storage_to_litter_fire_patch(p)  * dt
-         ps%deadstemp_storage_patch(p)  =  ps%deadstemp_storage_patch(p)  - pf%m_deadstemp_storage_to_litter_fire_patch(p)  * dt
-         ps%livecrootp_storage_patch(p) =  ps%livecrootp_storage_patch(p) - pf%m_livecrootp_storage_to_litter_fire_patch(p) * dt
-         ps%deadcrootp_storage_patch(p) =  ps%deadcrootp_storage_patch(p) - pf%m_deadcrootp_storage_to_litter_fire_patch(p) * dt
+         veg_ps%leafp_storage(p)      =  veg_ps%leafp_storage(p)      - pf%m_leafp_storage_to_litter_fire_patch(p)      * dt
+         veg_ps%frootp_storage(p)     =  veg_ps%frootp_storage(p)     - pf%m_frootp_storage_to_litter_fire_patch(p)     * dt
+         veg_ps%livestemp_storage(p)  =  veg_ps%livestemp_storage(p)  - pf%m_livestemp_storage_to_litter_fire_patch(p)  * dt
+         veg_ps%deadstemp_storage(p)  =  veg_ps%deadstemp_storage(p)  - pf%m_deadstemp_storage_to_litter_fire_patch(p)  * dt
+         veg_ps%livecrootp_storage(p) =  veg_ps%livecrootp_storage(p) - pf%m_livecrootp_storage_to_litter_fire_patch(p) * dt
+         veg_ps%deadcrootp_storage(p) =  veg_ps%deadcrootp_storage(p) - pf%m_deadcrootp_storage_to_litter_fire_patch(p) * dt
 
 
          ! trapsfer pools
-         ps%leafp_xfer_patch(p)         =  ps%leafp_xfer_patch(p)      - pf%m_leafp_xfer_to_fire_patch(p)      * dt
-         ps%frootp_xfer_patch(p)        =  ps%frootp_xfer_patch(p)     - pf%m_frootp_xfer_to_fire_patch(p)     * dt
-         ps%livestemp_xfer_patch(p)     =  ps%livestemp_xfer_patch(p)  - pf%m_livestemp_xfer_to_fire_patch(p)  * dt
-         ps%deadstemp_xfer_patch(p)     =  ps%deadstemp_xfer_patch(p)  - pf%m_deadstemp_xfer_to_fire_patch(p)  * dt
-         ps%livecrootp_xfer_patch(p)    =  ps%livecrootp_xfer_patch(p) - pf%m_livecrootp_xfer_to_fire_patch(p) * dt
-         ps%deadcrootp_xfer_patch(p)    =  ps%deadcrootp_xfer_patch(p) - pf%m_deadcrootp_xfer_to_fire_patch(p) * dt
+         veg_ps%leafp_xfer(p)         =  veg_ps%leafp_xfer(p)      - pf%m_leafp_xfer_to_fire_patch(p)      * dt
+         veg_ps%frootp_xfer(p)        =  veg_ps%frootp_xfer(p)     - pf%m_frootp_xfer_to_fire_patch(p)     * dt
+         veg_ps%livestemp_xfer(p)     =  veg_ps%livestemp_xfer(p)  - pf%m_livestemp_xfer_to_fire_patch(p)  * dt
+         veg_ps%deadstemp_xfer(p)     =  veg_ps%deadstemp_xfer(p)  - pf%m_deadstemp_xfer_to_fire_patch(p)  * dt
+         veg_ps%livecrootp_xfer(p)    =  veg_ps%livecrootp_xfer(p) - pf%m_livecrootp_xfer_to_fire_patch(p) * dt
+         veg_ps%deadcrootp_xfer(p)    =  veg_ps%deadcrootp_xfer(p) - pf%m_deadcrootp_xfer_to_fire_patch(p) * dt
 
-         ps%leafp_xfer_patch(p)         =  ps%leafp_xfer_patch(p)      - pf%m_leafp_xfer_to_litter_fire_patch(p)      * dt
-         ps%frootp_xfer_patch(p)        =  ps%frootp_xfer_patch(p)     - pf%m_frootp_xfer_to_litter_fire_patch(p)     * dt
-         ps%livestemp_xfer_patch(p)     =  ps%livestemp_xfer_patch(p)  - pf%m_livestemp_xfer_to_litter_fire_patch(p)  * dt
-         ps%deadstemp_xfer_patch(p)     =  ps%deadstemp_xfer_patch(p)  - pf%m_deadstemp_xfer_to_litter_fire_patch(p)  * dt
-         ps%livecrootp_xfer_patch(p)    =  ps%livecrootp_xfer_patch(p) - pf%m_livecrootp_xfer_to_litter_fire_patch(p) * dt
-         ps%deadcrootp_xfer_patch(p)    =  ps%deadcrootp_xfer_patch(p) - pf%m_deadcrootp_xfer_to_litter_fire_patch(p) * dt
+         veg_ps%leafp_xfer(p)         =  veg_ps%leafp_xfer(p)      - pf%m_leafp_xfer_to_litter_fire_patch(p)      * dt
+         veg_ps%frootp_xfer(p)        =  veg_ps%frootp_xfer(p)     - pf%m_frootp_xfer_to_litter_fire_patch(p)     * dt
+         veg_ps%livestemp_xfer(p)     =  veg_ps%livestemp_xfer(p)  - pf%m_livestemp_xfer_to_litter_fire_patch(p)  * dt
+         veg_ps%deadstemp_xfer(p)     =  veg_ps%deadstemp_xfer(p)  - pf%m_deadstemp_xfer_to_litter_fire_patch(p)  * dt
+         veg_ps%livecrootp_xfer(p)    =  veg_ps%livecrootp_xfer(p) - pf%m_livecrootp_xfer_to_litter_fire_patch(p) * dt
+         veg_ps%deadcrootp_xfer(p)    =  veg_ps%deadcrootp_xfer(p) - pf%m_deadcrootp_xfer_to_litter_fire_patch(p) * dt
 
          ! retranslocated N pool
-         ps%retransp_patch(p)           =  ps%retransp_patch(p) - pf%m_retransp_to_fire_patch(p)        * dt
-         ps%retransp_patch(p)           =  ps%retransp_patch(p) - pf%m_retransp_to_litter_fire_patch(p) * dt
-         ps%ppool_patch(p)              =  ps%ppool_patch(p) - pf%m_ppool_to_fire_patch(p)              * dt
-         ps%ppool_patch(p)              =  ps%ppool_patch(p) - pf%m_ppool_to_litter_fire_patch(p)       * dt
+         veg_ps%retransp(p)           =  veg_ps%retransp(p) - pf%m_retransp_to_fire_patch(p)        * dt
+         veg_ps%retransp(p)           =  veg_ps%retransp(p) - pf%m_retransp_to_litter_fire_patch(p) * dt
+         veg_ps%ppool(p)              =  veg_ps%ppool(p) - pf%m_ppool_to_fire_patch(p)              * dt
+         veg_ps%ppool(p)              =  veg_ps%ppool(p) - pf%m_ppool_to_litter_fire_patch(p)       * dt
       end do
 
     end associate 

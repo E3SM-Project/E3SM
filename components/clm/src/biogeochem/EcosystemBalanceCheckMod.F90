@@ -36,9 +36,9 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use clm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
-  use GridcellDataType    , only : gridcell_carbon_state, grc_cf, grc_ns, grc_nf
+  use GridcellDataType    , only : gridcell_carbon_state, grc_cf, grc_ns, grc_nf, grc_ps
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state, col_cf, col_ns, col_nf 
+  use ColumnDataType      , only : column_carbon_state, col_cf, col_ns, col_nf, col_ps 
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf
   
@@ -154,15 +154,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                           &
-         totcolp   => phosphorusstate_vars%totcolp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totcolp   => col_ps%totcolp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          !X.YANG - checking P balance problem, starting from VEGP 
-         totpftp   => phosphorusstate_vars%totpftp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         totsomp   => phosphorusstate_vars%totsomp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp   => phosphorusstate_vars%cwdp_col       , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         totlitp   => phosphorusstate_vars%totlitp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         sminp   => phosphorusstate_vars%sminp_col     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totpftp   => col_ps%totpftp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totsomp   => col_ps%totsomp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp   => col_ps%cwdp       , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totlitp   => col_ps%totlitp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         sminp   => col_ps%sminp     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
  
-         col_begpb => phosphorusstate_vars%begpb_col     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         col_begpb => col_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
       ! calculate beginning column-level phosphorus balance, for mass conservation check
@@ -508,7 +508,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                            &
-         totcolp                   => phosphorusstate_vars%totcolp_col                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totcolp                   => col_ps%totcolp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          supplement_to_sminp       => phosphorusflux_vars%supplement_to_sminp_col       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
          sminp_leached             => phosphorusflux_vars%sminp_leached_col             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          col_fire_ploss            => phosphorusflux_vars%fire_ploss_col                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
@@ -521,15 +521,15 @@ contains
          col_prod1p_loss           => phosphorusflux_vars%prod1p_loss_col               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested 
          col_pinputs               => phosphorusflux_vars%pinputs_col                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
          col_poutputs              => phosphorusflux_vars%poutputs_col                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
-         col_begpb                 => phosphorusstate_vars%begpb_col                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
-         col_endpb                 => phosphorusstate_vars%endpb_col                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
-         col_errpb                 => phosphorusstate_vars%errpb_col                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
+         col_begpb                 => col_ps%begpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         col_endpb                 => col_ps%endpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
+         col_errpb                 => col_ps%errpb                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
 
-         totpftp                   => phosphorusstate_vars%totpftp_col                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         totsomp                   => phosphorusstate_vars%totsomp_col                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp                      => phosphorusstate_vars%cwdp_col                     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         totlitp                   => phosphorusstate_vars%totlitp_col                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         sminp                     => phosphorusstate_vars%sminp_col                    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totpftp                   => col_ps%totpftp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totsomp                   => col_ps%totsomp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp                      => col_ps%cwdp                     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totlitp                   => col_ps%totlitp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         sminp                     => col_ps%sminp                    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          leafp_to_litter           => phosphorusflux_vars%leafp_to_litter_patch         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          frootp_to_litter          => phosphorusflux_vars%frootp_to_litter_patch        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          sminp_to_plant            => phosphorusflux_vars%sminp_to_plant_col            , &
@@ -622,9 +622,9 @@ contains
          if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin) then
             do j = 1, nlevdecomp               
                col_poutputs(c) = col_poutputs(c) + &
-                  (ps%solutionp_vr_col_cur(c,j) -  ps%solutionp_vr_col_prev(c,j)  + &
-                  ps%labilep_vr_col_cur(c,j) -  ps%labilep_vr_col_prev(c,j) + &
-                  ps%secondp_vr_col_cur(c,j) - ps%secondp_vr_col_prev(c,j) ) * dzsoi_decomp(j)/dt
+                  (col_ps%solutionp_vr_cur(c,j) -  col_ps%solutionp_vr_prev(c,j)  + &
+                  col_ps%labilep_vr_cur(c,j) -  col_ps%labilep_vr_prev(c,j) + &
+                  col_ps%secondp_vr_cur(c,j) - col_ps%secondp_vr_prev(c,j) ) * dzsoi_decomp(j)/dt
             end do 
          end if
 
@@ -728,8 +728,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                           &
-         totcolp   => phosphorusstate_vars%totcolp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         begpb_grc => phosphorusstate_vars%begpb_grc     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         totcolp   => col_ps%totcolp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         begpb_grc => grc_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
       call c2g( bounds = bounds, &
@@ -951,15 +951,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
-         totcolp                   =>    phosphorusstate_vars%totcolp_col              , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
+         totcolp                   =>    col_ps%totcolp              , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
          dwt_prod10p_gain_grc      =>    phosphorusflux_vars%dwt_prod10p_gain_grc      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_prod100p_gain_grc     =>    phosphorusflux_vars%dwt_prod100p_gain_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_conv_pflux_grc        =>    phosphorusflux_vars%dwt_conv_pflux_grc        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_leaf_grc     =>    phosphorusflux_vars%dwt_seedp_to_leaf_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_deadstem_grc =>    phosphorusflux_vars%dwt_seedp_to_deadstem_grc , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         begpb_grc                 =>    phosphorusstate_vars%begpb_grc                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         endpb_grc                 =>    phosphorusstate_vars%endpb_grc                , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
-         errpb_grc                 =>    phosphorusstate_vars%errpb_grc                  & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
+         begpb_grc                 =>    grc_ps%begpb                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         endpb_grc                 =>    grc_ps%endpb                , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
+         errpb_grc                 =>    grc_ps%errpb                  & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
          )
 
       ! set time steps

@@ -25,8 +25,10 @@ module ColumnDataType
   use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
   use clm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
   use clm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
-  use clm_varctl      , only : pf_hmode
+  use clm_varctl      , only : pf_hmode, nu_com
   use ch4varcon       , only : allowlakeprod
+  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
+  use soilorder_varcon, only : smax, ks_sorption
   use clm_time_manager, only : is_restart, get_nstep
   use clm_time_manager, only : is_first_step, get_step_size
   use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec  
@@ -282,10 +284,72 @@ module ColumnDataType
   ! Define the data structure that holds phosphorus state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_phosphorus_state
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: decomp_ppools_vr         (:,:,:)  => null() ! (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools 
+    real(r8), pointer :: solutionp_vr             (:,:)    => null() ! (gP/m3) vertically-resolved soil solution P
+    real(r8), pointer :: labilep_vr               (:,:)    => null() ! (gP/m3) vertically-resolved soil labile mineral P
+    real(r8), pointer :: secondp_vr               (:,:)    => null() ! (gP/m3) vertically-resolved soil secondary mineralP
+    real(r8), pointer :: occlp_vr                 (:,:)    => null() ! (gP/m3) vertically-resolved soil occluded mineral P
+    real(r8), pointer :: primp_vr                 (:,:)    => null() ! (gP/m3) vertically-resolved soil parimary mineral P
+    real(r8), pointer :: sminp_vr                 (:,:)    => null() ! (gP/m3) vertically-resolved soil parimary mineral P
+    real(r8), pointer :: ptrunc_vr                (:,:)    => null() ! (gP/m3) vertically-resolved column-level sink for P truncation
+    real(r8), pointer :: seedp                    (:)      => null() ! (gP/m2) column-level pool for seeding new Patches
+    real(r8), pointer :: prod1p                   (:)      => null() ! (gN/m2) crop product N pool, 1-year lifespan
+    real(r8), pointer :: prod10p                  (:)      => null() ! (gP/m2) wood product P pool, 10-year lifespan
+    real(r8), pointer :: prod100p                 (:)      => null() ! (gP/m2) wood product P pool, 100-year lifespan
+    real(r8), pointer :: totprodp                 (:)      => null() ! (gP/m2) total wood product P
+    real(r8), pointer :: dyn_pbal_adjustments     (:)      => null() ! (gP/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: decomp_ppools            (:,:)    => null() ! (gP/m2)  decomposing (litter, cwd, soil) P pools
+    real(r8), pointer :: decomp_ppools_1m         (:,:)    => null() ! (gP/m2)  diagnostic: decomposing (litter, cwd, soil) P pools to 1 meter
+    real(r8), pointer :: sminp                    (:)      => null() ! (gP/m2) soil mineral P
+    real(r8), pointer :: solutionp                (:)      => null() ! (gP/m2) soil solution P
+    real(r8), pointer :: labilep                  (:)      => null() ! (gP/m2) soil labile mineral P
+    real(r8), pointer :: secondp                  (:)      => null() ! (gP/m2) soil secondary mineralP
+    real(r8), pointer :: occlp                    (:)      => null() ! (gP/m2) soil occluded mineral P
+    real(r8), pointer :: primp                    (:)      => null() ! (gP/m2) soil parimary mineral P
+    real(r8), pointer :: ptrunc                   (:)      => null() ! (gP/m2) column-level sink for P truncation
+    real(r8), pointer :: cwdp                     (:)      => null() ! (gP/m2) Diagnostic: coarse woody debris P
+    real(r8), pointer :: totlitp                  (:)      => null() ! (gP/m2) total litter phosphorus
+    real(r8), pointer :: totsomp                  (:)      => null() ! (gP/m2) total soil organic matter phosphorus
+    real(r8), pointer :: totlitp_1m               (:)      => null() ! (gP/m2) total litter phosphorus to 1 meter
+    real(r8), pointer :: totsomp_1m               (:)      => null() ! (gP/m2) total soil organic matter phosphorus to 1 meter
+    real(r8), pointer :: totecosysp               (:)      => null() ! (gP/m2) total ecosystem phosphorus, incl veg 
+    real(r8), pointer :: totcolp                  (:)      => null() ! (gP/m2) total column phosphorus, incl veg
+    real(r8), pointer :: totvegp                  (:)      => null() ! (gP/m2) total vegetation phosphorus (p2c)
+    real(r8), pointer :: totpftp                  (:)      => null() ! (gP/m2) total pft-level phosphorus (p2c)
+    real(r8), pointer :: begpb                    (:)      => null() ! phosphorus mass, beginning of time step (gP/m**2)
+    real(r8), pointer :: endpb                    (:)      => null() ! phosphorus mass, end of time step (gP/m**2)
+    real(r8), pointer :: errpb                    (:)      => null() ! phosphorus balance error for the timestep (gP/m**2)
+    real(r8), pointer :: solutionp_vr_cur         (:,:)    => null() 
+    real(r8), pointer :: solutionp_vr_prev        (:,:)    => null() 
+    real(r8), pointer :: labilep_vr_cur           (:,:)    => null() 
+    real(r8), pointer :: labilep_vr_prev          (:,:)    => null() 
+    real(r8), pointer :: secondp_vr_cur           (:,:)    => null() 
+    real(r8), pointer :: secondp_vr_prev          (:,:)    => null() 
+    real(r8), pointer :: occlp_vr_cur             (:,:)    => null() 
+    real(r8), pointer :: occlp_vr_prev            (:,:)    => null() 
+    real(r8), pointer :: primp_vr_cur             (:,:)    => null() 
+    real(r8), pointer :: primp_vr_prev            (:,:)    => null() 
+    real(r8), pointer :: totpftp_beg              (:)      => null() 
+    real(r8), pointer :: solutionp_beg            (:)      => null() 
+    real(r8), pointer :: labilep_beg              (:)      => null() 
+    real(r8), pointer :: secondp_beg              (:)      => null() 
+    real(r8), pointer :: totlitp_beg              (:)      => null() 
+    real(r8), pointer :: cwdp_beg                 (:)      => null() 
+    real(r8), pointer :: totsomp_beg              (:)      => null() 
+    real(r8), pointer :: totlitp_end              (:)      => null() 
+    real(r8), pointer :: totpftp_end              (:)      => null() 
+    real(r8), pointer :: solutionp_end            (:)      => null() 
+    real(r8), pointer :: labilep_end              (:)      => null() 
+    real(r8), pointer :: secondp_end              (:)      => null() 
+    real(r8), pointer :: cwdp_end                 (:)      => null() 
+    real(r8), pointer :: totsomp_end              (:)      => null()
+    real(r8), pointer :: cropseedp_deficit        (:)      => null() ! (gP/m2) negative pool tracking seed P for DWT    
   contains
-    procedure, public :: Init  => col_ps_init
-    procedure, public :: Clean => col_ps_clean
+    procedure, public :: Init      => col_ps_init
+    procedure, public :: Restart   => col_ps_restart
+    procedure, public :: SetValues => col_ps_setvalues
+    procedure, public :: Summary   => col_ps_summary
+    procedure, public :: Clean     => col_ps_clean
   end type column_phosphorus_state
 
   !-----------------------------------------------------------------------
@@ -3723,24 +3787,979 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column phosphorus state data structure
   !------------------------------------------------------------------------
-  subroutine col_ps_init(this, begc, endc)
+  subroutine col_ps_init(this, begc, endc, col_cs)
     !
     ! !ARGUMENTS:
-    class(column_phosphorus_state) :: this
-    integer, intent(in) :: begc,endc
+    class(column_phosphorus_state)        :: this
+    integer, intent(in)                   :: begc,endc
+    type(column_carbon_state), intent(in) :: col_cs
+    !
+    ! !LOCAL VARIABLES:
+    integer           :: fc,l,c,j,k               ! indices
+    integer           :: num_special_col          ! number of good values in special_col filter
+    integer           :: special_col(endc-begc+1) ! special landunit filter - columns
+    character(8)      :: vr_suffix
+    character(24)     :: fieldname
+    character(100)    :: longname
+    real(r8), pointer :: data1dptr(:)             ! temp. pointer for slicing larger arrays
+    real(r8), pointer :: data2dptr(:,:)           ! temp. pointer for slicing larger arrays
     !------------------------------------------------------------------------
     
     !-----------------------------------------------------------------------
     ! allocate for each member of col_ps
     !-----------------------------------------------------------------------
+    allocate(this%ptrunc_vr            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr            (:,:) = nan
+    allocate(this%solutionp_vr         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr         (:,:) = nan  
+    allocate(this%labilep_vr           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr           (:,:) = nan  
+    allocate(this%secondp_vr           (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr           (:,:) = nan  
+    allocate(this%occlp_vr             (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr             (:,:) = nan  
+    allocate(this%primp_vr             (begc:endc,1:nlevdecomp_full)) ; this%primp_vr             (:,:) = nan  
+    allocate(this%sminp_vr             (begc:endc,1:nlevdecomp_full)) ; this%sminp_vr             (:,:) = nan  
+    allocate(this%solutionp            (begc:endc))                   ; this%solutionp            (:)   = nan
+    allocate(this%labilep              (begc:endc))                   ; this%labilep              (:)   = nan
+    allocate(this%secondp              (begc:endc))                   ; this%secondp              (:)   = nan
+    allocate(this%occlp                (begc:endc))                   ; this%occlp                (:)   = nan
+    allocate(this%primp                (begc:endc))                   ; this%primp                (:)   = nan
+    allocate(this%cwdp                 (begc:endc))                   ; this%cwdp                 (:)   = nan
+    allocate(this%sminp                (begc:endc))                   ; this%sminp                (:)   = nan
+    allocate(this%ptrunc               (begc:endc))                   ; this%ptrunc               (:)   = nan
+    allocate(this%seedp                (begc:endc))                   ; this%seedp                (:)   = nan
+    allocate(this%prod1p               (begc:endc))                   ; this%prod1p               (:)   = nan
+    allocate(this%prod10p              (begc:endc))                   ; this%prod10p              (:)   = nan
+    allocate(this%prod100p             (begc:endc))                   ; this%prod100p             (:)   = nan
+    allocate(this%totprodp             (begc:endc))                   ; this%totprodp             (:)   = nan
+    allocate(this%dyn_pbal_adjustments (begc:endc))                   ; this%dyn_pbal_adjustments (:)   = nan
+    allocate(this%totlitp              (begc:endc))                   ; this%totlitp              (:)   = nan
+    allocate(this%totsomp              (begc:endc))                   ; this%totsomp              (:)   = nan
+    allocate(this%totlitp_1m           (begc:endc))                   ; this%totlitp_1m           (:)   = nan
+    allocate(this%totsomp_1m           (begc:endc))                   ; this%totsomp_1m           (:)   = nan
+    allocate(this%totecosysp           (begc:endc))                   ; this%totecosysp           (:)   = nan
+    allocate(this%totcolp              (begc:endc))                   ; this%totcolp              (:)   = nan
+    allocate(this%decomp_ppools        (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools        (:,:) = nan
+    allocate(this%decomp_ppools_1m     (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_1m     (:,:) = nan
+    allocate(this%totpftp              (begc:endc))                   ; this%totpftp              (:)   = nan
+    allocate(this%totvegp              (begc:endc))                   ; this%totvegp              (:)   = nan
+    allocate(this%decomp_ppools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%decomp_ppools_vr(:,:,:)= nan
+    allocate(this%begpb                (begc:endc))                   ; this%begpb                (:)   = nan
+    allocate(this%endpb                (begc:endc))                   ; this%endpb                (:)   = nan
+    allocate(this%errpb                (begc:endc))                   ; this%errpb                (:)   = nan 
+    allocate(this%solutionp_vr_cur     (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_cur     (:,:) = nan
+    allocate(this%solutionp_vr_prev    (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_prev    (:,:) = nan
+    allocate(this%labilep_vr_cur       (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_cur       (:,:) = nan
+    allocate(this%labilep_vr_prev      (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_prev      (:,:) = nan
+    allocate(this%secondp_vr_cur       (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr_cur       (:,:) = nan
+    allocate(this%secondp_vr_prev      (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr_prev      (:,:) = nan
+    allocate(this%occlp_vr_cur         (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_cur         (:,:) = nan
+    allocate(this%occlp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_prev        (:,:) = nan
+    allocate(this%primp_vr_cur         (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_cur         (:,:) = nan
+    allocate(this%primp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_prev        (:,:) = nan
+    allocate(this%totpftp_beg          (begc:endc))                   ; this%totpftp_beg          (:)   = nan
+    allocate(this%solutionp_beg        (begc:endc))                   ; this%solutionp_beg        (:)   = nan
+    allocate(this%labilep_beg          (begc:endc))                   ; this%labilep_beg          (:)   = nan
+    allocate(this%secondp_beg          (begc:endc))                   ; this%secondp_beg          (:)   = nan
+    allocate(this%totlitp_beg          (begc:endc))                   ; this%totlitp_beg          (:)   = nan
+    allocate(this%cwdp_beg             (begc:endc))                   ; this%cwdp_beg             (:)   = nan
+    allocate(this%totsomp_beg          (begc:endc))                   ; this%totsomp_beg          (:)   = nan
+    allocate(this%totlitp_end          (begc:endc))                   ; this%totlitp_end          (:)   = nan
+    allocate(this%totpftp_end          (begc:endc))                   ; this%totpftp_end          (:)   = nan
+    allocate(this%labilep_end          (begc:endc))                   ; this%labilep_end          (:)   = nan
+    allocate(this%secondp_end          (begc:endc))                   ; this%secondp_end          (:)   = nan
+    allocate(this%solutionp_end        (begc:endc))                   ; this%solutionp_end        (:)   = nan
+    allocate(this%cwdp_end             (begc:endc))                   ; this%cwdp_end             (:)   = nan
+    allocate(this%totsomp_end          (begc:endc))                   ; this%totsomp_end          (:)   = nan
+    allocate(this%cropseedp_deficit    (begc:endc))                   ; this%cropseedp_deficit    (:)   = nan
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ps
     !-----------------------------------------------------------------------
+    if ( nlevdecomp_full > 1 ) then
+       this%decomp_ppools_vr(begc:endc,:,:) = spval
+       this%decomp_ppools_1m(begc:endc,:) = spval
+    end if
+    this%decomp_ppools(begc:endc,:) = spval
+    do l  = 1, ndecomp_pools
+       if ( nlevdecomp_full > 1 ) then
+          data2dptr => this%decomp_ppools_vr(:,:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_vr'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P (vertically resolved)'
+          call hist_addfld2d (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data2dptr)
+       endif
+
+       data1dptr => this%decomp_ppools(:,l)
+       fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P'
+       longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P'
+       call hist_addfld1d (fname=fieldname, units='gP/m^2', &
+            avgflag='A', long_name=longname, &
+            ptr_col=data1dptr)
+
+       if ( nlevdecomp_full > 1 ) then
+          data1dptr => this%decomp_ppools_1m(:,l)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_1m'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P to 1 meter'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2', &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default = 'inactive')
+       endif
+    end do
+
+
+    if ( nlevdecomp_full > 1 ) then
+
+       this%sminp(begc:endc) = spval
+       call hist_addfld1d (fname='SMINP', units='gP/m^2', &
+            avgflag='A', long_name='soil mineral P', &
+            ptr_col=this%sminp)
+
+       this%totlitp_1m(begc:endc) = spval
+       call hist_addfld1d (fname='TOTLITP_1m', units='gP/m^2', &
+            avgflag='A', long_name='total litter P to 1 meter', &
+            ptr_col=this%totlitp_1m)
+
+       this%totsomp_1m(begc:endc) = spval
+       call hist_addfld1d (fname='TOTSOMP_1m', units='gP/m^2', &
+            avgflag='A', long_name='total soil organic matter P to 1 meter', &
+            ptr_col=this%totsomp_1m)
+    endif
+
+    this%ptrunc(begc:endc) = spval
+    call hist_addfld1d (fname='COL_PTRUNC', units='gP/m^2',  &
+         avgflag='A', long_name='column-level sink for P truncation', &
+         ptr_col=this%ptrunc)
+
+    ! add suffix if number of soil decomposition depths is greater than 1
+    if (nlevdecomp > 1) then
+       vr_suffix = "_vr"
+    else 
+       vr_suffix = ""
+    endif
+
+    this%solutionp_vr(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='SOLUTIONP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name='soil solution P (vert. res.)', &
+         ptr_col=this%solutionp_vr)
+
+    this%labilep_vr(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='LABILEP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name='soil labile P (vert. res.)', &
+         ptr_col=this%labilep_vr)
+
+    this%secondp_vr(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='SECONDP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name='soil secondary P (vert. res.)', &
+         ptr_col=this%secondp_vr)
+
+    this%occlp_vr(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='OCCLP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name='soil occluded P (vert. res.)', &
+         ptr_col=this%occlp_vr)
+
+    this%primp_vr(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='PRIMP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name='soil primary P (vert. res.)', &
+         ptr_col=this%primp_vr)
+
+    this%sminp_vr(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='SMINP'//trim(vr_suffix), units='gp/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name='soil mineral P (vert. res.)', &
+         ptr_col=this%sminp_vr)
+
+    if ( nlevdecomp_full > 1 ) then
+
+       this%solutionp(begc:endc) = spval
+       call hist_addfld1d (fname='SOLUTIONP', units='gP/m^2', &
+            avgflag='A', long_name='soil solution P', &
+            ptr_col=this%solutionp)
+
+       this%labilep(begc:endc) = spval
+       call hist_addfld1d (fname='LABILEP', units='gP/m^2', &
+            avgflag='A', long_name='soil Labile P', &
+            ptr_col=this%labilep)
+
+       this%secondp(begc:endc) = spval
+       call hist_addfld1d (fname='SECONDP', units='gP/m^2', &
+            avgflag='A', long_name='soil secondary P', &
+            ptr_col=this%secondp)
+
+       this%occlp(begc:endc) = spval
+       call hist_addfld1d (fname='OCCLP', units='gP/m^2', &
+            avgflag='A', long_name='soil occluded P', &
+            ptr_col=this%occlp)
+
+       this%primp(begc:endc) = spval
+       call hist_addfld1d (fname='PRIMP', units='gP/m^2', &
+            avgflag='A', long_name='soil primary P', &
+            ptr_col=this%primp)
+    endif
+
+    this%totlitp(begc:endc) = spval
+    call hist_addfld1d (fname='TOTLITP', units='gP/m^2', &
+         avgflag='A', long_name='total litter P', &
+         ptr_col=this%totlitp)
+
+    this%totsomp(begc:endc) = spval
+    call hist_addfld1d (fname='TOTSOMP', units='gP/m^2', &
+         avgflag='A', long_name='total soil organic matter P', &
+         ptr_col=this%totsomp)
+
+    this%totecosysp(begc:endc) = spval
+    call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
+         avgflag='A', long_name='total ecosystem P but excl product pools', &
+         ptr_col=this%totecosysp)
+
+    this%totcolp(begc:endc) = spval
+    call hist_addfld1d (fname='TOTCOLP', units='gP/m^2', &
+         avgflag='A', long_name='total column-level P but excl product pools', &
+         ptr_col=this%totcolp)
+
+    this%seedp(begc:endc) = spval
+    call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
+         avgflag='A', long_name='P pool for seeding new PFTs ', &
+         ptr_col=this%seedp, default='inactive')
+
+    this%prod10p(begc:endc) = spval
+    call hist_addfld1d (fname='PROD10P', units='gP/m^2', &
+         avgflag='A', long_name='10-yr wood product P', &
+         ptr_col=this%prod10p, default='inactive')
+
+    this%prod100p(begc:endc) = spval
+    call hist_addfld1d (fname='PROD100P', units='gP/m^2', &
+         avgflag='A', long_name='100-yr wood product P', &
+         ptr_col=this%prod100p, default='inactive')
+
+    this%prod1p(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1P', units='gP/m^2', &
+         avgflag='A', long_name='1-yr crop product P', &
+         ptr_col=this%prod1p, default='inactive')
+
+    this%totprodp(begc:endc) = spval
+    call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
+         avgflag='A', long_name='total wood product P', &
+         ptr_col=this%totprodp, default='inactive')
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ps
     !-----------------------------------------------------------------------
+    num_special_col = 0
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%ifspecial(l)) then
+          num_special_col = num_special_col + 1
+          special_col(num_special_col) = c
+       end if
+    end do
+
+    do c = begc, endc
+       l = col_pp%landunit(c)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+
+          ! column phosphorus state variables
+          this%ptrunc(c) = 0._r8
+          this%sminp(c) = 0._r8
+          do j = 1, nlevdecomp
+             do k = 1, ndecomp_pools
+                this%decomp_ppools_vr(c,j,k) = col_cs%decomp_cpools_vr(c,j,k) / decomp_cascade_con%initial_cp_ratio(k)
+             end do
+             this%sminp_vr(c,j) = 0._r8
+             this%ptrunc_vr(c,j) = 0._r8
+          end do
+          if ( nlevdecomp > 1 ) then
+             do j = nlevdecomp+1, nlevdecomp_full
+                do k = 1, ndecomp_pools
+                   this%decomp_ppools_vr(c,j,k) = 0._r8
+                end do
+                this%sminp_vr(c,j) = 0._r8
+                this%ptrunc_vr(c,j) = 0._r8
+             end do
+          end if
+          do k = 1, ndecomp_pools
+             this%decomp_ppools(c,k)    = col_cs%decomp_cpools(c,k)    / decomp_cascade_con%initial_cp_ratio(k)
+             this%decomp_ppools_1m(c,k) = col_cs%decomp_cpools_1m(c,k) / decomp_cascade_con%initial_cp_ratio(k)
+          end do
+
+          do j = 1, nlevdecomp_full
+             this%solutionp_vr(c,j) = 0._r8
+             this%labilep_vr(c,j)   = 0._r8
+             this%secondp_vr(c,j)   = 0._r8
+             this%occlp_vr(c,j)     = 0._r8
+             this%primp_vr(c,j)     = 0._r8
+             this%sminp_vr(c,j) = 0._r8
+          end do
+          this%solutionp(c) = 0._r8
+          this%labilep(c)   = 0._r8
+          this%secondp(c)   = 0._r8
+          this%occlp(c)     = 0._r8
+          this%primp(c)     = 0._r8
+
+          this%totlitp(c)    = 0._r8
+          this%totsomp(c)    = 0._r8
+          this%totlitp_1m(c) = 0._r8
+          this%totsomp_1m(c) = 0._r8
+          this%totecosysp(c) = 0._r8
+          this%totcolp(c)    = 0._r8
+          this%cwdp(c)       = 0._r8
+
+          ! dynamic landcover state variables
+          this%seedp(c)         = 0._r8
+          this%prod1p(c)        = 0._r8
+          this%prod10p(c)       = 0._r8
+          this%prod100p(c)      = 0._r8
+          this%totprodp(c)      = 0._r8
+       end if
+    end do
+
+    ! now loop through special filters and explicitly set the variables that
+    ! have to be in place for biogeophysics
+
+    do fc = 1,num_special_col
+       c = special_col(fc)
+
+       this%seedp(c)    = 0._r8
+       this%prod1p(c)   = 0._r8
+       this%prod10p(c)  = 0._r8	  
+       this%prod100p(c) = 0._r8	  
+       this%totprodp(c) = 0._r8	  
+    end do
+
+    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+
   end subroutine col_ps_init
     
+  !-----------------------------------------------------------------------
+  subroutine col_ps_restart ( this,  bounds, ncid, flag, cnstate_vars)
+    !
+    ! !DESCRIPTION: 
+    ! Read/write vegetation-level phosphorus state restart data 
+    !
+    ! !ARGUMENTS:
+    class (column_phosphorus_state)            :: this
+    type(bounds_type)          , intent(in)    :: bounds 
+    type(file_desc_t)          , intent(inout) :: ncid   
+    character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer            :: i,j,k,l,c,a,b,d
+    logical            :: readvar
+    integer            :: idata
+    logical            :: exit_spinup = .false.
+    logical            :: enter_spinup = .false.
+    real(r8)           :: m, m_veg         ! multiplier for the exit_spinup code
+    real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    character(len=128) :: varname    ! temporary
+    integer            :: itemp      ! temporary 
+    integer , pointer  :: iptemp(:)  ! pointer to memory to be allocated
+    ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
+    integer            :: restart_file_spinup_state 
+    ! flags for comparing the model and restart decomposition cascades
+    integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    real(r8)           :: smax_c, ks_sorption_c
+    real(r8)           :: rootfr(1:nlevdecomp)
+    real(r8)           :: pinit_prof(1:nlevdecomp)
+    real(r8)           :: rootfr_tot
+    !------------------------------------------------------------------------
+
+    associate(&
+         isoilorder     => cnstate_vars%isoilorder  &
+         )
+
+    if (use_vertsoilc) then
+       ptr2d => this%solutionp_vr
+       call restartvar(ncid=ncid, flag=flag, varname="solutionp_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       ptr2d => this%labilep_vr
+       call restartvar(ncid=ncid, flag=flag, varname="labilep_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       ptr2d => this%secondp_vr
+       call restartvar(ncid=ncid, flag=flag, varname="secondp_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       ptr2d => this%occlp_vr
+       call restartvar(ncid=ncid, flag=flag, varname="occlp_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       ptr2d => this%primp_vr
+       call restartvar(ncid=ncid, flag=flag, varname="primp_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+    else
+
+       ptr1d => this%solutionp_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="solutionp", xtype=ncd_double,&
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+
+       ptr1d => this%labilep_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="labilep", xtype=ncd_double,&
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+
+       ptr1d => this%secondp_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="secondp", xtype=ncd_double,&
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+
+       ptr1d => this%occlp_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="occlp", xtype=ncd_double,&
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+
+       ptr1d => this%primp_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="primp", xtype=ncd_double,&
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+
+    end if
+
+    ! decomposing P pools
+    do k = 1, ndecomp_pools
+       varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'p'
+       if (use_vertsoilc) then
+          ptr2d => this%decomp_ppools_vr(:,:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
+       else
+          ptr1d => this%decomp_ppools_vr(:,1,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='column', &
+               long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+    if (use_vertsoilc) then
+       ptr2d => this%ptrunc_vr
+       call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc_vr", xtype=ncd_double,  &
+            dim1name='column', dim2name='levgrnd', switchdim=.true., &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    else
+       ptr1d => this%ptrunc_vr(:,1)
+       call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc", xtype=ncd_double,  &
+            dim1name='column', &
+            long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+    end if
+
+    !!! Debug balance 
+    call restartvar(ncid=ncid, flag=flag, varname='totsomp', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%totsomp) 
+    call restartvar(ncid=ncid, flag=flag, varname='cwdp', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%cwdp) 
+    call restartvar(ncid=ncid, flag=flag, varname='totlitp', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%totlitp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='totcolp', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%totcolp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='seedp', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%seedp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod10p', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod10p) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod100p', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod100p) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod1p', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod1p)
+    
+    !--------------------------------
+    ! Spinup state
+    !--------------------------------
+    ! Do nothing for write
+    ! Note that the call to write spinup_state out was done in CNCarbonStateType and
+    ! cannot be called again because it will try to define the variable twice
+    ! when the flag below is set to define
+    if (flag == 'read') then
+       call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
+            long_name='Spinup state of the model that wrote this restart file: ' &
+            // ' 0 = normal model mode, 1 = AD spinup', units='', &
+            interpinic_flag='copy', readvar=readvar,  data=idata)
+       if (readvar) then
+          restart_file_spinup_state = idata
+       else
+          ! assume, for sake of backwards compatibility, that if spinup_state is not in 
+          ! the restart file then current model state is the same as prior model state
+          restart_file_spinup_state = spinup_state
+          if ( masterproc ) then
+             write(iulog,*) ' WARNING!  Restart file does not contain info ' &
+                  // ' on spinup state used to generate the restart file. '
+             write(iulog,*) '   Assuming the same as current setting: ', spinup_state
+          end if
+       end if
+    end if
+    if (flag == 'read' .and. spinup_state /= restart_file_spinup_state ) then
+       if (spinup_state == 0 .and. restart_file_spinup_state == 1 ) then
+          if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools out of AD spinup mode'
+          exit_spinup = .true.
+       else if (spinup_state == 1 .and. restart_file_spinup_state == 0 ) then
+          if ( masterproc ) write(iulog,*) ' NitrogenStateType Restart: taking SOM pools into AD spinup mode'
+          enter_spinup = .true.
+       else
+          call endrun(msg=' Error in entering/exiting spinup.  spinup_state ' &
+               // ' != restart_file_spinup_state, but do not know what to do'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+       if (get_nstep() >= 2) then
+          call endrun(msg=' Error in entering/exiting spinup - should occur only when nstep = 1'//&
+               errMsg(__FILE__, __LINE__))
+       endif
+       do k = 1, ndecomp_pools
+          do c = bounds%begc, bounds%endc
+             do j = 1, nlevdecomp
+	             if ( exit_spinup ) then
+		             m = decomp_cascade_con%spinup_factor(k)
+                   if (decomp_cascade_con%spinup_factor(k) > 1) m = m  / cnstate_vars%scalaravg_col(c,j)
+                else if ( enter_spinup ) then 
+                   m = 1. / decomp_cascade_con%spinup_factor(k)
+		             if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c,j)
+                end if 
+                this%decomp_ppools_vr(c,j,k) = this%decomp_ppools_vr(c,j,k) * m
+             end do
+          end do
+       end do
+       ! soil phosphorus initialization when exit AD spinup Qing Z. 2017
+       if ( exit_spinup) then ! AD spinup -> RG spinup
+          if (.not. cnstate_vars%pdatasets_present) then
+              call endrun(msg='ERROR:: P pools are required on surface dataset'//&
+              errMsg(__FILE__, __LINE__))
+          end if
+
+          do j = 1, nlevdecomp
+             rootfr(j) = exp(-3.0* zsoi(j))
+          end do
+          rootfr_tot = 0._r8
+          do j = 1, nlevdecomp
+             rootfr_tot = rootfr_tot + rootfr(j)
+          end do
+          do j = 1, nlevdecomp
+             pinit_prof(j) = rootfr(j) / rootfr_tot / dzsoi_decomp(j) ! 1/m
+          end do
+
+          do c = bounds%begc, bounds%endc
+             if (use_vertsoilc) then
+                do j = 1, nlevdecomp
+                   ! solve equilibrium between loosely adsorbed and solution
+                   ! phosphorus
+                   ! the P maps used in the initialization are generated for the top 50cm soils
+                   ! assume soil below 50 cm has the same p pool concentration
+                   ! divide 0.5m when convert p pools from g/m2 to g/m3
+                   ! assume p pools evenly distributed at dif layers
+                   ! Prescribe P initial profile based on exponential rooting profile [need to improve]
+                   if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
+                      a = 1.0_r8
+                      b = VMAX_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) + &
+                          KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)*pinit_prof(j)
+                      d = -1.0_r8* cnstate_vars%labp_col(c)*pinit_prof(j) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+
+                      this%solutionp_vr(c,j) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a)
+                      this%labilep_vr(c,j) = cnstate_vars%labp_col(c)*pinit_prof(j) - this%solutionp_vr(c,j)
+                      this%secondp_vr(c,j) = cnstate_vars%secp_col(c)*pinit_prof(j)
+                      this%occlp_vr(c,j) = cnstate_vars%occp_col(c)*pinit_prof(j)
+                      this%primp_vr(c,j) = cnstate_vars%prip_col(c)*pinit_prof(j)
+                   else if (nu_com .eq. 'RD') then
+                      a = 1.0_r8
+                      b = smax(cnstate_vars%isoilorder(c)) + &
+                          ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5_r8
+                      d = -1.0_r8* cnstate_vars%labp_col(c)/0.5_r8 * ks_sorption(cnstate_vars%isoilorder(c))
+
+                      this%solutionp_vr(c,j) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a)
+                      this%labilep_vr(c,j) = cnstate_vars%labp_col(c)/0.5_r8 - this%solutionp_vr(c,j)
+                      this%secondp_vr(c,j) = cnstate_vars%secp_col(c)/0.5_r8
+                      this%occlp_vr(c,j) = cnstate_vars%occp_col(c)/0.5_r8
+                      this%primp_vr(c,j) = cnstate_vars%prip_col(c)/0.5_r8
+                   end if
+
+                   if (nu_com .eq. 'RD') then 
+                       smax_c = smax(isoilorder(c))
+                       ks_sorption_c = ks_sorption(isoilorder(c))
+                       this%solutionp_vr(c,j) = (cnstate_vars%labp_col(c)/0.5_r8*ks_sorption_c)/&
+                                    (smax_c-cnstate_vars%labp_col(c)/0.5_r8)
+                       this%labilep_vr(c,j) = cnstate_vars%labp_col(c)/0.5_r8
+                       this%secondp_vr(c,j) = cnstate_vars%secp_col(c)/0.5_r8
+                       this%occlp_vr(c,j) = cnstate_vars%occp_col(c)/0.5_r8
+                       this%primp_vr(c,j) = cnstate_vars%prip_col(c)/0.5_r8
+                   end if
+
+                end do
+             else
+                if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
+                   a = 1.0_r8
+                   b = VMAX_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) + &
+                       KM_MINSURF_P_vr(1,cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/zisoi(nlevdecomp)
+                   d = -1.0_r8* cnstate_vars%labp_col(c)/zisoi(nlevdecomp) * KM_MINSURF_P_vr(j,cnstate_vars%isoilorder(c))
+
+                   this%solutionp_vr(c,1) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a) * zisoi(nlevdecomp) ! convert to g/m2
+                   this%labilep_vr(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr(c,1)
+                   this%secondp_vr(c,1) = cnstate_vars%secp_col(c)
+                   this%occlp_vr(c,1) = cnstate_vars%occp_col(c)
+                   this%primp_vr(c,1) = cnstate_vars%prip_col(c)
+                else if (nu_com .eq. 'RD') then
+                   a = 1.0_r8
+                   b = smax(cnstate_vars%isoilorder(c)) + &
+                       ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5_r8
+                   d = -1.0_r8* cnstate_vars%labp_col(c)/0.5_r8 * ks_sorption(cnstate_vars%isoilorder(c))
+
+                   this%solutionp_vr(c,1) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a) * 0.5_r8 ! convert to g/m2
+                   this%labilep_vr(c,1) = cnstate_vars%labp_col(c) - this%solutionp_vr(c,1)
+                   this%secondp_vr(c,1) = cnstate_vars%secp_col(c)
+                   this%occlp_vr(c,1) = cnstate_vars%occp_col(c)
+                   this%primp_vr(c,1) = cnstate_vars%prip_col(c)
+                end if
+             end if ! use vertsoilc
+          end do ! column loop
+       end if ! exit spinup
+    end if ! read and switch state
+    
+    end associate
+
+  end subroutine col_ps_restart 
+  
+  !-----------------------------------------------------------------------
+  subroutine col_ps_setvalues ( this, num_column, filter_column, value_column)
+    !
+    ! !DESCRIPTION:
+    ! Set phosphorus state variables, column-level
+    !
+    ! !ARGUMENTS:
+    class (column_phosphorus_state) :: this
+    integer , intent(in)            :: num_column
+    integer , intent(in)            :: filter_column(:)
+    real(r8), intent(in)            :: value_column
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fi,i     ! loop index
+    integer :: j,k      ! indices
+    !------------------------------------------------------------------------
+    do fi = 1,num_column
+       i = filter_column(fi)
+
+       this%sminp(i)       = value_column
+       this%solutionp(i)   = value_column
+       this%labilep(i)     = value_column
+       this%secondp(i)     = value_column
+       this%occlp(i)       = value_column
+       this%primp(i)       = value_column
+       this%ptrunc(i)      = value_column
+       this%cwdp(i)        = value_column
+       this%totlitp(i)     = value_column
+       this%totsomp(i)     = value_column
+       this%totecosysp(i)  = value_column
+       this%totcolp(i)     = value_column
+       this%totsomp_1m(i)  = value_column
+       this%totlitp_1m(i)  = value_column
+    end do
+
+    do j = 1,nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%sminp_vr(i,j)       = value_column
+          this%solutionp_vr(i,j)   = value_column
+          this%labilep_vr(i,j)     = value_column
+          this%secondp_vr(i,j)     = value_column
+          this%occlp_vr(i,j)       = value_column
+          this%primp_vr(i,j)       = value_column
+          this%ptrunc_vr(i,j)      = value_column
+       end do
+    end do
+
+    ! column and decomp_pools
+    do k = 1, ndecomp_pools
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%decomp_ppools(i,k)    = value_column
+          this%decomp_ppools_1m(i,k) = value_column
+       end do
+    end do
+
+    ! column levdecomp, and decomp_pools
+    do j = 1,nlevdecomp_full
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_ppools_vr(i,j,k) = value_column
+          end do
+       end do
+    end do
+  
+  end subroutine col_ps_setvalues
+  
+  !-----------------------------------------------------------------------
+  subroutine col_ps_summary(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !ARGUMENTS:
+    class (column_phosphorus_state) :: this
+    type(bounds_type) , intent(in)  :: bounds  
+    integer           , intent(in)  :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in)  :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c,j,k,l   ! indices
+    integer  :: fc       ! lake filter indices
+    real(r8) :: maxdepth    ! depth to integrate soil variables
+    !-----------------------------------------------------------------------
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%solutionp(c) =0._r8
+      this%labilep(c)   =0._r8
+      this%secondp(c)   =0._r8
+      this%occlp(c)     =0._r8
+      this%primp(c)     =0._r8
+   end do
+
+   do j = 1, nlevdecomp
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%solutionp(c) = &
+              this%solutionp(c) + &
+              this%solutionp_vr(c,j) * dzsoi_decomp(j)
+         this%labilep(c) = &
+              this%labilep(c) + &
+              this%labilep_vr(c,j) * dzsoi_decomp(j)
+         this%secondp(c) = &
+              this%secondp(c) + &
+              this%secondp_vr(c,j) * dzsoi_decomp(j)
+         this%occlp(c) = &
+              this%occlp(c) + &
+              this%occlp_vr(c,j) * dzsoi_decomp(j)
+         this%primp(c) = &
+              this%primp(c) + &
+              this%primp_vr(c,j) * dzsoi_decomp(j)
+      end do 
+   end do
+
+   ! vertically integrate each of the decomposing P pools
+   do l = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%decomp_ppools(c,l) = 0._r8
+      end do
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%decomp_ppools(c,l) = &
+                 this%decomp_ppools(c,l) + &
+                 this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+         end do
+      end do
+   end do
+
+   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+   if ( nlevdecomp > 1) then
+      do l = 1, ndecomp_pools
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%decomp_ppools_1m(c,l) = 0._r8
+         end do
+      end do
+
+      ! vertically integrate each of the decomposing n pools to 1 meter
+      maxdepth = 1._r8
+      do l = 1, ndecomp_pools
+         do j = 1, nlevdecomp
+            if ( zisoi(j) <= maxdepth ) then
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  this%decomp_ppools_1m(c,l) = &
+                       this%decomp_ppools_1m(c,l) + &
+                       this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+               end do
+            elseif ( zisoi(j-1) < maxdepth ) then
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  this%decomp_ppools_1m(c,l) = &
+                       this%decomp_ppools_1m(c,l) + &
+                       this%decomp_ppools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+               end do
+            endif
+         end do
+      end do
+      
+      ! total litter phosphorus to 1 meter (TOTLITN_1m)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%totlitp_1m(c) = 0._r8
+      end do
+      do l = 1, ndecomp_pools
+         if ( decomp_cascade_con%is_litter(l) ) then
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               this%totlitp_1m(c) = &
+                    this%totlitp_1m(c) + &
+                    this%decomp_ppools_1m(c,l)
+            end do
+         end if
+      end do
+      
+      ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%totsomp_1m(c) = 0._r8
+      end do
+      do l = 1, ndecomp_pools
+         if ( decomp_cascade_con%is_soil(l) ) then
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               this%totsomp_1m(c) = &
+                    this%totsomp_1m(c) + &
+                    this%decomp_ppools_1m(c,l)
+            end do
+         end if
+      end do
+      
+   endif
+   
+   ! total litter phosphorus (TOTLITN)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%totlitp(c)    = 0._r8
+   end do
+   do l = 1, ndecomp_pools
+      if ( decomp_cascade_con%is_litter(l) ) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%totlitp(c) = &
+                 this%totlitp(c) + &
+                 this%decomp_ppools(c,l)
+         end do
+      end if
+   end do
+   
+   ! total soil organic matter phosphorus (TOTSOMN)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%totsomp(c)    = 0._r8
+   end do
+   do l = 1, ndecomp_pools
+      if ( decomp_cascade_con%is_soil(l) ) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%totsomp(c) = &
+                 this%totsomp(c) + &
+                 this%decomp_ppools(c,l)
+         end do
+      end if
+   end do
+   
+   ! total cwdn
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%cwdp(c) = 0._r8
+   end do
+   do l = 1, ndecomp_pools
+      if ( decomp_cascade_con%is_cwd(l) ) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%cwdp(c) = &
+                 this%cwdp(c) + &
+                 this%decomp_ppools(c,l)
+         end do
+      end if
+   end do
+
+   ! total sminp
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%sminp(c)      = 0._r8
+   end do
+   do j = 1, nlevdecomp
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%sminp_vr(c,j) = this%solutionp_vr(c,j)+ &
+                                  this%labilep_vr(c,j)+ &
+                                  this%secondp_vr(c,j)
+      end do
+   end do
+   do j = 1, nlevdecomp
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%sminp(c) =  this%sminp(c) + &
+         this%sminp_vr(c,j) * dzsoi_decomp(j)
+      end do
+   end do
+
+   ! total col_ntrunc
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%ptrunc(c) = 0._r8
+   end do
+   do j = 1, nlevdecomp
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%ptrunc(c) = &
+              this%ptrunc(c) + &
+              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
+      end do
+   end do
+
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+
+      ! total wood product phosphorus
+      this%totprodp(c) = &
+           this%prod1p(c) + &
+           this%prod10p(c) + &
+           this%prod100p(c)	 
+
+      ! total ecosystem phosphorus, including veg (TOTECOSYSP)
+      this%totecosysp(c) = &
+           this%cwdp(c) + &
+           this%totlitp(c) + &
+           this%totsomp(c) + &
+           this%solutionp(c) + &
+           this%labilep(c) + &
+           this%secondp(c) + &
+           this%primp(c) + &
+           this%occlp(c) + &
+           this%totprodp(c) + &
+           this%totvegp(c)
+
+      ! total column phosphorus, including pft (TOTCOLP)
+      this%totcolp(c) = &
+           this%totpftp(c) + &
+           this%cwdp(c) + &
+           this%totlitp(c) + &
+           this%totsomp(c) + &
+           this%prod1p(c) + &
+           this%solutionp(c) + &
+           this%labilep(c) + &
+           this%secondp(c) + &
+           this%ptrunc(c) + &
+           this%cropseedp_deficit(c)
+   end do
+
+  end subroutine col_ps_summary
+  
   !------------------------------------------------------------------------
   subroutine col_ps_clean(this)
     !
