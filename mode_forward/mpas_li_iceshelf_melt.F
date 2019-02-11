@@ -743,7 +743,7 @@ module li_iceshelf_melt
 !> temperature_profile iceshelf melt method, but must be calculated before the
 !> method is called because they require a global reduce.
 !> Different options for how to calculated these depths could be implemented.
-!> For the GL depth, an approximation of the mean depth of deepest 10% of the
+!> For the GL depth, an approximation of the mean depth of deepest specified-fraction of the
 !> grounding line is used.  For the CF depth, the mean of the calving front
 !> is used.
 !-----------------------------------------------------------------------
