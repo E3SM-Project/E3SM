@@ -97,9 +97,11 @@ class modelRun:
       self.mnGLslope = np.zeros((nt,))
       self.GA = np.zeros((nt,))
       self.mnGLmelt = np.zeros((nt,))
+      self.mnGLdepthMPASMethod = np.zeros((nt,))
       self.mnGLdepth = np.zeros((nt,))
       self.time = np.zeros((nt,))
       for t in range(nt):
+      #for t in np.arange(0,nt,10):
          print t
          usrf = f.variables['upperSurface'][t,:]
          edgeMask = f.variables['edgeMask'][t,:]
@@ -118,6 +120,14 @@ class modelRun:
          self.mnGLmelt[t] /= len(ind)
          self.mnGLdepth[t] /= len(ind)
          self.GA[t] = (areaCell[:] * (910.0/1028.0 * thk > -1.0 * topg)).sum()
+
+         # calc GL depth using MPAS method
+         ind = np.where(cellMask&256>0)[0]
+         frac = 0.25
+         GLdepths = np.sort(topg[ind])
+         #print GLdepths
+         fracIdx = int(round(len(GLdepths) * frac))  # get the index that represents the deepest x% of entries
+         self.mnGLdepthMPASMethod[t] = GLdepths[0:fracIdx].mean()
 
 # ================
 # Loop over runs and collect needed data
@@ -216,7 +226,7 @@ for run in runs:
    print "Plotting run: " + run
 
    thisRun = runData[run]
- 
+   stuff =  thisRun.mnGLdepthMPASMethod # somehow i need to access this member before using...?
    # optional rules about coloring
    if "steady" in run:
       lw = 3
@@ -239,4 +249,6 @@ for run in runs:
    axGLslope.plot(thisRun.yrs, thisRun.mnGLslope, color=color)
    axGLmelt.plot(thisRun.yrs, thisRun.mnGLmelt, color=color)
    axGLdepth.plot(thisRun.yrs, thisRun.mnGLdepth, color=color)
+   axGLdepth.plot(thisRun.yrs, thisRun.mnGLdepthMPASMethod[:], '.', color=color)
+
 plt.show()
