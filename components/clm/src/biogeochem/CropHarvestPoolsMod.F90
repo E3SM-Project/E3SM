@@ -18,7 +18,7 @@ module CropHarvestPoolsMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns
+  use ColumnDataType      , only : col_ns, col_nf
   !
   implicit none
   save
@@ -81,7 +81,7 @@ contains
           c14_col_cf%prod1c_loss(c)  = c14_col_cs%prod1c(c)  * kprod1
        endif
 
-       nitrogenflux_vars%prod1n_loss_col(c)    = col_ns%prod1n(c)    * kprod1
+       col_nf%prod1n_loss(c)    = col_ns%prod1n(c)    * kprod1
        phosphorusflux_vars%prod1p_loss_col(c)  = phosphorusstate_vars%prod1p_col(c)  * kprod1
     end do
 
@@ -107,7 +107,7 @@ contains
        endif
 
        col_ns%prod1n(c)    = col_ns%prod1n(c)    + &
-            nitrogenflux_vars%hrv_cropn_to_prod1n_col(c)*dt
+            col_nf%hrv_cropn_to_prod1n(c)*dt
        phosphorusstate_vars%prod1p_col(c)    = phosphorusstate_vars%prod1p_col(c)    + &
             phosphorusflux_vars%hrv_cropp_to_prod1p_col(c)*dt
 
@@ -126,7 +126,7 @@ contains
        endif
 
        col_ns%prod1n(c)    = col_ns%prod1n(c)    - &
-            nitrogenflux_vars%prod1n_loss_col(c)*dt
+            col_nf%prod1n_loss(c)*dt
        phosphorusstate_vars%prod1p_col(c)  = phosphorusstate_vars%prod1p_col(c)  - &
             phosphorusflux_vars%prod1p_loss_col(c)*dt
 

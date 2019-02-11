@@ -743,11 +743,14 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean gridcell nitrogen flux data structure
   !------------------------------------------------------------------------
-  subroutine grc_nf_init(this, begc, endc)
+  subroutine grc_nf_init(this, begg, endg)
     !
     ! !ARGUMENTS:
-    class(column_nitrogen_flux) :: this
+    class(gridcell_nitrogen_flux) :: this
     integer, intent(in) :: begg,endg
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g
     !------------------------------------------------------------------------
     
     !-----------------------------------------------------------------------
@@ -763,36 +766,36 @@ contains
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_nf
     !-----------------------------------------------------------------------
-    this%dwt_seedn_to_leaf_grc(begg:endg) = spval
+    this%dwt_seedn_to_leaf(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_LEAF_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to patch-level leaf', &
-         ptr_gcell=this%dwt_seedn_to_leaf_grc, default='inactive')
+         ptr_gcell=this%dwt_seedn_to_leaf, default='inactive')
 
-    this%dwt_seedn_to_deadstem_grc(begg:endg) = spval
+    this%dwt_seedn_to_deadstem(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_DEADSTEM_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to patch-level deadstem', &
-         ptr_gcell=this%dwt_seedn_to_deadstem_grc, default='inactive')
+         ptr_gcell=this%dwt_seedn_to_deadstem, default='inactive')
 
-    this%dwt_conv_nflux_grc(begg:endg) = spval
+    this%dwt_conv_nflux(begg:endg) = spval
     call hist_addfld1d (fname='DWT_CONV_NFLUX_GRC', units='gN/m^2/s', &
          avgflag='A', &
          long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
-         ptr_gcell=this%dwt_conv_nflux_grc)
+         ptr_gcell=this%dwt_conv_nflux)
 
-    this%dwt_seedn_to_npool_grc(begg:endg) = spval
+    this%dwt_seedn_to_npool(begg:endg) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_NPOOL_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level npool', &
-         ptr_gcell=this%dwt_seedn_to_npool_grc, default='inactive')
+         ptr_gcell=this%dwt_seedn_to_npool, default='inactive')
 
-    this%dwt_prod10n_gain_grc(begg:endg) = spval
+    this%dwt_prod10n_gain(begg:endg) = spval
     call hist_addfld1d (fname='DWT_PROD10N_GAIN_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-         ptr_gcell=this%dwt_prod10n_gain_grc, default='inactive')
+         ptr_gcell=this%dwt_prod10n_gain, default='inactive')
 
-    this%dwt_prod100n_gain_grc(begg:endg) = spval
+    this%dwt_prod100n_gain(begg:endg) = spval
     call hist_addfld1d (fname='DWT_PROD100N_GAIN_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-         ptr_gcell=this%dwt_prod100n_gain_grc, default='inactive')
+         ptr_gcell=this%dwt_prod100n_gain, default='inactive')
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_nf
@@ -833,7 +836,7 @@ contains
   subroutine grc_nf_clean(this)
     !
     ! !ARGUMENTS:
-    class(gridcell_nitrogen_state) :: this
+    class(gridcell_nitrogen_flux) :: this
     !------------------------------------------------------------------------
   
   end subroutine grc_nf_clean

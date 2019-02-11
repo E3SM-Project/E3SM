@@ -30,9 +30,9 @@ module AllocationMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_ws
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns  
+  use ColumnDataType      , only : col_ns, col_nf  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs, veg_ns
+  use VegetationDataType  , only : veg_cs, veg_ns, veg_nf
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   ! bgc interface & pflotran module switches
   use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
@@ -454,9 +454,9 @@ contains
          leafc                        => veg_cs%leafc                          , & ! Input:  [real(r8) (:)   ]                                          
          frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]                                          
          livestemc                    => veg_cs%livestemc                      , & ! Input:  [real(r8) (:)   ]                                          
-         plant_ndemand_col            => nitrogenflux_vars%plant_ndemand_col                 , & ! Output:  [real(r8) (:,:) ]
+         plant_ndemand_col            => col_nf%plant_ndemand                 , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_col            => phosphorusflux_vars%plant_pdemand_col               , & ! Output:  [real(r8) (:,:) ]
-         plant_ndemand_vr_col         => nitrogenflux_vars%plant_ndemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
+         plant_ndemand_vr_col         => col_nf%plant_ndemand_vr              , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_vr_col         => phosphorusflux_vars%plant_pdemand_vr_col            , & ! Output:  [real(r8) (:,:) ]
          
          gddmaturity                  => cnstate_vars%gddmaturity_patch                        , & ! Input:  [real(r8) (:)   ]  gdd needed to harvest                   
@@ -539,47 +539,47 @@ contains
          smin_nh4_vr                  => col_ns%smin_nh4_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4              
          smin_no3_vr                  => col_ns%smin_no3_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3              
 
-         plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch                 , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
-         plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                  , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)        
-         avail_retransn               => nitrogenflux_vars%avail_retransn_patch                , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
-         npool_to_grainn              => nitrogenflux_vars%npool_to_grainn_patch               , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)         
-         npool_to_grainn_storage      => nitrogenflux_vars%npool_to_grainn_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s) 
-         retransn_to_npool            => nitrogenflux_vars%retransn_to_npool_patch             , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
-         sminn_to_npool               => nitrogenflux_vars%sminn_to_npool_patch                , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
-         npool_to_leafn               => nitrogenflux_vars%npool_to_leafn_patch                , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)          
-         npool_to_leafn_storage       => nitrogenflux_vars%npool_to_leafn_storage_patch        , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)  
-         npool_to_frootn              => nitrogenflux_vars%npool_to_frootn_patch               , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)     
-         npool_to_frootn_storage      => nitrogenflux_vars%npool_to_frootn_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to fine root N storage (gN/m2/s)
-         npool_to_livestemn           => nitrogenflux_vars%npool_to_livestemn_patch            , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_livestemn_storage   => nitrogenflux_vars%npool_to_livestemn_storage_patch    , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_deadstemn           => nitrogenflux_vars%npool_to_deadstemn_patch            , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_deadstemn_storage   => nitrogenflux_vars%npool_to_deadstemn_storage_patch    , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_livecrootn          => nitrogenflux_vars%npool_to_livecrootn_patch           , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_livecrootn_storage  => nitrogenflux_vars%npool_to_livecrootn_storage_patch   , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_deadcrootn          => nitrogenflux_vars%npool_to_deadcrootn_patch           , & ! Output: [real(r8) (:)   ]                                          
-         npool_to_deadcrootn_storage  => nitrogenflux_vars%npool_to_deadcrootn_storage_patch   , & ! Output: [real(r8) (:)   ]                                          
-         leafn_to_retransn            => nitrogenflux_vars%leafn_to_retransn_patch             , & ! Output: [real(r8) (:)   ]                                          
-         frootn_to_retransn           => nitrogenflux_vars%frootn_to_retransn_patch            , & ! Output: [real(r8) (:)   ]                                          
-         livestemn_to_retransn        => nitrogenflux_vars%livestemn_to_retransn_patch         , & ! Output: [real(r8) (:)   ]                                          
-         potential_immob              => nitrogenflux_vars%potential_immob_col                 , & ! Output: [real(r8) (:)   ]                                          
-         actual_immob                 => nitrogenflux_vars%actual_immob_col                    , & ! Output: [real(r8) (:)   ]                                          
-         sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                  , & ! Output: [real(r8) (:)   ]                                          
-         sminn_to_denit_excess_vr     => nitrogenflux_vars%sminn_to_denit_excess_vr_col        , & ! Output: [real(r8) (:,:) ]                                        
-         pot_f_nit_vr                 => nitrogenflux_vars%pot_f_nit_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
-         pot_f_denit_vr               => nitrogenflux_vars%pot_f_denit_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
-         f_nit_vr                     => nitrogenflux_vars%f_nit_vr_col                        , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux     
-         f_denit_vr                   => nitrogenflux_vars%f_denit_vr_col                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux   
-         actual_immob_no3_vr          => nitrogenflux_vars%actual_immob_no3_vr_col             , & ! Output: [real(r8) (:,:) ]                                        
-         actual_immob_nh4_vr          => nitrogenflux_vars%actual_immob_nh4_vr_col             , & ! Output: [real(r8) (:,:) ]                                        
-         smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col            , & ! Output: [real(r8) (:,:) ]                                        
-         smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col            , & ! Output: [real(r8) (:,:) ]                                        
-         n2_n2o_ratio_denit_vr        => nitrogenflux_vars%n2_n2o_ratio_denit_vr_col           , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
-         f_n2o_denit_vr               => nitrogenflux_vars%f_n2o_denit_vr_col                  , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
-         f_n2o_nit_vr                 => nitrogenflux_vars%f_n2o_nit_vr_col                    , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
-         supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col          , & ! Output: [real(r8) (:,:) ]                                        
-         sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col               , & ! Output: [real(r8) (:,:) ]                                        
-         potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col              , & ! Output: [real(r8) (:,:) ]                                        
-         actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col                 , & ! Output: [real(r8) (:,:) ]                                        
+         plant_ndemand                => veg_nf%plant_ndemand                 , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
+         plant_nalloc                 => veg_nf%plant_nalloc                  , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)        
+         avail_retransn               => veg_nf%avail_retransn                , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
+         npool_to_grainn              => veg_nf%npool_to_grainn               , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)         
+         npool_to_grainn_storage      => veg_nf%npool_to_grainn_storage       , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s) 
+         retransn_to_npool            => veg_nf%retransn_to_npool             , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
+         sminn_to_npool               => veg_nf%sminn_to_npool                , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
+         npool_to_leafn               => veg_nf%npool_to_leafn                , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)          
+         npool_to_leafn_storage       => veg_nf%npool_to_leafn_storage        , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)  
+         npool_to_frootn              => veg_nf%npool_to_frootn               , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)     
+         npool_to_frootn_storage      => veg_nf%npool_to_frootn_storage       , & ! Output: [real(r8) (:)   ]  allocation to fine root N storage (gN/m2/s)
+         npool_to_livestemn           => veg_nf%npool_to_livestemn            , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_livestemn_storage   => veg_nf%npool_to_livestemn_storage    , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_deadstemn           => veg_nf%npool_to_deadstemn            , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_deadstemn_storage   => veg_nf%npool_to_deadstemn_storage    , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_livecrootn          => veg_nf%npool_to_livecrootn           , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_livecrootn_storage  => veg_nf%npool_to_livecrootn_storage   , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_deadcrootn          => veg_nf%npool_to_deadcrootn           , & ! Output: [real(r8) (:)   ]                                          
+         npool_to_deadcrootn_storage  => veg_nf%npool_to_deadcrootn_storage   , & ! Output: [real(r8) (:)   ]                                          
+         leafn_to_retransn            => veg_nf%leafn_to_retransn             , & ! Output: [real(r8) (:)   ]                                          
+         frootn_to_retransn           => veg_nf%frootn_to_retransn            , & ! Output: [real(r8) (:)   ]                                          
+         livestemn_to_retransn        => veg_nf%livestemn_to_retransn         , & ! Output: [real(r8) (:)   ]                                          
+         potential_immob              => col_nf%potential_immob                 , & ! Output: [real(r8) (:)   ]                                          
+         actual_immob                 => col_nf%actual_immob                    , & ! Output: [real(r8) (:)   ]                                          
+         sminn_to_plant               => col_nf%sminn_to_plant                  , & ! Output: [real(r8) (:)   ]                                          
+         sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr        , & ! Output: [real(r8) (:,:) ]                                        
+         pot_f_nit_vr                 => col_nf%pot_f_nit_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+         pot_f_denit_vr               => col_nf%pot_f_denit_vr                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
+         f_nit_vr                     => col_nf%f_nit_vr                        , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux     
+         f_denit_vr                   => col_nf%f_denit_vr                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux   
+         actual_immob_no3_vr          => col_nf%actual_immob_no3_vr             , & ! Output: [real(r8) (:,:) ]                                        
+         actual_immob_nh4_vr          => col_nf%actual_immob_nh4_vr             , & ! Output: [real(r8) (:,:) ]                                        
+         smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr            , & ! Output: [real(r8) (:,:) ]                                        
+         smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr            , & ! Output: [real(r8) (:,:) ]                                        
+         n2_n2o_ratio_denit_vr        => col_nf%n2_n2o_ratio_denit_vr           , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         f_n2o_denit_vr               => col_nf%f_n2o_denit_vr                  , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
+         f_n2o_nit_vr                 => col_nf%f_n2o_nit_vr                    , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
+         supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr          , & ! Output: [real(r8) (:,:) ]                                        
+         sminn_to_plant_vr            => col_nf%sminn_to_plant_vr               , & ! Output: [real(r8) (:,:) ]                                        
+         potential_immob_vr           => col_nf%potential_immob_vr              , & ! Output: [real(r8) (:,:) ]                                        
+         actual_immob_vr              => col_nf%actual_immob_vr                 , & ! Output: [real(r8) (:,:) ]                                        
          
          !!! add phosphorus variables  - X. YANG  
          sminp_vr                     => phosphorusstate_vars%sminp_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P                
@@ -647,9 +647,9 @@ contains
          slatop                       => veg_vp%slatop                                     , &
          t_scalar                     => col_cf%t_scalar                          , &
          w_scalar                     => col_cf%w_scalar                          , &
-         smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
-         smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
-         sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
+         smin_nh4_to_plant_patch      => veg_nf%smin_nh4_to_plant             , &                                   
+         smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
+         sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
          pnup_pfrootc                 => veg_ns%pnup_pfrootc                 , &
          leafn                        => veg_ns%leafn                          &
          )
@@ -658,16 +658,16 @@ contains
       sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch
       secondp_vr                   => phosphorusstate_vars%secondp_vr_col
       leafp                        => phosphorusstate_vars%leafp_patch
-      col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr
-      col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr
-      col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr
-      col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr
-      plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch
-      plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch
-      plant_ndemand_vr_patch       => nitrogenflux_vars%plant_ndemand_vr_patch
+      col_plant_ndemand_vr         => col_nf%col_plant_ndemand_vr
+      col_plant_nh4demand_vr       => col_nf%col_plant_nh4demand_vr
+      col_plant_no3demand_vr       => col_nf%col_plant_no3demand_vr
+      col_plant_pdemand_vr         => col_nf%col_plant_pdemand_vr
+      plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr
+      plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr
+      plant_ndemand_vr_patch       => veg_nf%plant_ndemand_vr
       plant_pdemand_vr_patch       => phosphorusflux_vars%plant_pdemand_vr_patch
-      actual_immob_no3             => nitrogenflux_vars%actual_immob_no3_col
-      actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col
+      actual_immob_no3             => col_nf%actual_immob_no3
+      actual_immob_nh4             => col_nf%actual_immob_nh4
       adsorb_to_labilep_vr         => phosphorusflux_vars%adsorb_to_labilep_vr
       desorb_to_solutionp_vr       => phosphorusflux_vars%desorb_to_solutionp_vr
       primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col
@@ -678,7 +678,7 @@ contains
       benefit_pgpp_pleafc          => veg_ns%benefit_pgpp_pleafc
 
       ! for debug
-      plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux
+      plant_n_uptake_flux          => col_nf%plant_n_uptake_flux
       plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux
 
       ! set time steps
@@ -1172,7 +1172,7 @@ contains
     associate(                                                                                 &
          ivt                          => veg_pp%itype                                             , & ! Input:  [integer  (:) ]  pft vegetation type                                
          ! new variables due to partition of Allocation to 3 subroutines: BEG
-         plant_ndemand_col            => nitrogenflux_vars%plant_ndemand_col                 , & ! Output:  [real(r8) (:,:) ]
+         plant_ndemand_col            => col_nf%plant_ndemand                 , & ! Output:  [real(r8) (:,:) ]
          plant_pdemand_col            => phosphorusflux_vars%plant_pdemand_col               , & ! Output:  [real(r8) (:,:) ]
          ! new variables due to partition of Allocation to 3 subroutines: END
 
@@ -1193,30 +1193,30 @@ contains
          smin_nh4_vr                  => col_ns%smin_nh4_vr                  , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4
          smin_no3_vr                  => col_ns%smin_no3_vr                  , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3
 
-         potential_immob              => nitrogenflux_vars%potential_immob_col               , & ! Output: [real(r8) (:)   ]
-         actual_immob                 => nitrogenflux_vars%actual_immob_col                  , & ! Output: [real(r8) (:)   ]
-         sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                , & ! Output: [real(r8) (:)   ]
-         sminn_to_denit_excess_vr     => nitrogenflux_vars%sminn_to_denit_excess_vr_col      , & ! Output: [real(r8) (:,:) ]
-         pot_f_nit_vr                 => nitrogenflux_vars%pot_f_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
-         pot_f_denit_vr               => nitrogenflux_vars%pot_f_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
-         f_nit_vr                     => nitrogenflux_vars%f_nit_vr_col                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
-         f_denit_vr                   => nitrogenflux_vars%f_denit_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
-         actual_immob_no3_vr          => nitrogenflux_vars%actual_immob_no3_vr_col           , & ! Output: [real(r8) (:,:) ]
-         actual_immob_nh4_vr          => nitrogenflux_vars%actual_immob_nh4_vr_col           , & ! Output: [real(r8) (:,:) ]
-         smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col          , & ! Output: [real(r8) (:,:) ]
-         smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col          , & ! Output: [real(r8) (:,:) ]
-         n2_n2o_ratio_denit_vr        => nitrogenflux_vars%n2_n2o_ratio_denit_vr_col         , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
-         f_n2o_denit_vr               => nitrogenflux_vars%f_n2o_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
-         f_n2o_nit_vr                 => nitrogenflux_vars%f_n2o_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
-         supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col        , & ! Output: [real(r8) (:,:) ]
-         sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
-         potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col            , & ! Output: [real(r8) (:,:) ]
-         actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col               , & ! Output: [real(r8) (:,:) ]
+         potential_immob              => col_nf%potential_immob               , & ! Output: [real(r8) (:)   ]
+         actual_immob                 => col_nf%actual_immob                  , & ! Output: [real(r8) (:)   ]
+         sminn_to_plant               => col_nf%sminn_to_plant                , & ! Output: [real(r8) (:)   ]
+         sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr      , & ! Output: [real(r8) (:,:) ]
+         pot_f_nit_vr                 => col_nf%pot_f_nit_vr                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+         pot_f_denit_vr               => col_nf%pot_f_denit_vr                , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
+         f_nit_vr                     => col_nf%f_nit_vr                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
+         f_denit_vr                   => col_nf%f_denit_vr                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
+         actual_immob_no3_vr          => col_nf%actual_immob_no3_vr           , & ! Output: [real(r8) (:,:) ]
+         actual_immob_nh4_vr          => col_nf%actual_immob_nh4_vr           , & ! Output: [real(r8) (:,:) ]
+         smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr          , & ! Output: [real(r8) (:,:) ]
+         smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr          , & ! Output: [real(r8) (:,:) ]
+         n2_n2o_ratio_denit_vr        => col_nf%n2_n2o_ratio_denit_vr         , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         f_n2o_denit_vr               => col_nf%f_n2o_denit_vr                , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
+         f_n2o_nit_vr                 => col_nf%f_n2o_nit_vr                  , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
+         supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr        , & ! Output: [real(r8) (:,:) ]
+         sminn_to_plant_vr            => col_nf%sminn_to_plant_vr             , & ! Output: [real(r8) (:,:) ]
+         potential_immob_vr           => col_nf%potential_immob_vr            , & ! Output: [real(r8) (:,:) ]
+         actual_immob_vr              => col_nf%actual_immob_vr               , & ! Output: [real(r8) (:,:) ]
 
-         col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr                , &
-         col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr              , &
-         col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr              , &
-         col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr                , &
+         col_plant_ndemand_vr         => col_nf%col_plant_ndemand_vr                , &
+         col_plant_nh4demand_vr       => col_nf%col_plant_nh4demand_vr              , &
+         col_plant_no3demand_vr       => col_nf%col_plant_no3demand_vr              , &
+         col_plant_pdemand_vr         => col_nf%col_plant_pdemand_vr                , &
 
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
@@ -1225,9 +1225,9 @@ contains
          t_scalar                     => col_cf%t_scalar                          , &
          w_scalar                     => col_cf%w_scalar                          , &
 
-         plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch            , &
-         plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch            , &
-         plant_ndemand_vr_patch       => nitrogenflux_vars%plant_ndemand_vr_patch              , &
+         plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr            , &
+         plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr            , &
+         plant_ndemand_vr_patch       => veg_nf%plant_ndemand_vr              , &
          plant_pdemand_vr_patch       => phosphorusflux_vars%plant_pdemand_vr_patch            , &
 
          pnup_pfrootc                 => veg_ns%pnup_pfrootc                 , &
@@ -1235,11 +1235,11 @@ contains
          isoilorder                   => cnstate_vars%isoilorder                               , &
 
          sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch              , &
-         sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
-         smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
-         smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
-         actual_immob_no3             => nitrogenflux_vars%actual_immob_no3_col                , &
-         actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col                , &
+         sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
+         smin_nh4_to_plant_patch      => veg_nf%smin_nh4_to_plant             , &                                   
+         smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
+         actual_immob_no3             => col_nf%actual_immob_no3                , &
+         actual_immob_nh4             => col_nf%actual_immob_nh4                , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
 
          frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]                                          
@@ -1299,7 +1299,7 @@ contains
          actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col           , & ! Output: [real(r8) (:,:) ]
          bd                           => soilstate_vars%bd_col                               , &
          h2osoi_vol                   => col_ws%h2osoi_vol                      , &
-         pmnf_decomp_cascade          => nitrogenflux_vars%pmnf_decomp_cascade               , &
+         pmnf_decomp_cascade          => col_nf%pmnf_decomp_cascade               , &
          pmpf_decomp_cascade          => phosphorusflux_vars%pmpf_decomp_cascade             , &
          leafc_storage                => veg_cs%leafc_storage                , &
          leafc_xfer                   => veg_cs%leafc_xfer                   , &
@@ -2963,29 +2963,29 @@ contains
 
          npool                        => veg_ns%npool                        , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant N pool storage
 
-         plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
-         plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
-         npool_to_grainn              => nitrogenflux_vars%npool_to_grainn_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)
-         npool_to_grainn_storage      => nitrogenflux_vars%npool_to_grainn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s)
-         retransn_to_npool            => nitrogenflux_vars%retransn_to_npool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
-         sminn_to_npool               => nitrogenflux_vars%sminn_to_npool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
-         nfix_to_plantn               => nitrogenflux_vars%nfix_to_plantn_patch              , &
+         plant_ndemand                => veg_nf%plant_ndemand               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
+         plant_nalloc                 => veg_nf%plant_nalloc                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
+         npool_to_grainn              => veg_nf%npool_to_grainn             , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)
+         npool_to_grainn_storage      => veg_nf%npool_to_grainn_storage     , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s)
+         retransn_to_npool            => veg_nf%retransn_to_npool           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
+         sminn_to_npool               => veg_nf%sminn_to_npool              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
+         nfix_to_plantn               => veg_nf%nfix_to_plantn              , &
          biochem_pmin_to_plant        => phosphorusflux_vars%biochem_pmin_to_plant_patch     , &
-         npool_to_leafn               => nitrogenflux_vars%npool_to_leafn_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)
-         npool_to_leafn_storage       => nitrogenflux_vars%npool_to_leafn_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)
-         npool_to_frootn              => nitrogenflux_vars%npool_to_frootn_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)
-         npool_to_frootn_storage      => nitrogenflux_vars%npool_to_frootn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to fine root N storage (gN/m2/s)
-         npool_to_livestemn           => nitrogenflux_vars%npool_to_livestemn_patch          , & ! Output: [real(r8) (:)   ]
-         npool_to_livestemn_storage   => nitrogenflux_vars%npool_to_livestemn_storage_patch  , & ! Output: [real(r8) (:)   ]
-         npool_to_deadstemn           => nitrogenflux_vars%npool_to_deadstemn_patch          , & ! Output: [real(r8) (:)   ]
-         npool_to_deadstemn_storage   => nitrogenflux_vars%npool_to_deadstemn_storage_patch  , & ! Output: [real(r8) (:)   ]
-         npool_to_livecrootn          => nitrogenflux_vars%npool_to_livecrootn_patch         , & ! Output: [real(r8) (:)   ]
-         npool_to_livecrootn_storage  => nitrogenflux_vars%npool_to_livecrootn_storage_patch , & ! Output: [real(r8) (:)   ]
-         npool_to_deadcrootn          => nitrogenflux_vars%npool_to_deadcrootn_patch         , & ! Output: [real(r8) (:)   ]
-         npool_to_deadcrootn_storage  => nitrogenflux_vars%npool_to_deadcrootn_storage_patch , & ! Output: [real(r8) (:)   ]
+         npool_to_leafn               => veg_nf%npool_to_leafn              , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)
+         npool_to_leafn_storage       => veg_nf%npool_to_leafn_storage      , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)
+         npool_to_frootn              => veg_nf%npool_to_frootn             , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)
+         npool_to_frootn_storage      => veg_nf%npool_to_frootn_storage     , & ! Output: [real(r8) (:)   ]  allocation to fine root N storage (gN/m2/s)
+         npool_to_livestemn           => veg_nf%npool_to_livestemn          , & ! Output: [real(r8) (:)   ]
+         npool_to_livestemn_storage   => veg_nf%npool_to_livestemn_storage  , & ! Output: [real(r8) (:)   ]
+         npool_to_deadstemn           => veg_nf%npool_to_deadstemn          , & ! Output: [real(r8) (:)   ]
+         npool_to_deadstemn_storage   => veg_nf%npool_to_deadstemn_storage  , & ! Output: [real(r8) (:)   ]
+         npool_to_livecrootn          => veg_nf%npool_to_livecrootn         , & ! Output: [real(r8) (:)   ]
+         npool_to_livecrootn_storage  => veg_nf%npool_to_livecrootn_storage , & ! Output: [real(r8) (:)   ]
+         npool_to_deadcrootn          => veg_nf%npool_to_deadcrootn         , & ! Output: [real(r8) (:)   ]
+         npool_to_deadcrootn_storage  => veg_nf%npool_to_deadcrootn_storage , & ! Output: [real(r8) (:)   ]
 
-         sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                , & ! Output: [real(r8) (:)   ]
-         sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
+         sminn_to_plant               => col_nf%sminn_to_plant                , & ! Output: [real(r8) (:)   ]
+         sminn_to_plant_vr            => col_nf%sminn_to_plant_vr             , & ! Output: [real(r8) (:,:) ]
 
          !!! add phosphorus variables  - X. YANG 
          ppool                        => phosphorusstate_vars%ppool_patch                      , & ! Input: [real(r8)       ] Plant non-structural P storage (gP/m2)
@@ -3011,14 +3011,14 @@ contains
          sminp_to_plant_vr            => phosphorusflux_vars%sminp_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
          p_allometry                  => cnstate_vars%p_allometry_patch                        , & ! Output: [real(r8) (:)   ]  P allocation index (DIM)
 
-         smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col            , & ! Output: [real(r8) (:,:) ]                                        
-         smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col            , & ! Output: [real(r8) (:,:) ]                                        
-         smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
-         smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
+         smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr            , & ! Output: [real(r8) (:,:) ]                                        
+         smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr            , & ! Output: [real(r8) (:,:) ]                                        
+         smin_nh4_to_plant_patch      => veg_nf%smin_nh4_to_plant             , &                                   
+         smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
          sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch              , &
 
-         sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
-         avail_retransn               => nitrogenflux_vars%avail_retransn_patch                , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
+         sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
+         avail_retransn               => veg_nf%avail_retransn                , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
          avail_retransp               => phosphorusflux_vars%avail_retransp_patch              , & ! Output: [real(r8) (:)   ]  P flux available from retranslocation pool (gP/m2/s)
          retransn                     => veg_ns%retransn                     , &
          retransp                     => phosphorusstate_vars%retransp_patch                   , &
@@ -3028,10 +3028,10 @@ contains
          leafc                        => veg_cs%leafc                          , &
          leafn                        => veg_ns%leafn                        , &
          leafp                        => phosphorusstate_vars%leafp_patch                      , &
-         supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col          , &
+         supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr          , &
          supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col        , &
          ! for debug
-         plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux                 , &
+         plant_n_uptake_flux          => col_nf%plant_n_uptake_flux                 , &
          plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux               , &
          leafc_storage                => veg_cs%leafc_storage                  , &
          leafc_xfer                   => veg_cs%leafc_xfer                     , &
@@ -3074,7 +3074,7 @@ contains
          rf_decomp_cascade            => cnstate_vars%rf_decomp_cascade_col                    , &
          fpi_vr                       => cnstate_vars%fpi_vr_col                               , &
          fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                             , &
-         supplement_to_plantn         => nitrogenflux_vars%supplement_to_plantn                , &
+         supplement_to_plantn         => veg_nf%supplement_to_plantn                , &
          supplement_to_plantp         => phosphorusflux_vars%supplement_to_plantp              , &
 
          c13cf => c13_carbonflux_vars, &

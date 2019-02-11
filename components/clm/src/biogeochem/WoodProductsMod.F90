@@ -20,7 +20,7 @@ module WoodProductsMod
   
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns
+  use ColumnDataType      , only : col_ns, col_nf
 
   !
   implicit none
@@ -91,8 +91,8 @@ contains
           c14_col_cf%prod100c_loss(c) = c14_col_cs%prod100c(c) * kprod100
        endif
 
-       nf%prod10n_loss_col(c)    = col_ns%prod10n(c)    * kprod10
-       nf%prod100n_loss_col(c)   = col_ns%prod100n(c)   * kprod100
+       col_nf%prod10n_loss(c)    = col_ns%prod10n(c)    * kprod10
+       col_nf%prod100n_loss(c)   = col_ns%prod100n(c)   * kprod100
 
        pf%prod10p_loss_col(c)    = ps%prod10p_col(c)    * kprod10
        pf%prod100p_loss_col(c)   = ps%prod100p_col(c)   * kprod100
@@ -141,14 +141,14 @@ contains
        endif
 
        col_ns%prod10n(c)    = col_ns%prod10n(c)             &
-            + nf%dwt_prod10n_gain_col(c)*dt                 & ! from landcover change
-            + nf%hrv_deadstemn_to_prod10n_col(c)*dt         & ! from harvest
-            - nf%prod10n_loss_col(c)*dt                       ! from decomposition
+            + col_nf%dwt_prod10n_gain(c)*dt                 & ! from landcover change
+            + col_nf%hrv_deadstemn_to_prod10n(c)*dt         & ! from harvest
+            - col_nf%prod10n_loss(c)*dt                       ! from decomposition
 
        col_ns%prod100n(c)   = col_ns%prod100n(c)            &
-            + nf%dwt_prod100n_gain_col(c)*dt                & ! from landcover change
-            + nf%hrv_deadstemn_to_prod100n_col(c)*dt        & ! from harvest
-            - nf%prod100n_loss_col(c)*dt                      ! from decomposition
+            + col_nf%dwt_prod100n_gain(c)*dt                & ! from landcover change
+            + col_nf%hrv_deadstemn_to_prod100n(c)*dt        & ! from harvest
+            - col_nf%prod100n_loss(c)*dt                      ! from decomposition
 
        ps%prod10p_col(c)    = ps%prod10p_col(c)             &
             + pf%dwt_prod10p_gain_col(c)*dt                 & ! from landcover change

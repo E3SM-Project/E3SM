@@ -21,7 +21,7 @@ module SoilLittVertTranspMod
   use clm_varctl             , only : nu_com
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType         , only : col_ns
+  use ColumnDataType         , only : col_ns, col_nf
   !
   implicit none
   save
@@ -247,8 +247,8 @@ contains
             trcr_tendency_ptr => col_cf%decomp_cpools_transport_tendency
          case (2)  ! N
             conc_ptr          => col_ns%decomp_npools_vr
-            source            => nitrogenflux_vars%decomp_npools_sourcesink_col
-            trcr_tendency_ptr => nitrogenflux_vars%decomp_npools_transport_tendency_col
+            source            => col_nf%decomp_npools_sourcesink
+            trcr_tendency_ptr => col_nf%decomp_npools_transport_tendency
          case (3)  ! P
             conc_ptr          => phosphorusstate_vars%decomp_ppools_vr_col
             source            => phosphorusflux_vars%decomp_ppools_sourcesink_col

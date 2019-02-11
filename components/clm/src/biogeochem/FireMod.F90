@@ -46,9 +46,9 @@ module FireMod
   use GridcellType           , only : grc_pp
   use TopounitDataType       , only : top_as, top_af ! atmospheric state and flux variables  
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es, col_ws, col_cs, col_cf, col_ns 
+  use ColumnDataType         , only : col_es, col_ws, col_cs, col_cf, col_ns, col_nf 
   use VegetationType         , only : veg_pp                
-  use VegetationDataType     , only : veg_cs, veg_cf, veg_ns  
+  use VegetationDataType     , only : veg_cs, veg_cf, veg_ns, veg_nf  
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
@@ -882,27 +882,27 @@ contains
         m_gresp_xfer_to_fire                =>    veg_cf%m_gresp_xfer_to_fire                  , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) C emis. gresp_xfer           
         m_cpool_to_fire                     =>    veg_cf%m_cpool_to_fire                       , & ! Input:  [real(r8) (:)     ]  (gC/m2/s) C emis. cpool     
   
-        fire_mortality_n_to_cwdn            =>    nitrogenflux_vars%fire_mortality_n_to_cwdn_col              , & ! Input:  [real(r8) (:,:)   ]  N flux fire mortality to CWD (gN/m3/s)
-        m_leafn_to_fire                     =>    nitrogenflux_vars%m_leafn_to_fire_patch                     , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. leafn		  
-        m_leafn_storage_to_fire             =>    nitrogenflux_vars%m_leafn_storage_to_fire_patch             , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. leafn_storage	  
-        m_leafn_xfer_to_fire                =>    nitrogenflux_vars%m_leafn_xfer_to_fire_patch                , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. leafn_xfer	       
-        m_livestemn_to_fire                 =>    nitrogenflux_vars%m_livestemn_to_fire_patch                 , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livestemn	       
-        m_livestemn_storage_to_fire         =>    nitrogenflux_vars%m_livestemn_storage_to_fire_patch         , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livestemn_s	       
-        m_livestemn_xfer_to_fire            =>    nitrogenflux_vars%m_livestemn_xfer_to_fire_patch            , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livestemn_xfer       
-        m_deadstemn_to_fire                 =>    nitrogenflux_vars%m_deadstemn_to_fire_patch                 , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadstemn	       
-        m_deadstemn_storage_to_fire         =>    nitrogenflux_vars%m_deadstemn_storage_to_fire_patch         , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadstemn_storage    
-        m_deadstemn_xfer_to_fire            =>    nitrogenflux_vars%m_deadstemn_xfer_to_fire_patch            , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadstemn_xfer       
-        m_frootn_to_fire                    =>    nitrogenflux_vars%m_frootn_to_fire_patch                    , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. frootn	       
-        m_frootn_storage_to_fire            =>    nitrogenflux_vars%m_frootn_storage_to_fire_patch            , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. frootn_storage       
-        m_frootn_xfer_to_fire               =>    nitrogenflux_vars%m_frootn_xfer_to_fire_patch               , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. frootn_xfer	       
-        m_livecrootn_to_fire                =>    nitrogenflux_vars%m_livecrootn_to_fire_patch                , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. m_livecrootn_to_fire 
-        m_livecrootn_storage_to_fire        =>    nitrogenflux_vars%m_livecrootn_storage_to_fire_patch        , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livecrootn_storage   
-        m_livecrootn_xfer_to_fire           =>    nitrogenflux_vars%m_livecrootn_xfer_to_fire_patch           , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livecrootn_xfer      
-        m_deadcrootn_to_fire                =>    nitrogenflux_vars%m_deadcrootn_to_fire_patch                , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn	       
-        m_deadcrootn_storage_to_fire        =>    nitrogenflux_vars%m_deadcrootn_storage_to_fire_patch        , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn_storage   
-        m_deadcrootn_xfer_to_fire           =>    nitrogenflux_vars%m_deadcrootn_xfer_to_fire_patch           , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn_xfer      
-        m_retransn_to_fire                  =>    nitrogenflux_vars%m_retransn_to_fire_patch                  , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. retransn             
-        m_npool_to_fire                     =>    nitrogenflux_vars%m_npool_to_fire_patch                     , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. npooln             
+        fire_mortality_n_to_cwdn            =>    col_nf%fire_mortality_n_to_cwdn              , & ! Input:  [real(r8) (:,:)   ]  N flux fire mortality to CWD (gN/m3/s)
+        m_leafn_to_fire                     =>    veg_nf%m_leafn_to_fire                     , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. leafn		  
+        m_leafn_storage_to_fire             =>    veg_nf%m_leafn_storage_to_fire             , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. leafn_storage	  
+        m_leafn_xfer_to_fire                =>    veg_nf%m_leafn_xfer_to_fire                , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. leafn_xfer	       
+        m_livestemn_to_fire                 =>    veg_nf%m_livestemn_to_fire                 , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livestemn	       
+        m_livestemn_storage_to_fire         =>    veg_nf%m_livestemn_storage_to_fire         , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livestemn_s	       
+        m_livestemn_xfer_to_fire            =>    veg_nf%m_livestemn_xfer_to_fire            , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livestemn_xfer       
+        m_deadstemn_to_fire                 =>    veg_nf%m_deadstemn_to_fire                 , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadstemn	       
+        m_deadstemn_storage_to_fire         =>    veg_nf%m_deadstemn_storage_to_fire         , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadstemn_storage    
+        m_deadstemn_xfer_to_fire            =>    veg_nf%m_deadstemn_xfer_to_fire            , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadstemn_xfer       
+        m_frootn_to_fire                    =>    veg_nf%m_frootn_to_fire                    , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. frootn	       
+        m_frootn_storage_to_fire            =>    veg_nf%m_frootn_storage_to_fire            , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. frootn_storage       
+        m_frootn_xfer_to_fire               =>    veg_nf%m_frootn_xfer_to_fire               , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. frootn_xfer	       
+        m_livecrootn_to_fire                =>    veg_nf%m_livecrootn_to_fire                , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. m_livecrootn_to_fire 
+        m_livecrootn_storage_to_fire        =>    veg_nf%m_livecrootn_storage_to_fire        , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livecrootn_storage   
+        m_livecrootn_xfer_to_fire           =>    veg_nf%m_livecrootn_xfer_to_fire           , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. livecrootn_xfer      
+        m_deadcrootn_to_fire                =>    veg_nf%m_deadcrootn_to_fire                , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn	       
+        m_deadcrootn_storage_to_fire        =>    veg_nf%m_deadcrootn_storage_to_fire        , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn_storage   
+        m_deadcrootn_xfer_to_fire           =>    veg_nf%m_deadcrootn_xfer_to_fire           , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn_xfer      
+        m_retransn_to_fire                  =>    veg_nf%m_retransn_to_fire                  , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. retransn             
+        m_npool_to_fire                     =>    veg_nf%m_npool_to_fire                     , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. npooln             
        
 
         ! add phosphorus fluxes with fire - these will be adding to 
@@ -959,32 +959,32 @@ contains
 
         )
 
-     m_leafn_to_litter_fire              =>    nitrogenflux_vars%m_leafn_to_litter_fire_patch              
-     m_leafn_storage_to_litter_fire      =>    nitrogenflux_vars%m_leafn_storage_to_litter_fire_patch      
-     m_leafn_xfer_to_litter_fire         =>    nitrogenflux_vars%m_leafn_xfer_to_litter_fire_patch         
-     m_livestemn_to_litter_fire          =>    nitrogenflux_vars%m_livestemn_to_litter_fire_patch          
-     m_livestemn_storage_to_litter_fire  =>    nitrogenflux_vars%m_livestemn_storage_to_litter_fire_patch  
-     m_livestemn_xfer_to_litter_fire     =>    nitrogenflux_vars%m_livestemn_xfer_to_litter_fire_patch     
-     m_livestemn_to_deadstemn_fire       =>    nitrogenflux_vars%m_livestemn_to_deadstemn_fire_patch       
-     m_deadstemn_to_litter_fire          =>    nitrogenflux_vars%m_deadstemn_to_litter_fire_patch          
-     m_deadstemn_storage_to_litter_fire  =>    nitrogenflux_vars%m_deadstemn_storage_to_litter_fire_patch  
-     m_deadstemn_xfer_to_litter_fire     =>    nitrogenflux_vars%m_deadstemn_xfer_to_litter_fire_patch     
-     m_frootn_to_litter_fire             =>    nitrogenflux_vars%m_frootn_to_litter_fire_patch             
-     m_frootn_storage_to_litter_fire     =>    nitrogenflux_vars%m_frootn_storage_to_litter_fire_patch     
-     m_frootn_xfer_to_litter_fire        =>    nitrogenflux_vars%m_frootn_xfer_to_litter_fire_patch        
-     m_livecrootn_to_litter_fire         =>    nitrogenflux_vars%m_livecrootn_to_litter_fire_patch         
-     m_livecrootn_storage_to_litter_fire =>    nitrogenflux_vars%m_livecrootn_storage_to_litter_fire_patch 
-     m_livecrootn_xfer_to_litter_fire    =>    nitrogenflux_vars%m_livecrootn_xfer_to_litter_fire_patch    
-     m_livecrootn_to_deadcrootn_fire     =>    nitrogenflux_vars%m_livecrootn_to_deadcrootn_fire_patch     
-     m_deadcrootn_to_litter_fire         =>    nitrogenflux_vars%m_deadcrootn_to_litter_fire_patch         
-     m_deadcrootn_storage_to_litter_fire =>    nitrogenflux_vars%m_deadcrootn_storage_to_litter_fire_patch 
-     m_deadcrootn_xfer_to_litter_fire    =>    nitrogenflux_vars%m_deadcrootn_xfer_to_litter_fire_patch    
-     m_retransn_to_litter_fire           =>    nitrogenflux_vars%m_retransn_to_litter_fire_patch           
-     m_npool_to_litter_fire              =>    nitrogenflux_vars%m_npool_to_litter_fire_patch
-     m_decomp_npools_to_fire_vr          =>    nitrogenflux_vars%m_decomp_npools_to_fire_vr_col            
-     m_n_to_litr_met_fire                =>    nitrogenflux_vars%m_n_to_litr_met_fire_col                  
-     m_n_to_litr_cel_fire                =>    nitrogenflux_vars%m_n_to_litr_cel_fire_col                  
-     m_n_to_litr_lig_fire                =>    nitrogenflux_vars%m_n_to_litr_lig_fire_col                  
+     m_leafn_to_litter_fire              =>    veg_nf%m_leafn_to_litter_fire              
+     m_leafn_storage_to_litter_fire      =>    veg_nf%m_leafn_storage_to_litter_fire      
+     m_leafn_xfer_to_litter_fire         =>    veg_nf%m_leafn_xfer_to_litter_fire         
+     m_livestemn_to_litter_fire          =>    veg_nf%m_livestemn_to_litter_fire          
+     m_livestemn_storage_to_litter_fire  =>    veg_nf%m_livestemn_storage_to_litter_fire  
+     m_livestemn_xfer_to_litter_fire     =>    veg_nf%m_livestemn_xfer_to_litter_fire     
+     m_livestemn_to_deadstemn_fire       =>    veg_nf%m_livestemn_to_deadstemn_fire       
+     m_deadstemn_to_litter_fire          =>    veg_nf%m_deadstemn_to_litter_fire          
+     m_deadstemn_storage_to_litter_fire  =>    veg_nf%m_deadstemn_storage_to_litter_fire  
+     m_deadstemn_xfer_to_litter_fire     =>    veg_nf%m_deadstemn_xfer_to_litter_fire     
+     m_frootn_to_litter_fire             =>    veg_nf%m_frootn_to_litter_fire             
+     m_frootn_storage_to_litter_fire     =>    veg_nf%m_frootn_storage_to_litter_fire     
+     m_frootn_xfer_to_litter_fire        =>    veg_nf%m_frootn_xfer_to_litter_fire        
+     m_livecrootn_to_litter_fire         =>    veg_nf%m_livecrootn_to_litter_fire         
+     m_livecrootn_storage_to_litter_fire =>    veg_nf%m_livecrootn_storage_to_litter_fire 
+     m_livecrootn_xfer_to_litter_fire    =>    veg_nf%m_livecrootn_xfer_to_litter_fire    
+     m_livecrootn_to_deadcrootn_fire     =>    veg_nf%m_livecrootn_to_deadcrootn_fire     
+     m_deadcrootn_to_litter_fire         =>    veg_nf%m_deadcrootn_to_litter_fire         
+     m_deadcrootn_storage_to_litter_fire =>    veg_nf%m_deadcrootn_storage_to_litter_fire 
+     m_deadcrootn_xfer_to_litter_fire    =>    veg_nf%m_deadcrootn_xfer_to_litter_fire    
+     m_retransn_to_litter_fire           =>    veg_nf%m_retransn_to_litter_fire           
+     m_npool_to_litter_fire              =>    veg_nf%m_npool_to_litter_fire
+     m_decomp_npools_to_fire_vr          =>    col_nf%m_decomp_npools_to_fire_vr            
+     m_n_to_litr_met_fire                =>    col_nf%m_n_to_litr_met_fire                  
+     m_n_to_litr_cel_fire                =>    col_nf%m_n_to_litr_cel_fire                  
+     m_n_to_litr_lig_fire                =>    col_nf%m_n_to_litr_lig_fire                  
 
 
      m_leafp_to_litter_fire              =>    phosphorusflux_vars%m_leafp_to_litter_fire_patch              

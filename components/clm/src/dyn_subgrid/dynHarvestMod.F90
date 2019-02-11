@@ -28,9 +28,9 @@ module dynHarvestMod
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_cf  
+  use ColumnDataType        , only : col_cf, col_nf  
   use VegetationType        , only : veg_pp                
-  use VegetationDataType    , only : veg_cs, veg_cf, veg_ns  
+  use VegetationDataType    , only : veg_cs, veg_cf, veg_ns, veg_nf  
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -303,27 +303,27 @@ contains
    hrv_gresp_xfer_to_litter            =>    veg_cf%hrv_gresp_xfer_to_litter                , & ! Output: [real(r8) (:)]                                                    
    hrv_cpool_to_litter                 =>    veg_cf%hrv_cpool_to_litter                     , & ! Output: [real(r8) (:)]             
 
-   hrv_leafn_to_litter                 =>    nitrogenflux_vars%hrv_leafn_to_litter_patch                     , & ! Output: [real(r8) (:)]                                                    
-   hrv_frootn_to_litter                =>    nitrogenflux_vars%hrv_frootn_to_litter_patch                    , & ! Output: [real(r8) (:)]                                                    
-   hrv_livestemn_to_litter             =>    nitrogenflux_vars%hrv_livestemn_to_litter_patch                 , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadstemn_to_prod10n            =>    nitrogenflux_vars%hrv_deadstemn_to_prod10n_patch                , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadstemn_to_prod100n           =>    nitrogenflux_vars%hrv_deadstemn_to_prod100n_patch               , & ! Output: [real(r8) (:)]                                                    
-   hrv_livecrootn_to_litter            =>    nitrogenflux_vars%hrv_livecrootn_to_litter_patch                , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadcrootn_to_litter            =>    nitrogenflux_vars%hrv_deadcrootn_to_litter_patch                , & ! Output: [real(r8) (:)]                                                    
-   hrv_retransn_to_litter              =>    nitrogenflux_vars%hrv_retransn_to_litter_patch                  , & ! Output: [real(r8) (:)]                                                    
-   hrv_npool_to_litter                 =>    nitrogenflux_vars%hrv_npool_to_litter_patch                     , & ! Output: [real(r8) (:)]   
-   hrv_leafn_storage_to_litter         =>    nitrogenflux_vars%hrv_leafn_storage_to_litter_patch             , & ! Output: [real(r8) (:)]                                                    
-   hrv_frootn_storage_to_litter        =>    nitrogenflux_vars%hrv_frootn_storage_to_litter_patch            , & ! Output: [real(r8) (:)]                                                    
-   hrv_livestemn_storage_to_litter     =>    nitrogenflux_vars%hrv_livestemn_storage_to_litter_patch         , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadstemn_storage_to_litter     =>    nitrogenflux_vars%hrv_deadstemn_storage_to_litter_patch         , & ! Output: [real(r8) (:)]                                                    
-   hrv_livecrootn_storage_to_litter    =>    nitrogenflux_vars%hrv_livecrootn_storage_to_litter_patch        , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadcrootn_storage_to_litter    =>    nitrogenflux_vars%hrv_deadcrootn_storage_to_litter_patch        , & ! Output: [real(r8) (:)]                                                    
-   hrv_leafn_xfer_to_litter            =>    nitrogenflux_vars%hrv_leafn_xfer_to_litter_patch                , & ! Output: [real(r8) (:)]                                                    
-   hrv_frootn_xfer_to_litter           =>    nitrogenflux_vars%hrv_frootn_xfer_to_litter_patch               , & ! Output: [real(r8) (:)]                                                    
-   hrv_livestemn_xfer_to_litter        =>    nitrogenflux_vars%hrv_livestemn_xfer_to_litter_patch            , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadstemn_xfer_to_litter        =>    nitrogenflux_vars%hrv_deadstemn_xfer_to_litter_patch            , & ! Output: [real(r8) (:)]                                                    
-   hrv_livecrootn_xfer_to_litter       =>    nitrogenflux_vars%hrv_livecrootn_xfer_to_litter_patch           , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadcrootn_xfer_to_litter       =>    nitrogenflux_vars%hrv_deadcrootn_xfer_to_litter_patch           , & ! Output: [real(r8) (:)]                                                    
+   hrv_leafn_to_litter                 =>    veg_nf%hrv_leafn_to_litter                     , & ! Output: [real(r8) (:)]                                                    
+   hrv_frootn_to_litter                =>    veg_nf%hrv_frootn_to_litter                    , & ! Output: [real(r8) (:)]                                                    
+   hrv_livestemn_to_litter             =>    veg_nf%hrv_livestemn_to_litter                 , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadstemn_to_prod10n            =>    veg_nf%hrv_deadstemn_to_prod10n                , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadstemn_to_prod100n           =>    veg_nf%hrv_deadstemn_to_prod100n               , & ! Output: [real(r8) (:)]                                                    
+   hrv_livecrootn_to_litter            =>    veg_nf%hrv_livecrootn_to_litter                , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadcrootn_to_litter            =>    veg_nf%hrv_deadcrootn_to_litter                , & ! Output: [real(r8) (:)]                                                    
+   hrv_retransn_to_litter              =>    veg_nf%hrv_retransn_to_litter                  , & ! Output: [real(r8) (:)]                                                    
+   hrv_npool_to_litter                 =>    veg_nf%hrv_npool_to_litter                     , & ! Output: [real(r8) (:)]   
+   hrv_leafn_storage_to_litter         =>    veg_nf%hrv_leafn_storage_to_litter             , & ! Output: [real(r8) (:)]                                                    
+   hrv_frootn_storage_to_litter        =>    veg_nf%hrv_frootn_storage_to_litter            , & ! Output: [real(r8) (:)]                                                    
+   hrv_livestemn_storage_to_litter     =>    veg_nf%hrv_livestemn_storage_to_litter         , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadstemn_storage_to_litter     =>    veg_nf%hrv_deadstemn_storage_to_litter         , & ! Output: [real(r8) (:)]                                                    
+   hrv_livecrootn_storage_to_litter    =>    veg_nf%hrv_livecrootn_storage_to_litter        , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadcrootn_storage_to_litter    =>    veg_nf%hrv_deadcrootn_storage_to_litter        , & ! Output: [real(r8) (:)]                                                    
+   hrv_leafn_xfer_to_litter            =>    veg_nf%hrv_leafn_xfer_to_litter                , & ! Output: [real(r8) (:)]                                                    
+   hrv_frootn_xfer_to_litter           =>    veg_nf%hrv_frootn_xfer_to_litter               , & ! Output: [real(r8) (:)]                                                    
+   hrv_livestemn_xfer_to_litter        =>    veg_nf%hrv_livestemn_xfer_to_litter            , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadstemn_xfer_to_litter        =>    veg_nf%hrv_deadstemn_xfer_to_litter            , & ! Output: [real(r8) (:)]                                                    
+   hrv_livecrootn_xfer_to_litter       =>    veg_nf%hrv_livecrootn_xfer_to_litter           , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadcrootn_xfer_to_litter       =>    veg_nf%hrv_deadcrootn_xfer_to_litter           , & ! Output: [real(r8) (:)]                                                    
 
    hrv_leafp_to_litter                 =>    phosphorusflux_vars%hrv_leafp_to_litter_patch                     , & ! Output: [real(r8) (:)]                                                    
    hrv_frootp_to_litter                =>    phosphorusflux_vars%hrv_frootp_to_litter_patch                    , & ! Output: [real(r8) (:)]                                                    
@@ -547,33 +547,33 @@ contains
         harvest_c_to_litr_lig_c          =>    col_cf%harvest_c_to_litr_lig_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
         harvest_c_to_cwdc                =>    col_cf%harvest_c_to_cwdc                    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
         
-        hrv_leafn_to_litter              =>    nitrogenflux_vars%hrv_leafn_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_frootn_to_litter             =>    nitrogenflux_vars%hrv_frootn_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_livestemn_to_litter          =>    nitrogenflux_vars%hrv_livestemn_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-        phrv_deadstemn_to_prod10n        =>    nitrogenflux_vars%hrv_deadstemn_to_prod10n_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-        phrv_deadstemn_to_prod100n       =>    nitrogenflux_vars%hrv_deadstemn_to_prod100n_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_livecrootn_to_litter         =>    nitrogenflux_vars%hrv_livecrootn_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_deadcrootn_to_litter         =>    nitrogenflux_vars%hrv_deadcrootn_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_retransn_to_litter           =>    nitrogenflux_vars%hrv_retransn_to_litter_patch           , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_npool_to_litter              =>    nitrogenflux_vars%hrv_npool_to_litter_patch              , & ! Input:  [real(r8) (:)   ]
-        hrv_leafn_storage_to_litter      =>    nitrogenflux_vars%hrv_leafn_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_frootn_storage_to_litter     =>    nitrogenflux_vars%hrv_frootn_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_livestemn_storage_to_litter  =>    nitrogenflux_vars%hrv_livestemn_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_deadstemn_storage_to_litter  =>    nitrogenflux_vars%hrv_deadstemn_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_livecrootn_storage_to_litter =>    nitrogenflux_vars%hrv_livecrootn_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_deadcrootn_storage_to_litter =>    nitrogenflux_vars%hrv_deadcrootn_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_leafn_xfer_to_litter         =>    nitrogenflux_vars%hrv_leafn_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_frootn_xfer_to_litter        =>    nitrogenflux_vars%hrv_frootn_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_livestemn_xfer_to_litter     =>    nitrogenflux_vars%hrv_livestemn_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_deadstemn_xfer_to_litter     =>    nitrogenflux_vars%hrv_deadstemn_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_livecrootn_xfer_to_litter    =>    nitrogenflux_vars%hrv_livecrootn_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_deadcrootn_xfer_to_litter    =>    nitrogenflux_vars%hrv_deadcrootn_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-        chrv_deadstemn_to_prod10n        =>    nitrogenflux_vars%hrv_deadstemn_to_prod10n_col           , & ! InOut:  [real(r8) (:)   ]                                                    
-        chrv_deadstemn_to_prod100n       =>    nitrogenflux_vars%hrv_deadstemn_to_prod100n_col          , & ! InOut:  [real(r8) (:)   ]                                                    
-        harvest_n_to_litr_met_n          =>    nitrogenflux_vars%harvest_n_to_litr_met_n_col            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter metabolic pool (gN/m3/s)
-        harvest_n_to_litr_cel_n          =>    nitrogenflux_vars%harvest_n_to_litr_cel_n_col            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
-        harvest_n_to_litr_lig_n          =>    nitrogenflux_vars%harvest_n_to_litr_lig_n_col            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter lignin pool (gN/m3/s)
-        harvest_n_to_cwdn                =>    nitrogenflux_vars%harvest_n_to_cwdn_col                  ,  & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to CWD pool (gN/m3/s)
+        hrv_leafn_to_litter              =>    veg_nf%hrv_leafn_to_litter              , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_frootn_to_litter             =>    veg_nf%hrv_frootn_to_litter             , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_livestemn_to_litter          =>    veg_nf%hrv_livestemn_to_litter          , & ! Input:  [real(r8) (:)   ]                                                    
+        phrv_deadstemn_to_prod10n        =>    veg_nf%hrv_deadstemn_to_prod10n         , & ! Input:  [real(r8) (:)   ]                                                    
+        phrv_deadstemn_to_prod100n       =>    veg_nf%hrv_deadstemn_to_prod100n        , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_livecrootn_to_litter         =>    veg_nf%hrv_livecrootn_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_deadcrootn_to_litter         =>    veg_nf%hrv_deadcrootn_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_retransn_to_litter           =>    veg_nf%hrv_retransn_to_litter           , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_npool_to_litter              =>    veg_nf%hrv_npool_to_litter              , & ! Input:  [real(r8) (:)   ]
+        hrv_leafn_storage_to_litter      =>    veg_nf%hrv_leafn_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_frootn_storage_to_litter     =>    veg_nf%hrv_frootn_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_livestemn_storage_to_litter  =>    veg_nf%hrv_livestemn_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_deadstemn_storage_to_litter  =>    veg_nf%hrv_deadstemn_storage_to_litter  , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_livecrootn_storage_to_litter =>    veg_nf%hrv_livecrootn_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_deadcrootn_storage_to_litter =>    veg_nf%hrv_deadcrootn_storage_to_litter , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_leafn_xfer_to_litter         =>    veg_nf%hrv_leafn_xfer_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_frootn_xfer_to_litter        =>    veg_nf%hrv_frootn_xfer_to_litter        , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_livestemn_xfer_to_litter     =>    veg_nf%hrv_livestemn_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_deadstemn_xfer_to_litter     =>    veg_nf%hrv_deadstemn_xfer_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_livecrootn_xfer_to_litter    =>    veg_nf%hrv_livecrootn_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_deadcrootn_xfer_to_litter    =>    veg_nf%hrv_deadcrootn_xfer_to_litter    , & ! Input:  [real(r8) (:)   ]                                                    
+        chrv_deadstemn_to_prod10n        =>    col_nf%hrv_deadstemn_to_prod10n           , & ! InOut:  [real(r8) (:)   ]                                                    
+        chrv_deadstemn_to_prod100n       =>    col_nf%hrv_deadstemn_to_prod100n          , & ! InOut:  [real(r8) (:)   ]                                                    
+        harvest_n_to_litr_met_n          =>    col_nf%harvest_n_to_litr_met_n            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter metabolic pool (gN/m3/s)
+        harvest_n_to_litr_cel_n          =>    col_nf%harvest_n_to_litr_cel_n            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
+        harvest_n_to_litr_lig_n          =>    col_nf%harvest_n_to_litr_lig_n            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter lignin pool (gN/m3/s)
+        harvest_n_to_cwdn                =>    col_nf%harvest_n_to_cwdn                  ,  & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to CWD pool (gN/m3/s)
         
         ! add P harvest fluxes 
         hrv_leafp_to_litter              =>    phosphorusflux_vars%hrv_leafp_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
