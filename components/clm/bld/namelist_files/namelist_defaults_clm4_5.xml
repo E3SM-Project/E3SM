@@ -127,7 +127,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 </finidat>
 
 <finidat hgrid="ne11np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
- ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne11_oQU240.1155ba0.clm2.r.nc
+ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICLM45BC.ne11_ne11.71f4e1927.clm2.r.nc
 </finidat>
 
 <!-- HOMME grid ne16 resolution -->
@@ -157,7 +157,7 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 </finidat>
 
 <finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne120_g16.1155ba0.clm2.r.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICLM45BC.ne120_g16.71f4e1927.clm2.r.nc
 </finidat>
 
 <finidat hgrid="ne120np4"   maxpft="17"  mask="oRRS15to5" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
@@ -173,7 +173,7 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 </finidat>
 
 <finidat hgrid="ne120np4"   maxpft="17"  mask="oRRS18to6v3" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
-ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne120_oRRS18v3.be55494.clm2.r.nc
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.A_WCYCL2000_H01AS.ne120_oRRS18v3_ICG.71f4e1927.clm2.r.nc
 </finidat>
 
 <!-- HOMME grid ne240 resolution -->
