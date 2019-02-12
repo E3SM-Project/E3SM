@@ -368,10 +368,12 @@ contains
          avgflag='A', long_name='intercepted water', &
          ptr_patch=this%h2ocan_patch, set_lake=0._r8)
 
+#if (defined HUM_HOL)
     this%h2o_moss_wc_patch(begp:endp) = spval
     call hist_addfld1d (fname='H2O_MOSS_WC_TOTAL', units='mm',  &
          avgflag='A', long_name='total moss water content', &
          ptr_patch=this%h2o_moss_wc_patch, set_lake=0._r8)
+#endif
 
     call hist_addfld1d (fname='H2OSNO',  units='mm',  &
          avgflag='A', long_name='snow depth (liquid water)', &

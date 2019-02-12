@@ -387,6 +387,7 @@ contains
          end if
 
          ! Soil water stress applied to Ball-Berry parameters
+#if (defined HUM_HOL)
          if (veg_pp%itype(p) == 12) then
              bbb(p) = (-0.195 + 0.134*(h2o_moss_wc(p)+1._r8) - &
                      0.0256*(h2o_moss_wc(p) + 1.0_r8)**2  &
@@ -400,7 +401,10 @@ contains
            bbb(p) = max (bbbopt(p)*btran(p), 1._r8)
            mbb(p) = mbbopt(p)
          end if
-
+#else
+         bbb(p) = max (bbbopt(p)*btran(p), 1._r8)
+         mbb(p) = mbbopt(p)
+#endif
          ! kc, ko, cp, from: Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
          !
          !       kc25 = 404.9 umol/mol
@@ -692,6 +696,7 @@ contains
          gb = 1._r8/rb(p)
          gb_mol(p) = gb * cf
 
+#if (defined HUM_HOL)
          !Dessication and submergence scalaers for moss photosynthesis
          if (veg_pp%itype(p) == 12)then
             wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
@@ -699,11 +704,13 @@ contains
             !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
             wcscaler = max(0._r8, min(1.0_r8, wcscaler))
          endif
+#endif
 
          ! Loop through canopy layers (above snow). Only do calculations if daytime
          do iv = 1, nrad(p)
-
+#if (defined HUM_HOL)
            if (veg_pp%itype(p) == 12) lmr_z(p,iv) = lmr_z(p,iv) * wcscaler
+#endif
            if (par_z(p,iv) <= 0._r8) then           ! night time
 
                ac(p,iv) = 0._r8
@@ -761,17 +768,19 @@ contains
                ! End of ci iteration.  Check for an < 0, in which case gs_mol = bbb
 
                if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
+#if (defined HUM_HOL)
                if (veg_pp%itype(p) == 12) gs_mol(p,iv) = bbb(p)
-
+#endif
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
                ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
-
+#if (defined HUM_HOL)
                if (veg_pp%itype(p) == 12) then
                   ci_z(p,iv) = cair(p)-an(p,iv) * forc_pbot(c)/gs_mol(p,iv)
                endif
+#endif
 
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
@@ -841,12 +850,15 @@ contains
             psncan_wj = psncan_wj + psn_wj_z(p,iv) * lai_z(p,iv)
             psncan_wp = psncan_wp + psn_wp_z(p,iv) * lai_z(p,iv)
             lmrcan = lmrcan + lmr_z(p,iv) * lai_z(p,iv)
+#if (defined HUM_HOL)
             if (veg_pp%itype(p) == 12) then
                gscan = gscan + lai_z(p,iv) / rs_z(p,iv)
             else
                gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
             endif
+#else
             gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
+#endif
             laican = laican + lai_z(p,iv)
          end do
          if (laican > 0._r8) then
@@ -1453,6 +1465,7 @@ contains
       ag(p,iv) = min(r1,r2)
 
       !Dessication and submergence effects for moss PFT
+#if (defined HUM_HOL)
       if (veg_pp%itype(p) == 12)then
          wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
          !DMR 05/11/17 - add scaler for submergence effect
@@ -1461,6 +1474,7 @@ contains
          ag(p,iv) = ag(p,iv) * wcscaler
          !if (h2osfc(c) > 0) print*, 'AG', c, h2osfc(c), wcscaler
       endif
+#endif
 
       ! Net photosynthesis. Exit iteration if an < 0
 
@@ -1479,12 +1493,15 @@ contains
       cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(t)*rh_can)
       call quadratic (aquad, bquad, cquad, r1, r2)
       gs_mol = max(r1,r2)
+#if (defined HUM_HOL)
       if (veg_pp%itype(p) == 12) gs_mol = bbb(p)
+#endif
       ! Derive new estimate for ci
 
       fval =ci - cair + an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
+#if (defined HUM_HOL)
       if (veg_pp%itype(p) == 12) fval = ci - cair + an(p,iv) *forc_pbot(c)/gs_mol
-
+#endif
     end associate
 
   end subroutine ci_func
