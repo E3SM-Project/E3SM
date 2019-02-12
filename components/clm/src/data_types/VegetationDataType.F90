@@ -13,7 +13,7 @@ module VegetationDataType
   use abortutils      , only : endrun
   use clm_time_manager, only : is_restart, get_nstep
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
-  use clm_varpar      , only : nlevdecomp
+  use clm_varpar      , only : nlevdecomp, nlevdecomp_full
   use clm_varcon      , only : spval, ispval, sb
   use clm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
@@ -9841,8 +9841,7 @@ module VegetationDataType
     integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
-    integer :: p,c,l,j                     ! indices
-    integer :: p,c,l,g
+    integer :: p,l                         ! indices
     integer :: fp                          ! filter indices
     integer :: num_special_patch           ! number of good values in special_patch filter
     integer :: special_patch(endp-begp+1)  ! special landunit filter - patches

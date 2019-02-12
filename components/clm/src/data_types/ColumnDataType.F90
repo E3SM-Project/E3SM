@@ -9912,15 +9912,13 @@ contains
   end subroutine col_pf_zerodwt
   
   !-----------------------------------------------------------------------
-  subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc)
     !
     ! !ARGUMENTS:
     class (column_phosphorus_flux) :: this
     type(bounds_type) , intent(in) :: bounds  
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
-    integer           , intent(in) :: num_soilp       ! number of soil patches in filter
-    integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
     !
     ! !LOCAL VARIABLES:
     integer  :: c,j,k,l   ! indices

@@ -20,7 +20,7 @@ module WoodProductsMod
   
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns, col_nf, col_ps
+  use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf
 
   !
   implicit none
@@ -94,8 +94,8 @@ contains
        col_nf%prod10n_loss(c)    = col_ns%prod10n(c)    * kprod10
        col_nf%prod100n_loss(c)   = col_ns%prod100n(c)   * kprod100
 
-       pf%prod10p_loss_col(c)    = col_ps%prod10p(c)    * kprod10
-       pf%prod100p_loss_col(c)   = col_ps%prod100p(c)   * kprod100
+       col_pf%prod10p_loss(c)    = col_ps%prod10p(c)    * kprod10
+       col_pf%prod100p_loss(c)   = col_ps%prod100p(c)   * kprod100
     end do
 
     ! set time steps
@@ -151,14 +151,14 @@ contains
             - col_nf%prod100n_loss(c)*dt                      ! from decomposition
 
        col_ps%prod10p(c)    = col_ps%prod10p(c)             &
-            + pf%dwt_prod10p_gain_col(c)*dt                 & ! from landcover change
-            + pf%hrv_deadstemp_to_prod10p_col(c)*dt         & ! from harvest
-            - pf%prod10p_loss_col(c)*dt                       ! from decomposition
+            + col_pf%dwt_prod10p_gain(c)*dt                 & ! from landcover change
+            + col_pf%hrv_deadstemp_to_prod10p(c)*dt         & ! from harvest
+            - col_pf%prod10p_loss(c)*dt                       ! from decomposition
 
        col_ps%prod100p(c)   = col_ps%prod100p(c)            &
-            + pf%dwt_prod100p_gain_col(c)*dt                & ! from landcover change
-            + pf%hrv_deadstemp_to_prod100p_col(c)*dt        & ! from harvest
-            - pf%prod100p_loss_col(c)*dt                      ! from decomposition
+            + col_pf%dwt_prod100p_gain(c)*dt                & ! from landcover change
+            + col_pf%hrv_deadstemp_to_prod100p(c)*dt        & ! from harvest
+            - col_pf%prod100p_loss(c)*dt                      ! from decomposition
 
     end do ! end of column loop
 

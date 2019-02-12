@@ -83,7 +83,7 @@ contains
        endif
 
        col_nf%prod1n_loss(c)    = col_ns%prod1n(c)    * kprod1
-       phosphorusflux_vars%prod1p_loss_col(c)  = col_ps%prod1p(c)  * kprod1
+       col_pf%prod1p_loss(c)  = col_ps%prod1p(c)  * kprod1
     end do
 
     ! set time steps
@@ -110,7 +110,7 @@ contains
        col_ns%prod1n(c)    = col_ns%prod1n(c)    + &
             col_nf%hrv_cropn_to_prod1n(c)*dt
        col_ps%prod1p(c)    = col_ps%prod1p(c)    + &
-            phosphorusflux_vars%hrv_cropp_to_prod1p_col(c)*dt
+            col_pf%hrv_cropp_to_prod1p(c)*dt
 
        ! fluxes out of wood product pools, from decomposition
        col_cs%prod1c(c)    = col_cs%prod1c(c)    - &
@@ -129,7 +129,7 @@ contains
        col_ns%prod1n(c)    = col_ns%prod1n(c)    - &
             col_nf%prod1n_loss(c)*dt
        col_ps%prod1p(c)  = col_ps%prod1p(c)  - &
-            phosphorusflux_vars%prod1p_loss_col(c)*dt
+            col_pf%prod1p_loss(c)*dt
 
     end do ! end of column loop
 

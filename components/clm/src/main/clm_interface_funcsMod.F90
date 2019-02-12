@@ -644,7 +644,7 @@ contains
       ! plant litering and removal + SOM/LIT vertical transport
       externalc_to_decomp_cpools_vr    => col_cf%externalc_to_decomp_cpools        , &
       externaln_to_decomp_npools_vr    => col_nf%externaln_to_decomp_npools      , &
-      externalp_to_decomp_ppools_vr    => phosphorusflux_vars%externalp_to_decomp_ppools_col    , &
+      externalp_to_decomp_ppools_vr    => col_pf%externalp_to_decomp_ppools    , &
       t_scalar                         => col_cf%t_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
       w_scalar                         => col_cf%w_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
       o_scalar                         => col_cf%o_scalar                          , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
@@ -665,14 +665,14 @@ contains
       col_plant_ndemand_vr             => col_nf%plant_ndemand_vr                , &
 
       plant_ndemand_col                => col_nf%plant_ndemand                   , &
-      plant_pdemand_col                => phosphorusflux_vars%plant_pdemand_col                 , &
+      plant_pdemand_col                => col_pf%plant_pdemand                 , &
 
-      col_plant_pdemand_vr             => phosphorusflux_vars%plant_pdemand_vr_col              , &
-      pdep_to_sminp                    => phosphorusflux_vars%pdep_to_sminp_col                 , &
+      col_plant_pdemand_vr             => col_pf%plant_pdemand_vr              , &
+      pdep_to_sminp                    => col_pf%pdep_to_sminp                 , &
       ! assume pdep_prof = ndep_prof
-      fert_p_to_sminp                  => phosphorusflux_vars%fert_p_to_sminp_col               , &
-      supplement_to_sminp_vr           => phosphorusflux_vars%supplement_to_sminp_vr_col        , &
-      sminp_net_transport_vr           => phosphorusflux_vars%sminp_net_transport_vr_col          &
+      fert_p_to_sminp                  => col_pf%fert_p_to_sminp               , &
+      supplement_to_sminp_vr           => col_pf%supplement_to_sminp_vr        , &
+      sminp_net_transport_vr           => col_pf%sminp_net_transport_vr          &
     )
 
     !
@@ -1005,7 +1005,7 @@ contains
     associate ( &
      decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
      decomp_npools_sourcesink_vr  => col_nf%decomp_npools_sourcesink  , &
-     decomp_ppools_sourcesink_vr  => phosphorusflux_vars%decomp_ppools_sourcesink_col  &
+     decomp_ppools_sourcesink_vr  => col_pf%decomp_ppools_sourcesink  &
      )
 
     do fc = 1, num_soilc
@@ -1051,10 +1051,10 @@ contains
 
      decomp_cascade_ctransfer_vr_col  => col_cf%decomp_cascade_ctransfer_vr            , &
      decomp_cascade_ntransfer_vr_col  => col_nf%decomp_cascade_ntransfer_vr          , &
-     decomp_cascade_ptransfer_vr_col  => phosphorusflux_vars%decomp_cascade_ptransfer_vr_col        , &
+     decomp_cascade_ptransfer_vr_col  => col_pf%decomp_cascade_ptransfer_vr        , &
 
      decomp_cascade_sminn_flux_vr_col => col_nf%decomp_cascade_sminn_flux_vr         , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
-     decomp_cascade_sminp_flux_vr_col => phosphorusflux_vars%decomp_cascade_sminp_flux_vr_col       , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
+     decomp_cascade_sminp_flux_vr_col => col_pf%decomp_cascade_sminp_flux_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
 
      sminn_to_denit_decomp_cascade_vr_col => col_nf%sminn_to_denit_decomp_cascade_vr   & ! Output: [real(r8) (:,:,:) ]
      )
@@ -1128,17 +1128,17 @@ contains
      no3_net_transport_vr         => col_nf%no3_net_transport_vr      , & ! Output: updated from PF, if coupled
      nh4_net_transport_vr         => col_nf%nh4_net_transport_vr      , & ! Output: updated from PF, if coupled
 
-     potential_immob_p            => phosphorusflux_vars%potential_immob_p_col       , & ! Output: [real(r8) (:)   ]
-     actual_immob_p               => phosphorusflux_vars%actual_immob_p_col          , & ! Output: [real(r8) (:)   ]
-     sminp_to_plant               => phosphorusflux_vars%sminp_to_plant_col          , & ! Output: [real(r8) (:)   ]
+     potential_immob_p            => col_pf%potential_immob_p       , & ! Output: [real(r8) (:)   ]
+     actual_immob_p               => col_pf%actual_immob_p          , & ! Output: [real(r8) (:)   ]
+     sminp_to_plant               => col_pf%sminp_to_plant          , & ! Output: [real(r8) (:)   ]
 
-     supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col  , & ! Output: [real(r8) (:,:) ]
+     supplement_to_sminp_vr       => col_pf%supplement_to_sminp_vr  , & ! Output: [real(r8) (:,:) ]
 
-     sminp_to_plant_vr            => phosphorusflux_vars%sminp_to_plant_vr_col       , &
-     potential_immob_p_vr         => phosphorusflux_vars%potential_immob_p_vr_col    , & ! Output: [real(r8) (:,:)   ]
-     actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col       , &
-     gross_pmin_vr                => phosphorusflux_vars%gross_pmin_vr_col           , & ! Output: [real(r8) (:,:)   ]
-     net_pmin_vr                  => phosphorusflux_vars%net_pmin_vr_col               & ! Output: [real(r8) (:,:)   ]
+     sminp_to_plant_vr            => col_pf%sminp_to_plant_vr       , &
+     potential_immob_p_vr         => col_pf%potential_immob_p_vr    , & ! Output: [real(r8) (:,:)   ]
+     actual_immob_p_vr            => col_pf%actual_immob_p_vr       , &
+     gross_pmin_vr                => col_pf%gross_pmin_vr           , & ! Output: [real(r8) (:,:)   ]
+     net_pmin_vr                  => col_pf%net_pmin_vr               & ! Output: [real(r8) (:,:)   ]
      )
 
      do fc = 1, num_soilc
@@ -1467,7 +1467,7 @@ contains
         primp_vr                => col_ps%primp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
         !
         plant_ndemand_col       => col_nf%plant_ndemand          , &
-        plant_pdemand_col       => phosphorusflux_vars%plant_pdemand_col        , &
+        plant_pdemand_col       => col_pf%plant_pdemand        , &
         !
         !alt_indx                => canopystate_vars%alt_indx_col                , & ! Input:  [integer  (:)     ]  current depth of thaw
         !
@@ -1605,12 +1605,12 @@ contains
          sminn_to_plant_vr            => col_nf%sminn_to_plant_vr                        , & ! Output: [real(r8) (:,:) ]
          actual_immob_vr              => col_nf%actual_immob_vr                          , & ! Output: [real(r8) (:,:) ]
 
-         potential_immob_p            => phosphorusflux_vars%potential_immob_p_col                      , & ! Output: [real(r8) (:)   ]
-         actual_immob_p               => phosphorusflux_vars%actual_immob_p_col                         , & ! Output: [real(r8) (:)   ]
-         sminp_to_plant               => phosphorusflux_vars%sminp_to_plant_col                         , & ! Output: [real(r8) (:)   ]
-         supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col                 , & ! Output: [real(r8) (:,:) ]
-         sminp_to_plant_vr            => phosphorusflux_vars%sminp_to_plant_vr_col                      , & ! Output: [real(r8) (:,:) ]
-         actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col                      , & ! Output: [real(r8) (:,:) ]
+         potential_immob_p            => col_pf%potential_immob_p                      , & ! Output: [real(r8) (:)   ]
+         actual_immob_p               => col_pf%actual_immob_p                         , & ! Output: [real(r8) (:)   ]
+         sminp_to_plant               => col_pf%sminp_to_plant                         , & ! Output: [real(r8) (:)   ]
+         supplement_to_sminp_vr       => col_pf%supplement_to_sminp_vr                 , & ! Output: [real(r8) (:,:) ]
+         sminp_to_plant_vr            => col_pf%sminp_to_plant_vr                      , & ! Output: [real(r8) (:,:) ]
+         actual_immob_p_vr            => col_pf%actual_immob_p_vr                      , & ! Output: [real(r8) (:,:) ]
 
          decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
          decomp_cascade_sminn_flux_vr     =>    col_nf%decomp_cascade_sminn_flux_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
@@ -1622,13 +1622,13 @@ contains
          net_nmin                         =>    col_nf%net_nmin                          , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
 
          ! add phosphorus
-         decomp_cascade_ptransfer_vr      =>    phosphorusflux_vars%decomp_cascade_ptransfer_vr_col     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
-         decomp_cascade_sminp_flux_vr     =>    phosphorusflux_vars%decomp_cascade_sminp_flux_vr_col    , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
-         potential_immob_p_vr             =>    phosphorusflux_vars%potential_immob_p_vr_col            , & ! Output: [real(r8) (:,:)   ]
-         gross_pmin_vr                    =>    phosphorusflux_vars%gross_pmin_vr_col                   , & ! Output: [real(r8) (:,:)   ]
-         net_pmin_vr                      =>    phosphorusflux_vars%net_pmin_vr_col                     , & ! Output: [real(r8) (:,:)   ]
-         gross_pmin                       =>    phosphorusflux_vars%gross_pmin_col                      , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
-         net_pmin                         =>    phosphorusflux_vars%net_pmin_col                        , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
+         decomp_cascade_ptransfer_vr      =>    col_pf%decomp_cascade_ptransfer_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
+         decomp_cascade_sminp_flux_vr     =>    col_pf%decomp_cascade_sminp_flux_vr    , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
+         potential_immob_p_vr             =>    col_pf%potential_immob_p_vr            , & ! Output: [real(r8) (:,:)   ]
+         gross_pmin_vr                    =>    col_pf%gross_pmin_vr                   , & ! Output: [real(r8) (:,:)   ]
+         net_pmin_vr                      =>    col_pf%net_pmin_vr                     , & ! Output: [real(r8) (:,:)   ]
+         gross_pmin                       =>    col_pf%gross_pmin                      , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
+         net_pmin                         =>    col_pf%net_pmin                        , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
 
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr                , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
