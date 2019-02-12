@@ -239,8 +239,11 @@ contains
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   integer :: tl
 
-  do tl = 1,3
-     elem%state%T(:,:,:,tl)=temperature(:,:,:)
+  tl = 1
+  elem%state%T(:,:,:,tl)=temperature(:,:,:)
+  
+  do tl = 2,3
+    call copy_state(elem,1,tl)
   enddo
 
   end subroutine set_thermostate

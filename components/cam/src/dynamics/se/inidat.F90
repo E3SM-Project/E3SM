@@ -60,9 +60,7 @@ contains
     use shr_const_mod,       only: SHR_CONST_PI
     use scamMod,             only: setiopupdate, readiopdata
     use se_single_column_mod, only: scm_setinitial
-#ifdef MODEL_THETA_L
     use element_ops,         only: set_thermostate
-#endif
 
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
@@ -539,15 +537,13 @@ contains
 !$omp parallel do private(ie, t, m_cnst)
     do ie=1,nelemd
 #ifdef MODEL_THETA_L
+       elem(ie)%state%w_i = 0.0
+       !sets Theta and phi, not w
        call set_thermostate(elem(ie),elem(ie)%derived%FT,hvcoord)
        !reset FT?
        elem(ie)%derived%FT = 0.0
 #else
-       do t=2,3
-          elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,tl)
-          elem(ie)%state%v(:,:,:,:,t)=elem(ie)%state%v(:,:,:,:,tl)
-          elem(ie)%state%T(:,:,:,t)=elem(ie)%state%T(:,:,:,tl)
-       end do
+       call set_thermostate(elem(ie),elem(ie)%state%T(:,:,:,tl),hvcoord)
 #endif
     end do
 
