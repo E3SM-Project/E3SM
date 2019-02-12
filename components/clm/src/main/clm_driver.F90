@@ -394,7 +394,7 @@ contains
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars,   &
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars,            &
        veg_cs, c13_veg_cs, c14_veg_cs,         &
-       col_cs, c13_col_cs, c14_col_cs,         &
+       col_cs, c13_col_cs, c14_col_cs, col_cf,  &
        grc_cs, grc_cf ,&
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &

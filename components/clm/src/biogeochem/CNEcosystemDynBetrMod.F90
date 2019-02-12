@@ -304,26 +304,18 @@ module CNEcosystemDynBetrMod
        end if
 
        !--------------------------------------------
-       ! CNUpdate0
+       ! C State Update 0
        !--------------------------------------------
 
-       call t_startf('CNUpdate0')
-       call CarbonStateUpdate0(&
-            num_soilp, filter_soilp, &
-            carbonflux_vars, carbonstate_vars, col_cs, veg_cs, col_cf, veg_cf)
-
+       call t_startf('CStateUpdate0')
+       call CStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf)
        if ( use_c13 ) then
-          call CarbonStateUpdate0(&
-               num_soilp, filter_soilp, &
-               c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf)
+          call CStateUpdate0(num_soilp, filter_soilp, c13_veg_cs, c13_veg_cf)
        end if
-
        if ( use_c14 ) then
-          call CarbonStateUpdate0(&
-               num_soilp, filter_soilp, &
-               c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf)
+          call CStateUpdate0(num_soilp, filter_soilp, c14_veg_cs, c14_veg_cf)
        end if
-       call t_stopf('CNUpdate0')
+       call t_stopf('CStateUpdate0')
 
        !--------------------------------------------
        ! Update1
@@ -346,15 +338,15 @@ module CNEcosystemDynBetrMod
        end if
 
        call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars, col_cs, veg_cs, col_cf, veg_cf)
+            crop_vars, col_cs, veg_cs, col_cf, veg_cf)
 
        if ( use_c13 ) then
           call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_carbonflux_vars, c13_carbonstate_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf)
+               crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf)
        end if
        if ( use_c14 ) then
           call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_carbonflux_vars, c14_carbonstate_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf)
+               crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf)
        end if
 
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
