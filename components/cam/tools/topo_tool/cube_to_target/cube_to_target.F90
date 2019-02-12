@@ -20,10 +20,11 @@ program convterr
   !**************************************
   !
   !
-  ! If smoothed PHIS is available SGH needs to be recomputed  to account for the 
+  ! If smoothed PHIS is available SGH needs to be recomputed to account for the 
   ! sub-grid-scale variability introduced by the smoothing; This will be set
   ! based on the presence of a smoothed topography file in the command line
-  ! argument list, but set the default to false here.
+  ! argument list, but set the default to false here. Note that SGH30 is also
+  ! downscaled to the target grid, but does not depend on the smoothing.
   !
   logical :: lsmooth_terr = .FALSE. 
   !
@@ -1012,7 +1013,10 @@ subroutine usage()
    print *, '  --smoothed-topography <filename>    Input smoothed topography (for surface '
    print *, '                                      roughness calculation). If present,    '
    print *, '                                      output will contain estimate of subgrid'
-   print *, '                                      surface roughness.                     '
+   print *, '                                      surface roughness (SGH). Note that the '
+   print *, '                                      variance in elevation from the 30s to  '
+   print *, '                                      3km grid (SGH30) is also downscaled,   '
+   print *, '                                      but does not depend on the smoothing.  '
    print *, '                                                                             '
    print *, 'DESCRIPTION:                                                                 '
    print *, 'This code performs rigorous remapping of topography variables on a cubed-    '

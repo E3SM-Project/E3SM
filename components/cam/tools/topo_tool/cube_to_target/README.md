@@ -43,7 +43,10 @@ OPTIONAL ARGUMENTS
   --smoothed-topography <filename>    Input smoothed topography (for surface 
                                       roughness calculation). If present,    
                                       output will contain estimate of subgrid
-                                      surface roughness.                     
+                                      surface roughness (SGH). Note that the                     
+                                      variance in elevation from the 30s to
+                                      3km grid (SGH30) is also downscaled,
+                                      but does not depend on the smoothing.
                                                                              
 AUTHOR
 ------
