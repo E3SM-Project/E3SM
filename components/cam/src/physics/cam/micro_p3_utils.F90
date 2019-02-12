@@ -18,9 +18,12 @@ module micro_p3_utils
     ! Signaling NaN bit pattern that represents a limiter that's turned off.
     integer(i8), parameter :: limiter_off = int(Z'7FF1111111111111', i8)
 
+    real(r8), public, parameter :: qsmall = 1.e-14
+    real(r8), public, parameter :: nsmall = 1.e-16
+
     real(r8),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
+       inv_rhow,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
        vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
        nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
@@ -78,6 +81,20 @@ type(MGHydrometeorProps), public :: mg_ice_props
 type(MGHydrometeorProps), public :: mg_rain_props
 type(MGHydrometeorProps), public :: mg_snow_props
 
+! particle mass-diameter relationship
+! currently we assume spherical particles for cloud ice/snow
+! m = cD^d
+! exponent
+real(r8), parameter :: dsph = 3._r8
+
+! Bounds for mean diameter for different constituents.
+real(r8), parameter :: lam_bnd_rain(2) = 1._r8/[500.e-6_r8, 20.e-6_r8]
+real(r8), parameter :: lam_bnd_snow(2) = 1._r8/[2000.e-6_r8, 10.e-6_r8]
+
+! Minimum average mass of particles.
+real(r8), parameter :: min_mean_mass_liq = 1.e-20_r8
+real(r8), parameter :: min_mean_mass_ice = 1.e-20_r8
+
 !=========================================================
 ! Utilities that are cheaper if the compiler knows that
 ! some argument is an integer.
@@ -99,6 +116,8 @@ end interface var_coef
 !__________________________________________________________________________________________!
     subroutine micro_p3_utils_init()
 
+
+    real(r8) :: ice_lambda_bounds(2)
 
     ! mathematical/optimization constants
     thrd  = 1./3.
@@ -146,8 +165,6 @@ end interface var_coef
     inv_rho_rimeMax = 1./rho_rimeMax
 
     ! minium allowable prognostic variables
-    qsmall = 1.e-14
-    nsmall = 1.e-16
     bsmall = qsmall*inv_rho_rimeMax
 
     ! Bigg (1953)
@@ -232,6 +249,19 @@ end interface var_coef
     clbfact_dep = 1.
     clbfact_sub = 1.
 
+    ! Don't specify lambda bounds for cloud liquid, as they are determined by
+    ! pgam dynamically.
+    mg_liq_props = MGHydrometeorProps(rhow, dsph, &
+         min_mean_mass=min_mean_mass_liq)
+  
+    ! Mean ice diameter can not grow bigger than twice the autoconversion
+    ! threshold for snow.
+    ice_lambda_bounds = 1._r8/[2._r8*400.e-6, 10.e-6_r8] !! dcs 400.e-6
+    mg_ice_props = MGHydrometeorProps(rhoi, dsph, &
+         ice_lambda_bounds, min_mean_mass_ice)
+  
+    mg_rain_props = MGHydrometeorProps(rhow, dsph, lam_bnd_rain)
+    mg_snow_props = MGHydrometeorProps(rhosn, dsph, lam_bnd_snow)
     
     return
     end subroutine micro_p3_utils_init
