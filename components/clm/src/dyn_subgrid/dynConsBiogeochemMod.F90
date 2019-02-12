@@ -24,19 +24,19 @@ module dynConsBiogeochemMod
   use PhosphorusFluxType       , only : phosphorusflux_type
   use PhosphorusStateType      , only : phosphorusstate_type
   use GridcellDataType         , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use GridcellDataType         , only : grc_nf
+  use GridcellDataType         , only : grc_nf, grc_pf
   use LandunitType             , only : lun_pp                
   use ColumnType               , only : col_pp  
   use ColumnDataType           , only : column_carbon_state, column_nitrogen_state
   use ColumnDataType           , only : column_phosphorus_state
   use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf  
-  use ColumnDataType           , only : col_nf  
+  use ColumnDataType           , only : col_nf, col_pf  
   use VegetationType           , only : veg_pp
   use VegetationDataType       , only : vegetation_carbon_state, vegetation_carbon_flux 
   use VegetationDataType       , only : vegetation_nitrogen_state 
   use VegetationDataType       , only : vegetation_phosphorus_state 
   use VegetationDataType       , only : veg_cf, c13_veg_cf, c14_veg_cf  
-  use VegetationDataType       , only : veg_nf  
+  use VegetationDataType       , only : veg_nf, veg_pf  
   use clm_varcon               , only : c3_r2, c4_r2, c14ratio
   use dynPatchStateUpdaterMod  , only : patch_state_updater_type
   use dynSubgridAdjustmentsMod , only : dyn_veg_cs_Adjustments, dyn_col_cs_Adjustments
@@ -512,21 +512,21 @@ contains
             veg_nf%dwt_seedn_to_npool(p)
 
        ! P fluxes
-       pf%dwt_seedp_to_leaf_patch(p)   = dwt_leafp_seed(p)/dt
-       pf%dwt_seedp_to_leaf_grc(g)     = &
-            pf%dwt_seedp_to_leaf_grc(g) + &
-            pf%dwt_seedp_to_leaf_patch(p)
+       veg_pf%dwt_seedp_to_leaf(p)   = dwt_leafp_seed(p)/dt
+       grc_pf%dwt_seedp_to_leaf(g)     = &
+            grc_pf%dwt_seedp_to_leaf(g) + &
+            veg_pf%dwt_seedp_to_leaf(p)
 
-       pf%dwt_seedp_to_deadstem_patch(p) = dwt_deadstemp_seed(p)/dt
-       pf%dwt_seedp_to_deadstem_grc(g)   = &
-            pf%dwt_seedp_to_deadstem_grc(g) + &
-            pf%dwt_seedp_to_deadstem_patch(p)
+       veg_pf%dwt_seedp_to_deadstem(p) = dwt_deadstemp_seed(p)/dt
+       grc_pf%dwt_seedp_to_deadstem(g)   = &
+            grc_pf%dwt_seedp_to_deadstem(g) + &
+            veg_pf%dwt_seedp_to_deadstem(p)
 
 
-       pf%dwt_seedp_to_ppool_patch(p) = dwt_npool_seed(p)/dt
-       pf%dwt_seedp_to_ppool_grc(g)   = &
-            pf%dwt_seedp_to_ppool_grc(g) + &
-            pf%dwt_seedp_to_ppool_patch(p)
+       veg_pf%dwt_seedp_to_ppool(p) = dwt_npool_seed(p)/dt
+       grc_pf%dwt_seedp_to_ppool(g)   = &
+            grc_pf%dwt_seedp_to_ppool(g) + &
+            veg_pf%dwt_seedp_to_ppool(p)
 
     end do
     
@@ -563,8 +563,8 @@ contains
             dwt_livecrootn_to_litter(p) /dt + &
             dwt_deadcrootn_to_litter(p) /dt
 
-       pf%dwt_slash_pflux_col(c) =            &
-            pf%dwt_slash_pflux_col(c)       + &
+       col_pf%dwt_slash_pflux(c) =            &
+            col_pf%dwt_slash_pflux(c)       + &
             dwt_frootp_to_litter(p)     /dt + &
             dwt_livecrootp_to_litter(p) /dt + &
             dwt_deadcrootp_to_litter(p) /dt
@@ -614,16 +614,16 @@ contains
                 
 
                 ! fine root litter phosphorus fluxes
-                pf%dwt_frootp_to_litr_met_p_col(c,j) = &
-                     pf%dwt_frootp_to_litr_met_p_col(c,j) + &
+                col_pf%dwt_frootp_to_litr_met_p(c,j) = &
+                     col_pf%dwt_frootp_to_litr_met_p(c,j) + &
                      (dwt_frootp_to_litter(p)* fr_flab)/dt * froot
-                pf%dwt_frootp_to_litr_cel_p_col(c,j) = &
+                col_pf%dwt_frootp_to_litr_cel_p(c,j) = &
 
-                     pf%dwt_frootp_to_litr_cel_p_col(c,j) + &
+                     col_pf%dwt_frootp_to_litr_cel_p(c,j) + &
                      (dwt_frootp_to_litter(p)* fr_fcel)/dt * froot
 
-                pf%dwt_frootp_to_litr_lig_p_col(c,j) = &
-                     pf%dwt_frootp_to_litr_lig_p_col(c,j) + &
+                col_pf%dwt_frootp_to_litr_lig_p(c,j) = &
+                     col_pf%dwt_frootp_to_litr_lig_p(c,j) + &
                      (dwt_frootp_to_litter(p)* fr_flig)/dt * froot
 
                 ! livecroot fluxes to cwd
@@ -635,8 +635,8 @@ contains
                      col_nf%dwt_livecrootn_to_cwdn(c,j) + &
                      (dwt_livecrootn_to_litter(p))/dt * croot
                 
-                pf%dwt_livecrootp_to_cwdp_col(c,j) = &
-                     pf%dwt_livecrootp_to_cwdp_col(c,j) + &
+                col_pf%dwt_livecrootp_to_cwdp(c,j) = &
+                     col_pf%dwt_livecrootp_to_cwdp(c,j) + &
                      (dwt_livecrootp_to_litter(p))/dt * croot
 
                 ! deadcroot fluxes to cwd
@@ -648,8 +648,8 @@ contains
                      col_nf%dwt_deadcrootn_to_cwdn(c,j) + &
                      (dwt_deadcrootn_to_litter(p))/dt * croot
              
-                pf%dwt_deadcrootp_to_cwdp_col(c,j) = &
-                     pf%dwt_deadcrootp_to_cwdp_col(c,j) + &
+                col_pf%dwt_deadcrootp_to_cwdp(c,j) = &
+                     col_pf%dwt_deadcrootp_to_cwdp(c,j) + &
                      (dwt_deadcrootp_to_litter(p))/dt * croot
 
                 if ( use_c13 ) then
@@ -767,15 +767,15 @@ contains
 
              ! column-level P flux updates
 
-             pf%dwt_conv_pflux_col(c) = pf%dwt_conv_pflux_col(c) - conv_pflux(p)/dt
-             pf%dwt_prod10p_gain_col(c) = pf%dwt_prod10p_gain_col(c) - prod10_pflux(p)/dt
-             pf%dwt_prod100p_gain_col(c) = pf%dwt_prod100p_gain_col(c) - prod100_pflux(p)/dt
+             col_pf%dwt_conv_pflux(c) = col_pf%dwt_conv_pflux(c) - conv_pflux(p)/dt
+             col_pf%dwt_prod10p_gain(c) = col_pf%dwt_prod10p_gain(c) - prod10_pflux(p)/dt
+             col_pf%dwt_prod100p_gain(c) = col_pf%dwt_prod100p_gain(c) - prod100_pflux(p)/dt
 
-             pf%dwt_prod10p_gain_patch(p) = -prod10_pflux(p)/dt
-             pf%dwt_prod10p_gain_grc(g)   = pf%dwt_prod10p_gain_grc(g) + pf%dwt_prod10p_gain_patch(p)
+             veg_pf%dwt_prod10p_gain(p) = -prod10_pflux(p)/dt
+             grc_pf%dwt_prod10p_gain(g)   = grc_pf%dwt_prod10p_gain(g) + veg_pf%dwt_prod10p_gain(p)
 
-             pf%dwt_prod100p_gain_patch(p)= -prod100_pflux(p)/dt
-             pf%dwt_prod100p_gain_grc(g)  = pf%dwt_prod100p_gain_grc(g) + pf%dwt_prod100p_gain_patch(p)
+             veg_pf%dwt_prod100p_gain(p)= -prod100_pflux(p)/dt
+             grc_pf%dwt_prod100p_gain(g)  = grc_pf%dwt_prod100p_gain(g) + veg_pf%dwt_prod100p_gain(p)
 
           end if
        end do
@@ -814,10 +814,10 @@ contains
             grc_nf%dwt_conv_nflux(g) + &
             veg_nf%dwt_conv_nflux(p)
 
-       pf%dwt_conv_pflux_patch(p) = -conv_pflux(p)/dt
-       pf%dwt_conv_pflux_grc(g) = &
-            pf%dwt_conv_pflux_grc(g) + &
-            pf%dwt_conv_pflux_patch(p)
+       veg_pf%dwt_conv_pflux(p) = -conv_pflux(p)/dt
+       grc_pf%dwt_conv_pflux(g) = &
+            grc_pf%dwt_conv_pflux(g) + &
+            veg_pf%dwt_conv_pflux(p)
 
     end do
 
@@ -1132,9 +1132,9 @@ contains
    type(phosphorusflux_type), intent(inout) :: pf
    integer                  , intent(in)    :: p
 
-   pf%plant_pdemand_patch(p)         = 0._r8
-   pf%avail_retransp_patch(p)        = 0._r8
-   pf%plant_palloc_patch(p)          = 0._r8
+   veg_pf%plant_pdemand(p)         = 0._r8
+   veg_pf%avail_retransp(p)        = 0._r8
+   veg_pf%plant_palloc(p)          = 0._r8
 
  end subroutine PhosphorusFluxVarsInit
 

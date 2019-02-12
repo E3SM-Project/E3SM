@@ -974,7 +974,7 @@ contains
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_pf
     !------------------------------------------------------------------------
-    do g = bounds%begg, bounds%endg
+    do g = begg, endg
        this%dwt_prod10p_gain(g)          = 0._r8
        this%dwt_prod100p_gain(g)         = 0._r8
     end do

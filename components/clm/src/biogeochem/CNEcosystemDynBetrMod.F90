@@ -620,7 +620,7 @@ module CNEcosystemDynBetrMod
          plant_p_buffer_patch        => veg_ps%plant_p_buffer          , & ! Inout:  [real(r8) (:)   ] gN/m2
          smin_nh4_to_plant_patch     => veg_nf%smin_nh4_to_plant          , &
          smin_no3_to_plant_patch     => veg_nf%smin_no3_to_plant          , &
-         sminp_to_plant_patch        => phosphorusflux_vars%sminp_to_plant_patch             &
+         sminp_to_plant_patch        => veg_pf%sminp_to_plant             &
     )
     dtime =  get_step_size()
 

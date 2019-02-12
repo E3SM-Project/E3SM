@@ -36,11 +36,13 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use clm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
-  use GridcellDataType    , only : gridcell_carbon_state, grc_cf, grc_ns, grc_nf, grc_ps
+  use GridcellDataType    , only : gridcell_carbon_state, grc_cf
+  use GridcellDataType    , only : grc_ns, grc_nf, grc_ps, grc_pf
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state, col_cf, col_ns, col_nf, col_ps 
+  use ColumnDataType      , only : column_carbon_state, col_cf 
+  use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf 
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cf, veg_nf
+  use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
   
 
   !
@@ -509,18 +511,18 @@ contains
 
     associate(                                                                            &
          totcolp                   => col_ps%totcolp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         supplement_to_sminp       => phosphorusflux_vars%supplement_to_sminp_col       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
-         sminp_leached             => phosphorusflux_vars%sminp_leached_col             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         col_fire_ploss            => phosphorusflux_vars%fire_ploss_col                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
-         hrv_deadstemp_to_prod10p  => phosphorusflux_vars%hrv_deadstemp_to_prod10p_col  , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 10-year product pool
-         hrv_deadstemp_to_prod100p => phosphorusflux_vars%hrv_deadstemp_to_prod100p_col , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 100-year product pool
-         primp_to_labilep          => phosphorusflux_vars%primp_to_labilep_col          , &
-         secondp_to_occlp          => phosphorusflux_vars%secondp_to_occlp_col          , &
-         fert_p_to_sminp           => phosphorusflux_vars%fert_p_to_sminp_col           , &
-         supplement_to_plantp      => phosphorusflux_vars%supplement_to_plantp          , &
-         col_prod1p_loss           => phosphorusflux_vars%prod1p_loss_col               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested 
-         col_pinputs               => phosphorusflux_vars%pinputs_col                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
-         col_poutputs              => phosphorusflux_vars%poutputs_col                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
+         supplement_to_sminp       => col_pf%supplement_to_sminp       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
+         sminp_leached             => col_pf%sminp_leached             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         col_fire_ploss            => col_pf%fire_ploss                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
+         hrv_deadstemp_to_prod10p  => col_pf%hrv_deadstemp_to_prod10p  , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 10-year product pool
+         hrv_deadstemp_to_prod100p => col_pf%hrv_deadstemp_to_prod100p , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 100-year product pool
+         primp_to_labilep          => col_pf%primp_to_labilep          , &
+         secondp_to_occlp          => col_pf%secondp_to_occlp          , &
+         fert_p_to_sminp           => col_pf%fert_p_to_sminp           , &
+         supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
+         col_prod1p_loss           => col_pf%prod1p_loss               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested 
+         col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
+         col_poutputs              => col_pf%poutputs                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
          col_begpb                 => col_ps%begpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          col_endpb                 => col_ps%endpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
          col_errpb                 => col_ps%errpb                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
@@ -530,9 +532,9 @@ contains
          cwdp                      => col_ps%cwdp                     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          totlitp                   => col_ps%totlitp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          sminp                     => col_ps%sminp                    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         leafp_to_litter           => phosphorusflux_vars%leafp_to_litter_patch         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         frootp_to_litter          => phosphorusflux_vars%frootp_to_litter_patch        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         sminp_to_plant            => phosphorusflux_vars%sminp_to_plant_col            , &
+         leafp_to_litter           => veg_pf%leafp_to_litter         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         frootp_to_litter          => veg_pf%frootp_to_litter        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         sminp_to_plant            => col_pf%sminp_to_plant            , &
          cascade_receiver_pool     => decomp_cascade_con%cascade_receiver_pool          , &
          pf                        =>  phosphorusflux_vars                              , &
          ps                        =>  phosphorusstate_vars                               &
@@ -564,14 +566,14 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   flux_mineralization_col(c) = flux_mineralization_col(c) - &
-                                               pf%decomp_cascade_sminp_flux_col(c,k)
+                                               col_pf%decomp_cascade_sminp_flux(c,k)
                end do
          else
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                     flux_mineralization_col(c) = flux_mineralization_col(c) + &
-                                               pf%decomp_cascade_sminp_flux_col(c,k)
+                                               col_pf%decomp_cascade_sminp_flux(c,k)
 
                end do
          endif
@@ -581,7 +583,7 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          flux_mineralization_col(c) = flux_mineralization_col(c) + &
-                                       pf%biochem_pmin_col(c)
+                                       col_pf%biochem_pmin(c)
       end do
 
 
@@ -952,11 +954,11 @@ contains
 
     associate(                                                                       &
          totcolp                   =>    col_ps%totcolp              , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
-         dwt_prod10p_gain_grc      =>    phosphorusflux_vars%dwt_prod10p_gain_grc      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_prod100p_gain_grc     =>    phosphorusflux_vars%dwt_prod100p_gain_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_conv_pflux_grc        =>    phosphorusflux_vars%dwt_conv_pflux_grc        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_seedp_to_leaf_grc     =>    phosphorusflux_vars%dwt_seedp_to_leaf_grc     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_seedp_to_deadstem_grc =>    phosphorusflux_vars%dwt_seedp_to_deadstem_grc , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_prod10p_gain_grc      =>    grc_pf%dwt_prod10p_gain      , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_prod100p_gain_grc     =>    grc_pf%dwt_prod100p_gain     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_conv_pflux_grc        =>    grc_pf%dwt_conv_pflux        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_leaf_grc     =>    grc_pf%dwt_seedp_to_leaf     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_deadstem_grc =>    grc_pf%dwt_seedp_to_deadstem , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          begpb_grc                 =>    grc_ps%begpb                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          endpb_grc                 =>    grc_ps%endpb                , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
          errpb_grc                 =>    grc_ps%errpb                  & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
