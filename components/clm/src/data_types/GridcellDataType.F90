@@ -168,9 +168,15 @@ module GridcellDataType
   ! Define the data structure that holds phosphorus flux information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_phosphorus_flux
-    real(r8), pointer :: xxx                    (:)     ! (gP/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
+    real(r8), pointer :: dwt_seedp_to_leaf        (:)  ! (gP/m2/s) dwt_seedn_to_leaf_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_seedp_to_deadstem    (:)  ! (gP/m2/s) dwt_seedn_to_deadstem_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_conv_pflux           (:)  ! (gP/m2/s) dwt_conv_nflux_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_seedp_to_ppool       (:)  ! (gP/m2/s) seed source to PFT-level
+    real(r8), pointer :: dwt_prod10p_gain         (:)  ! (gP/m2/s) addition to 10-yr wood product pool
+    real(r8), pointer :: dwt_prod100p_gain        (:)  ! (gP/m2/s) addition to 100-yr wood product pool
   contains
     procedure, public :: Init    => grc_pf_init
+    procedure, public :: ZeroDWT => grc_pf_zerodwt
     procedure, public :: Clean   => grc_pf_clean
   end type gridcell_phosphorus_flux
   
@@ -922,19 +928,83 @@ contains
     !------------------------------------------------------------------------
     
     !-----------------------------------------------------------------------
-    ! allocate for each member of grc_ps
+    ! allocate for each member of grc_pf
     !-----------------------------------------------------------------------
+    allocate(this%dwt_seedp_to_leaf      (begg:endg))   ; this%dwt_seedp_to_leaf      (:) = nan
+    allocate(this%dwt_seedp_to_deadstem  (begg:endg))   ; this%dwt_seedp_to_deadstem  (:) = nan
+    allocate(this%dwt_conv_pflux         (begg:endg))   ; this%dwt_conv_pflux         (:) = nan
+    allocate(this%dwt_seedp_to_ppool     (begg:endg))   ; this%dwt_seedp_to_ppool     (:) = nan
+    allocate(this%dwt_prod10p_gain       (begg:endg))   ; this%dwt_prod10p_gain       (:) = nan
+    allocate(this%dwt_prod100p_gain      (begg:endg))   ; this%dwt_prod100p_gain      (:) = nan
     
     !-----------------------------------------------------------------------
-    ! initialize history fields for select members of grc_ps
+    ! initialize history fields for select members of grc_pf
     !-----------------------------------------------------------------------
+    this%dwt_seedp_to_leaf(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to patch-level leaf', &
+         ptr_gcell=this%dwt_seedp_to_leaf, default='inactive')
+
+    this%dwt_seedp_to_deadstem(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to patch-level deadstem', &
+         ptr_gcell=this%dwt_seedp_to_deadstem, default='inactive')
+
+    this%dwt_conv_pflux(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_CONV_PFLUX_GRC', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='conversion C flux (immediate loss to atm) (0 at all times except first timestep of year)', &
+         ptr_gcell=this%dwt_conv_pflux)
+
+    this%dwt_seedp_to_ppool(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level', &
+         ptr_gcell=this%dwt_seedp_to_ppool, default='inactive')
+
+    this%dwt_prod10p_gain(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD10P_GAIN_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to 10-yr wood product pool', &
+         ptr_gcell=this%dwt_prod10p_gain, default='inactive')
+
+    this%dwt_prod100p_gain(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_PROD100P_GAIN_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to 10-yr wood product pool', &
+         ptr_gcell=this%dwt_prod100p_gain, default='inactive')
 
     !-----------------------------------------------------------------------
-    ! set cold-start initial values for select members of grc_ps
+    ! set cold-start initial values for select members of grc_pf
     !------------------------------------------------------------------------
+    do g = bounds%begg, bounds%endg
+       this%dwt_prod10p_gain(g)          = 0._r8
+       this%dwt_prod100p_gain(g)         = 0._r8
+    end do
   
   end subroutine grc_pf_init
 
+  !-----------------------------------------------------------------------
+  subroutine grc_pf_zerodwt( this, bounds )
+    !
+    ! !DESCRIPTION
+    ! Initialize flux variables needed for dynamic land use.
+    !
+    ! !ARGUMENTS:
+    class(gridcell_phosphorus_flux) :: this
+    type(bounds_type), intent(in)  :: bounds 
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g          ! indices
+    !-----------------------------------------------------------------------
+    do g = bounds%begg, bounds%endg
+       this%dwt_seedp_to_leaf(g)     = 0._r8
+       this%dwt_seedp_to_deadstem(g) = 0._r8
+       this%dwt_conv_pflux(g)        = 0._r8
+       this%dwt_seedp_to_ppool(g)    = 0._r8
+       this%dwt_prod10p_gain(g)      = 0._r8
+       this%dwt_prod100p_gain(g)     = 0._r8
+    end do
+  
+  end subroutine grc_pf_zerodwt
+  
   !------------------------------------------------------------------------
   subroutine grc_pf_clean(this)
     !

@@ -844,10 +844,167 @@ module VegetationDataType
   ! Define the data structure that holds phosphorus flux information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_phosphorus_flux
-    real(r8), pointer :: xxx      (:) => null() ! xxx (xxx)
+    real(r8), pointer :: m_leafp_to_litter                   (:)     ! leaf P mortality (gP/m2/s)
+    real(r8), pointer :: m_frootp_to_litter                  (:)     ! fine root P mortality (gP/m2/s)
+    real(r8), pointer :: m_leafp_storage_to_litter           (:)     ! leaf P storage mortality (gP/m2/s)
+    real(r8), pointer :: m_frootp_storage_to_litter          (:)     ! fine root P storage mortality (gP/m2/s)
+    real(r8), pointer :: m_livestemp_storage_to_litter       (:)     ! live stem P storage mortality (gP/m2/s)
+    real(r8), pointer :: m_deadstemp_storage_to_litter       (:)     ! dead stem P storage mortality (gP/m2/s)
+    real(r8), pointer :: m_livecrootp_storage_to_litter      (:)     ! live coarse root P storage mortality (gP/m2/s)
+    real(r8), pointer :: m_deadcrootp_storage_to_litter      (:)     ! dead coarse root P storage mortality (gP/m2/s)
+    real(r8), pointer :: m_leafp_xfer_to_litter              (:)     ! leaf P transfer mortality (gP/m2/s)
+    real(r8), pointer :: m_frootp_xfer_to_litter             (:)     ! fine root P transfer mortality (gP/m2/s)
+    real(r8), pointer :: m_livestemp_xfer_to_litter          (:)     ! live stem P transfer mortality (gP/m2/s)
+    real(r8), pointer :: m_deadstemp_xfer_to_litter          (:)     ! dead stem P transfer mortality (gP/m2/s)
+    real(r8), pointer :: m_livecrootp_xfer_to_litter         (:)     ! live coarse root P transfer mortality (gP/m2/s)
+    real(r8), pointer :: m_deadcrootp_xfer_to_litter         (:)     ! dead coarse root P transfer mortality (gP/m2/s)
+    real(r8), pointer :: m_livestemp_to_litter               (:)     ! live stem P mortality (gP/m2/s)
+    real(r8), pointer :: m_deadstemp_to_litter               (:)     ! dead stem P mortality (gP/m2/s)
+    real(r8), pointer :: m_livecrootp_to_litter              (:)     ! live coarse root P mortality (gP/m2/s)
+    real(r8), pointer :: m_deadcrootp_to_litter              (:)     ! dead coarse root P mortality (gP/m2/s)
+    real(r8), pointer :: m_retransp_to_litter                (:)     ! retranslocated P pool mortality (gP/m2/s)
+    real(r8), pointer :: m_ppool_to_litter                   (:)     ! storage P pool mortality (gP/m2/s)
+    real(r8), pointer :: hrv_leafp_to_litter                 (:)     ! leaf P harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_frootp_to_litter                (:)     ! fine root P harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_leafp_storage_to_litter         (:)     ! leaf P storage harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_frootp_storage_to_litter        (:)     ! fine root P storage harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_livestemp_storage_to_litter     (:)     ! live stem P storage harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_deadstemp_storage_to_litter     (:)     ! dead stem P storage harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_livecrootp_storage_to_litter    (:)     ! live coarse root P storage harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_deadcrootp_storage_to_litter    (:)     ! dead coarse root P storage harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_leafp_xfer_to_litter            (:)     ! leaf P transfer harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_frootp_xfer_to_litter           (:)     ! fine root P transfer harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_livestemp_xfer_to_litter        (:)     ! live stem P transfer harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_deadstemp_xfer_to_litter        (:)     ! dead stem P transfer harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_livecrootp_xfer_to_litter       (:)     ! live coarse root P transfer harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_deadcrootp_xfer_to_litter       (:)     ! dead coarse root P transfer harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_livestemp_to_litter             (:)     ! live stem P harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_deadstemp_to_prod10p            (:)     ! dead stem P harvest to 10-year product pool (gP/m2/s)
+    real(r8), pointer :: hrv_deadstemp_to_prod100p           (:)     ! dead stem P harvest to 100-year product pool (gP/m2/s)
+    real(r8), pointer :: hrv_livecrootp_to_litter            (:)     ! live coarse root P harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_deadcrootp_to_litter            (:)     ! dead coarse root P harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_retransp_to_litter              (:)     ! retranslocated P pool harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_ppool_to_litter                 (:)     ! retranslocated P pool harvest mortality (gP/m2/s)
+    real(r8), pointer :: hrv_leafp_to_prod1p                 (:)     ! crop leafp harvested (gP/m2/s)
+    real(r8), pointer :: hrv_livestemp_to_prod1p             (:)     ! crop stemp harvested (gP/m2/s)
+    real(r8), pointer :: hrv_grainp_to_prod1p                (:)     ! crop grain harvested (gP/m2/s)
+    real(r8), pointer :: hrv_cropp_to_prod1p                 (:)     ! total amount of crop P harvested (gP/m2/s)
+    real(r8), pointer :: m_leafp_to_fire                     (:)     ! (gP/m2/s) fire P emissions from leafp 
+    real(r8), pointer :: m_leafp_storage_to_fire             (:)     ! (gP/m2/s) fire P emissions from leafp_storage            
+    real(r8), pointer :: m_leafp_xfer_to_fire                (:)     ! (gP/m2/s) fire P emissions from leafp_xfer     
+    real(r8), pointer :: m_livestemp_to_fire                 (:)     ! (gP/m2/s) fire P emissions from livestemp 
+    real(r8), pointer :: m_livestemp_storage_to_fire         (:)     ! (gP/m2/s) fire P emissions from livestemp_storage      
+    real(r8), pointer :: m_livestemp_xfer_to_fire            (:)     ! (gP/m2/s) fire P emissions from livestemp_xfer
+    real(r8), pointer :: m_deadstemp_to_fire                 (:)     ! (gP/m2/s) fire P emissions from deadstemp
+    real(r8), pointer :: m_deadstemp_storage_to_fire         (:)     ! (gP/m2/s) fire P emissions from deadstemp_storage         
+    real(r8), pointer :: m_deadstemp_xfer_to_fire            (:)     ! (gP/m2/s) fire P emissions from deadstemp_xfer
+    real(r8), pointer :: m_frootp_to_fire                    (:)     ! (gP/m2/s) fire P emissions from frootp
+    real(r8), pointer :: m_frootp_storage_to_fire            (:)     ! (gP/m2/s) fire P emissions from frootp_storage
+    real(r8), pointer :: m_frootp_xfer_to_fire               (:)     ! (gP/m2/s) fire P emissions from frootp_xfer
+    real(r8), pointer :: m_livecrootp_to_fire                (:)     ! (gP/m2/s) fire P emissions from m_livecrootp_to_fire
+    real(r8), pointer :: m_livecrootp_storage_to_fire        (:)     ! (gP/m2/s) fire P emissions from livecrootp_storage     
+    real(r8), pointer :: m_livecrootp_xfer_to_fire           (:)     ! (gP/m2/s) fire P emissions from livecrootp_xfer
+    real(r8), pointer :: m_deadcrootp_to_fire                (:)     ! (gP/m2/s) fire P emissions from deadcrootp
+    real(r8), pointer :: m_deadcrootp_storage_to_fire        (:)     ! (gP/m2/s) fire P emissions from deadcrootp_storage  
+    real(r8), pointer :: m_deadcrootp_xfer_to_fire           (:)     ! (gP/m2/s) fire P emissions from deadcrootp_xfer
+    real(r8), pointer :: m_retransp_to_fire                  (:)     ! (gP/m2/s) fire P emissions from retransp
+    real(r8), pointer :: m_ppool_to_fire                     (:)     ! (gP/m2/s) fire P emissions from ppool
+    real(r8), pointer :: m_leafp_to_litter_fire              (:)     ! (gP/m2/s) from leafp to litter P  due to fire               
+    real(r8), pointer :: m_leafp_storage_to_litter_fire      (:)     ! (gP/m2/s) from leafp_storage to litter P  due to fire                              
+    real(r8), pointer :: m_leafp_xfer_to_litter_fire         (:)     ! (gP/m2/s) from leafp_xfer to litter P  due to fire                              
+    real(r8), pointer :: m_livestemp_to_litter_fire          (:)     ! (gP/m2/s) from livestemp to litter P  due to fire                              
+    real(r8), pointer :: m_livestemp_storage_to_litter_fire  (:)     ! (gP/m2/s) from livestemp_storage to litter P  due to fire                                     
+    real(r8), pointer :: m_livestemp_xfer_to_litter_fire     (:)     ! (gP/m2/s) from livestemp_xfer to litter P  due to fire                                     
+    real(r8), pointer :: m_livestemp_to_deadstemp_fire       (:)     ! (gP/m2/s) from livestemp to deadstemp P  due to fire                                     
+    real(r8), pointer :: m_deadstemp_to_litter_fire          (:)     ! (gP/m2/s) from deadstemp to litter P  due to fire                                     
+    real(r8), pointer :: m_deadstemp_storage_to_litter_fire  (:)     ! (gP/m2/s) from deadstemp_storage to litter P  due to fire                                               
+    real(r8), pointer :: m_deadstemp_xfer_to_litter_fire     (:)     ! (gP/m2/s) from deadstemp_xfer to litter P  due to fire                                               
+    real(r8), pointer :: m_frootp_to_litter_fire             (:)     ! (gP/m2/s) from frootp to litter P  due to fire                                               
+    real(r8), pointer :: m_frootp_storage_to_litter_fire     (:)     ! (gP/m2/s) from frootp_storage to litter P  due to fire                                               
+    real(r8), pointer :: m_frootp_xfer_to_litter_fire        (:)     ! (gP/m2/s) from frootp_xfer to litter P  due to fire                                               
+    real(r8), pointer :: m_livecrootp_to_litter_fire         (:)     ! (gP/m2/s) from livecrootp to litter P  due to fire                                               
+    real(r8), pointer :: m_livecrootp_storage_to_litter_fire (:)     ! (gP/m2/s) from livecrootp_storage to litter P  due to fire                                                     
+    real(r8), pointer :: m_livecrootp_xfer_to_litter_fire    (:)     ! (gP/m2/s) from livecrootp_xfer to litter P  due to fire                                                     
+    real(r8), pointer :: m_livecrootp_to_deadcrootp_fire     (:)     ! (gP/m2/s) from livecrootp_xfer to deadcrootp due to fire                                                     
+    real(r8), pointer :: m_deadcrootp_to_litter_fire         (:)     ! (gP/m2/s) from deadcrootp to deadcrootp due to fire                                                       
+    real(r8), pointer :: m_deadcrootp_storage_to_litter_fire (:)     ! (gP/m2/s) from deadcrootp_storage to deadcrootp due to fire                                                        
+    real(r8), pointer :: m_deadcrootp_xfer_to_litter_fire    (:)     ! (gP/m2/s) from deadcrootp_xfer to deadcrootp due to fire 
+    real(r8), pointer :: m_retransp_to_litter_fire           (:)     ! (gP/m2/s) from retransp to deadcrootp due to fire                                                               
+    real(r8), pointer :: m_ppool_to_litter_fire              (:)     ! (gP/m2/s) from ppool to deadcrootp due to fire                                                         
+    real(r8), pointer :: fire_ploss                          (:)     ! total pft-level fire P loss (gP/m2/s) 
+    real(r8), pointer :: grainp_xfer_to_grainp               (:)     ! grain P growth from storage for prognostic crop model (gP/m2/s)
+    real(r8), pointer :: leafp_xfer_to_leafp                 (:)     ! leaf P growth from storage (gP/m2/s)
+    real(r8), pointer :: frootp_xfer_to_frootp               (:)     ! fine root P growth from storage (gP/m2/s)
+    real(r8), pointer :: livestemp_xfer_to_livestemp         (:)     ! live stem P growth from storage (gP/m2/s)
+    real(r8), pointer :: deadstemp_xfer_to_deadstemp         (:)     ! dead stem P growth from storage (gP/m2/s)
+    real(r8), pointer :: livecrootp_xfer_to_livecrootp       (:)     ! live coarse root P growth from storage (gP/m2/s)
+    real(r8), pointer :: deadcrootp_xfer_to_deadcrootp       (:)     ! dead coarse root P growth from storage (gP/m2/s)
+    real(r8), pointer :: livestemp_to_litter                 (:)     ! livestem P to litter (gP/m2/s)
+    real(r8), pointer :: grainp_to_food                      (:)     ! grain P to food for prognostic crop (gP/m2/s)
+    real(r8), pointer :: leafp_to_litter                     (:)     ! leaf P litterfall (gP/m2/s)
+    real(r8), pointer :: leafp_to_retransp                   (:)     ! leaf P to retranslocated P pool (gP/m2/s)
+    real(r8), pointer :: frootp_to_retransp                  (:)     ! fine root P to retranslocated P pool (gP/m2/s)
+    real(r8), pointer :: frootp_to_litter                    (:)     ! fine root P litterfall (gP/m2/s)
+    real(r8), pointer :: retransp_to_ppool                   (:)     ! deployment of retranslocated P (gP/m2/s)       
+    real(r8), pointer :: sminp_to_ppool                      (:)     ! deployment of soil mineral P uptake (gP/m2/s)
+    real(r8), pointer :: ppool_to_grainp                     (:)     ! allocation to grain P for prognostic crop (gP/m2/s)
+    real(r8), pointer :: ppool_to_grainp_storage             (:)     ! allocation to grain P storage for prognostic crop (gP/m2/s)
+    real(r8), pointer :: ppool_to_leafp                      (:)     ! allocation to leaf P (gP/m2/s)
+    real(r8), pointer :: ppool_to_leafp_storage              (:)     ! allocation to leaf P storage (gP/m2/s)
+    real(r8), pointer :: ppool_to_frootp                     (:)     ! allocation to fine root P (gP/m2/s)
+    real(r8), pointer :: ppool_to_frootp_storage             (:)     ! allocation to fine root P storage (gP/m2/s)
+    real(r8), pointer :: ppool_to_livestemp                  (:)     ! allocation to live stem P (gP/m2/s)
+    real(r8), pointer :: ppool_to_livestemp_storage          (:)     ! allocation to live stem P storage (gP/m2/s)
+    real(r8), pointer :: ppool_to_deadstemp                  (:)     ! allocation to dead stem P (gP/m2/s)
+    real(r8), pointer :: ppool_to_deadstemp_storage          (:)     ! allocation to dead stem P storage (gP/m2/s)
+    real(r8), pointer :: ppool_to_livecrootp                 (:)     ! allocation to live coarse root P (gP/m2/s)
+    real(r8), pointer :: ppool_to_livecrootp_storage         (:)     ! allocation to live coarse root P storage (gP/m2/s)
+    real(r8), pointer :: ppool_to_deadcrootp                 (:)     ! allocation to dead coarse root P (gP/m2/s)
+    real(r8), pointer :: ppool_to_deadcrootp_storage         (:)     ! allocation to dead coarse root P storage (gP/m2/s)
+    real(r8), pointer :: grainp_storage_to_xfer              (:)     ! grain P shift storage to transfer for prognostic crop (gP/m2/s)
+    real(r8), pointer :: leafp_storage_to_xfer               (:)     ! leaf P shift storage to transfer (gP/m2/s)
+    real(r8), pointer :: frootp_storage_to_xfer              (:)     ! fine root P shift storage to transfer (gP/m2/s)
+    real(r8), pointer :: livestemp_storage_to_xfer           (:)     ! live stem P shift storage to transfer (gP/m2/s)
+    real(r8), pointer :: deadstemp_storage_to_xfer           (:)     ! dead stem P shift storage to transfer (gP/m2/s)
+    real(r8), pointer :: livecrootp_storage_to_xfer          (:)     ! live coarse root P shift storage to transfer (gP/m2/s)
+    real(r8), pointer :: deadcrootp_storage_to_xfer          (:)     ! dead coarse root P shift storage to transfer (gP/m2/s)
+    real(r8), pointer :: fert_p                              (:)     ! applied fertilizer (gP/m2/s)
+    real(r8), pointer :: fert_p_counter                      (:)     ! >0 fertilize; <=0 not
+    real(r8), pointer :: livestemp_to_deadstemp              (:)     ! live stem P turnover (gP/m2/s)
+    real(r8), pointer :: livestemp_to_retransp               (:)     ! live stem P to retranslocated P pool (gP/m2/s)
+    real(r8), pointer :: livecrootp_to_deadcrootp            (:)     ! live coarse root P turnover (gP/m2/s)
+    real(r8), pointer :: livecrootp_to_retransp              (:)     ! live coarse root P to retranslocated P pool (gP/m2/s)
+    real(r8), pointer :: pdeploy                             (:)     ! total P deployed to growth and storage (gP/m2/s)
+    real(r8), pointer :: pinputs                             (:)     ! total P inputs to pft-level (gP/m2/s)
+    real(r8), pointer :: poutputs                            (:)     ! total P outputs from pft-level (gP/m2/s)
+    real(r8), pointer :: wood_harvestp                       (:)     ! total P losses to wood product pools (gP/m2/s)
+    real(r8), pointer :: biochem_pmin_to_plant               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
+    real(r8), pointer :: crop_seedp_to_leaf                  (:)     ! (gP/m2/s) seed source to leaf, for crops
+    real(r8), pointer :: dwt_seedp_to_leaf                   (:)     ! (gP/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
+    real(r8), pointer :: dwt_seedp_to_deadstem               (:)     ! (gP/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
+    real(r8), pointer :: dwt_conv_pflux                      (:)     ! (gP/m2/s) conversion N flux (immediate loss to atm); although this is a patch-level flux, it is expressed per unit GRIDCELL area
+    real(r8), pointer :: dwt_prod10p_gain                    (:)     ! (gP/m2/s) addition to 10-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
+    real(r8), pointer :: dwt_prod100p_gain                   (:)     ! (gP/m2/s) addition to 100-yr wood product pool; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
+    real(r8), pointer :: dwt_crop_productp_gain              (:)     ! (gP/m2/s) addition to crop product pool from landcover change; even though this is a patch-level flux, it is expressed per unit GRIDCELL area
+    real(r8), pointer :: dwt_seedp_to_ppool                  (:)     ! (gP/m2/s) seed source to PFT-level
+    real(r8), pointer :: plant_pdemand                       (:)     ! P flux required to support initial GPP (gP/m2/s)
+    real(r8), pointer :: avail_retransp                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
+    real(r8), pointer :: plant_palloc                        (:)     ! total allocated P flux (gP/m2/s)
+    real(r8), pointer :: sminp_to_plant                      (:)     ! plant p uptake (gP/m2/s)
+    real(r8), pointer :: plant_pdemand_vr                    (:,:)   ! plant P demand
+    real(r8), pointer :: prev_leafp_to_litter                (:)     ! previous timestep leaf P litterfall flux (gP/m2/s)
+    real(r8), pointer :: prev_frootp_to_litter               (:)     ! previous timestep froot P litterfall flux (gP/m2/s)
+    real(r8), pointer :: supplement_to_plantp                (:)     ! supplementary P flux for plant 
+    real(r8), pointer :: gap_ploss_litter                    (:)     ! total ploss from veg to litter pool due to gap mortality
+    real(r8), pointer :: fire_ploss_litter                   (:)     ! total ploss from veg to litter pool due to fire
+    real(r8), pointer :: hrv_ploss_litter                    (:)     ! total ploss from veg to litter pool due to harvest mortality
+    real(r8), pointer :: sen_ploss_litter                    (:)     ! total ploss from veg to litter pool due to senescence
   contains
-    procedure, public :: Init  => veg_pf_init
-    procedure, public :: Clean => veg_pf_clean
+    procedure, public :: Init      => veg_pf_init
+    procedure, public :: Restart   => veg_pf_restart
+    procedure, public :: SetValues => veg_pf_setvalues
+    procedure, public :: Summary   => veg_pf_summary
+    procedure, public :: Clean     => veg_pf_clean
   end type vegetation_phosphorus_flux
 
    
@@ -9684,24 +9841,1087 @@ module VegetationDataType
     integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
-    integer           :: p,c,l,j                        ! indices
+    integer :: p,c,l,j                     ! indices
+    integer :: p,c,l,g
+    integer :: fp                          ! filter indices
+    integer :: num_special_patch           ! number of good values in special_patch filter
+    integer :: special_patch(endp-begp+1)  ! special landunit filter - patches
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_pf
     !-----------------------------------------------------------------------
-    allocate(this%xxx              (begp:endp))                   ; this%xxx              (:)   = nan
+    allocate(this%m_leafp_to_litter                   (begp:endp)) ; this%m_leafp_to_litter                   (:) = nan
+    allocate(this%m_frootp_to_litter                  (begp:endp)) ; this%m_frootp_to_litter                  (:) = nan
+    allocate(this%m_leafp_storage_to_litter           (begp:endp)) ; this%m_leafp_storage_to_litter           (:) = nan
+    allocate(this%m_frootp_storage_to_litter          (begp:endp)) ; this%m_frootp_storage_to_litter          (:) = nan
+    allocate(this%m_livestemp_storage_to_litter       (begp:endp)) ; this%m_livestemp_storage_to_litter       (:) = nan
+    allocate(this%m_deadstemp_storage_to_litter       (begp:endp)) ; this%m_deadstemp_storage_to_litter       (:) = nan
+    allocate(this%m_livecrootp_storage_to_litter      (begp:endp)) ; this%m_livecrootp_storage_to_litter      (:) = nan
+    allocate(this%m_deadcrootp_storage_to_litter      (begp:endp)) ; this%m_deadcrootp_storage_to_litter      (:) = nan
+    allocate(this%m_leafp_xfer_to_litter              (begp:endp)) ; this%m_leafp_xfer_to_litter              (:) = nan
+    allocate(this%m_frootp_xfer_to_litter             (begp:endp)) ; this%m_frootp_xfer_to_litter             (:) = nan
+    allocate(this%m_livestemp_xfer_to_litter          (begp:endp)) ; this%m_livestemp_xfer_to_litter          (:) = nan
+    allocate(this%m_deadstemp_xfer_to_litter          (begp:endp)) ; this%m_deadstemp_xfer_to_litter          (:) = nan
+    allocate(this%m_livecrootp_xfer_to_litter         (begp:endp)) ; this%m_livecrootp_xfer_to_litter         (:) = nan
+    allocate(this%m_deadcrootp_xfer_to_litter         (begp:endp)) ; this%m_deadcrootp_xfer_to_litter         (:) = nan
+    allocate(this%m_livestemp_to_litter               (begp:endp)) ; this%m_livestemp_to_litter               (:) = nan
+    allocate(this%m_deadstemp_to_litter               (begp:endp)) ; this%m_deadstemp_to_litter               (:) = nan
+    allocate(this%m_livecrootp_to_litter              (begp:endp)) ; this%m_livecrootp_to_litter              (:) = nan
+    allocate(this%m_deadcrootp_to_litter              (begp:endp)) ; this%m_deadcrootp_to_litter              (:) = nan
+    allocate(this%m_retransp_to_litter                (begp:endp)) ; this%m_retransp_to_litter                (:) = nan
+    allocate(this%m_ppool_to_litter                   (begp:endp)) ; this%m_ppool_to_litter                   (:) = nan
+    allocate(this%hrv_leafp_to_litter                 (begp:endp)) ; this%hrv_leafp_to_litter                 (:) = nan
+    allocate(this%hrv_frootp_to_litter                (begp:endp)) ; this%hrv_frootp_to_litter                (:) = nan
+    allocate(this%hrv_leafp_storage_to_litter         (begp:endp)) ; this%hrv_leafp_storage_to_litter         (:) = nan
+    allocate(this%hrv_frootp_storage_to_litter        (begp:endp)) ; this%hrv_frootp_storage_to_litter        (:) = nan
+    allocate(this%hrv_livestemp_storage_to_litter     (begp:endp)) ; this%hrv_livestemp_storage_to_litter     (:) = nan
+    allocate(this%hrv_deadstemp_storage_to_litter     (begp:endp)) ; this%hrv_deadstemp_storage_to_litter     (:) = nan
+    allocate(this%hrv_livecrootp_storage_to_litter    (begp:endp)) ; this%hrv_livecrootp_storage_to_litter    (:) = nan
+    allocate(this%hrv_deadcrootp_storage_to_litter    (begp:endp)) ; this%hrv_deadcrootp_storage_to_litter    (:) = nan
+    allocate(this%hrv_leafp_xfer_to_litter            (begp:endp)) ; this%hrv_leafp_xfer_to_litter            (:) = nan
+    allocate(this%hrv_frootp_xfer_to_litter           (begp:endp)) ; this%hrv_frootp_xfer_to_litter           (:) = nan
+    allocate(this%hrv_livestemp_xfer_to_litter        (begp:endp)) ; this%hrv_livestemp_xfer_to_litter        (:) = nan
+    allocate(this%hrv_deadstemp_xfer_to_litter        (begp:endp)) ; this%hrv_deadstemp_xfer_to_litter        (:) = nan
+    allocate(this%hrv_livecrootp_xfer_to_litter       (begp:endp)) ; this%hrv_livecrootp_xfer_to_litter       (:) = nan
+    allocate(this%hrv_deadcrootp_xfer_to_litter       (begp:endp)) ; this%hrv_deadcrootp_xfer_to_litter       (:) = nan
+    allocate(this%hrv_livestemp_to_litter             (begp:endp)) ; this%hrv_livestemp_to_litter             (:) = nan
+    allocate(this%hrv_deadstemp_to_prod10p            (begp:endp)) ; this%hrv_deadstemp_to_prod10p            (:) = nan
+    allocate(this%hrv_deadstemp_to_prod100p           (begp:endp)) ; this%hrv_deadstemp_to_prod100p           (:) = nan
+    allocate(this%hrv_leafp_to_prod1p                 (begp:endp)) ; this%hrv_leafp_to_prod1p                 (:) = nan
+    allocate(this%hrv_livestemp_to_prod1p             (begp:endp)) ; this%hrv_livestemp_to_prod1p             (:) = nan
+    allocate(this%hrv_grainp_to_prod1p                (begp:endp)) ; this%hrv_grainp_to_prod1p                (:) = nan
+    allocate(this%hrv_cropp_to_prod1p                 (begp:endp)) ; this%hrv_cropp_to_prod1p                 (:) = nan
+    allocate(this%hrv_livecrootp_to_litter            (begp:endp)) ; this%hrv_livecrootp_to_litter            (:) = nan
+    allocate(this%hrv_deadcrootp_to_litter            (begp:endp)) ; this%hrv_deadcrootp_to_litter            (:) = nan
+    allocate(this%hrv_retransp_to_litter              (begp:endp)) ; this%hrv_retransp_to_litter              (:) = nan
+    allocate(this%hrv_ppool_to_litter                 (begp:endp)) ; this%hrv_ppool_to_litter                 (:) = nan
+    allocate(this%m_leafp_to_fire                     (begp:endp)) ; this%m_leafp_to_fire                     (:) = nan
+    allocate(this%m_leafp_storage_to_fire             (begp:endp)) ; this%m_leafp_storage_to_fire             (:) = nan
+    allocate(this%m_leafp_xfer_to_fire                (begp:endp)) ; this%m_leafp_xfer_to_fire                (:) = nan
+    allocate(this%m_livestemp_to_fire                 (begp:endp)) ; this%m_livestemp_to_fire                 (:) = nan
+    allocate(this%m_livestemp_storage_to_fire         (begp:endp)) ; this%m_livestemp_storage_to_fire         (:) = nan
+    allocate(this%m_livestemp_xfer_to_fire            (begp:endp)) ; this%m_livestemp_xfer_to_fire            (:) = nan
+    allocate(this%m_deadstemp_to_fire                 (begp:endp)) ; this%m_deadstemp_to_fire                 (:) = nan
+    allocate(this%m_deadstemp_storage_to_fire         (begp:endp)) ; this%m_deadstemp_storage_to_fire         (:) = nan
+    allocate(this%m_deadstemp_xfer_to_fire            (begp:endp)) ; this%m_deadstemp_xfer_to_fire            (:) = nan
+    allocate(this%m_frootp_to_fire                    (begp:endp)) ; this%m_frootp_to_fire                    (:) = nan
+    allocate(this%m_frootp_storage_to_fire            (begp:endp)) ; this%m_frootp_storage_to_fire            (:) = nan
+    allocate(this%m_frootp_xfer_to_fire               (begp:endp)) ; this%m_frootp_xfer_to_fire               (:) = nan
+    allocate(this%m_livecrootp_to_fire                (begp:endp)) ; this%m_livecrootp_to_fire                (:) = nan    
+    allocate(this%m_livecrootp_storage_to_fire        (begp:endp)) ; this%m_livecrootp_storage_to_fire        (:) = nan
+    allocate(this%m_livecrootp_xfer_to_fire           (begp:endp)) ; this%m_livecrootp_xfer_to_fire           (:) = nan
+    allocate(this%m_deadcrootp_to_fire                (begp:endp)) ; this%m_deadcrootp_to_fire                (:) = nan
+    allocate(this%m_deadcrootp_storage_to_fire        (begp:endp)) ; this%m_deadcrootp_storage_to_fire        (:) = nan
+    allocate(this%m_deadcrootp_xfer_to_fire           (begp:endp)) ; this%m_deadcrootp_xfer_to_fire           (:) = nan
+    allocate(this%m_retransp_to_fire                  (begp:endp)) ; this%m_retransp_to_fire                  (:) = nan
+    allocate(this%m_ppool_to_fire                     (begp:endp)) ; this%m_ppool_to_fire                     (:) = nan
+    allocate(this%m_leafp_to_litter_fire              (begp:endp)) ; this%m_leafp_to_litter_fire              (:) = nan
+    allocate(this%m_leafp_storage_to_litter_fire      (begp:endp)) ; this%m_leafp_storage_to_litter_fire      (:) = nan
+    allocate(this%m_leafp_xfer_to_litter_fire         (begp:endp)) ; this%m_leafp_xfer_to_litter_fire         (:) = nan
+    allocate(this%m_livestemp_to_litter_fire          (begp:endp)) ; this%m_livestemp_to_litter_fire          (:) = nan
+    allocate(this%m_livestemp_storage_to_litter_fire  (begp:endp)) ; this%m_livestemp_storage_to_litter_fire  (:) = nan
+    allocate(this%m_livestemp_xfer_to_litter_fire     (begp:endp)) ; this%m_livestemp_xfer_to_litter_fire     (:) = nan
+    allocate(this%m_livestemp_to_deadstemp_fire       (begp:endp)) ; this%m_livestemp_to_deadstemp_fire       (:) = nan
+    allocate(this%m_deadstemp_to_litter_fire          (begp:endp)) ; this%m_deadstemp_to_litter_fire          (:) = nan
+    allocate(this%m_deadstemp_storage_to_litter_fire  (begp:endp)) ; this%m_deadstemp_storage_to_litter_fire  (:) = nan
+    allocate(this%m_deadstemp_xfer_to_litter_fire     (begp:endp)) ; this%m_deadstemp_xfer_to_litter_fire     (:) = nan
+    allocate(this%m_frootp_to_litter_fire             (begp:endp)) ; this%m_frootp_to_litter_fire             (:) = nan
+    allocate(this%m_frootp_storage_to_litter_fire     (begp:endp)) ; this%m_frootp_storage_to_litter_fire     (:) = nan
+    allocate(this%m_frootp_xfer_to_litter_fire        (begp:endp)) ; this%m_frootp_xfer_to_litter_fire        (:) = nan
+    allocate(this%m_livecrootp_to_litter_fire         (begp:endp)) ; this%m_livecrootp_to_litter_fire         (:) = nan
+    allocate(this%m_livecrootp_storage_to_litter_fire (begp:endp)) ; this%m_livecrootp_storage_to_litter_fire (:) = nan
+    allocate(this%m_livecrootp_xfer_to_litter_fire    (begp:endp)) ; this%m_livecrootp_xfer_to_litter_fire    (:) = nan
+    allocate(this%m_livecrootp_to_deadcrootp_fire     (begp:endp)) ; this%m_livecrootp_to_deadcrootp_fire     (:) = nan
+    allocate(this%m_deadcrootp_to_litter_fire         (begp:endp)) ; this%m_deadcrootp_to_litter_fire         (:) = nan
+    allocate(this%m_deadcrootp_storage_to_litter_fire (begp:endp)) ; this%m_deadcrootp_storage_to_litter_fire (:) = nan
+    allocate(this%m_deadcrootp_xfer_to_litter_fire    (begp:endp)) ; this%m_deadcrootp_xfer_to_litter_fire    (:) = nan
+    allocate(this%m_retransp_to_litter_fire           (begp:endp)) ; this%m_retransp_to_litter_fire           (:) = nan
+    allocate(this%m_ppool_to_litter_fire              (begp:endp)) ; this%m_ppool_to_litter_fire              (:) = nan
+    allocate(this%leafp_xfer_to_leafp                 (begp:endp)) ; this%leafp_xfer_to_leafp                 (:) = nan
+    allocate(this%frootp_xfer_to_frootp               (begp:endp)) ; this%frootp_xfer_to_frootp               (:) = nan
+    allocate(this%livestemp_xfer_to_livestemp         (begp:endp)) ; this%livestemp_xfer_to_livestemp         (:) = nan
+    allocate(this%deadstemp_xfer_to_deadstemp         (begp:endp)) ; this%deadstemp_xfer_to_deadstemp         (:) = nan
+    allocate(this%livecrootp_xfer_to_livecrootp       (begp:endp)) ; this%livecrootp_xfer_to_livecrootp       (:) = nan
+    allocate(this%deadcrootp_xfer_to_deadcrootp       (begp:endp)) ; this%deadcrootp_xfer_to_deadcrootp       (:) = nan
+    allocate(this%leafp_to_litter                     (begp:endp)) ; this%leafp_to_litter                     (:) = nan
+    allocate(this%leafp_to_retransp                   (begp:endp)) ; this%leafp_to_retransp                   (:) = nan
+    allocate(this%frootp_to_retransp                  (begp:endp)) ; this%frootp_to_retransp                  (:) = nan
+    allocate(this%frootp_to_litter                    (begp:endp)) ; this%frootp_to_litter                    (:) = nan
+    allocate(this%retransp_to_ppool                   (begp:endp)) ; this%retransp_to_ppool                   (:) = nan
+    allocate(this%sminp_to_ppool                      (begp:endp)) ; this%sminp_to_ppool                      (:) = nan
+    allocate(this%biochem_pmin_to_plant               (begp:endp)) ; this%biochem_pmin_to_plant               (:) = nan
+    allocate(this%ppool_to_leafp                      (begp:endp)) ; this%ppool_to_leafp                      (:) = nan
+    allocate(this%ppool_to_leafp_storage              (begp:endp)) ; this%ppool_to_leafp_storage              (:) = nan
+    allocate(this%ppool_to_frootp                     (begp:endp)) ; this%ppool_to_frootp                     (:) = nan
+    allocate(this%ppool_to_frootp_storage             (begp:endp)) ; this%ppool_to_frootp_storage             (:) = nan
+    allocate(this%ppool_to_livestemp                  (begp:endp)) ; this%ppool_to_livestemp                  (:) = nan
+    allocate(this%ppool_to_livestemp_storage          (begp:endp)) ; this%ppool_to_livestemp_storage          (:) = nan
+    allocate(this%ppool_to_deadstemp                  (begp:endp)) ; this%ppool_to_deadstemp                  (:) = nan
+    allocate(this%ppool_to_deadstemp_storage          (begp:endp)) ; this%ppool_to_deadstemp_storage          (:) = nan
+    allocate(this%ppool_to_livecrootp                 (begp:endp)) ; this%ppool_to_livecrootp                 (:) = nan
+    allocate(this%ppool_to_livecrootp_storage         (begp:endp)) ; this%ppool_to_livecrootp_storage         (:) = nan
+    allocate(this%ppool_to_deadcrootp                 (begp:endp)) ; this%ppool_to_deadcrootp                 (:) = nan
+    allocate(this%ppool_to_deadcrootp_storage         (begp:endp)) ; this%ppool_to_deadcrootp_storage         (:) = nan
+    allocate(this%leafp_storage_to_xfer               (begp:endp)) ; this%leafp_storage_to_xfer               (:) = nan
+    allocate(this%frootp_storage_to_xfer              (begp:endp)) ; this%frootp_storage_to_xfer              (:) = nan
+    allocate(this%livestemp_storage_to_xfer           (begp:endp)) ; this%livestemp_storage_to_xfer           (:) = nan
+    allocate(this%deadstemp_storage_to_xfer           (begp:endp)) ; this%deadstemp_storage_to_xfer           (:) = nan
+    allocate(this%livecrootp_storage_to_xfer          (begp:endp)) ; this%livecrootp_storage_to_xfer          (:) = nan
+    allocate(this%deadcrootp_storage_to_xfer          (begp:endp)) ; this%deadcrootp_storage_to_xfer          (:) = nan
+    allocate(this%livestemp_to_deadstemp              (begp:endp)) ; this%livestemp_to_deadstemp              (:) = nan
+    allocate(this%livestemp_to_retransp               (begp:endp)) ; this%livestemp_to_retransp               (:) = nan
+    allocate(this%livecrootp_to_deadcrootp            (begp:endp)) ; this%livecrootp_to_deadcrootp            (:) = nan
+    allocate(this%livecrootp_to_retransp              (begp:endp)) ; this%livecrootp_to_retransp              (:) = nan
+    allocate(this%pdeploy                             (begp:endp)) ; this%pdeploy                             (:) = nan
+    allocate(this%pinputs                             (begp:endp)) ; this%pinputs                             (:) = nan
+    allocate(this%poutputs                            (begp:endp)) ; this%poutputs                            (:) = nan
+    allocate(this%wood_harvestp                       (begp:endp)) ; this%wood_harvestp                       (:) = nan
+    allocate(this%fire_ploss                          (begp:endp)) ; this%fire_ploss                          (:) = nan
+    allocate(this%ppool_to_grainp                     (begp:endp)) ; this%ppool_to_grainp                     (:) = nan
+    allocate(this%ppool_to_grainp_storage             (begp:endp)) ; this%ppool_to_grainp_storage             (:) = nan
+    allocate(this%livestemp_to_litter                 (begp:endp)) ; this%livestemp_to_litter                 (:) = nan
+    allocate(this%grainp_to_food                      (begp:endp)) ; this%grainp_to_food                      (:) = nan
+    allocate(this%grainp_xfer_to_grainp               (begp:endp)) ; this%grainp_xfer_to_grainp               (:) = nan
+    allocate(this%grainp_storage_to_xfer              (begp:endp)) ; this%grainp_storage_to_xfer              (:) = nan
+    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = nan
+    allocate(this%fert_p_counter                      (begp:endp)) ; this%fert_p_counter                      (:) = nan
+    allocate(this%crop_seedp_to_leaf                  (begp:endp)) ; this%crop_seedp_to_leaf                  (:) = nan
+    allocate(this%dwt_seedp_to_leaf                   (begp:endp)) ; this%dwt_seedp_to_leaf                   (:) = nan
+    allocate(this%dwt_seedp_to_deadstem               (begp:endp)) ; this%dwt_seedp_to_deadstem               (:) = nan
+    allocate(this%dwt_conv_pflux                      (begp:endp)) ; this%dwt_conv_pflux                      (:) = nan
+    allocate(this%dwt_prod10p_gain                    (begp:endp)) ; this%dwt_prod10p_gain                    (:) = nan
+    allocate(this%dwt_prod100p_gain                   (begp:endp)) ; this%dwt_prod100p_gain                   (:) = nan
+    allocate(this%dwt_crop_productp_gain              (begp:endp)) ; this%dwt_crop_productp_gain              (:) = nan
+    allocate(this%dwt_seedp_to_ppool                  (begp:endp)) ; this%dwt_seedp_to_ppool                  (:) = nan
+    allocate(this%plant_pdemand                       (begp:endp)) ; this%plant_pdemand                       (:) = nan
+    allocate(this%avail_retransp                      (begp:endp)) ; this%avail_retransp                      (:) = nan
+    allocate(this%plant_palloc                        (begp:endp)) ; this%plant_palloc                        (:) = nan
+    allocate(this%sminp_to_plant                      (begp:endp)) ; this%sminp_to_plant                      (:) = nan
+    allocate(this%plant_pdemand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr (:,:) = nan
+    allocate(this%prev_leafp_to_litter                (begp:endp)) ; this%prev_leafp_to_litter                (:) = nan
+    allocate(this%prev_frootp_to_litter               (begp:endp)) ; this%prev_frootp_to_litter               (:) = nan
+    allocate(this%supplement_to_plantp                (begp:endp)) ; this%supplement_to_plantp                (:) = 0.d0
+    allocate(this%gap_ploss_litter                    (begp:endp)) ; this%gap_ploss_litter                    (:) = nan
+    allocate(this%fire_ploss_litter                   (begp:endp)) ; this%fire_ploss_litter                   (:) = nan
+    allocate(this%hrv_ploss_litter                    (begp:endp)) ; this%hrv_ploss_litter                    (:) = nan
+    allocate(this%sen_ploss_litter                    (begp:endp)) ; this%sen_ploss_litter                    (:) = nan
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_pf
     !-----------------------------------------------------------------------
+    this%m_leafp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LEAFP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P mortality', &
+         ptr_patch=this%m_leafp_to_litter, default='inactive')
+
+    this%m_frootp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_FROOTP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P mortality', &
+         ptr_patch=this%m_frootp_to_litter, default='inactive')
+
+    this%m_leafp_storage_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LEAFP_STORAGE_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P storage mortality', &
+         ptr_patch=this%m_leafp_storage_to_litter, default='inactive')
+
+    this%m_frootp_storage_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_FROOTP_STORAGE_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P storage mortality', &
+         ptr_patch=this%m_frootp_storage_to_litter, default='inactive')
+
+    this%m_livestemp_storage_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVESTEMP_STORAGE_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P storage mortality', &
+         ptr_patch=this%m_livestemp_storage_to_litter, default='inactive')
+
+    this%m_deadstemp_storage_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_STORAGE_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P storage mortality', &
+         ptr_patch=this%m_deadstemp_storage_to_litter, default='inactive')
+
+    this%m_livecrootp_storage_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVECROOTP_STORAGE_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P storage mortality', &
+         ptr_patch=this%m_livecrootp_storage_to_litter, default='inactive')
+
+    this%m_deadcrootp_storage_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_STORAGE_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P storage mortality', &
+         ptr_patch=this%m_deadcrootp_storage_to_litter, default='inactive')
+
+    this%m_leafp_xfer_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LEAFP_XFER_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P transfer mortality', &
+         ptr_patch=this%m_leafp_xfer_to_litter, default='inactive')
+
+    this%m_frootp_xfer_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_FROOTP_XFER_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P transfer mortality', &
+         ptr_patch=this%m_frootp_xfer_to_litter, default='inactive')
+
+    this%m_livestemp_xfer_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVESTEMP_XFER_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P transfer mortality', &
+         ptr_patch=this%m_livestemp_xfer_to_litter, default='inactive')
+
+    this%m_deadstemp_xfer_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_XFER_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P transfer mortality', &
+         ptr_patch=this%m_deadstemp_xfer_to_litter, default='inactive')
+
+    this%m_livecrootp_xfer_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVECROOTP_XFER_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P transfer mortality', &
+         ptr_patch=this%m_livecrootp_xfer_to_litter, default='inactive')
+
+    this%m_deadcrootp_xfer_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_XFER_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P transfer mortality', &
+         ptr_patch=this%m_deadcrootp_xfer_to_litter, default='inactive')
+
+    this%m_livestemp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVESTEMP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P mortality', &
+         ptr_patch=this%m_livestemp_to_litter, default='inactive')
+
+    this%m_deadstemp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P mortality', &
+         ptr_patch=this%m_deadstemp_to_litter, default='inactive')
+
+    this%m_livecrootp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVECROOTP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P mortality', &
+         ptr_patch=this%m_livecrootp_to_litter, default='inactive')
+
+    this%m_deadcrootp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P mortality', &
+         ptr_patch=this%m_deadcrootp_to_litter, default='inactive')
+
+    this%m_retransp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_RETRANSP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='retranslocated P pool mortality', &
+         ptr_patch=this%m_retransp_to_litter, default='inactive')
+
+    this%m_ppool_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='M_PPOOL_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='Storage P pool mortality', &
+         ptr_patch=this%m_ppool_to_litter, default='inactive')
+
+    this%m_leafp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LEAFP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P fire loss', &
+         ptr_patch=this%m_leafp_to_fire, default='inactive')
+
+    this%m_frootp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_FROOTP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P fire loss ', &
+         ptr_patch=this%m_frootp_to_fire, default='inactive')
+
+    this%m_leafp_storage_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LEAFP_STORAGE_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P storage fire loss', &
+         ptr_patch=this%m_leafp_storage_to_fire, default='inactive')
+
+    this%m_frootp_storage_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_FROOTP_STORAGE_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P storage fire loss', &
+         ptr_patch=this%m_frootp_storage_to_fire, default='inactive')
+
+    this%m_livestemp_storage_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVESTEMP_STORAGE_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P storage fire loss', &
+         ptr_patch=this%m_livestemp_storage_to_fire, default='inactive')
+
+    this%m_deadstemp_storage_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_STORAGE_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P storage fire loss', &
+         ptr_patch=this%m_deadstemp_storage_to_fire, default='inactive')
+
+    this%m_livecrootp_storage_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVECROOTP_STORAGE_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P storage fire loss', &
+         ptr_patch=this%m_livecrootp_storage_to_fire, default='inactive')
+
+    this%m_deadcrootp_storage_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_STORAGE_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P storage fire loss', &
+         ptr_patch=this%m_deadcrootp_storage_to_fire, default='inactive')
+
+    this%m_leafp_xfer_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LEAFP_XFER_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P transfer fire loss', &
+         ptr_patch=this%m_leafp_xfer_to_fire, default='inactive')
+
+    this%m_frootp_xfer_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_FROOTP_XFER_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P transfer fire loss', &
+         ptr_patch=this%m_frootp_xfer_to_fire, default='inactive')
+
+    this%m_livestemp_xfer_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVESTEMP_XFER_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P transfer fire loss', &
+         ptr_patch=this%m_livestemp_xfer_to_fire, default='inactive')
+
+    this%m_deadstemp_xfer_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_XFER_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P transfer fire loss', &
+         ptr_patch=this%m_deadstemp_xfer_to_fire, default='inactive')
+
+    this%m_livecrootp_xfer_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVECROOTP_XFER_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P transfer fire loss', &
+         ptr_patch=this%m_livecrootp_xfer_to_fire, default='inactive')
+
+    this%m_deadcrootp_xfer_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_XFER_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P transfer fire loss', &
+         ptr_patch=this%m_deadcrootp_xfer_to_fire, default='inactive')
+
+    this%m_livestemp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVESTEMP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P fire loss', &
+         ptr_patch=this%m_livestemp_to_fire, default='inactive')
+
+    this%m_deadstemp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P fire loss', &
+         ptr_patch=this%m_deadstemp_to_fire, default='inactive')
+
+    this%m_deadstemp_to_litter_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADSTEMP_TO_LITTER_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P fire mortality to litter', &
+         ptr_patch=this%m_deadstemp_to_litter_fire, default='inactive')
+
+    this%m_livecrootp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_LIVECROOTP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P fire loss', &
+         ptr_patch=this%m_livecrootp_to_fire, default='inactive')
+
+    this%m_deadcrootp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P fire loss', &
+         ptr_patch=this%m_deadcrootp_to_fire, default='inactive')
+
+    this%m_deadcrootp_to_litter_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_DEADCROOTP_TO_LITTER_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P fire mortality to litter', &
+         ptr_patch=this%m_deadcrootp_to_litter_fire, default='inactive')
+
+    this%m_retransp_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_RETRANSP_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='retranslocated P pool fire loss', &
+         ptr_patch=this%m_retransp_to_fire, default='inactive')
+
+    this%m_ppool_to_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_PPOOL_TO_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='Storage P pool fire loss', &
+         ptr_patch=this%m_ppool_to_fire, default='inactive')
+
+    this%leafp_xfer_to_leafp(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP_XFER_TO_LEAFP', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P growth from storage', &
+         ptr_patch=this%leafp_xfer_to_leafp, default='inactive')
+
+    this%frootp_xfer_to_frootp(begp:endp) = spval
+    call hist_addfld1d (fname='FROOTP_XFER_TO_FROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P growth from storage', &
+         ptr_patch=this%frootp_xfer_to_frootp, default='inactive')
+
+    this%livestemp_xfer_to_livestemp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP_XFER_TO_LIVESTEMP', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P growth from storage', &
+         ptr_patch=this%livestemp_xfer_to_livestemp, default='inactive')
+
+    this%deadstemp_xfer_to_deadstemp(begp:endp) = spval
+    call hist_addfld1d (fname='DEADSTEMP_XFER_TO_DEADSTEMP', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P growth from storage', &
+         ptr_patch=this%deadstemp_xfer_to_deadstemp, default='inactive')
+
+    this%livecrootp_xfer_to_livecrootp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP_XFER_TO_LIVECROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P growth from storage', &
+         ptr_patch=this%livecrootp_xfer_to_livecrootp, default='inactive')
+
+    this%deadcrootp_xfer_to_deadcrootp(begp:endp) = spval
+    call hist_addfld1d (fname='DEADCROOTP_XFER_TO_DEADCROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P growth from storage', &
+         ptr_patch=this%deadcrootp_xfer_to_deadcrootp, default='inactive')
+
+    this%leafp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P litterfall', &
+         ptr_patch=this%leafp_to_litter, default='inactive')
+
+    this%leafp_to_retransp(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP_TO_RETRANSP', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P to retranslocated P pool', &
+         ptr_patch=this%leafp_to_retransp, default='inactive')
+
+    this%frootp_to_litter(begp:endp) = spval
+    call hist_addfld1d (fname='FROOTP_TO_LITTER', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P litterfall', &
+         ptr_patch=this%frootp_to_litter, default='inactive')
+
+    this%retransp_to_ppool(begp:endp) = spval
+    call hist_addfld1d (fname='RETRANSP_TO_PPOOL', units='gP/m^2/s', &
+         avgflag='A', long_name='deployment of retranslocated P', &
+         ptr_patch=this%retransp_to_ppool)
+
+    this%sminp_to_ppool(begp:endp) = spval
+    call hist_addfld1d (fname='SMINP_TO_PPOOL', units='gP/m^2/s', &
+         avgflag='A', long_name='deployment of soil mineral P uptake', &
+         ptr_patch=this%sminp_to_ppool)
+
+    this%ppool_to_leafp(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_LEAFP', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to leaf P', &
+         ptr_patch=this%ppool_to_leafp, default='inactive')
+
+    this%ppool_to_leafp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_LEAFP_STORAGE', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to leaf P storage', &
+         ptr_patch=this%ppool_to_leafp_storage, default='inactive')
+
+    this%ppool_to_frootp(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_FROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to fine root P', &
+         ptr_patch=this%ppool_to_frootp, default='inactive')
+
+    this%ppool_to_frootp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_FROOTP_STORAGE', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to fine root P storage', &
+         ptr_patch=this%ppool_to_frootp_storage, default='inactive')
+
+    this%ppool_to_livestemp(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_LIVESTEMP', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to live stem P', &
+         ptr_patch=this%ppool_to_livestemp, default='inactive')
+
+    this%ppool_to_livestemp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_LIVESTEMP_STORAGE', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to live stem P storage', &
+         ptr_patch=this%ppool_to_livestemp_storage, default='inactive')
+
+    this%ppool_to_deadstemp(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_DEADSTEMP', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to dead stem P', &
+         ptr_patch=this%ppool_to_deadstemp, default='inactive')
+
+    this%ppool_to_deadstemp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_DEADSTEMP_STORAGE', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to dead stem P storage', &
+         ptr_patch=this%ppool_to_deadstemp_storage, default='inactive')
+
+    this%ppool_to_livecrootp(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_LIVECROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to live coarse root P', &
+         ptr_patch=this%ppool_to_livecrootp, default='inactive')
+
+    this%ppool_to_livecrootp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_LIVECROOTP_STORAGE', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to live coarse root P storage', &
+         ptr_patch=this%ppool_to_livecrootp_storage, default='inactive')
+
+    this%ppool_to_deadcrootp(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_DEADCROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to dead coarse root P', &
+         ptr_patch=this%ppool_to_deadcrootp, default='inactive')
+
+    this%ppool_to_deadcrootp_storage(begp:endp) = spval
+    call hist_addfld1d (fname='PPOOL_TO_DEADCROOTP_STORAGE', units='gP/m^2/s', &
+         avgflag='A', long_name='allocation to dead coarse root P storage', &
+         ptr_patch=this%ppool_to_deadcrootp_storage, default='inactive')
+
+    this%leafp_storage_to_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFP_STORAGE_TO_XFER', units='gP/m^2/s', &
+         avgflag='A', long_name='leaf P shift storage to transfer', &
+         ptr_patch=this%leafp_storage_to_xfer, default='inactive')
+
+    this%frootp_storage_to_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='FROOTP_STORAGE_TO_XFER', units='gP/m^2/s', &
+         avgflag='A', long_name='fine root P shift storage to transfer', &
+         ptr_patch=this%frootp_storage_to_xfer, default='inactive')
+
+    this%livestemp_storage_to_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP_STORAGE_TO_XFER', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P shift storage to transfer', &
+         ptr_patch=this%livestemp_storage_to_xfer, default='inactive')
+
+    this%deadstemp_storage_to_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='DEADSTEMP_STORAGE_TO_XFER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead stem P shift storage to transfer', &
+         ptr_patch=this%deadstemp_storage_to_xfer, default='inactive')
+
+    this%livecrootp_storage_to_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP_STORAGE_TO_XFER', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P shift storage to transfer', &
+         ptr_patch=this%livecrootp_storage_to_xfer, default='inactive')
+
+    this%deadcrootp_storage_to_xfer(begp:endp) = spval
+    call hist_addfld1d (fname='DEADCROOTP_STORAGE_TO_XFER', units='gP/m^2/s', &
+         avgflag='A', long_name='dead coarse root P shift storage to transfer', &
+         ptr_patch=this%deadcrootp_storage_to_xfer, default='inactive')
+
+    this%livestemp_to_deadstemp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP_TO_DEADSTEMP', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P turnover', &
+         ptr_patch=this%livestemp_to_deadstemp, default='inactive')
+
+    this%livestemp_to_retransp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVESTEMP_TO_RETRANSP', units='gP/m^2/s', &
+         avgflag='A', long_name='live stem P to retranslocated P pool', &
+         ptr_patch=this%livestemp_to_retransp, default='inactive')
+
+    this%livecrootp_to_deadcrootp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP_TO_DEADCROOTP', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P turnover', &
+         ptr_patch=this%livecrootp_to_deadcrootp, default='inactive')
+
+    this%livecrootp_to_retransp(begp:endp) = spval
+    call hist_addfld1d (fname='LIVECROOTP_TO_RETRANSP', units='gP/m^2/s', &
+         avgflag='A', long_name='live coarse root P to retranslocated N pool', &
+         ptr_patch=this%livecrootp_to_retransp, default='inactive')
+
+    this%pdeploy(begp:endp) = spval
+    call hist_addfld1d (fname='PDEPLOY', units='gP/m^2/s', &
+         avgflag='A', long_name='total P deployed in new growth', &
+         ptr_patch=this%pdeploy)
+
+    this%wood_harvestp(begp:endp) = spval
+    call hist_addfld1d (fname='WOOD_HARVESTP', units='gP/m^2/s', &
+         avgflag='A', long_name='wood harvest P (to product pools)', &
+         ptr_patch=this%wood_harvestp, default='inactive')
+
+    this%fire_ploss(begp:endp) = spval
+    call hist_addfld1d (fname='PFT_FIRE_PLOSS', units='gP/m^2/s', &
+         avgflag='A', long_name='total pft-level fire P loss', &
+         ptr_patch=this%fire_ploss, default='inactive')
+
+    this%gap_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='GAP_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to gap mortality', &
+         ptr_patch=this%gap_ploss_litter, default='inactive')
+
+    this%fire_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='FIRE_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to fire mortality', &
+         ptr_patch=this%fire_ploss_litter, default='inactive')
+    
+    this%hrv_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='HRV_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter due to harvest mortality', &
+         ptr_patch=this%hrv_ploss_litter, default='inactive')
+    
+    this%sen_ploss_litter(begp:endp) = spval
+    call hist_addfld1d (fname='SEN_PLOSS_LITTER', units='gN/m^2/s', &
+         avgflag='A', long_name='total ploss from veg to litter pool due to senescence', &
+         ptr_patch=this%sen_ploss_litter, default='inactive')
+
+    if (crop_prog) then
+       this%fert_p(begp:endp) = spval
+       call hist_addfld1d (fname='FERT_P', units='gP/m^2/s', &
+            avgflag='A', long_name='fertilizer P added', &
+            ptr_patch=this%fert_p)
+    end if
+
+    if (crop_prog) then
+       this%fert_p_counter(begp:endp) = spval
+       call hist_addfld1d (fname='FERT_P_COUNTER', units='seconds', &
+            avgflag='A', long_name='time left to fertilize', &
+            ptr_patch=this%fert_p_counter)
+    end if
+
+    this%crop_seedp_to_leaf(begp:endp) = spval
+    call hist_addfld1d (fname='CROP_SEEDP_TO_LEAF', units='gP/m^2/s', &
+         avgflag='A', long_name='crop seed source to leaf', &
+         ptr_patch=this%crop_seedp_to_leaf, default='inactive')
+
+    this%dwt_seedp_to_leaf(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF_PATCH', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='patch-level seed source to patch-level leaf ' // &
+         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+         ptr_patch=this%dwt_seedp_to_leaf, default='inactive')
+
+    this%dwt_seedp_to_deadstem(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM_PATCH', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='patch-level seed source to patch-level deadstem ' // &
+         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+         ptr_patch=this%dwt_seedp_to_deadstem, default='inactive')
+
+    this%dwt_conv_pflux(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_CONV_PFLUX_PATCH', units='gP/m^2/s', &
+         avgflag='A', &
+         long_name='patch-level conversion C flux (immediate loss to atm) ' // &
+         '(0 at all times except first timestep of year) ' // &
+         '(per-area-gridcell; only makes sense with dov2xy=.false.)', &
+         ptr_patch=this%dwt_conv_pflux, default='inactive')
+
+    this%dwt_prod10p_gain(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_PROD10P_GAIN_PATCH', units='gP/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
+         ptr_col=this%dwt_prod10p_gain, default='inactive')
+
+    this%dwt_prod100p_gain(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_PROD100P_GAIN_PATCH', units='gP/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
+         ptr_col=this%dwt_prod100p_gain, default='inactive')
+
+    this%dwt_seedp_to_ppool(begp:endp) = spval
+    call hist_addfld1d (fname='DWT_SEEDP_TO_PPOOL_PATCH', units='gP/m^2/s', &
+         avgflag='A', long_name='seed source to PFT-level', &
+         ptr_patch=this%dwt_seedp_to_ppool, default='inactive')
+
+    this%plant_pdemand(begp:endp) = spval
+    call hist_addfld1d (fname='PLANT_PDEMAND', units='gP/m^2/s', &
+         avgflag='A', long_name='P flux required to support initial GPP', &
+         ptr_patch=this%plant_pdemand)
+
+    this%avail_retransp(begp:endp) = spval
+    call hist_addfld1d (fname='AVAIL_RETRANSP', units='gP/m^2/s', &
+         avgflag='A', long_name='P flux available from retranslocation pool', &
+         ptr_patch=this%avail_retransp, default='active')
+
+    this%plant_palloc(begp:endp) = spval
+    call hist_addfld1d (fname='PLANT_PALLOC', units='gP/m^2/s', &
+         avgflag='A', long_name='total allocated P flux', &
+         ptr_patch=this%plant_palloc, default='active')
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of veg_pf
     !------------------------------------------------------------------------
+    num_special_patch = 0
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
+          num_special_patch = num_special_patch + 1
+          special_patch(num_special_patch) = p
+       end if
+    end do
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+
+       this%prev_leafp_to_litter (p)  = 0._r8 
+       this%prev_frootp_to_litter(p)  = 0._r8 
+     
+       if ( crop_prog )then
+          this%fert_p_counter(p)  = spval
+          this%fert_p(p)          = 0._r8 
+       end if
+
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          this%fert_p_counter(p)  = 0._r8
+       end if
+
+       if (lun_pp%ifspecial(l)) then
+          this%plant_pdemand(p)  = spval
+          this%avail_retransp(p) = spval
+          this%plant_palloc(p)   = spval
+       end if
+    end do
     
+    call this%SetValues (num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
+
   end subroutine veg_pf_init
     
+  !-----------------------------------------------------------------------
+  subroutine veg_pf_restart (this,  bounds, ncid, flag )
+    !
+    ! !DESCRIPTION: 
+    ! Read/write restart data for vegetation-level phosphorus fluxes
+    !
+    ! !ARGUMENTS:
+    class (vegetation_phosphorus_flux) :: this
+    type(bounds_type) , intent(in)     :: bounds 
+    type(file_desc_t) , intent(inout)  :: ncid   ! netcdf id
+    character(len=*)  , intent(in)     :: flag   !'read' or 'write'
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j,c ! indices
+    logical :: readvar      ! determine if variable is on initial file
+    !------------------------------------------------------------------------
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag, varname='fert_p_counter', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fert_p_counter)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fert_p', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fert_p)
+    end if
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer_to_grainp', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='grain P growth from storage', units='gP/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer_to_grainp)
+    end if
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag,  varname='livestemp_to_litter', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='livestem P to litter', units='gP/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%livestemp_to_litter)
+    end if
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag,  varname='grainp_to_food', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='grain P to food', units='gP/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%grainp_to_food)
+    end if
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag,  varname='ppool_to_grainp', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='allocation to grain P', units='gP/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%ppool_to_grainp)
+    end if
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag,  varname='ppool_to_grainp_storage', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='allocation to grain P storage', units='gP/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%ppool_to_grainp_storage)
+    end if
+
+    if (crop_prog) then
+       call restartvar(ncid=ncid, flag=flag, varname='grainp_storage_to_xfer', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='grain P shift storage to transfer', units='gP/m2/s', &
+            interpinic_flag='interp', readvar=readvar, data=this%grainp_storage_to_xfer)
+    end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='plant_pdemand', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_pdemand) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='avail_retransp', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%avail_retransp) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='plant_palloc', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_palloc) 
+  
+  end subroutine veg_pf_restart
+  
+  !-----------------------------------------------------------------------
+  subroutine veg_pf_setvalues ( this, num_patch, filter_patch, value_patch)
+    !
+    ! !DESCRIPTION:
+    ! Set phosphorus flux variables
+    !
+    ! !ARGUMENTS:
+    class (vegetation_phosphorus_flux) :: this
+    integer , intent(in) :: num_patch
+    integer , intent(in) :: filter_patch(:)
+    real(r8), intent(in) :: value_patch
+    !
+    ! !LOCAL VARIABLES:
+    integer :: fi,i     ! loop index
+    !------------------------------------------------------------------------
+    do fi = 1,num_patch
+       i=filter_patch(fi)
+
+       this%m_leafp_to_litter(i)                   = value_patch
+       this%m_frootp_to_litter(i)                  = value_patch
+       this%m_leafp_storage_to_litter(i)           = value_patch
+       this%m_frootp_storage_to_litter(i)          = value_patch
+       this%m_livestemp_storage_to_litter(i)       = value_patch
+       this%m_deadstemp_storage_to_litter(i)       = value_patch
+       this%m_livecrootp_storage_to_litter(i)      = value_patch
+       this%m_deadcrootp_storage_to_litter(i)      = value_patch
+       this%m_leafp_xfer_to_litter(i)              = value_patch
+       this%m_frootp_xfer_to_litter(i)             = value_patch
+       this%m_livestemp_xfer_to_litter(i)          = value_patch
+       this%m_deadstemp_xfer_to_litter(i)          = value_patch
+       this%m_livecrootp_xfer_to_litter(i)         = value_patch
+       this%m_deadcrootp_xfer_to_litter(i)         = value_patch
+       this%m_livestemp_to_litter(i)               = value_patch
+       this%m_deadstemp_to_litter(i)               = value_patch
+       this%m_livecrootp_to_litter(i)              = value_patch
+       this%m_deadcrootp_to_litter(i)              = value_patch
+       this%m_retransp_to_litter(i)                = value_patch
+       this%m_ppool_to_litter(i)                   = value_patch
+       this%hrv_leafp_to_litter(i)                 = value_patch             
+       this%hrv_frootp_to_litter(i)                = value_patch            
+       this%hrv_leafp_storage_to_litter(i)         = value_patch     
+       this%hrv_frootp_storage_to_litter(i)        = value_patch    
+       this%hrv_livestemp_storage_to_litter(i)     = value_patch 
+       this%hrv_deadstemp_storage_to_litter(i)     = value_patch 
+       this%hrv_livecrootp_storage_to_litter(i)    = value_patch
+       this%hrv_deadcrootp_storage_to_litter(i)    = value_patch
+       this%hrv_leafp_xfer_to_litter(i)            = value_patch        
+       this%hrv_frootp_xfer_to_litter(i)           = value_patch       
+       this%hrv_livestemp_xfer_to_litter(i)        = value_patch    
+       this%hrv_deadstemp_xfer_to_litter(i)        = value_patch    
+       this%hrv_livecrootp_xfer_to_litter(i)       = value_patch   
+       this%hrv_deadcrootp_xfer_to_litter(i)       = value_patch   
+       this%hrv_livestemp_to_litter(i)             = value_patch         
+       this%hrv_deadstemp_to_prod10p(i)            = value_patch        
+       this%hrv_deadstemp_to_prod100p(i)           = value_patch       
+       this%hrv_leafp_to_prod1p(i)                 = value_patch
+       this%hrv_livestemp_to_prod1p(i)             = value_patch
+       this%hrv_grainp_to_prod1p(i)                = value_patch
+       this%hrv_cropp_to_prod1p(i)                 = value_patch
+       this%hrv_livecrootp_to_litter(i)            = value_patch        
+       this%hrv_deadcrootp_to_litter(i)            = value_patch        
+       this%hrv_retransp_to_litter(i)              = value_patch    
+       this%hrv_ppool_to_litter(i)                 = value_patch
+
+       this%m_leafp_to_fire(i)                     = value_patch
+       this%m_leafp_storage_to_fire(i)             = value_patch
+       this%m_leafp_xfer_to_fire(i)                = value_patch
+       this%m_livestemp_to_fire(i)                 = value_patch
+       this%m_livestemp_storage_to_fire(i)         = value_patch
+       this%m_livestemp_xfer_to_fire(i)            = value_patch
+       this%m_deadstemp_to_fire(i)                 = value_patch
+       this%m_deadstemp_storage_to_fire(i)         = value_patch
+       this%m_deadstemp_xfer_to_fire(i)            = value_patch
+       this%m_frootp_to_fire(i)                    = value_patch
+       this%m_frootp_storage_to_fire(i)            = value_patch
+       this%m_frootp_xfer_to_fire(i)               = value_patch
+       this%m_livecrootp_to_fire(i)                = value_patch
+       this%m_livecrootp_storage_to_fire(i)        = value_patch
+       this%m_livecrootp_xfer_to_fire(i)           = value_patch
+       this%m_deadcrootp_to_fire(i)                = value_patch
+       this%m_deadcrootp_storage_to_fire(i)        = value_patch
+       this%m_deadcrootp_xfer_to_fire(i)           = value_patch
+       this%m_retransp_to_fire(i)                  = value_patch
+       this%m_ppool_to_fire(i)                     = value_patch
+
+       this%m_leafp_to_litter_fire(i)              = value_patch
+       this%m_leafp_storage_to_litter_fire(i)      = value_patch
+       this%m_leafp_xfer_to_litter_fire(i)         = value_patch
+       this%m_livestemp_to_litter_fire(i)          = value_patch
+       this%m_livestemp_storage_to_litter_fire(i)  = value_patch
+       this%m_livestemp_xfer_to_litter_fire(i)     = value_patch
+       this%m_livestemp_to_deadstemp_fire(i)       = value_patch
+       this%m_deadstemp_to_litter_fire(i)          = value_patch
+       this%m_deadstemp_storage_to_litter_fire(i)  = value_patch
+       this%m_deadstemp_xfer_to_litter_fire(i)     = value_patch
+       this%m_frootp_to_litter_fire(i)             = value_patch
+       this%m_frootp_storage_to_litter_fire(i)     = value_patch
+       this%m_frootp_xfer_to_litter_fire(i)        = value_patch
+       this%m_livecrootp_to_litter_fire(i)         = value_patch
+       this%m_livecrootp_storage_to_litter_fire(i) = value_patch
+       this%m_livecrootp_xfer_to_litter_fire(i)    = value_patch
+       this%m_livecrootp_to_deadcrootp_fire(i)     = value_patch
+       this%m_deadcrootp_to_litter_fire(i)         = value_patch
+       this%m_deadcrootp_storage_to_litter_fire(i) = value_patch
+       this%m_deadcrootp_xfer_to_litter_fire(i)    = value_patch
+       this%m_retransp_to_litter_fire(i)           = value_patch
+       this%m_ppool_to_litter_fire(i)              = value_patch
+
+       this%leafp_xfer_to_leafp(i)                 = value_patch
+       this%frootp_xfer_to_frootp(i)               = value_patch
+       this%livestemp_xfer_to_livestemp(i)         = value_patch
+       this%deadstemp_xfer_to_deadstemp(i)         = value_patch
+       this%livecrootp_xfer_to_livecrootp(i)       = value_patch
+       this%deadcrootp_xfer_to_deadcrootp(i)       = value_patch
+       this%leafp_to_litter(i)                     = value_patch
+       this%leafp_to_retransp(i)                   = value_patch
+       this%frootp_to_litter(i)                    = value_patch
+       this%retransp_to_ppool(i)                   = value_patch
+       this%sminp_to_ppool(i)                      = value_patch
+       this%ppool_to_leafp(i)                      = value_patch
+       this%ppool_to_leafp_storage(i)              = value_patch
+       this%ppool_to_frootp(i)                     = value_patch
+       this%ppool_to_frootp_storage(i)             = value_patch
+       this%ppool_to_livestemp(i)                  = value_patch
+       this%ppool_to_livestemp_storage(i)          = value_patch
+       this%ppool_to_deadstemp(i)                  = value_patch
+       this%ppool_to_deadstemp_storage(i)          = value_patch
+       this%ppool_to_livecrootp(i)                 = value_patch
+       this%ppool_to_livecrootp_storage(i)         = value_patch
+       this%ppool_to_deadcrootp(i)                 = value_patch
+       this%ppool_to_deadcrootp_storage(i)         = value_patch
+       this%leafp_storage_to_xfer(i)               = value_patch
+       this%frootp_storage_to_xfer(i)              = value_patch
+       this%livestemp_storage_to_xfer(i)           = value_patch
+       this%deadstemp_storage_to_xfer(i)           = value_patch
+       this%livecrootp_storage_to_xfer(i)          = value_patch
+       this%deadcrootp_storage_to_xfer(i)          = value_patch
+       this%livestemp_to_deadstemp(i)              = value_patch
+       this%livestemp_to_retransp(i)               = value_patch
+       this%livecrootp_to_deadcrootp(i)            = value_patch
+       this%livecrootp_to_retransp(i)              = value_patch
+       this%pdeploy(i)                             = value_patch
+       this%pinputs(i)                             = value_patch
+       this%poutputs(i)                            = value_patch
+       this%wood_harvestp(i)                       = value_patch
+       this%fire_ploss(i)                          = value_patch
+       this%biochem_pmin_to_plant(i)               = value_patch
+       this%gap_ploss_litter(i)                    = value_patch
+       this%fire_ploss_litter(i)                   = value_patch
+       this%hrv_ploss_litter(i)                    = value_patch
+       this%sen_ploss_litter(i)                    = value_patch
+    end do
+
+    if ( crop_prog )then
+       do fi = 1,num_patch
+          i = filter_patch(fi)
+          this%livestemp_to_litter(i)              = value_patch
+          this%grainp_to_food(i)                   = value_patch
+          this%grainp_xfer_to_grainp(i)            = value_patch
+          this%ppool_to_grainp(i)                  = value_patch
+          this%ppool_to_grainp_storage(i)          = value_patch
+          this%grainp_storage_to_xfer(i)           = value_patch
+          this%frootp_to_retransp(i)               = value_patch
+          this%crop_seedp_to_leaf(i)               = value_patch
+       end do
+    end if
+  
+  end subroutine veg_pf_setvalues
+  
+  !-----------------------------------------------------------------------
+  subroutine veg_pf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+    !
+    ! !ARGUMENTS:
+    class (vegetation_phosphorus_flux) :: this
+    type(bounds_type) , intent(in)     :: bounds  
+    integer           , intent(in)     :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in)     :: filter_soilc(:) ! filter for soil columns
+    integer           , intent(in)     :: num_soilp       ! number of soil patches in filter
+    integer           , intent(in)     :: filter_soilp(:) ! filter for soil patches
+    type(column_phosphorus_flux), intent(inout) :: col_pf
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p, fp   ! indices
+    !-----------------------------------------------------------------------
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+
+       ! total P deployment (from sminn and retranslocated P pool) (PDEPLOY)
+       this%pdeploy(p) = &
+            this%sminp_to_ppool(p) + &
+            this%retransp_to_ppool(p)
+
+       ! pft-level wood harvest
+       this%wood_harvestp(p) = &
+            this%hrv_deadstemp_to_prod10p(p) + &
+            this%hrv_deadstemp_to_prod100p(p)
+       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+            this%wood_harvestp(p) = &
+            this%wood_harvestp(p) + &
+            this%hrv_cropp_to_prod1p(p)
+       end if
+
+       ! total pft-level fire P losses
+       this%fire_ploss(p) = &
+            this%m_leafp_to_fire(p)               + &
+            this%m_leafp_storage_to_fire(p)       + &
+            this%m_leafp_xfer_to_fire(p)          + &
+            this%m_frootp_to_fire(p)              + &
+            this%m_frootp_storage_to_fire(p)      + &
+            this%m_frootp_xfer_to_fire(p)         + &
+            this%m_livestemp_to_fire(p)           + &
+            this%m_livestemp_storage_to_fire(p)   + &
+            this%m_livestemp_xfer_to_fire(p)      + &
+            this%m_deadstemp_to_fire(p)           + &
+            this%m_deadstemp_storage_to_fire(p)   + &
+            this%m_deadstemp_xfer_to_fire(p)      + &
+            this%m_livecrootp_to_fire(p)          + &
+            this%m_livecrootp_storage_to_fire(p)  + &
+            this%m_livecrootp_xfer_to_fire(p)     + &
+            this%m_deadcrootp_to_fire(p)          + &
+            this%m_deadcrootp_storage_to_fire(p)  + &
+            this%m_deadcrootp_xfer_to_fire(p)     + &
+            this%m_retransp_to_fire(p)            + &
+            this%m_ppool_to_fire(p)
+
+      this%gap_ploss_litter(p) = &
+           this%m_leafp_to_litter(p)              + &
+           this%m_leafp_storage_to_litter(p)      + &
+           this%m_leafp_xfer_to_litter(p)         + &
+           this%m_frootp_to_litter(p)             + &
+           this%m_frootp_storage_to_litter(p)     + &
+           this%m_frootp_xfer_to_litter(p)        + &
+           this%m_livestemp_to_litter(p)          + &
+           this%m_livestemp_storage_to_litter(p)  + &
+           this%m_livestemp_xfer_to_litter(p)     + &
+           this%m_deadstemp_to_litter(p)          + &
+           this%m_deadstemp_storage_to_litter(p)  + &
+           this%m_deadstemp_xfer_to_litter(p)     + &
+           this%m_livecrootp_to_litter(p)         + &
+           this%m_livecrootp_storage_to_litter(p) + &
+           this%m_livecrootp_xfer_to_litter(p)    + &
+           this%m_deadcrootp_to_litter(p)         + &
+           this%m_deadcrootp_storage_to_litter(p) + &
+           this%m_deadcrootp_xfer_to_litter(p)    + &
+           this%m_retransp_to_litter(p)           + &
+           this%m_ppool_to_litter(p)
+
+      this%fire_ploss_litter(p) = &
+           this%m_deadstemp_to_litter_fire(p)     + &
+           this%m_deadcrootp_to_litter_fire(p)    + &
+           this%m_retransp_to_litter_fire(p)      + &
+           this%m_ppool_to_litter_fire(p)         + &
+           this%m_leafp_to_litter_fire(p)         + &
+           this%m_frootp_to_litter_fire(p)        + &
+           this%m_livestemp_to_litter_fire(p)     + &
+           this%m_livecrootp_to_litter_fire(p)    + &
+           this%m_leafp_storage_to_litter_fire(p) + &
+           this%m_frootp_storage_to_litter_fire(p)       + &
+           this%m_livestemp_storage_to_litter_fire(p)    + &
+           this%m_deadstemp_storage_to_litter_fire(p)    + &
+           this%m_livecrootp_storage_to_litter_fire(p)   + &
+           this%m_deadcrootp_storage_to_litter_fire(p)   + &
+           this%m_leafp_xfer_to_litter_fire(p)           + &
+           this%m_frootp_xfer_to_litter_fire(p)          + &
+           this%m_livestemp_xfer_to_litter_fire(p)       + &
+           this%m_deadstemp_xfer_to_litter_fire(p)       + &
+           this%m_livecrootp_xfer_to_litter_fire(p)      + &
+           this%m_deadcrootp_xfer_to_litter_fire(p)
+
+      this%hrv_ploss_litter(p) = &
+           this%hrv_retransp_to_litter(p)         + &
+           this%hrv_ppool_to_litter(p)            + &
+           this%hrv_leafp_to_litter(p)            + &
+           this%hrv_leafp_storage_to_litter(p)    + &
+           this%hrv_leafp_xfer_to_litter(p)       + &
+           this%hrv_frootp_to_litter(p)           + &
+           this%hrv_frootp_storage_to_litter(p)   + &
+           this%hrv_frootp_xfer_to_litter(p)      + &
+           this%hrv_livestemp_to_litter(p)        + &
+           this%hrv_livestemp_storage_to_litter(p)+ &
+           this%hrv_livestemp_xfer_to_litter(p)   + &
+           this%hrv_deadstemp_storage_to_litter(p)+ &
+           this%hrv_deadstemp_xfer_to_litter(p)   + &
+           this%hrv_livecrootp_to_litter(p)       + &
+           this%hrv_livecrootp_storage_to_litter(p)+ &
+           this%hrv_livecrootp_xfer_to_litter(p)  + &
+           this%hrv_deadcrootp_to_litter(p)       + &
+           this%hrv_deadcrootp_storage_to_litter(p)+ &
+           this%hrv_deadcrootp_xfer_to_litter(p)
+
+       this%sen_ploss_litter(p) = &
+           this%livestemp_to_litter(p)            + &
+           this%leafp_to_litter(p)                + &
+           this%frootp_to_litter(p)
+    end do
+
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%fire_ploss(bounds%begp:bounds%endp), &
+         col_pf%fire_ploss_p2c(bounds%begc:bounds%endc))
+
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%wood_harvestp(bounds%begp:bounds%endp), &
+         col_pf%wood_harvestp(bounds%begc:bounds%endc))
+  
+  end subroutine veg_pf_summary
+  
   !------------------------------------------------------------------------
   subroutine veg_pf_clean(this)
     !

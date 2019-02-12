@@ -216,7 +216,9 @@ contains
        call col_ps%Init(begc, endc, col_cs)
        call veg_ps%Init(begp, endp, veg_cs)
 
-       call phosphorusflux_vars%Init(bounds_proc)
+       call grc_pf%Init(begg, endg)
+       call col_pf%Init(begc, endc)
+       call veg_pf%Init(begp, endp)
 
        ! Note - always initialize the memory for the dgvs_vars data structure so
        ! that it can be used in associate statements (nag compiler complains otherwise)
