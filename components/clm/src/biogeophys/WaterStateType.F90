@@ -58,6 +58,8 @@ module WaterstateType
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
      real(r8), pointer :: ice2_grc               (:)   ! grc post land cover change total ice content
      real(r8), pointer :: tws_grc                (:)   ! grc total water storage (mm H2O)
+     real(r8), pointer :: h2o_moss_wc_patch      (:)   ! patch total moss water content (mm H2O)
+     real(r8), pointer :: h2o_moss_inter_patch   (:)   ! patch internal moss water content (mm H2O)
      real(r8), pointer :: tws_month_beg_grc      (:)   ! grc total water storage at the beginning of a month
      real(r8), pointer :: tws_month_end_grc      (:)   ! grc total water storage at the end of a month
 
@@ -230,6 +232,9 @@ contains
     allocate(this%ice1_grc               (begg:endg))                     ; this%ice1_grc               (:)   = nan
     allocate(this%ice2_grc               (begg:endg))                     ; this%ice2_grc               (:)   = nan
     allocate(this%tws_grc                (begg:endg))                     ; this%tws_grc                (:)   = nan
+    allocate(this%h2o_moss_wc_patch      (begp:endp))                     ; this%h2o_moss_wc_patch      (:)   = nan
+    allocate(this%h2o_moss_inter_patch   (begp:endp))                     ; this%h2o_moss_inter_patch   (:)   = nan
+
     allocate(this%tws_month_beg_grc      (begg:endg))                     ; this%tws_month_beg_grc      (:)   = nan
     allocate(this%tws_month_end_grc      (begg:endg))                     ; this%tws_month_end_grc      (:)   = nan
 

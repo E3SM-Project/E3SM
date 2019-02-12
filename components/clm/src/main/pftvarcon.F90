@@ -265,6 +265,12 @@ module pftvarcon
   ! Soil erosion ground cover
   real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
   real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
+#if (defined HUM_HOL)
+  real(r8)              :: qflx_h2osfc_surfrate
+  real(r8)              :: humhol_ht
+  real(r8)              :: hum_frac
+  real(r8)              :: humhol_dist
+#endif
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -862,7 +868,18 @@ contains
     end if
     call ncd_io('rsub_top_globalmax', rsub_top_globalmax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv) rsub_top_globalmax = 10._r8
-    !if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    !if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft
+    !data'//errMsg(__FILE__,__LINE__))
+#if (defined HUM_HOL)
+    call ncd_io('humhol_ht', humhol_ht, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('humhol_dist', humhol_dist, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('hum_frac', hum_frac, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('qflx_h2osfc_surfrate', qflx_h2osfc_surfrate, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+#endif
     call ncd_io('fnr', fnr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     call ncd_io('act25', act25, 'read', ncid, readvar=readv, posNOTonfile=.true.)

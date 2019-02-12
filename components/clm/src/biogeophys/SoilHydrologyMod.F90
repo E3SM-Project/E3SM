@@ -53,6 +53,9 @@ contains
     use clm_varpar      , only : nlayer, nlayert
     use clm_varctl      , only : use_var_soil_thick
     use abortutils      , only : endrun
+#if (defined HUM_HOL)
+    use pftvarcon       , only : humhol_ht
+#endif
     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
     !
     ! !ARGUMENTS:
@@ -177,8 +180,7 @@ contains
             fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
          end if
 #if (defined HUM_HOL)
-         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
+         fsat(c) = 1.0_r8 * exp(-3.0_r8/humhol_ht*(zwt(c)))   !at 30cm, hummock saturated at 5%
 #endif
 
          ! use perched water table to determine fsat (if present)
@@ -189,16 +191,14 @@ contains
                fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
             end if
 #if (defined HUM_HOL)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
+            fsat(c) = 1.0_r8 * exp(-3.0_r8/humhol_ht*(zwt(c)))   !at 30cm, hummock saturated at 5%
 #endif
          else
             if ( frost_table(c) > zwt_perched(c)) then 
                fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt_perched(c))!*( frost_table(c) - zwt_perched(c))/4.0
             endif
 #if (defined HUM_HOL)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.3_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8)
+            fsat(c) = 1.0_r8 * exp(-3.0_r8/humhol_ht*(zwt(c)))   !at 30cm, hummock saturated at 5%
 #endif   
          endif
          if (origflag == 1) then
@@ -289,6 +289,9 @@ contains
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
      use clm_time_manager , only : get_step_size
+#if (defined HUM_HOL)
+     use pftvarcon        , only : humhol_ht, humhol_dist, hum_frac, qflx_h2osfc_surfrate
+#endif
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
@@ -339,7 +342,7 @@ contains
      real(r8) :: top_icefrac                                ! temporary, ice fraction in top VIC layers
      ! variables for HUM_HOL
      real(r8) :: dzmm(bounds%begc:bounds%endc,1:nlevsoi)   ! layer thickness (mm)
-     real(r8) :: hum_frac, hol_frac
+     real(r8) :: hol_frac
      real(r8) :: ka_ho
      real(r8) :: ka_hu
      real(r8) :: zwt_ho, zwt_hu
@@ -461,9 +464,7 @@ contains
 
              !1. partition surface inputs between soil and h2osfc
 #if (defined HUM_HOL)
-             hum_frac = 0.75_r8
-             hol_frac = 0.25_r8
-
+             hol_frac = 1.0_r8 - hum_frac
              if (c .eq. 1) then
                qflx_surf_input(1) = 0._r8            !hummock
                qflx_surf_input(2) = qflx_surf(1)*(hum_frac/hol_frac)     !hollow
@@ -540,9 +541,7 @@ contains
              ! limit runoff to value of storage above S(pc)
 #if (defined HUM_HOL)
              if (h2osfc(c) .gt. 0._r8) then
-                !qflx_h2osfc_surf(c) = min(qflx_h2osfc_surfrate*h2osfc(c)**2.0,h2osfc(c) / dtime)
-                qflx_h2osfc_surf(c) = min(1.0e-7_R8*h2osfc(c)**2.0,h2osfc(c) / dtime)
-
+                qflx_h2osfc_surf(c) = min(qflx_h2osfc_surfrate*h2osfc(c)**2.0_r8,h2osfc(c) / dtime)
 #else
              if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
                 ! spatially variable k_wet
@@ -618,16 +617,19 @@ contains
                ka_hu = max(ka_hu, 1e-5_r8)
                !DMR 9/21/15 - only inlcude h2osfc if water table near surfce, use
                !harmonic mean 
-               zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13
+               if (zwt_ho < 0.03_r8) then 
+                 zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13
+               end if
                !DMR 12/4/2015
-               if (maxval(icefrac(:,:)) .ge. 0.01_r8) then
-                 !turn off lateral transport if any ice is present
+               if (icefrac(0,jwt(c)+1) .ge. 0.01_r8 .or. icefrac(1,jwt(c)+1) .ge. 0.01_r8) then
+                 !turn off lateral transport if any ice is present at or below
+                 !water table
                  qflx_lat_aqu(:) = 0._r8
                else
                  qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- &
-                     0.3_r8) / 1._r8 * sqrt(hol_frac/hum_frac)
+                     humhol_ht) / humhol_dist * sqrt(hol_frac/hum_frac)
                  qflx_lat_aqu(2) = -2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- &
-                     0.3_r8) / 1._r8 * sqrt(hum_frac/hol_frac)
+                     humhol_ht) / humhol_dist * sqrt(hum_frac/hol_frac)
                endif
              endif
 #endif
@@ -1136,6 +1138,9 @@ contains
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
+#if (defined HUM_HOL)
+     use pftvarcon        , only : humhol_ht
+#endif
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
@@ -1489,7 +1494,10 @@ contains
                    fracice_rsub(c) = max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
                         - exp(-3._r8))/(1.0_r8-exp(-3._r8))
                    imped=(1._r8 - fracice_rsub(c))
+                   rsub_top_max = 5.5e-3_r8
+#if (defined HUM_HOL)                   
                    rsub_top_max = min(5.5e-3_r8, rsub_top_globalmax)
+#endif
                 end if
              else
                 if (use_vichydro) then
@@ -1505,21 +1513,21 @@ contains
 #if (defined HUM_HOL)
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
-            if (zwt(c) < 0.7_r8) then
+            if (zwt(c) < (0.4_r8 + humhol_ht)) then
               rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c)) - &
-                imped * rsub_top_max * exp(-fff(c)*0.7_r8)
+                imped * rsub_top_max * exp(-fff(c)*(0.4_r8+humhol_ht))
             else
               rsub_top(c)    = 0_r8
             endif
           else           !hollow
             if (zwt(c) < 0.4_r8) then
-              if (zwt(c) .lt. 0.017) then
-                  rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+0.3_r8-h2osfc(c)/1000_r8)) - &
-                  imped * rsub_top_max * exp(-fff(c)*0.7_r8)
-              else
-                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+0.3_r8)) - &
-                  imped * rsub_top_max * exp(-fff(c)*0.7_r8)
-              end if
+              !if (zwt(c) .lt. 0.017) then
+              !    rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+0.3_r8-h2osfc(c)/1000_r8)) - &
+              !    imped * rsub_top_max * exp(-fff(c)*0.7_r8)
+              !else
+                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+humhol_ht)) - &
+                  imped * rsub_top_max * exp(-fff(c)*(0.4_r8+humhol_ht))
+              !end if
             else
               rsub_top(c)    = 0_r8
             endif

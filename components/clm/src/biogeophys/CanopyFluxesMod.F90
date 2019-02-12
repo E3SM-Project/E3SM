@@ -412,6 +412,9 @@ contains
          rh_ref2m             => veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)                              
          rhaf                 => veg_ws%rh_af               , & ! Output: [real(r8) (:)   ]  fractional humidity of canopy air [dimensionless]                     
 
+         h2o_moss_inter       => veg_ws%h2o_moss_inter_patch , & ! Output: [real(r8) (:)   ]  Internal Moss water content
+         h2o_moss_wc          => veg_ws%h2o_moss_wc_patch    , & ! Output: [real(r8) (:)   ]  Total Moss water content
+
          n_irrig_steps_left   => veg_wf%n_irrig_steps_left   , & ! Output: [integer  (:)   ]  number of time steps for which we still need to irrigate today              
          irrig_rate           => veg_wf%irrig_rate           , & ! Output: [real(r8) (:)   ]  current irrigation rate [mm/s]                                        
          qflx_tran_veg        => veg_wf%qflx_tran_veg        , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)                      
@@ -442,6 +445,8 @@ contains
          eflx_sh_soil         => veg_ef%eflx_sh_soil        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]                      
          eflx_sh_veg          => veg_ef%eflx_sh_veg         , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]                    
          eflx_sh_grnd         => veg_ef%eflx_sh_grnd        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         leafn                => veg_ns%leafn_patch         , &
+
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
          )
@@ -835,6 +840,28 @@ contains
             svpts(p) = el(p)                         ! pa
             eah(p) = forc_pbot(t) * qaf(p) / 0.622_r8   ! pa
             rhaf(p) = eah(p)/svpts(p)
+
+            ! XShi 11/20/15 - Calculate the internal water (tissue water
+            ! content) content
+            ! for moss
+            if (veg_pp%itype(p) == 12) then
+                !DMRicciuto 12/4/2015 - changed to use average of layer 3 and 4 
+                h2o_moss_inter(p) = -18032 * ((h2osoi_vol(c,3)+h2osoi_vol(c,4))/2._r8)**4 +  &
+                                7248.1 * ((h2osoi_vol(c,3)+h2osoi_vol(c,4))/2._r8)**3 -  &
+                                591.74 * ((h2osoi_vol(c,3)+h2osoi_vol(c,4))/2._r8)**2 +  &
+                                6.9031 * ((h2osoi_vol(c,3)+h2osoi_vol(c,4))/2._r8)       &
+                                + 0.4945
+                if ((h2osoi_vol(c,3) + h2osoi_vol(c,4))/2._r8 .gt. 0.25) then
+                    h2o_moss_inter(p) = -18032 *0.25**4 + 7248.1 * 0.25**3 &
+                                     -591.74 *0.25**2 + 6.9031*0.25 + 0.4954
+                endif
+                if (leafn(p).gt. 0._r8) then
+                   h2o_moss_wc(p) = h2o_moss_inter(p) + h2ocan(p)/(leafn(p)*60.0*2.0_r8/1000.0_r8)
+                else
+                   h2o_moss_wc(p) = 0._r8
+                endif
+            end if
+
          end do
 
          ! Modification for shrubs proposed by X.D.Z 
@@ -877,7 +904,7 @@ contains
                call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sun')
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, waterstate_vars, phase='sun'
             end if
 
             if ( use_c13 ) then
@@ -897,7 +924,7 @@ contains
               call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sha')
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, waterstate_vars, phase='sha')
             end if
 
             if ( use_c13 ) then

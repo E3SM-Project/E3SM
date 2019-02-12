@@ -70,6 +70,9 @@ contains
      !SoilLittVertTranspParamsInst%som_diffus=tempr
      ! FIX(SPM,032414) - can't be pulled out since division makes things not bfb
      SoilLittVertTranspParamsInst%som_diffus = 1e-4_r8 / (secspday * 365._r8)  
+#if (defined HUM_HOL)
+     SoilLittVertTranspParamsInst%som_diffus = 5e-4_r8 / (secspday * 365._r8)
+#endif
 
      tString='cryoturb_diffusion_k'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
