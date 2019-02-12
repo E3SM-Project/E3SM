@@ -439,7 +439,7 @@
 	</queues>
   </batch_system>
 
-   <batch_system MACH="wolf" type="slurm" >
+   <batch_system MACH="badger" type="slurm" >
 	<directives>
 		<directive>--nodes={{ num_nodes }}</directive>
 		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
