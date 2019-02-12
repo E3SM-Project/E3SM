@@ -16,6 +16,7 @@ module VegStructUpdateMod
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_cs
+  use SoilHydrologyType    , only : soilhydrology_type 
   !
   implicit none
   save
@@ -30,7 +31,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine VegStructUpdate(num_soilp, filter_soilp, &
        frictionvel_vars, cnstate_vars, &
-       canopystate_vars, crop_vars)
+       canopystate_vars, crop_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, use C state variables and epc to diagnose
@@ -40,6 +41,9 @@ contains
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
     use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
+#if (defined HUM_HOL)
+    use pftvarcon        , only : humhol_ht
+#endif
     use clm_time_manager , only : get_rad_step_size
     use elm_varctl       , only : spinup_state, spinup_mortality_factor
     !
@@ -50,6 +54,7 @@ contains
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
     type(crop_type)        , intent(inout) :: crop_vars
+    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     !
     ! !REVISION HISTORY:
     ! 10/28/03: Created by Peter Thornton
@@ -67,6 +72,7 @@ contains
     real(r8) :: tsai_min   ! PATCH derived minimum tsai
     real(r8) :: tsai_alpha ! monthly decay rate of tsai
     real(r8) :: dt         ! radiation time step (sec)
+    real(r8) :: fb1, fb2, thiswtht
 
     real(r8), parameter :: dtsmonth = 2592000._r8 ! number of seconds in a 30 day month (60x60x24x30)
     !-----------------------------------------------------------------------
@@ -90,9 +96,10 @@ contains
          displar            =>  veg_vp%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
          dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)
 
-         snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)
-
-         forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]
+         snow_depth         =>  col_ws%snow_depth             ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
+         zwt                =>  col_ws%zwt_col                ,       &
+         h2osfc             =>  col_ws%h2osfc_col             ,       &
+         forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
 
          leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C
          deadstemc          =>  veg_cs%deadstemc  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C
@@ -252,8 +259,21 @@ contains
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else
-            fb = 1._r8 - max(min(snow_depth(c),0.2_r8),0._r8)/0.2_r8   ! 0.2m is assumed
-            !depth of snow required for complete burial of grasses
+#if (defined HUM_HOL)
+           if (ivt(p) == 12) then
+             thiswtht = zwt(c)*-1.0_r8+humhol_ht/2.0_r8+h2osfc(c)/1000._r8 !height above hollow bottom
+             !calculate submerged LAI
+             !Calculate LAI buried by snow (5cm is assumed)
+             fb1 = 1._r8 - max(min(snow_depth(c),0.05_r8),0._r8)/0.05_r8
+             fb2 = 1._r8 - max(min(thiswtht,0.2_r8),0._r8)/0.2_r8 
+             fb = min(fb1, fb2)
+           else
+             fb = 1._r8 - max(min(snow_depth(c),0.2_r8),0._r8)/0.2_r8 ! 0.2m is assumed
+           end if
+#else
+           !depth of snow required for complete burial of grasses
+           fb = 1._r8 - max(min(snow_depth(c),0.2_r8),0._r8)/0.2_r8   !0.2m is assumed
+#endif
          endif
 
          elai(p) = max(tlai(p)*fb, 0.0_r8)

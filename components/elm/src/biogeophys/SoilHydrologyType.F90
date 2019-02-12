@@ -869,7 +869,11 @@ contains
      namelist / elm_soilhydrology_inparm / h2osfcflag, origflag
 
 
-     origflag = 1          
+#if (defined HUM_HOL)
+     origflag = 1    
+#else
+     origflag = 0
+#endif      
      h2osfcflag = 1        
 
      if ( masterproc )then

@@ -27,6 +27,7 @@ module  PhotosynthesisMod
   use PhotosynthesisType  , only : photosyns_type
   use VegetationType      , only : veg_pp
   use AllocationMod       , only : nu_com_leaf_physiology
+  use WaterStateType      , only : waterstate_type
   use elm_varctl          , only : carbon_only
   use elm_varctl          , only : carbonnitrogen_only
   use elm_varctl          , only : carbonphosphorus_only
@@ -360,6 +361,7 @@ contains
     real(r8) :: sum_nscaler
     real(r8) :: total_lai
     integer  :: rad_layers_patch
+    real(r8) :: wcscaler
     !------------------------------------------------------------------------------
     ! Temperature and soil water response functions
 
@@ -406,7 +408,9 @@ contains
          leafp_storage => veg_ps%leafp_storage , &
          leafp_xfer    => veg_ps%leafp_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
-         s_vcmax       => veg_vp%s_vc                            &
+         s_vcmax       => veg_vp%s_vc                          , &
+         h2o_moss_wc   => veg_ws%h2o_moss_wc_patch         , & !Input: [real(r8) (:)   ]  Total Moss water content
+         h2osfc        => veg_ws%h2osfc_col                 & !Input: [real(r8) (:)   ]  Surface water
          )
 
       if (phase == 'sun') then !sun
@@ -517,9 +521,19 @@ contains
          end if
 
          ! Soil water stress applied to Ball-Berry parameters
-
-         bbb(p) = max (bbbopt(p)*btran(p), 1._r8)
-         mbb(p) = mbbopt(p)
+         if (veg_pp%itype(p) == 12) then
+             bbb(p) = (-0.195 + 0.134*(h2o_moss_wc(p)+1._r8) - &
+                     0.0256*(h2o_moss_wc(p) + 1.0_r8)**2  &
+                 + 0.00228 * (h2o_moss_wc(p) + 1.0_r8)**3 &
+                  -0.0000984*(h2o_moss_wc(p) + 1.0_r8)**4 + 0.00000168* &
+                  (h2o_moss_wc(p) + 1._r8)**5)*1.e06_r8/0.634_r8
+           if (bbb(p) .lt.(0.005*1.e06_r8/0.634_r8)) bbb(p) = 0.005*1.e06_r8/0.634_r8
+           if (bbb(p) .gt.(0.07*1.e06_r8/0.634_r8)) bbb(p) = 0.07*1.e06_r8/0.634_r8
+           mbb(p) = 0.0_r8
+         else
+           bbb(p) = max (bbbopt(p)*btran(p), 1._r8)
+           mbb(p) = mbbopt(p)
+         end if
 
          ! kc, ko, cp, from: Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
          !
@@ -809,10 +823,19 @@ contains
          gb = 1._r8/rb(p)
          gb_mol(p) = gb * cf
 
-         ! Loop through canopy layers (above snow). Only do calculations if daytime
-        do iv = 1, nrad(p)
+         !Dessication and submergence scalaers for moss photosynthesis
+         if (veg_pp%itype(p) == 12)then
+            wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
+            !DMR 05/11/17 - add scaler for submergence effect
+            !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
+            wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+         endif
 
-            if (par_z(p,iv) <= 0._r8) then           ! night time
+         ! Loop through canopy layers (above snow). Only do calculations if daytime
+         do iv = 1, nrad(p)
+
+           if (veg_pp%itype(p) == 12) lmr_z(p,iv) = lmr_z(p,iv) * wcscaler
+           if (par_z(p,iv) <= 0._r8) then           ! night time
 
                ac(p,iv) = 0._r8
                aj(p,iv) = 0._r8
@@ -869,12 +892,17 @@ contains
                ! End of ci iteration.  Check for an < 0, in which case gs_mol = bbb
 
                if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
+               if (veg_pp%itype(p) == 12) gs_mol(p,iv) = bbb(p)
 
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
                ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+
+               if (veg_pp%itype(p) == 12) then
+                  ci_z(p,iv) = cair(p)-an(p,iv) * forc_pbot(c)/gs_mol(p,iv)
+               endif
 
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
@@ -945,6 +973,11 @@ contains
             psncan_wj = psncan_wj + psn_wj_z(p,iv) * lai_z(p,iv)
             psncan_wp = psncan_wp + psn_wp_z(p,iv) * lai_z(p,iv)
             lmrcan = lmrcan + lmr_z(p,iv) * lai_z(p,iv)
+            if (veg_pp%itype(p) == 12) then
+               gscan = gscan + lai_z(p,iv) / rs_z(p,iv)
+            else
+               gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
+            endif
             gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
             laican = laican + lai_z(p,iv)
          end do
@@ -1257,8 +1290,7 @@ contains
   subroutine brent(x, x1,x2,f1, f2, tol, ip, iv, ic, it, gb_mol, je, cair, oair,&
        lmr_z, par_z, rh_can, gs_mol, &
        atm2lnd_vars, photosyns_vars)
-     !$acc routine seq
-
+    !
     !!DESCRIPTION:
     !Use Brent's method to find the root of a single variable function ci_func, which is known to exist between x1 and x2.
     !The found root will be updated until its accuracy is tol.
@@ -1447,7 +1479,7 @@ contains
   !------------------------------------------------------------------------------
   subroutine ci_func(ci, fval, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z,&
        rh_can, gs_mol, atm2lnd_vars, photosyns_vars)
-    !$acc routine seq
+    !
     !! DESCRIPTION:
     ! evaluate the function
     ! f(ci)=ci - (ca - (1.37rb+1.65rs))*patm*an
@@ -1481,6 +1513,7 @@ contains
     real(r8) :: fnps                 ! fraction of light absorbed by non-photosynthetic pigments
     real(r8) :: theta_psii           ! empirical curvature parameter for electron transport rate
     real(r8) :: theta_ip             ! empirical curvature parameter for ap photosynthesis co-limitation
+    real(r8) :: wcscaler  
     !------------------------------------------------------------------------------
 
     associate(&
@@ -1501,6 +1534,8 @@ contains
          theta_cj   => photosyns_vars%theta_cj_patch           , & ! Output: [real(r8) (:)   ]  empirical curvature parameter for ac, aj photosynthesis co-limitation
          bbb        => photosyns_vars%bbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
          mbb        => photosyns_vars%mbb_patch                  & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship
+         h2o_moss_wc   => waterstate_vars%h2o_moss_wc_patch    , & ! Input: [real(r8) (:)   ]  Total Moss water content
+         h2osfc        => waterstate_vars%h2osfc_col             & ! Input: [real(r8) (:)   ]  Surface water
          )
 
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
@@ -1545,6 +1580,16 @@ contains
       call quadratic (aquad, bquad, cquad, r1, r2)
       ag(p,iv) = min(r1,r2)
 
+      !Dessication and submergence effects for moss PFT
+      if (veg_pp%itype(p) == 12)then
+         wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
+         !DMR 05/11/17 - add scaler for submergence effect
+         !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
+         wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+         ag(p,iv) = ag(p,iv) * wcscaler
+         !if (h2osfc(c) > 0) print*, 'AG', c, h2osfc(c), wcscaler
+      endif
+
       ! Net photosynthesis. Exit iteration if an < 0
 
       an(p,iv) = ag(p,iv) - lmr_z
@@ -1562,10 +1607,11 @@ contains
       cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(t)*rh_can)
       call quadratic (aquad, bquad, cquad, r1, r2)
       gs_mol = max(r1,r2)
-
+      if (veg_pp%itype(p) == 12) gs_mol = bbb(p)
       ! Derive new estimate for ci
 
       fval =ci - cair + an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
+      if (veg_pp%itype(p) == 12) fval = ci - cair + an(p,iv) *forc_pbot(c)/gs_mol
 
     end associate
 

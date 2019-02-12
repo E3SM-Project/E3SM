@@ -1252,7 +1252,7 @@ contains
        if (use_cn .and. doalb) then
            call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
                 frictionvel_vars, cnstate_vars, &
-                canopystate_vars, crop_vars)
+                canopystate_vars, crop_vars, soilhydrology_vars)
        end if
 
 
