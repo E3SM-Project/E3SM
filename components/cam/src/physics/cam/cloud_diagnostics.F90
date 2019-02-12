@@ -31,7 +31,7 @@ module cloud_diagnostics
    integer :: dei_idx, mu_idx, lambda_idx, iciwp_idx, iclwp_idx, cld_idx  ! index into pbuf for cloud fields
    integer :: ixcldice, ixcldliq, rei_idx, rel_idx
 
-   logical :: do_cld_diag, mg_clouds, rk_clouds, camrt_rad
+   logical :: do_cld_diag, p3_clouds, mg_clouds, rk_clouds, camrt_rad
    integer :: conv_water_in_rad
    
    integer :: cicewp_idx = -1
@@ -59,6 +59,7 @@ contains
     camrt_rad = rad_pkg .eq. 'camrt'
     rk_clouds = microp_pgk == 'RK'
     mg_clouds = microp_pgk == 'MG'
+    p3_clouds = microp_pgk == 'P3'
 
     if (rk_clouds) then
        call pbuf_add_field('CLDEMIS','physpkg', dtype_r8,(/pcols,pver/), cldemis_idx)
@@ -69,7 +70,7 @@ contains
 
        call pbuf_add_field('PMXRGN', 'physpkg', dtype_r8,(/pcols,pverp/), pmxrgn_idx)
        call pbuf_add_field('NMXRGN', 'physpkg', dtype_i4,(/pcols /),      nmxrgn_idx)
-    else if (mg_clouds) then
+    else if (mg_clouds.or.p3_clouds) then
        ! In cloud ice water path for radiation
        call pbuf_add_field('ICIWP',      'global', dtype_r8,(/pcols,pver/), iciwp_idx)
        ! In cloud liquid water path for radiation
@@ -104,7 +105,7 @@ contains
     call phys_getopts( history_amwg_out = history_amwg, &
                        history_verbose_out = history_verbose )
 
-    if (mg_clouds) then
+    if (mg_clouds.or.p3_clouds) then
 
        call addfld ('ICWMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud water mixing ratio'                  )
        call addfld ('ICIMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud ice mixing ratio'                    )
@@ -132,7 +133,7 @@ contains
     call cnst_get_ind('CLDICE', ixcldice)
     call cnst_get_ind('CLDLIQ', ixcldliq)
 
-    do_cld_diag = rk_clouds .or. mg_clouds
+    do_cld_diag = rk_clouds .or. mg_clouds .or. p3_clouds
 
     if (.not.do_cld_diag) return
     
@@ -141,7 +142,7 @@ contains
     if (rk_clouds) then 
        wpunits = 'gram/m2'
        sampling_seq='rad_lwsw'
-    else if (mg_clouds) then 
+    else if (mg_clouds .or. p3_clouds) then 
        wpunits = 'kg/m2'
        sampling_seq=''
     endif
@@ -159,7 +160,7 @@ contains
     call addfld ('TGCLDIWP',horiz_only,    'A',wpunits,'Total grid-box cloud ice water path'   , &
          sampling_seq=sampling_seq)
     
-    if(mg_clouds) then
+    if(mg_clouds.or.p3_clouds) then
        call addfld ('lambda_cloud',(/ 'lev' /),'I','1/meter','lambda in cloud')
        call addfld ('mu_cloud',(/ 'lev' /),'I','1','mu in cloud')
        call addfld ('dei_cloud',(/ 'lev' /),'I','micrometers','ice radiative effective diameter in cloud')
@@ -293,7 +294,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     itim_old = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, cld_idx, cld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-    if(mg_clouds)then
+    if(mg_clouds .or. p3_clouds)then
 
        call pbuf_get_field(pbuf, iclwp_idx, iclwp )
        call pbuf_get_field(pbuf, iciwp_idx, iciwp )
@@ -350,7 +351,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     endif
 
 ! Compute liquid and ice water paths
-    if(mg_clouds) then
+    if(mg_clouds .or. p3_clouds) then
 
        ! ----------------------------------------------------------- !
        ! Adjust in-cloud water values to take account of convective  !
@@ -462,7 +463,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
           call outfld('EMISCLD' ,cldemis, pcols,lchnk)
        endif
 
-    else if (mg_clouds) then
+    else if (mg_clouds .or. p3_clouds) then
 
        ! --------------------------------------------- !
        ! General outfield calls for microphysics       !

@@ -1474,13 +1474,13 @@
         <command name="load">python</command>
         <command name="load">git</command>
         <command name="load">intel</command>
-        <command name="load">mvapich2</command>
+        <command name="load">mvapich2/2.2</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
     </module_system>
-    <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/p/lustre2/$CCSMUSER/ACME/$CASE/run</RUNDIR>
+    <EXEROOT>/p/lustre2/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
     </environment_variables>

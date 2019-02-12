@@ -1104,6 +1104,9 @@
 <subcol_silhs_weight >.true.</subcol_silhs_weight>
 <subcol_silhs_numsubcol >4</subcol_silhs_numsubcol>
 
+<!-- P3 initial files directory -->
+<p3_lookup_dir>atm/cam/physprops</p3_lookup_dir>
+
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>

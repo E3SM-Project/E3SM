@@ -43,6 +43,12 @@ FortranData::Ptr make_mixed () {
 
   // pres is actually an input variable, but needed here to compute theta.
   for (k = 0; k < nk; ++k) d.pres(0,k) = 100 + 1e5/double(nk)*k;
+  // pdel is actually an input variable, but needed here to compute theta.
+  for (k = 0; k < nk; ++k) d.pdel(0,k) = 1e5/double(nk);
+  // exner is actually an input variable, but needed here to compute theta.
+  for (k = 0; k < nk; ++k) d.exner(0,k) = std::pow((1e5/d.pres(0,k)), (287.15/1005.0));
+  // ast is actually an input variable, but needed here to compute theta.
+  for (k = 0; k < nk; ++k) d.ast(0,k) = 1.0;
 
   // To get potential temperature, start by making absolute temperature vary
   // between 150K at top of atmos and 300k at surface, then convert to potential
