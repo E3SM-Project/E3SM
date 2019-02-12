@@ -1169,7 +1169,6 @@ end subroutine micro_p3_readnl
     pres    = state%pmid(:,:)
     ! CALL P3
     !==============
-#if 1
     ! TODO: get proper value for 'it' from time module
     call p3_main( &
          cldliq(its:ite,kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
@@ -1260,7 +1259,6 @@ end subroutine micro_p3_readnl
 
        end do
     end do
-#endif
 
     ! Net micro_p3 condensation rate
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
@@ -1279,7 +1277,7 @@ end subroutine micro_p3_readnl
       
    !icecldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver)
    !liqcldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver) ! already an output from p3_main
-      
+
    ! ------------------------------------------------------------ !
    ! Compute in cloud ice and liquid mixing ratios                !
    ! Note that 'iclwp, iciwp' are used for radiation computation. !
@@ -1313,6 +1311,10 @@ end subroutine micro_p3_readnl
 
    flxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp) ! need output from p3
    flxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp) ! need output from p3
+
+   cvreffliq(:ncol,top_lev:pver) = 9.0_r8
+   cvreffice(:ncol,top_lev:pver) = 37.0_r8
+
     !note s=cp*T has units J/kg
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1455,6 +1457,8 @@ end subroutine micro_p3_readnl
       end do
    end do
 
+   reffrain(:,:) = 0.d0
+   reffsnow(:,:) = 0.d0
    reffrain(:ngrdcol,top_lev:pver) = reff_rain(:ngrdcol,top_lev:pver)
    reffsnow(:ngrdcol,top_lev:pver) = 1000._r8 !! dummy value 
 
@@ -1493,11 +1497,15 @@ end subroutine micro_p3_readnl
    nfice       = 0._r8
 
    ! FICE
-   where (ice .gt. qsmall .and. (rain+ice+cldliq) .gt. qsmall)
-      nfice=min(ice/(rain+ice+cldliq),1._r8)
-   elsewhere
-      nfice=0._r8
-   end where
+   do k = top_lev, pver
+      do icol = 1, ngrdcol
+      if (ice(icol,k).gt.qsmall .and. (rain(icol,k)+ice(icol,k)+cldliq(icol,k)).gt.qsmall) then
+         nfice(icol,k)=min(ice(icol,k)/(rain(icol,k)+ice(icol,k)+cldliq(icol,k)),1._r8)
+      else
+         nfice(icol,k)=0._r8
+      end if
+      end do
+   end do
 
    ! Column droplet concentration
    cdnumc(:ngrdcol) = sum(nc(:ngrdcol,top_lev:pver) * &
@@ -1547,7 +1555,6 @@ end subroutine micro_p3_readnl
 !   call outfld('AQSNOW',      qsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
     
     !call outfld('P3_QCAUT',   qcaut,  pcols, lchnk)
-
 
   end subroutine micro_p3_tend
 
