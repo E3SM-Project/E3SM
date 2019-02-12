@@ -283,7 +283,8 @@ contains
        call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='define')
 
-       call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
+       call col_pf%Restart(bounds, ncid, flag='define')
+       call veg_pf%Restart(bounds, ncid, flag='define')
 
        call crop_vars%Restart(bounds, ncid, flag='define')
 
@@ -438,7 +439,8 @@ contains
        call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='write')
 
-       call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
+       call col_pf%Restart(bounds, ncid, flag='write')
+       call veg_pf%Restart(bounds, ncid, flag='write')
 
        call crop_vars%Restart(bounds, ncid, flag='write')
     end if
@@ -695,7 +697,8 @@ contains
        call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='read')
 
-       call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
+       call col_pf%Restart(bounds, ncid, flag='read')
+       call veg_pf%Restart(bounds, ncid, flag='read')
 
        call crop_vars%Restart(bounds, ncid, flag='read')
     end if

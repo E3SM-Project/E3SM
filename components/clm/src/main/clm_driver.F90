@@ -131,7 +131,7 @@ module clm_driver
   use GridcellType           , only : grc_pp
   use GridcellDataType       , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use GridcellDataType       , only : grc_nf
+  use GridcellDataType       , only : grc_nf, grc_pf
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
@@ -351,7 +351,8 @@ contains
 
           call veg_ps%ZeroDWT(bounds_clump)
 
-          call phosphorusflux_vars%ZeroDWT(bounds_clump)
+          call grc_pf%ZeroDWT(bounds_clump)
+          call col_pf%ZeroDWT(bounds_clump)
 
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &

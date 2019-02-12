@@ -248,7 +248,8 @@ contains
        call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
        call col_ns%Summary(bounds, num_soilc, filter_soilc)
 
-       call phosphorusflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+       call veg_pf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+       call col_pf%Summary(bounds, num_soilc, filter_soilc)
        
        call veg_ps%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
        call col_ps%Summary(bounds, num_soilc, filter_soilc)
@@ -360,7 +361,7 @@ contains
     if( .not. use_fates ) then
 
        ! --------------------------------------------------
-       ! zero the column-level C and N fluxes
+       ! zero the C and N fluxes
        ! --------------------------------------------------
 
        call t_startf('CNZero')
@@ -380,9 +381,8 @@ contains
        call veg_nf%SetValues (num_soilp, filter_soilp, 0._r8)
        call col_nf%SetValues (num_soilc, filter_soilc, 0._r8)
 
-       call phosphorusflux_vars%SetValues( &
-            num_soilp, filter_soilp, 0._r8, &
-            num_soilc, filter_soilc, 0._r8)
+       call veg_pf%SetValues (num_soilp, filter_soilp, 0._r8)
+       call col_pf%SetValues (num_soilc, filter_soilc, 0._r8)
 
        call t_stopf('CNZero')
 
