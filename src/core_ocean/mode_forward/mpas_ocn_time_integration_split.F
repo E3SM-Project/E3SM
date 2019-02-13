@@ -1769,6 +1769,20 @@ module ocn_time_integration_split
         ! implicit vmix routine that follows.
         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
+        block => block % next
+      end do
+      call mpas_threading_barrier()
+
+      call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
+
+      block => domain % blocklist
+      do while(associated(block))
+        call mpas_pool_get_subpool(block % structs, 'state', statePool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+        call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
         if (config_use_standardGM) then
            call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
