@@ -394,8 +394,8 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer :: iCell
-      integer, pointer :: nCellsSolve
+      integer :: iCell, nCells
+      integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND), pointer :: config_land_ice_flux_ISOMIP_gammaT
 
@@ -428,7 +428,6 @@ contains
                                      freezeInterfaceSalinityField, freezeInterfaceTemperatureField, &
                                      freezeFreshwaterFluxField, freezeHeatFluxField, &
                                      freezeIceHeatFluxField
-
       err = 0
 
       if ( .not. standaloneOn ) return
@@ -439,7 +438,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', &
                                 config_land_ice_flux_useHollandJenkinsAdvDiff)
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
 
@@ -489,9 +488,11 @@ contains
          freezeIceHeatFlux => freezeIceHeatFluxField % array
       end if
 
+      nCells = nCellsArray( size(nCellsArray) )
+
       if(isomipOn) then
          !$omp do schedule(runtime) private(heatFlux)
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             if (landIceMask(iCell) == 0) cycle
 
             ! linearized equaiton for the S and p dependent potential freezing temperature
@@ -538,7 +539,7 @@ contains
                landIceFreshwaterFlux, &
                landIceHeatFlux, &
                heatFluxToLandIce, &
-               nCellsSolve, &
+               nCells, &
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
@@ -559,7 +560,7 @@ contains
                freezeFreshwaterFlux, &
                freezeHeatFlux, &
                freezeIceHeatFlux, &
-               nCellsSolve, &
+               nCells, &
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
@@ -567,7 +568,7 @@ contains
                   MPAS_LOG_CRIT)
             end if
 
-            do iCell = 1, nCellsSolve
+            do iCell = 1, nCells
                if ((landIceMask(iCell) == 0) .or. (landIceFreshwaterFlux(iCell) >= 0.0_RKIND)) cycle
 
                landIceInterfaceTracers(indexIS,iCell) = freezeInterfaceSalinity(iCell)
@@ -589,7 +590,7 @@ contains
                landIceFreshwaterFlux, &
                landIceHeatFlux, &
                heatFluxToLandIce, &
-               nCellsSolve, &
+               nCells, &
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
@@ -599,7 +600,7 @@ contains
          end if
 
          ! modulate the fluxes by the landIceFraction
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             if (landIceMask(iCell) == 0) cycle
 
             landIceFreshwaterFlux(iCell) = landIceFraction(iCell)*landIceFreshwaterFlux(iCell)
@@ -618,7 +619,7 @@ contains
       end if
 
       ! accumulate land-ice mass and heat
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
         accumulatedLandIceMassNew(iCell) = accumulatedLandIceMassOld(iCell) - dt*landIceFreshwaterFlux(iCell)
         accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
       end do
