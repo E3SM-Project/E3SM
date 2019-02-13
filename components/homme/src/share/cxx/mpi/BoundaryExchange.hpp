@@ -24,7 +24,7 @@ namespace Homme
 {
 
 // Forward declaration
-class BuffersManager;
+class MpiBuffersManager;
 
 /*
  * BoundaryExchange: a class to handle the pack/exchange/unpack process
@@ -64,8 +64,8 @@ class BuffersManager;
  *    and sets up all the internal structure to prepare for calls to
  *    exchange(). This method MUST be called BEFORE any call to exchange.
  *
- * This class relies on the BuffersManager (BM) class for the handling of the buffers.
- * See BuffersManager header for more info on that. As explained above,
+ * This class relies on the MpiBuffersManager (BM) class for the handling of the buffers.
+ * See MpiBuffersManager header for more info on that. As explained above,
  * you may have different BE objects, which are however never used at the
  * same time. Therefore, it makes sense to reuse the same BM for all of them.
  * For this reason, the BM can serve multiple 'customers'. The BE and BM
@@ -91,7 +91,7 @@ class BoundaryExchange
 public:
 
   BoundaryExchange();
-  BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<BuffersManager> buffers_manager);
+  BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<MpiBuffersManager> buffers_manager);
 
   // Thou shall not copy this class
   BoundaryExchange(const BoundaryExchange&) = delete;
@@ -103,7 +103,7 @@ public:
   void set_connectivity (std::shared_ptr<Connectivity> connectivity);
 
   // Set the buffers manager (registration must not be completed)
-  void set_buffers_manager (std::shared_ptr<BuffersManager> buffers_manager);
+  void set_buffers_manager (std::shared_ptr<MpiBuffersManager> buffers_manager);
 
   // These number refers to *scalar* fields. A 2-vector field counts as 2 fields.
   void set_num_fields (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields, const int num_3d_int_fields = 0);
@@ -205,8 +205,8 @@ private:
 
   short int m_exchange_type;
 
-  // Make BuffersManager a friend, so it can call the method underneath
-  friend class BuffersManager;
+  // Make MpiBuffersManager a friend, so it can call the method underneath
+  friend class MpiBuffersManager;
   void clear_buffer_views_and_requests ();
 
   void build_buffer_views_and_requests ();
@@ -226,7 +226,7 @@ private:
   // This class contains all the buffers to be stuffed in the buffers views, and used in pack/unpack,
   // as well as the mpi buffers used in MPI calls (which are the same as the former if MPIMemSpace=ExecMemSpace),
   // and the blackhole buffers (used for missing connections)
-  std::shared_ptr<BuffersManager> m_buffers_manager;
+  std::shared_ptr<MpiBuffersManager> m_buffers_manager;
 
   // These views can look quite complicated. Basically, we want something like
   // send_buffer(ielem, ifield, iedge) to point to the right area of one of the

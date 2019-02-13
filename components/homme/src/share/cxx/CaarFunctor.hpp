@@ -22,7 +22,7 @@ class SphereOperators;
 class SimulationParams;
 class HybridVCoord;
 
-class BuffersManager;
+class MpiBuffersManager;
 struct FunctorsBuffersManager;
 
 class CaarFunctor {
@@ -39,7 +39,7 @@ public:
 
   void request_buffers (FunctorsBuffersManager& fbm) const;
   void init_buffers(const FunctorsBuffersManager& fbm);
-  void init_boundary_exchanges(const std::shared_ptr<BuffersManager> &bm_exchange);
+  void init_boundary_exchanges(const std::shared_ptr<MpiBuffersManager> &bm_exchange);
 
   void set_rk_stage_data(const RKStageData& data);
 

@@ -127,7 +127,7 @@ struct CaarFunctorImpl {
     m_buffers.kernel_end_times   = ExecViewManaged<clock_t*>("kernel end times",m_state.num_elems());
   }
 
-  void init_boundary_exchanges (const std::shared_ptr<BuffersManager>& bm_exchange) {
+  void init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {
     for (int tl=0; tl<NUM_TIME_LEVELS; ++tl) {
       m_bes[tl] = std::make_shared<BoundaryExchange>();
       auto& be = *m_bes[tl];

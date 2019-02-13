@@ -23,7 +23,7 @@ class Connectivity;
 class BoundaryExchange;
 
 /*
- * BuffersManager: a class to handle the buffers needed by BoundaryExchange
+ * MpiBuffersManager: a class to handle the buffers needed by BoundaryExchange
  *
  * This class (BM) is responsible mainly for allocating buffers to be
  * used by the BoundaryExchange (BE) class. A single BM object can
@@ -72,17 +72,17 @@ class BoundaryExchange;
  *
  */
 
-class BuffersManager
+class MpiBuffersManager
 {
 public:
 
-  BuffersManager ();
-  BuffersManager (std::shared_ptr<Connectivity> connectivity);
-  ~BuffersManager ();
+  MpiBuffersManager ();
+  MpiBuffersManager (std::shared_ptr<Connectivity> connectivity);
+  ~MpiBuffersManager ();
 
   // I'm not sure copying this class is a good idea.
-  BuffersManager(const BuffersManager&) = delete;
-  BuffersManager& operator= (const BuffersManager&) = delete;
+  MpiBuffersManager(const MpiBuffersManager&) = delete;
+  MpiBuffersManager& operator= (const MpiBuffersManager&) = delete;
 
   // Checks whether the connectivity is already set
   bool is_connectivity_set () const { return m_connectivity!=nullptr; }
@@ -162,7 +162,7 @@ private:
   // Used to check whether user can still request different sizes
   bool m_views_are_valid;
 
-  // Customers of this BuffersManager, each with its local and mpi sizes
+  // Customers of this MpiBuffersManager, each with its local and mpi sizes
   std::map<BoundaryExchange*,CustomerNeeds>  m_customers;
 
   // The connectivity (needed to allocate buffers)
@@ -182,7 +182,7 @@ private:
   ExecViewManaged<Real*>  m_blackhole_recv_buffer;
 };
 
-inline void BuffersManager::sync_send_buffer (BoundaryExchange* customer)
+inline void MpiBuffersManager::sync_send_buffer (BoundaryExchange* customer)
 {
   // Only customers can call this
   assert (m_customers.find(customer)!=m_customers.end());
@@ -198,7 +198,7 @@ inline void BuffersManager::sync_send_buffer (BoundaryExchange* customer)
   }
 }
 
-inline void BuffersManager::sync_recv_buffer (BoundaryExchange* customer)
+inline void MpiBuffersManager::sync_recv_buffer (BoundaryExchange* customer)
 {
   // Only customers can call this
   assert (m_customers.find(customer)!=m_customers.end());
@@ -215,7 +215,7 @@ inline void BuffersManager::sync_recv_buffer (BoundaryExchange* customer)
 }
 
 inline ExecViewUnmanaged<Real*>
-BuffersManager::get_send_buffer () const
+MpiBuffersManager::get_send_buffer () const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
@@ -223,7 +223,7 @@ BuffersManager::get_send_buffer () const
 }
 
 inline ExecViewUnmanaged<Real*>
-BuffersManager::get_recv_buffer () const
+MpiBuffersManager::get_recv_buffer () const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
@@ -231,7 +231,7 @@ BuffersManager::get_recv_buffer () const
 }
 
 inline ExecViewUnmanaged<Real*>
-BuffersManager::get_local_buffer () const
+MpiBuffersManager::get_local_buffer () const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
@@ -239,7 +239,7 @@ BuffersManager::get_local_buffer () const
 }
 
 inline MPIViewUnmanaged<Real*>
-BuffersManager::get_mpi_send_buffer() const
+MpiBuffersManager::get_mpi_send_buffer() const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
@@ -247,7 +247,7 @@ BuffersManager::get_mpi_send_buffer() const
 }
 
 inline MPIViewUnmanaged<Real*>
-BuffersManager::get_mpi_recv_buffer() const
+MpiBuffersManager::get_mpi_recv_buffer() const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
@@ -255,7 +255,7 @@ BuffersManager::get_mpi_recv_buffer() const
 }
 
 inline ExecViewUnmanaged<Real*>
-BuffersManager::get_blackhole_send_buffer () const
+MpiBuffersManager::get_blackhole_send_buffer () const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
@@ -263,23 +263,23 @@ BuffersManager::get_blackhole_send_buffer () const
 }
 
 inline ExecViewUnmanaged<Real*>
-BuffersManager::get_blackhole_recv_buffer () const
+MpiBuffersManager::get_blackhole_recv_buffer () const
 {
   // We ensure that the buffers are valid
   assert(m_views_are_valid);
   return m_blackhole_recv_buffer;
 }
 
-// BuffersManagerMap contains a BuffersManager for each type of BoundaryExchange
-struct BuffersManagerMap {
+// MpiBuffersManagerMap contains a MpiBuffersManager for each type of BoundaryExchange
+struct MpiBuffersManagerMap {
 public:
-  BuffersManagerMap () {
-    m_bmm[MPI_EXCHANGE] = std::make_shared<BuffersManager>();
-    m_bmm[MPI_EXCHANGE_MIN_MAX] = std::make_shared<BuffersManager>();
+  MpiBuffersManagerMap () {
+    m_bmm[MPI_EXCHANGE] = std::make_shared<MpiBuffersManager>();
+    m_bmm[MPI_EXCHANGE_MIN_MAX] = std::make_shared<MpiBuffersManager>();
   }
 
-  BuffersManagerMap (std::shared_ptr<Connectivity> connectivity)
-   : BuffersManagerMap()
+  MpiBuffersManagerMap (std::shared_ptr<Connectivity> connectivity)
+   : MpiBuffersManagerMap()
   {
     set_connectivity(connectivity);
   }
@@ -289,15 +289,15 @@ public:
     m_bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
   }
 
-  std::shared_ptr<BuffersManager> operator() (int exchange_type) const {
+  std::shared_ptr<MpiBuffersManager> operator() (int exchange_type) const {
     return m_bmm.at(exchange_type);
   }
-  std::shared_ptr<BuffersManager> operator[] (int exchange_type) const {
+  std::shared_ptr<MpiBuffersManager> operator[] (int exchange_type) const {
     return m_bmm.at(exchange_type);
   }
 
 private:
-  std::map<int,std::shared_ptr<BuffersManager>> m_bmm;
+  std::map<int,std::shared_ptr<MpiBuffersManager>> m_bmm;
 };
 
 } // namespace Homme

@@ -4,7 +4,7 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
-#include "BuffersManager.hpp"
+#include "MpiBuffersManager.hpp"
 
 #include "BoundaryExchange.hpp"
 #include "Connectivity.hpp"
@@ -12,7 +12,7 @@
 namespace Homme
 {
 
-BuffersManager::BuffersManager ()
+MpiBuffersManager::MpiBuffersManager ()
  : m_num_customers     (0)
  , m_mpi_buffer_size   (0)
  , m_local_buffer_size (0)
@@ -28,13 +28,13 @@ BuffersManager::BuffersManager ()
   Kokkos::deep_copy(m_blackhole_recv_buffer,0.0);
 }
 
-BuffersManager::BuffersManager (std::shared_ptr<Connectivity> connectivity)
- : BuffersManager()
+MpiBuffersManager::MpiBuffersManager (std::shared_ptr<Connectivity> connectivity)
+ : MpiBuffersManager()
 {
   set_connectivity(connectivity);
 }
 
-BuffersManager::~BuffersManager ()
+MpiBuffersManager::~MpiBuffersManager ()
 {
   // Check that all the customers un-registered themselves
   assert (m_num_customers==0);
@@ -43,14 +43,14 @@ BuffersManager::~BuffersManager ()
   assert (!m_buffers_busy);
 }
 
-void BuffersManager::check_for_reallocation ()
+void MpiBuffersManager::check_for_reallocation ()
 {
   for (auto& it : m_customers) {
     update_requested_sizes (it);
   }
 }
 
-void BuffersManager::set_connectivity (std::shared_ptr<Connectivity> connectivity)
+void MpiBuffersManager::set_connectivity (std::shared_ptr<Connectivity> connectivity)
 {
   // We don't allow a null connectivity, or a change of connectivity
   assert (connectivity && !m_connectivity);
@@ -58,7 +58,7 @@ void BuffersManager::set_connectivity (std::shared_ptr<Connectivity> connectivit
   m_connectivity = connectivity;
 }
 
-bool BuffersManager::check_views_capacity (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields, const int num_3d_interface_fields) const
+bool MpiBuffersManager::check_views_capacity (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields, const int num_3d_interface_fields) const
 {
   size_t mpi_buffer_size, local_buffer_size;
   required_buffer_sizes (num_1d_fields, num_2d_fields, num_3d_fields, num_3d_interface_fields, mpi_buffer_size, local_buffer_size);
@@ -67,7 +67,7 @@ bool BuffersManager::check_views_capacity (const int num_1d_fields, const int nu
          (local_buffer_size<=m_local_buffer_size);
 }
 
-void BuffersManager::allocate_buffers ()
+void MpiBuffersManager::allocate_buffers ()
 {
   // If views are marked as valid, they are already allocated, and no other
   // customer has requested a larger size
@@ -93,7 +93,7 @@ void BuffersManager::allocate_buffers ()
   }
 }
 
-void BuffersManager::lock_buffers ()
+void MpiBuffersManager::lock_buffers ()
 {
   // Make sure we are not trying to lock buffers already locked
   assert (!m_buffers_busy);
@@ -101,14 +101,14 @@ void BuffersManager::lock_buffers ()
   m_buffers_busy = true;
 }
 
-void BuffersManager::unlock_buffers ()
+void MpiBuffersManager::unlock_buffers ()
 {
   // TODO: I am not checking if the buffers are locked. This allows to call
   //       the method twice in a row safely. Is this a bad idea?
   m_buffers_busy = false;
 }
 
-void BuffersManager::add_customer (BoundaryExchange* add_me)
+void MpiBuffersManager::add_customer (BoundaryExchange* add_me)
 {
   // We don't allow null customers (although this should never happen)
   assert (add_me!=nullptr);
@@ -128,7 +128,7 @@ void BuffersManager::add_customer (BoundaryExchange* add_me)
   }
 }
 
-void BuffersManager::remove_customer (BoundaryExchange* remove_me)
+void MpiBuffersManager::remove_customer (BoundaryExchange* remove_me)
 {
   // We don't allow null customers (although this should never happen)
   assert (remove_me!=nullptr);
@@ -149,7 +149,7 @@ void BuffersManager::remove_customer (BoundaryExchange* remove_me)
   --m_num_customers;
 }
 
-void BuffersManager::update_requested_sizes (typename std::map<BoundaryExchange*,CustomerNeeds>::value_type& customer)
+void MpiBuffersManager::update_requested_sizes (typename std::map<BoundaryExchange*,CustomerNeeds>::value_type& customer)
 {
   // Make sure connectivity is valid
   assert (m_connectivity && m_connectivity->is_finalized());
@@ -182,9 +182,9 @@ void BuffersManager::update_requested_sizes (typename std::map<BoundaryExchange*
   }
 }
 
-void BuffersManager::required_buffer_sizes (const int num_1d_fields, const int num_2d_fields,
-                                            const int num_3d_fields, const int num_3d_interface_fields,
-                                            size_t& mpi_buffer_size, size_t& local_buffer_size) const
+void MpiBuffersManager::required_buffer_sizes (const int num_1d_fields, const int num_2d_fields,
+                                               const int num_3d_fields, const int num_3d_interface_fields,
+                                               size_t& mpi_buffer_size, size_t& local_buffer_size) const
 {
   mpi_buffer_size = local_buffer_size = 0;
 

@@ -6,7 +6,7 @@
 
 #include "BoundaryExchange.hpp"
 
-#include "BuffersManager.hpp"
+#include "MpiBuffersManager.hpp"
 #include "KernelVariables.hpp"
 #include "profiling.hpp"
 
@@ -28,7 +28,7 @@ BoundaryExchange::BoundaryExchange()
   m_num_3d_int_fields = 0;
 
   m_connectivity    = std::shared_ptr<Connectivity>();
-  m_buffers_manager = std::shared_ptr<BuffersManager>();
+  m_buffers_manager = std::shared_ptr<MpiBuffersManager>();
 
   m_num_elems = -1;
 
@@ -45,7 +45,7 @@ BoundaryExchange::BoundaryExchange()
   m_recv_pending = false;
 }
 
-BoundaryExchange::BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<BuffersManager> buffers_manager)
+BoundaryExchange::BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<MpiBuffersManager> buffers_manager)
  : BoundaryExchange ()
 {
   // Set the connectivity
@@ -84,7 +84,7 @@ void BoundaryExchange::set_connectivity (std::shared_ptr<Connectivity> connectiv
   m_num_elems = connectivity->get_num_local_elements();
 }
 
-void BoundaryExchange::set_buffers_manager (std::shared_ptr<BuffersManager> buffers_manager)
+void BoundaryExchange::set_buffers_manager (std::shared_ptr<MpiBuffersManager> buffers_manager)
 {
   // Functionality available only before the registration is completed
   assert (!m_registration_completed);
@@ -119,7 +119,7 @@ void BoundaryExchange::set_num_fields (const int num_1d_fields, const int num_2d
   // We don't allow to call this method twice in a row. If you want to change the number of fields,
   // you need to call clean_up first, to get a fresh new BoundaryExchange.
   // Note: if you do call clean_up and then again set_num_field and the new number of fields
-  //       are smaller than the previous ones, BuffersManager will NOT shrink the buffers, so
+  //       are smaller than the previous ones, MpiBuffersManager will NOT shrink the buffers, so
   //       you may be left with buffers that are larger than what you need.
   assert (m_cleaned_up);
 
@@ -244,7 +244,7 @@ void BoundaryExchange::exchange (const ExecViewUnmanaged<const Real * [NP][NP]>*
     return;
   }
 
-  // If this is the first time we call the exchange method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call the exchange method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
     build_buffer_views_and_requests();
@@ -276,7 +276,7 @@ void BoundaryExchange::exchange_min_max ()
     return;
   }
 
-  // If this is the first time we call the exchange method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call the exchange method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
     build_buffer_views_and_requests();
@@ -314,7 +314,7 @@ void BoundaryExchange::pack_and_send ()
   assert (!m_buffers_manager->are_buffers_busy());
   m_buffers_manager->lock_buffers();
 
-  // If this is the first time we call this method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call this method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, AND we are calling this method manually, without relying
   // on the exchange method to call it, then we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
@@ -825,7 +825,7 @@ void BoundaryExchange::pack_and_send_min_max ()
   // Check that this object is setup to perform exchange_min_max and not exchange
   assert (m_exchange_type==MPI_EXCHANGE_MIN_MAX);
 
-  // If this is the first time we call this method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call this method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, AND we are calling this method manually, without relying
   // on the exchange_min_max method to call it, then we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
@@ -1041,7 +1041,7 @@ void BoundaryExchange::build_buffer_views_and_requests()
     return;
   }
 
-  // Check that the BuffersManager is present and was setup with enough storage
+  // Check that the MpiBuffersManager is present and was setup with enough storage
   assert (m_buffers_manager);
 
   // Ask the buffer manager to check for reallocation and then proceed with the allocation (if needed)
@@ -1312,7 +1312,7 @@ void BoundaryExchange
 
 void BoundaryExchange::clear_buffer_views_and_requests ()
 {
-  // BuffersManager calls this method upon (re)allocation of buffers, so that all its customers are forced to
+  // MpiBuffersManager calls this method upon (re)allocation of buffers, so that all its customers are forced to
   // recompute their internal buffers views. However, if the views were not yet built, we can skip this
   if (!m_buffer_views_and_requests_built) {
     return;

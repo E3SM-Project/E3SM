@@ -167,9 +167,9 @@ SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/prim_advec_tracers_remap.cpp
   ${SRC_SHARE_DIR}/cxx/prim_driver.cpp

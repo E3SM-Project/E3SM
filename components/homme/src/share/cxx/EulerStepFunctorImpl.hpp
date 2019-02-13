@@ -21,7 +21,7 @@
 #include "Tracers.hpp"
 #include "profiling.hpp"
 #include "mpi/BoundaryExchange.hpp"
-#include "mpi/BuffersManager.hpp"
+#include "mpi/MpiBuffersManager.hpp"
 #include "mpi/Connectivity.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
@@ -168,10 +168,7 @@ public:
   void init_boundary_exchanges () {
     assert(m_data.qsize >= 0); // after reset() called
 
-    auto bm_exchange = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
-    if (!bm_exchange->is_connectivity_set()) {
-      bm_exchange->set_connectivity(Context::singleton().get_ptr<Connectivity>());
-    }
+    auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
     for (int np1_qdp = 0, k = 0; np1_qdp < Q_NUM_TIME_LEVELS; ++np1_qdp) {
       for (int dssi = 0; dssi < 3; ++dssi, ++k) {
         m_bes[k] = std::make_shared<BoundaryExchange>();
@@ -195,10 +192,7 @@ public:
     }
 
     {
-      auto bm_exchange_minmax = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
-      if (!bm_exchange_minmax->is_connectivity_set()) {
-        bm_exchange_minmax->set_connectivity(Context::singleton().get_ptr<Connectivity>());
-      }
+      auto bm_exchange_minmax = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
       m_mm_be = std::make_shared<BoundaryExchange>();
       BoundaryExchange& be = *m_mm_be;
       be.set_buffers_manager(bm_exchange_minmax);

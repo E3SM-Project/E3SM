@@ -14,7 +14,7 @@
 #include "ReferenceElement.hpp"
 #include "SphereOperators.hpp"
 #include "Tracers.hpp"
-#include "mpi/BuffersManager.hpp"
+#include "mpi/MpiBuffersManager.hpp"
 
 #include "profiling.hpp"
 
@@ -66,7 +66,7 @@ void CaarFunctor::init_buffers(const FunctorsBuffersManager& fbm) {
   m_caar_impl->init_buffers(fbm);
 }
 
-void CaarFunctor::init_boundary_exchanges (const std::shared_ptr<BuffersManager>& bm_exchange) {
+void CaarFunctor::init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {
   assert (m_caar_impl);
   m_caar_impl->init_boundary_exchanges(bm_exchange);
 }

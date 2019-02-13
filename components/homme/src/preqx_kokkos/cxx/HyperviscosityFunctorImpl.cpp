@@ -10,7 +10,7 @@
 #include "profiling.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
-#include "mpi/BuffersManager.hpp"
+#include "mpi/MpiBuffersManager.hpp"
 
 namespace Homme
 {
@@ -67,7 +67,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be = std::make_shared<BoundaryExchange>();
   auto& be = *m_be;
-  auto bm_exchange = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
+  auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
   be.set_buffers_manager(bm_exchange);
   be.set_num_fields(0, 0, 4);
   be.register_field(m_buffers.vtens, 2, 0);

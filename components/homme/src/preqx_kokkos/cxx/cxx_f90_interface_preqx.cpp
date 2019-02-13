@@ -21,7 +21,7 @@
 #include "Tracers.hpp"
 #include "VerticalRemapManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
-#include "mpi/BuffersManager.hpp"
+#include "mpi/MpiBuffersManager.hpp"
 
 #include "utilities/SyncUtils.hpp"
 
@@ -322,11 +322,13 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
 
 void init_boundary_exchanges_c ()
 {
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
+  auto& params       = Context::singleton().get<SimulationParams>();
 
   // Create BEs. Note: connectivity is created in init_connectivity in mpi_cxx_f90_interface
   auto  connectivity = Context::singleton().get_ptr<Connectivity>();
-  auto& be_map = Context::singleton().create<BuffersManagerMap>(connectivity);
+  auto& bmm = Context::singleton().create<MpiBuffersManagerMap>();
+  bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
+  bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
 
   // Euler BEs
   auto& esf = Context::singleton().get<EulerStepFunctor>();
@@ -335,7 +337,7 @@ void init_boundary_exchanges_c ()
 
   // RK stages BE's
   auto& cf = Context::singleton().get<CaarFunctor>();
-  cf.init_boundary_exchanges(be_map[MPI_EXCHANGE]);
+  cf.init_boundary_exchanges(bmm[MPI_EXCHANGE]);
 
   // HyperviscosityFunctor's BE's
   auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
