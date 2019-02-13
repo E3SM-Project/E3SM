@@ -301,7 +301,6 @@ contains
       if(config_disable_vel_all_tend) return
 
       call mpas_timer_start("ocn_tend_vel")
-      call mpas_log_write("ocn_tend_vel start")
 
       ! Build bulk forcing surface stress
       call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
@@ -344,14 +343,12 @@ contains
       call ocn_vel_hmix_tend(meshPool, scratchPool, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
          tend_normalVelocity, err)
 
-      call mpas_log_write("error start")
       !
       ! velocity tendency: forcing and bottom drag
       !
       call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, &
               surfaceStress, kineticEnergyCell, layerThicknessEdge, &
                                 tend_normalVelocity, err)
-      call mpas_log_write("error end")
 
       !
       ! velocity tendency: zero if drying
@@ -366,9 +363,7 @@ contains
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))
       !
       call mpas_timer_stop("ocn_tend_vel")
-      call mpas_log_write("ocn_tend_vel end")
       call mpas_threading_barrier()
-      call mpas_log_write("ocn_tend_vel 2")
 
    end subroutine ocn_tend_vel!}}}
 
