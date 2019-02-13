@@ -1,41 +1,47 @@
 module micro_p3_utils
 
-    use physconst, only: pi, cpair, gravit, rair, rh2o, mwh2o, mwdry, rhoh2o, cpliq, &
-                         latvap, latice, tmelt
-    use shr_kind_mod,   only: r8=>shr_kind_r8, i8=>shr_kind_i8
+#ifdef CAM
+    use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
+#endif
 
     implicit none
     private
     save
 
+#ifndef CAM
+  integer,parameter :: rtype = selected_real_kind(12) ! 8 byte real
+  integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
+#endif
+
     public :: get_latent_heat, get_precip_fraction, micro_p3_utils_init, size_dist_param_liq, &
               size_dist_param_basic,avg_diameter, rising_factorial
 
-
-    ! 8 byte real and integer
-!    integer, parameter, public :: i8 = selected_int_kind(18)
+    integer, public :: iulog_e3sm
+    logical, public :: masterproc_e3sm
 
     ! Signaling NaN bit pattern that represents a limiter that's turned off.
-    integer(i8), parameter :: limiter_off = int(Z'7FF1111111111111', i8)
+    integer(itype), parameter :: limiter_off = int(Z'7FF1111111111111', itype)
 
-    real(r8), public, parameter :: qsmall = 1.e-14
-    real(r8), public, parameter :: nsmall = 1.e-16
+    real(rtype), public, parameter :: qsmall = 1.e-14
+    real(rtype), public, parameter :: nsmall = 1.e-16
 
-    real(r8),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
+    real(rtype) :: xxlv, xxls, xlf
+
+    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
        inv_rhow,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
        vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
        nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep
-    real(r8),dimension(16), public :: dnu
+    real(rtype),dimension(16), public :: dnu
 
-    real(r8),public :: zerodegc  ! Temperature at zero degree celcius ~K
-    real(r8),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
-    real(r8),public :: homogfrze ! Homogeneous freezing temperature, -40C  ~K
-    real(r8),public :: icenuct   ! Ice nucleation temperature, -5C ~K
+    real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
+    real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
+    real(rtype),public :: homogfrze ! Homogeneous freezing temperature, -40C  ~K
+    real(rtype),public :: icenuct   ! Ice nucleation temperature, -5C ~K
 
-    real(r8),public,parameter :: pi_e3sm = pi
+    real(rtype),public :: pi_e3sm
     ! ice microphysics lookup table array dimensions
     integer, public,parameter :: isize        = 50
     integer, public,parameter :: densize      =  5
@@ -49,27 +55,27 @@ module micro_p3_utils
     ! = 3 Khairoutdinov and Kogan 2000
     integer, public,parameter :: iparam = 3
 
-    real(r8), parameter, public :: mincld=0.0001
-    real(r8), parameter, public :: rhosn = 250._r8  ! bulk density snow
-    real(r8), parameter, public :: rhoi = 500._r8   ! bulk density ice
-    real(r8), parameter, public :: rhows = 917._r8  ! bulk density water solid
+    real(rtype), parameter, public :: mincld=0.0001
+    real(rtype), parameter, public :: rhosn = 250._rtype  ! bulk density snow
+    real(rtype), parameter, public :: rhoi = 500._rtype   ! bulk density ice
+    real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
 
 
 public :: MGHydrometeorProps
 
 type :: MGHydrometeorProps
    ! Density (kg/m^3)
-   real(r8) :: rho
+   real(rtype) :: rho
    ! Information for size calculations.
    ! Basic calculation of mean size is:
    !     lambda = (shape_coef*nic/qic)^(1/eff_dim)
    ! Then lambda is constrained by bounds.
-   real(r8) :: eff_dim
-   real(r8) :: shape_coef
-   real(r8) :: lambda_bounds(2)
+   real(rtype) :: eff_dim
+   real(rtype) :: shape_coef
+   real(rtype) :: lambda_bounds(2)
    ! Minimum average particle mass (kg).
    ! Limit is applied at the beginning of the size distribution calculations.
-   real(r8) :: min_mean_mass
+   real(rtype) :: min_mean_mass
 end type MGHydrometeorProps
 
 interface MGHydrometeorProps
@@ -85,15 +91,15 @@ type(MGHydrometeorProps), public :: mg_snow_props
 ! currently we assume spherical particles for cloud ice/snow
 ! m = cD^d
 ! exponent
-real(r8), parameter :: dsph = 3._r8
+real(rtype), parameter :: dsph = 3._rtype
 
 ! Bounds for mean diameter for different constituents.
-real(r8), parameter :: lam_bnd_rain(2) = 1._r8/[500.e-6_r8, 20.e-6_r8]
-real(r8), parameter :: lam_bnd_snow(2) = 1._r8/[2000.e-6_r8, 10.e-6_r8]
+real(rtype), parameter :: lam_bnd_rain(2) = 1._rtype/[500.e-6_rtype, 20.e-6_rtype]
+real(rtype), parameter :: lam_bnd_snow(2) = 1._rtype/[2000.e-6_rtype, 10.e-6_rtype]
 
 ! Minimum average mass of particles.
-real(r8), parameter :: min_mean_mass_liq = 1.e-20_r8
-real(r8), parameter :: min_mean_mass_ice = 1.e-20_r8
+real(rtype), parameter :: min_mean_mass_liq = 1.e-20_rtype
+real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 
 !=========================================================
 ! Utilities that are cheaper if the compiler knows that
@@ -101,12 +107,12 @@ real(r8), parameter :: min_mean_mass_ice = 1.e-20_r8
 !=========================================================
 
 interface rising_factorial
-   module procedure rising_factorial_r8
+   module procedure rising_factorial_rtype
    module procedure rising_factorial_integer
 end interface rising_factorial
 
 interface var_coef
-   module procedure var_coef_r8
+   module procedure var_coef_rtype
    module procedure var_coef_integer
 end interface var_coef
 
@@ -114,14 +120,34 @@ end interface var_coef
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
-    subroutine micro_p3_utils_init()
+    subroutine micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
+                   cpliq,tmelt,pi,iulog,masterproc)
 
+    real(rtype), intent(in) :: cpair
+    real(rtype), intent(in) :: rair
+    real(rtype), intent(in) :: rh2o
+    real(rtype), intent(in) :: rhoh2o
+    real(rtype), intent(in) :: mwh2o
+    real(rtype), intent(in) :: mwdry
+    real(rtype), intent(in) :: gravit
+    real(rtype), intent(in) :: latvap
+    real(rtype), intent(in) :: latice
+    real(rtype), intent(in) :: cpliq
+    real(rtype), intent(in) :: tmelt
+    real(rtype), intent(in) :: pi
+    integer(itype), intent(in) :: iulog
+    logical, intent(in)  :: masterproc
 
-    real(r8) :: ice_lambda_bounds(2)
+    real(rtype) :: ice_lambda_bounds(2)
+
+    ! logfile info
+    iulog_e3sm      = iulog
+    masterproc_e3sm = masterproc
 
     ! mathematical/optimization constants
     thrd  = 1./3.
     sxth  = 1./6.
+    pi_e3sm = pi
     piov3 = pi*thrd
     piov6 = pi*sxth
 
@@ -158,6 +184,10 @@ end interface var_coef
     rhow   = rhoh2o ! Density of liquid water (STP) !997.
     cpw    = cpliq  ! specific heat of fresh h2o (J/K/kg) !4218.
     inv_rhow = 1./rhow  !inverse of (max.) density of liquid water
+
+    xxlv = latvap           ! latent heat of vaporization
+    xxls = latvap + latice  ! latent heat of sublimation
+    xlf  = latice           ! latent heat of fusion
 
     ! limits for rime density [kg m-3]
     rho_rimeMin     =  50.
@@ -256,7 +286,7 @@ end interface var_coef
   
     ! Mean ice diameter can not grow bigger than twice the autoconversion
     ! threshold for snow.
-    ice_lambda_bounds = 1._r8/[2._r8*400.e-6, 10.e-6_r8] !! dcs 400.e-6
+    ice_lambda_bounds = 1._rtype/[2._rtype*400.e-6, 10.e-6_rtype] !! dcs 400.e-6
     mg_ice_props = MGHydrometeorProps(rhoi, dsph, &
          ice_lambda_bounds, min_mean_mass_ice)
   
@@ -271,13 +301,13 @@ end interface var_coef
     subroutine get_latent_heat(its,ite,kts,kte,v,s,f)
 
        integer,intent(in) :: its,ite,kts,kte
-       real(r8),dimension(its:ite,kts:kte),intent(out) :: v,s,f
+       real(rtype),dimension(its:ite,kts:kte),intent(out) :: v,s,f
 
 !       integer i,k
 
-       v(:,:) = latvap           ! latent heat of vaporization
-       s(:,:) = latvap + latice  ! latent heat of sublimation
-       f(:,:) = latice           ! latent heat of fusion
+       v(:,:) = xxlv !latvap           ! latent heat of vaporization
+       s(:,:) = xxls !latvap + latice  ! latent heat of sublimation
+       f(:,:) = xlf  !latice           ! latent heat of fusion
  
 ! Original P3 definition of latent heats:   
 !       do i = its,ite
@@ -297,9 +327,9 @@ end interface var_coef
                 cldm,icldm,lcldm,rcldm)
       
        integer,intent(in)                              :: its,ite,kts,kte,kbot,ktop,kdir
-       real(r8),dimension(its:ite,kts:kte),intent(in)  :: ast, qc, qr, qitot
+       real(rtype),dimension(its:ite,kts:kte),intent(in)  :: ast, qc, qr, qitot
        character(len=16),intent(in)                    :: method
-       real(r8),dimension(its:ite,kts:kte),intent(out) :: cldm, icldm, lcldm, rcldm
+       real(rtype),dimension(its:ite,kts:kte),intent(out) :: cldm, icldm, lcldm, rcldm
 
        integer  :: i,k
 
@@ -349,12 +379,12 @@ end interface var_coef
 ! get cloud droplet size distribution parameters
 elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
   type(MGHydrometeorProps), intent(in) :: props
-  real(r8), intent(in) :: qcic
-  real(r8), intent(inout) :: ncic
-  real(r8), intent(in) :: rho
+  real(rtype), intent(in) :: qcic
+  real(rtype), intent(inout) :: ncic
+  real(rtype), intent(in) :: rho
 
-  real(r8), intent(out) :: pgam
-  real(r8), intent(out) :: lamc
+  real(rtype), intent(out) :: pgam
+  real(rtype), intent(out) :: lamc
 
   type(MGHydrometeorProps) :: props_loc
 
@@ -367,32 +397,32 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
 
      ! Get pgam from fit to observations of martin et al. 1994
 #if ! defined(CLUBB_BFB_S2) && ! defined(CLUBB_BFB_ALL)
-     pgam = 0.0005714_r8*(ncic/1.e6_r8*rho) + 0.2714_r8
-     pgam = 1._r8/(pgam**2) - 1._r8
-     pgam = max(pgam, 2._r8)
-     pgam = min(pgam, 15._r8)
+     pgam = 0.0005714_rtype*(ncic/1.e6_rtype*rho) + 0.2714_rtype
+     pgam = 1._rtype/(pgam**2) - 1._rtype
+     pgam = max(pgam, 2._rtype)
+     pgam = min(pgam, 15._rtype)
 
      ! Set coefficient for use in size_dist_param_basic.
-     props_loc%shape_coef = pi * props_loc%rho / 6._r8 * &
-          rising_factorial(pgam+1._r8, props_loc%eff_dim)
+     props_loc%shape_coef = pi_e3sm * props_loc%rho / 6._rtype * &
+          rising_factorial(pgam+1._rtype, props_loc%eff_dim)
 #else
-     pgam = 0.0005714_r8*1.e-6_r8*ncic*rho + 0.2714_r8
-     pgam = 1._r8/(pgam**2) - 1._r8
-     pgam = max(pgam, 2._r8)
+     pgam = 0.0005714_rtype*1.e-6_rtype*ncic*rho + 0.2714_rtype
+     pgam = 1._rtype/(pgam**2) - 1._rtype
+     pgam = max(pgam, 2._rtype)
 
      ! Set coefficient for use in size_dist_param_basic.
      ! The 3D case is so common and optimizable that we specialize it:
-     if (props_loc%eff_dim == 3._r8) then
-        props_loc%shape_coef = pi / 6._r8 * props_loc%rho * &
-             rising_factorial(pgam+1._r8, 3)
+     if (props_loc%eff_dim == 3._rtype) then
+        props_loc%shape_coef = pi_e3sm / 6._rtype * props_loc%rho * &
+             rising_factorial(pgam+1._rtype, 3)
      else
-        props_loc%shape_coef = pi / 6._r8 * props_loc%rho * &
-             rising_factorial(pgam+1._r8, props_loc%eff_dim)
+        props_loc%shape_coef = pi_e3sm / 6._rtype * props_loc%rho * &
+             rising_factorial(pgam+1._rtype, props_loc%eff_dim)
      end if
 #endif
 
      ! Limit to between 2 and 50 microns mean size.
-     props_loc%lambda_bounds = (pgam+1._r8)*1._r8/[50.e-6_r8, 2.e-6_r8]
+     props_loc%lambda_bounds = (pgam+1._rtype)*1._rtype/[50.e-6_rtype, 2.e-6_rtype]
 
      call size_dist_param_basic(props_loc, qcic, ncic, lamc)
 
@@ -400,8 +430,8 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
      ! pgam not calculated in this case, so set it to a value likely to
      ! cause an error if it is accidentally used
      ! (gamma function undefined for negative integers)
-     pgam = -100._r8
-     lamc = 0._r8
+     pgam = -100._rtype
+     lamc = 0._rtype
   end if
 
 end subroutine size_dist_param_liq
@@ -411,11 +441,11 @@ end subroutine size_dist_param_liq
 ! Basic routine for getting size distribution parameters.
 elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
   type(MGHydrometeorProps), intent(in) :: props
-  real(r8), intent(in) :: qic
-  real(r8), intent(inout) :: nic
+  real(rtype), intent(in) :: qic
+  real(rtype), intent(inout) :: nic
 
-  real(r8), intent(out) :: lam
-  real(r8), intent(out), optional :: n0
+  real(rtype), intent(out) :: lam
+  real(rtype), intent(out), optional :: n0
 
   if (qic > qsmall) then
 
@@ -426,7 +456,7 @@ elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
      end if
 
      ! lambda = (c n/q)^(1/d)
-     lam = (props%shape_coef * nic/qic)**(1._r8/props%eff_dim)
+     lam = (props%shape_coef * nic/qic)**(1._rtype/props%eff_dim)
 
      ! check for slope
      ! adjust vars
@@ -439,7 +469,7 @@ elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
      end if
 
   else
-     lam = 0._r8
+     lam = 0._rtype
   end if
 
   if (present(n0)) n0 = nic * lam
@@ -449,16 +479,16 @@ end subroutine size_dist_param_basic
 !                                                                                          !
 !__________________________________________________________________________________________!
 
-real(r8) elemental function avg_diameter(q, n, rho_air, rho_sub)
+real(rtype) elemental function avg_diameter(q, n, rho_air, rho_sub)
   ! Finds the average diameter of particles given their density, and
   ! mass/number concentrations in the air.
   ! Assumes that diameter follows an exponential distribution.
-  real(r8), intent(in) :: q         ! mass mixing ratio
-  real(r8), intent(in) :: n         ! number concentration (per volume)
-  real(r8), intent(in) :: rho_air   ! local density of the air
-  real(r8), intent(in) :: rho_sub   ! density of the particle substance
+  real(rtype), intent(in) :: q         ! mass mixing ratio
+  real(rtype), intent(in) :: n         ! number concentration (per volume)
+  real(rtype), intent(in) :: rho_air   ! local density of the air
+  real(rtype), intent(in) :: rho_sub   ! density of the particle substance
 
-  avg_diameter = (pi * rho_sub * n/(q*rho_air))**(-1._r8/3._r8)
+  avg_diameter = (pi_e3sm * rho_sub * n/(q*rho_air))**(-1._rtype/3._rtype)
 
 end function avg_diameter
 !__________________________________________________________________________________________!
@@ -467,8 +497,8 @@ end function avg_diameter
 ! Constructor for a constituent property object.
 function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
      result(res)
-  real(r8), intent(in) :: rho, eff_dim
-  real(r8), intent(in), optional :: lambda_bounds(2), min_mean_mass
+  real(rtype), intent(in) :: rho, eff_dim
+  real(rtype), intent(in), optional :: lambda_bounds(2), min_mean_mass
   type(MGHydrometeorProps) :: res
 
   res%rho = rho
@@ -484,7 +514,7 @@ function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
      res%min_mean_mass = no_limiter()
   end if
 
-  res%shape_coef = rho*pi*gamma(eff_dim+1._r8)/6._r8
+  res%shape_coef = rho*pi_e3sm*gamma(eff_dim+1._rtype)/6._rtype
 
 end function NewMGHydrometeorProps
 !__________________________________________________________________________________________!
@@ -495,14 +525,14 @@ end function NewMGHydrometeorProps
 !========================================================================
 
 pure function no_limiter()
-  real(r8) :: no_limiter
+  real(rtype) :: no_limiter
 
   no_limiter = transfer(limiter_off, no_limiter)
 
 end function no_limiter
 
 pure function limiter_is_on(lim)
-  real(r8), intent(in) :: lim
+  real(rtype), intent(in) :: lim
   logical :: limiter_is_on
 
   limiter_is_on = transfer(lim, limiter_off) /= limiter_off
@@ -513,50 +543,50 @@ end function limiter_is_on
 !========================================================================
 
 ! Use gamma function to implement rising factorial extended to the reals.
-pure function rising_factorial_r8(x, n) result(res)
-  real(r8), intent(in) :: x, n
-  real(r8) :: res
+pure function rising_factorial_rtype(x, n) result(res)
+  real(rtype), intent(in) :: x, n
+  real(rtype) :: res
 
   res = gamma(x+n)/gamma(x)
 
-end function rising_factorial_r8
+end function rising_factorial_rtype
 
 ! Rising factorial can be performed much cheaper if n is a small integer.
 pure function rising_factorial_integer(x, n) result(res)
-  real(r8), intent(in) :: x
+  real(rtype), intent(in) :: x
   integer, intent(in) :: n
-  real(r8) :: res
+  real(rtype) :: res
 
   integer :: i
-  real(r8) :: factor
+  real(rtype) :: factor
 
-  res = 1._r8
+  res = 1._rtype
   factor = x
 
   do i = 1, n
      res = res * factor
-     factor = factor + 1._r8
+     factor = factor + 1._rtype
   end do
 
 end function rising_factorial_integer
 
-elemental function var_coef_r8(relvar, a) result(res)
+elemental function var_coef_rtype(relvar, a) result(res)
   ! Finds a coefficient for process rates based on the relative variance
   ! of cloud water.
-  real(r8), intent(in) :: relvar
-  real(r8), intent(in) :: a
-  real(r8) :: res
+  real(rtype), intent(in) :: relvar
+  real(rtype), intent(in) :: a
+  real(rtype) :: res
 
   res = rising_factorial(relvar, a) / relvar**a
 
-end function var_coef_r8
+end function var_coef_rtype
 
 elemental function var_coef_integer(relvar, a) result(res)
   ! Finds a coefficient for process rates based on the relative variance
   ! of cloud water.
-  real(r8), intent(in) :: relvar
+  real(rtype), intent(in) :: relvar
   integer, intent(in) :: a
-  real(r8) :: res
+  real(rtype) :: res
 
   res = rising_factorial(relvar, a) / relvar**a
 
