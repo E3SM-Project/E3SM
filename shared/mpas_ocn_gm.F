@@ -172,8 +172,6 @@ contains
       call mpas_allocate_scratch_field(gradZMidTopOfEdgeField, .True., .false.)
       call mpas_allocate_scratch_field(areaCellSumField, .True., .false.)
 
-      call mpas_threading_barrier()
-
       gradDensityEdge => gradDensityEdgeField % array
       gradDensityTopOfEdge => gradDensityTopOfEdgeField % array
       gradDensityConstZTopOfEdge => gradDensityConstZTopOfEdgeField % array
@@ -614,8 +612,6 @@ contains
       deallocate(tridiagA)
       deallocate(tridiagB)
       deallocate(tridiagC)
-
-      call mpas_threading_barrier()
 
       ! Deallocate scratch variables
       call mpas_deallocate_scratch_field(gradDensityEdgeField, .true.)
