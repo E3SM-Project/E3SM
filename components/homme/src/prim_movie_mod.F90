@@ -93,6 +93,7 @@ contains
 
   subroutine prim_movie_init(elem, par, hvcoord,tl)
     use hybvcoord_mod, only : hvcoord_t
+    use dcmip16_wrapper, only: precl
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
     use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem 
@@ -220,6 +221,7 @@ contains
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
@@ -368,6 +370,21 @@ contains
              enddo
              call nf_put_var(ncdf(ios),var2d,start,count,name='geos')
              deallocate(var2d)
+          endif
+
+          if(nf_selectedvar('precl', output_varnames)) then
+             if (allocated(precl)) then
+             allocate(var2d(nxyp))
+             if (par%masterproc) print *,'writing precl...'
+             st=1
+             do ie=1,nelemd
+                en=st+elem(ie)%idxp%NumUniquePts-1
+                call UniquePoints(elem(ie)%idxP,precl(:,:,ie),var2d(st:en))
+                st=en+1
+             enddo
+             call nf_put_var(ncdf(ios),var2d,start,count,name='precl')
+             deallocate(var2d)
+             endif
           endif
 
 

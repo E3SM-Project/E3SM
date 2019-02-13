@@ -390,8 +390,12 @@ contains
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
        write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
-       write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
-       write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
+       if (theta_hydrostatic_mode) then
+          write(iulog,100) "T     = ",tmin_p,tmax_p,tsum_p       
+       else
+          write(iulog,100) "dpnh/dp=",tmin_p,tmax_p,tsum_p
+       endif
+       write(iulog,100) "vTh_dp= ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
        if (rsplit>0) &
             write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
