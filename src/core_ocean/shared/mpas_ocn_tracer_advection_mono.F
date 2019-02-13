@@ -167,7 +167,6 @@ module ocn_tracer_advection_mono
       call mpas_allocate_scratch_field(hProvField, .true., .false.)
       call mpas_allocate_scratch_field(lowOrderFluxField, .true., .false.)
       call mpas_allocate_scratch_field(highOrderFluxField, .true., .false.)
-      call mpas_threading_barrier()
 
       ! allocate nCells arrays
       h_prov_inv => hProvInvField % array
@@ -686,16 +685,8 @@ module ocn_tracer_advection_mono
       end do ! iTracer loop
 
 #ifdef _ADV_TIMERS
-      call mpas_timer_start('half step')
-#endif
-#ifdef _ADV_TIMERS
-      call mpas_timer_stop('half step')
-#endif
-
-#ifdef _ADV_TIMERS
       call mpas_timer_start('deallocates')
 #endif
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(tracerCurField, .true.)
       call mpas_deallocate_scratch_field(workTendencyField, .true.)
       call mpas_deallocate_scratch_field(hNewInvField, .true.)

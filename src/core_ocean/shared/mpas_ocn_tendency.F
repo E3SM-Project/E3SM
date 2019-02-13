@@ -345,7 +345,6 @@ contains
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))
       !
       call mpas_timer_stop("ocn_tend_vel")
-      call mpas_threading_barrier()
 
    end subroutine ocn_tend_vel!}}}
 
@@ -534,7 +533,6 @@ contains
       !allocate(normalThicknessFlux(nVertLevels, nEdges+1))
       call mpas_pool_get_field(scratchPool, 'normalThicknessFlux', normalThicknessFluxField)
       call mpas_allocate_scratch_field(normalThicknessFluxField, .true.)
-      call mpas_threading_barrier()
 
       normalThicknessFlux => normalThicknessFluxField % array
 
@@ -891,7 +889,6 @@ contains
          end if
       end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(normalThicknessFluxField, .true.)
 
       call mpas_timer_stop("ocn_tend_tracer")

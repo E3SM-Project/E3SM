@@ -390,7 +390,6 @@ contains
          call mpas_pool_get_field(scratchPool, 'kineticEnergyVertexOnCells', kineticEnergyVertexOnCellsField)
          call mpas_allocate_scratch_field(kineticEnergyVertexField, .true.)
          call mpas_allocate_scratch_field(kineticEnergyVertexOnCellsField, .true.)
-         call mpas_threading_barrier()
 
          kineticEnergyVertex         => kineticEnergyVertexField % array
          kineticEnergyVertexOnCells  => kineticEnergyVertexOnCellsField % array
@@ -435,7 +434,6 @@ contains
          end do
          !$omp end do
 
-         call mpas_threading_barrier()
          call mpas_deallocate_scratch_field(kineticEnergyVertexField, .true.)
          call mpas_deallocate_scratch_field(kineticEnergyVertexOnCellsField, .true.)
       end if
@@ -447,7 +445,6 @@ contains
       call mpas_pool_get_field(scratchPool, 'normalizedPlanetaryVorticityVertex', normalizedPlanetaryVorticityVertexField)
       call mpas_allocate_scratch_field(normalizedRelativeVorticityVertexField, .true., .false.)
       call mpas_allocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true., .false.)
-      call mpas_threading_barrier()
 
       normalizedPlanetaryVorticityVertex  => normalizedPlanetaryVorticityVertexField % array
       normalizedRelativeVorticityVertex  => normalizedRelativeVorticityVertexField % array
@@ -517,7 +514,6 @@ contains
          call mpas_pool_get_field(scratchPool, 'vorticityGradientTangentialComponent', vorticityGradientTangentialComponentField)
          call mpas_allocate_scratch_field(vorticityGradientNormalComponentField, .true.)
          call mpas_allocate_scratch_field(vorticityGradientTangentialComponentField, .true.)
-         call mpas_threading_barrier()
 
          vorticityGradientNormalComponent => vorticityGradientNormalComponentField % array
          vorticityGradientTangentialComponent => vorticityGradientTangentialComponentField % array
@@ -564,13 +560,11 @@ contains
          enddo
          !$omp end do
 
-         call mpas_threading_barrier()
          call mpas_deallocate_scratch_field(vorticityGradientNormalComponentField, .true.)
          call mpas_deallocate_scratch_field(vorticityGradientTangentialComponentField, .true.)
 
       endif
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
       call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
 
@@ -862,8 +856,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
-
       call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
       call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
       call mpas_timer_stop('diagnostic solve')
@@ -983,8 +975,6 @@ contains
       call mpas_allocate_scratch_field(projectedSSHField, .true.)
       call mpas_allocate_scratch_field(ALE_ThicknessField, .true.)
 
-      call mpas_threading_barrier()
-
       div_hu => div_huField % array
       projectedSSH => projectedSSHField % array
       ALE_Thickness => ALE_ThicknessField % array
@@ -1041,7 +1031,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(div_huField, .true.)
       call mpas_deallocate_scratch_field(projectedSSHField, .true.)
       call mpas_deallocate_scratch_field(ALE_ThicknessField, .true.)
@@ -1084,7 +1073,6 @@ contains
       end if
 
       call mpas_timer_start("ocn_fuperp")
-      call mpas_threading_barrier()
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, timeLevel)
@@ -1122,7 +1110,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_timer_stop("ocn_fuperp")
 
    end subroutine ocn_fuperp!}}}
@@ -1435,7 +1422,6 @@ contains
       call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true., .false.)
       call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true., .false.)
       call mpas_allocate_scratch_field(salineContractionCoeffField, .true., .false.)
-      call mpas_threading_barrier()
 
       densitySurfaceDisplaced => densitySurfaceDisplacedField % array
       thermalExpansionCoeff => thermalExpansionCoeffField % array
@@ -1695,7 +1681,7 @@ contains
       call mpas_pool_get_field(scratchPool, 'boundaryLayerSalinityScratch', boundaryLayerSalinityField)
       call mpas_allocate_scratch_field(boundaryLayerTemperatureField, .true.)
       call mpas_allocate_scratch_field(boundaryLayerSalinityField, .true.)
-      call mpas_threading_barrier()
+
       blTempScratch => boundaryLayerTemperatureField % array
       blSaltScratch => boundaryLayerSalinityField % array
 
@@ -1806,7 +1792,6 @@ contains
          !$omp end do
       end if
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(boundaryLayerTemperatureField, .true.)
       call mpas_deallocate_scratch_field(boundaryLayerSalinityField, .true.)
 
