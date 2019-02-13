@@ -15,6 +15,7 @@ namespace Homme
 {
 
 class HyperviscosityFunctorImpl;
+struct FunctorsBuffersManager;
 
 class HyperviscosityFunctor
 {
@@ -23,6 +24,9 @@ public:
   HyperviscosityFunctor ();
 
   ~HyperviscosityFunctor ();
+
+  void request_buffers (FunctorsBuffersManager& fbm) const;
+  void init_buffers    (const FunctorsBuffersManager& fbm);
 
   void init_boundary_exchanges();
 

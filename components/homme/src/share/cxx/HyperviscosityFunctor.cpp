@@ -6,6 +6,7 @@
 
 #include "HyperviscosityFunctor.hpp"
 #include "HyperviscosityFunctorImpl.hpp"
+#include "FunctorsBuffersManager.hpp"
 
 #include "Context.hpp"
 #include "Elements.hpp"
@@ -30,6 +31,16 @@ HyperviscosityFunctor::~HyperviscosityFunctor ()
   // deleter, which needs to know the size of the stored type, and which
   // would be called from the implicitly declared default destructor, which
   // would be in the header file, where HyperviscosityFunctorImpl type is incomplete.
+}
+
+void HyperviscosityFunctor::request_buffers (FunctorsBuffersManager& fbm) const {
+  assert (m_hvf_impl);
+  m_hvf_impl->request_buffers(fbm);
+}
+
+void HyperviscosityFunctor::init_buffers (const FunctorsBuffersManager& fbm) {
+  assert (m_hvf_impl);
+  m_hvf_impl->init_buffers(fbm);
 }
 
 void HyperviscosityFunctor::init_boundary_exchanges () {

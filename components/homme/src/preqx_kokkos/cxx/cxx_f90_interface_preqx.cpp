@@ -10,6 +10,7 @@
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
+#include "FunctorsBuffersManager.hpp"
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctor.hpp"
@@ -244,8 +245,6 @@ void init_elements_c (const int& num_elems)
   geometry = r.m_geometry;
   ElementsDerivedState& derived = Context::singleton().create<ElementsDerivedState>();
   derived = r.m_derived;
-  ElementsBuffers& buffers = Context::singleton().create<ElementsBuffers>();
-  buffers = r.m_buffers;
 }
 
 void init_functors_c ()
@@ -259,6 +258,7 @@ void init_functors_c ()
   auto& ref_FE  = Context::singleton().get<ReferenceElement>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   auto& params  = Context::singleton().get<SimulationParams>();
+  auto& fbm     = Context::singleton().create<FunctorsBuffersManager>();
 
   // Check that the above structures have been inited
   Errors::runtime_check(elems.inited(),    "Error! You must initialize the Elements structure before initializing the functors.\n", -1);
@@ -269,10 +269,23 @@ void init_functors_c ()
 
   // First, sphere operators, then all the functors
   auto& sph_op = Context::singleton().create<SphereOperators>(elems.m_geometry,ref_FE);
-  Context::singleton().create<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params.rsplit);
-  Context::singleton().create<EulerStepFunctor>();
-  Context::singleton().create<HyperviscosityFunctor>();
+  auto& caar   = Context::singleton().create<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
+  auto& esf    = Context::singleton().create<EulerStepFunctor>();
+  auto& hvf    = Context::singleton().create<HyperviscosityFunctor>();
   Context::singleton().create<VerticalRemapManager>();
+
+  // Ask the functors to request buffers to the buffers manager
+  caar.request_buffers(fbm);
+  esf.request_buffers(fbm);
+  hvf.request_buffers(fbm);
+
+  // Allocate the buffers
+  fbm.allocate();
+
+  // Tell the functors to grab their buffers
+  caar.init_buffers(fbm);
+  esf.init_buffers(fbm);
+  hvf.init_buffers(fbm);
 }
 
 void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,

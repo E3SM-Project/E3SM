@@ -11,7 +11,7 @@
 #include "ReferenceElement.hpp"
 #include "ElementsGeometry.hpp"
 #include "ElementsDerivedState.hpp"
-#include "ElementsBuffers.hpp"
+#include "FunctorsBuffersManager.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
 #include "HommexxEnums.hpp"
@@ -96,10 +96,19 @@ class EulerStepFunctorImpl {
     bool consthv;
   };
 
+  struct Buffers {
+    static constexpr int num_3d_scalar_mid_buf = 2;
+    static constexpr int num_3d_vector_mid_buf = 1;
+
+    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]> dp;
+    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]> dpdissk;
+    ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]> vstar;
+  };
+
   using deriv_type = ReferenceElement::deriv_type;
 
   const ElementsGeometry      m_geometry;
-  const ElementsBuffers       m_buffers;
+        Buffers               m_buffers;
   const ElementsDerivedState  m_derived_state;
   const Tracers               m_tracers;
   const deriv_type            m_deriv;
@@ -118,14 +127,13 @@ public:
 
   EulerStepFunctorImpl ()
    : m_geometry      (Context::singleton().get<ElementsGeometry>())
-   , m_buffers       (Context::singleton().get<ElementsBuffers>())
    , m_derived_state (Context::singleton().get<ElementsDerivedState>())
    , m_tracers       (Context::singleton().get<Tracers>())
    , m_deriv         (Context::singleton().get<ReferenceElement>().get_deriv())
    , m_hvcoord       (Context::singleton().get<HybridVCoord>())
    , m_sphere_ops    (Context::singleton().get<SphereOperators>())
   {
-    m_sphere_ops.setup(m_geometry,Context::singleton().get<ReferenceElement>());
+    // Nothing to be done here
   }
 
   void reset (const SimulationParams& params) {
@@ -143,8 +151,18 @@ public:
       Errors::runtime_abort(msg,Errors::err_not_implemented);
     }
 
-    // This will fit the needs of all calls to sphere operators.
+    // Make sure sphere ops have buffers large enough to accommodate this functor's needs
     m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize));
+  }
+
+  void request_buffers (FunctorsBuffersManager& fbm) {
+    fbm.request_concurrency(m_geometry.num_elems());
+    fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
+  }
+  void init_buffers (const FunctorsBuffersManager& fbm) {
+    m_buffers.dp      = fbm.get_3d_scalar_midpoint_buffer(0);
+    m_buffers.dpdissk = fbm.get_3d_scalar_midpoint_buffer(1);
+    m_buffers.vstar   = fbm.get_3d_vector_midpoint_buffer(0);
   }
 
   void init_boundary_exchanges () {
@@ -294,7 +312,7 @@ public:
     team.team_barrier();
     m_sphere_ops.laplace_simple(kv, qtens_biharmonic, qtens_biharmonic);
     // laplace_simple provides the barrier.
-   rhsviss_adjustment(kv, team);
+    rhsviss_adjustment(kv, team);
   }//end of BIHPostConstHV ()
 
   KOKKOS_INLINE_FUNCTION
@@ -426,7 +444,7 @@ public:
     const auto dp = m_derived_state.m_dp;
     const auto divdp_proj = m_derived_state.m_divdp_proj;
     const auto rhsmdt = c.rhs_multiplier * c.dt;
-    const auto buf = m_buffers.pressure;
+    const auto buf = m_buffers.dp;
     Kokkos::parallel_for(
       Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()),
       KOKKOS_LAMBDA (const TeamMember& team) {
@@ -456,7 +474,7 @@ public:
     const Real rhs_multiplier = m_data.rhs_multiplier;
     const int n0_qdp = m_data.n0_qdp;
     const auto qdp = m_tracers.qdp;
-    const auto dp = m_buffers.pressure;
+    const auto dp = m_buffers.dp;
     const auto qtens_biharmonic = m_tracers.qtens_biharmonic;
     const auto qlim = m_tracers.qlim;
     const auto num_parallel_iterations = m_geometry.num_elems() * m_data.qsize;
@@ -618,7 +636,7 @@ private:
         Kokkos::parallel_for(
           Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
           [&] (const int& k) {
-            const auto dp = m_buffers.pressure(kv.ie,i,j,k);
+            const auto dp = m_buffers.dp(kv.ie,i,j,k);
             m_buffers.vstar(kv.ie,0,i,j,k) = m_derived_state.m_vn0(kv.ie,0,i,j,k) / dp;
             m_buffers.vstar(kv.ie,1,i,j,k) = m_derived_state.m_vn0(kv.ie,1,i,j,k) / dp;
             if (lim_quasi_monotone) {

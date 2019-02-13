@@ -11,7 +11,6 @@
 
 #include "ElementsGeometry.hpp"
 #include "ElementsState.hpp"
-#include "ElementsBuffers.hpp"
 #include "ElementsDerivedState.hpp"
 #include "ElementsForcing.hpp"
 
@@ -36,7 +35,6 @@ public:
   ElementsGeometry      m_geometry;
   ElementsState         m_state;
   ElementsDerivedState  m_derived;
-  ElementsBuffers       m_buffers;
   ElementsForcing       m_forcing;
 
   Elements () : m_inited(false) {}

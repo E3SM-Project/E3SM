@@ -5,14 +5,10 @@
  *******************************************************************************/
 
 #include "Elements.hpp"
+
 #include "utilities/SubviewUtils.hpp"
-#include "utilities/SyncUtils.hpp"
-#include "utilities/TestUtils.hpp"
-#include "HybridVCoord.hpp"
 
 #include <limits>
-#include <random>
-#include <assert.h>
 
 namespace Homme {
 
@@ -22,7 +18,6 @@ void Elements::init(const int num_elems, const bool consthv) {
   m_geometry.init(num_elems,consthv);
   m_state.init(num_elems);
   m_derived.init(num_elems);
-  m_buffers.init(num_elems);
   m_forcing.init(num_elems);
 
   m_inited = true;

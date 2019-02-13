@@ -5,6 +5,7 @@
  *******************************************************************************/
 
 #include "Context.hpp"
+#include "FunctorsBuffersManager.hpp"
 #include "HyperviscosityFunctorImpl.hpp"
 #include "profiling.hpp"
 
@@ -14,13 +15,18 @@
 namespace Homme
 {
 
-HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& params, const Elements& elements)
- : m_elements   (elements)
- , m_data       (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+HyperviscosityFunctorImpl::
+HyperviscosityFunctorImpl (const SimulationParams&       params,
+                           const Elements&               elements)
+ : m_data       (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+ , m_state      (elements.m_state)
+ , m_derived    (elements.m_derived)
+ , m_geometry   (elements.m_geometry)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
+ , m_policy_update_states (0, elements.num_elems()*NP*NP*NUM_LEV)
+ , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(elements.num_elems()))
+ , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(elements.num_elems()))
 {
-  m_sphere_ops.setup(elements.m_geometry,Context::singleton().get<ReferenceElement>());
-
   // Sanity check
   assert(params.params_set);
 
@@ -41,7 +47,21 @@ HyperviscosityFunctorImpl::HyperviscosityFunctorImpl (const SimulationParams& pa
   }
 
   // Allocate buffers in the sphere operators
-  m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_elements.num_elems()));
+  m_sphere_ops.allocate_buffers(m_policy_first_laplace);
+}
+
+void HyperviscosityFunctorImpl::request_buffers (FunctorsBuffersManager& fbm) const {
+  fbm.request_concurrency(m_state.num_elems());
+  fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
+}
+
+void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm) {
+  m_buffers.dptens     = fbm.get_3d_scalar_midpoint_buffer(0);
+  m_buffers.laplace_dp = fbm.get_3d_scalar_midpoint_buffer(1);
+  m_buffers.ttens      = fbm.get_3d_scalar_midpoint_buffer(2);
+  m_buffers.laplace_t  = fbm.get_3d_scalar_midpoint_buffer(3);
+  m_buffers.vtens      = fbm.get_3d_vector_midpoint_buffer(0);
+  m_buffers.laplace_v  = fbm.get_3d_vector_midpoint_buffer(1);
 }
 
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
@@ -50,9 +70,9 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   auto bm_exchange = Context::singleton().get<BuffersManagerMap>()[MPI_EXCHANGE];
   be.set_buffers_manager(bm_exchange);
   be.set_num_fields(0, 0, 4);
-  be.register_field(m_elements.m_buffers.vtens, 2, 0);
-  be.register_field(m_elements.m_buffers.ttens);
-  be.register_field(m_elements.m_buffers.dptens);
+  be.register_field(m_buffers.vtens, 2, 0);
+  be.register_field(m_buffers.ttens);
+  be.register_field(m_buffers.dptens);
   be.registration_completed();
 }
 
@@ -62,16 +82,12 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   m_data.dt = dt/m_data.hypervis_subcycle;
   m_data.eta_ave_w = eta_ave_w;
 
-  Kokkos::RangePolicy<ExecSpace,TagUpdateStates> policy_update_states(0, m_elements.num_elems()*NP*NP*NUM_LEV);
-  const auto policy_pre_exchange =
-      Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(
-          m_elements.num_elems());
   for (int icycle = 0; icycle < m_data.hypervis_subcycle; ++icycle) {
     GPTLstart("hvf-bhwk");
     biharmonic_wk_dp3d ();
     GPTLstop("hvf-bhwk");
     // dispatch parallel_for for first kernel
-    Kokkos::parallel_for(policy_pre_exchange, *this);
+    Kokkos::parallel_for(m_policy_pre_exchange, *this);
     Kokkos::fence();
 
     // Exchange
@@ -81,10 +97,9 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     GPTLstop("hvf-bexch");
 
     // Update states
-    Kokkos::parallel_for(policy_update_states, *this);
+    Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
   }
-
 }
 
 void HyperviscosityFunctorImpl::biharmonic_wk_dp3d() const
@@ -92,23 +107,22 @@ void HyperviscosityFunctorImpl::biharmonic_wk_dp3d() const
   // For the first laplacian we use a differnt kernel, which uses directly the states
   // at timelevel np1 as inputs. This way we avoid copying the states to *tens buffers.
   
-  auto policy_first_laplace = Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_elements.num_elems());
-  Kokkos::parallel_for(policy_first_laplace, *this);
+  Kokkos::parallel_for(m_policy_first_laplace, *this);
   Kokkos::fence();
 
   // Exchange
   assert (m_be->is_registration_completed());
   GPTLstart("hvf-bexch");
-  m_be->exchange(m_elements.m_geometry.m_rspheremp);
+  m_be->exchange(m_geometry.m_rspheremp);
   GPTLstop("hvf-bexch");
 
   // TODO: update m_data.nu_ratio if nu_div!=nu
   // Compute second laplacian, tensor or const hv
   if ( m_data.consthv ) {
-    auto policy_second_laplace = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceConstHV>(m_elements.num_elems());
+    auto policy_second_laplace = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceConstHV>(m_state.num_elems());
     Kokkos::parallel_for(policy_second_laplace, *this);
   }else{
-    auto policy_second_laplace = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceTensorHV>(m_elements.num_elems());
+    auto policy_second_laplace = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceTensorHV>(m_state.num_elems());
     Kokkos::parallel_for(policy_second_laplace, *this);
   }
   Kokkos::fence();

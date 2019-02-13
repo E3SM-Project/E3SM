@@ -13,30 +13,33 @@
 
 namespace Homme {
 
-struct BuffersManager;
 struct CaarFunctorImpl;
 
 class Elements;
 class Tracers;
 class ReferenceElement;
 class SphereOperators;
+class SimulationParams;
 class HybridVCoord;
+
+class BuffersManager;
+struct FunctorsBuffersManager;
 
 class CaarFunctor {
 public:
   CaarFunctor();
   CaarFunctor(const Elements &elements, const Tracers &tracers,
               const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
-              const SphereOperators &sphere_ops, 
-              const int rsplit);
+              const SphereOperators &sphere_ops, const SimulationParams& params);
   CaarFunctor(const CaarFunctor &) = delete;
 
   ~CaarFunctor();
 
   CaarFunctor &operator=(const CaarFunctor &) = delete;
 
-  void
-  init_boundary_exchanges(const std::shared_ptr<BuffersManager> &bm_exchange);
+  void request_buffers (FunctorsBuffersManager& fbm) const;
+  void init_buffers(const FunctorsBuffersManager& fbm);
+  void init_boundary_exchanges(const std::shared_ptr<BuffersManager> &bm_exchange);
 
   void set_rk_stage_data(const RKStageData& data);
 

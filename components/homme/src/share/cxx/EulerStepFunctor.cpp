@@ -17,6 +17,13 @@ void EulerStepFunctor::reset (const SimulationParams& params) {
   p_->reset(params);
 }
 
+void EulerStepFunctor::request_buffers (FunctorsBuffersManager& fbm) {
+  p_->request_buffers(fbm);
+}
+void EulerStepFunctor::init_buffers (const FunctorsBuffersManager& fbm) {
+  p_->init_buffers(fbm);
+}
+
 void EulerStepFunctor::init_boundary_exchanges () {
   p_->init_boundary_exchanges();
 }
@@ -36,4 +43,4 @@ void EulerStepFunctor
   p_->qdp_time_avg(n0_qdp, np1_qdp);
 }
 
-}
+} // namespace Homme
