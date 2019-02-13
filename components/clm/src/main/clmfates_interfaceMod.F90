@@ -2113,15 +2113,13 @@ contains
            call hist_addfld1d(fname=trim(vname),units=trim(vunits),         &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_patch=this%fates_hist%hvars(ivar)%r81d,    &
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
            
         case(site_r8)
            call hist_addfld1d(fname=trim(vname),units=trim(vunits),         &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r81d,      & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
 
         case(patch_ground_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
@@ -2130,8 +2128,7 @@ contains
                               type2d=trim(dim2name),                        & ! <--- type2d
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_patch=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
            
         case(patch_size_pft_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
@@ -2140,8 +2137,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_patch=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_ground_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2149,8 +2145,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,      & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_size_pft_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2158,8 +2153,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,      & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_size_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2167,8 +2161,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_pft_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2176,8 +2169,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_age_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2185,8 +2177,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
 
         case(site_height_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
@@ -2195,8 +2186,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,     & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
 
         case(site_scagpft_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
@@ -2205,8 +2195,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,     & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
 
         case(site_agepft_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
@@ -2215,8 +2204,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,     & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
 
         case(site_fuel_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
@@ -2225,8 +2213,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_cwdsc_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2234,8 +2221,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_can_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2243,8 +2229,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_cnlf_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2252,8 +2237,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_cnlfpft_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2261,8 +2245,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
         case(site_scag_r8)
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2270,8 +2253,7 @@ contains
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=this%fates_hist%hvars(ivar)%r82d,    & 
-                              default=trim(vdefault),                       &
-                              set_lake=0._r8,set_urb=0._r8)
+                              default=trim(vdefault))
            
 
         case default
