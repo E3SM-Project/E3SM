@@ -313,8 +313,8 @@ contains
       end do
       !$omp end do
 
-      ! Need 0 and 1 halo cells
-      nCells = nCellsArray( 2 )
+      ! Need 0,1,2 halo cells
+      nCells = nCellsArray( 3 )
       !
       ! Compute divergence, kinetic energy, and vertical velocity
       !
@@ -379,8 +379,8 @@ contains
       end do
       !$omp end do
 
-      nCells = nCellsArray( size(nCellsArray) )
-
+      ! Need 0,1,2 halo cells
+      nCells = nCellsArray( 3 )
       !
       ! Compute kinetic energy
       !
