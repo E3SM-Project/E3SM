@@ -549,9 +549,10 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         case.set_value("BUILD_STATUS", 0)
         if "SMP_VALUE" in os.environ:
             case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
-            case.flush()
 
-        lock_file("env_build.xml")
+        case.flush()
+
+        lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):
