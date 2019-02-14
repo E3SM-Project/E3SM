@@ -27,7 +27,7 @@ struct Constants
   static constexpr Scalar CpLiq       = 4188.0;
   static constexpr Scalar Tmelt       = 273.15;
   static constexpr Scalar Pi          = 3.14159265;
-  static constexpr int    iulog       = 98;
+  static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc  = true;
   static constexpr Scalar RHOW     = RhoH2O;
   static constexpr Scalar INV_RHOW = 1.0/RHOW;
