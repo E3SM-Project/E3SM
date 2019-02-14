@@ -77,8 +77,6 @@ contains
        end if
     end if
 
-    call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWDry,gravit,LatVap,LatIce, &
-                   CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine p3_init_c
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
@@ -123,19 +121,19 @@ contains
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
                  CpLiq, Tmelt, Pi, iulog, masterproc) bind(C)
 
-    real(kind=c_real), intent(in) :: Cpair
-    real(kind=c_real), intent(in) :: Rair
-    real(kind=c_real), intent(in) :: RH2O
-    real(kind=c_real), intent(in) :: RhoH2O
-    real(kind=c_real), intent(in) :: MWH2O
-    real(kind=c_real), intent(in) :: MWdry
-    real(kind=c_real), intent(in) :: gravit
-    real(kind=c_real), intent(in) :: LatVap
-    real(kind=c_real), intent(in) :: LatIce
-    real(kind=c_real), intent(in) :: CpLiq
-    real(kind=c_real), intent(in) :: Tmelt
-    real(kind=c_real), intent(in) :: Pi
-    integer(kind=c_int),value, intent(in) :: iulog
+    real(kind=c_real), value, intent(in) :: Cpair
+    real(kind=c_real), value, intent(in) :: Rair
+    real(kind=c_real), value, intent(in) :: RH2O
+    real(kind=c_real), value, intent(in) :: RhoH2O
+    real(kind=c_real), value, intent(in) :: MWH2O
+    real(kind=c_real), value, intent(in) :: MWdry
+    real(kind=c_real), value, intent(in) :: gravit
+    real(kind=c_real), value, intent(in) :: LatVap
+    real(kind=c_real), value, intent(in) :: LatIce
+    real(kind=c_real), value, intent(in) :: CpLiq
+    real(kind=c_real), value, intent(in) :: Tmelt
+    real(kind=c_real), value, intent(in) :: Pi
+    integer(kind=c_int), value, intent(in) :: iulog
     logical(kind=c_bool), value, intent(in)  :: masterproc
 
     call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &

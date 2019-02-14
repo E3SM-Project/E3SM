@@ -1,4 +1,5 @@
 #include "p3_f90.hpp"
+#include "p3_constants.hpp"
 #include "p3_ic_cases.hpp"
 
 #include "share/scream_assert.hpp"
@@ -9,7 +10,7 @@ using scream::Int;
 extern "C" {
   void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RhoH2O, 
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce, 
-                 Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc)
+                 Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th_old, Real* th,
                  Real* qv_old, Real* qv, Real dt, Real* qitot, Real* qirim,
@@ -105,9 +106,10 @@ FortranDataIterator::getfield (Int i) const {
 }
 
 void micro_p3_utils_init (const FortranData& d) {
-  micro_p3_utils_init_c(d.Cpair, d.Rair, d.RH2O, d.RhoH2O, 
-                 d.MWH2O, d.MWdry, d.gravit, d.LatVap, d.LatIce, 
-                 d.CpLiq, d.Tmelt, d.Pi, d.iulog, d.masterproc)
+  using c = Constants<double>;
+  micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RhoH2O, 
+                 c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce, 
+                 c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 
 void p3_init () {
