@@ -199,7 +199,11 @@ endif
 
      amode = IOR(MPI_MODE_WRONLY,MPI_MODE_CREATE)
      info  = MPI_INFO_NULL
+     !call mpi_info_create(info,ierr)
+     !call mpi_info_set(info,'romio_ds_read','disable',ierr)
+     !call mpi_info_set(info,'romio_ds_write','disable',ierr)
      call MPI_file_open(File%par%comm,File%fname,amode,info,File%fh,ierr)
+     !call mpi_info_free(info,ierr)
 
      if(ierr .ne. MPI_SUCCESS) then
         errorcode=ierr
