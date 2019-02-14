@@ -77,6 +77,8 @@ contains
        end if
     end if
 
+    call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
+                   cpliq,tmelt,pi,iulog,masterproc)
   end subroutine p3_init_c
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
