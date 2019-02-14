@@ -23,7 +23,6 @@ contains
   subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
     use array_io_mod
     use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables
-    use micro_p3_utils, only: micro_p3_utils_init
 
     type(c_ptr), intent(in) :: lookup_file_dir_c
     integer(kind=c_int), intent(out) :: info
@@ -121,6 +120,7 @@ contains
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
                  CpLiq, Tmelt, Pi, iulog, masterproc) bind(C)
 
+    use micro_p3_utils, only: micro_p3_utils_init
     real(kind=c_real), value, intent(in) :: Cpair
     real(kind=c_real), value, intent(in) :: Rair
     real(kind=c_real), value, intent(in) :: RH2O
