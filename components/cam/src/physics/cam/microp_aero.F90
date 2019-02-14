@@ -191,8 +191,6 @@ subroutine microp_aero_init
    select case(trim(eddy_scheme))
    case ('diag_TKE', 'SHOC_SGS')
       tke_idx      = pbuf_get_index('tke')   
-!   case ('SHOC_SGS')
-!      call cnst_get_ind('SHOC_TKE', tke_idx)
    case ('CLUBB_SGS')
       wp2_idx = pbuf_get_index('WP2_nadv')
    case default

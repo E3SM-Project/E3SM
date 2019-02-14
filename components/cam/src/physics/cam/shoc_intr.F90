@@ -25,7 +25,7 @@ module shoc_intr
   use perf_mod,      only: t_startf, t_stopf
   use spmd_utils,    only: masterproc
   use cam_logfile,   only: iulog 
-  use shoc,          only: linear_interp, largeneg, dtqsatw_shoc
+  use shoc,          only: linear_interp, largeneg 
   use spmd_utils,    only: masterproc
  
   implicit none	
@@ -51,8 +51,8 @@ module shoc_intr
 	     icwmrdp_idx, &      ! In cloud mixing ratio for deep convection
              sh_frac_idx, &      ! shallow convection cloud fraction
              relvar_idx, &       ! relative cloud water variance
-	     kvh_idx, &          ! CLUBB eddy diffusivity on thermo levels
-             kvm_idx, &          ! CLUBB eddy diffusivity on mom levels
+	     kvh_idx, &          ! SHOC eddy diffusivity on thermo levels
+             kvm_idx, &          ! SHOC eddy diffusivity on mom levels
              pblh_idx, &         ! PBL pbuf
              accre_enhan_idx, &  ! optional accretion enhancement factor for MG
              naai_idx, &         ! ice number concentration
@@ -700,8 +700,8 @@ end function shoc_implements_cnst
      call endrun('shoc_tend_e3sm:  SHOC time step and HOST time step NOT compatible')
    endif      
   
-   !  determine number of timesteps CLUBB core should be advanced, 
-   !  host time step divided by CLUBB time step  
+   !  determine number of timesteps SHOC core should be advanced, 
+   !  host time step divided by SHOC time step  
    nadv = max(hdtime/dtime,1._r8)
 
    ! Set grid space, in meters.  Note this should be changed to a more
@@ -733,34 +733,18 @@ end function shoc_implements_cnst
        vm(i,k) = state1%v(i,k)
        
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
-!       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*(state1%q(i,k,ixq)))  
        thv2(i,k) = thlm(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
  
-!       if (state1%q(i,k,ixcldliq) .eq. 0._r8) then
-!         thv(i,k) = (cpair*state1%t(i,k) + gravit * state1%zm(i,k) - latvap*rcm(i,k) + &
-!                     0.61_r8 * state1%t(i,k) * cpair * rtm(i,k))/cpair
-!       else
-!         thv(i,k) = (cpair*state1%t(i,k) + gravit*state1%zm(i,k) - latvap*rcm(i,k) + &
-!                    (latvap - cpair*state1%t(i,k))*rtm(i,k))/ & 
-!                    (cpair + latvap * dtqsatw_shoc(state1%t(i,k),state1%pmid(i,k)))
-!       endif  
-
        thv(i,k) = thv2(i,k)
  
-!       if (macmic_it .eq. 1) then
-         tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
-!       endif
+       tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
      
      enddo
    enddo        
   
-!   write(*,*) 'THV', thv(1,:)
-
-!   write(*,*) 'THV2', thv2(1,:)
- 
    ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
-   ! for the computation of total energy before CLUBB is called.  This is for an 
-   ! effort to conserve energy since liquid water potential temperature (which CLUBB 
+   ! for the computation of total energy before SHOC is called.  This is for an 
+   ! effort to conserve energy since liquid water potential temperature (which SHOC 
    ! conserves) and static energy (which CAM conserves) are not exactly equal.   
    se_b = 0._r8
    ke_b = 0._r8
@@ -821,14 +805,6 @@ end function shoc_implements_cnst
    call linear_interp(zt_g(:ncol,:pver),zi_g(:ncol,:pverp),rrho(:ncol,:pver),&
                       rrho_i(:ncol,:pverp),pver,pverp,ncol,0._r8)
 
-!    do i=1,ncol 
-!      if (rrho_i(i,1) .le. 0._r8) then
-!        write(iulog,*) 'macmic_it ', macmic_it
-!        write(iulog,*) 'WARNingrrho ', rrho(1,:)
-!        write(iulog,*) 'WARNingrrhoi ', rrho_i(1,:)
-!      endif
-!    enddo
-
    do i=1,ncol
       !  Surface fluxes provided by host model
 
@@ -886,26 +862,24 @@ end function shoc_implements_cnst
    ! Actually call SHOC                                !
    ! ------------------------------------------------- !   
 
-!   write(iulog,*) 'FLUXES', cam_in%wsx(:ncol), cam_in%wsy(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol)
-
    do t=1,nadv
 
      call shoc_main( &
-          ncol, pver, pverp, dtime, &                   ! Input
-	  host_dx_in(:ncol), host_dy_in(:ncol), thv_in(:ncol,:), temp_in(:ncol,:), &                            ! Input
-          zt_g(:ncol,:), zi_g(:ncol,:), pres_in(:ncol,:), pdel_in(:ncol,:),&                       ! Input
-	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), &         ! Input
-	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), &
-	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), &                           ! Input/Ouput
-	  um_in(:ncol,:), vm_in(:ncol,:), rcm_in(:ncol,:), edsclr_in(:ncol,:,:), &                   ! Input/Output
-	  wthv_in(:ncol,:),tkh_in(:ncol,:),tk_in(:ncol,:), &                                           ! Input/Output
+          ncol, pver, pverp, dtime, & ! Input
+	  host_dx_in(:ncol), host_dy_in(:ncol), thv_in(:ncol,:),rcm_in(:ncol,:),& ! Input
+          zt_g(:ncol,:), zi_g(:ncol,:), pres_in(:ncol,:), pdel_in(:ncol,:),& ! Input
+	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
+	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
+	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), & ! Input/Ouput
+	  um_in(:ncol,:), vm_in(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
+	  wthv_in(:ncol,:),tkh_in(:ncol,:),tk_in(:ncol,:), & ! Input/Output
 	  tauresx(:ncol),tauresy(:ncol),&  ! Input/Output
-          cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), &                          ! Output
-          shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), &       ! Output (diagnostic)
+          cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), & ! Output
+          shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
-          wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), &           ! Output (diagnostic)
-          uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), &                    ! Output (diagnostic)
-          wqls_out(:ncol,:),brunt_out(:ncol,:))
+          wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
+          uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), & ! Output (diagnostic)
+          wqls_out(:ncol,:),brunt_out(:ncol,:)) ! Output (diagnostic)
 
           rcm_in(:,:) = rcm_shoc(:,:)
 
@@ -976,28 +950,17 @@ end function shoc_implements_cnst
        wv_a(i) = wv_a(i) + (rtm(i,k)-rcm(i,k))*state1%pdel(i,k)/gravit
        wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)/gravit
 
-       if (shoc_t(i,k) .lt. 0._r8 .or. rtm(i,k) .lt. 0._r8 .or. rcm(i,k) .lt. 0._r8) then 
-         write(iulog,*) 'SHOCTlessthanzero', shoc_t(i,k), i, k, macmic_it
-         write(iulog,*) 'RTMandRCM ', rtm(i,k), rcm(i,k)
-         write(iulog,*) 'LOCATION',state%lat(i)*(180._r8/SHR_CONST_PI), state%lon(i)*(180._r8/SHR_CONST_PI)
-       endif
-
      enddo    
    enddo     
   
-!   write(*,*) 'TafterSHOC ', shoc_t(1,:)
-!   write(*,*) 'RTMafterSHOC ', rtm(1,:)
-!   write(*,*) 'RCMafterSHOC ', rcm(1,:)
-!   write(*,*) 'TKEafterSHOC ', tke(1,:)
- 
-   ! Based on these integrals, compute the total energy before and after CLUBB call
+   ! Based on these integrals, compute the total energy before and after SHOC call
    do i=1,ncol
      te_a(i) = se_a(i) + ke_a(i) + (latvap+latice)*wv_a(i)+latice*wl_a(i)
      te_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*wl_b(i)
      te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
    enddo  
    
-   ! Limit the energy fixer to find highest layer where CLUBB is active
+   ! Limit the energy fixer to find highest layer where SHOC is active
    ! Find first level where wp2 is higher than lowest threshold
    do i=1,ncol
      shoctop(i) = 1
@@ -1005,7 +968,7 @@ end function shoc_implements_cnst
        shoctop(i) = shoctop(i) + 1
      enddo   
    
-     ! Compute the disbalance of total energy, over depth where CLUBB is active
+     ! Compute the disbalance of total energy, over depth where SHOC is active
      se_dis(i) = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,shoctop(i)))  
    enddo    
 
@@ -1015,9 +978,7 @@ end function shoc_implements_cnst
      enddo
    enddo
 
-  ! write(*,*) 'uwind', um(:,:)
-   
-   !  Now compute the tendencies of CLUBB to CAM, note that pverp is the ghost point
+   !  Now compute the tendencies of SHOC to CAM, note that pverp is the ghost point
    !  for all variables and therefore is never called in this loop
    do k=1,pver
      do i=1,ncol
@@ -1049,15 +1010,11 @@ end function shoc_implements_cnst
    
    cmeliq(:,:) = ptend_loc%q(:,:,ixcldliq)
   
-!   write(*,*) 'STATETbefore ', state1%t(1,:)
- 
    ! Update physics tendencies
    call physics_ptend_init(ptend_all, state%psetcols, 'shoc')
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
    
-!   write(*,*) 'STATETafter ', state%t(1,:)
-
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ ! 
    ! ------------------------------------------------------------ !
@@ -1175,7 +1132,7 @@ end function shoc_implements_cnst
         !  using the deep convective cloud fraction, and SHOC cloud fraction (variable 
         !  "cloud_frac"), compute the convective cloud fraction.  This follows the formulation
         !  found in macrophysics code.  Assumes that convective cloud is all nonstratiform cloud 
-        !  from CLUBB plus the deep convective cloud fraction
+        !  from SHOC plus the deep convective cloud fraction
         concld(i,k) = min(cloud_frac(i,k)-alst(i,k)+deepcu(i,k),0.80_r8)
       enddo
     enddo   
