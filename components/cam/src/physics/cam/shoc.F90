@@ -9,13 +9,13 @@ module shoc
 ! email: bogenschutz1@llnl.gov
 !--------------------------------------------------------------
 
-!use shr_kind_mod,  only: r8=>shr_kind_r8
-use cam_logfile, only: iulog
-
 implicit none
 
+! define r8 for double precision 
 integer, parameter, public :: r8 = selected_real_kind(12)
 real(r8), parameter, public :: largeneg = -99999999.99_r8
+
+public :: esatw_shoc,dtesatw_shoc,dtqsatw_shoc
 
 !=========================================================
 ! Constants set in initialization
@@ -81,19 +81,20 @@ end subroutine shoc_init
 
 subroutine shoc_main ( &
      shcol, nlev, nlevi, dtime, &         ! Input
-     host_dx, host_dy,thv, &              ! Input
+     host_dx, host_dy,thv,temp, &              ! Input
      zt_grid,zi_grid,pres,pdel,&          ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input     
      tke, thetal, qw, &                   ! Input/Output
      u_wind, v_wind,cldliq,qtracers,&     ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
+     tauresx,tauresy,&                    ! Input/Output
      shoc_cldfrac,shoc_ql,&               ! Output
-     shoc_mix, isotropy,&        ! Output (diagnostic)
+     shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
      uw_sec, vw_sec, w3,&                 ! Output (diagnostic)    
-     wqls_sec)
+     wqls_sec, brunt)
 
   implicit none
   
@@ -111,6 +112,7 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: pres(shcol,nlev) ! pressure levels on thermo grid [hPa]
   real(r8), intent(in) :: pdel(shcol,nlev)
   real(r8), intent(in) :: thv(shcol,nlev)
+  real(r8), intent(in) :: temp(shcol,nlev)
 
   real(r8), intent(in) :: cldliq(shcol,nlev) ! cloud liquid mixing ratio [kg/kg]
   real(r8), intent(in) :: w_field(shcol,nlev) ! large scale vertical velocity [m/s]
@@ -133,7 +135,9 @@ subroutine shoc_main ( &
   real(r8), intent(inout) :: qtracers(shcol,nlev,num_qtracers) ! tracers [varies]
   real(r8), intent(inout) :: tk(shcol,nlev)
   real(r8), intent(inout) :: tkh(shcol,nlev)
-  
+  real(r8), intent(inout) :: tauresx(shcol)
+  real(r8), intent(inout) :: tauresy(shcol)  
+
   ! output variables
   real(r8), intent(out) :: shoc_cldfrac(shcol,nlev)
   real(r8), intent(out) :: shoc_ql(shcol,nlev)
@@ -151,11 +155,11 @@ subroutine shoc_main ( &
   real(r8) :: vw_sec(shcol,nlevi)
   real(r8) :: w3(shcol,nlevi)
   real(r8) :: wqls_sec(shcol,nlev)
+  real(r8) :: brunt(shcol,nlev)
 
   ! local variables
   real(r8) :: wtracer_sec(shcol,nlevi,num_qtracers)
   real(r8) :: isotropy(shcol,nlev)
-  real(r8) :: brunt(shcol,nlev)
   real(r8) :: rho_zt(shcol,nlev)
   
   real(r8) :: dz_zt(shcol,nlev), dz_zi(shcol,nlev)
@@ -174,7 +178,7 @@ subroutine shoc_main ( &
 
   ! Update the turbulent length scale	 
   call shoc_length(&
-         shcol,nlev,nlevi, tke,&     	      ! Input
+         shcol,nlev,nlevi, tke,temp,&         ! Input
          host_dx, host_dy, cldliq,&           ! Input
          zt_grid,zi_grid,dz_zt,dz_zi,&         ! Input
 	 thetal,wthv_sec,thv,&                ! Input
@@ -197,7 +201,8 @@ subroutine shoc_main ( &
 	   zt_grid,zi_grid,tk,tkh,&           ! Input
            uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
            thetal,qw,qtracers,tke,&           ! Input/Output
-	   u_wind,v_wind)                     ! Input/Output
+	   u_wind,v_wind,&                    ! Input/Output
+           tauresx,tauresy)                   ! Input/Output
   endif	 
 
   ! Diagnose the second order moments
@@ -398,7 +403,8 @@ subroutine update_prognostics_implicit( &
 	     zt_grid,zi_grid,tk,tkh,&         ! Input
              uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,& ! Input
 	     thetal,qw,tracer,tke,&           ! Input/Output
-	     u_wind,v_wind)                   ! Input/Output	
+	     u_wind,v_wind,&                  ! Input/Output
+             tauresx,tauresy)                 ! Input/Output	
   
   implicit none
 
@@ -430,7 +436,9 @@ subroutine update_prognostics_implicit( &
   real(r8), intent(inout) :: u_wind(shcol,nlev)
   real(r8), intent(inout) :: v_wind(shcol,nlev)
   real(r8), intent(inout) :: tke(shcol,nlev)	   
-  
+  real(r8), intent(inout) :: tauresx(shcol)
+  real(r8), intent(inout) :: tauresy(shcol) 
+ 
 ! Local variables         
   integer :: i, k, p
   real(r8) :: rdz_zt(shcol,nlev)
@@ -441,7 +449,10 @@ subroutine update_prognostics_implicit( &
  
   real(r8) :: flux_dummy(shcol)
   real(r8) :: ws(shcol)
-  real(r8) :: tau(shcol)
+  real(r8) :: tau(shcol), taux(shcol), tauy(shcol)
+  real(r8) :: tauimpx(shcol), tauimpy(shcol)
+  real(r8) :: usum_out(shcol), usum_in(shcol)
+  real(r8) :: vsum_out(shcol), vsum_in(shcol)
   real(r8) :: ksrf(shcol)
   
   real(r8) :: ca(shcol,nlev)
@@ -449,21 +460,26 @@ subroutine update_prognostics_implicit( &
   real(r8) :: denom(shcol,nlev)
   real(r8) :: ze(shcol,nlev)
 
-  real(r8) :: wsmin, ksrfmin
-  
-  wsmin = 1._r8
-  ksrfmin = 1.e-4_r8
+  real(r8) :: wsmin, ksrfmin, ramda
+  real(r8) :: timeres 
+ 
+  wsmin = 1._r8      ! Minimum wind speed for ksrfturb computation [ m/s ]
+  ksrfmin = 1.e-4_r8 ! Minimum surface drag coefficient  [ kg/s/m^2 ]
+  timeres = 7200._r8 ! Relaxation time scale of residual stress ( >= dt ) [s]
 
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
  
-  do k=1,nlev-1
+!  do k=1,nlev-1
+  do k=1,nlev
     do i=1,shcol
-      tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / (zt_grid(i,k+1) - zt_grid(i,k))
+!      tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / (zt_grid(i,k+1) - zt_grid(i,k))
+       tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / dz_zi(i,k)
     enddo
   enddo
- 
+
+  ! this is really 1/dp 
   do k=1,nlev
     do i=1,shcol 
       rdz_zt(i,k) = 1._r8/(ggr*rho_zt(i,k)*dz_zt(i,k))
@@ -471,16 +487,34 @@ subroutine update_prognostics_implicit( &
   enddo  
 
   do i=1,shcol
+    taux(i) = rho_zi(i,1)*uw_sfc(i)
+    tauy(i) = rho_zi(i,1)*vw_sfc(i)
     ws(i) = max(sqrt(u_wind(i,1)**2._r8 + v_wind(i,1)**2._r8),wsmin)
-    tau(i) = sqrt( (rho_zi(i,1)*uw_sfc(i))**2._r8 + &
-                   (rho_zi(i,1)*vw_sfc(i))**2._r8 )
+    tau(i) = sqrt( taux(i)**2._r8 + tauy(i)**2._r8 )
     ksrf(i) = max(tau(i) / ws(i), ksrfmin)
   enddo
+
+  do i=1,shcol
+    usum_in(i)=0._r8
+    vsum_in(i)=0._r8
+    do k=1,nlev
+      usum_in(i)=usum_in(i)+(1._r8/ggr)*u_wind(i,k)/rdz_zt(i,k)
+      vsum_in(i)=vsum_in(i)+(1._r8/ggr)*v_wind(i,k)/rdz_zt(i,k)
+    enddo
+  enddo
+
+  ! Add in residual stress of previous time step explicitly into the lowest
+  ! model layer with a relaxation time scale of 'timeres'
+  ramda = dtime/timeres
+  ramda = 0._r8
+  u_wind(:,1) = u_wind(:,1) + dtime * ggr * rdz_zt(:,1) * tauresx(:) * ramda
+  v_wind(:,1) = v_wind(:,1) + dtime * ggr * rdz_zt(:,1) * tauresy(:) * ramda 
 
   ! Apply the surface fluxes explicitly
   thetal(:,1) = thetal(:,1) + dtime * (ggr * rho_zi(:,1) * rdz_zt(:,1)) * wthl_sfc(:)  
   qw(:,1) = qw(:,1) + dtime * (ggr * rho_zi(:,1) * rdz_zt(:,1)) * wqw_sfc(:)
 
+  ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdz_zt,dtime,&
 	 ksrf,ca,cc,denom,ze)
 
@@ -502,7 +536,25 @@ subroutine update_prognostics_implicit( &
   do p=1,num_tracer
     call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,tracer(:shcol,:nlev,p))
   enddo
-	 
+
+  do i=1,shcol
+    usum_out(i)=0._r8
+    vsum_out(i)=0._r8
+    do k=1,nlev
+      usum_out(i)=usum_out(i)+(1._r8/ggr)*u_wind(i,k)/rdz_zt(i,k)
+      vsum_out(i)=vsum_out(i)+(1._r8/ggr)*v_wind(i,k)/rdz_zt(i,k)
+    enddo
+
+    tauimpx(i) = (usum_out(i) - usum_in(i))/dtime
+    tauimpy(i) = (vsum_out(i) - vsum_in(i))/dtime
+
+    tauresx(i) = tauresx(i) + taux(i) + ksrf(i)*u_wind(i,1)
+    tauresy(i) = tauresy(i) + tauy(i) + ksrf(i)*v_wind(i,1)
+
+!   tauresx(i) = taux(i) + tauresx(i) - tauimpx(i)
+!    tauresy(i) = tauy(i) + tauresy(i) - tauimpy(i)
+  enddo
+
   return	 	 
 
 end subroutine update_prognostics_implicit
@@ -648,6 +700,8 @@ subroutine diag_second_shoc_moments(&
       wthl_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(thetal(i,k)-thetal(i,kb))
       ! diagnose vertical moisture flux
       wqw_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(qw(i,k)-qw(i,kb))
+
+      ! The below fluxes are used for diagnostic purposes
       ! diagnose vertical TKE flux      
       wtke_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(tke(i,k)-tke(i,kb))
  
@@ -752,7 +806,7 @@ subroutine diag_third_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,wthv_sec,wthv_sec_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,10._r8)
  
-  c=7._r8
+  c=7.0_r8
   a0=(0.52_r8*c**(-2))/(c-2._r8)
   a1=0.87_r8/(c**2)
   a2=0.5_r8/c
@@ -782,9 +836,9 @@ subroutine diag_third_shoc_moments(&
       f0=thedz2 * bet2**3 * iso**4 * wthl_sec(i,k) * &
         (thl_sec(i,kc)-thl_sec(i,kb))
 	
-      f1=thedz2 * bet2**2 * iso**3 * wthl_sec(i,k) * &
+      f1=thedz2 * bet2**2 * iso**3 * (wthl_sec(i,k) * &
         (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_r8 * &
-	w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))
+	w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))) ! bug here
 	
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
         (w_sec(i,k)-w_sec(i,kb))+ 2._r8 * thedz2 * bet2 * &   
@@ -792,7 +846,7 @@ subroutine diag_third_shoc_moments(&
 	
       f3=thedz2 * bet2 * isosqrt * w_sec_zi(i,k) * &
         (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
-	bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,k) - tke(i,kb)))
+	bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,k) - tke(i,kb))) 
 	
       f4=thedz * iso * w_sec_zi(i,k) * ((w_sec(i,k) - w_sec(i,kb) + &
         (tke(i,k) - tke(i,kb))))
@@ -814,8 +868,8 @@ subroutine diag_third_shoc_moments(&
       Y0 = (2._r8 * a2 * buoy_sgs2 * X0) / (1._r8 - a3 * buoy_sgs2)
       X1 = (a0 * f0 + a1 * f1 + a2 * (1._r8 - a3 * buoy_sgs2) * f2) / &
         (1._r8 - (a1 + a3) * buoy_sgs2)
-      Y1 = (2._r8 * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1) / &
-        (1._r8 - a3* buoy_sgs2))     
+      Y1 = (2._r8 * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1)) / &   ! bug here!
+        (1._r8 - a3* buoy_sgs2)     
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	
       ! Compute the A0, A1 terms	
@@ -834,19 +888,20 @@ subroutine diag_third_shoc_moments(&
 
 ! Alternate definition
 !  w3(:,:) = shoc_mix_zi(:,:) * (ggr/basetemp) * wthv_sec_zi(:,:)
-
+!  w3(:,:) = 0._r8
   ! perform clipping to prevent unrealistically large values from occuring
-!  do k=1,nlevi
-!    do i=1,shcol
+  do k=1,nlevi
+    do i=1,shcol
     
-!      tsign = 1._r8
-!      theterm = w_sec_zi(i,k)
-!      cond = 1.2_r8 * sqrt(2._r8 * theterm**3)
-!      if (w3(i,k) .lt. 0) tsign = -1._r8
-!      if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
-     
-!    enddo ! end i loop (column loop)
-!  enddo ! end k loop (vertical loop)
+      tsign = 1._r8
+      theterm = w_sec_zi(i,k)
+      cond = 1.2_r8 * sqrt(2._r8 * theterm**3)
+      if (w3(i,k) .lt. 0) tsign = -1._r8
+      if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
+!      w3(i,k) = tsign * cond 
+    
+    enddo ! end i loop (column loop)
+  enddo ! end k loop (vertical loop)
  
   w3(:,:) = w3tune*w3(:,:)
  
@@ -1048,6 +1103,8 @@ subroutine shoc_assumed_pdf(&
 
         thl1_1=thl1_1*sqrtthl+thl_first
         thl1_2=thl1_2*sqrtthl+thl_first
+!        thl1_1=thl_first - (wthlsec/sqrtw2)/w1_2
+!        thl1_2=thl_first - (wthlsec/sqrtw2)/w1_1
 
         sqrtthl2_1=sqrt(thl2_1)
         sqrtthl2_2=sqrt(thl2_2)
@@ -1091,6 +1148,8 @@ subroutine shoc_assumed_pdf(&
 
         qw1_1=qw1_1*sqrtqt+qw_first
         qw1_2=qw1_2*sqrtqt+qw_first
+!        qw1_1=qw_first - (wqwsec/sqrtw2)/w1_2
+!        qw1_2=qw_first - (wqwsec/sqrtw2)/w1_1
 
         sqrtqw2_1=sqrt(qw2_1)
         sqrtqw2_2=sqrt(qw2_2)
@@ -1231,7 +1290,8 @@ subroutine shoc_assumed_pdf(&
         +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)  
 !        +((lcond/cp)-(1._r8/epsterm)*basetemp)*wqls
 	
-	
+
+     	
     enddo  ! end i loop here
   enddo	  ! end k loop here
 	                     
@@ -1284,7 +1344,7 @@ subroutine shoc_tke(&
   ! local variables	     
   real(r8) :: shear_prod(shcol,nlevi)
   real(r8) :: shear_prod_zt(shcol,nlev), tk_zi(shcol,nlevi)
-  real(r8) :: grd,betdz,Ck,Ce,Ces,Ce1,Ce2,smix,Pr,Cee,Cs
+  real(r8) :: grd,betdz,Ck,Ck10,Ce,Ces,Ce1,Ce2,smix,Pr,Cee,Cs
   real(r8) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
   real(r8) :: lstarn, lstarp, bbb, omn, omp, ustar
   real(r8) :: qsatt,dqsat,tk_in, uw_sec, vw_sec
@@ -1293,6 +1353,7 @@ subroutine shoc_tke(&
   
   Cs = 0.15_r8
   Ck=0.1_r8
+  Ck10=0.1_r8
   Ce=Ck**3/Cs**4
   Ces=Ce/0.7_r8*3.0_r8
   Pr=1.0_r8   
@@ -1345,13 +1406,13 @@ subroutine shoc_tke(&
       
       tke(i,k)=min(tke(i,k),maxtke)
    
-      tscale1=(2._r8*tke(i,k))/a_diss
+      tscale1=(2.0_r8*tke(i,k))/a_diss
       lambda=0.04_r8
       if (buoy_sgs_save .le. 0) lambda=0._r8
       
       isotropy(i,k)=min(maxiso,tscale1/(1._r8+lambda*buoy_sgs_save*tscale1**2))
 
-      tkh(i,k)=Ck*isotropy(i,k)*tke(i,k)              
+      tkh(i,k)=Ck10*isotropy(i,k)*tke(i,k)              
       tk(i,k)=tkh(i,k)  
 
       tke(i,k) = max(mintke,tke(i,k))
@@ -1394,7 +1455,7 @@ end subroutine check_tke
 ! Compute the turbulent length scale
 
 subroutine shoc_length(&
-             shcol,nlev,nlevi,tke,&      ! Input
+             shcol,nlev,nlevi,tke,temp,&      ! Input
              host_dx,host_dy,cldin,&     ! Input
              zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
 	     thetal,wthv_sec,thv,&       ! Input
@@ -1422,6 +1483,7 @@ subroutine shoc_length(&
   real(r8), intent(in) :: wthv_sec(shcol,nlev) ! SGS buoyancy flux [K m/s]
   real(r8), intent(in) :: thetal(shcol,nlev) ! liquid water potential temperature [K]
   real(r8), intent(in) :: thv(shcol,nlev)
+  real(r8), intent(in) :: temp(shcol,nlev)
 
   ! output variables
   real(r8), intent(out) :: brunt(shcol,nlev) ! brunt vailsailla frequency
@@ -1457,7 +1519,9 @@ subroutine shoc_length(&
   ! First define the local stability
   do k=1,nlev
     do i=1,shcol
-      brunt(i,k) = (ggr/basetemp) * (thv_zi(i,k+1) - thv_zi(i,k))/dz_zt(i,k) 
+!      brunt(i,k) = (ggr/basetemp) * (thv_zi(i,k+1) - thv_zi(i,k))/dz_zt(i,k) 
+      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k+1) - thv_zi(i,k))/dz_zt(i,k) 
+!      brunt(i,k) = 0.9_r8*brunt(i,k)
     enddo
   enddo 
  
@@ -1596,7 +1660,7 @@ subroutine shoc_length(&
 !      kt=k+1
 !      if (k .eq. nlev) kt=k
 !      if (cldin(i,kt) .eq. cldthresh .and. cldin(i,k) .gt. cldthresh) then
-!        shoc_mix(i,k)=0.1*dz_zt(i,k)
+!        shoc_mix(i,k)=dz_zt(i,k)
 !      endif
 
     enddo
@@ -1641,9 +1705,11 @@ subroutine vd_shoc_decomp( &
   
   do k=2,nlev
     do i=1,shcol
+      ca(i,k) = kv_term(i,k) * tmpi(i,k) * rdz_zt(i,k)
+      cc(i,k-1) = kv_term(i,k) * tmpi(i,k) * rdz_zt(i,k-1)
       
-      ca(i,k) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k)
-      cc(i,k-1) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k-1)
+!      ca(i,k) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k)
+!      cc(i,k-1) = kv_term(i,k) * tmpi(i,k-1) * rdz_zt(i,k-1)
       
     enddo
   enddo 
@@ -1804,5 +1870,32 @@ else
  esatw_shoc = 2._r8*0.01_r8*exp(9.550426_r8 - 5723.265_r8/t + 3.53068_r8*Log(t) - 0.00728332_r8*t)
 end if
 end     
+
+real(r8) function dtesatw_shoc(t)
+implicit none
+real(r8) t  ! temperature (K)
+real(r8) a0,a1,a2,a3,a4,a5,a6,a7,a8
+data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
+          0.443956472_r8, 0.285976452e-1_r8, 0.794747212e-3_r8, &
+          0.121167162e-4_r8, 0.103167413e-6_r8, 0.385208005e-9_r8, &
+         -0.604119582e-12_r8, -0.792933209e-14_r8, -0.599634321e-17_r8/
+real(r8) dt
+dt = t-273.16_r8
+if(dt.gt.-80._r8) then
+ dtesatw_shoc = a0 + dt*(a1+dt*(a2+dt*(a3+dt*(a4+dt*(a5+dt*(a6+dt*(a7+a8*dt)))))))
+else
+ dtesatw_shoc = esatw_shoc(t+1)-esatw_shoc(t)
+end if
+
+end
+
+
+real(r8) function dtqsatw_shoc(t,p)
+implicit none
+real(r8) t  ! temperature (K)
+real(r8) p  ! pressure    (mb)
+dtqsatw_shoc = 0.622_r8*dtesatw_shoc(t)/p
+end
+
 
 end module shoc

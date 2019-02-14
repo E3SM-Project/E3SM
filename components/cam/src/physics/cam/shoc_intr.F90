@@ -25,7 +25,7 @@ module shoc_intr
   use perf_mod,      only: t_startf, t_stopf
   use spmd_utils,    only: masterproc
   use cam_logfile,   only: iulog 
-  use shoc,          only: linear_interp, largeneg
+  use shoc,          only: linear_interp, largeneg, dtqsatw_shoc
   use spmd_utils,    only: masterproc
  
   implicit none	
@@ -37,6 +37,8 @@ module shoc_intr
              tkh_idx, &
              tk_idx, &
              wthv_idx, &       ! buoyancy flux
+             tauresx_idx, &    ! Residual meridional surface stress
+             tauresy_idx, &    ! Residual zonal surface stress
              cld_idx, &          ! Cloud fraction
              concld_idx, &       ! Convective cloud fraction
              ast_idx, &          ! Stratiform cloud fraction
@@ -134,7 +136,9 @@ module shoc_intr
     call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.false.)
   
     ! Fields that are not prognostic should be added to PBUF
-    call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx) 
+    call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx)
+    call pbuf_add_field('TAURESX', 'global', dtype_r8, (/pcols,dyn_time_lvls/), tauresx_idx) 
+    call pbuf_add_field('TAURESY', 'global', dtype_r8, (/pcols,dyn_time_lvls/), tauresy_idx) 
     call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tkh_idx) 
     call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tk_idx) 
 
@@ -280,7 +284,9 @@ end function shoc_implements_cnst
     tke_idx         = pbuf_get_index('tke')   
  
     if (is_first_step()) then
-      call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8) 
+      call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d, tauresx_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d, tauresy_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tkh_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
     endif
@@ -361,6 +367,7 @@ end function shoc_implements_cnst
     call addfld('WQL_SEC',(/'lev'/),'A', 'W/m2', 'Liquid water flux')
     call addfld('ISOTROPY',(/'lev'/),'A', 's', 'timescale')
     call addfld('CONCLD',(/'lev'/),  'A',        'fraction', 'Convective cloud cover')
+    call addfld('BRUNT',(/'lev'/), 'A', 's-1', 'Brunt frequency')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -380,6 +387,7 @@ end function shoc_implements_cnst
     call add_default('WQL_SEC', 1, ' ')
     call add_default('ISOTROPY',1,' ')
     call add_default('CONCLD',1,' ')
+    call add_default('BRUNT',1,' ')
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
     ! ---------------------------------------------------------------!
@@ -492,6 +500,7 @@ end function shoc_implements_cnst
    real(r8) :: tke_in(pcols,pver)
    real(r8) :: thlm_in(pcols,pver)
    real(r8) :: thv_in(pcols,pver)
+   real(r8) :: temp_in(pcols,pver)
    real(r8) :: qv_in(pcols,pver)
    real(r8) :: rcm_in(pcols,pver)
    real(r8) :: rvm_in(pcols,pver)
@@ -530,13 +539,13 @@ end function shoc_implements_cnst
    real(r8) :: wthl_sec_out(pcols,pverp), wqw_sec_out(pcols,pverp)
    real(r8) :: wtke_sec_out(pcols,pverp), uw_sec_out(pcols,pverp)
    real(r8) :: vw_sec_out(pcols,pverp), w3_out(pcols,pverp)
-   real(r8) :: wqls_out(pcols,pver)
+   real(r8) :: wqls_out(pcols,pver), brunt_out(pcols,pver)
    real(r8) :: shoc_mix(pcols,pver)
    real(r8) :: w_sec(pcols,pver), thl_sec(pcols,pverp)
    real(r8) :: qw_sec(pcols,pverp), qwthl_sec(pcols,pverp)
    real(r8) :: wthl_sec(pcols,pverp), wqw_sec(pcols,pverp)
    real(r8) :: wtke_sec(pcols,pverp), uw_sec(pcols,pverp)
-   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pverp), wqls(pcols,pver)
+   real(r8) :: vw_sec(pcols,pverp), w3(pcols,pverp), wqls(pcols,pver), brunt(pcols,pver)
 
    real(r8) :: wthl_output(pcols,pverp)
    real(r8) :: wqw_output(pcols,pverp)
@@ -545,7 +554,8 @@ end function shoc_implements_cnst
 
    real(r8) :: obklen(pcols), ustar2(pcols), kinheat(pcols), kinwat(pcols)
    real(r8) :: dummy2(pcols), dummy3(pcols), kbfs(pcols), th(pcols,pver), thv(pcols,pver)
-   
+   real(r8) :: thv2(pcols,pver)  
+ 
    real(r8) :: minqn, rrho(pcols,pver), rrho_i(pcols,pverp)    ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
@@ -565,6 +575,8 @@ end function shoc_implements_cnst
   
    real(r8), pointer, dimension(:,:) :: tke  ! turbulent kinetic energy 
    real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
+   real(r8), pointer, dimension(:)   :: tauresx
+   real(r8), pointer, dimension(:)   :: tauresy
    real(r8), pointer, dimension(:,:) :: tkh 
    real(r8), pointer, dimension(:,:) :: tk
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
@@ -626,6 +638,8 @@ end function shoc_implements_cnst
    
    !  Establish associations between pointers and physics buffer fields   
    call pbuf_get_field(pbuf, tke_idx,     tke)
+   call pbuf_get_field(pbuf, tauresx_idx,  tauresx,  start=(/1,itim_old/), kount=(/pcols,1/))
+   call pbuf_get_field(pbuf, tauresy_idx,  tauresy,  start=(/1,itim_old/), kount=(/pcols,1/))
    call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tkh_idx,      tkh,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tk_idx,       tk,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
@@ -719,16 +733,31 @@ end function shoc_implements_cnst
        vm(i,k) = state1%v(i,k)
        
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
-!       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*(state1%q(i,k,ixq)+state1%q(i,k,ixcldliq)))  
-       thv(i,k) = thlm(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
-    
+!       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*(state1%q(i,k,ixq)))  
+       thv2(i,k) = thlm(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
+ 
+!       if (state1%q(i,k,ixcldliq) .eq. 0._r8) then
+!         thv(i,k) = (cpair*state1%t(i,k) + gravit * state1%zm(i,k) - latvap*rcm(i,k) + &
+!                     0.61_r8 * state1%t(i,k) * cpair * rtm(i,k))/cpair
+!       else
+!         thv(i,k) = (cpair*state1%t(i,k) + gravit*state1%zm(i,k) - latvap*rcm(i,k) + &
+!                    (latvap - cpair*state1%t(i,k))*rtm(i,k))/ & 
+!                    (cpair + latvap * dtqsatw_shoc(state1%t(i,k),state1%pmid(i,k)))
+!       endif  
+
+       thv(i,k) = thv2(i,k)
+ 
 !       if (macmic_it .eq. 1) then
          tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
 !       endif
      
      enddo
    enddo        
-   
+  
+!   write(*,*) 'THV', thv(1,:)
+
+!   write(*,*) 'THV2', thv2(1,:)
+ 
    ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
    ! for the computation of total energy before CLUBB is called.  This is for an 
    ! effort to conserve energy since liquid water potential temperature (which CLUBB 
@@ -830,6 +859,7 @@ end function shoc_implements_cnst
        rtm_in(i,k)     = rtm(i,pver-k+1)
        thlm_in(i,k)    = thlm(i,pver-k+1)
        thv_in(i,k)     = thv(i,pver-k+1)
+       temp_in(i,k)    = state%t(i,pver-k+1)
        tke_in(i,k)     = tke(i,pver-k+1)
        wthv_in(i,k)    = wthv(i,pver-k+1)
        tkh_in(i,k)     = tkh(i,pver-k+1)
@@ -862,19 +892,20 @@ end function shoc_implements_cnst
 
      call shoc_main( &
           ncol, pver, pverp, dtime, &                   ! Input
-	  host_dx_in(:ncol), host_dy_in(:ncol), thv_in(:ncol,:), &                            ! Input
+	  host_dx_in(:ncol), host_dy_in(:ncol), thv_in(:ncol,:), temp_in(:ncol,:), &                            ! Input
           zt_g(:ncol,:), zi_g(:ncol,:), pres_in(:ncol,:), pdel_in(:ncol,:),&                       ! Input
 	  wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), &         ! Input
 	  wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), &
 	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), &                           ! Input/Ouput
 	  um_in(:ncol,:), vm_in(:ncol,:), rcm_in(:ncol,:), edsclr_in(:ncol,:,:), &                   ! Input/Output
 	  wthv_in(:ncol,:),tkh_in(:ncol,:),tk_in(:ncol,:), &                                           ! Input/Output
-	  cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), &                          ! Output
+	  tauresx(:ncol),tauresy(:ncol),&  ! Input/Output
+          cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), &                          ! Output
           shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), &       ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          
           wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), &           ! Output (diagnostic)
           uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), &                    ! Output (diagnostic)
-          wqls_out(:ncol,:))
+          wqls_out(:ncol,:),brunt_out(:ncol,:))
 
           rcm_in(:,:) = rcm_shoc(:,:)
 
@@ -903,6 +934,7 @@ end function shoc_implements_cnst
        isotropy(i,k) = isotropy_out(i,pver-k+1)
        w_sec(i,k) = w_sec_out(i,pver-k+1)
        wqls(i,k) = wqls_out(i,pver-k+1)
+       brunt(i,k) = brunt_out(i,pver-k+1)
  
      enddo
    enddo
@@ -1259,6 +1291,7 @@ end function shoc_implements_cnst
     call outfld('WQL_SEC',wql_output, pcols, lchnk)
     call outfld('ISOTROPY',isotropy, pcols,lchnk)
     call outfld('CONCLD',concld,pcols,lchnk)
+    call outfld('BRUNT',brunt,pcols,lchnk)
 
 	 
     return
