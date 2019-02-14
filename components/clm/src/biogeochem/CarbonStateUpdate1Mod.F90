@@ -39,7 +39,7 @@ module CarbonStateUpdate1Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
+  subroutine CarbonStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
        grc_cs, grc_cf, col_cs, col_cf)
     !
     ! !DESCRIPTION:
@@ -94,7 +94,7 @@ contains
   end subroutine CarbonStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf)
+  subroutine CarbonStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state

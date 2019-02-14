@@ -28,7 +28,7 @@ module CarbonStateUpdate3Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars, col_csv2, veg_csv2, col_cfv2, veg_cfv2)
     !
     ! !DESCRIPTION:

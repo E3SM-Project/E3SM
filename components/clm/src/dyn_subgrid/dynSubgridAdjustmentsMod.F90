@@ -25,7 +25,7 @@ module dynSubgridAdjustmentsMod
   use ColumnDataType         , only : column_phosphorus_state
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
-  use CNSpeciesMod           , only : CN_SPECIES_N, CN_SPECIES_P
+  use SpeciesMod           , only : CN_SPECIES_N, CN_SPECIES_P
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -72,7 +72,7 @@ contains
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
-    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
     type(bounds_type)              , intent(in)    :: bounds
@@ -500,7 +500,7 @@ contains
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
-    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
     type(bounds_type)              , intent(in)    :: bounds
@@ -926,7 +926,7 @@ contains
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
-    use CNComputeSeedMod   , only : ComputeSeedAmounts
+    use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
     type(bounds_type)                , intent(in)    :: bounds

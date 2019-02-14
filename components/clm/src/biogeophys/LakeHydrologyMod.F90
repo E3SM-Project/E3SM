@@ -148,8 +148,8 @@ contains
          do_capsnow           =>  col_ws%do_capsnow        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
          begwb                =>  col_ws%begwb             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
          endwb                =>  col_ws%endwb             , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
-         h2osoi_liq_depth_intg=> waterstate_vars%h2osoi_liq_depth_intg_col, & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
-         h2osoi_ice_depth_intg=> waterstate_vars%h2osoi_ice_depth_intg_col, & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
+         h2osoi_liq_depth_intg=>  col_ws%h2osoi_liq_depth_intg, & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
+         h2osoi_ice_depth_intg=>  col_ws%h2osoi_ice_depth_intg, & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
          snw_rds              =>  col_ws%snw_rds           , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
          snw_rds_top          =>  col_ws%snw_rds_top       , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer [microns] 
          h2osno_top           =>  col_ws%h2osno_top        , & ! Output: [real(r8) (:)   ]  mass of snow in top layer [kg]    
