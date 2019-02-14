@@ -135,8 +135,8 @@ end interface var_coef
     real(rtype), intent(in) :: cpliq
     real(rtype), intent(in) :: tmelt
     real(rtype), intent(in) :: pi
-    integer(itype), intent(in) :: iulog
-    logical, intent(in)  :: masterproc
+    integer, intent(in)     :: iulog
+    logical, intent(in)     :: masterproc
 
     real(rtype) :: ice_lambda_bounds(2)
 

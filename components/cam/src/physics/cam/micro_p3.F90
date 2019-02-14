@@ -462,7 +462,6 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: diam_ice
     ! AaronDonahue Added for extra output
     real(rtype), dimension(its:ite,kts:kte) :: cldm
-    real(rtype)                             :: mincld
     CHARACTER(len=16) :: precip_frac_method = 'max_overlap'
     ! AaronDonahue -end
 

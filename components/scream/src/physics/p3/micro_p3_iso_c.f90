@@ -133,7 +133,7 @@ contains
     real(kind=c_real), value, intent(in) :: CpLiq
     real(kind=c_real), value, intent(in) :: Tmelt
     real(kind=c_real), value, intent(in) :: Pi
-    integer(kind=c_int), value, intent(in) :: iulog_in
+    integer(kind=c_int), value, intent(in)   :: iulog_in
     logical(kind=c_bool), value, intent(in)  :: masterproc_in
 
     logical :: masterproc
@@ -143,7 +143,7 @@ contains
     iulog = iulog_in
 
     call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
-                   CpLiq,Tmelt,Pi,98,masterproc)
+                   CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine micro_p3_utils_init_c
 
 end module micro_p3_iso_c
