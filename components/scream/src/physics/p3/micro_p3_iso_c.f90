@@ -77,8 +77,8 @@ contains
        end if
     end if
 
-    call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
-                   cpliq,tmelt,pi,iulog,masterproc)
+    call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWDry,gravit,LatVap,LatIce, &
+                   CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine p3_init_c
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
@@ -123,23 +123,23 @@ contains
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
                  CpLiq, Tmelt, Pi, iulog, masterproc) bind(C)
 
-    real(kind=c_real), intent(in) :: cpair
-    real(kind=c_real), intent(in) :: rair
-    real(kind=c_real), intent(in) :: rh2o
-    real(kind=c_real), intent(in) :: rhoh2o
-    real(kind=c_real), intent(in) :: mwh2o
-    real(kind=c_real), intent(in) :: mwdry
+    real(kind=c_real), intent(in) :: Cpair
+    real(kind=c_real), intent(in) :: Rair
+    real(kind=c_real), intent(in) :: RH2O
+    real(kind=c_real), intent(in) :: RhoH2O
+    real(kind=c_real), intent(in) :: MWH2O
+    real(kind=c_real), intent(in) :: MWdry
     real(kind=c_real), intent(in) :: gravit
-    real(kind=c_real), intent(in) :: latvap
-    real(kind=c_real), intent(in) :: latice
-    real(kind=c_real), intent(in) :: cpliq
-    real(kind=c_real), intent(in) :: tmelt
-    real(kind=c_real), intent(in) :: pi
+    real(kind=c_real), intent(in) :: LatVap
+    real(kind=c_real), intent(in) :: LatIce
+    real(kind=c_real), intent(in) :: CpLiq
+    real(kind=c_real), intent(in) :: Tmelt
+    real(kind=c_real), intent(in) :: Pi
     integer(kind=c_int),value, intent(in) :: iulog
     logical(kind=c_bool), value, intent(in)  :: masterproc
 
-    call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
-                   cpliq,tmelt,pi,iulog,masterproc)
+    call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
+                   CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine micro_p3_utils_init_c
 
 end module micro_p3_iso_c
