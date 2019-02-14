@@ -363,9 +363,9 @@
       <queue walltimemax="02:00:00"   strict="true" nodemin="1"  nodemax="8">short</queue>
       <queue walltimemax="08:00:00"   strict="true" nodemin="1"  nodemax="6" default="true">medium</queue>
       <queue walltimemax="40:00:00"   strict="true" nodemin="1"  nodemax="8">long</queue>
-      <queue walltimemax="80:00:00"   strict="true" nodemin="1"  nodemax="8">verylong</queue>
-      <queue walltimemax="32:00:00"   strict="true" nodemax="16" nodemin="1">overnight</queue>
-      <queue walltimemax="3000:00:00" strict="true" nodemax="32" nodemin="1">monster</queue>
+      <queue walltimemax="120:00:00"   strict="true" nodemin="1"  nodemax="8">verylong</queue>
+      <queue walltimemax="32:00:00"   strict="true" nodemax="14" nodemin="1">overnight</queue>
+      <queue walltimemax="3000:00:00" strict="true" nodemax="14" nodemin="1">monster</queue>
     </queues>
   </batch_system>
 
