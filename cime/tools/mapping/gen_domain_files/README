@@ -31,6 +31,7 @@ $ gen_domain -m <filemap>
              [-c <user comment gen_domain.nml>]
              [--fminval <fminval>]
              [--fmaxval <fmaxval>]
+             [--set-omask]
  
 where:
     filemap = input mapping file name  (character string)
@@ -40,6 +41,12 @@ where:
     set_fv_pole_yc = [0,1,2] ~ optional, default = 0 (see comments below)
     fminval = minimum allowable land fraction (reset to 0 below fminval)
     fmaxval = maximum allowable land fraction (reset to 1 above fmaxval)
+
+Notes:
+    If --set-omask is passed, then an ocean mask is not required and will
+    simply be set to a vector of 1s if mask_a is not present in the input
+    mapping file. If --set-omask is omitted, then mask_a is required and an
+    error will be raised if it does not exist in the input mapping file.
 
 The following output domain files are created:
   domain.lnd.gridlnd_gridocn.nc
