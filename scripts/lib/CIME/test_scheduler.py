@@ -760,7 +760,7 @@ class TestScheduler(object):
 
         if not success:
             status_str += "\n    Case dir: {}\n".format(self._get_test_dir(test))
-            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.encode('utf-8').splitlines()))
+            status_str += "    Errors were:\n        {}\n".format("\n        ".join(str(errors.encode('utf-8')).splitlines()))
 
         logger.info(status_str)
 
