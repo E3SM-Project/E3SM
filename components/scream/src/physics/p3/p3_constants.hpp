@@ -15,11 +15,24 @@ namespace p3 {
 template <typename Scalar>
 struct Constants
 {
-  static constexpr Scalar RHOW     = 997.0;
+  static constexpr Scalar Cpair       = 1004.64;
+  static constexpr Scalar Rair        = 287.042;
+  static constexpr Scalar RH2O        = 461.505;
+  static constexpr Scalar RhoH2O      = 1000.0;
+  static constexpr Scalar MWH2O       = 18.016;
+  static constexpr Scalar MWdry       = 28.966;
+  static constexpr Scalar gravit      = 9.80616;
+  static constexpr Scalar LatVap      = 2501000.0;
+  static constexpr Scalar LatIce      = 333700.0;
+  static constexpr Scalar CpLiq       = 4188.0;
+  static constexpr Scalar Tmelt       = 273.15;
+  static constexpr Scalar Pi          = 3.14159265;
+  static constexpr int    iulog       = 98;
+  static constexpr bool   masterproc  = true;
+  static constexpr Scalar RHOW     = RhoH2O;
   static constexpr Scalar INV_RHOW = 1.0/RHOW;
   static constexpr Scalar THIRD    = 1.0/3.0;
   static constexpr Scalar SXTH     = 1.0/6.0;
-  static constexpr Scalar PI       = 3.14159265;
   static constexpr Scalar PIOV6    = PI*SXTH;
   static constexpr Scalar CONS1    = PIOV6*RHOW;
   static constexpr Scalar QSMALL   = 1.e-14;
@@ -27,7 +40,7 @@ struct Constants
   static constexpr Scalar P0       = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD       = 287.15;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR   = P0/(RD*273.15);
-  static constexpr Scalar CP       = 1005.0;          // heat constant of air at constant pressure, J/kg
+  static constexpr Scalar CP       = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP   = 1.0/CP;
 };
 

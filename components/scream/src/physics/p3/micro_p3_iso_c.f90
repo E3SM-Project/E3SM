@@ -116,4 +116,29 @@ contains
          diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
          pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm)
   end subroutine p3_main_c
+
+   
+  subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
+                 MWH2O, MWdry, gravit, LatVap, LatIce,        &
+                 CpLiq, Tmelt, Pi, iulog, masterproc) bind(C)
+
+    real(kind=c_real), intent(in) :: cpair
+    real(kind=c_real), intent(in) :: rair
+    real(kind=c_real), intent(in) :: rh2o
+    real(kind=c_real), intent(in) :: rhoh2o
+    real(kind=c_real), intent(in) :: mwh2o
+    real(kind=c_real), intent(in) :: mwdry
+    real(kind=c_real), intent(in) :: gravit
+    real(kind=c_real), intent(in) :: latvap
+    real(kind=c_real), intent(in) :: latice
+    real(kind=c_real), intent(in) :: cpliq
+    real(kind=c_real), intent(in) :: tmelt
+    real(kind=c_real), intent(in) :: pi
+    integer(kind=c_int),value, intent(in) :: iulog
+    logical(kind=c_bool), value, intent(in)  :: masterproc
+
+    call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
+                   cpliq,tmelt,pi,iulog,masterproc)
+  end subroutine micro_p3_utils_init_c
+
 end module micro_p3_iso_c
