@@ -531,7 +531,7 @@ module EcosystemDynBeTRMod
     use clm_varpar                        , only : crop_prog
     use CropHarvestPoolsMod               , only : CropHarvestPools
     use PlantMicKineticsMod               , only : PlantMicKinetics_type
-    use AllocationMod                     , only : update_PlantMicKinetics_pars
+    use AllocationMod                     , only : update_PlantMicKinetics_pars,Allocation3_PlantCNPAlloc
     use PhosphorusDynamicsMod             , only : PhosphorusDeposition,PhosphorusWeathering,PhosphorusLeaching
     use PhosphorusDynamicsMod             , only : PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
     use NitrogenDynamicsMod               , only : NitrogenLeaching
@@ -618,6 +618,7 @@ module EcosystemDynBeTRMod
          waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
          atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars, carbonflux_vars=carbonflux_vars)
 
+!      call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'bfbetrbgc')  
       call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
        num_soilc, filter_soilc, &
        carbonstate_vars, carbonflux_vars, &
@@ -633,6 +634,14 @@ module EcosystemDynBeTRMod
         nitrogenstate_vars, nitrogenflux_vars, &
         phosphorusstate_vars, phosphorusflux_vars)
       call t_stopf('betr type1 soil bgc')
+
+      call Allocation3_PlantCNPAlloc (bounds            , &
+        num_soilc, filter_soilc, num_soilp, filter_soilp    , &
+        canopystate_vars                                    , &
+        cnstate_vars, carbonstate_vars, carbonflux_vars     , &
+        c13_carbonflux_vars, c14_carbonflux_vars            , &
+        nitrogenstate_vars, nitrogenflux_vars               , &
+        phosphorusstate_vars, phosphorusflux_vars, crop_vars)
        !--------------------------------------------
        ! Phenology
        !--------------------------------------------
@@ -754,7 +763,6 @@ module EcosystemDynBeTRMod
 
        call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, phosphorusflux_vars, phosphorusstate_vars, ldecomp_on=.false.)
-
        call t_stopf('CNUpdate1')
 
        call t_startf('SoilLittVertTransp')
@@ -1468,9 +1476,9 @@ module EcosystemDynBeTRMod
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
-    call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
+    call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'bulk')
+    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'CNFluxStateBetr2Summary')
     if ( use_c13 ) then
        call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
 

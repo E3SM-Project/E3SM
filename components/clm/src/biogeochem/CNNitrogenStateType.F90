@@ -1547,13 +1547,14 @@ contains
   end subroutine ZeroDwt
 
   !-----------------------------------------------------------------------
-  subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, loc)
     !
     ! !USES:
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use clm_varpar    , only: nlevdecomp_full
+    use clm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
     class (nitrogenstate_type) :: this
@@ -1562,6 +1563,7 @@ contains
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
     integer           , intent(in) :: num_soilp       ! number of soil patches in filter
     integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+    character(len=*)  , optional, intent(in) :: loc
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l   ! indices
@@ -1571,6 +1573,7 @@ contains
     real(r8) :: cropseedn_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
+    if(present(loc))print*,'nitrogenstate_type',loc, get_nstep()
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -1873,7 +1876,6 @@ contains
            this%totlitn_col(c) + &
            this%totsomn_col(c) + &
            this%sminn_col(c)
-
    end do
 
  end subroutine Summary

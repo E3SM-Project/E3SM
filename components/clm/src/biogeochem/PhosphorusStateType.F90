@@ -927,7 +927,8 @@ contains
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c,a,b,d
+    integer            :: i,j,k,l,c
+    real(r8)           :: a,b,d
     logical            :: readvar
     integer            :: idata
     logical            :: exit_spinup = .false.

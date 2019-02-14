@@ -434,12 +434,13 @@ module CNNitrogenFluxType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
+     procedure , public  :: summary_phenoloy_litter
+     procedure , public  :: summary_plant_n_uptake
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
      procedure , private :: summary_bgc_cascade
      procedure , private :: NSummary_interface
-
   end type nitrogenflux_type
   !------------------------------------------------------------------------
 
@@ -3591,4 +3592,78 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 end subroutine NSummary_interface
 !-------------------------------------------------------------------------------------------------
 
+  subroutine summary_phenoloy_litter(this, bounds, num_soilc, filter_soilc,loc)
+
+  use clm_time_manager, only: get_step_size
+  implicit none
+
+    !
+    ! !ARGUMENTS:
+    class (nitrogenflux_type), intent(inout)       :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    character(len=*), optional, intent(in) :: loc
+
+    integer :: c, fc,j
+    real(r8) :: phenology_n_to_litr(bounds%begc:bounds%endc)
+    character(len=64) :: subname = 'summary_phenoloy_litter'
+
+    print*,'------------------------'
+    if(present(loc))print*,subname,loc
+    phenology_n_to_litr(:)=0._r8
+    do j = 1, nlevdecomp
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        phenology_n_to_litr(c)=phenology_n_to_litr(c)+ &
+           (this%phenology_n_to_litr_met_n_col(c,j) + &
+           this%phenology_n_to_litr_cel_n_col(c,j) + &
+           this%phenology_n_to_litr_lig_n_col(c,j))* dzsoi_decomp(j)  
+           
+      enddo
+   enddo
+
+   do fc = 1, num_soilc
+     c = filter_soilc(fc)
+     print*,phenology_n_to_litr(c)*get_step_size()
+   enddo   
+  end subroutine summary_phenoloy_litter
+
+
+
+!-------------------------------------------------------------------------------------------------
+
+  subroutine summary_plant_n_uptake(this, bounds, num_soilc, filter_soilc,loc)
+
+  use clm_time_manager, only: get_step_size
+  implicit none
+
+    ! !ARGUMENTS:
+    class (nitrogenflux_type), intent(inout)       :: this
+    type(bounds_type)               , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    character(len=*), optional, intent(in) :: loc
+
+    integer :: c, fc,j
+    character(len=64) :: subname='summary_plant_n_uptake'
+
+    if(present(loc))print*,loc, subname
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
+      this%smin_no3_to_plant_col(c) = 0._r8
+      this%smin_nh4_to_plant_col(c) = 0._r8
+    enddo
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+         c = filter_soilc(fc)
+          this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + &
+                 this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+          this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + &
+                  this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+       enddo
+    enddo
+
+    print*,'minflx',( this%smin_no3_to_plant_col(c)+this%smin_nh4_to_plant_col(c))*get_step_size()
+   end subroutine summary_plant_n_uptake
 end module CNNitrogenFluxType

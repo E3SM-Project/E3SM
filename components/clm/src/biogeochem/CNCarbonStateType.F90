@@ -3026,7 +3026,7 @@ contains
     real(r8) :: cropseedc_deficit_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
     
-    if(present(loc))print*,'loc ',trim(loc)
+    if(present(loc))print*,'loc ',trim(loc), get_nstep()
     if (use_fates) return
 
     do fp = 1,num_soilp
