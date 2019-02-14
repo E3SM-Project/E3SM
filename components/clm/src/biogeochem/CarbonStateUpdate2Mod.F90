@@ -32,7 +32,7 @@ module CarbonStateUpdate2Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars, col_csv2, veg_csv2, col_cfv2, veg_cfv2)
     !
     ! !DESCRIPTION:
@@ -129,7 +129,7 @@ contains
   end subroutine CarbonStateUpdate2
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, carbonstate_vars, col_csv2, veg_csv2, col_cfv2, veg_cfv2)
     !
     ! !DESCRIPTION:

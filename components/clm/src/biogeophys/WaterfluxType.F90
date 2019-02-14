@@ -317,13 +317,7 @@ contains
     begg = bounds%begg; endg= bounds%endg
 
 
-    ! Use qflx_snwcp_ice_col rather than qflx_snwcp_ice_patch, because the column version 
-    ! is the final version, which includes some  additional corrections beyond the patch-level version
-    this%qflx_snwcp_ice_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QSNWCPICE_NODYNLNDUSE', units='mm H2O/s', &
-         avgflag='A', long_name='excess snowfall due to snow capping not including correction for land use change', &
-         ptr_col=this%qflx_snwcp_ice_col, c2l_scale_type='urbanf')
-
+ 
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------

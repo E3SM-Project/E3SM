@@ -91,8 +91,8 @@ contains
 
          wa                     => soilhydrology_vars%wa_col                  , & ! Input:  [real(r8) (:)   ]  water in the unconfined aquifer (mm)              
          
-         h2osoi_liq_depth_intg  => waterstate_vars%h2osoi_liq_depth_intg_col  , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
-         h2osoi_ice_depth_intg  => waterstate_vars%h2osoi_ice_depth_intg_col  , & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
+         h2osoi_liq_depth_intg  => col_ws%h2osoi_liq_depth_intg , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water
+         h2osoi_ice_depth_intg  => col_ws%h2osoi_ice_depth_intg , & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water
          h2ocan                 => col_ws%h2ocan                 , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)                             
          h2osfc                 => col_ws%h2osfc                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
          h2osno                 => col_ws%h2osno                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               

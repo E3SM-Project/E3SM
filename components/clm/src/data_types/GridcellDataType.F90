@@ -61,9 +61,25 @@ module GridcellDataType
     real(r8), pointer :: ice1               (:)   ! initial gridcell total h2o ice content (kg/m2)
     real(r8), pointer :: ice2               (:)   ! post land cover change total ice content (kg/m2)
     real(r8), pointer :: tws                (:)   ! total water storage (kg/m2)
+    real(r8), pointer :: tws_month_beg      (:)   ! grc total water storage at the beginning of a month
+    real(r8), pointer :: tws_month_end      (:)   ! grc total water storage at the end of a month
+    real(r8), pointer :: begwb              (:)   ! water mass begining of the time step
+    real(r8), pointer :: endwb              (:)   ! water mass end of the time step
+    real(r8), pointer :: errh2o             (:)   ! water conservation error (mm H2O)
+    real(r8), pointer :: beg_h2ocan         (:)   ! grid-level canopy water at begining of the time step (mm H2O)
+    real(r8), pointer :: beg_h2osno         (:)   ! grid-level snow water at begining of the time step (mm H2O)
+    real(r8), pointer :: beg_h2osfc         (:)   ! grid-level surface water at begining of the time step (mm H2O)
+    real(r8), pointer :: beg_h2osoi_liq     (:)   ! grid-level liquid water at begining of the time step (kg/m2)
+    real(r8), pointer :: beg_h2osoi_ice     (:)   ! grid-level ice lens at begining of the time step (kg/m2)
+    real(r8), pointer :: end_h2ocan         (:)   ! grid-level canopy water at end of the time step (mm H2O)
+    real(r8), pointer :: end_h2osno         (:)   ! grid-level snow water at end of the time step (mm H2O)
+    real(r8), pointer :: end_h2osfc         (:)   ! grid-level surface water at end of the time step (mm H2O)
+    real(r8), pointer :: end_h2osoi_liq     (:)   ! grid-level liquid water at end of the time step (kg/m2)
+    real(r8), pointer :: end_h2osoi_ice     (:)   ! grid-level ice lens at end of the time step (kg/m2)
 
   contains
     procedure, public :: Init    => grc_ws_init
+    procedure, public :: Restart => grc_ws_restart
     procedure, public :: Clean   => grc_ws_clean
   end type gridcell_water_state
   
@@ -317,11 +333,26 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_ws
     !-----------------------------------------------------------------------
-    allocate(this%liq1       (begg:endg))           ; this%liq1      (:)   = nan
-    allocate(this%liq2       (begg:endg))           ; this%liq2      (:)   = nan
-    allocate(this%ice1       (begg:endg))           ; this%ice1      (:)   = nan
-    allocate(this%ice2       (begg:endg))           ; this%ice2      (:)   = nan
-    allocate(this%tws        (begg:endg))           ; this%tws       (:)   = nan
+    allocate(this%liq1           (begg:endg))       ; this%liq1           (:)   = nan
+    allocate(this%liq2           (begg:endg))       ; this%liq2           (:)   = nan
+    allocate(this%ice1           (begg:endg))       ; this%ice1           (:)   = nan
+    allocate(this%ice2           (begg:endg))       ; this%ice2           (:)   = nan
+    allocate(this%tws            (begg:endg))       ; this%tws            (:)   = nan
+    allocate(this%tws_month_beg  (begg:endg))       ; this%tws_month_beg  (:)   = nan
+    allocate(this%tws_month_end  (begg:endg))       ; this%tws_month_end  (:)   = nan
+    allocate(this%begwb          (begg:endg))       ; this%begwb          (:)   = nan
+    allocate(this%endwb          (begg:endg))       ; this%endwb          (:)   = nan
+    allocate(this%errh2o         (begg:endg))       ; this%errh2o         (:)   = nan
+    allocate(this%beg_h2ocan     (begg:endg))       ; this%beg_h2ocan     (:)   = nan
+    allocate(this%beg_h2osno     (begg:endg))       ; this%beg_h2osno     (:)   = nan
+    allocate(this%beg_h2osfc     (begg:endg))       ; this%beg_h2osfc     (:)   = nan
+    allocate(this%beg_h2osoi_liq (begg:endg))       ; this%beg_h2osoi_liq (:)   = nan
+    allocate(this%beg_h2osoi_ice (begg:endg))       ; this%beg_h2osoi_ice (:)   = nan
+    allocate(this%end_h2ocan     (begg:endg))       ; this%end_h2ocan     (:)   = nan
+    allocate(this%end_h2osno     (begg:endg))       ; this%end_h2osno     (:)   = nan
+    allocate(this%end_h2osfc     (begg:endg))       ; this%end_h2osfc     (:)   = nan
+    allocate(this%end_h2osoi_liq (begg:endg))       ; this%end_h2osoi_liq (:)   = nan
+    allocate(this%end_h2osoi_ice (begg:endg))       ; this%end_h2osoi_ice (:)   = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_ws
@@ -351,8 +382,41 @@ contains
          avgflag='A', long_name='total water storage', &
          ptr_lnd=this%tws)
 
+    this%tws_month_beg(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_MONTH_BEGIN',  units='mm',  &
+         avgflag='I', long_name='total water storage at the beginning of a month', &
+         ptr_lnd=this%tws_month_beg)
+
+    this%tws_month_end(begg:endg) = spval
+    call hist_addfld1d (fname='TWS_MONTH_END',  units='mm',  &
+         avgflag='I', long_name='total water storage at the end of a month', &
+         ptr_lnd=this%tws_month_end)
   end subroutine grc_ws_init
 
+  !------------------------------------------------------------------------
+  subroutine grc_ws_restart(this, bounds, ncid, flag)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write gridcell water state information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(gridcell_water_state) :: this
+    type(bounds_type), intent(in)    :: bounds 
+    type(file_desc_t), intent(inout) :: ncid   
+    character(len=*) , intent(in)    :: flag   
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+    call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
+         dim1name='gridcell', &
+         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
+          interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg)
+  
+  end subroutine grc_ws_restart
+  
   !------------------------------------------------------------------------
   subroutine grc_ws_clean(this)
     !

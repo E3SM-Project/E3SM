@@ -150,6 +150,14 @@ module ColumnDataType
     real(r8), pointer :: endwb              (:)   => null() ! water mass end of the time step (kg/m2)
     real(r8), pointer :: errh2o             (:)   => null() ! water conservation error (kg/m2)
     real(r8), pointer :: errh2osno          (:)   => null() ! snow water conservation error(kg/m2)
+    real(r8), pointer :: h2osoi_liq_depth_intg(:) => null() ! grid-level depth integrated liquid soil water
+    real(r8), pointer :: h2osoi_ice_depth_intg(:) => null() ! grid-level depth integrated ice soil water
+    ! VSFM
+    real(r8), pointer :: vsfm_fliq_col_1d   (:)   => null() ! fraction of liquid saturation for VSFM [-]
+    real(r8), pointer :: vsfm_sat_col_1d    (:)   => null() ! liquid saturation from VSFM [-]
+    real(r8), pointer :: vsfm_mass_col_1d   (:)   => null() ! liquid mass per unit area from VSFM [kg H2O/m^2]
+    real(r8), pointer :: vsfm_smpl_col_1d   (:)   => null() ! 1D soil matrix potential liquid from VSFM [m]
+    real(r8), pointer :: vsfm_soilp_col_1d  (:)   => null() ! 1D soil liquid pressure from VSFM [Pa]
    
   contains
     procedure, public :: Init    => col_ws_init
@@ -1200,7 +1208,7 @@ contains
     real(r8), pointer  :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
     real(r8)           :: snowbd      ! temporary calculation of snow bulk density (kg/m3)
     real(r8)           :: fmelt       ! snowbd/100
-    integer            :: c,l,j,nlevs,nlevbed
+    integer            :: c,l,j,nlevs,nlevbed, ncells
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -1251,6 +1259,14 @@ contains
     allocate(this%endwb              (begc:endc))                     ; this%endwb              (:)   = nan
     allocate(this%errh2o             (begc:endc))                     ; this%errh2o             (:)   = nan
     allocate(this%errh2osno          (begc:endc))                     ; this%errh2osno          (:)   = nan
+    allocate(this%h2osoi_liq_depth_intg(begc:endc))                   ; this%h2osoi_liq_depth_intg(:) = nan
+    allocate(this%h2osoi_ice_depth_intg(begc:endc))                   ; this%h2osoi_ice_depth_intg(:) = nan
+    ncells = (endc - begc + 1)*nlevgrnd
+    allocate(this%vsfm_fliq_col_1d   (ncells))                        ; this%vsfm_fliq_col_1d   (:)   = nan
+    allocate(this%vsfm_sat_col_1d    (ncells))                        ; this%vsfm_sat_col_1d    (:)   = nan
+    allocate(this%vsfm_mass_col_1d   (ncells))                        ; this%vsfm_mass_col_1d   (:)   = nan
+    allocate(this%vsfm_smpl_col_1d   (ncells))                        ; this%vsfm_smpl_col_1d   (:)   = nan
+    allocate(this%vsfm_soilp_col_1d  (ncells))                        ; this%vsfm_soilp_col_1d  (:)   = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ws

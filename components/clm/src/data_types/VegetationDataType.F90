@@ -27,7 +27,7 @@ module VegetationDataType
   use subgridAveMod   , only : p2c
   use restUtilMod
   use CNStateType     , only: cnstate_type
-  use CNSpeciesMod              , only : species_from_string
+  use SpeciesMod              , only : species_from_string
   use VegetationType            , only : veg_pp
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp

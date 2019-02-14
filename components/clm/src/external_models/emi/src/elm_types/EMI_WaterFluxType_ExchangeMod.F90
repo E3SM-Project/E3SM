@@ -310,7 +310,7 @@ contains
     integer                             :: count
 
     associate(& 
-         mflx_snowlyr => waterflux_vars%mflx_snowlyr_col   &
+         mflx_snowlyr => col_wf%mflx_snowlyr   &
          )
 
     count = 0

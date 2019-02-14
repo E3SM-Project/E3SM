@@ -328,15 +328,6 @@ contains
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
 
-    this%tws_month_beg_grc(begg:endg) = spval
-    call hist_addfld1d (fname='TWS_MONTH_BEGIN',  units='mm',  &
-         avgflag='I', long_name='total water storage at the beginning of a month', &
-         ptr_lnd=this%tws_month_beg_grc)
-
-    this%tws_month_end_grc(begg:endg) = spval
-    call hist_addfld1d (fname='TWS_MONTH_END',  units='mm',  &
-         avgflag='I', long_name='total water storage at the end of a month', &
-         ptr_lnd=this%tws_month_end_grc)
     ! Snow properties - these will be vertically averaged over the snow profile
 
     ! We determine the fractional time (and fraction of the grid cell) over which each
@@ -525,10 +516,6 @@ contains
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
 
-    call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
-         dim1name='gridcell', &
-         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
-          interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
   end subroutine Restart
 
   !-----------------------------------------------------------------------
