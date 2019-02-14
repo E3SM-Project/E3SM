@@ -71,6 +71,12 @@ _TESTS = {
                                   "TSC.ne4_ne4.FC5AV1C-L")
                                  ),
 
+    #oceanice tests for extra coverage
+    "e3sm_ocnice_extra_coverage" : (None, None,
+                         ("ERS_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+                          "PEM_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF")
+                         ),
+
     "e3sm_developer" : (("e3sm_land_developer","e3sm_atm_developer"), "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.ne30_g16_rx1.A",
@@ -103,7 +109,7 @@ _TESTS = {
                            ("SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850","clm-bgcexp"))
                           ),
     #e3sm tests for extra coverage
-    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage",), None,
+    "e3sm_extra_coverage" : (("e3sm_atm_extra_coverage","e3sm_ocnice_extra_coverage"), None,
                              ("SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
                               "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L")),
 
