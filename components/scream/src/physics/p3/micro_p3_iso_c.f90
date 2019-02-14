@@ -77,7 +77,6 @@ contains
        end if
     end if
 
-    call micro_p3_utils_init()
   end subroutine p3_init_c
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
