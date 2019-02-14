@@ -40,20 +40,24 @@ program fmain
   character(LEN=10)  :: ctime       ! wall clock time
   real(r8) :: fminval = 0.001_r8    ! min allowable land fraction; frac set to 0 if frac < fminval
   real(r8) :: fmaxval = 1.000_r8    ! max allowable land fraction; frac set to 1 if frac > fmaxval
+  logical :: set_omask = .false.    ! set ocn mask if not present in input mapping file
   !----------------------------------------------------
 
+  ! Initialize options before parsing command line arguments
   set_fv_pole_yc = 0
   fmap        = 'null'
   fn1_out     = 'null'
   fn2_out     = 'null'
   usercomment = 'null'
 
+  ! Make sure we have arguments
   nargs = iargc()
   if (nargs == 0) then
      write(6,*)'invoke gen_domain -h for usage'
      stop
   end if
 
+  ! Parse command line arguments
   cmdline = 'gen_domain '
   n = 1
   do while (n <= nargs)
@@ -101,6 +105,9 @@ program fmain
        call getarg (n, arg)
        n = n + 1
        usercomment = trim(arg)
+    case ('--set-omask')
+       ! do not require ocean mask to be present in input mapping file
+       set_omask = .true.
     case ('-h')
        call usage_exit (' ')
     case default
@@ -119,25 +126,28 @@ program fmain
   fn2_out_lnd = 'domain.lnd.' // trim(fn2_out) // '_' // trim(fn1_out) // '.' // cdate(3:8) // '.nc'
   fn2_out_ocn = 'domain.ocn.' // trim(fn2_out) // '_' // trim(fn1_out) // '.' // cdate(3:8) // '.nc'
 
-  call gen_domain (fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment, fminval, fmaxval)
+  call gen_domain (fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, &
+                   usercomment, fminval, fmaxval, set_omask)
 
 contains
 
-  subroutine gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, usercomment, fminval, fmaxval)
+  subroutine gen_domain(fmap, fn1_out_ocn, fn2_out_lnd, fn2_out_ocn, set_fv_pole_yc, &
+                        usercomment, fminval, fmaxval, set_omask)
 
    implicit none
 
    !--- includes ---
    include 'netcdf.inc'       ! netCDF defs
 
-   character(LEN=*), intent(in) :: fmap        ! file name ( input nc file)
-   character(LEN=*), intent(in) :: fn1_out_ocn ! file name (output nc file) for grid _a
-   character(LEN=*), intent(in) :: fn2_out_lnd ! file name (output nc file) for grid _b (lnd frac)
-   character(LEN=*), intent(in) :: fn2_out_ocn ! file name (output nc file) for grid _b (ocn frac)
+   character(LEN=*), intent(in) :: fmap            ! file name ( input nc file)
+   character(LEN=*), intent(in) :: fn1_out_ocn     ! file name (output nc file) for grid _a
+   character(LEN=*), intent(in) :: fn2_out_lnd     ! file name (output nc file) for grid _b (lnd frac)
+   character(LEN=*), intent(in) :: fn2_out_ocn     ! file name (output nc file) for grid _b (ocn frac)
    integer         , intent(in) :: set_fv_pole_yc
-   character(LEN=*), intent(in) :: usercomment ! user comment from namelist
-   real(r8)        , intent(in) :: fminval     ! set frac to zero if frac < fminval
-   real(r8)        , intent(in) :: fmaxval     ! set frac to one  if frac > fmaxval
+   character(LEN=*), intent(in) :: usercomment     ! user comment from namelist
+   real(r8)        , intent(in) :: fminval         ! set frac to zero if frac < fminval
+   real(r8)        , intent(in) :: fmaxval         ! set frac to one  if frac > fmaxval
+   logical         , intent(in) :: set_omask       ! set ocn mask if not present in input mapping file
 
    !--- domain data ---
    integer         ::   n         ! size of 1d domain
@@ -352,7 +362,12 @@ contains
             call check_ret(nf_inq_varid(fid,'mask'//trim(suffix), vid ))
             call check_ret(nf_get_var_int   (fid,vid,omask ))
          else
-            omask(:) = 1
+            if (set_omask) then
+               omask(:) = 1
+            else
+               write(6,*) 'ERROR: mask'//trim(suffix)//' does not exist in inputfile.'
+               stop
+            end if
          end if
          ofrac(:) = c0
          where (omask /= 0) ofrac = c1
@@ -383,7 +398,12 @@ contains
             call check_ret(nf_inq_varid(fid,'mask_a', vid ))
             call check_ret(nf_get_var_int(fid,vid,mask_a ))
          else
-            mask_a(:) = 1
+            if (set_omask) then
+               mask_a(:) = 1
+            else
+               write(6,*) 'ERROR: mask_a not present in inputfile.'
+               stop
+            end if
          end if
 
          frac_a = c0
@@ -532,6 +552,7 @@ contains
     write(6,*) '                [-c <usercomment>]'
     write(6,*) '                [--fminval <fminval>]'
     write(6,*) '                [--fmaxval <fmaxval>]'
+    write(6,*) '                [--set-omask]'
     write(6,*) ' '
     write(6,*) ' Where: '
     write(6,*) '    filemap = input conservative mapping file name (from ocn->atm)'
@@ -541,6 +562,12 @@ contains
     write(6,*) '    usercomment = optional, netcdf global attribute (character string)'
     write(6,*) '    fminval = minimum allowable land fraction (reset to 0 below fminval)'
     write(6,*) '    fmaxval = maximum allowable land fraction (reset to 1 above fmaxval)'
+    write(6,*) ' '
+    write(6,*) ' Notes: '
+    write(6,*) '    If --set-omask is passed, then an ocean mask is not required and will'
+    write(6,*) '    simply be set to a vector of 1s if mask_a is not present in the input'
+    write(6,*) '    mapping file. If --set-omask is omitted, then mask_a is required and an'
+    write(6,*) '    error will be raised if it does not exist in the input mapping file.'
     write(6,*) ' '
     write(6,*) ' The following output domain files are created:'
     write(6,*) '    domain.lnd.gridlnd_gridocn.nc'
