@@ -353,6 +353,22 @@
     </queues>
   </batch_system>
 
+  <batch_system type="pbs" MACH="izumi" >
+    <batch_submit>ssh izumi cd $CASEROOT ; qsub</batch_submit>
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="02:00:00"   strict="true" nodemin="1"  nodemax="8">short</queue>
+      <queue walltimemax="08:00:00"   strict="true" nodemin="1"  nodemax="6" default="true">medium</queue>
+      <queue walltimemax="40:00:00"   strict="true" nodemin="1"  nodemax="8">long</queue>
+      <queue walltimemax="120:00:00"   strict="true" nodemin="1"  nodemax="8">verylong</queue>
+      <queue walltimemax="32:00:00"   strict="true" nodemax="14" nodemin="1">overnight</queue>
+      <queue walltimemax="3000:00:00" strict="true" nodemax="14" nodemin="1">monster</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="laramie" type="pbs">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
