@@ -284,43 +284,43 @@
   </compset>
   <compset>
     <alias>F-EAMv1-AQP2</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP3</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP4</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP5</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP6</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP7</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP8</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP9</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQP10</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-EAMv1-AQPFILE</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%V1-AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
