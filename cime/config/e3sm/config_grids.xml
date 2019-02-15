@@ -2320,8 +2320,8 @@
 
     <gridmap atm_grid="TL319" ocn_grid="oARRM60to6">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_oARRM60to6_aave.180904.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_oARRM60to6_blin.180904.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_oARRM60to6_patc.180904.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_oARRM60to6_bilin.180904.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_oARRM60to6_patch.180904.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oARRM60to6/map_oARRM60to6_to_TL319_aave.180904.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oARRM60to6/map_oARRM60to6_to_TL319_aave.180904.nc</map>
     </gridmap>
