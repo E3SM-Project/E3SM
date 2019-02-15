@@ -7,7 +7,7 @@ module TemperatureType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use clm_varctl      , only : use_cndv, iulog
+  use clm_varctl      , only : iulog
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
   use clm_varcon      , only : spval
   use GridcellType    , only : grc_pp
@@ -254,7 +254,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : use_cn, use_cndv
+    use clm_varctl     , only : use_cn
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -276,7 +276,7 @@ contains
     begg = bounds%begg; endg= bounds%endg
 
 
-    if (use_cndv .or. crop_prog) then
+    if (crop_prog) then
        active = "active"
     else
        active = "inactive"
@@ -388,14 +388,6 @@ contains
     !---------------------------------------------------------------------
 
     dtime = get_step_size()
-
-    if (use_cndv) then
-       ! 30-day average of 2m temperature.
-       call init_accum_field (name='TDA', units='K', &
-            desc='30-day average of 2-m temperature', accum_type='timeavg', accum_period=-30, &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    end if
 
   end subroutine InitAccBuffer
 

@@ -34,7 +34,6 @@ contains
     use clm_time_manager, only: get_step_size, get_days_per_year
     use clm_varcon      , only: secspday
     use SubgridAveMod   , only: p2c
-    use clm_varctl      , only: use_cndv 
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -88,13 +87,7 @@ contains
              veg_cf%annsum_npp(p) = veg_cf%tempsum_npp(p) * dt
              veg_cf%tempsum_npp(p) = 0._r8
 
-             if (use_cndv) then
-                ! update annual litfall accumulator, convert to annual total
-                veg_cf%annsum_litfall(p) = veg_cf%tempsum_litfall(p) * dt
-                veg_cf%tempsum_litfall(p) = 0._r8
-             end if
           end do
-
           ! use p2c routine to get selected column-average pft-level fluxes and states
 
           call p2c(bounds, num_soilc, filter_soilc, &

@@ -8,7 +8,7 @@ module CNCarbonFluxType
   use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
   use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
-  use clm_varctl             , only : use_cndv, use_c13, use_fates 
+  use clm_varctl             , only : use_c13, use_fates 
   use CH4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -409,9 +409,7 @@ module CNCarbonFluxType
      real(r8), pointer :: hrv_xsmrpool_to_atm_col                   (:)     ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
   
      ! Temporary and annual sums
-     real(r8), pointer :: tempsum_litfall_patch       (:) ! temporary annual sum of litfall (gC/m2/yr) (CNDV)
      real(r8), pointer :: tempsum_npp_patch           (:) ! patch temporary annual sum of NPP (gC/m2/yr)
-     real(r8), pointer :: annsum_litfall_patch        (:) ! annual sum of litfall (gC/m2/yr) (CNDV)
      real(r8), pointer :: annsum_npp_patch            (:) ! patch annual sum of NPP (gC/m2/yr)
      real(r8), pointer :: annsum_npp_col              (:) ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
      real(r8), pointer :: lag_npp_col                 (:) ! col lagged net primary production (gC/m2/s)
@@ -842,8 +840,6 @@ contains
 
      allocate(this%tempsum_npp_patch     (begp:endp)) ; this%tempsum_npp_patch     (:) = nan
      allocate(this%annsum_npp_patch      (begp:endp)) ; this%annsum_npp_patch      (:) = nan
-     allocate(this%tempsum_litfall_patch (begp:endp)) ; this%tempsum_litfall_patch (:) = nan
-     allocate(this%annsum_litfall_patch  (begp:endp)) ; this%annsum_litfall_patch  (:) = nan
      allocate(this%annsum_npp_col        (begc:endc)) ; this%annsum_npp_col        (:) = nan
      allocate(this%lag_npp_col           (begc:endc)) ; this%lag_npp_col           (:) = spval
 
@@ -1029,10 +1025,6 @@ contains
              this%plant_calloc_patch(p)          = spval
              this%prev_leafc_to_litter_patch(p)  = spval
              this%prev_frootc_to_litter_patch(p) = spval
-             if (use_cndv) then
-                this%tempsum_litfall_patch(p)    = spval
-                this%annsum_litfall_patch(p)     = spval
-             end if
              if ( use_c13 ) then
                 this%xsmrpool_c13ratio_patch(p)  = spval
              endif
@@ -1045,10 +1037,6 @@ contains
              this%excess_cflux_patch(p)          = 0._r8
              this%prev_leafc_to_litter_patch(p)  = 0._r8
              this%prev_frootc_to_litter_patch(p) = 0._r8
-             if (use_cndv) then
-                this%tempsum_litfall_patch(p)    = 0._r8
-                this%annsum_litfall_patch(p)     = 0._r8
-             end if
              this%plant_calloc_patch(p)          = 0._r8
           end if
        end do
@@ -1589,7 +1577,7 @@ contains
     ! On the radiation time step, perform patch and column-level carbon summary calculations
     !
     ! !USES:
-    use clm_varctl       , only : iulog, use_cndv
+    use clm_varctl       , only : iulog
     use clm_time_manager , only : get_step_size
     use clm_varcon       , only : secspday
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
@@ -1810,12 +1798,6 @@ contains
             this%hrv_cpool_to_litter_patch(p)
 
        ! update the annual litfall accumulator, for use in mortality code
-       if (use_cndv) then
-          this%tempsum_litfall_patch(p) = &
-               this%tempsum_litfall_patch(p) + &
-               this%leafc_to_litter_patch(p) + &
-               this%frootc_to_litter_patch(p)
-       end if
 
        ! patch-level fire losses (VEGFIRE)
        this%vegfire_patch(p) = 0._r8

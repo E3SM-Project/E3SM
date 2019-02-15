@@ -14,7 +14,7 @@ module clm_driver
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
   use clm_varpar             , only : nlevtrc_soil, nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
-  use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
+  use clm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
@@ -66,7 +66,6 @@ module clm_driver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
   use VerticalProfileMod   , only : decomp_vertprofiles
   use FireMod              , only : FireInterp
-  use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
   use pdepStreamMod          , only : pdep_interp
@@ -95,7 +94,6 @@ module clm_driver
   use clm_instMod            , only : nitrogenflux_vars
   use clm_instMod            , only : phosphorusstate_vars
   use clm_instMod            , only : phosphorusflux_vars
-  use clm_instMod            , only : dgvs_vars
   use clm_instMod            , only : crop_vars
   use clm_instMod            , only : cnstate_vars
   use clm_instMod            , only : dust_vars
@@ -384,7 +382,7 @@ contains
 
     ! ============================================================================
     ! Update subgrid weights with dynamic landcover (prescribed transient patches,
-    ! CNDV, and or dynamic landunits), and do related adjustments. Note that this
+    ! and or dynamic landunits), and do related adjustments. Note that this
     ! call needs to happen outside loops over nclumps.
     ! ============================================================================
 
@@ -392,7 +390,7 @@ contains
     call dynSubgrid_driver(bounds_proc,                                      &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars,   &
-       canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars,            &
+       canopystate_vars, photosyns_vars, cnstate_vars,                       &
        veg_cs, c13_veg_cs, c14_veg_cs,         &
        col_cs, c13_col_cs, c14_col_cs, col_cf,  &
        grc_cs, grc_cf ,&
@@ -458,7 +456,7 @@ contains
     ! Initialize the mass balance checks for water.
     !
     ! Currently, I believe this needs to be done after weights are updated for
-    ! prescribed transient patches or CNDV, because column-level water is not
+    ! prescribed transient patches, because column-level water is not
     ! generally conserved when weights change (instead the difference is put in
     ! the grid cell-level terms, qflx_liq_dynbal, etc.). In the future, we may
     ! want to change the balance checks to ensure that the grid cell-level water
@@ -887,7 +885,7 @@ contains
        call t_stopf('snow_init')
 
        ! ============================================================================
-       ! Ecosystem dynamics: Uses CN, CNDV, or static parameterizations
+       ! Ecosystem dynamics: Uses CN, or static parameterizations
        ! ============================================================================
 
        call t_startf('ecosysdyn')
@@ -906,7 +904,7 @@ contains
                  nitrogenflux_vars, nitrogenstate_vars,                         &
                  atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
-                 dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+                 photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars,                                         &
                  phosphorusflux_vars, phosphorusstate_vars)
 
@@ -923,7 +921,6 @@ contains
            if (use_cn) then 
 
              ! fully prognostic canopy structure and C-N biogeochemistry
-             ! - CNDV defined: prognostic biogeography; else prescribed
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
              !===========================================================================================
@@ -1021,7 +1018,7 @@ contains
                    nitrogenflux_vars, nitrogenstate_vars,                                   &
                    atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
                    canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
-                   dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+                   photosyns_vars, soilhydrology_vars, energyflux_vars,          &
                    phosphorusflux_vars,phosphorusstate_vars)
 
              !===========================================================================================
@@ -1213,7 +1210,7 @@ contains
                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,      &
                   cnstate_vars, carbonflux_vars, carbonstate_vars,      &
                   c13_carbonflux_vars, c13_carbonstate_vars,            &
-                  c14_carbonflux_vars, c14_carbonstate_vars, dgvs_vars, &
+                  c14_carbonflux_vars, c14_carbonstate_vars,            &
                   nitrogenflux_vars, nitrogenstate_vars,                &
                   waterstate_vars, waterflux_vars, frictionvel_vars,    &
                   canopystate_vars,                                     &
@@ -1222,7 +1219,7 @@ contains
 
              if (doalb) then   
                 call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
-                     waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
+                     waterstate_vars, frictionvel_vars, cnstate_vars, &
                      carbonstate_vars, canopystate_vars, crop_vars)
              end if
                
@@ -1380,10 +1377,6 @@ contains
        
        call canopystate_vars%UpdateAccVars(bounds_proc)
        
-       if (use_cndv) then
-          call dgvs_vars%UpdateCNDVAccVars(bounds_proc, temperature_vars)
-       end if
-       
        if (crop_prog) then
           call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
        end if
@@ -1401,41 +1394,6 @@ contains
     call t_startf('hbuf')
     call hist_update_hbuf(bounds_proc)
     call t_stopf('hbuf')
-
-    ! ============================================================================
-    ! Call dv (dynamic vegetation) at last time step of year
-    ! NOTE: monp1, dayp1, and secp1 correspond to nstep+1
-    ! ============================================================================
-
-    if (use_cndv) then
-       call t_startf('d2dgvm')
-       dtime = get_step_size()
-       call get_curr_date(yrp1, monp1, dayp1, secp1, offset=int(dtime))
-       if (monp1==1 .and. dayp1==1 .and. secp1==dtime .and. nstep>0)  then
-
-          ! Get date info.  kyr is used in lpj().  At end of first year, kyr = 2.
-          call get_curr_date(yr, mon, day, sec)
-          ncdate = yr*10000 + mon*100 + day
-          call get_ref_date(yr, mon, day, sec)
-          nbdate = yr*10000 + mon*100 + day
-          kyr = ncdate/10000 - nbdate/10000 + 1
-
-          if (masterproc) write(iulog,*) 'End of year. CNDV called now: ncdate=', &
-               ncdate,' nbdate=',nbdate,' kyr=',kyr,' nstep=', nstep
-
-          nclumps = get_proc_clumps()
-
-          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-          do nc = 1,nclumps
-             call get_clump_bounds(nc, bounds_clump)
-             call CNDVDriver(bounds_clump,                                           &
-                  filter(nc)%num_natvegp, filter(nc)%natvegp, kyr,                   &
-                  atm2lnd_vars, carbonflux_vars, carbonstate_vars, dgvs_vars)
-          end do
-          !$OMP END PARALLEL DO
-       end if
-       call t_stopf('d2dgvm')
-    end if
 
     ! ============================================================================
     ! Compute water budget
@@ -1467,16 +1425,6 @@ contains
 
        call t_stopf('clm_drv_io_htapes')
 
-       ! Write to CNDV history buffer if appropriate
-       if (use_cndv) then
-          if (monp1==1 .and. dayp1==1 .and. secp1==dtime .and. nstep>0)  then
-             call t_startf('clm_drv_io_hdgvm')
-             call CNDVHist( bounds_proc, dgvs_vars )
-             if (masterproc) write(iulog,*) 'Annual CNDV calculations are complete'
-             call t_stopf('clm_drv_io_hdgvm')
-          end if
-       end if
-
        ! Write restart/initial files if appropriate
        if (rstwr) then
           call t_startf('clm_drv_io_wrest')
@@ -1485,7 +1433,7 @@ contains
           call restFile_write( bounds_proc, filer,                                            &
                atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars,                                               &

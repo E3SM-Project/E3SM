@@ -19,7 +19,6 @@ module CNEcosystemDynBetrMod
   use CNCarbonStateType         , only : carbonstate_type
   use CNNitrogenFluxType        , only : nitrogenflux_type
   use CNNitrogenStateType       , only : nitrogenstate_type
-  use CNDVType                  , only : dgvs_type
   use CanopyStateType           , only : canopystate_type
   use SoilStateType             , only : soilstate_type
   use TemperatureType           , only : temperature_type
@@ -66,7 +65,7 @@ module CNEcosystemDynBetrMod
          nitrogenflux_vars, nitrogenstate_vars,                          &
          atm2lnd_vars, waterstate_vars, waterflux_vars,                  &
          canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
-         dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars, &
+         photosyns_vars, soilhydrology_vars, energyflux_vars, &
          PlantMicKinetics_vars,                                          &
          phosphorusflux_vars, phosphorusstate_vars)
 
@@ -134,7 +133,6 @@ module CNEcosystemDynBetrMod
     type(soilstate_type)             , intent(inout) :: soilstate_vars
     type(temperature_type)           , intent(inout) :: temperature_vars
     type(crop_type)                  , intent(inout) :: crop_vars
-    type(dgvs_type)                  , intent(inout) :: dgvs_vars
     type(photosyns_type)             , intent(in)    :: photosyns_vars
     type(soilhydrology_type)         , intent(in)    :: soilhydrology_vars
     type(energyflux_type)            , intent(in)    :: energyflux_vars
@@ -267,7 +265,7 @@ module CNEcosystemDynBetrMod
        call CNPhenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             num_pcropp, filter_pcropp, doalb, &
             waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
-            dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
+            cnstate_vars, carbonstate_vars, carbonflux_vars, &
             nitrogenstate_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)
        call t_stopf('CNPhenology')
@@ -359,7 +357,7 @@ module CNEcosystemDynBetrMod
 
        call t_startf('CNGapMortality')
        call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dgvs_vars, cnstate_vars, &
+            cnstate_vars, &
             carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars )
        call t_stopf('CNGapMortality')
@@ -452,7 +450,7 @@ module CNEcosystemDynBetrMod
             cnstate_vars, carbonstate_vars)
 
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+            cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
 
        call t_stopf('CNUpdate2')

@@ -13,7 +13,7 @@ module CanopyFluxesMod
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
-  use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_cndv, use_fates
+  use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
   use clm_varpar            , only : nlevgrnd, nlevsno
   use clm_varcon            , only : namep 
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
@@ -841,11 +841,6 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
-            if (use_cndv) then
-               if (veg_pp%itype(p) == nbrdlf_dcd_tmp_shrub) then
-                  btran(p) = min(1._r8, btran(p) * 3.33_r8)
-               end if
-            end if
             if(.not.veg_pp%is_fates(p)) then
                if (veg_pp%itype(p) == nsoybean .or. veg_pp%itype(p) == nsoybeanirrig) then
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
@@ -876,11 +871,6 @@ contains
             do f = 1, fn
                p = filterp(f)
                c = veg_pp%column(p)
-               if (use_cndv) then
-                  if (veg_pp%itype(p) == nbrdlf_dcd_tmp_shrub) then
-                     btran(p) = min(1._r8, btran(p) * 3.33_r8)
-                  end if
-               end if
                if (veg_pp%itype(p) == nsoybean .or. veg_pp%itype(p) == nsoybeanirrig) then
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if

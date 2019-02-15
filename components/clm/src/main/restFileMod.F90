@@ -15,14 +15,13 @@ module restFileMod
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_betr
+  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
-  use CNDVType             , only : dgvs_type
   use CNStateType          , only : cnstate_type
   use CNNitrogenFluxType   , only : nitrogenflux_type
   use CNNitrogenStateType  , only : nitrogenstate_type
@@ -109,7 +108,7 @@ contains
   subroutine restFile_write( bounds, file,                                            &
        atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars,                                               &
@@ -138,7 +137,6 @@ contains
     type(carbonstate_type)         , intent(in)    :: c14_carbonstate_vars
     type(carbonflux_type)          , intent(inout) :: carbonflux_vars
     type(ch4_type)                 , intent(in)    :: ch4_vars
-    type(dgvs_type)                , intent(in)    :: dgvs_vars
     type(energyflux_type)          , intent(in)    :: energyflux_vars
     type(frictionvel_type)         , intent(inout) :: frictionvel_vars
     type(lakestate_type)           , intent(in)    :: lakestate_vars
@@ -318,11 +316,6 @@ contains
              soilstate_inst=soilstate_vars)
     end if
 
-
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='define')
-    end if
-
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='define')
     endif
@@ -479,10 +472,6 @@ contains
 
     end if
 
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='write')
-    end if
-
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='write')
     endif
@@ -517,7 +506,7 @@ contains
   subroutine restFile_read( bounds, file,                                             &
        atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars,                                               &
@@ -550,7 +539,6 @@ contains
     type(carbonstate_type)         , intent(inout) :: c14_carbonstate_vars
     type(carbonflux_type)          , intent(inout) :: carbonflux_vars
     type(ch4_type)                 , intent(inout) :: ch4_vars
-    type(dgvs_type)                , intent(inout) :: dgvs_vars
     type(energyflux_type)          , intent(inout) :: energyflux_vars
     type(frictionvel_type)         , intent(inout) :: frictionvel_vars
     type(lakestate_type)           , intent(inout) :: lakestate_vars
@@ -737,10 +725,6 @@ contains
              soilstate_inst=soilstate_vars)
     end if
 
-
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='read')
-    end if
 
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='read')

@@ -5,7 +5,7 @@ module dynSubgridDriverMod
   !---------------------------------------------------------------------------
   !
   ! !DESCRIPTION:
-  ! High-level routines for dynamic subgrid areas (prescribed transient Patches, CNDV, and
+  ! High-level routines for dynamic subgrid areas (prescribed transient Patches and
   ! dynamic landunits).
   !
   ! !USES:
@@ -16,7 +16,6 @@ module dynSubgridDriverMod
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
   use dynColumnStateUpdaterMod     , only : column_state_updater_type
   use UrbanParamsType     , only : urbanparams_type
-  use CNDVType            , only : dgvs_type
   use CanopyStateType     , only : canopystate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -68,10 +67,10 @@ module dynSubgridDriverMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynSubgrid_init(bounds, dgvs_vars, glc2lnd_vars, crop_vars)
+  subroutine dynSubgrid_init(bounds, glc2lnd_vars, crop_vars)
     !
     ! !DESCRIPTION:
-    ! Determine initial subgrid weights for prescribed transient Patches, CNDV, and/or
+    ! Determine initial subgrid weights for prescribed transient Patches and/or
     ! dynamic landunits. Note that these weights will be overwritten in a restart run.
     !
     ! This should be called from initialization. 
@@ -80,17 +79,14 @@ contains
     ! clumps - so this routine needs to be called from outside any loops over clumps.
     !
     ! !USES:
-    use clm_varctl        , only : use_cndv
     use decompMod         , only : bounds_type, BOUNDS_LEVEL_PROC
     use decompMod         , only : get_proc_clumps, get_clump_bounds
     use dynpftFileMod     , only : dynpft_init
     use dynHarvestMod     , only : dynHarvest_init
-    use dynCNDVMod        , only : dynCNDV_init
     use dynpftFileMod     , only : dynpft_interp
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
-    type(dgvs_type)   , intent(inout) :: dgvs_vars
     type(glc2lnd_type), intent(inout) :: glc2lnd_vars
     type(crop_type)   , intent(inout) :: crop_vars
     !
@@ -117,10 +113,6 @@ contains
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
     if (get_do_harvest()) then
        call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
-    end if
-
-    if (use_cndv) then
-       call dynCNDV_init(bounds, dgvs_vars)
     end if
 
     ! Initialize stuff for prescribed transient crops
@@ -154,7 +146,7 @@ contains
   subroutine dynSubgrid_driver(bounds_proc, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
        waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars, &
-       canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars, &
+       canopystate_vars, photosyns_vars, cnstate_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
        col_cs, c13_col_cs, c14_col_cs, col_cf, &
        grc_cs, grc_cf, &
@@ -163,7 +155,7 @@ contains
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     !
     ! !DESCRIPTION:
-    ! Update subgrid weights for prescribed transient Patches, CNDV, and/or dynamic
+    ! Update subgrid weights for prescribed transient Patches and/or dynamic
     ! landunits. Also do related adjustments (water & energy, carbon & nitrogen).
     !
     ! This should be called every time step in CLM's run loop.
@@ -173,7 +165,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use clm_varctl           , only : use_cndv, use_cn, create_glacier_mec_landunit, use_fates
+    use clm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
@@ -181,7 +173,6 @@ contains
     use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
     use dynHarvestMod        , only : dynHarvest_interp
-    use dynCNDVMod           , only : dynCNDV_interp
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
@@ -202,7 +193,6 @@ contains
     type(canopystate_type)   , intent(inout) :: canopystate_vars
     type(photosyns_type)     , intent(inout) :: photosyns_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
     type(vegetation_carbon_state), intent(inout) :: veg_cs
     type(vegetation_carbon_state), intent(inout) :: c13_veg_cs
     type(vegetation_carbon_state), intent(inout) :: c14_veg_cs
@@ -280,10 +270,6 @@ contains
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
 
-       if (use_cndv) then
-          call dynCNDV_interp(bounds_clump, dgvs_vars)
-       end if
-       
        if (use_fates) then
           call dyn_ED(bounds_clump)
        end if

@@ -17,7 +17,6 @@ module EcosystemDynMod
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use CNDVType            , only : dgvs_type
   use CanopyStateType     , only : canopystate_type
   use SoilStateType       , only : soilstate_type
   use TemperatureType     , only : temperature_type
@@ -99,7 +98,7 @@ contains
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
        c13_carbonflux_vars, c13_carbonstate_vars, &
-       c14_carbonflux_vars, c14_carbonstate_vars, dgvs_vars, &
+       c14_carbonflux_vars, c14_carbonstate_vars, &
        nitrogenflux_vars, nitrogenstate_vars, &
        waterstate_vars, waterflux_vars, frictionvel_vars, canopystate_vars,&
        phosphorusflux_vars,phosphorusstate_vars)
@@ -139,7 +138,6 @@ contains
     type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(dgvs_type)          , intent(in)    :: dgvs_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(waterstate_type)    , intent(in)    :: waterstate_vars
@@ -345,7 +343,6 @@ contains
     type(temperature_type)   , intent(inout) :: temperature_vars
     type(crop_type)          , intent(in)    :: crop_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-!    type(dgvs_type)          , intent(inout) :: dgvs_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
 !    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
 !    type(energyflux_type)    , intent(in)    :: energyflux_vars
@@ -497,7 +494,7 @@ contains
        nitrogenflux_vars, nitrogenstate_vars,                                   &
        atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
-       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+       photosyns_vars, soilhydrology_vars, energyflux_vars,          &
        phosphorusflux_vars,phosphorusstate_vars)
     !-------------------------------------------------------------------
     ! bgc interface
@@ -568,7 +565,6 @@ contains
     type(temperature_type)   , intent(inout) :: temperature_vars
     type(crop_type)          , intent(inout) :: crop_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
@@ -623,7 +619,7 @@ contains
        call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
             waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
-            dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
+            cnstate_vars, carbonstate_vars, carbonflux_vars, &
             nitrogenstate_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars)
        call t_stopf('Phenology')
@@ -724,7 +720,7 @@ contains
 
        call t_startf('CNGapMortality')
        call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dgvs_vars, cnstate_vars, &
+            cnstate_vars, &
             carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
             phosphorusstate_vars,phosphorusflux_vars )
        call t_stopf('CNGapMortality')
@@ -817,7 +813,7 @@ contains
             cnstate_vars, carbonstate_vars)
 
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+            cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
 
        call t_stopf('CNUpdate2')

@@ -550,7 +550,7 @@ contains
       ! Return true if we should check weights
       !
       ! !USES:
-      use clm_varctl          , only : nsrest, nsrContinue, use_cndv, use_fates
+      use clm_varctl          , only : nsrest, nsrContinue, use_fates
       use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
@@ -570,10 +570,6 @@ contains
          ! WJS (3-25-14): I'm not sure why we don't do the check in this case, but I'm
          ! maintaining the logic that used to be in BiogeophysRestMod regarding these
          ! weight checks
-         do_check_weights = .false.
-      else if (use_cndv) then
-         ! Don't check weights for a cndv case, because the weights will almost certainly
-         ! differ from the surface dataset in this case
          do_check_weights = .false.
       else if (use_fates) then
          ! Don't check weights for a ed case, because the weights will almost certainly
