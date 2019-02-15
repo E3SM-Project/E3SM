@@ -55,6 +55,7 @@
 <clubb_liq_deep>     8.e-6  </clubb_liq_deep>  
 <clubb_liq_sh>       10.e-6 </clubb_liq_sh>
 <clubb_C2rt>         1.75D0 </clubb_C2rt>
+<clubb_use_sgv>      .true. </clubb_use_sgv>
 <zmconv_c0_lnd>      0.0020  </zmconv_c0_lnd>
 <zmconv_c0_ocn>      0.0020  </zmconv_c0_ocn>
 <zmconv_dmpdz>      -1.2e-3</zmconv_dmpdz>
