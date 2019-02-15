@@ -133,28 +133,45 @@ public:
   void register_field (ExecView<Real*[DIM][NP][NP], Properties...> field, int num_dims, int start_dim);
 
   // 3d fields (with vertical level dimension at the end)
-  template<int DIM, typename... Properties>
-  void register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim);
   template<typename... Properties>
   void register_field (ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim);
-  template <typename... Properties>
-  void register_field(ExecView<Scalar[NP][NP][NUM_LEV], Properties...> field, int ie, int iq);
   template<int OUTER_DIM, int DIM, typename... Properties>
   void register_field (ExecView<Scalar*[OUTER_DIM][DIM][NP][NP][NUM_LEV], Properties...> field, int idim_out, int num_dims, int start_dim);
   template<typename... Properties>
   void register_field (ExecView<Scalar***[NP][NP][NUM_LEV], Properties...> field, int idim_out, int num_dims, int start_dim);
-  template<typename... Properties>
-  void register_field (ExecView<Scalar*[NP][NP][NUM_LEV], Properties...> field);
 
-  // 3d fields defined on level interfaces NUM_LEV!=NUM_LEV_P
-  template<int NUM_INT_LEV, typename... Properties>
-  void register_field (typename std::enable_if<NUM_INT_LEV==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
-                                               ExecView<Scalar*[NP][NP][NUM_INT_LEV], Properties...>
-                                              >::type field);
-  template<int DIM, int NUM_INT_LEV, typename... Properties>
-  void register_field (ExecView<Scalar*[DIM][NP][NP][NUM_INT_LEV], Properties...> field,
-                       typename std::enable_if<NUM_INT_LEV==NUM_LEV_P && NUM_LEV!=NUM_LEV_P, int>::type num_dims,
-                       int start_dim);
+  // Handle both NUM_LEV and NUM_LEV_P
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field (ExecView<Scalar*[NP][NP][NUM_LEV_IN], Properties...> field) {
+    register_field_impl<NUM_LEV_IN,Properties...>(field);
+  }
+  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  void register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV_IN], Properties...> field, int num_dims, int start_dim) {
+    register_field_impl<NUM_LEV_IN,DIM,Properties...>(field,num_dims,start_dim);
+  }
+
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                                ExecView<Scalar*[NP][NP][NUM_LEV], Properties...>
+                               >::type field);
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                                ExecView<Scalar*[NP][NP][NUM_LEV_P], Properties...>
+                               >::type field);
+  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                                ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...>
+                               >::type field,
+        int num_dims, int start_dim);
+  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                                ExecView<Scalar*[DIM][NP][NP][NUM_LEV_P], Properties...>
+                               >::type field,
+        int num_dims, int start_dim);
 
   // This registration method should be used for the exchange of min/max fields
   template<int DIM, typename... Properties>
@@ -378,30 +395,6 @@ void BoundaryExchange::register_field (ExecView<Real***[NP][NP], Properties...> 
 
 // --- 3d NUM_LEV fields --- //
 
-template<int DIM, typename... Properties>
-void BoundaryExchange::register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim)
-{
-  using Kokkos::ALL;
-
-  // Sanity checks
-  assert (m_registration_started && !m_registration_completed);
-  assert (num_dims>0 && start_dim>=0 && DIM>0);
-  assert (start_dim+num_dims<=DIM);
-  assert (m_num_3d_fields+num_dims<=m_3d_fields.extent_int(1));
-  assert (m_num_1d_fields==0);
-
-  {
-    auto l_num_3d_fields = m_num_3d_fields;
-    auto l_3d_fields = m_3d_fields;
-    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
-                         KOKKOS_LAMBDA(const int ie, const int idim){
-        l_3d_fields(ie, l_num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
-    });
-  }
-
-  m_num_3d_fields += num_dims;
-}
-
 template<typename... Properties>
 void BoundaryExchange::register_field (ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim)
 {
@@ -474,8 +467,11 @@ void BoundaryExchange::register_field (ExecView<Scalar***[NP][NP][NUM_LEV], Prop
   m_num_3d_fields += num_dims;
 }
 
-template<typename... Properties>
-void BoundaryExchange::register_field (ExecView<Scalar*[NP][NP][NUM_LEV], Properties...> field)
+template<int NUM_LEV_IN, typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                            ExecView<Scalar*[NP][NP][NUM_LEV], Properties...>
+                           >::type field)
 {
   using Kokkos::ALL;
 
@@ -496,33 +492,65 @@ void BoundaryExchange::register_field (ExecView<Scalar*[NP][NP][NUM_LEV], Proper
   ++m_num_3d_fields;
 }
 
-template <typename... Properties>
-void BoundaryExchange::register_field(
-    ExecView<Scalar[NP][NP][NUM_LEV], Properties...> field, int ie, int iq) {
+template<int NUM_LEV_IN,typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                            ExecView<Scalar*[NP][NP][NUM_LEV_P], Properties...>
+                                            >::type field)
+{
   using Kokkos::ALL;
 
   // Sanity checks
-  assert(m_registration_started && !m_registration_completed);
-  assert(0 < ie < m_3d_fields.extent_int(0));
-  assert(0 < iq < m_3d_fields.extent_int(1));
-  assert(m_num_1d_fields == 0);
+  assert (m_registration_started && !m_registration_completed);
+  assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
+  assert (m_num_1d_fields==0);
 
   {
-    auto l_3d_fields = m_3d_fields;
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int) {
-      l_3d_fields(ie, iq) = field;
+    auto l_num_3d_int_fields = m_num_3d_int_fields;
+    auto l_3d_int_fields = m_3d_int_fields;
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, m_connectivity->get_num_local_elements()),
+                         KOKKOS_LAMBDA(const int ie){
+      l_3d_int_fields(ie, l_num_3d_int_fields) = Kokkos::subview(field, ie, ALL, ALL, ALL);
     });
   }
-  // Temporary hack
-  m_num_3d_fields = iq + 1;
+
+  ++m_num_3d_int_fields;
 }
 
-// --- 3d NUM_LEV_P fields --- //
+template<int NUM_LEV_IN, int DIM, typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                            ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...>
+                           >::type field,
+    int num_dims, int start_dim)
+{
+  using Kokkos::ALL;
 
-template<int DIM, int NUM_INT_LEV, typename... Properties>
-void BoundaryExchange::register_field (ExecView<Scalar*[DIM][NP][NP][NUM_INT_LEV], Properties...> field,
-                                       typename std::enable_if<NUM_INT_LEV==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,int>::type num_dims,
-                                       int start_dim)
+  // Sanity checks
+  assert (m_registration_started && !m_registration_completed);
+  assert (num_dims>0 && start_dim>=0 && DIM>0);
+  assert (start_dim+num_dims<=DIM);
+  assert (m_num_3d_fields+num_dims<=m_3d_fields.extent_int(1));
+  assert (m_num_1d_fields==0);
+
+  {
+    auto l_num_3d_fields = m_num_3d_fields;
+    auto l_3d_fields = m_3d_fields;
+    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
+                         KOKKOS_LAMBDA(const int ie, const int idim){
+        l_3d_fields(ie, l_num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
+    });
+  }
+
+  m_num_3d_fields += num_dims;
+}
+
+template<int NUM_LEV_IN, int DIM, typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                            ExecView<Scalar*[DIM][NP][NP][NUM_LEV_P], Properties...>
+                           >::type field,
+    int num_dims, int start_dim)
 {
   using Kokkos::ALL;
 
@@ -539,30 +567,6 @@ void BoundaryExchange::register_field (ExecView<Scalar*[DIM][NP][NP][NUM_INT_LEV
     Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
                          KOKKOS_LAMBDA(const int ie, const int idim){
       l_3d_int_fields(ie, l_num_3d_int_fields) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
-    });
-  }
-
-  ++m_num_3d_int_fields;
-}
-
-template<int NUM_INT_LEV,typename... Properties>
-void BoundaryExchange::register_field (typename std::enable_if<NUM_INT_LEV==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
-                                             ExecView<Scalar*[NP][NP][NUM_INT_LEV], Properties...>
-                                            >::type field)
-{
-  using Kokkos::ALL;
-
-  // Sanity checks
-  assert (m_registration_started && !m_registration_completed);
-  assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
-  assert (m_num_1d_fields==0);
-
-  {
-    auto l_num_3d_int_fields = m_num_3d_int_fields;
-    auto l_3d_int_fields = m_3d_int_fields;
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, m_connectivity->get_num_local_elements()),
-                         KOKKOS_LAMBDA(const int ie){
-      l_3d_int_fields(ie, l_num_3d_int_fields) = Kokkos::subview(field, ie, ALL, ALL, ALL);
     });
   }
 
