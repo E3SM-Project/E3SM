@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-perturbs = np.arange(0.0, 2.1, 0.1)
+perturbs = np.arange(0.0, 2.1, 0.2)
 nruns = len(perturbs)
 
 # init some vectors
@@ -22,6 +22,8 @@ VAFchange = np.zeros((nruns,))
 VAFchangeInst = np.zeros((nruns,))
 GLfchange = np.zeros((nruns,))
 GLfchangeInst = np.zeros((nruns,))
+
+yr = 10.0
 
 for i in range(nruns):
    p = perturbs[i]
@@ -36,11 +38,14 @@ for i in range(nruns):
       VAF = f.variables['volumeAboveFloatation'][:] *910.0 /1.0e9 /1000.0
       GLf = f.variables['groundingLineFlux'][:] /1.0e9 /1000.0
       dt = f.variables['deltat'][:] / (3600.0*24.0*365.0)
-      GAchange[i] = GA[-1] - GA[0]
+      yrs = f.variables['daysSinceStart'][:]/365.0
+      #ind = np.where(yrs == yr)[0][0]
+      ind = np.argmin(np.absolute(yrs-yr))
+      GAchange[i] = (GA[ind] - GA[0]) / (yrs[ind] - yrs[0])
       GAchangeInst[i] = (GA[2] - GA[1]) / dt[2]
-      VAFchange[i] = VAF[-1] - VAF[0]
+      VAFchange[i] = (VAF[ind] - VAF[0]) / (yrs[ind] - yrs[0])
       VAFchangeInst[i] = (VAF[2] - VAF[1]) / dt[2]
-      GLfchange[i] = GLf[-1] - GLf[0]
+      GLfchange[i] = (GLf[ind] - GLf[0]) / (yrs[ind] - yrs[0])
       GLfchangeInst[i] = (GLf[2] - GLf[1]) / dt[2]
       f.close()
    else:
@@ -57,7 +62,7 @@ axGA = fig.add_subplot(3,2,1)
 plt.plot(meltMag, GAchange, '.')
 plt.plot(meltMag[ind], GAchange[ind], 'ko')
 plt.xlabel('ice shelf melt rate (Gt yr$^{-1}$)')
-plt.ylabel('grounded area change\nin one year (km$^2$)')
+plt.ylabel('grounded area change\n (km$^2$/yr)')
 plt.grid()
 
 axGAinst = fig.add_subplot(3,2,2)
@@ -71,7 +76,7 @@ axMelt = fig.add_subplot(3,2,3)
 plt.plot(meltMag, VAFchange, '.')
 plt.plot(meltMag[ind], VAFchange[ind], 'ko')
 plt.xlabel('ice shelf melt rate (Gt yr$^{-1}$)')
-plt.ylabel('VAF change\nin one year (Gt)')
+plt.ylabel('VAF change (Gt/yr)')
 plt.grid()
 
 axMelt = fig.add_subplot(3,2,4)
@@ -85,7 +90,7 @@ axMelt = fig.add_subplot(3,2,5)
 plt.plot(meltMag, GLfchange, '.')
 plt.plot(meltMag[ind], GLfchange[ind], 'ko')
 plt.xlabel('ice shelf melt rate (Gt yr$^{-1}$)')
-plt.ylabel('GL flux change\nin one year (Gt yr$^{-1}$)')
+plt.ylabel('GL flux change\n (Gt yr$^{-1}$/yr)')
 plt.grid()
 
 axMelt = fig.add_subplot(3,2,6)
