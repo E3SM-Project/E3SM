@@ -14,7 +14,6 @@ module clm_instMod
   use CH4Mod                     , only : ch4_type
   use CNCarbonFluxType           , only : carbonflux_type
   use CNCarbonStateType          , only : carbonstate_type
-  use CNDVType                   , only : dgvs_type
   use CNStateType                , only : cnstate_type
   use CNNitrogenFluxType         , only : nitrogenflux_type
   use CNNitrogenStateType        , only : nitrogenstate_type
@@ -97,7 +96,6 @@ module clm_instMod
   type(carbonflux_type)                               :: c14_carbonflux_vars
   type(nitrogenstate_type)                            :: nitrogenstate_vars
   type(nitrogenflux_type)                             :: nitrogenflux_vars
-  type(dgvs_type)                                     :: dgvs_vars
   type(crop_type)                                     :: crop_vars
   type(cnstate_type)                                  :: cnstate_vars
   type(dust_type)                                     :: dust_vars
@@ -219,10 +217,6 @@ contains
        call grc_pf%Init(begg, endg)
        call col_pf%Init(begc, endc)
        call veg_pf%Init(begp, endp)
-
-       ! Note - always initialize the memory for the dgvs_vars data structure so
-       ! that it can be used in associate statements (nag compiler complains otherwise)
-       call dgvs_vars%Init(bounds_proc)
 
        call crop_vars%Init(bounds_proc)
 

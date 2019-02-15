@@ -33,7 +33,6 @@ module FireMod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use atm2lndType            , only : atm2lnd_type
-  use CNDVType               , only : dgvs_type
   use CNStateType            , only : cnstate_type
   use CNCarbonFluxType       , only : carbonflux_type
   use CNCarbonStateType      , only : carbonstate_type
@@ -650,7 +649,7 @@ contains
 
  !-----------------------------------------------------------------------
  subroutine FireFluxes (num_soilc, filter_soilc, num_soilp, filter_soilp, &
-      dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+      cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
       carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
    !
    ! !DESCRIPTION:
@@ -668,7 +667,7 @@ contains
    use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use clm_time_manager     , only: get_step_size,get_days_per_year,get_curr_date
    use clm_varpar           , only: max_patch_per_col
-   use clm_varctl           , only: use_cndv, spinup_state, spinup_mortality_factor
+   use clm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
    use clm_varcon           , only: secspday
    use dynSubgridControlMod , only: run_has_transient_landcover
@@ -678,7 +677,6 @@ contains
    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-   type(dgvs_type)          , intent(inout) :: dgvs_vars
    type(cnstate_type)       , intent(inout) :: cnstate_vars
    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
@@ -773,8 +771,6 @@ contains
 
         woody                               =>    veg_vp%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)             
 
-        nind                                =>    dgvs_vars%nind_patch                                        , & ! Input:  [real(r8) (:)     ]  number of individuals (#/m2)                      
-        
         cropf_col                           =>    cnstate_vars%cropf_col                                      , & ! Input:  [real(r8) (:)     ]  cropland fraction in veg column                   
         croot_prof                          =>    cnstate_vars%croot_prof_patch                               , & ! Input:  [real(r8) (:,:)   ]  (1/m) profile of coarse roots                   
         stem_prof                           =>    cnstate_vars%stem_prof_patch                                , & ! Input:  [real(r8) (:,:)   ]  (1/m) profile of stems                          
@@ -1298,20 +1294,6 @@ contains
         m_ppool_to_litter_fire(p)                  =  ppool(p)              * f * &
              (1._r8 - cc_other(veg_pp%itype(p))) * &
              fm_other(veg_pp%itype(p))
-
-
-
-        if (use_cndv) then
-           if ( woody(veg_pp%itype(p)) == 1._r8 )then
-              if ( livestemc(p)+deadstemc(p) > 0._r8 )then
-                 nind(p) = nind(p)*(1._r8-1._r8*fm_droot(veg_pp%itype(p))*f) 
-              else
-                 nind(p) = 0._r8
-              end if
-           end if
-           leafcmax(p) = max(leafc(p)-m_leafc_to_fire(p)*dt, leafcmax(p))
-           if (veg_pp%itype(p) == noveg) leafcmax(p) = 0._r8
-        end if
 
      end do  ! end of patches loop  
 

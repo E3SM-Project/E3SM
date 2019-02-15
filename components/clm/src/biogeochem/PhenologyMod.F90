@@ -14,13 +14,12 @@ module PhenologyMod
   use shr_sys_mod         , only : shr_sys_flush
   use decompMod           , only : bounds_type
   use clm_varpar          , only : numpft
-  use clm_varctl          , only : iulog, use_cndv
+  use clm_varctl          , only : iulog
   use clm_varcon          , only : tfrz
   use abortutils          , only : endrun
   use CanopyStateType     , only : canopystate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
-  use CNDVType            , only : dgvs_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
@@ -206,7 +205,7 @@ contains
   subroutine Phenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
        num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
        waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
-       dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
+       cnstate_vars, carbonstate_vars, carbonflux_vars, &
        nitrogenstate_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
@@ -227,7 +226,6 @@ contains
     type(crop_type)          , intent(inout)    :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(inout) :: carbonstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
@@ -248,7 +246,7 @@ contains
          cnstate_vars) 
 
     call CNSeasonDecidPhenology(num_soilp, filter_soilp, &
-         temperature_vars, cnstate_vars, dgvs_vars, &
+         temperature_vars, cnstate_vars, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
          phosphorusstate_vars,phosphorusflux_vars)
 
@@ -509,7 +507,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNSeasonDecidPhenology (num_soilp, filter_soilp       , &
-       temperature_vars, cnstate_vars, dgvs_vars , &
+       temperature_vars, cnstate_vars, &
        carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
        phosphorusstate_vars, phosphorusflux_vars)
     !
@@ -521,14 +519,12 @@ contains
     ! !USES:
     use shr_const_mod   , only: SHR_CONST_TKFRZ, SHR_CONST_PI
     use clm_varcon      , only: secspday
-    use clm_varctl      , only: use_cndv
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(temperature_type)   , intent(in)    :: temperature_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
     type(carbonstate_type)   , intent(inout) :: carbonstate_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
@@ -554,8 +550,6 @@ contains
          
          t_soisno                            =>    col_es%t_soisno                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          
-         pftmayexist                         =>    dgvs_vars%pftmayexist_patch                           , & ! Output: [logical   (:)   ]  exclude seasonal decid patches from tropics           
-
          annavg_t2m                          =>    cnstate_vars%annavg_t2m_patch                         , & ! Input:  [real(r8)  (:)   ]  annual average 2m air temperature (K)             
          dormant_flag                        =>    cnstate_vars%dormant_flag_patch                       , & ! Output: [real(r8)  (:)   ]  dormancy flag                                     
          days_active                         =>    cnstate_vars%days_active_patch                        , & ! Output: [real(r8)  (:)   ]  number of days since last dormancy                
@@ -695,9 +689,6 @@ contains
                   offset_counter(p) = 0._r8
                   dormant_flag(p) = 1._r8
                   days_active(p) = 0._r8
-                  if (use_cndv) then
-                     pftmayexist(p) = .true.
-                  end if
 
                   ! reset the previous timestep litterfall flux memory
                   prev_leafc_to_litter(p) = 0._r8
@@ -840,16 +831,6 @@ contains
 
                ! test for switching from growth period to offset period
             else if (offset_flag(p) == 0.0_r8) then
-               if (use_cndv) then
-                  ! If days_active > 355, then remove pft in
-                  ! CNDVEstablishment at the end of the year.
-                  ! days_active > 355 is a symptom of seasonal decid. patches occurring in
-                  ! gridcells where dayl never drops below crit_dayl.
-                  ! This results in TLAI>1e4 in a few gridcells.
-                  days_active(p) = days_active(p) + fracday
-                  if (days_active(p) > 355._r8) pftmayexist(p) = .false.
-               end if
-
                ! only begin to test for offset daylength once past the summer sol
                if (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) then
                   offset_flag(p) = 1._r8

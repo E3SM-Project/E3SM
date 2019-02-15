@@ -947,7 +947,7 @@ contains
 
     ! Activity factor for leaf age (Guenther et al., 2006)
     !-----------------------------
-    ! If not CNDV elai is constant therefore gamma_a=1.0
+    ! If bgc not active, then elai is constant therefore gamma_a=1.0
     ! gamma_a set to unity for evergreens (Patches 1, 2, 4, 5)
     ! Note that we assume here that the time step is shorter than the number of 
     !days after budbreak required to induce isoprene emissions (ti=12 days) and 

@@ -19,7 +19,7 @@ module VegetationDataType
   use landunit_varcon , only : istsoil, istcrop
   use pftvarcon       , only : npcropmin, noveg, nstor
   use clm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
-  use clm_varctl      , only : nu_com, use_crop, use_cndv, use_c13
+  use clm_varctl      , only : nu_com, use_crop, use_c13
   use clm_varctl      , only : use_lch4, use_betr
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
@@ -630,9 +630,7 @@ module VegetationDataType
     real(r8), pointer :: dwt_crop_productc_gain              (:) => null()    ! (gC/m2/s) addition to crop product pools from landcover change; although this is a patch-level flux, it is expressed per unit GRIDCELL area
                                                              
     ! Debug, Temporary, and annual sums                              
-    real(r8), pointer :: tempsum_litfall                     (:) => null()    ! temporary annual sum of litfall (gC/m2/yr) (CNDV)
     real(r8), pointer :: tempsum_npp                         (:) => null()    ! patch temporary annual sum of NPP (gC/m2/yr)
-    real(r8), pointer :: annsum_litfall                      (:) => null()    ! annual sum of litfall (gC/m2/yr) (CNDV)
     real(r8), pointer :: annsum_npp                          (:) => null()    ! patch annual sum of NPP (gC/m2/yr)
     real(r8), pointer :: annavg_agnpp                        (:) => null()    ! (gC/m2/s) annual average aboveground NPP
     real(r8), pointer :: annavg_bgnpp                        (:) => null()    ! (gC/m2/s) annual average belowground NPP
@@ -5773,9 +5771,7 @@ module VegetationDataType
     allocate(this%dwt_prod10c_gain                    (begp:endp)) ;    this%dwt_prod10c_gain                     (:) = nan
     allocate(this%dwt_prod100c_gain                   (begp:endp)) ;    this%dwt_prod100c_gain                    (:) = nan
     allocate(this%dwt_crop_productc_gain              (begp:endp)) ;    this%dwt_crop_productc_gain               (:) = nan
-    allocate(this%tempsum_litfall                     (begp:endp)) ;    this%tempsum_litfall                      (:) = nan
     allocate(this%tempsum_npp                         (begp:endp)) ;    this%tempsum_npp                          (:) = nan
-    allocate(this%annsum_litfall                      (begp:endp)) ;    this%annsum_litfall                       (:) = nan
     allocate(this%annsum_npp                          (begp:endp)) ;    this%annsum_npp                           (:) = nan
     allocate(this%annavg_agnpp                        (begp:endp)) ;    this%annavg_agnpp                         (:) = spval
     allocate(this%annavg_bgnpp                        (begp:endp)) ;    this%annavg_bgnpp                         (:) = spval
@@ -7815,10 +7811,6 @@ module VegetationDataType
              this%plant_calloc(p)          = spval
              this%prev_leafc_to_litter(p)  = spval
              this%prev_frootc_to_litter(p) = spval
-             if (use_cndv) then
-                this%tempsum_litfall(p)    = spval
-                this%annsum_litfall(p)     = spval
-             end if
              if ( use_c13 ) then
                 this%xsmrpool_c13ratio(p)  = spval
              endif
@@ -7831,10 +7823,6 @@ module VegetationDataType
              this%excess_cflux(p)          = 0._r8
              this%prev_leafc_to_litter(p)  = 0._r8
              this%prev_frootc_to_litter(p) = 0._r8
-             if (use_cndv) then
-                this%tempsum_litfall(p)    = 0._r8
-                this%annsum_litfall(p)     = 0._r8
-             end if
              this%plant_calloc(p)          = 0._r8
           end if
        end do
@@ -7991,18 +7979,6 @@ module VegetationDataType
          dim1name='pft', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annsum_npp) 
-
-    if (use_cndv) then
-       call restartvar(ncid=ncid, flag=flag, varname='tempsum_litfall', xtype=ncd_double,  &
-            dim1name='pft', &
-            long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%tempsum_litfall)
-
-       call restartvar(ncid=ncid, flag=flag, varname='annsum_litfall', xtype=ncd_double,  &
-            dim1name='pft', &
-            long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%annsum_litfall)
-    end if
 
   end subroutine veg_cf_restart
   
@@ -8211,14 +8187,6 @@ module VegetationDataType
             this%hrv_gresp_storage_to_litter(p)         + &
             this%hrv_gresp_xfer_to_litter(p)            + &
             this%hrv_cpool_to_litter(p)
-
-       ! update the annual litfall accumulator, for use in mortality code
-       if (use_cndv) then
-          this%tempsum_litfall(p) = &
-               this%tempsum_litfall(p) + &
-               this%leafc_to_litter(p) + &
-               this%frootc_to_litter(p)
-       end if
 
        ! patch-level fire losses (VEGFIRE)
        this%vegfire(p) = 0._r8

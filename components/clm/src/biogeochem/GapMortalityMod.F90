@@ -11,7 +11,6 @@ module GapMortalityMod
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use VegetationPropertiesType      , only : veg_vp
-  use CNDVType            , only : dgvs_type
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -83,7 +82,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine GapMortality (&
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       dgvs_vars, cnstate_vars, &
+       cnstate_vars, &
        carbonstate_vars, nitrogenstate_vars, carbonflux_vars,nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
     !
@@ -94,14 +93,13 @@ contains
     use clm_time_manager , only: get_days_per_year
     use clm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
-    use clm_varctl       , only: use_cndv, spinup_state, spinup_mortality_factor
+    use clm_varctl       , only: spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
     type(cnstate_type)       , intent(inout)    :: cnstate_vars
     type(carbonstate_type)   , intent(inout)    :: carbonstate_vars
     type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
@@ -124,11 +122,8 @@ contains
     associate(                                                                                              & 
          ivt                                 =>    veg_pp%itype                                              , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
-         woody                               =>    veg_vp%woody                                       , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform                    
+         woody                               =>    veg_vp%woody                                        & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform                    
          
-         greffic                             =>    dgvs_vars%greffic_patch                                , & ! Input:  [real(r8) (:) ]                                                    
-         heatstress                          =>    dgvs_vars%heatstress_patch                             , & ! Input:  [real(r8) (:) ]                                                    
-         nind                                =>    dgvs_vars%nind_patch                                     & ! Output: [real(r8) (:) ]  number of individuals (#/m2) added by F. Li and S. Levis
          )
 
       ! set the mortality rate based on annual rate
@@ -144,35 +139,6 @@ contains
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-
-         if (use_cndv) then
-            ! Stress mortality from lpj's subr Mortality.
-
-            if (woody(ivt(p)) == 1._r8) then
-
-               if (ivt(p) == 8) then
-                  mort_max = 0.03_r8 ! BDT boreal
-               else
-                  mort_max = 0.01_r8 ! original value for all patches
-               end if
-
-               ! heatstress and greffic calculated in Establishment once/yr
-
-               ! Mortality rate inversely related to growth efficiency
-               ! (Prentice et al 1993)
-               am = mort_max / (1._r8 + k_mort * greffic(p))
-
-               ! Mortality rate inversely related to growth efficiency
-               ! (Prentice et al 1993)
-               am = mort_max / (1._r8 + k_mort * greffic(p))
-
-               am = min(1._r8, am + heatstress(p))
-            else ! lpj didn't set this for grasses; cn does
-               ! set the mortality rate based on annual rate
-               am = CNGapMortParamsInst%am
-            end if
-
-         end if
 
          if (nu_com .eq. 'RD') then
              am = cnstate_vars%r_mort_cal_patch(p)
@@ -293,17 +259,6 @@ contains
          veg_pf%m_deadstemp_xfer_to_litter(p)      = veg_ps%deadstemp_xfer(p)      * m
          veg_pf%m_livecrootp_xfer_to_litter(p)     = veg_ps%livecrootp_xfer(p)     * m
          veg_pf%m_deadcrootp_xfer_to_litter(p)     = veg_ps%deadcrootp_xfer(p)     * m
-
-         ! added by F. Li and S. Levis
-         if (use_cndv) then
-            if (woody(ivt(p)) == 1._r8)then
-               if (veg_cs%livestemc(p) + veg_cs%deadstemc(p)> 0._r8)then
-                  nind(p)=nind(p)*(1._r8-m)
-               else
-                  nind(p) = 0._r8 
-               end if
-            end if
-         end if
 
       end do ! end of pft loop
 
