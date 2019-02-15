@@ -206,21 +206,21 @@ public:
     if (m_data.nu_top > 0) {
 
       //for top 3 levels and laplace, there is trivial nu_ratio only
-      m_sphere_ops.vlaplace_sphere_wk_contra<NUM_BIHARMONIC_LEV>(
+      m_sphere_ops.vlaplace_sphere_wk_contra<NUM_LEV,NUM_BIHARMONIC_LEV>(
             kv, 1.0,
             // input
             Homme::subview(m_state.m_v, kv.ie, m_data.np1),
             // output
             Homme::subview(laplace_v, kv.ie));
 
-      m_sphere_ops.laplace_simple<NUM_BIHARMONIC_LEV>(
+      m_sphere_ops.laplace_simple<NUM_LEV,NUM_BIHARMONIC_LEV>(
             kv,
             // input
             Homme::subview(m_state.m_t, kv.ie, m_data.np1),
             // output
             Homme::subview(laplace_t, kv.ie));
 
-      m_sphere_ops.laplace_simple<NUM_BIHARMONIC_LEV>(
+      m_sphere_ops.laplace_simple<NUM_LEV,NUM_BIHARMONIC_LEV>(
             kv,
             // input
             Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),

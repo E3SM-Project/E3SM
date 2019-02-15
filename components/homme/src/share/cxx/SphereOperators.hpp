@@ -14,6 +14,7 @@
 #include "KernelVariables.hpp"
 #include "PhysicalConstants.hpp"
 #include "utilities/SubviewUtils.hpp"
+#include "utilities/ViewUtils.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -25,6 +26,18 @@ class SphereOperators
   static constexpr int NUM_3D_SCALAR_BUFFERS = 3;
   static constexpr int NUM_3D_VECTOR_BUFFERS = 3;
 
+  // These two short names will be used to extract subviews from the 3d buffers,
+  // since we can no longer use the auto keyword. Before we used to do
+  //   const auto& gv = Homme::subview(vector_buf_ml,kv.team_idx,0);
+  // However, now vector_buf_ml has last timension NUM_LEV_P, but we may
+  // need gv to be smaller. Hence, we simply grab the pointer from the subview,
+  // but then we need to explicitly tell the compiler the type of the result,
+  // which can no longer be deduced. Like this:
+  //   vector_buf<NUM_LEV gv(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
+  template<int NUM_LEVELS>
+  using scalar_buf = ExecViewUnmanaged<Scalar[NP][NP][NUM_LEVELS]>;
+  template<int NUM_LEVELS>
+  using vector_buf = ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEVELS]>;
 public:
 
   SphereOperators () = default;
@@ -82,8 +95,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere_sl (const KernelVariables &kv,
-                      const ExecViewUnmanaged<const Real    [NP][NP]> scalar,
-                      const ExecViewUnmanaged<      Real [2][NP][NP]> grad_s) const
+                      const ExecViewUnmanaged<const Real    [NP][NP]>& scalar,
+                      const ExecViewUnmanaged<      Real [2][NP][NP]>& grad_s) const
   {
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
     const auto& temp_v_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
@@ -117,8 +130,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere_update_sl (const KernelVariables &kv,
-                             const ExecViewUnmanaged<const Real    [NP][NP]> scalar,
-                             const ExecViewUnmanaged<      Real [2][NP][NP]> grad_s) const
+                             const ExecViewUnmanaged<const Real    [NP][NP]>& scalar,
+                             const ExecViewUnmanaged<      Real [2][NP][NP]>& grad_s) const
   {
     constexpr int np_squared = NP * NP;
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
@@ -152,8 +165,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_sl (const KernelVariables &kv,
-                        const ExecViewUnmanaged<const Real [2][NP][NP]> v,
-                        const ExecViewUnmanaged<      Real    [NP][NP]> div_v) const
+                        const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
+                        const ExecViewUnmanaged<      Real    [NP][NP]>& div_v) const
   {
     const auto& metdet = Homme::subview(m_metdet,kv.ie);
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
@@ -188,8 +201,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk_sl (const KernelVariables &kv,
-                           const ExecViewUnmanaged<const Real [2][NP][NP]> v,
-                           const ExecViewUnmanaged<      Real    [NP][NP]> div_v) const
+                           const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
+                           const ExecViewUnmanaged<      Real    [NP][NP]>& div_v) const
   {
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
     const auto& spheremp = Homme::subview(m_spheremp,kv.ie);
@@ -239,9 +252,9 @@ public:
   // This must be called from the device space
   KOKKOS_INLINE_FUNCTION void
   vorticity_sphere_sl (const KernelVariables &kv,
-                       const ExecViewUnmanaged<const Real [NP][NP]> u,
-                       const ExecViewUnmanaged<const Real [NP][NP]> v,
-                       const ExecViewUnmanaged<      Real [NP][NP]> vort) const
+                       const ExecViewUnmanaged<const Real [NP][NP]>& u,
+                       const ExecViewUnmanaged<const Real [NP][NP]>& v,
+                       const ExecViewUnmanaged<      Real [NP][NP]>& vort) const
   {
     const auto& D = Homme::subview(m_d,kv.ie);
     const auto& metdet = Homme::subview(m_metdet,kv.ie);
@@ -281,8 +294,8 @@ public:
   // Single level implementation
   KOKKOS_INLINE_FUNCTION void
   laplace_wk_sl (const KernelVariables &kv,
-                 const ExecViewUnmanaged<const Real [NP][NP]> field,
-                 const ExecViewUnmanaged<      Real [NP][NP]> laplace) const
+                 const ExecViewUnmanaged<const Real [NP][NP]>& field,
+                 const ExecViewUnmanaged<      Real [NP][NP]>& laplace) const
   {
     const auto& grad_s = Homme::subview(vector_buf_sl, kv.team_idx, 1);
     gradient_sphere_sl(kv, field, grad_s);
@@ -291,13 +304,23 @@ public:
 
   // ================ MULTI-LEVEL IMPLEMENTATION =========================== //
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere (const KernelVariables &kv,
-                   const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                   const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> grad_s) const
+                   const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                   const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& grad_s) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    gradient_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(scalar),grad_s);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  gradient_sphere (const KernelVariables &kv,
+                   const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                   const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV_IN]>& grad_s) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
 
@@ -321,13 +344,23 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere_update (const KernelVariables &kv,
-                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> grad_s) const
+                          const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                          const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& grad_s) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    gradient_sphere_update<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(scalar),grad_s);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  gradient_sphere_update (const KernelVariables &kv,
+                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV_IN]>& grad_s) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     constexpr int np_squared = NP * NP;
@@ -350,17 +383,27 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere (const KernelVariables &kv,
-                     const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> v,
-                     const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV]> div_v) const
+                     const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                     const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& div_v) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    divergence_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(v),div_v);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  divergence_sphere (const KernelVariables &kv,
+                     const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                     const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV_IN]>& div_v) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& gv_buf = Homme::subview(vector_buf_ml,kv.team_idx, 0);
+    vector_buf<NUM_LEV_IN> gv_buf(Homme::subview(vector_buf_ml,kv.team_idx, 0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -396,21 +439,33 @@ public:
 
   // Note: this updates the field div_v as follows:
   //     div_v = beta*div_v + alpha*div(v)
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_update (const KernelVariables &kv,
                             const Real alpha, const bool add_hyperviscosity,
-                            const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> vstar,
-                            const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> qdp,
+                            const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& vstar,
+                            const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& qdp,
+                            const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& qtens) const
+  {
+    divergence_sphere_update<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,alpha,add_hyperviscosity,viewConst(vstar),viewConst(qdp),qtens);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  divergence_sphere_update (const KernelVariables &kv,
+                            const Real alpha, const bool add_hyperviscosity,
+                            const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV_IN]>& vstar,
+                            const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV_IN]>& qdp,
                             // On input, qtens_biharmonic if add_hyperviscosity, undefined
                             // if not; on output, qtens.
-                            const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV]> qtens) const
+                            const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV_IN]>& qtens) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& gv = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_IN> gv(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -446,18 +501,29 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   vorticity_sphere (const KernelVariables &kv,
-                    const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> u,
-                    const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> v,
-                    const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV]> vort) const
+                    const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>& u,
+                    const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>& v,
+                    const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>& vort) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    vorticity_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(u),viewConst(v),vort);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  vorticity_sphere (const KernelVariables &kv,
+                    const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV_IN]>& u,
+                    const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV_IN]>& v,
+                    const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_IN]>& vort) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& vcov_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_IN> vcov_buf(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -490,19 +556,29 @@ public:
     kv.team_barrier();
   }
 
-  //Why does the prev version take u and v separately?
-  //rewriting this to take vector as the input.
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   vorticity_sphere (const KernelVariables &kv,
-                    const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> v,
-                    const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV]> vort) const
+                    const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                    const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& vort) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    vorticity_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(v),vort);
+  }
+
+  //Why does the prev version take u and v separately?
+  //rewriting this to take vector as the input.
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  vorticity_sphere (const KernelVariables &kv,
+                    const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                    const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV_IN]>& vort) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& sphere_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_IN> sphere_buf(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -535,16 +611,16 @@ public:
     kv.team_barrier();
   }
 
-
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk (const KernelVariables &kv,
                         // On input, a field whose divergence is sought; on
                         // output, the view's data are invalid.
-                        const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV]> v,
-                        const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV]> div_v) const
+                        const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                        const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& div_v) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
@@ -586,37 +662,57 @@ public:
   }//end of divergence_sphere_wk
 
   //analog of laplace_simple_c_callable
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   laplace_simple (const KernelVariables &kv,
-                  const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> field,
-                  const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV]> laplace) const
+                  const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>& field,
+                  const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    laplace_simple<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(field),laplace);
+  }
 
-    const auto& grad_s = Homme::subview(vector_buf_ml, kv.team_idx, 0);
-    gradient_sphere<NUM_LEV_REQUEST>(kv, field, grad_s);
-    divergence_sphere_wk<NUM_LEV_REQUEST>(kv, grad_s, laplace);
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  laplace_simple (const KernelVariables &kv,
+                  const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV_IN]>& field,
+                  const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_IN]>& laplace) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+
+    vector_buf<NUM_LEV_IN> grad_s(Homme::subview(vector_buf_ml, kv.team_idx, 0).data());
+    gradient_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv, field, grad_s);
+    divergence_sphere_wk<NUM_LEV_IN,NUM_LEV_REQUEST>(kv, grad_s, laplace);
   }//end of laplace_simple
 
   //analog of laplace_wk_c_callable
   //but without if-statements for hypervis_power, var_coef, and hypervis_scaling.
   //for 2d fields, there should be either laplace_simple, or laplace_tensor for the whole run.
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  laplace_tensor (const KernelVariables &kv,
+                  const ExecViewUnmanaged<Real   [2][2][NP][NP]>&          tensorVisc,
+                  const ExecViewUnmanaged<Scalar       [NP][NP][NUM_LEV_IN]>& field,
+                  const ExecViewUnmanaged<Scalar       [NP][NP][NUM_LEV_IN]>& laplace) const
+  {
+    laplace_tensor<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(tensorVisc),viewConst(field),laplace);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   laplace_tensor(const KernelVariables &kv,
-                 const ExecViewUnmanaged<const Real   [2][2][NP][NP]>          tensorVisc,
-                 const ExecViewUnmanaged<const Scalar       [NP][NP][NUM_LEV]> field,         // input
-                 const ExecViewUnmanaged<      Scalar       [NP][NP][NUM_LEV]> laplace) const
+                 const ExecViewUnmanaged<const Real   [2][2][NP][NP]>&          tensorVisc,
+                 const ExecViewUnmanaged<const Scalar       [NP][NP][NUM_LEV_IN]>& field,         // input
+                 const ExecViewUnmanaged<      Scalar       [NP][NP][NUM_LEV_IN]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
-    const auto& grad_s     = Homme::subview(vector_buf_ml, kv.team_idx, 1);
-    const auto& sphere_buf = Homme::subview(vector_buf_ml, kv.team_idx, 2);
-    const auto& D_inv = Homme::subview(m_dinv, kv.ie);
-    const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
+    vector_buf<NUM_LEV_IN> grad_s(Homme::subview(vector_buf_ml, kv.team_idx, 1).data());
+    vector_buf<NUM_LEV_IN> sphere_buf(Homme::subview(vector_buf_ml, kv.team_idx, 2).data());
 
-    gradient_sphere<NUM_LEV_REQUEST>(kv, field, grad_s);
+    gradient_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv, field, grad_s);
   //now multiply tensorVisc(:,:,i,j)*grad_s(i,j) (matrix*vector, independent of i,j )
   //but it requires a temp var to store a result. the result is then placed to grad_s,
   //or should it be an extra temp var instead of an extra loop?
@@ -634,19 +730,29 @@ public:
     });
     kv.team_barrier();
 
-    divergence_sphere_wk<NUM_LEV_REQUEST>(kv, sphere_buf, laplace);
+    divergence_sphere_wk<NUM_LEV_IN,NUM_LEV_REQUEST>(kv, sphere_buf, laplace);
   }//end of laplace_tensor
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   curl_sphere_wk_testcov (const KernelVariables &kv,
-                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> curls) const
+                          const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                          const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& curls) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    curl_sphere_wk_testcov<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(scalar),curls);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  curl_sphere_wk_testcov (const KernelVariables &kv,
+                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV_IN]>& curls) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& sphere_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_IN> sphere_buf(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared), [&](const int loop_idx) {
       const int ngp = loop_idx / NP;
@@ -680,13 +786,23 @@ public:
 
   // This computes curls = alpha*curl(scalar) + beta*curls, where scalar is the input view,
   // and curls is the output view
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   curl_sphere_wk_testcov_update (const KernelVariables &kv, const Real alpha, const Real beta,
-                                 const ExecViewUnmanaged<const Scalar       [NP][NP][NUM_LEV]> scalar,
-                                 const ExecViewUnmanaged<      Scalar    [2][NP][NP][NUM_LEV]> curls) const
+                                 const ExecViewUnmanaged<Scalar       [NP][NP][NUM_LEV_IN]>& scalar,
+                                 const ExecViewUnmanaged<Scalar    [2][NP][NP][NUM_LEV_IN]>& curls) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    curl_sphere_wk_testcov_update<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,alpha,beta,viewConst(scalar),curls);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  curl_sphere_wk_testcov_update (const KernelVariables &kv, const Real alpha, const Real beta,
+                                 const ExecViewUnmanaged<const Scalar       [NP][NP][NUM_LEV_IN]>& scalar,
+                                 const ExecViewUnmanaged<      Scalar    [2][NP][NP][NUM_LEV_IN]>& curls) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
     constexpr int np_squared = NP * NP;
@@ -710,13 +826,23 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   grad_sphere_wk_testcov (const KernelVariables &kv,
-                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> grads) const
+                          const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                          const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& grads) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    grad_sphere_wk_testcov<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(scalar),grads);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  grad_sphere_wk_testcov (const KernelVariables &kv,
+                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV_IN]>& scalar,
+                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV_IN]>& grads) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& D = Homme::subview(m_d, kv.ie);
     const auto& metinv = Homme::subview(m_metinv, kv.ie);
@@ -747,21 +873,32 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   vlaplace_sphere_wk_cartesian (const KernelVariables &kv,
-                                const ExecViewUnmanaged<const Real   [2][2][NP][NP]>          tensorVisc,
-                                const ExecViewUnmanaged<const Real   [2][3][NP][NP]>          vec_sph2cart,
-                                const ExecViewUnmanaged<const Scalar    [2][NP][NP][NUM_LEV]> vector,
-                                const ExecViewUnmanaged<      Scalar    [2][NP][NP][NUM_LEV]> laplace) const
+                                const ExecViewUnmanaged<Real   [2][2][NP][NP]>&          tensorVisc,
+                                const ExecViewUnmanaged<Real   [2][3][NP][NP]>&          vec_sph2cart,
+                                const ExecViewUnmanaged<Scalar    [2][NP][NP][NUM_LEV_IN]>& vector,
+                                const ExecViewUnmanaged<Scalar    [2][NP][NP][NUM_LEV_IN]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    vlaplace_sphere_wk_cartesian<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,viewConst(tensorVisc),viewConst(vec_sph2cart),viewConst(vector),laplace);
+  }
 
-    const auto& D_inv = Homme::subview(m_dinv, kv.ie);
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  vlaplace_sphere_wk_cartesian (const KernelVariables &kv,
+                                const ExecViewUnmanaged<const Real   [2][2][NP][NP]>&          tensorVisc,
+                                const ExecViewUnmanaged<const Real   [2][3][NP][NP]>&          vec_sph2cart,
+                                const ExecViewUnmanaged<const Scalar    [2][NP][NP][NUM_LEV_IN]>& vector,
+                                const ExecViewUnmanaged<      Scalar    [2][NP][NP][NUM_LEV_IN]>& laplace) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
-    const auto& laplace0   = Homme::subview(scalar_buf_ml,kv.team_idx,0);
-    const auto& laplace1   = Homme::subview(scalar_buf_ml,kv.team_idx,1);
-    const auto& laplace2   = Homme::subview(scalar_buf_ml,kv.team_idx,2);
+    scalar_buf<NUM_LEV_IN> laplace0(Homme::subview(scalar_buf_ml,kv.team_idx,0).data());
+    scalar_buf<NUM_LEV_IN> laplace1(Homme::subview(scalar_buf_ml,kv.team_idx,1).data());
+    scalar_buf<NUM_LEV_IN> laplace2(Homme::subview(scalar_buf_ml,kv.team_idx,2).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -778,9 +915,9 @@ public:
     kv.team_barrier();
 
     // Use laplace* as input, and then overwrite it with the output (saves temporaries)
-    laplace_tensor<NUM_LEV_REQUEST>(kv,tensorVisc,laplace0,laplace0);
-    laplace_tensor<NUM_LEV_REQUEST>(kv,tensorVisc,laplace1,laplace1);
-    laplace_tensor<NUM_LEV_REQUEST>(kv,tensorVisc,laplace2,laplace2);
+    laplace_tensor<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,tensorVisc,viewConst(laplace0),laplace0);
+    laplace_tensor<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,tensorVisc,viewConst(laplace1),laplace1);
+    laplace_tensor<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,tensorVisc,viewConst(laplace2),laplace2);
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -813,22 +950,32 @@ public:
     kv.team_barrier();
   } // end of vlaplace_sphere_wk_cartesian
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
   KOKKOS_INLINE_FUNCTION void
   vlaplace_sphere_wk_contra (const KernelVariables &kv, const Real nu_ratio,
-                             const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> vector,
-                             const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> laplace) const
+                             const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& vector,
+                             const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    vlaplace_sphere_wk_contra<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,nu_ratio,viewConst(vector),laplace);
+  }
+
+  template<int NUM_LEV_IN, int NUM_LEV_REQUEST = NUM_LEV_IN>
+  KOKKOS_INLINE_FUNCTION void
+  vlaplace_sphere_wk_contra (const KernelVariables &kv, const Real nu_ratio,
+                             const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV_IN]>& vector,
+                             const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV_IN]>& laplace) const
+  {
+    static_assert(NUM_LEV_IN>0 && NUM_LEV_IN<=NUM_LEV_P, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>0 && NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
 
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
-    const auto& div           = Homme::subview(scalar_buf_ml,kv.team_idx,0);
-    const auto& vort          = Homme::subview(scalar_buf_ml,kv.team_idx,0);
-    const auto& grad_curl_cov = Homme::subview(vector_buf_ml,kv.team_idx,1);
+    scalar_buf<NUM_LEV_IN> div (Homme::subview(scalar_buf_ml,kv.team_idx,0).data());
+    scalar_buf<NUM_LEV_IN> vort(Homme::subview(scalar_buf_ml,kv.team_idx,0).data());
+    vector_buf<NUM_LEV_IN> grad_curl_cov(Homme::subview(vector_buf_ml,kv.team_idx,1).data());
     constexpr int np_squared = NP * NP;
 
     // grad(div(v))
-    divergence_sphere<NUM_LEV_REQUEST>(kv,vector,div);
+    divergence_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,vector,div);
     if (nu_ratio>0 && nu_ratio!=1.0) {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                           [&](const int loop_idx) {
@@ -840,11 +987,11 @@ public:
       });
       kv.team_barrier();
     }
-    grad_sphere_wk_testcov<NUM_LEV_REQUEST>(kv,div,grad_curl_cov);
+    grad_sphere_wk_testcov<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,div,grad_curl_cov);
 
     // curl(curl(v))
-    vorticity_sphere<NUM_LEV_REQUEST>(kv,vector,vort);
-    curl_sphere_wk_testcov_update<NUM_LEV_REQUEST>(kv,-1.0,1.0,vort,grad_curl_cov);
+    vorticity_sphere<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,vector,vort);
+    curl_sphere_wk_testcov_update<NUM_LEV_IN,NUM_LEV_REQUEST>(kv,-1.0,1.0,vort,grad_curl_cov);
 
     const auto re2 = PhysicalConstants::rrearth*PhysicalConstants::rrearth;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
@@ -866,9 +1013,9 @@ public:
   // users of SphereOperators for other things, and using the same
   // memory buffers for multiple things gives performance in mem
   // b/w-limited computations.
-  ExecViewManaged<Real   * [NUM_2D_VECTOR_BUFFERS][2][NP][NP]>           vector_buf_sl;
-  ExecViewManaged<Scalar * [NUM_3D_SCALAR_BUFFERS][NP][NP][NUM_LEV]>     scalar_buf_ml;
-  ExecViewManaged<Scalar * [NUM_3D_VECTOR_BUFFERS][2][NP][NP][NUM_LEV]>  vector_buf_ml;
+  ExecViewManaged<Real   * [NUM_2D_VECTOR_BUFFERS][2][NP][NP]>             vector_buf_sl;
+  ExecViewManaged<Scalar * [NUM_3D_SCALAR_BUFFERS][NP][NP][NUM_LEV_P]>     scalar_buf_ml;
+  ExecViewManaged<Scalar * [NUM_3D_VECTOR_BUFFERS][2][NP][NP][NUM_LEV_P]>  vector_buf_ml;
 
 private:
   ExecViewManaged<const Real [NP][NP]>          dvv;
