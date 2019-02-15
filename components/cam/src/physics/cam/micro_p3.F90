@@ -37,9 +37,10 @@
 
 module micro_p3
 
-   use cam_logfile,    only: iulog
-   use shr_kind_mod,   only: r8=>shr_kind_r8
-   use spmd_utils,     only: masterproc
+#ifdef CAM
+   use shr_kind_mod,   only: rtype=>shr_kind_r8
+#endif
+
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
@@ -49,10 +50,15 @@ module micro_p3
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, get_precip_fraction, zerodegc, pi=>pi_e3sm, dnu, &
-       micro_p3_utils_init, rainfrze, icenuct, homogfrze
+       micro_p3_utils_init, rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
+       masterproc=>masterproc_e3sm
 
   implicit none
   save
+
+#ifndef CAM
+  integer,parameter :: rtype = selected_real_kind(12) ! 8 byte real
+#endif
 
   public  :: p3_init,p3_main
 
@@ -60,18 +66,18 @@ module micro_p3
        find_lookupTable_indices_3,get_cloud_dsd2,        &
        get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat
 
-  real(r8),private :: e0
+  real(rtype),private :: e0
 
-  real(r8), private, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
+  real(rtype), private, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
 
   !ice lookup table values for ice-rain collision/collection
   double precision, private, dimension(densize,rimsize,isize,rcollsize,colltabsize)    :: itabcoll
 
   ! lookup table values for rain shape parameter mu_r
-  real(r8), private, dimension(150) :: mu_r_table
+  real(rtype), private, dimension(150) :: mu_r_table
 
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  real(r8), private, dimension(300,10) :: vn_table,vm_table,revap_table
+  real(rtype), private, dimension(300,10) :: vn_table,vm_table,revap_table
 
 contains
 
@@ -93,7 +99,6 @@ contains
     if (masterproc) write(iulog,*) ''
     if (masterproc) write(iulog,*) ' P3 microphysics: v',version_p3
 
-    call micro_p3_utils_init()
     call p3_init_a(lookup_file_dir)
     call p3_init_b()
 
@@ -109,7 +114,7 @@ contains
     character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
     character(len=1024)          :: lookup_file_1                  !lookup table, main
     integer                      :: i,j,ii,jj
-    real(r8)                         :: dum
+    real(rtype)                         :: dum
     integer                      :: dumi
 
     !------------------------------------------------------------------------------------------!
@@ -162,8 +167,8 @@ contains
 
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called instead of p3_init_b.
-    real(r8), dimension(150), intent(out) :: mu_r_user
-    real(r8), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
+    real(rtype), dimension(150), intent(out) :: mu_r_user
+    real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
     mu_r_user(:) = mu_r_table(:)
     revap_user(:,:) = revap_table(:,:)
     vn_user(:,:) = vn_table(:,:)
@@ -172,8 +177,8 @@ contains
 
   subroutine p3_set_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called instead of p3_init_b.
-    real(r8), dimension(150), intent(in) :: mu_r_user
-    real(r8), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
+    real(rtype), dimension(150), intent(in) :: mu_r_user
+    real(rtype), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
     mu_r_table(:) = mu_r_user(:)
     revap_table(:,:) = revap_user(:,:)
     vn_table(:,:) = vn_user(:,:)
@@ -183,7 +188,7 @@ contains
   SUBROUTINE p3_init_b()
     implicit none
     integer                      :: i,ii,jj,kk
-    real(r8)                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
+    real(rtype)                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
          dd,amg,vt,dia
 
     !------------------------------------------------------------------------------------------!
@@ -327,33 +332,33 @@ contains
 
     !----- Input/ouput arguments:  ----------------------------------------------------------!
 
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: qc         ! cloud, mass mixing ratio         kg kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qc         ! cloud, mass mixing ratio         kg kg-1
     ! note: Nc may be specified or predicted (set by log_predictNc)
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: nc         ! cloud, number mixing ratio       #  kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: qr         ! rain, mass mixing ratio          kg kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: nr         ! rain, number mixing ratio        #  kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: qitot      ! ice, total mass mixing ratio     kg kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: qirim      ! ice, rime mass mixing ratio      kg kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: nitot      ! ice, total number mixing ratio   #  kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: birim      ! ice, rime volume mixing ratio    m3 kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: ssat       ! supersaturation (i.e., qv-qvs)   kg kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: nc         ! cloud, number mixing ratio       #  kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qr         ! rain, mass mixing ratio          kg kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: nr         ! rain, number mixing ratio        #  kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qitot      ! ice, total mass mixing ratio     kg kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qirim      ! ice, rime mass mixing ratio      kg kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: nitot      ! ice, total number mixing ratio   #  kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: birim      ! ice, rime volume mixing ratio    m3 kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: ssat       ! supersaturation (i.e., qv-qvs)   kg kg-1
 
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: qv         ! water vapor mixing ratio         kg kg-1
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: th         ! potential temperature            K
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: th_old     ! beginning of time step value of theta K
-    real(r8), intent(inout), dimension(its:ite,kts:kte)      :: qv_old     ! beginning of time step value of qv    kg kg-1
-    real(r8), intent(in),    dimension(its:ite,kts:kte)      :: pres       ! pressure                         Pa
-    real(r8), intent(in),    dimension(its:ite,kts:kte)      :: dzq        ! vertical grid spacing            m
-    real(r8), intent(in)                                     :: dt         ! model time step                  s
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qv         ! water vapor mixing ratio         kg kg-1
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: th         ! potential temperature            K
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: th_old     ! beginning of time step value of theta K
+    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qv_old     ! beginning of time step value of qv    kg kg-1
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: pres       ! pressure                         Pa
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: dzq        ! vertical grid spacing            m
+    real(rtype), intent(in)                                     :: dt         ! model time step                  s
 
-    real(r8), intent(out),   dimension(its:ite)              :: prt_liq    ! precipitation rate, liquid       m s-1
-    real(r8), intent(out),   dimension(its:ite)              :: prt_sol    ! precipitation rate, solid        m s-1
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: diag_ze    ! equivalent reflectivity          dBZ
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: diag_effc  ! effective radius, cloud          m
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: diag_effi  ! effective radius, ice            m
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: diag_vmi   ! mass-weighted fall speed of ice  m s-1
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-1
+    real(rtype), intent(out),   dimension(its:ite)              :: prt_liq    ! precipitation rate, liquid       m s-1
+    real(rtype), intent(out),   dimension(its:ite)              :: prt_sol    ! precipitation rate, solid        m s-1
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_ze    ! equivalent reflectivity          dBZ
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effc  ! effective radius, cloud          m
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effi  ! effective radius, ice            m
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_vmi   ! mass-weighted fall speed of ice  m s-1
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-1
 
     integer, intent(in)                                  :: its,ite    ! array bounds (horizontal)
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
@@ -361,115 +366,114 @@ contains
 
     logical, intent(in)                                  :: log_predictNc ! .T. (.F.) for prediction (specification) of Nc
 
-    real(r8), intent(in),    dimension(its:ite,kts:kte)      :: pdel       ! pressure thickness               Pa
-    real(r8), intent(in),    dimension(its:ite,kts:kte)      :: exner      ! Exner expression
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: pdel       ! pressure thickness               Pa
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: exner      ! Exner expression
 
     ! OUTPUT for PBUF variables used by other parameterizations
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: cmeiout    ! qitend due to deposition/sublimation
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: prain      ! Total precipitation (rain + snow)
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: nevapr     ! evaporation of total precipitation (rain + snow)
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap  ! evaporation of rain
-    real(r8), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
-    real(r8), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: cmeiout    ! qitend due to deposition/sublimation
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prain      ! Total precipitation (rain + snow)
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: nevapr     ! evaporation of total precipitation (rain + snow)
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap  ! evaporation of rain
+    real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
+    real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
     ! INPUT needed for PBUF variables used by other parameterizations
-    real(r8), intent(in),    dimension(its:ite,kts:kte)      :: ast        ! relative humidity cloud fraction
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: ast        ! relative humidity cloud fraction
 
-    real(r8), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
     !----- Local variables and parameters:  -------------------------------------------------!
 
-    real(r8), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
-    real(r8), dimension(its:ite,kts:kte) :: t     ! temperature at the beginning of the microhpysics step [K]
-    real(r8), dimension(its:ite,kts:kte) :: t_old ! temperature at the beginning of the model time step [K]
+    real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
+    real(rtype), dimension(its:ite,kts:kte) :: t     ! temperature at the beginning of the microhpysics step [K]
+    real(rtype), dimension(its:ite,kts:kte) :: t_old ! temperature at the beginning of the model time step [K]
 
     ! 2D size distribution and fallspeed parameters:
 
-    real(r8), dimension(its:ite,kts:kte) :: lamc
-    real(r8), dimension(its:ite,kts:kte) :: lamr
-    real(r8), dimension(its:ite,kts:kte) :: logn0r
-    real(r8), dimension(its:ite,kts:kte) :: mu_c
-    !real(r8), dimension(its:ite,kts:kte) :: diag_effr   (currently not used)
-    real(r8), dimension(its:ite,kts:kte) :: nu
-    real(r8), dimension(its:ite,kts:kte) :: cdist
-    real(r8), dimension(its:ite,kts:kte) :: cdist1
-    real(r8), dimension(its:ite,kts:kte) :: cdistr
-    real(r8), dimension(its:ite,kts:kte) :: Vt_qc
+    real(rtype), dimension(its:ite,kts:kte) :: lamc
+    real(rtype), dimension(its:ite,kts:kte) :: lamr
+    real(rtype), dimension(its:ite,kts:kte) :: logn0r
+    real(rtype), dimension(its:ite,kts:kte) :: mu_c
+    !real(rtype), dimension(its:ite,kts:kte) :: diag_effr   (currently not used)
+    real(rtype), dimension(its:ite,kts:kte) :: nu
+    real(rtype), dimension(its:ite,kts:kte) :: cdist
+    real(rtype), dimension(its:ite,kts:kte) :: cdist1
+    real(rtype), dimension(its:ite,kts:kte) :: cdistr
+    real(rtype), dimension(its:ite,kts:kte) :: Vt_qc
 
     ! liquid-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
     !  (all N process rates in # kg-1)
 
-    real(r8) :: qrcon   ! rain condensation   (Not in paper?)
-    real(r8) :: qcacc   ! cloud droplet accretion by rain
-    real(r8) :: qcaut   ! cloud droplet autoconversion to rain
-    real(r8) :: ncacc   ! change in cloud droplet number from accretion by rain
-    real(r8) :: ncautc  ! change in cloud droplet number from autoconversion
-    real(r8) :: ncslf   ! change in cloud droplet number from self-collection  (Not in paper?)
-    real(r8) :: nrslf   ! change in rain number from self-collection  (Not in paper?)
-    real(r8) :: ncnuc   ! change in cloud droplet number from activation of CCN
-    real(r8) :: qccon   ! cloud droplet condensation
-    real(r8) :: qcnuc   ! activation of cloud droplets from CCN
-    real(r8) :: qrevp   ! rain evaporation
-    real(r8) :: qcevp   ! cloud droplet evaporation
-    real(r8) :: nrevp   ! change in rain number from evaporation
-    real(r8) :: ncautr  ! change in rain number from autoconversion of cloud water
+    real(rtype) :: qrcon   ! rain condensation   (Not in paper?)
+    real(rtype) :: qcacc   ! cloud droplet accretion by rain
+    real(rtype) :: qcaut   ! cloud droplet autoconversion to rain
+    real(rtype) :: ncacc   ! change in cloud droplet number from accretion by rain
+    real(rtype) :: ncautc  ! change in cloud droplet number from autoconversion
+    real(rtype) :: ncslf   ! change in cloud droplet number from self-collection  (Not in paper?)
+    real(rtype) :: nrslf   ! change in rain number from self-collection  (Not in paper?)
+    real(rtype) :: ncnuc   ! change in cloud droplet number from activation of CCN
+    real(rtype) :: qccon   ! cloud droplet condensation
+    real(rtype) :: qcnuc   ! activation of cloud droplets from CCN
+    real(rtype) :: qrevp   ! rain evaporation
+    real(rtype) :: qcevp   ! cloud droplet evaporation
+    real(rtype) :: nrevp   ! change in rain number from evaporation
+    real(rtype) :: ncautr  ! change in rain number from autoconversion of cloud water
 
     ! ice-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
     !  (all N process rates in # kg-1)
 
-    real(r8) :: qccol     ! collection of cloud water by ice
-    real(r8) :: qwgrth    ! wet growth rate
-    real(r8) :: qidep     ! vapor deposition
-    real(r8) :: qrcol     ! collection rain mass by ice
-    real(r8) :: qinuc     ! deposition/condensation freezing nuc
-    real(r8) :: nccol     ! change in cloud droplet number from collection by ice
-    real(r8) :: nrcol     ! change in rain number from collection by ice
-    real(r8) :: ninuc     ! change in ice number from deposition/cond-freezing nucleation
-    real(r8) :: qisub     ! sublimation of ice
-    real(r8) :: qimlt     ! melting of ice
-    real(r8) :: nimlt     ! melting of ice
-    real(r8) :: nisub     ! change in ice number from sublimation
-    real(r8) :: nislf     ! change in ice number from collection within a category (Not in paper?)
-    real(r8) :: qcheti    ! immersion freezing droplets
-    real(r8) :: qrheti    ! immersion freezing rain
-    real(r8) :: ncheti    ! immersion freezing droplets
-    real(r8) :: nrheti    ! immersion freezing rain
-    real(r8) :: nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
-    real(r8) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
-    real(r8) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
-    real(r8) :: rhorime_c ! density of rime (from cloud)
-    real(r8) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
+    real(rtype) :: qccol     ! collection of cloud water by ice
+    real(rtype) :: qwgrth    ! wet growth rate
+    real(rtype) :: qidep     ! vapor deposition
+    real(rtype) :: qrcol     ! collection rain mass by ice
+    real(rtype) :: qinuc     ! deposition/condensation freezing nuc
+    real(rtype) :: nccol     ! change in cloud droplet number from collection by ice
+    real(rtype) :: nrcol     ! change in rain number from collection by ice
+    real(rtype) :: ninuc     ! change in ice number from deposition/cond-freezing nucleation
+    real(rtype) :: qisub     ! sublimation of ice
+    real(rtype) :: qimlt     ! melting of ice
+    real(rtype) :: nimlt     ! melting of ice
+    real(rtype) :: nisub     ! change in ice number from sublimation
+    real(rtype) :: nislf     ! change in ice number from collection within a category (Not in paper?)
+    real(rtype) :: qcheti    ! immersion freezing droplets
+    real(rtype) :: qrheti    ! immersion freezing rain
+    real(rtype) :: ncheti    ! immersion freezing droplets
+    real(rtype) :: nrheti    ! immersion freezing rain
+    real(rtype) :: nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
+    real(rtype) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
+    real(rtype) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
+    real(rtype) :: rhorime_c ! density of rime (from cloud)
+    real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
 
     ! AaronDonahue, The following microphysical processes are not currently used
     ! in the code so they have been deleted pending future improvements.
-!    real(r8) :: nchetc    ! contact freezing droplets
-!    real(r8) :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
-!    real(r8) :: nrhetc    ! contact freezing rain
-!    real(r8) :: qchetc    ! contact freezing droplets
-!    real(r8) :: qrhetc    ! contact freezing rain
-!    real(r8) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
+!    real(rtype) :: nchetc    ! contact freezing droplets
+!    real(rtype) :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
+!    real(rtype) :: nrhetc    ! contact freezing rain
+!    real(rtype) :: qchetc    ! contact freezing droplets
+!    real(rtype) :: qrhetc    ! contact freezing rain
+!    real(rtype) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
 
     logical   :: log_wetgrowth
 
-    real(r8) :: Eii_fact,epsi
-    real(r8) :: eii ! temperature dependent aggregation efficiency
+    real(rtype) :: Eii_fact,epsi
+    real(rtype) :: eii ! temperature dependent aggregation efficiency
 
-    real(r8), dimension(its:ite,kts:kte) :: diam_ice
+    real(rtype), dimension(its:ite,kts:kte) :: diam_ice
     ! AaronDonahue Added for extra output
-    real(r8), dimension(its:ite,kts:kte) :: cldm
-    real(r8)                             :: mincld
+    real(rtype), dimension(its:ite,kts:kte) :: cldm
     CHARACTER(len=16) :: precip_frac_method = 'max_overlap'
     ! AaronDonahue -end
 
-    real(r8), dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
+    real(rtype), dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
          rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,vtrmi1,       &
          tmparr1,inv_exner
 
-    real(r8), dimension(kts:kte) ::  V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,flux_qit,        &
+    real(rtype), dimension(kts:kte) ::  V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,flux_qit,        &
          flux_qx,flux_nx,                     &
          flux_nit,flux_qir,flux_bir
 
-    real(r8)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,sigvl,epsi_tot, &
+    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,sigvl,epsi_tot, &
          aact,sm1,sm2,uu1,uu2,dum,dum1,dum2,    &
          dumqv,dumqvs,dums,ratio,qsat0,dum3,dum4,dum5,dum6,rdumii, &
          rdumjj,dqsidt,abi,dumqvi,rhop,v_impact,ri,iTc,D_c,tmp1,  &
@@ -492,24 +496,24 @@ contains
 
     ! quantities related to process rates/parameters, interpolated from lookup tables:
 
-    real(r8)    :: f1pr01   ! number-weighted fallspeed
-    real(r8)    :: f1pr02   ! mass-weighted fallspeed
-    real(r8)    :: f1pr03   ! ice collection within a category
-    real(r8)    :: f1pr04   ! collection of cloud water by ice
-    real(r8)    :: f1pr05   ! melting
-    real(r8)    :: f1pr06   ! effective radius
-    real(r8)    :: f1pr07   ! collection of rain number by ice
-    real(r8)    :: f1pr08   ! collection of rain mass by ice
-    real(r8)    :: f1pr09   ! minimum ice number (lambda limiter)
-    real(r8)    :: f1pr10   ! maximum ice number (lambda limiter)
-!    real(r8)    :: f1pr11   ! not used
-!    real(r8)    :: f1pr12   ! not used
-    real(r8)    :: f1pr13   ! reflectivity
-    real(r8)    :: f1pr14   ! melting (ventilation term)
-    real(r8)    :: f1pr15   ! mass-weighted mean diameter
-    real(r8)    :: f1pr16   ! mass-weighted mean particle density
-!    real(r8)    :: f1pr17   ! ice-ice category collection change in number (not used)
-!    real(r8)    :: f1pr18   ! ice-ice category collection change in mass (not used)
+    real(rtype)    :: f1pr01   ! number-weighted fallspeed
+    real(rtype)    :: f1pr02   ! mass-weighted fallspeed
+    real(rtype)    :: f1pr03   ! ice collection within a category
+    real(rtype)    :: f1pr04   ! collection of cloud water by ice
+    real(rtype)    :: f1pr05   ! melting
+    real(rtype)    :: f1pr06   ! effective radius
+    real(rtype)    :: f1pr07   ! collection of rain number by ice
+    real(rtype)    :: f1pr08   ! collection of rain mass by ice
+    real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)
+    real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)
+!    real(rtype)    :: f1pr11   ! not used
+!    real(rtype)    :: f1pr12   ! not used
+    real(rtype)    :: f1pr13   ! reflectivity
+    real(rtype)    :: f1pr14   ! melting (ventilation term)
+    real(rtype)    :: f1pr15   ! mass-weighted mean diameter
+    real(rtype)    :: f1pr16   ! mass-weighted mean particle density
+!    real(rtype)    :: f1pr17   ! ice-ice category collection change in number (not used)
+!    real(rtype)    :: f1pr18   ! ice-ice category collection change in mass (not used)
 
     !--These will be added as namelist parameters in the future
     logical, parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code
@@ -2286,7 +2290,7 @@ contains
 
     implicit none
 
-    real(r8)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
+    real(rtype)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumi,index
 
     ! get value at current density index
@@ -2328,7 +2332,7 @@ contains
 
     implicit none
 
-    real(r8)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
+    real(rtype)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
 
@@ -2394,7 +2398,7 @@ contains
 
   !==========================================================================================!
 
-  real(r8) function polysvp1(T,i_type)
+  real(rtype) function polysvp1(T,i_type)
 
     !-------------------------------------------
     !  COMPUTE SATURATION VAPOR PRESSURE
@@ -2405,27 +2409,27 @@ contains
 
     implicit none
 
-    real(r8)    :: T
+    real(rtype)    :: T
     integer :: i_type
 
     ! REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
 
     ! ice
-    real(r8) a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
+    real(rtype) a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
     data a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i /&
          6.11147274, 0.503160820, 0.188439774e-1, &
          0.420895665e-3, 0.615021634e-5,0.602588177e-7, &
          0.385852041e-9, 0.146898966e-11, 0.252751365e-14/
 
     ! liquid
-    real(r8) a0,a1,a2,a3,a4,a5,a6,a7,a8
+    real(rtype) a0,a1,a2,a3,a4,a5,a6,a7,a8
 
     ! V1.7
     data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
          6.11239921, 0.443987641, 0.142986287e-1, &
          0.264847430e-3, 0.302950461e-5, 0.206739458e-7, &
          0.640689451e-10,-0.952447341e-13,-0.976195544e-15/
-    real(r8) dt
+    real(rtype) dt
 
     !-------------------------------------------
 
@@ -2488,9 +2492,9 @@ contains
 
     ! arguments:
     integer, intent(out) :: dumi,dumjj,dumii,dumzz
-    real(r8),    intent(out) :: dum1,dum4,dum5,dum6
+    real(rtype),    intent(out) :: dum1,dum4,dum5,dum6
     integer, intent(in)  :: isize,rimsize,densize
-    real(r8),    intent(in)  :: qitot,nitot,qirim,rhop
+    real(rtype),    intent(in)  :: qitot,nitot,qirim,rhop
 
     !------------------------------------------------------------------------------------------!
 
@@ -2547,13 +2551,13 @@ contains
 
     ! arguments:
     integer, intent(out) :: dumj
-    real(r8),    intent(out) :: dum3
+    real(rtype),    intent(out) :: dum3
     integer, intent(in)  :: rcollsize
-    real(r8),    intent(in)  :: qr,nr
+    real(rtype),    intent(in)  :: qr,nr
 
     ! local variables:
-    real(r8)                 :: dumlr
-    real(r8)                 :: real_rcollsize
+    real(rtype)                 :: dumlr
+    real(rtype)                 :: real_rcollsize
 
     !------------------------------------------------------------------------------------------!
     real_rcollsize = real(rcollsize)
@@ -2589,8 +2593,8 @@ contains
 
     ! arguments:
     integer, intent(out) :: dumii,dumjj
-    real(r8),    intent(out) :: dum1,rdumii,rdumjj,inv_dum3
-    real(r8),    intent(in)  :: mu_r,lamr
+    real(rtype),    intent(out) :: dum1,rdumii,rdumjj,inv_dum3
+    real(rtype),    intent(in)  :: mu_r,lamr
 
     !------------------------------------------------------------------------------------------!
 
@@ -2631,13 +2635,13 @@ contains
     implicit none
 
     !arguments:
-    real(r8), dimension(:), intent(in)  :: dnu
-    real(r8),     intent(in)            :: qc,rho
-    real(r8),     intent(inout)         :: nc
-    real(r8),     intent(out)           :: mu_c,nu,lamc,cdist,cdist1
+    real(rtype), dimension(:), intent(in)  :: dnu
+    real(rtype),     intent(in)            :: qc,rho
+    real(rtype),     intent(inout)         :: nc
+    real(rtype),     intent(out)           :: mu_c,nu,lamc,cdist,cdist1
 
     !local variables
-    real(r8)                            :: lammin,lammax
+    real(rtype)                            :: lammin,lammax
     integer                         :: dumi
 
     !--------------------------------------------------------------------------
@@ -2694,14 +2698,14 @@ contains
     implicit none
 
     !arguments:
-    real(r8), dimension(:), intent(in)  :: mu_r_table
-    real(r8),     intent(in)            :: qr
-    real(r8),     intent(inout)         :: nr
-    real(r8),     intent(out)           :: rdumii,lamr,mu_r,cdistr,logn0r
+    real(rtype), dimension(:), intent(in)  :: mu_r_table
+    real(rtype),     intent(in)            :: qr
+    real(rtype),     intent(inout)         :: nr
+    real(rtype),     intent(out)           :: rdumii,lamr,mu_r,cdistr,logn0r
     integer,  intent(out)           :: dumii
 
     !local variables:
-    real(r8)                            :: inv_dum,lammax,lammin
+    real(rtype)                            :: inv_dum,lammax,lammin
 
     !--------------------------------------------------------------------------
 
@@ -2768,9 +2772,9 @@ contains
     implicit none
 
     !arguments:
-    real(r8), intent(in)    :: qi_tot
-    real(r8), intent(inout) :: qi_rim,bi_rim
-    real(r8), intent(out)   :: rho_rime
+    real(rtype), intent(in)    :: qi_tot
+    real(rtype), intent(inout) :: qi_rim,bi_rim
+    real(rtype), intent(out)   :: rho_rime
 
     !--------------------------------------------------------------------------
 
@@ -2819,11 +2823,11 @@ contains
     implicit none
 
     !arguments:
-    real(r8), intent(inout)               :: nitot_local      !PMC - scalar now that nCat deleted.
-    real(r8), intent(in)                  :: max_total_Ni,inv_rho_local
+    real(rtype), intent(inout)               :: nitot_local      !PMC - scalar now that nCat deleted.
+    real(rtype), intent(in)                  :: max_total_Ni,inv_rho_local
 
     !local variables:
-    real(r8)                              :: dum
+    real(rtype)                              :: dum
 
     if (nitot_local.ge.1.e-20) then
        dum = max_total_Ni*inv_rho_local/nitot_local
@@ -2835,7 +2839,7 @@ contains
 
   !===========================================================================================
 
-  real(r8) function qv_sat(t_atm,p_atm,i_wrt)
+  real(rtype) function qv_sat(t_atm,p_atm,i_wrt)
 
     !------------------------------------------------------------------------------------
     ! Calls polysvp1 to obtain the saturation vapor pressure, and then computes
@@ -2846,12 +2850,12 @@ contains
     implicit none
 
     !Calling parameters:
-    real(r8)    :: t_atm  !temperature [K]
-    real(r8)    :: p_atm  !pressure    [Pa]
+    real(rtype)    :: t_atm  !temperature [K]
+    real(rtype)    :: p_atm  !pressure    [Pa]
     integer :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
 
     !Local variables:
-    real(r8)            :: e_pres         !saturation vapor pressure [Pa]
+    real(rtype)            :: e_pres         !saturation vapor pressure [Pa]
 
     !------------------
 
@@ -2884,18 +2888,18 @@ contains
     implicit none
 
     !Calling parameters:
-    real(r8), dimension(:,:),   intent(in) :: Qv,T
+    real(rtype), dimension(:,:),   intent(in) :: Qv,T
     integer,                intent(in) :: source_ind,i,timestepcount
     logical,                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
-    real(r8), parameter :: T_low  = 173.
-    real(r8), parameter :: T_high = 323.
-    real(r8), parameter :: Q_high = 40.e-3
-    real(r8), parameter :: N_high = 1.e+20
-    real(r8), parameter :: B_high = Q_high*1.e-3
-    real(r8), parameter :: x_high = 1.e+30
-    real(r8), parameter :: x_low  = 0.
+    real(rtype), parameter :: T_low  = 173.
+    real(rtype), parameter :: T_high = 323.
+    real(rtype), parameter :: Q_high = 40.e-3
+    real(rtype), parameter :: N_high = 1.e+20
+    real(rtype), parameter :: B_high = Q_high*1.e-3
+    real(rtype), parameter :: x_high = 1.e+30
+    real(rtype), parameter :: x_low  = 0.
     integer         :: k,nk
     logical         :: trap,badvalue_found
 

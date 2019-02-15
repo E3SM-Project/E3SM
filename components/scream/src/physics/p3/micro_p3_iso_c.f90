@@ -23,7 +23,6 @@ contains
   subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
     use array_io_mod
     use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables
-    use micro_p3_utils, only: micro_p3_utils_init
 
     type(c_ptr), intent(in) :: lookup_file_dir_c
     integer(kind=c_int), intent(out) :: info
@@ -77,7 +76,6 @@ contains
        end if
     end if
 
-    call micro_p3_utils_init()
   end subroutine p3_init_c
 
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
@@ -116,4 +114,36 @@ contains
          diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
          pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm)
   end subroutine p3_main_c
+
+   
+  subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
+                 MWH2O, MWdry, gravit, LatVap, LatIce,        &
+                 CpLiq, Tmelt, Pi, iulog_in, masterproc_in) bind(C)
+
+    use micro_p3_utils, only: micro_p3_utils_init
+    real(kind=c_real), value, intent(in) :: Cpair
+    real(kind=c_real), value, intent(in) :: Rair
+    real(kind=c_real), value, intent(in) :: RH2O
+    real(kind=c_real), value, intent(in) :: RhoH2O
+    real(kind=c_real), value, intent(in) :: MWH2O
+    real(kind=c_real), value, intent(in) :: MWdry
+    real(kind=c_real), value, intent(in) :: gravit
+    real(kind=c_real), value, intent(in) :: LatVap
+    real(kind=c_real), value, intent(in) :: LatIce
+    real(kind=c_real), value, intent(in) :: CpLiq
+    real(kind=c_real), value, intent(in) :: Tmelt
+    real(kind=c_real), value, intent(in) :: Pi
+    integer(kind=c_int), value, intent(in)   :: iulog_in
+    logical(kind=c_bool), value, intent(in)  :: masterproc_in
+
+    logical :: masterproc
+    integer :: iulog
+
+    masterproc = masterproc_in
+    iulog = iulog_in
+
+    call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
+                   CpLiq,Tmelt,Pi,iulog,masterproc)
+  end subroutine micro_p3_utils_init_c
+
 end module micro_p3_iso_c

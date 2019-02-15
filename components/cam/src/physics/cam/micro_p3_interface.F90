@@ -10,7 +10,7 @@ module micro_p3_interface
   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  use shr_kind_mod,   only: r8=>shr_kind_r8
+  use shr_kind_mod,   only: rtype=>shr_kind_r8
   use ppgrid,         only: pcols,pver,pverp
 
 !comment: I think Kai added handle_errmsg. It would be better to 
@@ -20,7 +20,7 @@ module micro_p3_interface
   use physics_types,  only: physics_state, &
                             physics_ptend, &
                             physics_ptend_init
-  use physconst,      only: mwdry, cpair, mwh2o, gravit, rair, &
+  use physconst,      only: mwdry, cpair, mwh2o, gravit, rair, cpliq, pi, &
                             rh2o, latvap, latice, tmelt, rhoh2o, rairv 
   use constituents,   only: cnst_add, pcnst, sflxnam, apcnst, bpcnst, pcnst,&
                             cnst_name, cnst_get_ind,cnst_longname
@@ -139,14 +139,14 @@ module micro_p3_interface
 
 
 
-   real(r8) :: &
-      micro_mg_accre_enhan_fac = huge(1.0_r8), & !Accretion enhancement factor from namelist
-      prc_coef1_in             = huge(1.0_r8), &
-      prc_exp_in               = huge(1.0_r8), &
-      prc_exp1_in              = huge(1.0_r8), &
-      cld_sed_in               = huge(1.0_r8), & !scale fac for cloud sedimentation velocity
-      nccons                   = huge(1.0_r8), &
-      nicons                   = huge(1.0_r8)
+   real(rtype) :: &
+      micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
+      prc_coef1_in             = huge(1.0_rtype), &
+      prc_exp_in               = huge(1.0_rtype), &
+      prc_exp1_in              = huge(1.0_rtype), &
+      cld_sed_in               = huge(1.0_rtype), & !scale fac for cloud sedimentation velocity
+      nccons                   = huge(1.0_rtype), &
+      nicons                   = huge(1.0_rtype)
 
    integer :: ncnst
 
@@ -155,15 +155,15 @@ module micro_p3_interface
   !assigned at the beginning of each step from the value at the end 
   !of the step before.
 
-  real(r8) :: th(pcols,pver)
-  real(r8) :: qv(pcols,pver)
+  real(rtype) :: th(pcols,pver)
+  real(rtype) :: qv(pcols,pver)
 
   character(len=8), parameter :: &      ! Constituent names
      cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
                      'RAINQM', 'CLDRIM','NUMRAI','BVRIM'/)
 
-  real(r8) :: &             
-     ice_sed_ai = 700.0_r8      ! Fall speed parameter for cloud ice
+  real(rtype) :: &             
+     ice_sed_ai = 700.0_rtype      ! Fall speed parameter for cloud ice
 
   contains
 !===============================================================================
@@ -183,7 +183,7 @@ subroutine micro_p3_readnl(nlfile)
   logical :: micro_do_nccons    = .false.! micro_do_nccons = .true, MG does NOT predict numliq 
   logical :: micro_do_nicons    = .false.! micro_do_nicons = .true.,MG does NOT predict numice
   integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
-  real(r8) :: micro_nccons, micro_nicons
+  real(rtype) :: micro_nccons, micro_nicons
 
   ! Local variables
   integer :: unitn, ierr
@@ -277,40 +277,40 @@ end subroutine micro_p3_readnl
     ! (i.e. members of state%q) and save indices.
     ! TODO make sure the cnst_names match what we think they are here.
     !================
-   call cnst_add(cnst_names(1), mwdry, cpair, 0._r8, ixcldliq, &
+   call cnst_add(cnst_names(1), mwdry, cpair, 0._rtype, ixcldliq, &
          longname='Grid box averaged cloud liquid amount', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(2), mwdry, cpair, 0._r8, ixcldice, &
+   call cnst_add(cnst_names(2), mwdry, cpair, 0._rtype, ixcldice, &
          longname='Grid box averaged cloud ice amount', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(3), mwh2o, cpair, 0._r8, ixnumliq, &
+   call cnst_add(cnst_names(3), mwh2o, cpair, 0._rtype, ixnumliq, &
          longname='Grid box averaged cloud liquid number', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(4), mwh2o, cpair, 0._r8, ixnumice, &
+   call cnst_add(cnst_names(4), mwh2o, cpair, 0._rtype, ixnumice, &
          longname='Grid box averaged cloud ice number', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(5), mwh2o, cpair, 0._r8, ixrain, &
+   call cnst_add(cnst_names(5), mwh2o, cpair, 0._rtype, ixrain, &
          longname='Grid box averaged rain amount', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(6), mwh2o, cpair, 0._r8, ixcldrim, &
+   call cnst_add(cnst_names(6), mwh2o, cpair, 0._rtype, ixcldrim, &
          longname='Grid box averaged riming amount', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(7), mwh2o, cpair, 0._r8, ixnumrain, &
+   call cnst_add(cnst_names(7), mwh2o, cpair, 0._rtype, ixnumrain, &
          longname='Grid box averaged rain number', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
-   call cnst_add(cnst_names(8), mwh2o, cpair, 0._r8, ixrimvol, &
+   call cnst_add(cnst_names(8), mwh2o, cpair, 0._rtype, ixrimvol, &
          longname='Grid box averaged riming volume', &
          is_convtran1=.true.)
    ncnst = ncnst + 1
 !+++ Aaron
-!    call cnst_add(cnst_names(8), mwh2o, cpair, 0._r8, ixqirim, &
+!    call cnst_add(cnst_names(8), mwh2o, cpair, 0._rtype, ixqirim, &
 !         longname='Grid box averaged riming ???', &
 !         is_convtran1=.true.)  ! TODO what is this?
 !--- Aaron
@@ -441,10 +441,10 @@ end subroutine micro_p3_readnl
     ! not read from the initial file.
 
     character(len=*), intent(in) :: name     ! constituent name
-    real(r8), intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
+    real(rtype), intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
     integer,  intent(in)  :: gcid(:)  ! global column id
 
-    if (micro_p3_implements_cnst(name)) q = 0.0_r8
+    if (micro_p3_implements_cnst(name)) q = 0.0_rtype
 
   end subroutine micro_p3_init_cnst
 
@@ -469,7 +469,8 @@ end subroutine micro_p3_readnl
     ! =============
     call phys_getopts(p3_lookup_dir_out = p3_lookup_dir)
 
-    call micro_p3_utils_init()
+    call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
+             cpliq,tmelt,pi,iulog,masterproc)
 
     ! CALL P3 INIT:
     !==============
@@ -512,38 +513,38 @@ end subroutine micro_p3_readnl
     if (is_first_step()) then
 
 
-       call pbuf_set_field(pbuf2d, p3_qv_idx, 0._r8)
-       call pbuf_set_field(pbuf2d, p3_th_idx, 0._r8)
+       call pbuf_set_field(pbuf2d, p3_qv_idx, 0._rtype)
+       call pbuf_set_field(pbuf2d, p3_th_idx, 0._rtype)
 
-       call pbuf_set_field(pbuf2d, cldo_idx,   0._r8)
-       call pbuf_set_field(pbuf2d, cc_t_idx,   0._r8)
-       call pbuf_set_field(pbuf2d, cc_qv_idx,  0._r8)
-       call pbuf_set_field(pbuf2d, cc_ql_idx,  0._r8)
-       call pbuf_set_field(pbuf2d, cc_qi_idx,  0._r8)
-       call pbuf_set_field(pbuf2d, cc_nl_idx,  0._r8)
-       call pbuf_set_field(pbuf2d, cc_ni_idx,  0._r8)
-       call pbuf_set_field(pbuf2d, cc_qlst_idx,0._r8)
-       call pbuf_set_field(pbuf2d, acprecl_idx,   0._r8)
-       call pbuf_set_field(pbuf2d, acgcme_idx, 0._r8)
+       call pbuf_set_field(pbuf2d, cldo_idx,   0._rtype)
+       call pbuf_set_field(pbuf2d, cc_t_idx,   0._rtype)
+       call pbuf_set_field(pbuf2d, cc_qv_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, cc_ql_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, cc_qi_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, cc_nl_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, cc_ni_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, cc_qlst_idx,0._rtype)
+       call pbuf_set_field(pbuf2d, acprecl_idx,   0._rtype)
+       call pbuf_set_field(pbuf2d, acgcme_idx, 0._rtype)
        call pbuf_set_field(pbuf2d, acnum_idx,  0)
-       call pbuf_set_field(pbuf2d, relvar_idx, 2._r8)
+       call pbuf_set_field(pbuf2d, relvar_idx, 2._rtype)
        call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
-       call pbuf_set_field(pbuf2d, prer_evap_idx,  0._r8)
+       call pbuf_set_field(pbuf2d, prer_evap_idx,  0._rtype)
  
        !! not used 
-       if (qrain_idx > 0)   call pbuf_set_field(pbuf2d, qrain_idx, 0._r8)
-       if (nrain_idx > 0)   call pbuf_set_field(pbuf2d, nrain_idx, 0._r8)
+       if (qrain_idx > 0)   call pbuf_set_field(pbuf2d, qrain_idx, 0._rtype)
+       if (nrain_idx > 0)   call pbuf_set_field(pbuf2d, nrain_idx, 0._rtype)
 
        ! If sub-columns turned on, need to set the sub-column fields as well
        if (use_subcol_microp) then
-          call pbuf_set_field(pbuf2d, cldo_idx,   0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_t_idx,   0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_qv_idx,  0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_ql_idx,  0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_qi_idx,  0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_nl_idx,  0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_ni_idx,  0._r8, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_qlst_idx,0._r8, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cldo_idx,   0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_t_idx,   0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_qv_idx,  0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_ql_idx,  0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_qi_idx,  0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_nl_idx,  0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_ni_idx,  0._rtype, col_type=col_type_subcol)
+          call pbuf_set_field(pbuf2d, cc_qlst_idx,0._rtype, col_type=col_type_subcol)
        end if
 
     end if
@@ -655,7 +656,7 @@ end subroutine micro_p3_readnl
    ! NOTE -- only 'I' should be used for sub-column fields as subc-columns could shift from time-step to time-step
 !   if (use_subcol_microp) then
 !      call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', 'fraction', &
-!           'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_r8)
+!           'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_rtype)
 !   end if
 
    ! Averaging for cloud particle number and size
@@ -800,136 +801,136 @@ end subroutine micro_p3_readnl
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
     type(physics_ptend),         intent(out)   :: ptend
-    real(r8),                    intent(in)    :: dtime
+    real(rtype),                    intent(in)    :: dtime
     type(physics_buffer_desc),   pointer       :: pbuf(:)
     logical :: lq(pcnst)   !list of what constituents to update
 
     !INTERNAL VARIABLES
-    real(r8), pointer :: th_old(:,:)     !potential temperature from last step   K
-    real(r8), pointer :: qv_old(:,:)     !water vapor from last step             kg/kg
-    real(r8) :: ssat(pcols,pver)       !supersaturated mixing ratio            kg/kg
-    real(r8) :: dzq(pcols,pver)        !geometric layer thickness              m
-    real(r8) :: cldliq(pcols,pver)     !cloud liquid water mixing ratio        kg/kg
-    real(r8) :: numliq(pcols,pver)     !cloud liquid water drop concentraiton  #/kg
-    real(r8) :: rain(pcols,pver)       !rain water mixing ratio                kg/kg
-    real(r8) :: numrain(pcols,pver)    !rain water number concentration        #/kg
-    real(r8) :: qv(pcols,pver)         !water vapor mixing ratio               kg/kg
-    real(r8) :: ice(pcols,pver)        !total ice water mixing ratio           kg/kg
-    real(r8) :: qirim(pcols,pver)      !rime ice mixing ratio                  kg/kg
-    real(r8) :: numice(pcols,pver)     !total ice crystal number concentration #/kg
-    real(r8) :: rimvol(pcols,pver)     !rime volume mixing ratio               m3/kg
-    real(r8) :: temp(pcols,pver)       !potential temperature                  K
-    real(r8) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
-    real(r8) :: prt_liq(pcols)         !precipitation rate, liquid             m s-1
-    real(r8) :: prt_sol(pcols)         !precipitation rate, solid              m s-1
-    real(r8) :: diag_ze(pcols,pver)    !equivalent reflectivity                dBZ
-    real(r8) :: diag_effc(pcols,pver)  !effective radius, cloud                m
-    real(r8) :: diag_effi(pcols,pver)  !effective radius, ice                  m
-    real(r8) :: diag_vmi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
-    real(r8) :: diag_di(pcols,pver)    !mean diameter of ice                   m
-    real(r8) :: diag_rhoi(pcols,pver)  !bulk density of ice                    kg m-1
-    real(r8) :: pres(pcols,pver)       !pressure at midlevel                   hPa
-    real(r8) :: cmeiout(pcols,pver)
-    real(r8) :: rflx(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
-    real(r8) :: sflx(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
-    real(r8) :: exner(pcols,pver)      !exner formula for converting between potential and normal temp
-    real(r8) :: rcldm(pcols,pver)      !rain cloud fraction
-    real(r8) :: lcldm(pcols,pver)      !liquid cloud fraction
-    real(r8) :: icldm(pcols,pver)      !ice cloud fraction
+    real(rtype), pointer :: th_old(:,:)     !potential temperature from last step   K
+    real(rtype), pointer :: qv_old(:,:)     !water vapor from last step             kg/kg
+    real(rtype) :: ssat(pcols,pver)       !supersaturated mixing ratio            kg/kg
+    real(rtype) :: dzq(pcols,pver)        !geometric layer thickness              m
+    real(rtype) :: cldliq(pcols,pver)     !cloud liquid water mixing ratio        kg/kg
+    real(rtype) :: numliq(pcols,pver)     !cloud liquid water drop concentraiton  #/kg
+    real(rtype) :: rain(pcols,pver)       !rain water mixing ratio                kg/kg
+    real(rtype) :: numrain(pcols,pver)    !rain water number concentration        #/kg
+    real(rtype) :: qv(pcols,pver)         !water vapor mixing ratio               kg/kg
+    real(rtype) :: ice(pcols,pver)        !total ice water mixing ratio           kg/kg
+    real(rtype) :: qirim(pcols,pver)      !rime ice mixing ratio                  kg/kg
+    real(rtype) :: numice(pcols,pver)     !total ice crystal number concentration #/kg
+    real(rtype) :: rimvol(pcols,pver)     !rime volume mixing ratio               m3/kg
+    real(rtype) :: temp(pcols,pver)       !potential temperature                  K
+    real(rtype) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
+    real(rtype) :: prt_liq(pcols)         !precipitation rate, liquid             m s-1
+    real(rtype) :: prt_sol(pcols)         !precipitation rate, solid              m s-1
+    real(rtype) :: diag_ze(pcols,pver)    !equivalent reflectivity                dBZ
+    real(rtype) :: diag_effc(pcols,pver)  !effective radius, cloud                m
+    real(rtype) :: diag_effi(pcols,pver)  !effective radius, ice                  m
+    real(rtype) :: diag_vmi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
+    real(rtype) :: diag_di(pcols,pver)    !mean diameter of ice                   m
+    real(rtype) :: diag_rhoi(pcols,pver)  !bulk density of ice                    kg m-1
+    real(rtype) :: pres(pcols,pver)       !pressure at midlevel                   hPa
+    real(rtype) :: cmeiout(pcols,pver)
+    real(rtype) :: rflx(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
+    real(rtype) :: sflx(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
+    real(rtype) :: exner(pcols,pver)      !exner formula for converting between potential and normal temp
+    real(rtype) :: rcldm(pcols,pver)      !rain cloud fraction
+    real(rtype) :: lcldm(pcols,pver)      !liquid cloud fraction
+    real(rtype) :: icldm(pcols,pver)      !ice cloud fraction
 
     ! PBUF Variables
-    real(r8), pointer :: ast(:,:)      ! Relative humidity cloud fraction
-    real(r8), pointer :: cld(:,:)          ! Total cloud fraction
-    real(r8), pointer :: concld(:,:)       ! Convective cloud fraction
-    real(r8), pointer :: naai(:,:)      ! ice nucleation number
-    real(r8), pointer :: naai_hom(:,:)  ! ice nucleation number (homogeneous)
-    real(r8), pointer :: npccn(:,:)     ! liquid activation number tendency
-    real(r8), pointer :: rndst(:,:,:)
-    real(r8), pointer :: nacon(:,:,:)
-    real(r8), pointer :: cmeliq(:,:)
+    real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
+    real(rtype), pointer :: cld(:,:)          ! Total cloud fraction
+    real(rtype), pointer :: concld(:,:)       ! Convective cloud fraction
+    real(rtype), pointer :: naai(:,:)      ! ice nucleation number
+    real(rtype), pointer :: naai_hom(:,:)  ! ice nucleation number (homogeneous)
+    real(rtype), pointer :: npccn(:,:)     ! liquid activation number tendency
+    real(rtype), pointer :: rndst(:,:,:)
+    real(rtype), pointer :: nacon(:,:,:)
+    real(rtype), pointer :: cmeliq(:,:)
     !! variables for heterogeneous freezing
-    real(r8), pointer :: frzimm(:,:)
-    real(r8), pointer :: frzcnt(:,:)
-    real(r8), pointer :: frzdep(:,:)
+    real(rtype), pointer :: frzimm(:,:)
+    real(rtype), pointer :: frzcnt(:,:)
+    real(rtype), pointer :: frzdep(:,:)
     !!
-    real(r8), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ]
-    real(r8), pointer :: prec_sed(:)          ! Surface flux of total cloud water from sedimentation
-    real(r8), pointer :: prec_pcw(:)          ! Sfc flux of precip from microphysics [ m/s ]
-    real(r8), pointer :: snow_str(:)          ! [Total] Sfc flux of snow from stratiform   [ m/s ]
-    real(r8), pointer :: snow_pcw(:)          ! Sfc flux of snow from microphysics [ m/s ]
-    real(r8), pointer :: snow_sed(:)          ! Surface flux of cloud ice from sedimentation
-    real(r8), pointer :: relvar(:,:)       ! relative variance of cloud water
-    real(r8), pointer :: accre_enhan(:,:)  ! optional accretion enhancement for experimentation
-    real(r8), pointer :: cldo(:,:)         ! Old cloud fraction
-    real(r8), pointer :: prer_evap(:,:)    ! precipitation evaporation rate 
+    real(rtype), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ]
+    real(rtype), pointer :: prec_sed(:)          ! Surface flux of total cloud water from sedimentation
+    real(rtype), pointer :: prec_pcw(:)          ! Sfc flux of precip from microphysics [ m/s ]
+    real(rtype), pointer :: snow_str(:)          ! [Total] Sfc flux of snow from stratiform   [ m/s ]
+    real(rtype), pointer :: snow_pcw(:)          ! Sfc flux of snow from microphysics [ m/s ]
+    real(rtype), pointer :: snow_sed(:)          ! Surface flux of cloud ice from sedimentation
+    real(rtype), pointer :: relvar(:,:)       ! relative variance of cloud water
+    real(rtype), pointer :: accre_enhan(:,:)  ! optional accretion enhancement for experimentation
+    real(rtype), pointer :: cldo(:,:)         ! Old cloud fraction
+    real(rtype), pointer :: prer_evap(:,:)    ! precipitation evaporation rate 
     !! wetdep 
-    real(r8), pointer :: qme(:,:)
-    real(r8), pointer :: prain(:,:)        ! Total precipitation (rain + snow)
-    real(r8), pointer :: nevapr(:,:)       ! Evaporation of total precipitation (rain + snow)
+    real(rtype), pointer :: qme(:,:)
+    real(rtype), pointer :: prain(:,:)        ! Total precipitation (rain + snow)
+    real(rtype), pointer :: nevapr(:,:)       ! Evaporation of total precipitation (rain + snow)
     !! COSP simulator
-    real(r8), pointer :: rel(:,:)          ! Liquid effective drop radius (microns)
-    real(r8), pointer :: rei(:,:)          ! Ice effective drop size (microns)
-    real(r8), pointer :: flxprc(:,:)     ! P3 grid-box mean flux_large_scale_cloud_rain+snow at interfaces (kg/m2/s)
-    real(r8), pointer :: flxsnw(:,:)     ! P3 grid-box mean flux_large_scale_cloud_snow at interfaces (kg/m2/s)
-    real(r8), pointer :: reffrain(:,:)   ! P3 diagnostic rain effective radius (um)
-    real(r8), pointer :: reffsnow(:,:)   ! P3 diagnostic snow effective radius (um)
-    real(r8), pointer :: cvreffliq(:,:)    ! convective cloud liquid effective radius (um)
-    real(r8), pointer :: cvreffice(:,:)    ! convective cloud ice effective radius (um)
+    real(rtype), pointer :: rel(:,:)          ! Liquid effective drop radius (microns)
+    real(rtype), pointer :: rei(:,:)          ! Ice effective drop size (microns)
+    real(rtype), pointer :: flxprc(:,:)     ! P3 grid-box mean flux_large_scale_cloud_rain+snow at interfaces (kg/m2/s)
+    real(rtype), pointer :: flxsnw(:,:)     ! P3 grid-box mean flux_large_scale_cloud_snow at interfaces (kg/m2/s)
+    real(rtype), pointer :: reffrain(:,:)   ! P3 diagnostic rain effective radius (um)
+    real(rtype), pointer :: reffsnow(:,:)   ! P3 diagnostic snow effective radius (um)
+    real(rtype), pointer :: cvreffliq(:,:)    ! convective cloud liquid effective radius (um)
+    real(rtype), pointer :: cvreffice(:,:)    ! convective cloud ice effective radius (um)
 
-    real(r8), pointer :: iciwpst(:,:)      ! Stratiform in-cloud ice water path for radiation
-    real(r8), pointer :: iclwpst(:,:)      ! Stratiform in-cloud liquid water path for radiation
+    real(rtype), pointer :: iciwpst(:,:)      ! Stratiform in-cloud ice water path for radiation
+    real(rtype), pointer :: iclwpst(:,:)      ! Stratiform in-cloud liquid water path for radiation
     !! radiation 
-    real(r8), pointer :: dei(:,:)          ! Ice effective diameter (um)
-    real(r8), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
-    real(r8), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
+    real(rtype), pointer :: dei(:,:)          ! Ice effective diameter (um)
+    real(rtype), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
+    real(rtype), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
     !! Park-Macro
-    real(r8), pointer :: cc_t(:,:)
-    real(r8), pointer :: cc_qv(:,:)
-    real(r8), pointer :: cc_ql(:,:)
-    real(r8), pointer :: cc_qi(:,:)
-    real(r8), pointer :: cc_nl(:,:)
-    real(r8), pointer :: cc_ni(:,:)
-    real(r8), pointer :: cc_qlst(:,:)
+    real(rtype), pointer :: cc_t(:,:)
+    real(rtype), pointer :: cc_qv(:,:)
+    real(rtype), pointer :: cc_ql(:,:)
+    real(rtype), pointer :: cc_qi(:,:)
+    real(rtype), pointer :: cc_nl(:,:)
+    real(rtype), pointer :: cc_ni(:,:)
+    real(rtype), pointer :: cc_qlst(:,:)
     !!
-    real(r8), pointer, dimension(:) :: acprecl ! accumulated precip across timesteps
-    real(r8), pointer, dimension(:) :: acgcme  ! accumulated condensation across timesteps
+    real(rtype), pointer, dimension(:) :: acprecl ! accumulated precip across timesteps
+    real(rtype), pointer, dimension(:) :: acgcme  ! accumulated condensation across timesteps
     integer,  pointer, dimension(:) :: acnum   ! counter for # timesteps accumulated
     ! DONE PBUF
 
     ! Derived Variables
-    real(r8) :: tgliqwp(pcols)   ! column liquid
-    real(r8) :: tgcmeliq(pcols)  ! column condensation rate (units)
-    real(r8) :: pe(pcols)        ! precip efficiency for output
-    real(r8) :: pefrac(pcols)    ! fraction of time precip efficiency is written out
-    real(r8) :: tpr(pcols)       ! average accumulated precipitation rate in pe calculation
-    real(r8) :: icimrst(pcols,pver) ! stratus ice mixing ratio - on grid
-    real(r8) :: icwmrst(pcols,pver) ! stratus water mixing ratio - on grid
-    real(r8) :: rho(pcols,pver)
-    real(r8) :: icecldf(state%psetcols,pver) ! Ice cloud fraction
-    real(r8) :: liqcldf(state%psetcols,pver) ! Liquid cloud fraction (combined into cloud)
-    real(r8) :: ncic(pcols,pver)
-    real(r8) :: niic(pcols,pver)
-    real(r8) :: rel_fn(pcols,pver)    ! Ice effective drop size at fixed number (indirect effect) (microns) - on grid
-    real(r8) :: nc(pcols,pver)
-    real(r8) :: drout2(pcols,pver)
-    real(r8) :: reff_rain(pcols,pver)
+    real(rtype) :: tgliqwp(pcols)   ! column liquid
+    real(rtype) :: tgcmeliq(pcols)  ! column condensation rate (units)
+    real(rtype) :: pe(pcols)        ! precip efficiency for output
+    real(rtype) :: pefrac(pcols)    ! fraction of time precip efficiency is written out
+    real(rtype) :: tpr(pcols)       ! average accumulated precipitation rate in pe calculation
+    real(rtype) :: icimrst(pcols,pver) ! stratus ice mixing ratio - on grid
+    real(rtype) :: icwmrst(pcols,pver) ! stratus water mixing ratio - on grid
+    real(rtype) :: rho(pcols,pver)
+    real(rtype) :: icecldf(state%psetcols,pver) ! Ice cloud fraction
+    real(rtype) :: liqcldf(state%psetcols,pver) ! Liquid cloud fraction (combined into cloud)
+    real(rtype) :: ncic(pcols,pver)
+    real(rtype) :: niic(pcols,pver)
+    real(rtype) :: rel_fn(pcols,pver)    ! Ice effective drop size at fixed number (indirect effect) (microns) - on grid
+    real(rtype) :: nc(pcols,pver)
+    real(rtype) :: drout2(pcols,pver)
+    real(rtype) :: reff_rain(pcols,pver)
 
     ! Variables used for microphysics output
-    real(r8) :: aqrain(pcols,pver)
-    real(r8) :: anrain(pcols,pver)
-    real(r8) :: nfice(pcols,pver)
-    real(r8) :: efcout(pcols,pver)      
-    real(r8) :: efiout(pcols,pver)      
-    real(r8) :: ncout(pcols,pver)      
-    real(r8) :: niout(pcols,pver)      
-    real(r8) :: freqr(pcols,pver)      
-    real(r8) :: freql(pcols,pver)      
-    real(r8) :: freqi(pcols,pver)      
-    real(r8) :: cdnumc(pcols)      
-    real(r8) :: icwmrst_out(pcols,pver) 
-    real(r8) :: icimrst_out(pcols,pver) 
-    real(r8) :: icinc(pcols,pver) 
-    real(r8) :: icwnc(pcols,pver) 
+    real(rtype) :: aqrain(pcols,pver)
+    real(rtype) :: anrain(pcols,pver)
+    real(rtype) :: nfice(pcols,pver)
+    real(rtype) :: efcout(pcols,pver)      
+    real(rtype) :: efiout(pcols,pver)      
+    real(rtype) :: ncout(pcols,pver)      
+    real(rtype) :: niout(pcols,pver)      
+    real(rtype) :: freqr(pcols,pver)      
+    real(rtype) :: freql(pcols,pver)      
+    real(rtype) :: freqi(pcols,pver)      
+    real(rtype) :: cdnumc(pcols)      
+    real(rtype) :: icwmrst_out(pcols,pver) 
+    real(rtype) :: icimrst_out(pcols,pver) 
+    real(rtype) :: icinc(pcols,pver) 
+    real(rtype) :: icwnc(pcols,pver) 
 
  
     integer :: it                      !timestep counter                       -
@@ -945,12 +946,12 @@ end subroutine micro_p3_readnl
     integer :: ngrdcol
 
     ! For rrtmg optics. specified distribution.
-    real(r8), parameter :: dcon   = 25.e-6_r8         ! Convective size distribution effective radius (um)
-    real(r8), parameter :: mucon  = 5.3_r8            ! Convective size distribution shape parameter
-    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (um)
+    real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
+    real(rtype), parameter :: mucon  = 5.3_rtype            ! Convective size distribution shape parameter
+    real(rtype), parameter :: deicon = 50._rtype            ! Convective ice effective diameter (um)
 
     ! For potential temperature conversion
-    real(r8) :: rd, cp, inv_cp
+    real(rtype) :: rd, cp, inv_cp
 
     psetcols = state%psetcols
     lchnk = state%lchnk
@@ -1084,7 +1085,7 @@ end subroutine micro_p3_readnl
     !              Return true on first step of initial run only.
     do icol = 1,ncol
        do k = 1,pver
-          exner(icol,k) = 1._r8/((state%pmid(icol,k)*1.e-5)**(rd*inv_cp))
+          exner(icol,k) = 1._rtype/((state%pmid(icol,k)*1.e-5)**(rd*inv_cp))
           if ( is_first_step() ) then
              th_old(icol,k)=state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
              qv_old(icol,k)=state%q(icol,k,1)
@@ -1129,7 +1130,7 @@ end subroutine micro_p3_readnl
     !(as we will set it initially), ssat is overwritten rather than used by p3.
     !Thus it shouldn't matter what ssat is, so we give it -999.
 
-    ssat(:,:) = -999._r8
+    ssat(:,:) = -999._rtype
 
     ! HANDLE TIMESTEP COUNTER
     !==============
@@ -1232,7 +1233,7 @@ end subroutine micro_p3_readnl
     !they are assigned here. The comments below are a step in that direction.
 
     !cloud_rad_props needs ice effective diameter, which Kai calculates as below:
-    !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._r8
+    !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
     !where rhopo is bulk ice density from table lookup (taken from f1pr16, but not 
     !done in my ver yet) and rhows=917.0 is a constant parameter.
 
@@ -1247,15 +1248,15 @@ end subroutine micro_p3_readnl
        do k = 1,pver
           temp(icol,k) = th(icol,k)/exner(icol,k) !*(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) !convert theta to 
           ptend%s(icol,k)           = cpair*(temp(icol,k) - state%t(icol,k))/dtime ! changed cpair to 1005
-          ptend%q(icol,k,1)         = (max(0._r8,qv(icol,k)     ) - state%q(icol,k,1) )/dtime
-          ptend%q(icol,k,ixcldliq)  = (max(0._r8,cldliq(icol,k) ) - state%q(icol,k,ixcldliq) )/dtime
-          ptend%q(icol,k,ixnumliq)  = (max(0._r8,numliq(icol,k) ) - state%q(icol,k,ixnumliq) )/dtime
-          ptend%q(icol,k,ixrain)    = (max(0._r8,rain(icol,k)   ) - state%q(icol,k,ixrain) )/dtime
-          ptend%q(icol,k,ixnumrain) = (max(0._r8,numrain(icol,k)) - state%q(icol,k,ixnumrain) )/dtime
-          ptend%q(icol,k,ixcldice)  = (max(0._r8,ice(icol,k)    ) - state%q(icol,k,ixcldice) )/dtime
-          ptend%q(icol,k,ixnumice)  = (max(0._r8,numice(icol,k) ) - state%q(icol,k,ixnumice) )/dtime
-          ptend%q(icol,k,ixcldrim)  = (max(0._r8,rim(icol,k)    ) - state%q(icol,k,ixcldrim) )/dtime
-          ptend%q(icol,k,ixrimvol)  = (max(0._r8,rimvol(icol,k) ) - state%q(icol,k,ixrimvol) )/dtime
+          ptend%q(icol,k,1)         = (max(0._rtype,qv(icol,k)     ) - state%q(icol,k,1) )/dtime
+          ptend%q(icol,k,ixcldliq)  = (max(0._rtype,cldliq(icol,k) ) - state%q(icol,k,ixcldliq) )/dtime
+          ptend%q(icol,k,ixnumliq)  = (max(0._rtype,numliq(icol,k) ) - state%q(icol,k,ixnumliq) )/dtime
+          ptend%q(icol,k,ixrain)    = (max(0._rtype,rain(icol,k)   ) - state%q(icol,k,ixrain) )/dtime
+          ptend%q(icol,k,ixnumrain) = (max(0._rtype,numrain(icol,k)) - state%q(icol,k,ixnumrain) )/dtime
+          ptend%q(icol,k,ixcldice)  = (max(0._rtype,ice(icol,k)    ) - state%q(icol,k,ixcldice) )/dtime
+          ptend%q(icol,k,ixnumice)  = (max(0._rtype,numice(icol,k) ) - state%q(icol,k,ixnumice) )/dtime
+          ptend%q(icol,k,ixcldrim)  = (max(0._rtype,rim(icol,k)    ) - state%q(icol,k,ixcldrim) )/dtime
+          ptend%q(icol,k,ixrimvol)  = (max(0._rtype,rimvol(icol,k) ) - state%q(icol,k,ixrimvol) )/dtime
 
        end do
     end do
@@ -1268,11 +1269,11 @@ end subroutine micro_p3_readnl
     ! Do not subscript by ncol here, because in physpkg we divide the whole
     ! array and need to avoid an FPE due to uninitialized data.
     prec_pcw = prt_liq + prt_sol
-    prec_sed = 0._r8
+    prec_sed = 0._rtype
     prec_str = prec_pcw + prec_sed
 
     snow_pcw = prt_sol
-    snow_sed = 0._r8
+    snow_sed = 0._rtype
     snow_str = snow_pcw + snow_sed
       
    !icecldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver)
@@ -1283,37 +1284,37 @@ end subroutine micro_p3_readnl
    ! Note that 'iclwp, iciwp' are used for radiation computation. !
    ! ------------------------------------------------------------ !
       
-   icinc = 0._r8
-   icwnc = 0._r8
-   iciwpst = 0._r8
-   iclwpst = 0._r8
+   icinc = 0._rtype
+   icwnc = 0._rtype
+   iciwpst = 0._rtype
+   iclwpst = 0._rtype
       
    do k = top_lev, pver
       do icol = 1, ncol
          ! Limits for in-cloud mixing ratios consistent with P3 microphysics
          ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
-         icimrst(icol,k)   = min( state%q(icol,k,ixcldice) / max(mincld,icldm(icol,k)),0.005_r8 )
-         icwmrst(icol,k)   = min( state%q(icol,k,ixcldliq) / max(mincld,lcldm(icol,k)),0.005_r8 )
+         icimrst(icol,k)   = min( state%q(icol,k,ixcldice) / max(mincld,icldm(icol,k)),0.005_rtype )
+         icwmrst(icol,k)   = min( state%q(icol,k,ixcldliq) / max(mincld,lcldm(icol,k)),0.005_rtype )
          icinc(icol,k)     = state%q(icol,k,ixnumice) / max(mincld,icldm(icol,k)) * &
-              state%pmid(icol,k) / (287.15_r8*state%t(icol,k))
+              state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
          icwnc(icol,k)     = state%q(icol,k,ixnumliq) / max(mincld,lcldm(icol,k)) * &
-              state%pmid(icol,k) / (287.15_r8*state%t(icol,k))
+              state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
          ! Calculate micro_p3_acme cloud water paths in each layer
          ! Note: uses stratiform cloud fraction!
-         iciwpst(icol,k)   = min(state%q(icol,k,ixcldice)/max(mincld,ast(icol,k)),0.005_r8) * state%pdel(icol,k) / gravit
-         iclwpst(icol,k)   = min(state%q(icol,k,ixcldliq)/max(mincld,ast(icol,k)),0.005_r8) * state%pdel(icol,k) / gravit
+         iciwpst(icol,k)   = min(state%q(icol,k,ixcldice)/max(mincld,ast(icol,k)),0.005_rtype) * state%pdel(icol,k) / gravit
+         iclwpst(icol,k)   = min(state%q(icol,k,ixcldliq)/max(mincld,ast(icol,k)),0.005_rtype) * state%pdel(icol,k) / gravit
       end do                    
    end do
   
    ! array must be zeroed beyond trop_cloud_top_pre otherwise undefined values will be used in cosp.
-   flxprc(:ncol,1:top_lev) = 0.0_r8
-   flxsnw(:ncol,1:top_lev) = 0.0_r8
+   flxprc(:ncol,1:top_lev) = 0.0_rtype
+   flxsnw(:ncol,1:top_lev) = 0.0_rtype
 
    flxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp) ! need output from p3
    flxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp) ! need output from p3
 
-   cvreffliq(:ncol,top_lev:pver) = 9.0_r8
-   cvreffice(:ncol,top_lev:pver) = 37.0_r8
+   cvreffliq(:ncol,top_lev:pver) = 9.0_rtype
+   cvreffice(:ncol,top_lev:pver) = 37.0_rtype
 
     !note s=cp*T has units J/kg
 
@@ -1337,11 +1338,11 @@ end subroutine micro_p3_readnl
    !! Effective radius for cloud liquid, fixed number.
    !!
    
-   mu = 0._r8
-   lambdac = 0._r8
-   rel_fn = 10._r8
+   mu = 0._rtype
+   lambdac = 0._rtype
+   rel_fn = 10._rtype
 
-   ncic = 1.e8_r8
+   ncic = 1.e8_rtype
 
    !! size distribution 
    
@@ -1355,8 +1356,8 @@ end subroutine micro_p3_readnl
 
    where (icwmrst(:ngrdcol,top_lev:) > qsmall)
       rel_fn(:ngrdcol,top_lev:) = &
-                    (mu(:ngrdcol,top_lev:) + 3._r8)/ &
-                    lambdac(:ngrdcol,top_lev:)/2._r8 * 1.e6_r8
+                    (mu(:ngrdcol,top_lev:) + 3._rtype)/ &
+                    lambdac(:ngrdcol,top_lev:)/2._rtype * 1.e6_rtype
    end where
 
    !!
@@ -1364,9 +1365,9 @@ end subroutine micro_p3_readnl
    !! mu and lambdac.
    !!
    
-   mu = 0._r8
-   lambdac = 0._r8
-   rel = 10._r8
+   mu = 0._rtype
+   lambdac = 0._rtype
+   rel = 10._rtype
 
    !!
    !! Calculate ncic on the grid
@@ -1385,27 +1386,27 @@ end subroutine micro_p3_readnl
 
    where (icwmrst(:ngrdcol,top_lev:) >= qsmall)
       rel(:ngrdcol,top_lev:) = &
-           (mu(:ngrdcol,top_lev:) + 3._r8) / &
-           lambdac(:ngrdcol,top_lev:)/2._r8 * 1.e6_r8
+           (mu(:ngrdcol,top_lev:) + 3._rtype) / &
+           lambdac(:ngrdcol,top_lev:)/2._rtype * 1.e6_rtype
    elsewhere
       ! Deal with the fact that size_dist_param_liq sets mu to -100
       ! wherever there is no cloud.
-      mu(:ngrdcol,top_lev:) = 0._r8
+      mu(:ngrdcol,top_lev:) = 0._rtype
    end where
 
    !!
    !! Rain/Snow effective diameter
    !!
    
-   drout2    = 0._r8
-   reff_rain = 0._r8
-   aqrain    = 0._r8
-   anrain    = 0._r8
-   freqr     = 0._r8
+   drout2    = 0._rtype
+   reff_rain = 0._rtype
+   aqrain    = 0._rtype
+   anrain    = 0._rtype
+   freqr     = 0._rtype
 
       ! Prognostic precipitation
 
-      where (rain(:ngrdcol,top_lev:) >= 1.e-7_r8)
+      where (rain(:ngrdcol,top_lev:) >= 1.e-7_rtype)
          drout2(:ngrdcol,top_lev:) = avg_diameter( &
               rain(:ngrdcol,top_lev:), &
               numrain(:ngrdcol,top_lev:) * rho(:ngrdcol,top_lev:), &
@@ -1415,7 +1416,7 @@ end subroutine micro_p3_readnl
          anrain = numrain * rcldm
          freqr = rcldm
          reff_rain(:ngrdcol,top_lev:) = drout2(:ngrdcol,top_lev:) * &
-              1.5_r8 * 1.e6_r8
+              1.5_rtype * 1.e6_rtype
       end where
 
 
@@ -1423,7 +1424,7 @@ end subroutine micro_p3_readnl
    !! Effective radius and diameter for cloud ice
    !!
    
-   rei = 25._r8
+   rei = 25._rtype
 
    niic(:ngrdcol,top_lev:) = numice(:ngrdcol,top_lev:) / &
         max(mincld,icldm(:ngrdcol,top_lev:))
@@ -1436,12 +1437,12 @@ end subroutine micro_p3_readnl
 
    where (icimrst(:ngrdcol,top_lev:) >= qsmall)
       rei(:ngrdcol,top_lev:) = &
-         1.5_r8/rei(:ngrdcol,top_lev:) * 1.e6_r8
+         1.5_rtype/rei(:ngrdcol,top_lev:) * 1.e6_rtype
    elsewhere
-      rei(:ngrdcol,top_lev:) = 25._r8
+      rei(:ngrdcol,top_lev:) = 25._rtype
    end where
 
-   dei = rei * rhoi/rhows * 2._r8
+   dei = rei * rhoi/rhows * 2._rtype
 
    !!
    !! Limiters for low cloud fraction
@@ -1449,9 +1450,9 @@ end subroutine micro_p3_readnl
    
    do k = top_lev, pver
       do icol = 1, ngrdcol
-         if ( ast(icol,k) < 1.e-4_r8 ) then
+         if ( ast(icol,k) < 1.e-4_rtype ) then
             mu(icol,k) = mucon
-            lambdac(icol,k) = (mucon + 1._r8)/dcon
+            lambdac(icol,k) = (mucon + 1._rtype)/dcon
             dei(icol,k) = deicon
          end if
       end do
@@ -1460,7 +1461,7 @@ end subroutine micro_p3_readnl
    reffrain(:,:) = 0.d0
    reffsnow(:,:) = 0.d0
    reffrain(:ngrdcol,top_lev:pver) = reff_rain(:ngrdcol,top_lev:pver)
-   reffsnow(:ngrdcol,top_lev:pver) = 1000._r8 !! dummy value 
+   reffsnow(:ngrdcol,top_lev:pver) = 1000._rtype !! dummy value 
 
    ! ------------------------------------- !
    ! Precipitation efficiency Calculation  !
@@ -1470,13 +1471,13 @@ end subroutine micro_p3_readnl
    ! Liquid water path
 
    ! Compute liquid water paths, and column condensation
-   tgliqwp(:ngrdcol) = 0._r8
-   tgcmeliq(:ngrdcol) = 0._r8
+   tgliqwp(:ngrdcol) = 0._rtype
+   tgcmeliq(:ngrdcol) = 0._rtype
    do k = top_lev, pver
       do icol = 1, ngrdcol
          tgliqwp(icol)  = tgliqwp(icol) + iclwpst(icol,k)*cld(icol,k)
 
-         if (cmeliq(icol,k) > 1.e-12_r8) then
+         if (cmeliq(icol,k) > 1.e-12_rtype) then
             !convert cmeliq to right units:  kgh2o/kgair/s  *  kgair/m2  / kgh2o/m3  = m/s
             tgcmeliq(icol) = tgcmeliq(icol) + cmeliq(icol,k) * &
                  (state%pdel(icol,k) / gravit) / rhoh2o
@@ -1485,24 +1486,24 @@ end subroutine micro_p3_readnl
    end do
 
    ! Averaging for new output fields
-   efcout      = 0._r8
-   efiout      = 0._r8
-   ncout       = 0._r8
-   niout       = 0._r8
-   freql       = 0._r8
-   freqi       = 0._r8
-   cdnumc      = 0._r8
-   icwmrst_out = 0._r8
-   icimrst_out = 0._r8
-   nfice       = 0._r8
+   efcout      = 0._rtype
+   efiout      = 0._rtype
+   ncout       = 0._rtype
+   niout       = 0._rtype
+   freql       = 0._rtype
+   freqi       = 0._rtype
+   cdnumc      = 0._rtype
+   icwmrst_out = 0._rtype
+   icimrst_out = 0._rtype
+   nfice       = 0._rtype
 
    ! FICE
    do k = top_lev, pver
       do icol = 1, ngrdcol
       if (ice(icol,k).gt.qsmall .and. (rain(icol,k)+ice(icol,k)+cldliq(icol,k)).gt.qsmall) then
-         nfice(icol,k)=min(ice(icol,k)/(rain(icol,k)+ice(icol,k)+cldliq(icol,k)),1._r8)
+         nfice(icol,k)=min(ice(icol,k)/(rain(icol,k)+ice(icol,k)+cldliq(icol,k)),1._rtype)
       else
-         nfice(icol,k)=0._r8
+         nfice(icol,k)=0._rtype
       end if
       end do
    end do
@@ -1512,13 +1513,13 @@ end subroutine micro_p3_readnl
         state%pdel(:ngrdcol,top_lev:pver)/gravit, dim=2)
    do k = top_lev, pver
       do icol = 1, ngrdcol
-         if ( lcldm(icol,k) > 0.01_r8 .and. icwmrst(icol,k) > 5.e-5_r8 ) then
+         if ( lcldm(icol,k) > 0.01_rtype .and. icwmrst(icol,k) > 5.e-5_rtype ) then
             efcout(icol,k) = rel(icol,k) * lcldm(icol,k)
             ncout(icol,k)  = icwnc(icol,k) * lcldm(icol,k)
             freql(icol,k)  = lcldm(icol,k)
             icwmrst_out(icol,k) = icwmrst(icol,k)
          end if
-         if ( icldm(icol,k) > 0.01_r8 .and. icimrst(icol,k) > 1.e-6_r8 ) then
+         if ( icldm(icol,k) > 0.01_rtype .and. icimrst(icol,k) > 1.e-6_rtype ) then
             efiout(icol,k) = rei(icol,k) * icldm(icol,k)
             niout(icol,k)  = icinc(icol,k) * icldm(icol,k)
             freqi(icol,k)  = icldm(icol,k)
