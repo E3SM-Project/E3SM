@@ -14,18 +14,44 @@ from matplotlib import cm
 perturbs = np.arange(0.0, 2.1, 0.2)
 nruns = len(perturbs)
 
-# init some vectors
-meltMag = np.zeros((nruns,))
-GAchange = np.zeros((nruns,))
-GAchangeInst = np.zeros((nruns,))
-VAFchange = np.zeros((nruns,))
-VAFchangeInst = np.zeros((nruns,))
-GLfchange = np.zeros((nruns,))
-GLfchangeInst = np.zeros((nruns,))
+# === set up plots ===
+# another plot ===============
 
-yr = 10.0
+fig = plt.figure(2, facecolor='w', figsize=(13,5))
+axVAF = fig.add_subplot(1,3,1)
+plt.xlabel('ice shelf melt rate (Gt yr$^{-1}$)')
+plt.ylabel('VAF change (Gt/yr)')
+plt.grid()
 
-for i in range(nruns):
+
+axPctDiff = fig.add_subplot(1,3,2)
+plt.xlabel('fractional change in melt rate from control')
+plt.ylabel('difference between + and - perturbations (%)')
+plt.grid()
+
+axAbsDiff = fig.add_subplot(1,3,3)
+plt.xlabel('fractional change in melt rate from control')
+plt.ylabel('difference between + and - perturbations (Gt yr$^{-1}$)')
+plt.grid()
+
+fig.tight_layout()
+
+
+
+
+yr_samples = [1.0, 2.5, 10.0]
+for yr in yr_samples:
+ print "Analyzing at year {}".format(yr)
+ # init some vectors
+ meltMag = np.zeros((nruns,))
+ GAchange = np.zeros((nruns,))
+ GAchangeInst = np.zeros((nruns,))
+ VAFchange = np.zeros((nruns,))
+ VAFchangeInst = np.zeros((nruns,))
+ GLfchange = np.zeros((nruns,))
+ GLfchangeInst = np.zeros((nruns,))
+
+ for i in range(nruns):
    p = perturbs[i]
    dname = "meltfactor{}".format(p)
    print dname
@@ -41,18 +67,29 @@ for i in range(nruns):
       yrs = f.variables['daysSinceStart'][:]/365.0
       #ind = np.where(yrs == yr)[0][0]
       ind = np.argmin(np.absolute(yrs-yr))
+      ind2 = np.argmin(np.absolute(yrs-(yr-1.0)))  # index to one year before 'yr'
       GAchange[i] = (GA[ind] - GA[0]) / (yrs[ind] - yrs[0])
       GAchangeInst[i] = (GA[2] - GA[1]) / dt[2]
       VAFchange[i] = (VAF[ind] - VAF[0]) / (yrs[ind] - yrs[0])
+      VAFchange[i] = (VAF[ind] - VAF[ind2]) / (yrs[ind] - yrs[ind2])
       VAFchangeInst[i] = (VAF[2] - VAF[1]) / dt[2]
       GLfchange[i] = (GLf[ind] - GLf[0]) / (yrs[ind] - yrs[0])
       GLfchangeInst[i] = (GLf[2] - GLf[1]) / dt[2]
       f.close()
    else:
       print "err"
+ # plot multiple years on the plots set up above
+ ind = np.where(perturbs==1.0)[0][0]
+ axVAF.plot(meltMag, VAFchange, '.', label="{} yr".format(yr))
+ axVAF.plot(meltMag[ind], VAFchange[ind], 'k.')
+ ind06 = np.argmin(np.absolute(perturbs-0.6))
+ ind14 = np.argmin(np.absolute(perturbs-1.4))
+ axVAF.plot(meltMag[ind], VAFchange[ [ind06, ind14] ].mean(), 'kx')
+ rng = np.arange(0,nruns-ind)
+ axPctDiff.plot(perturbs[ind+rng]-perturbs[ind], ((VAFchange[ind+rng] - VAFchange[ind]) - (VAFchange[ind] - VAFchange[ind-rng])) / VAFchange[ind] * 100.0, '.')
+ axAbsDiff.plot(perturbs[ind+rng]-perturbs[ind], (VAFchange[ind+rng] - VAFchange[ind]) - (VAFchange[ind] - VAFchange[ind-rng]) , '.')
 
-print meltMag
-print GAchange
+axVAF.legend()
 
 # plot ===============
 ind = np.where(perturbs==1.0)[0][0]
@@ -102,31 +139,5 @@ plt.grid()
 
 fig.tight_layout()
 
-
-# another plot ===============
-
-fig = plt.figure(2, facecolor='w', figsize=(7,4))
-ax = fig.add_subplot(1,2,1)
-rng = np.arange(0,nruns-ind)
-plt.plot(perturbs[ind+rng]-perturbs[ind], ((VAFchange[ind+rng] - VAFchange[ind]) - (VAFchange[ind] - VAFchange[ind-rng])) / VAFchange[ind] * 100.0, '.')
-
-#print ind, rng
-#print ind+rng
-#print ind-rng
-#print perturbs[ind+rng]-perturbs[ind]
-#print perturbs
-#print VAFchange
-
-plt.xlabel('fractional change in melt rate from control')
-plt.ylabel('difference between + and - perturbations (%)')
-plt.grid()
-
-ax = fig.add_subplot(1,2,2)
-plt.plot(perturbs[ind+rng]-perturbs[ind], (VAFchange[ind+rng] - VAFchange[ind]) - (VAFchange[ind] - VAFchange[ind-rng]) , '.')
-plt.xlabel('fractional change in melt rate from control')
-plt.ylabel('difference between + and - perturbations (Gt yr$^{-1}$)')
-plt.grid()
-
-fig.tight_layout()
 
 plt.show()
