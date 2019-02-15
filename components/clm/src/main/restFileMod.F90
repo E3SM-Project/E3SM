@@ -146,7 +146,7 @@ contains
     type(nitrogenflux_type)        , intent(in)    :: nitrogenflux_vars
     type(photosyns_type)           , intent(in)    :: photosyns_vars
     type(soilhydrology_type)       , intent(in)    :: soilhydrology_vars
-    type(soilstate_type)           , intent(in)    :: soilstate_vars
+    type(soilstate_type)           , intent(inout) :: soilstate_vars
     type(solarabs_type)            , intent(in)    :: solarabs_vars
     type(surfalb_type)             , intent(in)    :: surfalb_vars
     type(temperature_type)         , intent(in)    :: temperature_vars
