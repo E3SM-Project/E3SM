@@ -816,6 +816,18 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="izumi">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
+  <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <SLIBS>
+    <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="hobart" COMPILER="intel">
   <CFLAGS>
     <append> -lifcore</append>
@@ -871,8 +883,7 @@ using a fortran linker.
 
 <compiler MACH="hobart" COMPILER="gnu">
   <SLIBS>
-    <append> -lm </append>
-    <append> -ldl </append>
+    <append> -lm -ldl</append>
   </SLIBS>
 </compiler>
 
