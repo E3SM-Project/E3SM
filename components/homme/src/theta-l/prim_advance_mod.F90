@@ -921,7 +921,7 @@ contains
             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
      enddo
      call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
-          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i)
+          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i,caller='convert_thermo_forcing')
      do k=1,nlev
         ! compute NH pressure perturbation (forcing applied w.r.t. constant pprime)
         pprime(:,:,k)=pnh(:,:,k) - &
@@ -1276,7 +1276,7 @@ contains
         temp(:,:,:)=elem(ie)%state%vtheta_dp(:,:,:,nt)*elem(ie)%state%dp3d(:,:,:,nt)
         call get_pnh_and_exner(hvcoord,temp,&
              elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
-             pnh,exner,temp_i)
+             pnh,exner,temp_i,caller='advance_hypervis')
         
         do k=1,nlev
            k2=max(k,nlev)
@@ -1602,7 +1602,7 @@ contains
      endif
 #endif
 
-     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i)
+     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2211,6 +2211,11 @@ contains
   real (kind=real_kind) :: dphi(nlev)
 
   integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
+  logical :: pass
+  integer :: count
+  real(kind=real_kind) :: phi_temp(1:nlevp)
+
+
   itercountmax=0
   itererrmax=0.d0
 
@@ -2226,7 +2231,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i)
+    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2288,11 +2293,19 @@ contains
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
         ! update approximate solution of phi
-        phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+        !phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+
+        phi_temp(nlevp)=phi_np1(i,j,nlevp)  ! set surface height
+        do count=0,10
+           phi_temp(1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j) / (2**count)
+           if (all(phi_temp(1:nlev) > phi_temp(2:nlevp))) exit
+        enddo
+        if (count>0) print *,'WARNING:  bad newton iteration count=',count
+        phi_np1(i,j,1:nlev)=phi_temp(1:nlev)
       end do
       end do
 
-      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i)
+      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
 
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &

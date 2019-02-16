@@ -32,7 +32,7 @@ module eos
 contains
 
 subroutine get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
-     dpnh_dp_i,pnh_i_out)
+     dpnh_dp_i,pnh_i_out,caller)
 implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
@@ -56,6 +56,7 @@ implicit none
   real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
+  character(len=*),      intent(in), optional  :: caller       ! name for error
 
   !   local
   real (kind=real_kind) :: p_over_exner(np,np,nlev)
@@ -111,10 +112,15 @@ implicit none
                  do k2=1,nlev
                     write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2+1),dp3d(i,j,k2),vtheta_dp(i,j,k2)
                  enddo
-                 call abortmp('error: rho<0')
+                 if (present(caller)) print *,'EOS called from =',caller
+                 call abortmp('error: EOS bad state: rho<0')
               endif
            enddo
         enddo
+     endif
+     if (minval(dp3d(:,:,k))<0) then
+        if (present(caller)) print *,'EOS called from =',caller
+        call abortmp('error: EOS bad state: dp3d<0')
      endif
     
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
