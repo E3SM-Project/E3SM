@@ -407,16 +407,13 @@ module ocn_tracer_advection_mono
            if (tracerGroupName == 'activeTracers') then
 
               !$omp do schedule(runtime) private(k)
-              do i = 1,nEdgesOnCell(iCell)
-                iEdge = edgesOnCell(i, iCell)
-                do k = 1,maxLevelEdgeTop(iEdge)
-                  activeTracerHorizontalAdvectionEdgeTend(iTracer,k,iEdge) = high_order_flux(k,iEdge)
-                enddo
-              enddo
-              !$omp end do
-
-              !$omp do schedule(runtime) private(k)
               do iCell = 1, nCells
+                do i = 1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i, iCell)
+                  do k = 1,maxLevelEdgeTop(iEdge)
+                    activeTracerHorizontalAdvectionEdgeTend(iTracer,k,iEdge) = high_order_flux(k,iEdge)
+                  enddo
+                enddo
                 do k = 1, maxLevelCell(iCell)
                     activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = work_tend(k,iCell)
                 end do
@@ -639,7 +636,7 @@ module ocn_tracer_advection_mono
                     activeTracerVerticalAdvectionTopTend(iTracer,k,iCell) = high_order_flux(k,iCell)
                 end do
                 k = maxLevelCell(iCell)+1
-                activeTracerVerticalAdvectionTopTend(iTracer,k,iEdge) = high_order_flux(k,iCell)
+                activeTracerVerticalAdvectionTopTend(iTracer,k,iCell) = high_order_flux(k,iCell)
               end do ! iCell loop
               !$omp end do
            end if
