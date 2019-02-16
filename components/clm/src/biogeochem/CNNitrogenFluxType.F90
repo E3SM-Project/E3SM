@@ -398,6 +398,9 @@ module CNNitrogenFluxType
      real(r8), pointer :: hrv_nloss_litter                          (:)     ! total nloss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
 
+     ! C4MIP output variable
+     real(r8), pointer :: plant_n_to_cwdn                           (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant nitrogen flux to CWD
+
    contains
 
      procedure , public  :: Init   
@@ -815,7 +818,10 @@ contains
     allocate(this%fire_nloss_litter           (begp:endp)) ; this%fire_nloss_litter                 (:) = nan
     allocate(this%hrv_nloss_litter            (begp:endp)) ; this%hrv_nloss_litter                  (:) = nan
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
-    
+
+    ! C4MIP output variable
+    allocate(this%plant_n_to_cwdn             (begc:endc)) ; this%plant_n_to_cwdn                   (:)  =nan
+ 
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1278,6 +1284,12 @@ contains
     call hist_addfld1d (fname='NFIX_TO_SMINN', units='gN/m^2/s', &
          avgflag='A', long_name='symbiotic/asymbiotic N fixation to soil mineral N', &
          ptr_col=this%nfix_to_sminn_col)
+
+    ! C4MIP output variable, plant nitrogen flux to cwd (a part of fVegLitter)
+    this%plant_n_to_cwdn(begc:endc) = spval
+    call hist_addfld1d (fname='VEGN_TO_CWDN', units='gN/m^2/s', &
+         avgflag='A', long_name='plant nitrogen flux to cwd', &
+         ptr_col=this%plant_n_to_cwdn, default='inactive')
 
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
@@ -2934,6 +2946,19 @@ contains
        this%som_n_leached_col(c)       = 0._r8
     end do
     
+    ! C4MIP output variable, plant nitrogen flux to cwd (a part of fVegLitter)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%plant_n_to_cwdn(c) = 0._r8
+       do j = 1, nlevdecomp
+          this%plant_n_to_cwdn(c) = this%plant_n_to_cwdn(c) + &
+             this%gap_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j) + &
+             this%fire_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j)+ &
+             this%harvest_n_to_cwdn_col(c,j)* dzsoi_decomp(j)       + &
+             this%dwt_livecrootn_to_cwdn_col(c,j)* dzsoi_decomp(j)  + &
+             this%dwt_deadcrootn_to_cwdn_col(c,j)* dzsoi_decomp(j)
+       end do
+    end do
 
     if (  (.not. (use_pflotran .and. pf_cmode)) ) then
        

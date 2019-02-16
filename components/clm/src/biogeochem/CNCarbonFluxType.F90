@@ -3214,7 +3214,7 @@ contains
 
        ! C4MIP output variable, plant carbon flux to cwd (a part of fVegLitter)
        this%plant_c_to_cwdc(begc:endc) = spval
-       call hist_addfld1d (fname='fVegCWDC', units='gC/m^2/s', &
+       call hist_addfld1d (fname='VEGC_TO_CWDC', units='gC/m^2/s', &
             avgflag='A', long_name='plant carbon flux to cwd', &
             ptr_col=this%plant_c_to_cwdc, default='inactive')
  
