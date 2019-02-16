@@ -161,7 +161,7 @@
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 
 <!-- E3SM Aquaplanet -->
-<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c15-02-2019.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c15-02-2019.nc</ncdata>
 
 
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
