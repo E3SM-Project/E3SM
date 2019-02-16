@@ -461,7 +461,7 @@ contains
 
              write(iulog,*)''
              write(iulog,*)'WATER STATES (kg/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
-             write(iulog,FS0),&
+             write(iulog,FS0) &
                   '       Canopy  ', &
                   '       Snow    ', &
                   '       SFC     ', &
@@ -471,7 +471,7 @@ contains
                   ' Grid-level Err', &
                   '       TOTAL   '
              write(iulog,'(143("-"),"|",23("-"))')
-             write(iulog,FS), '         beg', &
+             write(iulog,FS) '         beg', &
                   budg_stateG(s_wcan_beg  , ip)*unit_conversion, &
                   budg_stateG(s_wsno_beg  , ip)*unit_conversion, &
                   budg_stateG(s_wsfc_beg  , ip)*unit_conversion, &
@@ -479,7 +479,7 @@ contains
                   budg_stateG(s_wsice_beg , ip)*unit_conversion, &
                   budg_stateG(s_wwa_beg   , ip)*unit_conversion, &
                   budg_stateG(s_w_beg     , ip)*unit_conversion
-             write(iulog,FS), '         end', &
+             write(iulog,FS) '         end', &
                   budg_stateG(s_wcan_end  , ip)*unit_conversion, &
                   budg_stateG(s_wsno_end  , ip)*unit_conversion, &
                   budg_stateG(s_wsfc_end  , ip)*unit_conversion, &
@@ -503,8 +503,8 @@ contains
                   (budg_stateG(s_wsfc_end  ,ip) - budg_stateG(s_wsfc_beg  ,ip))*unit_conversion + &
                   (budg_stateG(s_wsliq_end ,ip) - budg_stateG(s_wsliq_beg ,ip))*unit_conversion + &
                   (budg_stateG(s_wsice_end ,ip) - budg_stateG(s_wsice_beg ,ip))*unit_conversion + &
-                  (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion + &
-                  -budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
+                  (budg_stateG(s_wwa_end   ,ip) - budg_stateG(s_wwa_beg   ,ip))*unit_conversion - &
+                   budg_stateG(s_w_errh2o ,ip) *unit_conversion, &
                   (budg_stateG(s_w_end     ,ip) - budg_stateG(s_w_beg     ,ip))*unit_conversion
              write(iulog,'(143("-"),"|",23("-"))')
           end if
