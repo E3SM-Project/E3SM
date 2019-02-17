@@ -2211,9 +2211,8 @@ contains
   real (kind=real_kind) :: dphi(nlev)
 
   integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
-  logical :: pass
-  integer :: count
-  real(kind=real_kind) :: phi_temp(1:nlevp)
+  integer :: nsafe
+
 
 
   itercountmax=0
@@ -2293,18 +2292,18 @@ contains
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
         ! update approximate solution of phi
-        !phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+        phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
 
-        phi_temp(nlevp)=phi_np1(i,j,nlevp)  ! set surface height
-        do count=0,10
-           phi_temp(1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j) / (2**count)
-           if (all(phi_temp(1:nlev) > phi_temp(2:nlevp))) exit
+        do nsafe=1,8
+           if (all(phi_np1(i,j,1:nlev) > phi_np1(i,j,2:nlevp))) exit
+           ! remove the last netwon increment, try reduced increment
+           phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) - x(1:nlev,i,j)/(2**nsafe)
         enddo
-        if (count>0) print *,'WARNING:  bad newton iteration count=',count
-        phi_np1(i,j,1:nlev)=phi_temp(1:nlev)
+        if (nsafe>1) print *,'WARNING: reducing newton increment, nsafe=',nsafe
+        ! if nsafe>1, code will probably crash soon
+        ! if nsafe>8, code will crash in next call to get_pnh_and_exner
       end do
       end do
-
       call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
 
       ! update approximate solution of w

@@ -66,6 +66,36 @@ implicit none
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 
   integer :: i,j,k,k2
+  logical :: ierr
+
+
+  ! check for bad state that will crash exponential function below
+  ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
+        any(dp3d(:,:,:) < 0 ) .or. &
+        any(phi_i(:,:,1:nlev) <= phi_i(:,:,2:nlevp))
+  if (ierr) then
+     if (present(caller)) then
+        print *,'bad state in EOS, called from: ',caller
+     else
+        print *,'bad state in EOS, calling function not specified'
+     endif
+     do j=1,np
+     do i=1,np
+     do k=1,nlev
+        if ( (vtheta_dp(i,j,k) < 0) .or. (dp3d(i,j,k)<0)  .or. &
+             (phi_i(i,j,k) <= phi_i(i,j,k+1))  ) then
+           print *,'bad i,j,k=',i,j,k
+           print *,'vertical column: phi_i,dp3d,vtheta_dp'
+           do k2=1,nlev
+              write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+           enddo
+           write(*,'(i3,4f14.4)') nlevp,phi_i(i,j,nlevp)
+           call abortmp('EOS bad state: d(phi), dp3d or vtheta_dp < 0')
+        endif
+     enddo
+     enddo
+     enddo
+  endif
 
   ! hydrostatic pressure
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
@@ -90,39 +120,8 @@ implicit none
 !==============================================================
 !  non-hydrostatic EOS
 !==============================================================
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
   do k=1,nlev
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(phi_i(:,:,k)-phi_i(:,:,k+1)) 
-
-     if (minval(p_over_exner(:,:,k))<0) then
-        do i=1,np
-           do j=1,np
-              if ( p_over_exner(i,j,k)<0 ) then
-                 print *,'i,j,k, p/exner = ',i,j,k,p_over_exner(i,j,k)
-                 print *,'k,phi_i(k),phi_i(k+1):',k,(phi_i(i,j,k)),(phi_i(i,j,k+1))
-              endif
-           enddo
-        enddo
-        do i=1,np
-           do j=1,np
-              if ( p_over_exner(i,j,k)<0 ) then
-                 print *,'vertical column phi_i,dp3d,vtheta_dp:'
-                 do k2=1,nlev
-                    write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2+1),dp3d(i,j,k2),vtheta_dp(i,j,k2)
-                 enddo
-                 if (present(caller)) print *,'EOS called from =',caller
-                 call abortmp('error: EOS bad state: rho<0')
-              endif
-           enddo
-        enddo
-     endif
-     if (minval(dp3d(:,:,k))<0) then
-        if (present(caller)) print *,'EOS called from =',caller
-        call abortmp('error: EOS bad state: dp3d<0')
-     endif
-    
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
      exner(:,:,k) =  pnh(:,:,k)/ p_over_exner(:,:,k)
   enddo
