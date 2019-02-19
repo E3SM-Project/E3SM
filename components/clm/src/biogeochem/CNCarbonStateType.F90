@@ -3297,7 +3297,14 @@ contains
             this%prod1c_col(c)   + &
             this%ctrunc_col(c)   + &
             cropseedc_deficit_col(c)
-            
+!       print*,'totcolc_col',this%totcolc_col(c)        
+!       print*,'totpftc_col',this%totpftc_col(c) 
+!       print*,'cwdc_col', this%cwdc_col(c)
+!       print*,'totlitc_col',this%totlitc_col(c)
+!       print*,'totsomc_col',this%totsomc_col(c)
+!       print*,'prod1c_col',this%prod1c_col(c)
+!       print*,'ctrunc_col',this%ctrunc_col(c)
+!       print*,'cropseedc_deficit_col',cropseedc_deficit_col(c)
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &
             this%totprodc_col(c) + &

@@ -283,7 +283,6 @@ contains
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_fates
-
     end associate
 
   end subroutine ColCBalanceCheck

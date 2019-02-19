@@ -5281,14 +5281,9 @@ contains
        this%somhr_col(c)              = 0._r8
        this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
-       if (.not. (use_pflotran .and. pf_cmode)) then
-       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in EcosystemDynNoLeaching2
-       ! thus 'hr_vr_col' should NOT be set to 0
-            this%hr_vr_col(c,1:nlevdecomp) = 0._r8
-       end if
     enddo
+    if(.not. is_active_betr_bgc)call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-    call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     if(.not. (use_pflotran .and. pf_cmode)) then
       !following code is also duplicated in summary_bgc_cascade
       !one should consider avoiding this.
@@ -5912,7 +5907,7 @@ end subroutine CSummary_interface
     !-----------------------------------------------------------------------
 
   subroutine  summary_sinksource(this, bounds, num_soilc, filter_soilc, loc)
-
+  use clm_time_manager, only: get_step_size
   implicit none
     class (carbonflux_type), intent(inout) :: this
     type(bounds_type)               , intent(in)    :: bounds
@@ -5935,5 +5930,20 @@ end subroutine CSummary_interface
       enddo
     enddo
     print*,'total sink source', total_sinksource(c)
+
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
+      this%hr_col(c) = 0._r8
+    enddo
+    do j = 1,nlevdecomp_full
+      do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%hr_col(c) = this%hr_col(c) + this%hr_vr_col(c,j) * dzsoi_decomp(j)
+      end do
+    enddo
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
+      print*,'hr',this%hr_col(c)*get_step_size() 
+    enddo
   end subroutine  summary_sinksource
 end module CNCarbonFluxType

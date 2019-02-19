@@ -613,12 +613,13 @@ module EcosystemDynBeTRMod
       call ep_betr%CalcSmpL(bounds, 1, nlevsoi, num_soilc, filter_soilc, &
             temperature_vars%t_soisno_col(bounds%begc:bounds%endc,1:nlevsoi), &
             soilstate_vars, waterstate_vars, soil_water_retention_curve)
-
-      call ep_betr%BeTRSetBiophysForcing(bounds, col, pft, 1, nlevsoi, &
+!      print*,'carbonflux_vars ecodyn'
+      call ep_betr%SetBiophysForcing(bounds, col, pft,  &
          waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
          atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars, carbonflux_vars=carbonflux_vars)
+ !     print*,'sefff fin'
+ !     call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'bfbetrbgc')  
 
-!      call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'bfbetrbgc')  
       call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
        num_soilc, filter_soilc, &
        carbonstate_vars, carbonflux_vars, &
@@ -633,7 +634,9 @@ module EcosystemDynBeTRMod
         c14_carbonstate_vars, c14_carbonflux_vars, &
         nitrogenstate_vars, nitrogenflux_vars, &
         phosphorusstate_vars, phosphorusflux_vars)
-      call t_stopf('betr type1 soil bgc')
+ !     call t_stopf('betr type1 soil bgc')
+ !     call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'afbetrbgc') 
+ !     call carbonflux_vars%summary_sinksource(bounds, num_soilc, filter_soilc, 'afberbbgc') 
 
       call Allocation3_PlantCNPAlloc (bounds            , &
         num_soilc, filter_soilc, num_soilp, filter_soilp    , &
@@ -937,15 +940,15 @@ module EcosystemDynBeTRMod
        ! in type 1 bgc, leaching will be done in betr, evenutally.
        !-----------------------------------------------------------------------
        ! in type 1 bgc, leaching will be done in betr, evenutally.
-       call t_startf('NitrogenLeaching')
-       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-       call t_stopf('NitrogenLeaching')
+!       call t_startf('NitrogenLeaching')
+!       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+!            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+!       call t_stopf('NitrogenLeaching')
 
-       call t_startf('PhosphorusLeaching')
-       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-       call t_stopf('PhosphorusLeaching')
+!       call t_startf('PhosphorusLeaching')
+!       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+!            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+!       call t_stopf('PhosphorusLeaching')
 
        call t_startf('CNUpdate3')
        call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &

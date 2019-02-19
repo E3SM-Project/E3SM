@@ -1058,7 +1058,7 @@ contains
              chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
              cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
 
-           if(do_betr_bgc_type('type2_bgc'))then
+           if(do_betr_bgc_type('bgc'))then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
                filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
                carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, &
