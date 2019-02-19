@@ -410,7 +410,7 @@
   </batch_system>
 
   <batch_system MACH="lonestar5" type="slurm" >
-    <batch_submit>sbatch</batch_submit>
+    <batch_submit>ssh login1.ls5.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <submit_args>
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-p" name="$JOB_QUEUE"/>
