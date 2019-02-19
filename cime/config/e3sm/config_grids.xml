@@ -734,6 +734,26 @@
       <mask>oQU240</mask>
     </model_grid>
 
+    <model_grid alias="ne4pg1_ne4pg1" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne4np4.pg1</grid>
+      <grid name="lnd">ne4np4.pg1</grid>
+      <grid name="ocnice">ne4np4.pg1</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240</mask>
+    </model_grid>
+
+    <model_grid alias="ne4pg2_ne4pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne4np4.pg2</grid>
+      <grid name="lnd">ne4np4.pg2</grid>
+      <grid name="ocnice">ne4np4.pg2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240</mask>
+    </model_grid>
+
     <model_grid alias="ne11_ne11" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne11np4</grid>
       <grid name="lnd">ne11np4</grid>
@@ -818,6 +838,26 @@
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
       <grid name="ocnice">ne30np4</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg1_ne30pg1" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne30np4.pg1</grid>
+      <grid name="lnd">ne30np4.pg1</grid>
+      <grid name="ocnice">ne30np4.pg1</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_ne30pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">ne30np4.pg2</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -1478,6 +1518,22 @@
       <desc>ne4np4 is Spectral Elem  7.5-deg grid:</desc>
     </domain>
 
+    <domain name="ne4np4.pg1">
+      <nx>96</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oQU240">UNSET</file>
+      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <desc>ne4np4.pg1 is Spectral Elem  7.5-deg grid w/ 1x1 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne4np4.pg2">
+      <nx>384</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oQU240">UNSET</file>
+      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <desc>ne4np4.pg2 is Spectral Elem  7.5-deg grid w/ 2x2 FV physics grid per element:</desc>
+    </domain>
+
     <domain name="ne11np4">
       <nx>6536</nx>
       <ny>1</ny>
@@ -1521,6 +1577,22 @@
       <file grid="ice|ocn" mask="oRRS30to10v3wLI">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_oRRS30to10v3wLI_mask.171109.nc</file>
       <file grid="lnd" mask="oEC60to30v3wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_oEC60to30v3wLI_mask.170802.nc</file>
       <desc>ne30np4 is Spectral Elem 1-deg grid:</desc>
+    </domain>
+
+    <domain name="ne30np4.pg1">
+      <nx>5400</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
+      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <desc>ne30np4.pg1 is Spectral Elem 1-deg grid w/ 1x1 FV physics grid per element:</desc>
+    </domain>
+
+    <domain name="ne30np4.pg2">
+      <nx>21600</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
+      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
     <domain name="ne60np4">
