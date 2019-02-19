@@ -49,7 +49,7 @@ AR ?= ar
 ARFLAGS ?= ruv
 
 libgptl.a: $(OBJS)
-	$(AR) $(ARFLAGS) $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
 
 
 
