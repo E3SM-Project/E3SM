@@ -326,6 +326,9 @@ module PhosphorusFluxType
      real(r8), pointer :: hrv_ploss_litter                          (:)     ! total ploss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
 
+     ! C4MIP output variable
+     real(r8), pointer :: plant_p_to_cwdp                           (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant phosphorus flux to CWD
+
    contains
 
      procedure , public  :: Init   
@@ -671,6 +674,10 @@ contains
     allocate(this%fire_ploss_litter           (begp:endp)) ; this%fire_ploss_litter                 (:) = nan
     allocate(this%hrv_ploss_litter            (begp:endp)) ; this%hrv_ploss_litter                  (:) = nan
     allocate(this%sen_ploss_litter            (begp:endp)) ; this%sen_ploss_litter                  (:) = nan
+
+     ! C4MIP output variable
+     allocate(this%plant_p_to_cwdp            (begc:endc)) ; this%plant_p_to_cwdp                   (:)  =nan
+
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
     allocate(this%plant_pdemand_col                 (begc:endc))
@@ -1156,6 +1163,11 @@ contains
          avgflag='A', long_name='atmospheric P deposition to soil mineral P', &
          ptr_col=this%pdep_to_sminp_col)
 
+    ! C4MIP output variable, plant phosphorus flux to cwd (a part of fVegLitter)
+    this%plant_p_to_cwdp(begc:endc) = spval
+    call hist_addfld1d (fname='VEGP_TO_CWDP', units='gP/m^2/s', &
+         avgflag='A', long_name='plant phosphorus flux to cwd', &
+         ptr_col=this%plant_p_to_cwdp, default='inactive')
 
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
@@ -2548,6 +2560,20 @@ contains
                this%plant_to_cwd_pflux(c) + &
                this%gap_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j) + &
                this%fire_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j)
+       end do
+    end do
+
+    ! C4MIP output variable, plant phosphorus flux to cwd (a part of fVegLitter)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%plant_p_to_cwdp(c) = 0._r8
+       do j = 1, nlevdecomp
+          this%plant_p_to_cwdp(c) = this%plant_p_to_cwdp(c) + &
+             this%gap_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j) + &
+             this%fire_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j)+ &
+             this%harvest_p_to_cwdp_col(c,j)* dzsoi_decomp(j)       + &
+             this%dwt_livecrootp_to_cwdp_col(c,j)* dzsoi_decomp(j)  + &
+             this%dwt_deadcrootp_to_cwdp_col(c,j)* dzsoi_decomp(j)
        end do
     end do
 
