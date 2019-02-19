@@ -870,8 +870,13 @@ install_lib: $(COMPLIB)
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
+ifeq ($(AR),xiar cru)
+$(COMPLIB): $(OBJS)
+	xiar -r $(COMPLIB) $(OBJS)
+else
 $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
+endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
