@@ -45,9 +45,12 @@ endif
 OBJS = gptl.o GPTLutil.o GPTLget_memusage.o GPTLprint_memusage.o \
        gptl_papi.o f_wrappers.o perf_mod.o perf_utils.o
 
+ifndef AR
+  AR := ar ruv
+endif
 
 libgptl.a: $(OBJS)
-	$(AR) ruv $@ $(OBJS)
+	$(AR) $@ $(OBJS)
 
 
 
