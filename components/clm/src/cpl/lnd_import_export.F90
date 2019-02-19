@@ -27,6 +27,8 @@ contains
     ! !USES:
     use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
+    use clm_varctl       , only: add_temperature, add_co2
+    use clm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use clm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
@@ -93,6 +95,8 @@ contains
     integer  :: var_month_count(12)
     integer*2 :: temp(1,500000)
     integer :: xtoget, ytoget, thisx, thisy, calday_start
+    integer :: sdate_addt, sy_addt, sm_addt, sd_addt
+    integer :: sdate_addco2, sy_addco2, sm_addco2, sd_addco2
     character(len=200) metsource_str, thisline
     character(len=32), parameter :: sub = 'lnd_import_mct'
     integer :: av, v, n, nummetdims, g3, gtoget, ztoget, line, mystart, tod_start, thistimelen  
@@ -235,7 +239,9 @@ contains
           metvars(1) = 'TBOT'
           metvars(2) = 'PSRF'
           metvars(3) = 'QBOT'
-          !if (atm2lnd_vars%metsource .eq. 2) metvars(3) = 'RH'
+#ifndef HUM_HOL
+          if (atm2lnd_vars%metsource .eq. 2) metvars(3) = 'RH'
+#endif
           if (atm2lnd_vars%metsource .ne. 5) metvars(4) = 'FSDS'
           if (atm2lnd_vars%metsource .ne. 5) metvars(5) = 'PRECTmms'
           if (atm2lnd_vars%metsource .ne. 5) metvars(6) = 'WIND'
@@ -549,15 +555,17 @@ contains
                                                      *atm2lnd_vars%scale_factors(3)+atm2lnd_vars%add_offsets(3))*wt2(3)) * &
                                                      atm2lnd_vars%var_mult(3,g,mon) + atm2lnd_vars%var_offset(3,g,mon), 1e-9_r8)
 
-        !if (atm2lnd_vars%metsource == 2) then  !convert RH to qbot						     
-        !  if (tbot > SHR_CONST_TKFRZ) then
-        !    e = esatw(tdc(tbot))
-        !  else
-        !    e = esati(tdc(tbot))
-        !!  end if
-        !  qsat           = 0.622_r8*e / (atm2lnd_vars%forc_pbot_not_downscaled_grc(g) - 0.378_r8*e)
-        !  atm2lnd_vars%forc_q_not_downscaled_grc(g) = qsat * atm2lnd_vars%forc_q_not_downscaled_grc(g) / 100.0_r8
-        !end if
+#ifndef HUM_HOL
+        if (atm2lnd_vars%metsource == 2) then  !convert RH to qbot						     
+          if (tbot > SHR_CONST_TKFRZ) then
+            e = esatw(tdc(tbot))
+          else
+            e = esati(tdc(tbot))
+          end if
+          qsat           = 0.622_r8*e / (atm2lnd_vars%forc_pbot_not_downscaled_grc(g) - 0.378_r8*e)
+          atm2lnd_vars%forc_q_not_downscaled_grc(g) = qsat * atm2lnd_vars%forc_q_not_downscaled_grc(g) / 100.0_r8
+        end if
+#endif
 
         !use longwave from file if provided
         atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ((atm2lnd_vars%atm_input(7,g,1,tindex(7,1))*atm2lnd_vars%scale_factors(7)+ &
@@ -959,7 +967,27 @@ contains
             atm2lnd_vars%ndepind(g,2),aindex(1))*wt1(1)+atm2lnd_vars%aerodata(av,atm2lnd_vars%ndepind(g,1), &
             atm2lnd_vars%ndepind(g,2),aindex(2))*wt2(1)
         end do    
- 
+
+       !Parse startdate for adding temperature
+       if (startdate_add_temperature .ne. '') then 
+         call get_curr_date( yr, mon, day, tod )
+         read(startdate_add_temperature,*) sdate_addt
+         sy_addt     = sdate_addt/10000
+         sm_addt     = (sdate_addt-sy_addt*10000)/100
+         sd_addt     = sdate_addt-sy_addt*10000-sm_addt*100
+         read(startdate_add_co2,*) sdate_addco2
+         sy_addco2     = sdate_addco2/10000
+         sm_addco2     = (sdate_addco2-sy_addco2*10000)/100
+         sd_addco2     = sdate_addco2-sy_addco2*10000-sm_addt*100
+       end if 
+       if (startdate_add_temperature .ne. '') then
+         if ((yr == sy_addt .and. mon == sm_addt .and. day >= sd_addt) .or. &
+             (yr == sy_addt .and. mon > sm_addt) .or. (yr > sy_addt)) then
+           atm2lnd_vars%forc_t_not_downscaled_grc(g) = atm2lnd_vars%forc_t_not_downscaled_grc(g) + add_temperature
+           atm2lnd_vars%forc_th_not_downscaled_grc(g) = atm2lnd_vars%forc_th_not_downscaled_grc(g) + add_temperature
+         end if
+       end if
+
        !set the topounit-level atmospheric state and flux forcings (bypass mode)
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          ! first, all the state forcings
@@ -1057,7 +1085,7 @@ contains
          else
             e = esati(tdc(top_as%tbot(topo)))
          end if
-         qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
+         qsat = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
          top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
          ! partial pressure of oxygen (Pa)
          top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
@@ -1093,6 +1121,7 @@ contains
        end if
        ! Assign to topounits, with conversion from ppmv to partial pressure (Pa)
        ! If using C13, then get the c13ratio from clm_varcon (constant value for pre-industrial atmosphere)
+
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          top_as%pco2bot(topo) = co2_ppmv_val * 1.e-6_r8 * top_as%pbot(topo)
          if (use_c13) then
@@ -1187,12 +1216,17 @@ contains
         wt2(1) = 1._r8 - wt1(1)
 
         co2_ppmv_val = atm2lnd_vars%co2_input(1,1,nindex(1))*wt1(1) + atm2lnd_vars%co2_input(1,1,nindex(2))*wt2(1)
+        if (startdate_add_co2 .ne. '') then
+          if ((yr == sy_addco2 .and. mon == sm_addco2 .and. day >= sd_addco2) .or. &
+              (yr == sy_addco2 .and. mon > sm_addco2) .or. (yr > sy_addco2)) then
+            co2_ppmv_val=co2_ppmv_val + add_co2
+          end if
+        end if
+
         if (use_c13) then 
           atm2lnd_vars%forc_pc13o2_grc(g) = (atm2lnd_vars%c13o2_input(1,1,nindex(1))*wt1(1) + &
                atm2lnd_vars%c13o2_input(1,1,nindex(2))*wt2(1)) * 1.e-6_r8 * forc_pbot
         end if
-        !TEST (FACE-like experiment begins in 2010)
-        !if (yr .ge. 2010) atm2lnd_vars%co2_input = 550.
         co2_type_idx = 1
 #else
           co2_ppmv_val = co2_ppmv_diag 
@@ -1208,13 +1242,14 @@ contains
        end if
        atm2lnd_vars%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot 
 
-       !DMR - shouldn't CO2 go here?
+#ifdef CPL_BYPASS
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          top_as%pco2bot(topo) = atm2lnd_vars%forc_pco2_grc(g)
          if (use_c13) then
             top_as%pc13o2bot(topo) = atm2lnd_vars%forc_pc13o2_grc(g)
          end if
        end do
+#endif
       
        ! glc coupling 
 
