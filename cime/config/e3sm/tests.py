@@ -103,7 +103,7 @@ _TESTS = {
             "ERS.f09_g16_g.MALISIA",
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGCLM45_MLI",
-            "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods"
+            "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
             )
         },
 
@@ -124,7 +124,7 @@ _TESTS = {
             "SMS.f09_g16_a.MALI",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.clm-bgcexp",
-            "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp"
+            "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
             )
         },
 
@@ -133,7 +133,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_extra_coverage",
         "tests"   : (
             "SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L"
+            "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L",
             )
         },
 
@@ -151,7 +151,7 @@ _TESTS = {
         "tests" : (
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L"
+            "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L",
             )
         },
 
