@@ -32,7 +32,7 @@ def get_set_name(set_name):
     raise RuntimeError('Invalid set option: {}'.format(set_name))
 
 
-def get_name_and_yrs(parameters, dataset, season):
+def get_name_and_yrs(parameters, dataset, season=''):
     """
     Given either test or ref data, get the name of the data
     (test_name or reference_name), along with the years averaged.
