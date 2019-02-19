@@ -409,6 +409,20 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="lonestar5" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <queues>
+      <queue walltimemax="48:00:00" nodemin="1" nodemax="171" default="true">normal</queue>
+      <queue walltimemax="24:00:00" nodemin="160" nodemax="342">large</queue>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="11" >development</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="mira" type="cobalt">
     <queues>
       <queue walltimemax="06:00:00" nodemin="1" nodemax="12288" default="true">default</queue>
