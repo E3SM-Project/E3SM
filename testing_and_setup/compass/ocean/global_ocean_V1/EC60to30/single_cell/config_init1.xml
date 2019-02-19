@@ -9,7 +9,7 @@
 	<add_executable source="mask_creator" dest="MpasMaskCreator.x"/>
 
 	<add_link source_path="mesh_database" source="mesh.EC.60-30km.160115.nc" dest="base_mesh.nc"/>
-	<add_link source_path="compass" source="ocean/global_ocean/EC60to30/single_cell/land_coverage_1_cell.geojson" dest="land_coverage_1_cell.geojson"/>
+	<add_link source_path="case_dir" source="land_coverage_1_cell.geojson" dest="land_coverage_1_cell.geojson"/>
 	<add_link source_path="mpas_tools" source="ocean/coastline_alteration/add_land_locked_cells_to_mask.py" dest="add_land_locked_cells_to_mask.py"/>
 	<add_link source_path="mpas_tools" source="ocean/coastline_alteration/widen_transect_edge_masks.py" dest="widen_transect_edge_masks.py"/>
 
