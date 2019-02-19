@@ -91,6 +91,7 @@ def run_diag(parameter):
         # Yes, these files should be saved.
         # utils.general.save_ncfiles(parameter.current_set,
         #                     mv1_domain, mv2_domain, diff, parameter)
+    return parameter
 
 def plot(data, parameter):
     # Data is a list based on the len of the regions parameter.
