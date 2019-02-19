@@ -5,7 +5,7 @@ module EMI_Filter_Exchange
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
-  use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_DataDimensionMod , only : emi_data_dimension_list_type
   use EMI_Filter_Constants
   !
   implicit none

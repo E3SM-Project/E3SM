@@ -5,7 +5,7 @@ module EMI_TemperatureType_ExchangeMod
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
-  use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_DataDimensionMod , only : emi_data_dimension_list_type
   use TemperatureType                       , only : temperature_type
   use ColumnDataType                        , only : col_es
   use VegetationDataType                    , only : veg_es
