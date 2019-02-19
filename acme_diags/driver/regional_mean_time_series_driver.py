@@ -39,7 +39,7 @@ def run_diag(parameter):
         #
         # [ 4 ]   [ 5 ]
         # [   ]   [   ]
-        data = []
+        regions_to_data = collections.OrderedDict()
         print('Variable: {}'.format(var))
         parameter.var_id = var
 
@@ -83,27 +83,31 @@ def run_diag(parameter):
             metrics_dict = create_metrics(ref_domain)
 
             result = RefsTestMetrics(test=test_domain, refs=refs, metrics=metrics_dict)
-            data.append(result)
+            regions_to_data[region] = result
             
         # plot(parameter.current_set, data, parameter)
-        plot(data, parameter)
+        plot(regions_to_data, parameter)
         # TODO: How will this work when there are a bunch of plots for each image?
         # Yes, these files should be saved.
         # utils.general.save_ncfiles(parameter.current_set,
         #                     mv1_domain, mv2_domain, diff, parameter)
     return parameter
 
-def plot(data, parameter):
+def plot(regions_to_data, parameter):
     # Data is a list based on the len of the regions parameter.
     # Each element is a tuple with ref data,
     # test data, and metrics for that region.
-    for single_data_set in data:
-        refs = single_data_set.refs
-        test = single_data_set.test
+    msg = 'We are plotting {} plots in this image,'.format(len(regions_to_data))
+    msg += ' because regions = {}'.format(parameter.regions)
+    print(msg)
+    for data_set_for_region in regions_to_data.values():
+        refs = data_set_for_region.refs
+        test = data_set_for_region.test
         # You can have multiple reference data, so we
         # make a list of all the data to plot.s
         data_to_plot = refs + [test]
-        metrics = single_data_set.metrics
+        print('In this plot, we have {} data sets'.format(len(data_to_plot)))
+        metrics = data_set_for_region.metrics
     
         for data in data_to_plot:
             # Plot each of these data sets.
