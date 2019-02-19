@@ -214,7 +214,7 @@ end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use bndry_mod,      only: bndry_exchangeV
-   use dimensions_mod, only: nlev, nelemd, np, npsq
+   use dimensions_mod, only: nlev, nelemd, np, npsq, fv_nphys
    use dp_coupling,    only: p_d_coupling
    use parallel_mod,   only: par
    use dyn_comp,       only: TimeLevel
@@ -247,16 +247,29 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
    if (.not. single_column) then 
-     do ie=1,nelemd
-       kptr=0
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
+      do ie=1,nelemd
 
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-       kptr=kptr+nlev
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-     end do
-   endif
+         if (fv_nphys>0) then
+            ! We need to apply mass matrix weighting when FV physics grid is used
+            do k = 1,nlev
+               dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%spheremp(:,:)
+               dyn_in%elem(ie)%derived%FM(:,:,1,k) = dyn_in%elem(ie)%derived%FM(:,:,1,k) * dyn_in%elem(ie)%spheremp(:,:)
+               dyn_in%elem(ie)%derived%FM(:,:,2,k) = dyn_in%elem(ie)%derived%FM(:,:,2,k) * dyn_in%elem(ie)%spheremp(:,:)
+               do ic = 1,pcnst
+                  dyn_in%elem(ie)%derived%FQ(:,:,k,ic) = dyn_in%elem(ie)%derived%FQ(:,:,k,ic) * dyn_in%elem(ie)%spheremp(:,:)
+               end do
+            end do ! k = 1, nlev
+         end if ! fv_nphys>0
+
+         kptr=0
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+         kptr=kptr+2*nlev
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+         kptr=kptr+nlev
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+
+      end do ! ie
+   endif ! .not. single_column
 
    call bndry_exchangeV(par, edgebuf)
 
@@ -269,17 +282,28 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
 
    do ie=1,nelemd
-     if (.not. single_column) then
-       kptr=0
+      if (.not. single_column) then
 
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
+         kptr=0
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+         kptr=kptr+2*nlev
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+         kptr=kptr+nlev
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
 
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-       kptr=kptr+nlev
+         if (fv_nphys>0) then
+            ! We need to apply inverse mass matrix weighting when FV physics grid is used
+            do k = 1,nlev
+               dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%rspheremp(:,:)
+               dyn_in%elem(ie)%derived%FM(:,:,1,k) = dyn_in%elem(ie)%derived%FM(:,:,1,k) * dyn_in%elem(ie)%rspheremp(:,:)
+               dyn_in%elem(ie)%derived%FM(:,:,2,k) = dyn_in%elem(ie)%derived%FM(:,:,2,k) * dyn_in%elem(ie)%rspheremp(:,:)
+               do ic = 1,pcnst
+                  dyn_in%elem(ie)%derived%FQ(:,:,k,ic) = dyn_in%elem(ie)%derived%FQ(:,:,k,ic) * dyn_in%elem(ie)%rspheremp(:,:)
+               end do
+            end do ! k = 1, nlev
+         end if ! fv_nphys>0
 
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-     endif
+      endif ! .not. single_column
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
