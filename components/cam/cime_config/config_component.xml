@@ -113,7 +113,7 @@
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
 
       <!-- Aquaplanet -->
-      <value compset="_EAM%V1-AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
+      <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
     </values>
     <group>build_component_cam</group>
@@ -240,7 +240,7 @@
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
       <!-- Aqua planet -->
-      <value compset="_EAM%V1-AQUA"     >aquaplanet_EAMv1</value>
+      <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
