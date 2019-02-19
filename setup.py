@@ -30,6 +30,8 @@ polar_files.append('acme_diags/plot/vcs/plot_set_7_new.json')
 cosp_histogram_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'cosp_histogram*')
 cosp_histogram_files += get_all_files_in_dir('acme_diags/driver/default_diags/legacy_diags', 'cosp_histogram*')
 
+regional_mean_time_series = get_all_files_in_dir('acme_diags/driver/default_diags', 'regional_mean_time_series*')
+
 rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
 control_runs_files = get_all_files_in_dir('acme_diags/driver/control_runs', '*.csv')
 
@@ -50,6 +52,9 @@ data_files = [
      ),
     (os.path.join(INSTALL_PATH, 'cosp_histogram'),
      cosp_histogram_files
+     ),
+    (os.path.join(INSTALL_PATH, 'regional_mean_time_series'),
+     regional_mean_time_series
      ),
     (INSTALL_PATH,
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',

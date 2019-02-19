@@ -1,8 +1,11 @@
-from collections import namedtuple
+import os
+import collections
+import cdms2
+import acme_diags
 from acme_diags.driver import utils
 from acme_diags.metrics import mean
 
-RefTestMetrics = namedtuple('RefTestMetrics', ['ref', 'test', 'metrics'])
+RefTestMetrics = collections.namedtuple('RefTestMetrics', ['ref', 'test', 'metrics'])
 
 def create_metrics(ref_domain):
     """

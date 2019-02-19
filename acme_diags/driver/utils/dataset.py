@@ -64,7 +64,7 @@ class Dataset():
                 self.derived_vars[derived_var] = original_vars
 
 
-    def get_timeseries_variable(self, var, extra_var=[], *args, **kwargs):
+    def get_timeseries_variable(self, var, extra_vars=[], *args, **kwargs):
         """
         Get the variable and any extra variables, only if they are timeseries files.
         These variables can either be from the test data or reference data.
@@ -73,26 +73,21 @@ class Dataset():
         self.extra_vars = extra_vars
 
         if not self.is_timeseries():
-            msg = '''
-            You can only use this function with timeseries data.
-            '''
+            msg = 'You can only use this function with timeseries data.'
             raise RuntimeError(msg)
         
         if self.ref:
             # Get the reference variable from timeseries files.
             data_path = self.parameters.reference_data_path
-            variables = self._get_timeseries_var(data_path, season, *args, **kwargs)
+            variables = self._get_timeseries_var(data_path, *args, **kwargs)
 
         elif self.test:
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
-            variables = self._get_timeseries_var(data_path, season, *args, **kwargs)
+            variables = self._get_timeseries_var(data_path, *args, **kwargs)
 
         else:
-            msg = '''
-            Error when determining what kind (ref
-            or test)of variable to get.
-            '''
+            msg = 'Error when determining what kind (ref or test)of variable to get.'
             raise RuntimeError(msg)
 
         # Needed so we can do:
@@ -146,10 +141,9 @@ class Dataset():
             variables = self._get_climo_var(filename, *args, **kwargs)
 
         else:
-            msg = '''
-            Error when determining what kind (ref or test) of variable to get and
-            where to get it from (climo or timeseries files).
-            '''
+            msg = 'Error when determining what kind (ref or test) '
+            msg += 'of variable to get and where to get it from '
+            msg += '(climo or timeseries files).'
             raise RuntimeError(msg)
 
         # Needed so we can do:
@@ -626,3 +620,4 @@ class Dataset():
 
         with cdms2.open(path) as f:
             return f(var, time=slice(start_time_idx, end_time_idx))(squeeze=1)
+
