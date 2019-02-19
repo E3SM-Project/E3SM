@@ -2158,19 +2158,19 @@
 			     description="salinity tendency due to kpp non-local flux"
 		      />
       </var_array>
-      <var_array name="activeTracerVerticalAdvectionTopTend" type="real" dimensions="nVertLevelsP1 nCells Time" packages="tracerBudget">
-          <var name="temperatureVerticalAdvectionTopTend" array_group="activeTracerVertTopTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTopTend"
+      <var_array name="activeTracerVerticalAdvectionTopFlux" type="real" dimensions="nVertLevelsP1 nCells Time" packages="tracerBudget">
+          <var name="temperatureVerticalAdvectionTopFlux" array_group="activeTracerVertTopTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTopFlux"
             description="potential temperature advective flux on cell top"
             />
-          <var name="salinityVerticalAdvectionTopTend" array_group="activeTracerVertTopTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTopTend"
+          <var name="salinityVerticalAdvectionTopFlux" array_group="activeTracerVertTopTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTopFlux"
             description="salinity advective flux on cell top"
             />
         </var_array>
-     <var_array name="activeTracerHorizontalAdvectionEdgeTend" type="real" dimensions="nVertLevels nEdges Time" packages="tracerBudget">
-		      <var name="temperatureHorizontalAdvectionEdgeTend" array_group="activeTracerHorAdvEdgeTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionEdgeTend"
+     <var_array name="activeTracerHorizontalAdvectionEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" packages="tracerBudget">
+		      <var name="temperatureHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeTendGroup" units="C m^3 s^{-1}" name_in_code="temperatureHorizontaldvectionEdgeTend"
 			     description="potential temperature advective flux due to horizontal advection on edges"
 		      />
-		      <var name="salinityHorizontalAdvectionEdgeTend" array_group="activeTracerHorAdvEdgeTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionEdgeTend"
+		      <var name="salinityHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeTendGroup" units="PSU m^3 s^{-1}" name_in_code="salinityHorizontalAdvectionEdgeFlux"
 			     description="salinity tendency due to horizontal advection on edges"
 		      />
 		</var_array>
