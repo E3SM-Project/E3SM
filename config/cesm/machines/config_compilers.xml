@@ -468,6 +468,8 @@ using a fortran linker.
   <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <AR>xiar</AR>
+  <ARFLAGS>cru</ARFLAGS>
 </compiler>
 
 <compiler MACH="athena" COMPILER="intel">

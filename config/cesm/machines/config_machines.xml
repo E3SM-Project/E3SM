@@ -124,8 +124,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <env name="AR">xiar cru</env>
-      <env name="ARFLAGS">cru</env>
       <env name="I_MPI_EXTRA_FILESYSTEM_LIST">gpfs</env>
       <env name="I_MPI_EXTRA_FILESYSTEM">on</env>
       <env name="I_MPI_PLATFORM">snb</env>
