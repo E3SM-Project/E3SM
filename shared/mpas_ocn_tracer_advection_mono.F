@@ -108,8 +108,8 @@ module ocn_tracer_advection_mono
       real (kind=RKIND), dimension(:,:,:), pointer :: &
               activeTracerHorizontalAdvectionTendency, &
               activeTracerVerticalAdvectionTendency,   &
-              activeTracerHorizontalAdvectionEdgeTend, &
-              activeTracerVerticalAdvectionTopTend
+              activeTracerHorizontalAdvectionEdgeFlux, &
+              activeTracerVerticalAdvectionTopFlux
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
@@ -133,10 +133,10 @@ module ocn_tracer_advection_mono
 
       call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
       if (config_compute_active_tracer_budgets) then
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerVerticalAdvectionTopTend', &
-                 activeTracerVerticalAdvectionTopTend)
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorizontalAdvectionEdgeTend', &
-                 activeTracerHorizontalAdvectionEdgeTend)
+         call mpas_pool_get_array(diagnosticsPool, 'activeTracerVerticalAdvectionTopFlux', &
+                 activeTracerVerticalAdvectionTopFlux)
+         call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorizontalAdvectionEdgeFlux', &
+                 activeTracerHorizontalAdvectionEdgeFlux)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
                  activeTracerHorizontalAdvectionTendency)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
@@ -411,7 +411,7 @@ module ocn_tracer_advection_mono
                 do i = 1,nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i, iCell)
                   do k = 1,maxLevelEdgeTop(iEdge)
-                    activeTracerHorizontalAdvectionEdgeTend(iTracer,k,iEdge) = high_order_flux(k,iEdge)
+                    activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = high_order_flux(k,iEdge)
                   enddo
                 enddo
                 do k = 1, maxLevelCell(iCell)
@@ -633,10 +633,10 @@ module ocn_tracer_advection_mono
               do iCell = 1, nCells
                 do k = 1, maxLevelCell(iCell)
                     activeTracerVerticalAdvectionTendency(iTracer,k,iCell) = work_tend(k,iCell)
-                    activeTracerVerticalAdvectionTopTend(iTracer,k,iCell) = high_order_flux(k,iCell)
+                    activeTracerVerticalAdvectionTopFlux(iTracer,k,iCell) = high_order_flux(k,iCell)
                 end do
                 k = maxLevelCell(iCell)+1
-                activeTracerVerticalAdvectionTopTend(iTracer,k,iCell) = high_order_flux(k,iCell)
+                activeTracerVerticalAdvectionTopFlux(iTracer,k,iCell) = high_order_flux(k,iCell)
               end do ! iCell loop
               !$omp end do
            end if
