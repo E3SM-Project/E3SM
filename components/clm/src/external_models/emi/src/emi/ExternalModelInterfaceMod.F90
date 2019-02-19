@@ -10,7 +10,7 @@ module ExternalModelInterfaceMod
   use decompMod                             , only : bounds_type, get_proc_clumps
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
-  use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
+  use EMI_DataMod         , only : emi_data_list, emi_data
   use EMI_DataDimensionMod , only : emi_data_dimension_list_type
 #ifdef USE_PETSC_LIB
   use ExternalModelVSFMMod                  , only : em_vsfm_type

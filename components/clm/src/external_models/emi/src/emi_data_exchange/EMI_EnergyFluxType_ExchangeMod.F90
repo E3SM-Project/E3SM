@@ -4,7 +4,7 @@ module EMI_EnergyFluxType_ExchangeMod
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
-  use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
+  use EMI_DataMod         , only : emi_data_list, emi_data
   use EMI_DataDimensionMod , only : emi_data_dimension_list_type
   use EnergyFluxType                        , only : energyflux_type
   use ColumnDataType                        , only : col_ef
