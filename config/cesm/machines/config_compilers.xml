@@ -469,7 +469,9 @@ using a fortran linker.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
   <AR>xiar</AR>
-  <ARFLAGS>cru</ARFLAGS>
+  <ARFLAGS>
+    <base>cru</base>
+  </ARFLAGS>
 </compiler>
 
 <compiler MACH="athena" COMPILER="intel">
