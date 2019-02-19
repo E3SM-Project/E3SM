@@ -1483,11 +1483,11 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{SCRATCH}/inputdata/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/work/02503/edwardsj/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -2099,11 +2099,11 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch/projects/xsede/CESM//cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/scratch/projects/xsede/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
@@ -2157,11 +2157,11 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch/projects/xsede/CESM//cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/scratch/projects/xsede/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
