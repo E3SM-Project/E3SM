@@ -474,21 +474,19 @@ using a fortran linker.
 
 <compiler MACH="athena" COMPILER="intel">
   <CFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
+    <append>  -xHost </append>
   </CFLAGS>
   <CPPDEFS>
-    <append MPILIB="mpich2"> -DINTEL_MKL -DHAVE_SSE2 </append>
+    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
   </CPPDEFS>
   <FFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
+    <append>  -xHost </append>
   </FFLAGS>
   <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
   <MPICC MPILIB="mpich2">mpiicc</MPICC>
   <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
-  <SCC MPILIB="mpi-serial">icc</SCC>
-  <SFC MPILIB="mpi-serial">ifort</SFC>
-  <SCC MPILIB="mpich2">mpiicc</SCC>
-  <SFC MPILIB="mpich2">mpiifort</SFC>
+  <SCC>icc</SCC>
+  <SFC>ifort</SFC>
   <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
