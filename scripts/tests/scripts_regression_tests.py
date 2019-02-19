@@ -193,7 +193,7 @@ def assert_dashboard_has_build(tester, build_name, expected_count=1):
 
         wget_file = tempfile.mktemp()
 
-        run_cmd_no_fail("wget https://my.cdash.org/index.php?project=ACME_test --no-check-certificate -O %s" % wget_file)
+        run_cmd_no_fail("wget https://my.cdash.org/api/v1/index.php?project=ACME_test --no-check-certificate -O %s" % wget_file)
 
         raw_text = open(wget_file, "r").read()
         os.remove(wget_file)
@@ -755,7 +755,8 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def setUp(self):
     ###########################################################################
-        self._testroot = os.path.join(TEST_ROOT,"TestWaitForTests")
+        self._testroot  = os.path.join(TEST_ROOT,"TestWaitForTests")
+        self._timestamp = CIME.utils.get_timestamp()
 
         # basic tests
         self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
@@ -922,8 +923,9 @@ class M_TestWaitForTests(unittest.TestCase):
     def test_wait_for_test_cdash_pass(self):
     ###########################################################################
         expected_results = ["PASS"] * 10
+        build_name = "regression_test_pass_" + self._timestamp
         run_thread = threading.Thread(target=self.threaded_test,
-                                      args=(self._testdir_all_pass, expected_results, "", "regression_test_pass"))
+                                      args=(self._testdir_all_pass, expected_results, "", build_name))
         run_thread.daemon = True
         run_thread.start()
 
@@ -933,14 +935,15 @@ class M_TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
-        assert_dashboard_has_build(self, "regression_test_pass")
+        assert_dashboard_has_build(self, build_name)
 
     ###########################################################################
     def test_wait_for_test_cdash_kill(self):
     ###########################################################################
         expected_results = ["PEND" if item == 5 else "PASS" for item in range(10)]
+        build_name = "regression_test_kill_" + self._timestamp
         run_thread = threading.Thread(target=self.threaded_test,
-                                      args=(self._testdir_unfinished, expected_results, "", "regression_test_kill"))
+                                      args=(self._testdir_unfinished, expected_results, "", build_name))
         run_thread.daemon = True
         run_thread.start()
 
@@ -955,7 +958,7 @@ class M_TestWaitForTests(unittest.TestCase):
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
-        assert_dashboard_has_build(self, "regression_test_kill")
+        assert_dashboard_has_build(self, build_name)
 
         if CIME.utils.get_model() == "e3sm":
             cdash_result_dir = os.path.join(self._testdir_unfinished, "Testing")
@@ -1439,7 +1442,7 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 
         kill_subprocesses(sig=signal.SIGTERM)
 
-        run_thread.join(timeout=10)
+        run_thread.join(timeout=30)
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
