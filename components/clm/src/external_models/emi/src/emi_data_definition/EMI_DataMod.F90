@@ -1,4 +1,4 @@
-module ExternalModelInterfaceDataMod
+module EMI_DataMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! This module provides
@@ -1795,4 +1795,4 @@ contains
 
   end subroutine EMIDListDestroy
 
-end module ExternalModelInterfaceDataMod
+end module EMI_DataMod

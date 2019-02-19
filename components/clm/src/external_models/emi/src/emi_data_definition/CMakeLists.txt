@@ -8,7 +8,7 @@ set(EMI_EMI_DATA_DEFINITION_SOURCES
   EMI_TemperatureType_DataMod.F90
   EMI_WaterFluxType_DataMod.F90
   EMI_WaterStateType_DataMod.F90
-  ExternalModelInterfaceDataMod.F90
+  EMI_DataMod.F90
 )
 
 include_directories(${CMAKE_BINARY_DIR}/elm_stub/shr)
