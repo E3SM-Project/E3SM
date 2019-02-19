@@ -63,8 +63,24 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
     test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
     expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
 
+    # auto-adjust test-id if multiple rounds of tests were matched
+    timestamps = set()
+    for test_status_file in test_status_files:
+        timestamp = os.path.basename(os.path.dirname(test_status_file)).split(".")[-1]
+        timestamps.add(timestamp)
+
+    if (len(timestamps) > 1):
+        logger.warning("Multiple sets of tests were matched! Selected only most recent tests.")
+
+    most_recent = sorted(timestamps)[-1]
+    logger.info("Matched test batch is {}".format(most_recent))
+
     broken_blesses = []
     for test_status_file in test_status_files:
+        if not most_recent in test_status_file:
+            logger.info("Skipping {}".format(test_status_file))
+            continue
+
         test_dir = os.path.dirname(test_status_file)
         ts = TestStatus(test_dir=test_dir)
         test_name = ts.get_name()
