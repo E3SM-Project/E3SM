@@ -1814,6 +1814,7 @@ if ($dyn_pkg eq 'se') {
     }
     # use FV physics grid if npg>0
     my $npg = $cfg_ref->get('npg');
+    $cfg_cppdefs .= " -DNPG=$npg "
 }
 
 # Resolution parameters for vertical grid, number of constituents, chunk size
