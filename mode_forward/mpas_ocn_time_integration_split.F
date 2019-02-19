@@ -204,7 +204,7 @@ module ocn_time_integration_split
         activeTracerVerticalAdvectionTendency,        &
         activeTracerSurfaceFluxTendency,              &
         activeTracerNonLocalTendency,                 &
-        activeTracerHorizontalAdvectionEdgeTend
+        activeTracerHorizontalAdvectionEdgeFlux
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         temperatureShortWaveTendency
@@ -1642,15 +1642,15 @@ module ocn_time_integration_split
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
                   call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
-                  call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionEdgeTend', &
-                          activeTracerHorizontalAdvectionEdgeTend)
+                  call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionEdgeFlux', &
+                          activeTracerHorizontalAdvectionEdgeFlux)
                   call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
 
                   !$omp do schedule(runtime) private(k)
                   do iEdge = 1, nEdges
                      do k= 1, maxLevelEdgeTop(iEdge)
-                        activeTracerHorizontalAdvectionEdgeTend(:,k,iEdge) = &
-                          activeTracerHorizontalAdvectionEdgeTend(:,k,iEdge) / &
+                        activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
+                          activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
                           layerThicknessEdge(k,iEdge)
                      enddo
                   enddo
