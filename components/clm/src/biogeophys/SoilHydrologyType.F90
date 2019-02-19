@@ -535,6 +535,8 @@ contains
     associate(micro_sigma => col_pp%micro_sigma)
       do c = bounds%begc, bounds%endc
          
+         g = col_pp%gridcell(c)
+
          ! determine h2osfc threshold ("fill & spill" concept)
          ! set to zero for no h2osfc (w/frac_infclust =large)
          
@@ -558,7 +560,7 @@ contains
          endif
 
          ! set decay factor
-         this%hkdepth_col(c) = 1._r8/2.5_r8
+         this%hkdepth_col(c) = 1._r8/fdrain(g)
 
       end do
     end associate
