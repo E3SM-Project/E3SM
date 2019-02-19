@@ -5,7 +5,7 @@ module EMI_SoilHydrologyType_ExchangeMod
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
-  use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_DataDimensionMod , only : emi_data_dimension_list_type
   use SoilHydrologyType                     , only : soilhydrology_type
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants

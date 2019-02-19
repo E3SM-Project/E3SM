@@ -1,4 +1,4 @@
-module ExternalModelIntefaceDataDimensionMod
+module EMI_DataDimensionMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! This module defines the dimensions of EMI data
@@ -263,4 +263,4 @@ contains
 
   end subroutine EMID_Dim_List_GetDimValue
 
-end module ExternalModelIntefaceDataDimensionMod
+end module EMI_DataDimensionMod

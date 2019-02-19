@@ -1,5 +1,5 @@
 set(EMI_EMI_DATA_TYPES_SOURCES
-  ExternalModelInterfaceDataDimensionMod.F90
+  EMI_DataDimensionMod.F90
 )
 
 include_directories(${CMAKE_BINARY_DIR}/elm_stub/shr)

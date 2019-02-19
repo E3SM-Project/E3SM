@@ -1049,22 +1049,22 @@ contains
     use EMI_ColumnType_Constants
     use EMI_Filter_Constants
     use EMI_Landunit_Constants
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_begg
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_endg
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_begl
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_endl
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_begc
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_endc
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_begp
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_endp
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_nlevsno
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_nlevsno_plus_one
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_nlevsoi
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_nlevgrnd
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_zero
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_one
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_two
-    use ExternalModelIntefaceDataDimensionMod, only : dimname_col_one_based_idx
+    use EMI_DataDimensionMod, only : dimname_begg
+    use EMI_DataDimensionMod, only : dimname_endg
+    use EMI_DataDimensionMod, only : dimname_begl
+    use EMI_DataDimensionMod, only : dimname_endl
+    use EMI_DataDimensionMod, only : dimname_begc
+    use EMI_DataDimensionMod, only : dimname_endc
+    use EMI_DataDimensionMod, only : dimname_begp
+    use EMI_DataDimensionMod, only : dimname_endp
+    use EMI_DataDimensionMod, only : dimname_nlevsno
+    use EMI_DataDimensionMod, only : dimname_nlevsno_plus_one
+    use EMI_DataDimensionMod, only : dimname_nlevsoi
+    use EMI_DataDimensionMod, only : dimname_nlevgrnd
+    use EMI_DataDimensionMod, only : dimname_zero
+    use EMI_DataDimensionMod, only : dimname_one
+    use EMI_DataDimensionMod, only : dimname_two
+    use EMI_DataDimensionMod, only : dimname_col_one_based_idx
     !
     implicit none
     !

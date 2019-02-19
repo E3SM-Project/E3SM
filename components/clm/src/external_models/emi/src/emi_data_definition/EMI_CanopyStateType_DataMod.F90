@@ -19,7 +19,7 @@ contains
     ! Defines information of data exchanged between ELM and EM
     !
     ! !USES: 
-    use ExternalModelIntefaceDataDimensionMod
+    use EMI_DataDimensionMod
     implicit none
     !
     ! !ARGUMENTS:

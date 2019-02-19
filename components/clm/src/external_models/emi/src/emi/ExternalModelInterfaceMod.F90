@@ -11,7 +11,7 @@ module ExternalModelInterfaceMod
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
-  use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_DataDimensionMod , only : emi_data_dimension_list_type
 #ifdef USE_PETSC_LIB
   use ExternalModelVSFMMod                  , only : em_vsfm_type
   use ExternalModelPTMMod                   , only : em_ptm_type
