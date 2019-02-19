@@ -5,7 +5,7 @@ import acme_diags
 from acme_diags.driver import utils
 from acme_diags.metrics import mean
 
-RefTestMetrics = collections.namedtuple('RefTestMetrics', ['ref', 'test', 'metrics'])
+RefsTestMetrics = collections.namedtuple('RefsTestMetrics', ['refs', 'test', 'metrics'])
 
 def create_metrics(ref_domain):
     """
@@ -18,7 +18,7 @@ def create_metrics(ref_domain):
 def run_diag(parameter):
     variables = parameter.variables
     regions = parameter.regions
-    ref_names = getattr(parameter, 'ref_names', [])
+    ref_names_regional_mean = getattr(parameter, 'ref_names_regional_mean', [])
 
     # Both input data sets must be time-series files.
     # Raising an error will cause this specific set of
@@ -43,44 +43,47 @@ def run_diag(parameter):
         print('Variable: {}'.format(var))
         parameter.var_id = var
 
-        for ref_name in ref_names:    
-            setattr(parameter, 'ref_name', ref_name)
+        # Get land/ocean fraction for masking.
+        # For now, we're only using the climo data that we saved below.
+        # So no time-series LANDFRAC or OCNFRAC from the user is used.
+        mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
+        with cdms2.open(mask_path) as f:
+            land_frac = f('LANDFRAC')
+            ocean_frac = f('OCNFRAC')
+
+        for region in regions:
+            # The regions that are supported are in acme_diags/derivations/default_regions.py
+            # You can add your own if it's not in there.
+            print("Selected region: {}".format(region))
             test_data = utils.dataset.Dataset(parameter, test=True)
-            ref_data = utils.dataset.Dataset(parameter, ref=True)
-        
-            # Get the name of the data, appended with the years averaged.
-            parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)
-            parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
-
-            # Get land/ocean fraction for masking.
-            # For now, we're only using the climo data that we saved below.
-            # So no time-series LANDFRAC or OCNFRAC from the user is used.
-            mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
-            with cdms2.open(mask_path) as f:
-                land_frac = f('LANDFRAC')
-                ocean_frac = f('OCNFRAC')
-
             test = test_data.get_timeseries_variable(var)
-            ref = ref_data.get_timeseries_variable(var)
 
             # TODO: Remove this if using the A-Prime viewer.
             parameter.viewer_descr[var] = test.long_name if hasattr(
                 test, 'long_name') else 'No long_name attr in test data.'
+            # Get the name of the data, appended with the years averaged.
+            parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)
 
-            for region in regions:
-                # The regions that are supported are in acme_diags/derivations/default_regions.py
-                # You can add your own if it's not in there.
-                print("Selected region: {}".format(region))
+            refs = []
 
+            for ref_name in ref_names_regional_mean:    
+                setattr(parameter, 'ref_name', ref_name)
+                ref_data = utils.dataset.Dataset(parameter, ref=True)
+            
+                parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
+
+                ref = ref_data.get_timeseries_variable(var)
                 # TODO: Will this work if ref and test are timeseries data,
                 # but land_frac and ocean_frac are climo'ed.
                 test_domain, ref_domain = utils.general.select_region(
                     region, test, ref, land_frac, ocean_frac, parameter)
 
-                metrics_dict = create_metrics(ref_domain)
+                refs.append(ref_domain)
 
-                result = RefTestMetrics(test=test_domain, ref=ref_domain, metrics=metrics_dict)
-                data.append(result)
+            metrics_dict = create_metrics(ref_domain)
+
+            result = RefsTestMetrics(test=test_domain, refs=refs, metrics=metrics_dict)
+            data.append(result)
             
         # plot(parameter.current_set, data, parameter)
         plot(data, parameter)
@@ -94,7 +97,7 @@ def plot(data, parameter):
     # Each element is a tuple with ref data,
     # test data, and metrics for that region.
     for single_data_set in data:
-        refs = single_data_set.ref
+        refs = single_data_set.refs
         test = single_data_set.test
         # You can have multiple reference data, so we
         # make a list of all the data to plot.s
