@@ -1509,7 +1509,7 @@
 			possible_values="positive real"
 			icepack_name="rsnw_fall"
 		/>
-		<nml_option name="config_use_snow_liquid_ponds" type="logical" default_value="true" units="none"
+		<nml_option name="config_use_snow_liquid_ponds" type="logical" default_value="false" units="none"
 			description="use snow liquid tracer for ponds"
 			possible_values="true or false"
 			icepack_name="use_smliq_pnd"

@@ -1093,7 +1093,7 @@
                fpn = c0
                hpn = c0
             endif ! pond type
-            
+
          snowfracn(n) = fsn ! for history
 
          call shortwave_dEdd(n_aero,        n_zaero,        &
@@ -1113,7 +1113,7 @@
                              kaer_bc_tab,                   &
                              waer_bc_tab,                   &
                              gaer_bc_tab,                   &
-                             bcenh,         modal_aero,     &   
+                             bcenh,         modal_aero,     &
                              kalg,                          &
                              swvdr,         swvdf,          &
                              swidr,         swidf,          &
