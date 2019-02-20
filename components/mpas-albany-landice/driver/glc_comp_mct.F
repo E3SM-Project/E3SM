@@ -1378,7 +1378,7 @@ contains
    integer, pointer :: nCellsSolve
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
-                                               basalOceanMassBal,&
+                                               floatingBasalMassBal,&
                                                surfaceTemperature,&
                                                basalOceanHeatflx,&
                                                OceanDensity
@@ -1397,7 +1397,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
@@ -1405,8 +1405,7 @@ contains
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-!JW            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
-!            basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
+            floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
 !            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
 !            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
