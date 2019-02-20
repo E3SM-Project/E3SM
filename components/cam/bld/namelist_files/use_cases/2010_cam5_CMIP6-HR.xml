@@ -8,8 +8,8 @@
 <ncdata>atm/cam/inic/homme/20180716.DECKv1b_A3.ne30_oEC.edison.cam.i.2010-01-01-00000_c20190219.nc</ncdata>
 
 <!-- Solar constant from CMIP6 input4MIPS -->
-<solar_data_file>atm/cam/solar/Solar_1950control_input4MIPS_c20171208.nc</solar_data_file>
-<solar_data_ymd>19500101</solar_data_ymd>
+<solar_data_file>atm/cam/solar/Solar_2010control_input4MIPS_c20181017.nc</solar_data_file>
+<solar_data_ymd>20100101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
 <!-- 1850 GHG values from CMIP6 input4MIPS -->
