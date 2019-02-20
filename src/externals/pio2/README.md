@@ -6,6 +6,12 @@ A high-level Parallel I/O Library for structured grid applications
 
 For complete documentation, see our website at [http://ncar.github.io/ParallelIO/](http://ncar.github.io/ParallelIO/).
 
+## Mailing List
+
+The (low-traffic) PIO mailing list is at
+https://groups.google.com/forum/#!forum/parallelio, send email to the
+list at parallelio@googlegroups.com.
+
 ## Nightly Tests
 
 The results of our nightly tests on multiple platforms can be found on our
