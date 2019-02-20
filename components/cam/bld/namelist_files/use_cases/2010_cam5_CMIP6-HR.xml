@@ -154,9 +154,9 @@
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
-<chlorine_loading_fixed_ymd >19500101</chlorine_loading_fixed_ymd>
+<chlorine_loading_fixed_ymd >20100101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      >FIXED</chlorine_loading_type>
-<linoz_data_cycle_yr        >1950</linoz_data_cycle_yr>
+<linoz_data_cycle_yr        >2010</linoz_data_cycle_yr>
 <linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
