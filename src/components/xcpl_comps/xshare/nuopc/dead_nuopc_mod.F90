@@ -1,23 +1,20 @@
-
 module dead_nuopc_mod
 
-  use ESMF                  , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
-  use ESMF                  , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_Alarm
-  use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockSet, ESMF_ClockAdvance, ESMF_AlarmSet
-  use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
-  use ESMF                  , only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
-  use ESMF                  , only : ESMF_FIELDSTATUS_COMPLETE, ESMF_FAILURE
-  use ESMF                  , only : operator(/=), operator(==), operator(+)
-  use med_constants_mod, only : IN, R8, CS, CL
-  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
-  use shr_sys_mod           , only : shr_sys_abort
+  use ESMF                , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
+  use ESMF                , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_Alarm
+  use ESMF                , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockSet, ESMF_ClockAdvance, ESMF_AlarmSet
+  use ESMF                , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
+  use ESMF                , only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
+  use ESMF                , only : ESMF_FIELDSTATUS_COMPLETE, ESMF_FAILURE
+  use ESMF                , only : operator(/=), operator(==), operator(+)
+  use med_constants_mod   , only : IN, R8, CS, CL
+  use shr_file_mod        , only : shr_file_getunit, shr_file_freeunit
+  use shr_sys_mod         , only : shr_sys_abort
   use shr_nuopc_utils_mod , only : shr_nuopc_utils_ChkErr
 
   implicit none
   private
 
-!  public :: dead_setNewGrid
-!  public :: dead_read_inparms
   public :: dead_init_nuopc
   public :: dead_run_nuopc
   public :: dead_final_nuopc
@@ -58,28 +55,31 @@ contains
 
   subroutine dead_read_inparms(model,  inst_suffix, logunit, &
        nxg, nyg, decomp_type, nproc_x, seg_len, flood)
-    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
-    ! !INPUT/OUTPUT PARAMETERS:
-    character(len=*)       , intent(in)    :: model
-    character(len=*)      , intent(in)    :: inst_suffix ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit     ! logging unit number
-    integer(IN)		   , intent(out)   :: nproc_x
-    integer(IN)            , intent(out)   :: seg_len
-    integer(IN)            , intent(out)   :: nxg         ! global dim i-direction
-    integer(IN)            , intent(out)   :: nyg         ! global dim j-direction
-    integer(IN)            , intent(out)   :: decomp_type ! decomposition type
-    logical                , intent(out)   :: flood       ! rof flood flag
 
-    !--- local variables ---
+    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+
+    ! input/output varialbes
+    character(len=*) , intent(in)    :: model
+    character(len=*) , intent(in)    :: inst_suffix ! char string associated with instance
+    integer(IN)      , intent(in)    :: logunit     ! logging unit number
+    integer(IN)	     , intent(out)   :: nproc_x
+    integer(IN)      , intent(out)   :: seg_len
+    integer(IN)      , intent(out)   :: nxg         ! global dim i-direction
+    integer(IN)      , intent(out)   :: nyg         ! global dim j-direction
+    integer(IN)      , intent(out)   :: decomp_type ! decomposition type
+    logical          , intent(out)   :: flood       ! rof flood flag
+
+    ! local variables
     type(ESMF_VM) :: vm
-    character(CL) :: fileName    ! generic file name
-    integer(IN)   :: nunit       ! unit number
-    integer(IN)   :: ierr        ! error code
-    integer(IN)   :: unitn       ! Unit for namelist file
-    integer(IN) :: tmp(6)     ! array for broadcast
-    integer(IN) :: localPet   ! mpi id of current task in current context
-    integer :: rc                  ! EMSF return code
-    !--- formats ---
+    character(CL) :: fileName ! generic file name
+    integer(IN)   :: nunit    ! unit number
+    integer(IN)   :: ierr     ! error code
+    integer(IN)   :: unitn    ! Unit for namelist file
+    integer(IN)   :: tmp(6)   ! array for broadcast
+    integer(IN)   :: localPet ! mpi id of current task in current context
+    integer       :: rc       ! EMSF return code
+
+    ! formats
     character(*), parameter :: F00   = "('(dead_read_inparms) ',8a)"
     character(*), parameter :: F01   = "('(dead_read_inparms) ',a,a,4i8)"
     character(*), parameter :: F03   = "('(dead_read_inparms) ',a,a,i8,a)"
@@ -153,12 +153,12 @@ contains
   end subroutine dead_read_inparms
 
   !===============================================================================
-  subroutine dead_setNewGrid(decomp_type, nxg, nyg, logunit, lsize,  &
-                             gbuf, seg_len, nproc_x)
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
-    use shr_const_mod, only : shr_const_pi, shr_const_rearth
 
-    ! DESCRIPTION:
+  subroutine dead_setNewGrid(decomp_type, nxg, nyg, logunit, lsize, gbuf, seg_len, nproc_x)
+
+    use ESMF          , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
+    use shr_const_mod , only : shr_const_pi, shr_const_rearth
+
     ! This sets up some defaults.  The user may want to overwrite some
     ! of these fields in the main program after initialization in complete.
 
@@ -171,21 +171,21 @@ contains
     integer(IN) ,intent(in),optional :: seg_len     ! seg len decomp setting
     integer(IN) ,intent(in),optional :: nproc_x     ! 2d decomp setting
 
-    !--- local ---
+    ! local
     type(ESMF_VM) :: vm
     integer(IN)   :: rc
-    integer(IN) ::  mype
-    integer(IN) :: totpe       ! total number of pes
-    integer(IN)             :: ierr            ! error code
-    logical                 :: found
-    integer(IN)             :: i,j,ig,jg
-    integer(IN)             :: n,ng,is,ie,js,je,nx,ny      ! indices
-    integer(IN)             :: npesx,npesy,mypex,mypey,nxp,nyp
-    real   (R8)             :: hscore,bscore
-    real   (R8)             :: dx,dy,deg2rad,ys,yc,yn,area,re
+    integer(IN)   ::  mype
+    integer(IN)   :: totpe       ! total number of pes
+    integer(IN)   :: ierr            ! error code
+    logical       :: found
+    integer(IN)   :: i,j,ig,jg
+    integer(IN)   :: n,ng,is,ie,js,je,nx,ny      ! indices
+    integer(IN)   :: npesx,npesy,mypex,mypey,nxp,nyp
+    real   (R8)   :: hscore,bscore
+    real   (R8)   :: dx,dy,deg2rad,ys,yc,yn,area,re
     integer(IN),allocatable :: gindex(:)
 
-    !--- formats ---
+    ! formats
     character(*), parameter :: F00   = "('(dead_setNewGrid) ',8a)"
     character(*), parameter :: F01   = "('(dead_setNewGrid) ',a,4i8)"
     character(*), parameter :: subName = "(dead_setNewGrid) "
@@ -381,7 +381,7 @@ contains
        gbuf(n,dead_grid_lat  ) = yc
        gbuf(n,dead_grid_index) = gindex(n)
        gbuf(n,dead_grid_area ) = area
-       gbuf(n,dead_grid_mask ) = 1
+       gbuf(n,dead_grid_mask ) = 0
        gbuf(n,dead_grid_frac ) = 1.0_R8
     enddo
 
@@ -390,6 +390,7 @@ contains
   end subroutine dead_setNewGrid
 
   !===============================================================================
+
   subroutine dead_init_nuopc(model, inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
     ! input/output parameters:
@@ -415,47 +416,39 @@ contains
     !-------------------------------------------------------------------------------
 
     ! Read input parms
-
     call dead_read_inparms(model, inst_suffix, logunit, &
          nxg, nyg, decomp_type, nproc_x, seg_len, flood)
 
     ! Initialize grid
-
     call dead_setNewGrid(decomp_type, nxg, nyg, logunit, &
          lsize, gbuf, seg_len, nproc_x)
 
   end subroutine dead_init_nuopc
 
   !===============================================================================
-  subroutine dead_run_nuopc(model, d2x, gbuf, flds_d2x)
+
+  subroutine dead_run_nuopc(model, d2x, gbuf)
 
     use shr_const_mod  , only : shr_const_pi
-    use shr_string_mod , only : shr_string_listGetIndexF
 
-    ! DESCRIPTION: run method for dead model
+    ! run method for dead model
 
     ! input/output parameters:
     character(len=*) , intent(in)    :: model
     real(r8)         , intent(inout) :: d2x(:,:)    ! dead   -> driver
     real(r8)         , pointer       :: gbuf(:,:)   ! model grid
-    character(len=*) , intent(in)    :: flds_d2x    ! list of fields to dead -> driver
 
-    !--- local ---
-    integer                 :: n                 ! index
-    integer                 :: nf                ! fields loop index
-    integer                 :: ki                ! index
-    integer                 :: lsize             ! size of AttrVect
-    real(R8)                :: lat               ! latitude
-    real(R8)                :: lon               ! longitude
-    integer                 :: nflds_d2x
-    integer                 :: ncomp
-    character(*), parameter :: F04   = "('(',a,'_run_nuopc) ',2a,2i8,'s')"
+    ! local
+    integer  :: n     ! index
+    integer  :: nf    ! fields loop index
+    integer  :: ki    ! index
+    integer  :: lsize ! size of AttrVect
+    real(R8) :: lat   ! latitude
+    real(R8) :: lon   ! longitude
+    integer  :: nflds_d2x
+    integer  :: ncomp
     character(*), parameter :: subName = "(dead_run_nuopc) "
     !-------------------------------------------------------------------------------
-
-    nflds_d2x = size(d2x, dim=1)
-
-    ! PACK (currently no unpacking)
 
     selectcase(model)
     case('atm')
@@ -475,18 +468,15 @@ contains
     end select
 
     nflds_d2x = size(d2x, dim=1)
-    lsize = size(d2x, dim=2)
+    lsize     = size(d2x, dim=2)
 
     if (model.eq.'rof') then
-
        do nf=1,nflds_d2x
           do n=1,lsize
              d2x(nf,n) = (nf+1) * 1.0_r8
           enddo
        enddo
-
     else if (model.eq.'glc') then
-
        do nf=1,nflds_d2x
           do n=1,lsize
              lon = gbuf(n,dead_grid_lon)
@@ -499,9 +489,7 @@ contains
                   + (ncomp*10.0_R8)
           enddo
        enddo
-
     else
-
        do nf=1,nflds_d2x
           do n=1,lsize
              lon = gbuf(n,dead_grid_lon)
@@ -513,47 +501,17 @@ contains
                   + (ncomp*10.0_R8)
           enddo
        enddo
-
     endif
-
-    selectcase(model)
-    case('ice')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Si_ifrac")
-       d2x(ki,:) = min(1.0_R8,max(0.0_R8,d2x(ki,:)))
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Si_imask")
-       d2x(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x(ki,:)))))
-
-    case('ocn')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "So_omask")
-       d2x(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x(ki,:)))))
-
-    case('lnd')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sl_lfrin")
-       d2x(ki,:) = 1.0_R8
-
-    case('glc')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sg_icemask")
-       d2x(ki,:) = 1.0_R8
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sg_icemask_coupled_fluxes")
-       d2x(ki,:) = 1.0_R8
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sg_ice_covered")
-       d2x(ki,:) = 1.0_R8
-
-    end select
 
   end subroutine dead_run_nuopc
 
   !===============================================================================
+
   subroutine dead_final_nuopc(model, logunit)
+
     use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
-    ! DESCRIPTION: finalize method for datm model
+
+    ! finalize method for xcpl component
 
     ! input/output parameters:
     character(len=*) , intent(in) :: model
@@ -584,23 +542,22 @@ contains
   end subroutine dead_final_nuopc
 
   !===============================================================================
-  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
+
+  subroutine fld_list_add(num, fldlist, stdname)
 
     use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
 
     integer,                    intent(inout) :: num
     type(fld_list_type),        intent(inout) :: fldlist(:)
     character(len=*),           intent(in)    :: stdname
-    character(len=*), optional, intent(inout) :: flds_concat
 
     ! local variables
     integer :: rc
     integer :: dbrc
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:fld_list_add)'
+    character(len=*), parameter :: subname='(dead_nuopc_mod:fld_list_add)'
     !-------------------------------------------------------------------------------
 
     ! Set up a list of field information
-
     num = num + 1
     if (num > fldsMax) then
        call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), &
@@ -609,21 +566,10 @@ contains
     endif
     fldlist(num)%stdname = trim(stdname)
 
-    if (present(flds_concat)) then
-       if (len_trim(flds_concat) + len_trim(stdname) + 1 >= len(flds_concat)) then
-          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
-       end if
-       if (trim(flds_concat) == '') then
-          flds_concat = trim(stdname)
-       else
-          flds_concat = trim(flds_concat)//':'//trim(stdname)
-       end if
-    end if
-
   end subroutine fld_list_add
 
   !===============================================================================
+
   subroutine fld_list_realize(state, fldList, numflds, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
 
     use NUOPC , only : NUOPC_IsConnected, NUOPC_Realize
@@ -720,6 +666,7 @@ contains
   end subroutine fld_list_realize
 
   !===============================================================================
+
   subroutine ModelInitPhase(gcomp, importState, exportState, clock, rc)
 
     use NUOPC, only : NUOPC_CompFilterPhaseMap
@@ -739,6 +686,7 @@ contains
   end subroutine ModelInitPhase
 
   !===============================================================================
+
   subroutine ModelSetRunClock(gcomp, rc)
 
     use shr_nuopc_time_mod , only : shr_nuopc_time_alarmInit
@@ -837,6 +785,7 @@ contains
   end subroutine ModelSetRunClock
 
   !===============================================================================
+
   subroutine state_getimport(state, fldname, output, rc)
 
     ! ----------------------------------------------
