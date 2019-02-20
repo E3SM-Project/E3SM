@@ -46,11 +46,12 @@ def buildlib(bldroot, installpath, case):
 ###############################################################################
     srcroot = case.get_value("SRCROOT")
     kokkos_dir = os.path.join(srcroot, "externals", "kokkos")
-    kokkos_options = case.get_value("KOKKOS_OPTIONS")
-    caseroot = case.get_value("CASEROOT")
 
-    # We want to use 
-    cxx = run_cmd_no_fail("make -f Macros.make -p | grep SCXX").split()[-1]
+    # We want to get the compiler and kokkos_options from Macros.make
+    # (generated from config_compilers.xml), but we want to otherwise
+    # let kokkos control flags
+    kokkos_options = run_cmd_no_fail("make -f Macros.make -p | grep KOKKOS_OPTIONS").split(":=")[-1].strip()
+    cxx            = run_cmd_no_fail("make -f Macros.make -p | grep SCXX").split(":=")[-1].strip()
 
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
