@@ -168,6 +168,25 @@
     </directives>
   </batch_system>
 
+  <!-- athena is lsf -->
+  <batch_system MACH="athena" type="lsf">
+    <submit_args>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-P" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
+      <directive                       > -N  </directive>
+      <directive default="poe"         > -a {{ poe }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00" walltimemax="02:00">poe_short</queue>
+      <queue walltimemin="02:00" walltimemax="04:00" default="true">poe_medium</queue>
+      <queue walltimemin="04:00" walltimemax="08:00">poe_long</queue>
+    </queues>
+  </batch_system>
+
   <!-- bluewaters is PBS -->
   <batch_system MACH="bluewaters" type="pbs" >
     <jobid_pattern>(\d+.bw)$</jobid_pattern>
