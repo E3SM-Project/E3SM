@@ -3,6 +3,8 @@
 <inputdata>
   <!-- server precidence is order in this file.  Highest preference at top -->
   <!-- If the client doesn't have the protocol it will be skipped -->
+
+
   <server>
     <comment>grid ftp requires the globus-url-copy tool on the client side </comment>
     <protocol>gftp</protocol>

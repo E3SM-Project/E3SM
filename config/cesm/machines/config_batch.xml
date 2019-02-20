@@ -220,6 +220,10 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
       <directive> -l select=1:mpiprocs={{ total_tasks }}:ompthreads={{ thread_count }}</directive>
     </directives>
+
+    <!-- Unknown queues use the batch directives for the regular queue -->
+    <unknown_queue_directives>regular</unknown_queue_directives>
+
     <queues>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
@@ -421,6 +425,20 @@
     </directives>
     <queues>
       <queue walltimemin="00:00:00" walltimemax="72:00:00" nodemin="1" nodemax="64" default="true">lr2</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="lonestar5" type="slurm" >
+    <batch_submit>ssh login1.ls5.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <queues>
+      <queue walltimemax="48:00:00" nodemin="1" nodemax="171" default="true">normal</queue>
+      <queue walltimemax="24:00:00" nodemin="160" nodemax="342">large</queue>
+      <queue walltimemax="02:00:00" nodemin="1" nodemax="11" >development</queue>
     </queues>
   </batch_system>
 

@@ -508,8 +508,15 @@ using a fortran linker.
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
 </compiler>
+
 <compiler MACH="bluewaters" COMPILER="intel">
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append> -dynamic -mkl=sequential -no-fma</append>
+  </FFLAGS>
+  <CFLAGS>
+    <append> -dynamic -mkl=sequential -no-fma</append>
+  </CFLAGS>
 </compiler>
 
 <compiler MACH="bluewaters" COMPILER="pgi">
@@ -1131,6 +1138,21 @@ using a fortran linker.
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append> -L${NETCDF_PATH}/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="lonestar5">
+  <CPPDEFS>
+    <append> -DHAVE_NANOTIME </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
+  <LDFLAGS>
+    <append> -Wl,-rpath,${NETCDF_PATH}/lib </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append> -L${NETCDF_PATH}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
 </compiler>
 
