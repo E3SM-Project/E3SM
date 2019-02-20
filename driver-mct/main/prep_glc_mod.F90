@@ -121,6 +121,7 @@ module prep_glc_mod
   real(r8), allocatable ::  interfacePressure(:)
   real(r8), allocatable ::  iceTemperature(:)
   real(r8), allocatable ::  iceTemperatureDistance(:)
+  integer, allocatable ::  iceFloatingMask(:)
   real(r8), allocatable ::  outInterfaceSalinity(:)
   real(r8), allocatable ::  outInterfaceTemperature(:)
   real(r8), allocatable ::  outFreshwaterFlux(:)
@@ -292,11 +293,14 @@ contains
        allocate(interfacePressure(lsize_g))
        allocate(iceTemperature(lsize_g))
        allocate(iceTemperatureDistance(lsize_g))
+       allocate(iceFloatingMask(lsize_g))
        allocate(outInterfaceSalinity(lsize_g))
        allocate(outInterfaceTemperature(lsize_g))
        allocate(outFreshwaterFlux(lsize_g))
        allocate(outOceanHeatFlux(lsize_g))
        allocate(outIceHeatFlux(lsize_g))
+       ! TODO: Can we allocate these only while used or are we worried about performance hit?
+       ! TODO: add deallocates!
 
        call shr_sys_flush(logunit)
 
@@ -798,6 +802,7 @@ contains
     integer :: index_o2x_So_rhoeff
     integer :: index_g2x_Sg_tbot
     integer :: index_g2x_Sg_dztbot
+    integer :: index_g2x_Sg_icemask_floating
 
     integer :: index_g2x_Sg_blis
     integer :: index_g2x_Sg_blit
@@ -835,6 +840,7 @@ contains
     index_o2x_So_rhoeff = mct_avect_indexra(o2x_gx(1),'So_rhoeff',perrwith='quiet')
     index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
+    index_g2x_Sg_icemask_floating = mct_avect_indexra(g2x_gx,'Sg_icemask_floating',perrwith='quiet')
 
     index_g2x_Sg_blis = mct_avect_indexra(g2x_gx,'Sg_blis',perrwith='quiet')
     index_g2x_Sg_blit = mct_avect_indexra(g2x_gx,'Sg_blit',perrwith='quiet')
@@ -861,6 +867,8 @@ contains
       iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
       iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
 
+      iceFloatingMask(n) =                g2x_gx%rAttr(index_g2x_Sg_icemask_floating,n)
+
       !... initialize local compute_melt_fluxes output arrays...
       outInterfaceSalinity(n)     =       0.0_r8
       outInterfaceTemperature(n)  =       0.0_r8
@@ -886,6 +894,7 @@ contains
                              interfacePressure,&
                              iceTemperature,&
                              iceTemperatureDistance, &
+                             iceFloatingMask, &
                              outInterfaceSalinity,&
                              outInterfaceTemperature,&
                              outFreshwaterFlux,&
@@ -1479,6 +1488,7 @@ contains
     interfacePressure, &
     iceTemperature, &
     iceTemperatureDistance, &
+    iceFloatingMask, &
     outInterfaceSalinity, &
     outInterfaceTemperature, &
     outFreshwaterFlux, &
@@ -1510,6 +1520,8 @@ contains
       interfacePressure, &         !< Input: pressure at the ice-ocean interface
       iceTemperature, &            !< Input: ice temperature in bottom layer
       iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
+    integer, dimension(:), intent(in) :: &
+      iceFloatingMask              !< Input: mask of cells that contain floating ice
 
     integer, intent(in) :: nCells !< Input: number of cells in each array
 
@@ -1539,6 +1551,7 @@ contains
 
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
+      if (iceFloatingMask(iCell) == 0) cycle ! Only calculate on floating cells
 
       iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
       nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))
