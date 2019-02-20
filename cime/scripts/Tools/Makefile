@@ -292,6 +292,8 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
   CPPDEFS += -DUSE_KOKKOS_KERNELS
   include $(INSTALL_SHAREDPATH)/Makefile.kokkos
   SLIBS += $(KOKKOS_LIBS)
+  CFLAGS += $(KOKKOS_CXXFLAGS)
+  LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
 # Set MOAB info if it is being used
