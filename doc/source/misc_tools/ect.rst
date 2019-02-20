@@ -1,7 +1,7 @@
 .. _ensemble-consistency-test:
 
 ==============================
-CESM-ECT (CESM Ensemble Consistency Test:
+CESM-ECT (CESM Ensemble Consistency Test):
 ==============================
 
 CESM-ECT is a suite of tests to determine whether a new
