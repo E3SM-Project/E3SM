@@ -101,7 +101,7 @@
     config_use_column_biogeochemistry = false
     config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
-    config_use_column_snow = false
+    config_use_column_snow = true
 /
 &column_tracers
     config_use_ice_age = true
@@ -111,8 +111,8 @@
     config_use_level_meltponds = true
     config_use_topo_meltponds = false
     config_use_aerosols = false
-    config_use_snow_density = false
-    config_use_snow_grain_radius = false
+    config_use_snow_density = true
+    config_use_snow_grain_radius = true
 /
 &biogeochemistry
     config_use_brine = false
@@ -275,9 +275,9 @@
     config_algae_absorption_coefficient = 0.6
 /
 &snow
-    config_snow_redistribution = 'none'
+    config_snow_redistribution = '30percent'
     config_fallen_snow_radius = 54.4
-    config_use_snow_liquid_ponds = false
+    config_use_snow_liquid_ponds = true
     config_new_snow_density = 100.0
     config_max_snow_density = 450.0
     config_minimum_wind_compaction = 10.0

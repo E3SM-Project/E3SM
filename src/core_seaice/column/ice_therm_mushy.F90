@@ -3300,8 +3300,8 @@ contains
 ! eclare:  this change seems to be BFB
 
           ! density of newly formed snowice 
-          rho_snowice = phi_snowice * rho_ocn + rhos
-!          rho_snowice = phi_snowice * rho_ocn + (c1 - phi_snowice) * rhoi
+!          rho_snowice = phi_snowice * rho_ocn + rhos
+          rho_snowice = phi_snowice * rho_ocn + (c1 - phi_snowice) * rhoi
 
           ! calculate thickness of new ice added
           dh = freeboard_density / (rho_ocn - rho_snowice + rhos)
