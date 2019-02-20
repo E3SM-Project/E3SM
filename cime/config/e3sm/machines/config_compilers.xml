@@ -1385,7 +1385,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1418,6 +1418,7 @@ for mct, etc.
 
 <compiler MACH="melvin" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <KOKKOS_OPTIONS> --with-openmp --with-options=aggressive_vectorization </KOKKOS_OPTIONS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1461,8 +1462,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="snl-white">
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
-  <MPICXX>${KOKKOS_ROOT}/bin/nvcc_wrapper</MPICXX>
+  <MPICXX>${SHAREDLIBROOT}/bin/nvcc_wrapper</MPICXX>
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
@@ -1519,7 +1519,6 @@ for mct, etc.
     <base> -cxxlib </base>
   </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
 </compiler>
 
 <compiler MACH="mesabi" COMPILER="intel">
@@ -1658,7 +1657,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
