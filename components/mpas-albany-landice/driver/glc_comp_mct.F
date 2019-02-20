@@ -1506,6 +1506,10 @@ contains
             ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
             g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
 
+            ! Add masks used for ice shelf basal melt calculation
+            g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = li_mask_is_floating_ice_int(cellMask(i))
+            g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = li_mask_is_grounded_ice_int(cellMask(i))
+
          end do
 
          block => block % next
