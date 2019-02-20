@@ -88,6 +88,13 @@ _TESTS = {
             )
         },
 
+    "e3sm_ocnice_extra_coverage" : {
+        "tests" : (
+            "ERS_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+            "PEM_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+            )
+        },
+
     "e3sm_developer" : {
         "inherit" : ("e3sm_land_developer", "e3sm_atm_developer"),
         "time"    : "0:45:00",
@@ -130,7 +137,7 @@ _TESTS = {
 
     #e3sm tests for extra coverage
     "e3sm_extra_coverage" : {
-        "inherit" : "e3sm_atm_extra_coverage",
+        "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
             "SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
             "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L",
