@@ -30,20 +30,6 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
-
-CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
-COMP_INTERFACE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_INTERFACE --value)
-EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
-SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
-SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
-LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
-SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
-COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
-PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
-COMPARE_TO_NUOPC ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPARE_TO_NUOPC --value)
-
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
@@ -83,11 +69,8 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
-
-HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
-ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
    USE_CXX = true
-   USE_KOKKOS = TRUE
 endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
@@ -306,13 +289,9 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 endif
 
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  ifdef KOKKOS_PATH
-    INC_KOKKOS:=$(KOKKOS_PATH)/include
-    LIB_KOKKOS:=$(KOKKOS_PATH)/lib
-  else
-    $(error $(HOMME_TARGET) requires env. variable KOKKOS_ROOT to be set)
-  endif
-	CPPDEFS += -DUSE_KOKKOS_KERNELS
+  CPPDEFS += -DUSE_KOKKOS_KERNELS
+  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
+  SLIBS += $(KOKKOS_LIBS)
 endif
 
 # Set MOAB info if it is being used
@@ -463,9 +442,6 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
-ifdef INC_KOKKOS
-  INCLDIR += -I$(INC_KOKKOS)
-endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -599,10 +575,6 @@ ifdef LIB_MPI
    else
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
-endif
-
-ifdef LIB_KOKKOS
-   SLIBS += -L$(LIB_KOKKOS) -lkokkos
 endif
 
 # Add PETSc libraries
@@ -815,7 +787,7 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-ifeq ($(CIME_MODEL),cesm)
+ifeq ($(MODEL),cesm)
   ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
