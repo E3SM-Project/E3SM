@@ -10,8 +10,10 @@ module CarbonStateUpdate3Mod
   use abortutils       , only : endrun
   use clm_time_manager , only : get_step_size
   use clm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use clm_varctl       , only : use_erosion, ero_ccycle
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
+  use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
   ! bgc interface & pflotran:
@@ -33,7 +35,7 @@ contains
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
-    ! variables affected by fire fluxes
+    ! variables affected by fire fluxes and also erosion flux
     !
     use tracer_varcon       , only : is_active_betr_bgc
     use subgridAveMod       , only : p2c        
@@ -98,6 +100,20 @@ contains
             end do
          end do
       endif !
+
+      ! SOM C losses due to erosion
+      if ( use_erosion .and. ero_ccycle ) then
+         do l = 1, ndecomp_pools
+            if ( decomp_cascade_con%is_soil(l) ) then
+               do j = 1, nlevdecomp
+                  do fc = 1, num_soilc
+                     c = filter_soilc(fc)
+                     csv2%decomp_cpools_vr(c,j,l) = csv2%decomp_cpools_vr(c,j,l) - ccfv2%decomp_cpools_yield_vr(c,j,l) * dt
+                  end do
+               end do
+            end if
+         end do
+      end if
 
 
       ! patch loop

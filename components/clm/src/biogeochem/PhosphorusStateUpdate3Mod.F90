@@ -12,6 +12,7 @@ module PhosphorusStateUpdate3Mod
   use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use clm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -43,6 +44,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
     ! variables affected by gap-phase mortality fluxes. Also the Sminn leaching flux.
+    ! Also the erosion flux.
     ! NOTE - associate statements have been removed where there are
     ! no science equatiops. This increases readability and maintainability.
     !
@@ -291,6 +293,26 @@ contains
       end do
 
     endif !is_active_betr_bgc
+
+    ! soil P loss due to soil erosion
+    if ( use_erosion .and. ero_ccycle ) then
+      do l = 1, ndecomp_pools
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1, num_soilc
+               c = filter_soilc(fc)
+               if ( decomp_cascade_con%is_soil(l) ) then
+                  col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%decomp_ppools_yield_vr(c,j,l) * dt 
+               end if
+               col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) - col_pf%labilep_yield_vr(c,j) * dt
+               col_ps%secondp_vr(c,j) = col_ps%secondp_vr(c,j) - col_pf%secondp_yield_vr(c,j) * dt
+               col_ps%occlp_vr(c,j)   = col_ps%occlp_vr(c,j)   - col_pf%occlp_yield_vr(c,j) * dt
+               col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j)   - col_pf%primp_yield_vr(c,j) * dt
+            end do
+         end do
+      end do
+    end if
+
       ! patch-level phosphorus fluxes 
 
       do fp = 1,num_soilp

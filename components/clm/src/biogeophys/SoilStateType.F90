@@ -17,6 +17,7 @@ module SoilStateType
   use clm_varcon      , only : zsoi, dzsoi, zisoi, spval
   use clm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
   use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
+  use clm_varctl      , only : use_erosion
   use clm_varctl      , only : use_var_soil_thick
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use CH4varcon       , only : allowlakeprod
@@ -34,10 +35,12 @@ module SoilStateType
      ! sand/ clay/ organic matter
      real(r8), pointer :: sandfrac_patch       (:)   ! patch sand fraction
      real(r8), pointer :: clayfrac_patch       (:)   ! patch clay fraction
+     real(r8), pointer :: grvlfrac_patch       (:)   ! patch gravel fraction
      real(r8), pointer :: mss_frc_cly_vld_col  (:)   ! col mass fraction clay limited to 0.20
      real(r8), pointer :: cellorg_col          (:,:) ! col organic matter for gridcell containing column (1:nlevsoi)
      real(r8), pointer :: cellsand_col         (:,:) ! sand value for gridcell containing column (1:nlevsoi)
      real(r8), pointer :: cellclay_col         (:,:) ! clay value for gridcell containing column (1:nlevsoi)
+     real(r8), pointer :: cellgrvl_col         (:,:) ! gravel value for gridcell containing column (1:nlevsoi)
      real(r8), pointer :: bd_col               (:,:) ! col bulk density of dry soil material [kg/m^3] (CN)
 
      ! hydraulic properties
@@ -130,9 +133,11 @@ contains
     allocate(this%mss_frc_cly_vld_col  (begc:endc))                     ; this%mss_frc_cly_vld_col  (:)   = nan
     allocate(this%sandfrac_patch       (begp:endp))                     ; this%sandfrac_patch       (:)   = nan
     allocate(this%clayfrac_patch       (begp:endp))                     ; this%clayfrac_patch       (:)   = nan
+    allocate(this%grvlfrac_patch       (begp:endp))                     ; this%grvlfrac_patch       (:)   = nan
     allocate(this%cellorg_col          (begc:endc,nlevgrnd))            ; this%cellorg_col          (:,:) = nan 
     allocate(this%cellsand_col         (begc:endc,nlevgrnd))            ; this%cellsand_col         (:,:) = nan 
-    allocate(this%cellclay_col         (begc:endc,nlevgrnd))            ; this%cellclay_col         (:,:) = nan 
+    allocate(this%cellclay_col         (begc:endc,nlevgrnd))            ; this%cellclay_col         (:,:) = nan
+    allocate(this%cellgrvl_col         (begc:endc,nlevgrnd))            ; this%cellgrvl_col         (:,:) = nan 
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
 
     allocate(this%hksat_col            (begc_all:endc_all,nlevgrnd))    ; this%hksat_col            (:,:) = spval
@@ -340,7 +345,7 @@ contains
     real(r8)           :: bd                            ! bulk density of dry soil material [kg/m^3]
     real(r8)           :: tkm                           ! mineral conductivity
     real(r8)           :: xksat                         ! maximum hydraulic conductivity of soil [mm/s]
-    real(r8)           :: clay,sand                     ! temporaries
+    real(r8)           :: clay,sand,gravel              ! temporaries
     real(r8)           :: organic_max                   ! organic matter (kg/m3) where soil is assumed to act like peat
     integer            :: dimid                         ! dimension id
     logical            :: readvar 
@@ -351,6 +356,7 @@ contains
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: grvl3d (:,:)                  ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: nlevbed                       ! # of layers above bedrock
@@ -408,13 +414,14 @@ contains
 
     allocate(sand3d(begg:endg,nlevsoifl))
     allocate(clay3d(begg:endg,nlevsoifl))
+    allocate(grvl3d(begg:endg,nlevsoifl))
 
     ! --------------------------------------------------------------------
     ! Read surface dataset
     ! --------------------------------------------------------------------
 
     if (masterproc) then
-       write(iulog,*) 'Attempting to read soil color, sand and clay boundary data .....'
+       write(iulog,*) 'Attempting to read soil color, sand and clay, gravel boundary data .....'
     end if
 
     call getfil (fsurdat, locfn, 0)
@@ -437,7 +444,7 @@ contains
     allocate(organic3d(bounds%begg:bounds%endg,nlevsoifl))
     call organicrd(organic3d)
 
-    ! Read in sand and clay data
+    ! Read in sand, clay, gravel data
 
     call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -447,6 +454,15 @@ contains
     call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+    end if
+
+    if (use_erosion) then
+       call ncd_io(ncid=ncid, varname='PCT_GRVL', flag='read', data=grvl3d, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          call endrun(msg=' ERROR: PCT_GRVL NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       end if
+    else
+       grvl3d(:,:) = 0._r8
     end if
 
     do p = bounds%begp,bounds%endp
@@ -463,8 +479,20 @@ contains
           call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__)) 
        end if
 
+       if ( grvl3d(g,1) == 0.0_r8 )then
+          if ( any( grvl3d(g,:) /= 0.0_r8 ) )then
+             call endrun(msg='found depth points that do NOT sum to zero when surface does'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+          grvl3d(g,:) = 1.0_r8
+       end if
+       if ( any( grvl3d(g,:) == 0.0_r8 ) )then
+          call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__))
+       end if
+
        this%sandfrac_patch(p) = sand3d(g,1)/100.0_r8
        this%clayfrac_patch(p) = clay3d(g,1)/100.0_r8
+       this%grvlfrac_patch(p) = grvl3d(g,1)/100.0_r8
     end do
 
     ! Read fmax
@@ -536,6 +564,7 @@ contains
              if (lev <= nlevsoi) then
                 this%cellsand_col(c,lev) = spval
                 this%cellclay_col(c,lev) = spval
+                this%cellgrvl_col(c,lev) = spval
                 this%cellorg_col(c,lev)  = spval
              end if
           end do
@@ -568,6 +597,7 @@ contains
              if (lev <= nlevsoi) then
                 this%cellsand_col(c,lev) = spval
                 this%cellclay_col(c,lev) = spval
+                this%cellgrvl_col(c,lev) = spval
                 this%cellorg_col(c,lev)  = spval
              end if
           end do
@@ -589,28 +619,33 @@ contains
                 if (lev .eq. 1) then
                    clay = clay3d(g,1)
                    sand = sand3d(g,1)
+                   gravel = grvl3d(g,1)
                    om_frac = organic3d(g,1)/organic_max 
                 else if (lev <= nlevsoi) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                          clay = clay3d(g,j+1)
                          sand = sand3d(g,j+1)
+                         gravel = grvl3d(g,j+1)
                          om_frac = organic3d(g,j+1)/organic_max    
                       endif
                    end do
                 else
                    clay = clay3d(g,nlevsoifl)
                    sand = sand3d(g,nlevsoifl)
+                   gravel = grvl3d(g,nlevsoifl)
                    om_frac = 0._r8
                 endif
              else
                 if (lev <= nlevsoi) then ! duplicate clay and sand values from 10th soil layer
                    clay = clay3d(g,lev)
                    sand = sand3d(g,lev)
+                   gravel = grvl3d(g,lev)
                    om_frac = (organic3d(g,lev)/organic_max)**2._r8
                 else
                    clay = clay3d(g,nlevsoi)
                    sand = sand3d(g,nlevsoi)
+                   gravel = grvl3d(g,nlevsoi)
                    om_frac = 0._r8
                 endif
              end if
@@ -620,6 +655,7 @@ contains
                 if (lev <= nlevsoi) then
                    this%cellsand_col(c,lev) = sand
                    this%cellclay_col(c,lev) = clay
+                   this%cellgrvl_col(c,lev) = gravel
                    this%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
 
@@ -632,6 +668,7 @@ contains
                 if (lev <= nlevbed) then
                    this%cellsand_col(c,lev) = sand
                    this%cellclay_col(c,lev) = clay
+                   this%cellgrvl_col(c,lev) = gravel
                    this%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
 
@@ -739,10 +776,12 @@ contains
              if ( lev <= nlevsoi )then
                 clay    =  this%cellclay_col(c,lev)
                 sand    =  this%cellsand_col(c,lev)
+                gravel  =  this%cellgrvl_col(c,lev)
                 om_frac = (this%cellorg_col(c,lev)/organic_max)**2._r8
              else
                 clay    = this%cellclay_col(c,nlevsoi)
                 sand    = this%cellsand_col(c,nlevsoi)
+                gravel  = this%cellgrvl_col(c,nlevsoi)
                 om_frac = 0.0_r8
              end if
 
@@ -814,7 +853,7 @@ contains
     ! Deallocate memory
     ! --------------------------------------------------------------------
 
-    deallocate(sand3d, clay3d, organic3d)
+    deallocate(sand3d, clay3d, grvl3d, organic3d)
     deallocate(zisoifl, zsoifl, dzsoifl)
 
   end subroutine InitCold

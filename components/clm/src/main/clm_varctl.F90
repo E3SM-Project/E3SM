@@ -360,6 +360,12 @@ module clm_varctl
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
+  ! Soil erosion
+  !-----------------------------------------------------------------------
+  logical, public :: use_erosion    = .false.
+  logical, public :: ero_ccycle     = .false.
+
+  !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
   logical, public :: use_clm_interface  = .false.

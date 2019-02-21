@@ -194,6 +194,8 @@ contains
          qflx_snwcp_ice   =>    veg_wf%qflx_snwcp_ice    , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
          qflx_snwcp_liq   =>    veg_wf%qflx_snwcp_liq    , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+] 
          qflx_prec_grnd   =>    veg_wf%qflx_prec_grnd    , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+         qflx_dirct_rain  =>    veg_wf%qflx_dirct_rain   , & ! Output: [real(r8) (:)   ]  direct rain throughfall [mm H2O/s]
+         qflx_leafdrip    =>    veg_wf%qflx_leafdrip     , & ! Output: [real(r8) (:)   ]  leaf rain drip [mm H2O/s]
 
          t_veg            =>    veg_es%t_veg             , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                   
          t_ref2m          =>    veg_es%t_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
@@ -629,6 +631,8 @@ contains
          t_veg(p) = forc_t(t)
          eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(t)
          qflx_prec_grnd(p) = forc_rain(t) + forc_snow(t)
+         qflx_dirct_rain(p) = 0._r8
+         qflx_leafdrip(p) = 0._r8
 
          ! Because they will be used in pft2col initialize here.
          ! This will be overwritten in LakeHydrology

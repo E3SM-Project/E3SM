@@ -273,6 +273,9 @@ contains
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
 
+    namelist /clm_inparm/ &
+         use_erosion, ero_ccycle
+
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -398,6 +401,11 @@ contains
        
        if (.not. use_crop .and. irrigate) then
           call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+
+       if (.not. use_erosion .and. ero_ccycle) then
+          call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
        
@@ -776,6 +784,10 @@ contains
 
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    ! soil erosion
+    call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Budget
     call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)

@@ -89,6 +89,10 @@ contains
        idx = idx + 1; if (.not. isnan(col_pp%z_lake(c,j))) values(idx) = col_pp%z_lake(c,j)
     enddo
 
+    do j = 1,10
+       idx = idx + 1; if (.not. isnan(col_pp%hslp_p10(c,j))) values(idx) = col_pp%hslp_p10(c,j) 
+    enddo
+
   end subroutine GetValuesForColumn
 
   !------------------------------------------------------------------------
@@ -160,6 +164,10 @@ contains
 
     do j = 1,nlevlak
        idx = idx + 1; col_pp%z_lake(c,j) = values(idx)
+    enddo
+
+    do j = 1,10
+       idx = idx + 1; col_pp%hslp_p10(c,j) = values(idx)
     enddo
 
   end subroutine SetValuesForColumn

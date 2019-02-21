@@ -262,6 +262,9 @@ module pftvarcon
   real(r8)              :: laimax
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
+  ! Z. Tan add pft dependent parameters for ground cover
+  real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
+  real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -514,6 +517,9 @@ contains
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
     allocate( br_xr              (0:mxpft) )
+    ! Ground cover for soil erosion
+    allocate( gcpsi              (0:mxpft) )
+    allocate( pftcc              (0:mxpft) )
 
     ! Set specific vegetation type values
 
@@ -900,6 +906,10 @@ contains
     if (.not. readv) br_xr(:) = 0._r8
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('gcpsi',gcpsi, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcpsi(:) = 0._r8
+    call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) pftcc(:) = 1._r8
        
     call ncd_io('mergetoclmpft', mergetoclmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
