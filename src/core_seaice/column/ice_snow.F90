@@ -17,10 +17,10 @@
 
       private
       public :: snow_effective_density, update_snow_radius, snow_redist,&
-                drain_snow 
-              
+                drain_snow
+
       real (kind=dbl_kind), parameter, public :: &
-         S_r  = 0.033_dbl_kind, & ! irreducible saturation (Anderson 1976) 
+         S_r  = 0.033_dbl_kind, & ! irreducible saturation (Anderson 1976)
          S_wet= 4.22e-5_dbl_kind  ! (um^3/s) wet metamorphism parameters
 
 !=======================================================================
@@ -38,7 +38,7 @@
                                         rhos_effn, rhos_eff, &
                                         rhos_cmpn, rhos_cmp)
 
-      integer (kind=int_kind), intent(in) :: & 
+      integer (kind=int_kind), intent(in) :: &
          nslyr, & ! number of snow layers
          ncat     ! number of thickness categories
 
@@ -105,8 +105,8 @@
 ! Snow redistribution by wind, based on O. Lecomte Ph.D. (2014).
 ! Namelist option snwredist = 'ITDsd':
 ! Snow in suspension depends on wind speed, density and the standard
-! deviation of the ice thickness distribution. Snow is redistributed 
-! among ice categories proportionally to the category areas.  
+! deviation of the ice thickness distribution. Snow is redistributed
+! among ice categories proportionally to the category areas.
 ! Namelist option snwredist = 'ITDrdg':
 ! As above, but use the standard deviation of the level and ridged
 ! ice thickness distribution for snow in suspension, and redistribute
@@ -152,7 +152,7 @@
          zqsn      , & ! snow enthalpy (J/m^3)
          rhos_cmpn     ! effective snow density: compaction (kg/m^3)
 
-      character(len=char_len), intent(in) :: & 
+      character(len=char_len), intent(in) :: &
          snwredist                ! type of snow redistribution
 
       ! local variables
@@ -199,7 +199,7 @@
 
       real (kind=dbl_kind), dimension(ncat) :: &
          sfac      , & ! temporary for snwlvlfac
-         ardg      , & ! ridged ice area tracer 
+         ardg      , & ! ridged ice area tracer
          m_erosion , & ! eroded mass (kg/m^2)
          e_erosion , & ! eroded energy (J/m^2)
          m_redep   , & ! redeposited mass (kg/m^2)
@@ -277,7 +277,7 @@
             if (ar > puny) hrdg = vin(n)*(c1-vlvl(n))/ar
             work = work + al*(hlvl - sumv)**2 + ar*(hrdg - sumv)**2
 
-            ! for redeposition of snow on level ice 
+            ! for redeposition of snow on level ice
             sfac(n) = snwlvlfac
             if (ardg(n) > c0) sfac(n) = min(snwlvlfac, alvl(n)/ardg(n))
             asnw_lvl = asnw_lvl + al - sfac(n)*ar
@@ -354,7 +354,7 @@
          else                                   ! use standard ITD
             work = atmp(n)*(c1-flost)
          endif
-         m_redep(n) = msnw_susp*work    ! mass 
+         m_redep(n) = msnw_susp*work    ! mass
          e_redep(n) = c0
          e_redeptmp = esnw_susp*work    ! energy
 
@@ -399,10 +399,10 @@
 
                   zs1(1) = c0
                   zs1(1+nslyr) = hsn_new(n)
-         
+
                   zs2(1) = c0
                   zs2(1+nslyr) = hsn_new(n)
-         
+
                   do k = 1, nslyr-1
                      zs1(k+1) = zs1(k) + dzs(k) ! old layer depths (unequal thickness)
                      zs2(k+1) = zs2(k) + hslyr  ! new layer depths (equal thickness)
@@ -423,7 +423,7 @@
       enddo ! ncat
 
       !-----------------------------------------------------------------
-      ! mass of suspended snow lost in leads 
+      ! mass of suspended snow lost in leads
       !-----------------------------------------------------------------
       mlost = msnw_susp*alost
       fsloss = fsloss + mlost / dt
@@ -486,7 +486,7 @@
       tmp5 = tmp5 + esnw_susp*alost
 
       !-----------------------------------------------------------------
-      ! energy of suspended snow lost in leads 
+      ! energy of suspended snow lost in leads
       !-----------------------------------------------------------------
       elost = tmp3 - tmp4
       fhocn = fhocn + elost / dt
@@ -550,30 +550,30 @@
                                      Tsfc, zTin,  &
                                      hsn, zqsn, smice, smliq, &
                                      rsnw_fall, rsnw_tmax, &
-				     snowage_tau, &
-				     snowage_kappa, &
-				     snowage_drdt0, &
-				     idx_T_max, &
-				     idx_Tgrd_max, &
-				     idx_rhos_max)
+                                     snowage_tau, &
+                                     snowage_kappa, &
+                                     snowage_drdt0, &
+                                     idx_T_max, &
+                                     idx_Tgrd_max, &
+                                     idx_rhos_max)
 
       integer (kind=int_kind), intent(in) :: &
          ncat,   & ! number of categories
          nslyr,  & ! number of snow layers
          nilyr, &  ! number of ice layers
-	 idx_T_max, & ! dimensions of snow parameter matrix
-	 idx_Tgrd_max, &
-	 idx_rhos_max
+         idx_T_max, & ! dimensions of snow parameter matrix
+         idx_Tgrd_max, &
+         idx_rhos_max
 
       real (kind=dbl_kind), intent(in) :: &
          dt          ! time step
-      
+
       real (kind=dbl_kind), dimension(ncat), intent(in) :: &
          zTin        , & ! surface ice temperature (oC)
          Tsfc        , & ! surface temperature (oC)
          hin         , & ! ice thickness (m)
-         hsn             ! snow thickness (m) 
-      
+         hsn             ! snow thickness (m)
+
       real (kind=dbl_kind), dimension(nslyr,ncat), intent(in) :: &
          zqsn            ! enthalpy of snow (J m-3)
 
@@ -590,9 +590,9 @@
          rsnw_tmax    ! maximum grain radius from dry metamorphism (10^-6 m)
 
       ! dry snow aging parameters
-      real (kind=dbl_kind), dimension(idx_rhos_max,idx_Tgrd_max,idx_T_max), intent(in) :: &  
+      real (kind=dbl_kind), dimension(idx_rhos_max,idx_Tgrd_max,idx_T_max), intent(in) :: &
          snowage_tau,   & ! (10^-6 m)
-         snowage_kappa, & ! 
+         snowage_kappa, & !
          snowage_drdt0    ! (10^-6 m/hr)
 
       ! local temporary variables
@@ -607,32 +607,32 @@
       ! dry metamorphism
       !-----------------------------------------------------------------
        do n = 1, ncat
-           
+
           if (hsn(n) > puny .and. hin(n) > puny) then
-            
+
               drsnw_dry(:) = c0
               drsnw_wet(:) = c0
 
               call snow_dry_metamorph (nslyr, nilyr, dt, rsnw(:,n), drsnw_dry, zqsn(:,n), Tsfc(n), &
                                        zTin(n), hsn(n), hin(n), smice(:,n),smliq(:,n), rsnw_fall, &
-				       snowage_tau, snowage_kappa, snowage_drdt0, &
-				       idx_T_max, idx_Tgrd_max, idx_rhos_max)
+                                       snowage_tau, snowage_kappa, snowage_drdt0, &
+                                       idx_T_max, idx_Tgrd_max, idx_rhos_max)
 
       !-----------------------------------------------------------------
       ! wet metamorphism
       !-----------------------------------------------------------------
-      
+
 
               do k = 1,nslyr
                     call snow_wet_metamorph  (dt, drsnw_wet(k), rsnw(k,n), smice(k,n),smliq(k,n))
                     rsnw(k,n) = min(rsnw_tmax, rsnw(k,n) + drsnw_dry(k) + drsnw_wet(k))
               enddo
-	   else
-	      do k = 1,nslyr
+           else
+              do k = 1,nslyr
                 rsnw(k,n) = max(rsnw_fall,min(rsnw_tmax, rsnw(k,n)))
-		smice(k,n) = rhos
-		smliq(k,n) = c0
-	      enddo
+                smice(k,n) = rhos
+                smliq(k,n) = c0
+              enddo
 
            endif
         enddo
@@ -645,31 +645,31 @@
 
       subroutine snow_dry_metamorph (nslyr,nilyr, dt, rsnw, drsnw_dry, zqsn, &
                                      Tsfc, zTin1, hsn, hin, smice, smliq, rsnw_fall, &
-				     snowage_tau, snowage_kappa, snowage_drdt0, &
-				     idx_T_max, idx_Tgrd_max, idx_rhos_max)
+                                     snowage_tau, snowage_kappa, snowage_drdt0, &
+                                     idx_T_max, idx_Tgrd_max, idx_rhos_max)
 
       use ice_constants_colpkg, only: c0, rhos, Tffresh, Lfresh, cp_ice, p5, puny, c10
       use ice_colpkg_shared, only: idx_T_min, idx_Tgrd_min, idx_rhos_min
 
     ! Vapor redistribution: Method is to retrieve 3 best-bit parameters that
     ! depend on snow temperature, temperature gradient, and density,
-    ! that are derived from the microphysical model described in: 
+    ! that are derived from the microphysical model described in:
     ! Flanner and Zender (2006), Linking snowpack microphysics and albedo
-    ! evolution, J. Geophys. Res., 111, D12208, doi:10.1029/2005JD006834. 
-    ! The parametric equation has the form: 
+    ! evolution, J. Geophys. Res., 111, D12208, doi:10.1029/2005JD006834.
+    ! The parametric equation has the form:
     ! dr/dt = drdt_0*(tau/(dr_fresh+tau))^(1/kappa), where:
     !   r is the effective radius,
     !   tau and kappa are best-fit parameters,
     !   drdt_0 is the initial rate of change of effective radius, and
-    !   dr_fresh is the difference between the current and fresh snow states 
+    !   dr_fresh is the difference between the current and fresh snow states
     !  (r_current - r_fresh).
 
       integer (kind=int_kind), intent(in) :: &
          nslyr,  & ! number of snow layers
          nilyr, &  ! number of ice layers
-	 idx_T_max, & ! dimensions of snow parameter matrix
-	 idx_Tgrd_max, &
-	 idx_rhos_max
+         idx_T_max, & ! dimensions of snow parameter matrix
+         idx_Tgrd_max, &
+         idx_rhos_max
 
       real (kind=dbl_kind), intent(in) :: &
          dt                    ! time step (s)
@@ -689,21 +689,21 @@
          Tsfc,   & ! surface temperature (oC)
          zTin1,  & ! top ice layer temperature (oC)
          hsn,    & ! snow thickness (m)
-         hin,    & ! ice thickness (m)       
+         hin,    & ! ice thickness (m)
          rsnw_fall
 
       ! dry snow aging parameters
-      real (kind=dbl_kind), dimension(idx_rhos_max,idx_Tgrd_max,idx_T_max), intent(in) :: &  
+      real (kind=dbl_kind), dimension(idx_rhos_max,idx_Tgrd_max,idx_T_max), intent(in) :: &
          snowage_tau,   & ! (10^-6 m)
-         snowage_kappa, & ! 
+         snowage_kappa, & !
          snowage_drdt0    ! (10^-6 m/hr)
 
       ! local temporary variables
 
       integer (kind=int_kind) :: k
-    
+
       integer (kind=int_kind) :: &
-          T_idx,    & ! temperature index   
+          T_idx,    & ! temperature index
           Tgrd_idx, & ! temperature gradient index
           rhos_idx    ! density index
 
@@ -722,37 +722,37 @@
 
       character(len=char_len_long) :: &
          warning ! warning message
-      
+
 ! Needed for variable snow density not currently modeled
 ! calculate density based on liquid and ice content of snow
 
          drsnw_dry(:) = c0
-	 zTsn(:) = c0
-	 zdTdz(:) = c0
-	 zrhos(:) = rhos
+         zTsn(:) = c0
+         zdTdz(:) = c0
+         zrhos(:) = rhos
 
          dzs = hsn/real(nslyr,kind=dbl_kind)
          dzi = hin/real(nilyr,kind=dbl_kind)
 
          if (nslyr == 1) then
- 	      zTsn(1)  =(Lfresh + zqsn(1)/rhos)/cp_ice
+              zTsn(1)  =(Lfresh + zqsn(1)/rhos)/cp_ice
               zdTdz(1) =  min(c10*idx_Tgrd_max,abs((zTsn(1)*dzi + zTin1*dzs)/(dzs + dzi+puny)- Tsfc)/(hsn+puny))
          else
- 	      zTsn(1)  =(Lfresh + zqsn(1)/rhos)/cp_ice
+              zTsn(1)  =(Lfresh + zqsn(1)/rhos)/cp_ice
               do k = 2, nslyr
-	      	 zTsn(k) = (Lfresh + zqsn(k)/rhos)/cp_ice
-		 if (k == 2) then
-		    zdTdz(k-1) = abs((zTsn(k-1)+zTsn(k))*p5 - Tsfc)/(dzs+puny)
-		    zdTdz(k-1) = min(c10*idx_Tgrd_max,zdTdz(k-1))
-		 else
-		    zdTdz(k-1) = abs(zTsn(k-2)-zTsn(k))*p5/(dzs+puny)
-		    zdTdz(k-1) = min(c10*idx_Tgrd_max,zdTdz(k-1))
-		 endif
-	      enddo
-	      
+                 zTsn(k) = (Lfresh + zqsn(k)/rhos)/cp_ice
+                 if (k == 2) then
+                    zdTdz(k-1) = abs((zTsn(k-1)+zTsn(k))*p5 - Tsfc)/(dzs+puny)
+                    zdTdz(k-1) = min(c10*idx_Tgrd_max,zdTdz(k-1))
+                 else
+                    zdTdz(k-1) = abs(zTsn(k-2)-zTsn(k))*p5/(dzs+puny)
+                    zdTdz(k-1) = min(c10*idx_Tgrd_max,zdTdz(k-1))
+                 endif
+              enddo
+
               zdTdz(nslyr) = abs((zTsn(nslyr)*dzi + zTin1*dzs)/(dzs + dzi+puny)- &
                             (zTsn(nslyr) + zTsn(nslyr-1))*p5)/(dzs+puny)
-	      zdTdz(nslyr) = min(c10*idx_Tgrd_max,zdTdz(nslyr))
+              zdTdz(nslyr) = min(c10*idx_Tgrd_max,zdTdz(nslyr))
          endif
 
          ! best-fit parameters are read from a table
@@ -764,9 +764,9 @@
          do k = 1, nslyr
           zrhos(k) = smice(k) + smliq(k)
 
-          ! best-fit table indecies: 
-          T_idx    = nint(abs(zTsn(k)+ Tffresh - 223.0_dbl_kind) / 5.0_dbl_kind, kind=int_kind) 
-          Tgrd_idx = nint(zdTdz(k) / 10.0_dbl_kind, kind=int_kind) 
+          ! best-fit table indecies:
+          T_idx    = nint(abs(zTsn(k)+ Tffresh - 223.0_dbl_kind) / 5.0_dbl_kind, kind=int_kind)
+          Tgrd_idx = nint(zdTdz(k) / 10.0_dbl_kind, kind=int_kind)
           !rhos_idx = nint(zrhos(k)-50.0_dbl_kind) / 50.0_dbl_kind, kind=int_kind)   ! variable density
           rhos_idx = nint((rhos-50.0_dbl_kind) / 50.0_dbl_kind, kind=int_kind)        ! fixed density
 
@@ -775,9 +775,9 @@
           Tgrd_idx = min(idx_Tgrd_max, max(1,Tgrd_idx+1))!min(idx_Tgrd_max, max(idx_Tgrd_min,Tgrd_idx))
           rhos_idx = min(idx_rhos_max, max(1,rhos_idx+1)) !min(idx_rhos_max, max(idx_rhos_min,rhos_idx))
 
-          bst_tau   = snowage_tau(rhos_idx,Tgrd_idx,T_idx)    
-          bst_kappa = snowage_kappa(rhos_idx,Tgrd_idx,T_idx)   
-          bst_drdt0 = snowage_drdt0(rhos_idx,Tgrd_idx,T_idx)   
+          bst_tau   = snowage_tau(rhos_idx,Tgrd_idx,T_idx)
+          bst_kappa = snowage_kappa(rhos_idx,Tgrd_idx,T_idx)
+          bst_drdt0 = snowage_drdt0(rhos_idx,Tgrd_idx,T_idx)
 
           ! change in snow effective radius, using best-fit parameters
           dr_fresh = max(c0,rsnw(k)-rsnw_fall)
@@ -796,11 +796,11 @@
     use ice_constants_colpkg, only: c0, c1, c4, pi
     !
     ! Liquid water redistribution: Apply the grain growth function from:
-    !   Brun, E. (1989), Investigation of wet-snow metamorphism in respect of 
+    !   Brun, E. (1989), Investigation of wet-snow metamorphism in respect of
     !   liquid-water content, Annals of Glaciology, 13, 22-26.
-    !   There are two parameters that describe the grain growth rate as 
+    !   There are two parameters that describe the grain growth rate as
     !   a function of snow liquid water content (LWC). The "LWC=0" parameter
-    !   is zeroed here because we are accounting for dry snowing with a 
+    !   is zeroed here because we are accounting for dry snowing with a
     !   different representation
     !
       real (kind=dbl_kind), intent(in) :: &
@@ -811,18 +811,18 @@
          rsnw , & ! snow grain radius (10^-6 m)
          smice, & ! snow ice density (kg/m^3)
          smliq    ! snow liquid density (kg/m^3)
-         
+
       real (kind=dbl_kind), &
          intent(inout) :: &
          dr_wet
-  
+
       real (kind=dbl_kind) :: &
          fliq  ! liquid mass fraction
 
        dr_wet = c0
        fliq = c1
        if (smice + smliq > c0 .and. rsnw > c0) then
-         fliq = smliq/(smice + smliq) 
+         fliq = smliq/(smice + smliq)
          dr_wet = S_wet * fliq**3*dt/(c4*pi*rsnw**2)
        endif
 
@@ -835,7 +835,7 @@
       subroutine drain_snow (dt, nslyr, vsnon,  aicen, &
                              smice, smliq, meltsliq)
 
-      integer (kind=int_kind), intent(in) :: & 
+      integer (kind=int_kind), intent(in) :: &
          nslyr    ! number of snow layers
 
       real (kind=dbl_kind), intent(in) :: &
@@ -879,7 +879,7 @@
         do k = 1,nslyr
             smliq(k)   = smliq(k)  + dlin(k) / hslyr   ! liquid in from above layer
             phi_ice(k) = min(c1, smice(k) / rhoi)
-            phi_liq(k) = smliq(k)/rhofresh 
+            phi_liq(k) = smliq(k)/rhofresh
             w_drain(k) = max(c0, (phi_liq(k) - S_r*(c1-phi_ice(k))) / dt * rhofresh * hslyr)
             dlout(k)   = w_drain(k) * dt
             smliq(k)   = smliq(k) - dlout(k)/ hslyr
@@ -888,7 +888,7 @@
             else
                 meltsliq = dlout(nslyr)
             endif
-        enddo 
+        enddo
       else
         meltsliq = meltsliq  ! computed in thickness_changes
       endif
