@@ -80,6 +80,15 @@ module EMI_DataMod
      procedure, public :: AllocateMemory    => EMIDAllocateMemory
      procedure, public :: Reset             => EMIDReset
      procedure, public :: Destroy           => EMIDDestroy
+     procedure, public :: PrintInfo         => EMIDPrintInfo
+     procedure, public :: Print             => EMIDPrint
+     procedure, public :: PrintInt1D        => EMIDPrintInt1D
+     procedure, public :: PrintInt2D        => EMIDPrintInt2D
+     procedure, public :: PrintInt3D        => EMIDPrintInt3D
+     procedure, public :: PrintReal1D       => EMIDPrintReal1D
+     procedure, public :: PrintReal2D       => EMIDPrintReal2D
+     procedure, public :: PrintReal3D       => EMIDPrintReal3D
+     procedure, public :: PrintReal4D       => EMIDPrintReal4D
 
   end type emi_data
 
@@ -112,6 +121,7 @@ module EMI_DataMod
      procedure, public :: GetPointerToReal4D => EMIDListGetPointerToReal4D
      procedure, public :: IsDataIDPresent    => EMIDIsDataIDPresent
      procedure, public :: AppendDataEMStages => EMIDListAppendDataEMStages
+     procedure, public :: PrintInfo          => EMIDListPrintInfo
 
   end type emi_data_list
 
@@ -858,6 +868,222 @@ contains
     this%is_set = .false.
 
   end subroutine EMIDReset
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintInfo(this, rank)
+    !
+    ! !DESCRIPTION:
+    ! Print information about the data
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    integer, optional :: rank
+
+    if (present(rank)) then
+       write(iulog,*),rank,') ' // trim(this%name)
+    else
+       write(iulog,*)trim(this%name)
+    endif
+
+  end subroutine EMIDPrintInfo
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrint(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+
+    select case(this%ndim)
+    case (1)
+       if (this%is_real_type) then
+          call this%PrintReal1D()
+       else
+          call this%PrintInt1D()
+       endif
+
+    case (2)
+       if (this%is_real_type) then
+          call this%PrintReal2D()
+       else
+          call this%PrintInt2D()
+       endif
+
+    case (3)
+       if (this%is_real_type) then
+          call this%PrintReal3D()
+       else
+          call this%PrintInt3D()
+       endif
+
+    case (4)
+       if (this%is_real_type) then
+          call this%PrintReal4D()
+       else
+          call endrun(msg='EMID of type integer for dimension=4 is not supported.')
+       endif
+
+    case default
+       call endrun(msg='EMID dimension larger than 4 is not supported.')
+
+    end select
+
+  end subroutine EMIDPrint
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintInt1D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i
+
+    do i = this%dim1_beg, this%dim1_end
+       write(iulog,*)'     ',this%data_int_1d(i)
+    enddo
+  end subroutine EMIDPrintInt1D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintInt2D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i,j
+
+    do i = this%dim1_beg, this%dim1_end
+       do j = this%dim2_beg, this%dim2_end
+          write(iulog,*)'     ',this%data_int_2d(i,j)
+       enddo
+    enddo
+
+  end subroutine EMIDPrintInt2D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintInt3D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i,j,k
+
+    do i = this%dim1_beg, this%dim1_end
+       do j = this%dim2_beg, this%dim2_end
+          do k = this%dim3_beg, this%dim3_end
+             write(iulog,*)'     ',this%data_int_3d(i,j,k)
+          enddo
+       enddo
+    enddo
+
+  end subroutine EMIDPrintInt3D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintReal1D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i
+
+    do i = this%dim1_beg, this%dim1_end
+       write(iulog,*)'     ',this%data_real_1d(i)
+    enddo
+  end subroutine EMIDPrintReal1D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintReal2D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i,j
+
+    do i = this%dim1_beg, this%dim1_end
+       do j = this%dim2_beg, this%dim2_end
+          write(iulog,*)'     ',this%data_real_2d(i,j)
+       enddo
+    enddo
+
+  end subroutine EMIDPrintReal2D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintReal3D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i,j,k
+
+    do i = this%dim1_beg, this%dim1_end
+       do j = this%dim2_beg, this%dim2_end
+          do k = this%dim3_beg, this%dim3_end
+             write(iulog,*)'     ',this%data_real_3d(i,j,k)
+          enddo
+       enddo
+    enddo
+
+  end subroutine EMIDPrintReal3D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDPrintReal4D(this)
+    !
+    ! !DESCRIPTION:
+    ! Print the data value
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(emi_data) :: this
+    !
+    integer :: i,j,k,l
+
+    do i = this%dim1_beg, this%dim1_end
+       do j = this%dim2_beg, this%dim2_end
+          do k = this%dim3_beg, this%dim3_end
+             do l = this%dim4_beg, this%dim4_end
+                write(iulog,*)'     ',this%data_real_4d(i,j,k,l)
+             enddo
+          enddo
+       enddo
+    enddo
+
+  end subroutine EMIDPrintReal4D
 
   !------------------------------------------------------------------------
   subroutine EMIDDestroy(this)
@@ -1762,6 +1988,35 @@ contains
     endif
 
   end subroutine EMIDListGetPointerToReal4D
+
+  !------------------------------------------------------------------------
+  subroutine EMIDListPrintInfo(this)
+    !
+    ! !DESCRIPTION:
+    ! Print information about all data within the list
+    !
+    ! !ARGUMENTS:
+    implicit none
+    !
+    class(emi_data_list)     :: this
+    !
+    class(emi_data)      , pointer    :: cur_data
+    integer :: count
+
+    !write(iulog,*)'Number of variables in the list = ',this%num_data
+    count = 0
+
+    cur_data => this%first
+    do
+       if (.not.associated(cur_data)) exit
+
+       count = count + 1
+       call cur_data%PrintInfo(count)
+
+       cur_data => cur_data%next
+    enddo
+
+  end subroutine EMIDListPrintInfo
 
   !------------------------------------------------------------------------
   subroutine EMIDListDestroy(this)
