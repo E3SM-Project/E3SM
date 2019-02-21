@@ -39,13 +39,13 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
-		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_critical_passages.xml" path_base="script_configuration_dir"/>
 		<option name="config_global_ocean_depth_file">'vertical_grid.nc'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
-		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_critical_passages.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">
