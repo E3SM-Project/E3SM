@@ -50,8 +50,7 @@ fi
 usage() {
   echo ""
   echo "**********************"
-  echo "usage on yellowstone:"
-  echo "./mkmapdata.sh"
+  echo "usage: ./mkmapdata.sh <arguments>"
   echo ""
   echo "valid arguments: "
   echo "[-f|--gridfile <gridname>] "
@@ -120,7 +119,6 @@ runcmd() {
    if [ $rc != 0 ]; then
        echo "Error status returned from mkmapdata script"
        exit 4
-undo
    fi
    return 0
 }
@@ -140,47 +138,47 @@ outgrid=""
 gridfile="default"
 
 while [ $# -gt 0 ]; do
-   case $1 in
-       -v|-V)
-	   verbose="YES"
-	   ;;
-       -b|--batch) 
-	      interactive="NO"
-	      ;;
-       -d|--debug)
-	   debug="YES"
-	   ;;
-       -l|--list)
-	   debug="YES"
-	   list="YES"
-	   ;;
-       -r|--res)
-	   res=$2
-	   shift
-	   ;;
-       -f|--gridfile)
-	   gridfile=$2
-	   shift
-	   ;;
-       -t|--gridtype)
-	   type=$2
-	   shift
-	   ;;
-       -p|--phys)
-	   phys=$2
-	   shift
-	   ;;
-       -h|--help )
-	   usage
-	   exit 0
-	   ;;
-       * )
-	   echo "ERROR:: invalid argument sent in: $2"
-	   usage
-	   exit 1
-	   ;;
-   esac
-   shift
+    case $1 in
+        -v|-V)
+            verbose="YES"
+            ;;
+        -b|--batch) 
+            interactive="NO"
+            ;;
+        -d|--debug)
+            debug="YES"
+            ;;
+        -l|--list)
+            debug="YES"
+            list="YES"
+            ;;
+        -r|--res)
+            res=$2
+            shift
+            ;;
+        -f|--gridfile)
+            gridfile=$2
+            shift
+            ;;
+        -t|--gridtype)
+            type=$2
+            shift
+            ;;
+        -p|--phys)
+            phys=$2
+            shift
+            ;;
+        -h|--help )
+            usage
+            exit 0
+            ;;
+        * )
+            echo "ERROR:: invalid argument sent in: $2"
+            usage
+            exit 1
+            ;;
+    esac
+    shift
 done
 
 echo "Script to create mapping files required by mksurfdata_map"
@@ -221,7 +219,7 @@ else
     # Find the output grid file for this resolution using the XML database
     QUERYFIL="$QUERY -var scripgriddata $QUERYARGS -onlyfiles"
     if [ "$verbose" = "YES" ]; then
-	echo $QUERYFIL
+    echo $QUERYFIL
     fi
     GRIDFILE=`$QUERYFIL`
     echo "Using default scrip grid file: $GRIDFILE" 
@@ -231,8 +229,8 @@ else
     DST_TYPE=`$QUERY -var scripgriddata_type $QUERYARGS`
     if [ "$DST_TYPE" = "UGRID" ]; then
         # For UGRID, we need extra information: the meshname variable
-	dst_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
-	DST_EXTRA_ARGS="$DST_EXTRA_ARGS --dst_meshname $dst_meshname"
+    dst_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
+    DST_EXTRA_ARGS="$DST_EXTRA_ARGS --dst_meshname $dst_meshname"
     fi
 fi
 
@@ -261,18 +259,18 @@ fi
 
 if [ "$phys" = "clm4_0" ]; then
     grids=(                    \
-	   "0.5x0.5_USGS"      \
-	   "0.5x0.5_AVHRR"     \
-	   "0.5x0.5_MODIS"     \
-	   "3x3min_LandScan2004" \
-	   "3x3min_MODIS"      \
-	   "3x3min_USGS"       \
-	   "5x5min_nomask"     \
-	   "5x5min_IGBP-GSDP"  \
-	   "5x5min_ISRIC-WISE" \
-	   "10x10min_nomask"   \
-	   "3x3min_GLOBE-Gardner" \
-	   "3x3min_GLOBE-Gardner-mergeGIS" )
+       "0.5x0.5_USGS"      \
+       "0.5x0.5_AVHRR"     \
+       "0.5x0.5_MODIS"     \
+       "3x3min_LandScan2004" \
+       "3x3min_MODIS"      \
+       "3x3min_USGS"       \
+       "5x5min_nomask"     \
+       "5x5min_IGBP-GSDP"  \
+       "5x5min_ISRIC-WISE" \
+       "10x10min_nomask"   \
+       "3x3min_GLOBE-Gardner" \
+       "3x3min_GLOBE-Gardner-mergeGIS" )
 
 elif [ "$phys" = "clm4_5" ]; then
     grids=(                    \
