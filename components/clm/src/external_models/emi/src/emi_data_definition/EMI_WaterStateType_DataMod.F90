@@ -25,7 +25,7 @@ contains
     ! !ARGUMENTS:
     integer            , intent(in)  :: data_id
     integer            , intent(out) :: id_val
-    character (len=24) , intent(out) :: name_val
+    character (len=*)  , intent(out) :: name_val
     character (len=128), intent(out) :: long_name_val
     character (len=24) , intent(out) :: units_val
     logical            , intent(out) :: is_int_type

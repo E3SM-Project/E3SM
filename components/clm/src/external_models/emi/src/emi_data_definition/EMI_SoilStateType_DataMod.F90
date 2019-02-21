@@ -25,9 +25,9 @@ contains
     ! !ARGUMENTS:
     integer            , intent(in)  :: data_id
     integer            , intent(out) :: id_val
-    character (len=24) , intent(out) :: name_val
-    character (len=128), intent(out) :: long_name_val
-    character (len=24) , intent(out) :: units_val
+    character (len=*)  , intent(out) :: name_val
+    character (len=*)  , intent(out) :: long_name_val
+    character (len=*)  , intent(out) :: units_val
     logical            , intent(out) :: is_int_type
     logical            , intent(out) :: is_real_type
     integer            , intent(out) :: ndim
@@ -238,9 +238,9 @@ contains
 
     case(E2L_STATE_SOIL_MATRIC_POTENTIAL)
        id_val         =  E2L_STATE_SOIL_MATRIC_POTENTIAL
-       name_val       =  ''
+       name_val       =  'Soil matric potential'
        long_name_val  =  ': EM to ELM'
-       units_val      =  '[]'
+       units_val      =  '[Pa]'
        is_real_type   =  .true.
        ndim           =  2
        dim1_beg_name  =  dimname_begc
