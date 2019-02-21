@@ -362,7 +362,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     real(r8), pointer :: qpert(:,:)
 
     character*11 :: subname='phys_inidat' ! subroutine name
-    integer :: tpert_idx, qpert_idx, pblh_idx
+    integer :: tpert_idx, qpert_idx, pblh_idx, vmag_gust_idx
 
     logical :: found=.false., found2=.false.
     integer :: ierr
