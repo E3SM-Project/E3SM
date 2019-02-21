@@ -2157,22 +2157,38 @@
 		      <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
 			     description="salinity tendency due to kpp non-local flux"
 		      />
+	    </var_array>
+		<var_array name="activeTracerVerticalAdvectionTopFlux" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+			<var name="temperatureVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="C m s^{-1}" name_in_code="temperatureVerticalAdvectionTopFlux"
+				description="potential temperature vertical advective flux through top of cell"
+			/>
+			<var name="salinityVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="PSU m s^{-1}" name_in_code="salinityVerticalAdvectionTopFlux"
+				description="salinity advective vertical advective flux through top of cell"
+			/>
+		</var_array>
+		<var_array name="activeTracerHorizontalAdvectionEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" packages="tracerBudget">
+			<var name="temperatureHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="C m s^{-1}" name_in_code="temperatureHorizontalAdvectionEdgeFlux"
+				description="potential temperature advective flux due to horizontal advection through edges"
+			/>
+			<var name="salinityHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="PSU m s^{-1}" name_in_code="salinityHorizontalAdvectionEdgeFlux"
+				description="salinity advective flux due to horizontal advection through edges"
+			/>
 		</var_array>
 		<var_array name="activeTracerHorizontalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
-			     description="potential temperature tendency due to horizontal advection"
-		      />
-		      <var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionTendency"
-			     description="salinity tendency due to horizontal advection"
-		      />
+			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
+				description="potential temperature tendency due to horizontal advection"
+			/>
+			<var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionTendency"
+				description="salinity tendency due to horizontal advection"
+			/>
 		</var_array>
 		<var_array name="activeTracerVerticalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
-			     description="potential temperature tendency due to vertical advection"
-		      />
-		      <var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTendency"
-			     description="salinity tendency due to vertical advection"
-		      />
+			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
+				description="potential temperature tendency due to vertical advection"
+			/>
+			<var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTendency"
+				description="salinity tendency due to vertical advection"
+			/>
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 		      <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
@@ -3258,6 +3274,9 @@
 		/>
 		<var name="fluxOutgoing" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Outgoing flux of a tracer for advection"
+		/>
+		<var name="lowOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
+			 description="Low order flux scratch variable for both horizontal and vertical advection."
 		/>
 		<var name="highOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
 			 description="High order flux scratch variable for both horizontal and vertical advection."
