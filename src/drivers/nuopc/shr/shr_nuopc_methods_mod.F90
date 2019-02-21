@@ -3254,7 +3254,7 @@ module shr_nuopc_methods_mod
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
-      tmp(:) = farrayptr(:,scalar_id)
+      tmp(:) = farrayptr(scalar_id,:)
     endif
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -3306,7 +3306,7 @@ module shr_nuopc_methods_mod
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
-      farrayptr(1,scalar_id) = value
+      farrayptr(scalar_id,1) = value
     endif
 
   end subroutine shr_nuopc_methods_State_SetScalar
@@ -3456,16 +3456,20 @@ module shr_nuopc_methods_mod
     ! Determine the list of fields and the dimension count for each field
     call ESMF_StateGet(state, itemCount=fieldCount, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     allocate(fieldNameList(fieldCount))
     allocate(lfields(fieldCount))
     allocate(dimCounts(fieldCount))
+
     call ESMF_StateGet(state, itemNameList=fieldNameList, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     do nfld=1, fieldCount
        call ESMF_StateGet(state, itemName=trim(fieldNameList(nfld)), field=lfields(nfld), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_FieldGet(lfields(nfld), dimCount=dimCounts(nfld), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       write(6,*)'DEBUG: fieldname,dimcount = ',trim(fieldNameList(nfld)),dimCounts(nfld)
     end do
 
     ! Determine local size of field
@@ -3474,6 +3478,7 @@ module shr_nuopc_methods_mod
           call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr1d, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           lsize = size(dataPtr1d)
+          write(6,*)'DEBUG: lsize = ',lsize
           exit
        end if
     end do

@@ -1888,7 +1888,7 @@
          volume of snow per unit area
      #
      #-----------------------------------
-     # section: ocean export
+     # section: ocean export to mediator
      #-----------------------------------
      #
      - standard_name: Fioo_q
@@ -1898,23 +1898,23 @@
      #
      - standard_name: Faoo_fco2_ocn
        canonical_units: moles m-2 s-1
-       description: ocean export
+       description: ocean export (cesm only)
      #
      - standard_name: So_anidf
        canonical_units: 1
-       description: ocean export
+       description: ocean export (cesm only)
      #
      - standard_name: So_anidr
        canonical_units: 1
-       description: ocean export
+       description: ocean export (cesm only)
      #
      - standard_name: So_avsdf
        canonical_units: 1
-       description: ocean export
+       description: ocean export (cesm only)
      #
      - standard_name: So_avsdr
        canonical_units: 1
-       description: ocean export
+       description: ocean export (cesm only)
      #
      - standard_name: So_bldepth
        alias: mixed_layer_depth
@@ -1944,6 +1944,7 @@
        description: ocean export
      #
      - standard_name: So_omask
+       alias: ocean_mask
        canonical_units: 1
        description: ocean export
      #
@@ -2302,6 +2303,26 @@
        description: ocean import
          mean NET long wave radiation flux to ocean
      #
+     - standard_name: mean_runoff_rate
+       canonical_units: kg m-2 s-1
+       description: ocean import
+          total runoff to ocean 
+     #
+     - standard_name: mean_runoff_heat_flux
+       canonical_units: kg m-2 s-1
+       description: ocean import
+          heat content of runoff 
+     #
+     - standard_name: mean_calving_rate
+       canonical_units: kg m-2 s-1
+       description: ocean import
+          total calving to ocean
+     #
+     - standard_name: mean_calving_heat_flux
+       canonical_units: kg m-2 s-1
+       description: ocean import
+          heat content of calving 
+     #
      - standard_name: Foxx_rofi
        canonical_units: kg m-2 s-1
        description: ocean import
@@ -2323,6 +2344,7 @@
          water flux due to runoff (frozen) for HDO
      #
      - standard_name: Foxx_rofl
+       alias: mean_runoff_rate
        canonical_units: kg m-2 s-1
        description: ocean import
          water flux due to runoff (liquid)

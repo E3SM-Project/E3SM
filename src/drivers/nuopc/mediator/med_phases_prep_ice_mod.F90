@@ -109,15 +109,8 @@ module med_phases_prep_ice_mod
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(time,timestring=timestr)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (dbug_flag > 1) then
-       call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-#if DEBUG
-    if (mastertask) then
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-#endif
+    call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+
     !---------------------------------------
     !--- map to create FBimp(:,compice)
     !---------------------------------------
@@ -203,7 +196,11 @@ module med_phases_prep_ice_mod
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        do n = 1,size(temperature)
-          pot_temp(n) = temperature(n) * (100000._R8/pressure(n))**0.286_R8 ! Potential temperature (K)
+          if (pressure(n) /= 0._R8) then
+             pot_temp(n) = temperature(n) * (100000._R8/pressure(n))**0.286_R8 ! Potential temperature (K)
+          else
+             pot_temp(n) = 0._R8
+          end if
        end do
     end if
 
@@ -233,10 +230,8 @@ module med_phases_prep_ice_mod
        end if
     end if
 
-    if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- update local scalar data

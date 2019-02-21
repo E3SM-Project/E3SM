@@ -862,7 +862,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) scmlat
 
-       ! TODO(mvertens, 2019-01-30): need to add single column functionality 
+       ! TODO(mvertens, 2019-01-30): need to add single column functionality
 
     endif
 
@@ -936,7 +936,7 @@ contains
 
   !===============================================================================
 
-  subroutine AddAttributes(gcomp, driver, config, compid, compname, inst_suffix, inst_name, rc)
+  subroutine AddAttributes(gcomp, driver, config, compid, compname, inst_suffix, rc)
 
     ! Add specific set of attributes to components from driver attributes
 
@@ -951,7 +951,6 @@ contains
     integer             , intent(in)    :: compid
     character(len=*)    , intent(in)    :: compname
     character(len=*)    , intent(in)    :: inst_suffix
-    character(len=*)    , intent(in)    :: inst_name
     integer             , intent(inout) :: rc
 
     ! local variables
@@ -960,7 +959,7 @@ contains
     integer                        :: inst_index
     character(len=SHR_KIND_CL)     :: cvalue
     character(len=32), allocatable :: compLabels(:)
-    character(len=32), allocatable :: attrList(:) 
+    character(len=32), allocatable :: attrList(:)
     integer                        :: dbrc
     character(len=*), parameter    :: subname = "(esm.F90:AddAttributes)"
     !-------------------------------------------
@@ -982,7 +981,7 @@ contains
     !------
     ! Add all the other attributes in AttrList (which have already been added to driver attributes)
     !------
-    allocate(attrList(5)) 
+    allocate(attrList(5))
     attrList =  (/"read_restart", "orb_eccen", "orb_obliqr", "orb_lambm0", "orb_mvelpp"/)
 
     call NUOPC_CompAttributeAdd(gcomp, attrList=attrList, rc=rc)
@@ -1077,15 +1076,11 @@ contains
     !------
     ! Add multi-instance specific attributes
     !------
-    call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_name','inst_index'/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! add inst_name attribute (inst_name not required for cime internal components)
-    call NUOPC_CompAttributeSet(gcomp, name='inst_name', value=trim(inst_name), rc=rc)
+    call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_index'/), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! add inst_index attribute (inst_index is not required for cime internal components)
-    ! for now hard-wire inst_index to 1 
+    ! for now hard-wire inst_index to 1
     inst_index = 1
     write(cvalue,*) inst_index
     call NUOPC_CompAttributeSet(gcomp, name='inst_index', value=trim(cvalue), rc=rc)
@@ -1158,7 +1153,7 @@ contains
     ! to the ensemble driver). This would be used if we needed to
     ! communicate between the ensemble members. Since we do not need that
     ! right now, we turn it off with this empty subroutine.
-    
+
     use ESMF, only : ESMF_GridComp, ESMF_State, ESMF_Clock
     use ESMF, only : ESMF_LogWrite, ESMF_SUCCESS, ESMF_LOGMSG_INFO
 
@@ -1232,7 +1227,6 @@ contains
     integer, allocatable           :: comp_comm_iam(:)
     logical, allocatable           :: comp_iamin(:)
     character(len=5)               :: inst_suffix
-    character(len=5)               :: inst_name
     character(CL)                  :: cvalue
     character(len=*), parameter    :: subname = "(esm_pelayout.F90:esm_init_pelayout)"
     !---------------------------------------
@@ -1367,13 +1361,7 @@ contains
          !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
 
-       if (compLabels(i) == 'MED') then
-          inst_name = 'CPL'
-       else
-          inst_name = trim(compLabels(i))
-       end if
-
-       call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, inst_name, rc=rc)
+       call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
@@ -1383,9 +1371,9 @@ contains
           call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), localPet=comp_comm_iam(i), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, inst_name, rc=rc)
+          call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          
+
           ! This code is not supported, we need an optional arg to NUOPC_DriverAddComp to include the
           ! per component thread count.  #3614572 in esmf_support
           !          call ESMF_GridCompSetVMMaxPEs(child, maxPeCountPerPet=nthrds, rc=rc)
@@ -1565,7 +1553,7 @@ contains
     use ESMF,         only: ESMF_MAXSTR, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use NUOPC,        only: NUOPC_CompAttributeSet
     use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
-    
+
     ! input/output variables
     type(ESMF_GridComp)     :: gcomp
     integer, intent(out)    :: rc
