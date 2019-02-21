@@ -17,6 +17,7 @@ module CNCarbonFluxType
   use LandunitType           , only : lun_pp
   use clm_varctl             , only : nu_com
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, use_vertsoilc
+  use clm_varctl             , only : use_erosion
   use AnnualFluxDribbler     , only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   ! 
   ! !PUBLIC TYPES:
@@ -330,6 +331,15 @@ module CNCarbonFluxType
      real(r8), pointer :: som_c_leached_col                         (:)     ! total SOM C loss from vertical transport (gC/m^2/s)
      real(r8), pointer :: decomp_cpools_leached_col                 (:,:)   ! C loss from vertical transport from each decomposing C pool (gC/m^2/s)
      real(r8), pointer :: decomp_cpools_transport_tendency_col      (:,:,:) ! C tendency due to vertical transport in decomposing C pools (gC/m^3/s)
+
+     ! column-level soil erosion fluxes
+     real(r8), pointer :: somc_erode_col                            (:)     ! total SOM C detachment (gC/m^2/s)
+     real(r8), pointer :: somc_deposit_col                          (:)     ! total SOM C hillslope redeposition (gC/m^2/s)
+     real(r8), pointer :: somc_yield_col                            (:)     ! total SOM C loss (gC/m^2/s)
+     real(r8), pointer :: decomp_cpools_erode_col                   (:,:)   ! vertically-integrated decomposing C detachment (gC/m^2/s)
+     real(r8), pointer :: decomp_cpools_deposit_col                 (:,:)   ! vertically-integrated decomposing C hillslope redeposition (gC/m^2/s)
+     real(r8), pointer :: decomp_cpools_yield_col                   (:,:)   ! vertically-integrated decomposing C loss (gC/m^2/s)
+     real(r8), pointer :: decomp_cpools_yield_vr_col                (:,:,:) ! vertically-resolved decomposing C loss (gC/m^3/s)
 
      ! nitrif_denitrif
      real(r8), pointer :: phr_vr_col                                (:,:)   ! potential hr (not N-limited) (gC/m3/s)
@@ -756,6 +766,9 @@ contains
      allocate(this%dwt_prod100c_gain_col             (begc:endc))                  ; this%dwt_prod100c_gain_col     (:)  =nan
      allocate(this%som_c_leached_col                 (begc:endc))                  ; this%som_c_leached_col         (:)  =nan
      allocate(this%somc_fire_col                     (begc:endc))                  ; this%somc_fire_col             (:)  =nan
+     allocate(this%somc_erode_col                    (begc:endc))                  ; this%somc_erode_col            (:)  =nan
+     allocate(this%somc_deposit_col                  (begc:endc))                  ; this%somc_deposit_col          (:)  =nan
+     allocate(this%somc_yield_col                    (begc:endc))                  ; this%somc_yield_col            (:)  =nan
      allocate(this%landuseflux_col                   (begc:endc))                  ; this%landuseflux_col           (:)  =nan
      allocate(this%landuptake_col                    (begc:endc))                  ; this%landuptake_col            (:)  =nan
      allocate(this%prod1c_loss_col                   (begc:endc))                  ; this%prod1c_loss_col           (:)  =nan
@@ -838,6 +851,18 @@ contains
 
      allocate(this%decomp_cpools_transport_tendency_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))          
      this%decomp_cpools_transport_tendency_col(:,:,:)= nan
+
+     allocate(this%decomp_cpools_erode_col(begc:endc,1:ndecomp_pools))
+     this%decomp_cpools_erode_col(:,:)= nan
+
+     allocate(this%decomp_cpools_deposit_col(begc:endc,1:ndecomp_pools))
+     this%decomp_cpools_deposit_col(:,:)= nan
+
+     allocate(this%decomp_cpools_yield_col(begc:endc,1:ndecomp_pools))
+     this%decomp_cpools_yield_col(:,:)= nan
+
+     allocate(this%decomp_cpools_yield_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
+     this%decomp_cpools_yield_vr_col(:,:,:) = nan
 
 
      allocate(this%tempsum_npp_patch     (begp:endp)) ; this%tempsum_npp_patch     (:) = nan
@@ -2897,6 +2922,50 @@ contains
             avgflag='A', long_name='C loss due to peat burning', &
             ptr_col=this%somc_fire_col, default='inactive')
 
+       ! Z. Tan
+       this%somc_erode_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOMC_ERO', units='gC/m^2/s', &
+            avgflag='A', long_name='SOC detachment due to erosion', &
+            ptr_col=this%somc_erode_col, default='inactive')
+
+       this%somc_deposit_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOMC_DEP', units='gC/m^2/s', &
+            avgflag='A', long_name='SOC hillslope redeposition', &
+            ptr_col=this%somc_deposit_col, default='inactive')
+
+       this%somc_yield_col(begc:endc) = spval
+       call hist_addfld1d (fname='SOMC_YLD', units='gC/m^2/s', &
+            avgflag='A', long_name='SOC loss to inland waters', &
+            ptr_col=this%somc_yield_col, default='inactive')
+
+       this%decomp_cpools_erode_col(begc:endc,:) = spval
+       this%decomp_cpools_deposit_col(begc:endc,:) = spval
+       this%decomp_cpools_yield_col(begc:endc,:) = spval
+       do k = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_soil(k) ) then
+             data1dptr => this%decomp_cpools_erode_col(:,k)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_ERO'
+             longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C detachment'
+             call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr, default='inactive')
+
+             data1dptr => this%decomp_cpools_deposit_col(:,k)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_DEP'
+             longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C hillslope redeposition'
+             call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr, default='inactive')
+
+             data1dptr => this%decomp_cpools_yield_col(:,k)
+             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_YLD'
+             longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C loss to inland waters'
+             call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data1dptr, default='inactive')
+          endif
+       end do
+
 
        this%m_decomp_cpools_to_fire_col(begc:endc,:)      = spval
        this%m_decomp_cpools_to_fire_vr_col(begc:endc,:,:) = spval
@@ -4551,6 +4620,7 @@ contains
              i = filter_column(fi)
              this%m_decomp_cpools_to_fire_vr_col(i,j,k) = value_column
              this%decomp_cpools_transport_tendency_col(i,j,k) = value_column
+             this%decomp_cpools_yield_vr_col(i,j,k) = value_column
           end do
        end do
     end do
@@ -4578,6 +4648,9 @@ contains
        do fi = 1,num_column
           i = filter_column(fi)
           this%decomp_cpools_leached_col(i,k) = value_column
+          this%decomp_cpools_erode_col(i,k) = value_column
+          this%decomp_cpools_deposit_col(i,k) = value_column
+          this%decomp_cpools_yield_col(i,k) = value_column
           this%m_decomp_cpools_to_fire_col(i,k) = value_column
           this%bgc_cpool_ext_inputs_vr_col(i,:, k) = value_column
           this%bgc_cpool_ext_loss_vr_col(i,:, k) = value_column
@@ -4611,6 +4684,9 @@ contains
        this%cwdc_loss_col(i)                 = value_column
        this%litterc_loss_col(i)              = value_column
        this%som_c_leached_col(i)             = value_column
+       this%somc_erode_col(i)                = value_column
+       this%somc_deposit_col(i)              = value_column
+       this%somc_yield_col(i)                = value_column
 
        ! Zero p2c column fluxes
        this%rr_col(i)                    = value_column  
@@ -5287,6 +5363,18 @@ contains
        end do
     end do
 
+    ! vertically integrate column-level carbon erosion flux
+    do l = 1, ndecomp_pools
+       do j = 1, nlev
+          do fc = 1, num_soilc
+             c = filter_soilc(fc)
+             this%decomp_cpools_yield_col(c,l) = &
+                  this%decomp_cpools_yield_col(c,l) + &
+                  this%decomp_cpools_yield_vr_col(c,j,l) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
     ! column-level carbon losses to fire, including pft losses
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -5333,6 +5421,23 @@ contains
             this%nee_col(c) - &
             this%landuseflux_col(c)
     end do
+
+    ! column-level carbon losses due to soil erosion
+    if ( use_erosion ) then
+       do l = 1, ndecomp_pools
+          if ( is_soil(l) ) then
+             do fc = 1, num_soilc
+                c = filter_soilc(fc)
+                this%somc_erode_col(c) = this%somc_erode_col(c) + &
+                     this%decomp_cpools_erode_col(c,l)
+                this%somc_deposit_col(c) = this%somc_deposit_col(c) + &
+                     this%decomp_cpools_deposit_col(c,l)
+                this%somc_yield_col(c) = this%somc_yield_col(c) + &
+                     this%decomp_cpools_yield_col(c,l)
+             end do
+          end if
+       end do
+    end if
 
     if  (.not. is_active_betr_bgc) then
 

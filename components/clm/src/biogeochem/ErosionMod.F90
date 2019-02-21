@@ -1,4 +1,4 @@
-module CNErosionMod 
+module ErosionMod 
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -26,20 +26,20 @@ module CNErosionMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNErosionFluxes         ! Calculate erosion introduced CN fluxes 
+  public :: ErosionFluxes           ! Calculate erosion introduced CN fluxes 
   ! !MODULE CONSTANTS
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CNErosionFluxes (bounds, num_soilc, filter_soilc, &
+  subroutine ErosionFluxes (bounds, num_soilc, filter_soilc, &
     soilstate_vars, sedflux_vars, carbonstate_vars, nitrogenstate_vars, & 
     phosphorusstate_vars, carbonflux_vars, nitrogenflux_vars, &
     phosphorusflux_vars)
     !
     ! !DESCRIPTION:
-    ! Calculate soil erosion introduced soil CN fluxes 
+    ! Calculate soil erosion introduced soil C, N, P fluxes 
     !
     ! !USES:
     use clm_varctl      , only : iulog
@@ -76,7 +76,7 @@ contains
     real(r8) :: decomp_npool_vr_new                      ! new SOM N pool (gN/m3)
     real(r8) :: decomp_ppool_vr_new                      ! new SOM P pool (gP/m3)
     real(r8) :: dt                                       ! radiation time step (seconds)
-    character(len=32) :: subname = 'CNErosionFluxes'     ! subroutine name
+    character(len=32) :: subname = 'ErosionFluxes'       ! subroutine name
     !-----------------------------------------------------------------------
 
     associate(                                                        &
@@ -322,6 +322,6 @@ contains
     
     end associate
 
-  end subroutine CNErosionFluxes
+  end subroutine ErosionFluxes
 
-end module CNErosionMod 
+end module ErosionMod 

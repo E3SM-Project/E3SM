@@ -10,12 +10,13 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%NLDAS][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
+    <desc option="NLDAS"> NLDAS data set </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="1PT">single point tower site data set </desc>
     <desc option="NYF">COREv2 normal year forcing</desc>
@@ -34,13 +35,13 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CPLHIST,CORE_IAF_JRA</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CLMNLDAS,CPLHIST,CORE_IAF_JRA</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       CORE2_NYF (CORE2 normal year forcing) are modes used in forcing prognostic ocean/sea-ice components.
-      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1 and CLM1PT are modes using observational data for forcing prognostic land components.</desc>
+      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, CLMNLDAS and CLM1PT are modes using observational data for forcing prognostic land components.</desc>
     <values match="last">
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
@@ -50,6 +51,7 @@
       <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
+      <value compset="%NLDAS">CLMNLDAS</value>
       <value compset="%1PT">CLM1PT</value>
       <value compset="%CPLHIST">CPLHIST</value>
     </values>
@@ -208,8 +210,8 @@
       <value compset="2010.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
       <value compset="2000.*_DATM%GSW">1</value>
-      <value compset="2010.*_DATM%GSW">1</value>
       <value compset="2003.*_DATM%GSW">1</value>
+      <value compset="2010.*_DATM%GSW">1</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -244,8 +246,8 @@
       <value compset="2010.*_DATM%CRU">2005</value>
       <value compset="1850.*_DATM%GSW">1901</value>
       <value compset="2000.*_DATM%GSW">1991</value>
-      <value compset="2010.*_DATM%GSW">2005</value>
       <value compset="2003.*_DATM%GSW">2002</value>
+      <value compset="2010.*_DATM%GSW">2005</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -280,8 +282,8 @@
       <value   compset="2010.*_DATM%CRU">2014</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
       <value   compset="2000.*_DATM%GSW">2010</value>
-      <value   compset="2010.*_DATM%GSW">2014</value>
       <value   compset="2003.*_DATM%GSW">2003</value>
+      <value   compset="2010.*_DATM%GSW">2014</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

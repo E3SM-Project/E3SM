@@ -17,6 +17,7 @@ module initVerticalMod
   use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb 
   use clm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
+  use clm_varctl     , only : use_erosion, ero_lndsld
   use clm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
@@ -53,6 +54,9 @@ contains
     character(len=256)    :: locfn             ! local filename
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
+    real(r8) ,pointer     :: hslp (:)          ! read in - hillslope slope
+    real(r8) ,pointer     :: hslp_p10 (:,:)    ! read in - hillslope slope percentiles
+    real(r8) ,pointer     :: znsoil (:)        ! read in - soil depth
     real(r8) ,pointer     :: dtb (:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
     integer               :: nlevbed           ! temporary
@@ -572,6 +576,47 @@ contains
          col_pp%topo_std(c) = std(g)
       end do
       deallocate(std)
+
+      if (use_erosion) then
+         allocate(hslp(bounds%begg:bounds%endg))
+         call ncd_io(ncid=ncid, varname='hslp', flag='read', data=hslp, dim1name=grlnd, readvar=readvar)
+         if (.not. readvar) then
+            call shr_sys_abort(' ERROR: hillslope slope NOT on surfdata file'//&
+                 errMsg(__FILE__, __LINE__))
+         end if
+         do c = begc,endc
+            g = col_pp%gridcell(c)
+            ! check for near zero slopes, set minimum value
+            col_pp%hslp(c) = max(hslp(g), 0.0035_r8)
+         end do
+         deallocate(hslp)
+
+         allocate(hslp_p10(bounds%begg:bounds%endg,10))
+         call ncd_io(ncid=ncid, varname='SLP_P10', flag='read', data=hslp_p10, dim1name=grlnd, readvar=readvar)
+         if (.not. readvar) then
+            call shr_sys_abort(' ERROR: hillslope slope percentiles NOT on surfdata file'//&
+                 errMsg(__FILE__, __LINE__))
+         end if
+         do c = begc,endc
+            g = col_pp%gridcell(c)
+            col_pp%hslp_p10(c,:) = hslp_p10(g,:)
+         end do
+         deallocate(hslp_p10)
+      end if
+
+      if (use_erosion .and. ero_lndsld) then
+         allocate(znsoil(bounds%begg:bounds%endg))
+         call ncd_io(ncid=ncid, varname='zhill', flag='read', data=znsoil, dim1name=grlnd, readvar=readvar)
+         if (.not. readvar) then
+            call shr_sys_abort(' ERROR: soil layer depth NOT on surfdata file'//&
+                 errMsg(__FILE__, __LINE__))
+         end if
+         do c = begc,endc
+            g = col_pp%gridcell(c)
+            col_pp%znsoil(c) = min(znsoil(g), 200._r8)
+         end do
+         deallocate(znsoil)
+      end if
 
       !-----------------------------------------------
       ! Read in depth to bedrock

@@ -7,6 +7,7 @@ module SedFluxType
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use clm_varcon        , only : spval
+  use clm_varctl        , only : use_erosion 
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use ColumnType        , only : col_pp
@@ -51,8 +52,10 @@ contains
     type(bounds_type) , intent(in) :: bounds
 
     call this%InitAllocate ( bounds )
-    call this%InitHistory ( bounds )
-    call this%InitCold ( bounds )
+    if (use_erosion) then
+       call this%InitHistory ( bounds )
+       call this%InitCold ( bounds )
+    end if
 
   end subroutine Init
 

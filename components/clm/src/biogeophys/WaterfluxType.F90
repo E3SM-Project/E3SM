@@ -52,6 +52,10 @@ module WaterfluxType
      real(r8), pointer :: qflx_dew_grnd_col        (:)   ! col ground surface dew formation (mm H2O /s) [+] (+ = to atm); usually eflx_bot >= 0)
      real(r8), pointer :: qflx_prec_intr_patch     (:)   ! patch interception of precipitation [mm/s]
      real(r8), pointer :: qflx_prec_intr_col       (:)   ! col interception of precipitation [mm/s]
+     real(r8), pointer :: qflx_dirct_rain_patch    (:)   ! patch direct through rainfall [mm/s]
+     real(r8), pointer :: qflx_dirct_rain_col      (:)   ! col direct through rainfall [mm/s] 
+     real(r8), pointer :: qflx_leafdrip_patch      (:)   ! patch leaf rain drip [mm/s]
+     real(r8), pointer :: qflx_leafdrip_col        (:)   ! col leaf rain drip [mm/s]
 
      real(r8), pointer :: qflx_ev_snow_patch       (:)   ! patch evaporation heat flux from snow       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
      real(r8), pointer :: qflx_ev_snow_col         (:)   ! col evaporation heat flux from snow         (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
@@ -195,6 +199,11 @@ contains
 
     allocate(this%qflx_dew_grnd_patch      (begp:endp))              ; this%qflx_dew_grnd_patch      (:)   = nan
     allocate(this%qflx_dew_snow_patch      (begp:endp))              ; this%qflx_dew_snow_patch      (:)   = nan
+
+    allocate(this%qflx_dirct_rain_patch    (begp:endp))              ; this%qflx_dirct_rain_patch    (:)   = nan
+    allocate(this%qflx_leafdrip_patch      (begp:endp))              ; this%qflx_leafdrip_patch      (:)   = nan
+    allocate(this%qflx_dirct_rain_col      (begc:endc))              ; this%qflx_dirct_rain_col      (:)   = nan
+    allocate(this%qflx_leafdrip_col        (begc:endc))              ; this%qflx_leafdrip_col        (:)   = nan
 
     allocate(this%qflx_prec_intr_col       (begc:endc))              ; this%qflx_prec_intr_col       (:)   = nan
     allocate(this%qflx_prec_grnd_col       (begc:endc))              ; this%qflx_prec_grnd_col       (:)   = nan
@@ -453,6 +462,16 @@ contains
     call hist_addfld1d (fname='QSNWCPLIQ', units='mm H2O/s', &
          avgflag='A', long_name='excess rainfall due to snow capping', &
          ptr_patch=this%qflx_snwcp_liq_patch, c2l_scale_type='urbanf', default='inactive')
+
+    this%qflx_dirct_rain_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QWTRGH', units='mm/s',  &
+         avgflag='A', long_name='direct rain throughfall', &
+         ptr_patch=this%qflx_dirct_rain_patch, c2l_scale_type='urbanf', default='inactive')
+
+    this%qflx_leafdrip_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QWDRIP', units='mm/s',  &
+         avgflag='A', long_name='leaf rain drip', &
+         ptr_patch=this%qflx_leafdrip_patch, c2l_scale_type='urbanf', default='inactive')
 
     ! Use qflx_snwcp_ice_col rather than qflx_snwcp_ice_patch, because the column version 
     ! is the final version, which includes some  additional corrections beyond the patch-level version
