@@ -170,6 +170,10 @@ contains
          qflx_dew_grnd        =>  waterflux_vars%qflx_dew_grnd_patch    , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
          qflx_snwcp_ice       =>  waterflux_vars%qflx_snwcp_ice_patch   , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
          qflx_snwcp_liq       =>  waterflux_vars%qflx_snwcp_liq_patch   , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
+         qflx_dirct_rain      =>  waterflux_vars%qflx_dirct_rain_patch  , & ! Output: [real(r8) (:)   ]  direct rain throughfall (mm H2O/s)
+         qflx_leafdrip        =>  waterflux_vars%qflx_leafdrip_patch    , & ! Output: [real(r8) (:)   ]  leaf rain drip (mm H2O/s)
+         qflx_dirct_rain_col  =>  waterflux_vars%qflx_dirct_rain_col    , & ! Output: [real(r8) (:)   ]  direct rain throughfall (mm H2O/s)
+         qflx_leafdrip_col    =>  waterflux_vars%qflx_leafdrip_col      , & ! Output: [real(r8) (:)   ]  leaf rain drip (mm H2O/s)
          qflx_snomelt         =>  waterflux_vars%qflx_snomelt_col       , & ! Output: [real(r8) (:)   ]  snow melt (mm H2O /s)                   
          qflx_prec_grnd_col   =>  waterflux_vars%qflx_prec_grnd_col     , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
          qflx_evap_grnd_col   =>  waterflux_vars%qflx_evap_grnd_col     , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
@@ -229,6 +233,9 @@ contains
          qflx_prec_grnd_snow(p) = forc_snow(c)
          qflx_prec_grnd_rain(p) = forc_rain(c)
          qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
+
+         qflx_dirct_rain(p) = 0._r8
+         qflx_leafdrip(p) = 0._r8
 
          if (do_capsnow(c)) then
             qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
@@ -406,6 +413,8 @@ contains
          qflx_dew_grnd_col(c)  = qflx_dew_grnd(p)
          qflx_dew_snow_col(c)  = qflx_dew_snow(p)
          qflx_sub_snow_col(c)  = qflx_sub_snow(p)
+         qflx_dirct_rain_col(c) = qflx_dirct_rain(p)
+         qflx_leafdrip_col(c) = qflx_leafdrip(p)
       enddo
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

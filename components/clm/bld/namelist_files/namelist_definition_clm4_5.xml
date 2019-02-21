@@ -1714,4 +1714,23 @@ Runtime flag to turn on/off PETSc based thermal model.
 Runtime flag to turn on/off variable soil thickness.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for soil erosion model                                                   -->
+<!-- ========================================================================================  -->
+
+<entry id="use_erosion" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the soil erosion model.
+</entry>
+
+<entry id="ero_lndsld" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the soil erosion landslide model.
+</entry>
+
+<entry id="ero_ccycle" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the soil erosion and OM pools feedback.
+</entry>
+
 </namelist_definition>

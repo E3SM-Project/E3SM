@@ -33,6 +33,7 @@ module CNEcosystemDynMod
   use FrictionVelocityType, only : frictionvel_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  use SedFluxType         , only : sedflux_type 
   ! bgc interface & pflotran
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use CNVerticalProfileMod   , only : decomp_vertprofiles
@@ -472,7 +473,7 @@ contains
        atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       phosphorusflux_vars,phosphorusstate_vars)
+       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of CNEcosystemDynNoLeaching
@@ -499,6 +500,7 @@ contains
     use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
     use PStateUpdate2Mod       , only: PStateUpdate2, PStateUpdate2h
     use CNFireMod              , only: CNFireArea, CNFireFluxes
+    use CNErosionMod           , only: CNErosionFluxes
     use CNCStateUpdate3Mod     , only: CStateUpdate3
     use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
     use CNC14DecayMod          , only: C14Decay, C14BombSpike
@@ -549,6 +551,7 @@ contains
 !
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(sedflux_type)       , intent(in)    :: sedflux_vars
 
     !-----------------------------------------------------------------------
 
@@ -801,6 +804,10 @@ contains
        call CNFireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
+
+       call CNErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, &
+            carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars, carbonflux_vars, &
+            nitrogenflux_vars, phosphorusflux_vars)
 
        call t_stopf('CNUpdate2')
 

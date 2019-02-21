@@ -65,6 +65,8 @@ contains
     idx = idx + 1; if (.not. isnan(col_pp%n_melt      (c)))  values(idx) = col_pp%n_melt      (c)
     idx = idx + 1; if (.not. isnan(col_pp%topo_slope  (c)))  values(idx) = col_pp%topo_slope  (c)
     idx = idx + 1; if (.not. isnan(col_pp%topo_std    (c)))  values(idx) = col_pp%topo_std    (c)
+    idx = idx + 1; if (.not. isnan(col_pp%hslp        (c)))  values(idx) = col_pp%hslp        (c)
+    idx = idx + 1; if (.not. isnan(col_pp%znsoil      (c)))  values(idx) = col_pp%znsoil      (c)
 
     idx = idx + 1;                                         values(idx) = real(col_pp%snl   (c))
     idx = idx + 1; if (.not. isnan(col_pp%lakedepth   (c)))  values(idx) =      col_pp%lakedepth(c)
@@ -87,6 +89,10 @@ contains
 
     do j = 1,nlevlak
        idx = idx + 1; if (.not. isnan(col_pp%z_lake(c,j))) values(idx) = col_pp%z_lake(c,j)
+    enddo
+
+    do j = 1,10
+       idx = idx + 1; if (.not. isnan(col_pp%hslp_p10(c,j))) values(idx) = col_pp%hslp_p10(c,j) 
     enddo
 
   end subroutine GetValuesForColumn
@@ -138,6 +144,8 @@ contains
     idx = idx + 1;                           col_pp%n_melt      (c) = values(idx)
     idx = idx + 1;                           col_pp%topo_slope  (c) = values(idx)
     idx = idx + 1;                           col_pp%topo_std    (c) = values(idx)
+    idx = idx + 1;                           col_pp%hslp        (c) = values(idx)
+    idx = idx + 1;                           col_pp%znsoil      (c) = values(idx)
 
     idx = idx + 1;                           col_pp%snl         (c) = int(values(idx))
     idx = idx + 1;                           col_pp%lakedepth   (c) = values(idx)
@@ -160,6 +168,10 @@ contains
 
     do j = 1,nlevlak
        idx = idx + 1; col_pp%z_lake(c,j) = values(idx)
+    enddo
+
+    do j = 1,10
+       idx = idx + 1; col_pp%hslp_p10(c,j) = values(idx)
     enddo
 
   end subroutine SetValuesForColumn
