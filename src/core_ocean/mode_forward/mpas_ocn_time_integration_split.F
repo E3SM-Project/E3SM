@@ -203,7 +203,8 @@ module ocn_time_integration_split
         activeTracerHorizontalAdvectionTendency,      &
         activeTracerVerticalAdvectionTendency,        &
         activeTracerSurfaceFluxTendency,              &
-        activeTracerNonLocalTendency
+        activeTracerNonLocalTendency,                 &
+        activeTracerHorizontalAdvectionEdgeFlux
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         temperatureShortWaveTendency
@@ -1641,13 +1642,27 @@ module ocn_time_integration_split
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
                   call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
-               !$omp do schedule(runtime) private(k)
+                  call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionEdgeFlux', &
+                          activeTracerHorizontalAdvectionEdgeFlux)
+                  call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+
+                  !$omp do schedule(runtime) private(k)
+                  do iEdge = 1, nEdges
+                     do k= 1, maxLevelEdgeTop(iEdge)
+                        activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
+                          activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
+                          layerThicknessEdge(k,iEdge)
+                     enddo
+                  enddo
+                  !$omp end do
+
+                  !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k= 1, maxLevelCell(iCell)
                         activeTracerHorizontalAdvectionTendency(:,k,iCell) = &
                            activeTracerHorizontalAdvectionTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
-        
+
                         activeTracerVerticalAdvectionTendency(:,k,iCell) = &
                            activeTracerVerticalAdvectionTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
@@ -1664,7 +1679,7 @@ module ocn_time_integration_split
                            activeTracerNonLocalTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
                      end do
-                  end do 
+                  end do
                   !$omp end do
                endif
 
