@@ -325,6 +325,10 @@ module clm_varctl
   logical, public :: use_petsc_thermal_model = .false.
 
   !----------------------------------------------------------
+  ! Stub external model
+  !----------------------------------------------------------
+  logical, public :: use_em_stub = .false.
+  !----------------------------------------------------------
   ! To retrieve namelist
   !----------------------------------------------------------
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
