@@ -1566,6 +1566,7 @@ contains
     end do
     deallocate(flds)
 
+
     !=====================================================================
     ! FIELDS TO ICE (compice)
     !=====================================================================
@@ -2081,7 +2082,6 @@ contains
     !       call addfld(fldListTo(compatm)%flds, trim(fldname), mrg_from1=complnd, mrg_fld1=trim(fldname), mrg_type1='copy')
     !    enddo
     ! endif
-
 
   end subroutine esmFldsExchange
 
