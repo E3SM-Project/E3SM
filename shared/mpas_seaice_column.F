@@ -2481,12 +2481,13 @@ contains
        do iCell = 1, nCellsSolve
 
           effectiveSnowDensityCategory(:,:) = 0.0_RKIND
-          
+
           abortFlag = .false.
           abortMessage = ""
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call set_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_clear_warnings()
           call colpkg_step_snow (&
@@ -2529,11 +2530,11 @@ contains
                abortFlag, &
                abortMessage)
 
-          call colpkg_get_warnings(warnings)
-          call column_write_warnings(warnings, abortFlag)
+          call column_write_warnings(abortFlag)
 
           ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          call get_cice_tracer_array_category(block, ciceTracerObject, &
+                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo !iCell
 
@@ -6149,17 +6150,17 @@ contains
 
     ! snow density (ice mass, liquid mass, density)
     if (config_use_snow_density) then
-       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowIceMass(:,:,iCell)
+       tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowIceMass(:,:,iCell)
        nTracers = nTracers + nSnowLayers
-       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowLiquidMass(:,:,iCell)
+       tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowLiquidMass(:,:,iCell)
        nTracers = nTracers + nSnowLayers
-       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowDensity(:,:,iCell)
+       tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowDensity(:,:,iCell)
        nTracers = nTracers + nSnowLayers
     endif
 
     ! snow grain radius
     if (config_use_snow_grain_radius) then
-       tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowGrainRadius(:,:,iCell)
+       tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:) = snowGrainRadius(:,:,iCell)
        nTracers = nTracers + nSnowLayers
     endif
 
@@ -6338,17 +6339,17 @@ contains
 
     ! snow density (ice mass, liquid mass, density)
     if (config_use_snow_density) then
-       snowIceMass(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       snowIceMass(:,:,iCell) = tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
        nTracers = nTracers + nSnowLayers
-       snowLiquidMass(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       snowLiquidMass(:,:,iCell) = tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
        nTracers = nTracers + nSnowLayers
-       snowDensity(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       snowDensity(:,:,iCell) = tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
        nTracers = nTracers + nSnowLayers
     endif
 
     ! snow grain radius
     if (config_use_snow_grain_radius) then
-       snowGrainRadius(:,:,iCell) = tracerObject % tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
+       snowGrainRadius(:,:,iCell) = tracerArrayCategory(nTracers:nTracers+nSnowLayers-1,:)
        nTracers = nTracers + nSnowLayers
     endif
 
@@ -6528,17 +6529,17 @@ contains
 
     ! snow density (ice mass, liquid mass, density)
     if (config_use_snow_density) then
-       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowIceMassCell(:,iCell)
+       tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowIceMassCell(:,iCell)
        nTracers = nTracers + nSnowLayers
-       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowLiquidMassCell(:,iCell)
+       tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowLiquidMassCell(:,iCell)
        nTracers = nTracers + nSnowLayers
-       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowDensityCell(:,iCell)
+       tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowDensityCell(:,iCell)
        nTracers = nTracers + nSnowLayers
     endif
 
     ! snow grain radius
     if (config_use_snow_grain_radius) then
-       tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowGrainRadiusCell(:,iCell)
+       tracerArrayCell(nTracers:nTracers+nSnowLayers-1) = snowGrainRadiusCell(:,iCell)
        nTracers = nTracers + nSnowLayers
     endif
 
@@ -6718,17 +6719,17 @@ contains
 
     ! snow density (ice mass, liquid mass, density)
     if (config_use_snow_density) then
-       snowIceMassCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       snowIceMassCell(:,iCell) = tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
        nTracers = nTracers + nSnowLayers
-       snowLiquidMassCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       snowLiquidMassCell(:,iCell) = tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
        nTracers = nTracers + nSnowLayers
-       snowDensityCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       snowDensityCell(:,iCell) = tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
        nTracers = nTracers + nSnowLayers
     endif
 
     ! snow grain radius
     if (config_use_snow_grain_radius) then
-       snowGrainRadiusCell(:,iCell) = tracerObject % tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
+       snowGrainRadiusCell(:,iCell) = tracerArrayCell(nTracers:nTracers+nSnowLayers-1)
        nTracers = nTracers + nSnowLayers
     endif
 
