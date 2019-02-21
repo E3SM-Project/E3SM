@@ -21,7 +21,7 @@ except ImportError:
 #     "inherit" : (suite1, suite2, ...), # Optional. Suites to inherit tests from. Default is None. Tuple, list, or str.
 #     "time"    : "HH:MM:SS",            # Optional. Recommended upper-limit on test time.
 #     "share"   : True|False,            # Optional. If True, all tests in this suite share a build. Default is False.
-#     "tests"   : (test1, test2, ...)    # Required. The list of tests for this suite. See above for format. Tuple, list, or str.
+#     "tests"   : (test1, test2, ...)    # Optional. The list of tests for this suite. See above for format. Tuple, list, or str.
 # }
 
 _CIME_TESTS = {
@@ -84,6 +84,18 @@ _CIME_TESTS = {
             )
         },
 
+    "cime_test_repeat" : {
+        "tests" : (
+            "TESTRUNPASS_P1.f19_g16_rx1.A",
+            "TESTRUNPASS_P2.ne30_g16_rx1.A",
+            "TESTRUNPASS_P4.f45_g37_rx1.A",
+            )
+        },
+
+    "cime_test_multi_inherit" : {
+        "inherit" : ("cime_test_repeat", "cime_test_only_pass", "cime_test_all")
+        },
+
     "cime_developer" : {
         "time"  : "0:15:00",
         "tests" : (
@@ -143,9 +155,7 @@ def get_test_data(suite):
     for key in raw_dict.keys():
         expect(key in ["inherit", "time", "share", "tests"], "Unexpected test key '{}'".format(key))
 
-    expect("tests" in raw_dict.keys(), "Missing tests for suite '{}'".format(suite))
-
-    return _get_key_data(raw_dict, "inherits", tuple), _get_key_data(raw_dict, "time", str), _get_key_data(raw_dict, "share", bool), _get_key_data(raw_dict, "tests", tuple)
+    return _get_key_data(raw_dict, "inherit", tuple), _get_key_data(raw_dict, "time", str), _get_key_data(raw_dict, "share", bool), _get_key_data(raw_dict, "tests", tuple)
 
 ###############################################################################
 def get_test_suites():
@@ -187,9 +197,9 @@ def get_test_suite(suite, machine=None, compiler=None, skip_inherit=False):
         for inherits in inherits_from:
             inherited_tests = get_test_suite(inherits, machine, compiler)
 
-            expect(len(set(tests) & set(inherited_tests)) == 0,
-                   "Tests {} defined in multiple suites".format(", ".join(set(tests) & set(inherited_tests))))
-            tests.extend(inherited_tests)
+            for inherited_test in inherited_tests:
+                if inherited_test not in tests:
+                    tests.append(inherited_test)
 
     return tests
 
@@ -244,6 +254,9 @@ def get_full_test_names(testargs, machine, compiler):
 
     >>> get_full_test_names(["cime_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
+
+    >>> get_full_test_names(["cime_test_multi_inherit"], "melvin", "gnu")
+    ['TESTBUILDFAILEXC_P1.f19_g16_rx1.A.melvin_gnu', 'TESTBUILDFAIL_P1.f19_g16_rx1.A.melvin_gnu', 'TESTMEMLEAKFAIL_P1.f09_g16.X.melvin_gnu', 'TESTMEMLEAKPASS_P1.f09_g16.X.melvin_gnu', 'TESTRUNDIFF_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNFAILEXC_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNFAIL_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P1.f45_g37_rx1.A.melvin_gnu', 'TESTRUNPASS_P1.ne30_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P2.ne30_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P4.f45_g37_rx1.A.melvin_gnu', 'TESTRUNSTARCFAIL_P1.f19_g16_rx1.A.melvin_gnu', 'TESTTESTDIFF_P1.f19_g16_rx1.A.melvin_gnu']
     """
     expect(machine is not None, "Must define a machine")
     expect(compiler is not None, "Must define a compiler")
@@ -285,10 +298,10 @@ def get_recommended_test_time(test_full_name):
     >>> get_recommended_test_time("ERS.f19_g16_rx1.A.melvin_gnu")
     '0:10:00'
 
-    >>> get_recommended_test_time("ERP_Ln9.ne30_ne30.FC5.melvin_gun.cam-outfrq9s")
+    >>> get_recommended_test_time("ERS.f19_f19.ICLM45.melvin_gnu")
     '0:45:00'
 
-    >>> get_recommended_test_time("PET_Ln9.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
+    >>> get_recommended_test_time("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.sandiatoss3_intel.allactive-v1cmip6")
     '03:00:00'
 
     >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
