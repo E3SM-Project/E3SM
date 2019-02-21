@@ -118,7 +118,7 @@ class A_RunUnitTests(unittest.TestCase):
     def test_lib_doctests(self):
         # Find and run all the doctests in the lib directory tree
         skip_list = ["six.py", "CIME/SystemTests/mvk.py", "CIME/SystemTests/pgn.py"]
-        for root, dirs, files in os.walk(LIB_DIR):
+        for root, _, files in os.walk(LIB_DIR):
             for file_ in files:
                 filepath = os.path.join(root, file_)[len(LIB_DIR)+1:]
                 if filepath.endswith(".py") and filepath not in skip_list:
