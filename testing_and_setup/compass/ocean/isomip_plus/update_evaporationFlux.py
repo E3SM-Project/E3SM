@@ -9,31 +9,34 @@ import os.path
 
 import subprocess
 
+import glob
+
 parser = OptionParser()
 
-parser.add_option("--in_fluxes_file", type="string", default="land_ice_fluxes.nc", dest="in_fluxes_file")
 parser.add_option("--in_forcing_file", type="string", default="forcing_data_init.nc", dest="in_forcing_file")
 parser.add_option("--out_forcing_file", type="string", default="forcing_data_updated.nc", dest="out_forcing_file")
 parser.add_option("--out_forcing_link", type="string", default="forcing_data.nc", dest="out_forcing_link")
-parser.add_option("--avg_years", type="float", default=0.25, dest="avg_years")
+parser.add_option("--avg_months", type="int", default=3, dest="avg_months")
 
 options, args = parser.parse_args()
 
 subprocess.check_call(['cp', options.in_forcing_file, options.out_forcing_file])
 subprocess.check_call(['ln', '-sfn', options.out_forcing_file, options.out_forcing_link])
 
-inFile = Dataset(options.in_fluxes_file,'r')
-outFile = Dataset(options.out_forcing_file,'r+')
+fluxFiles = sorted(glob.glob('timeSeriesStatsMonthly*.nc'))
+index = max(0, len(fluxFiles)-options.avg_months)
+print(index)
+fluxFiles = fluxFiles[index:]
 
+outFile = Dataset(options.out_forcing_file, 'r+')
+
+inFile = Dataset('init.nc', 'r')
 areaCell = inFile.variables['areaCell'][:]
-times = inFile.variables['daysSinceStartOfSim'][:]/365.
+fraction = inFile.variables['landIceFraction'][0, :]
+meanIceArea = numpy.sum(fraction*areaCell)
 
 nCells = len(inFile.dimensions['nCells'])
-nTime = len(inFile.dimensions['Time'])
-
-tIndices = numpy.nonzero(times >= times[-1]-options.avg_years)[0]
-
-print len(tIndices)
+inFile.close()
 
 rho_sw = 1026.
 cp_sw = 3.996e3
@@ -46,15 +49,13 @@ Tsurf = -1.9
 Ssurf = 33.8
 
 meanMeltFlux = 0.0
-meanIceArea = 0.0
-for tIndex in tIndices:
-  freshwaterFlux = inFile.variables['landIceFreshwaterFlux'][tIndex,:]
-  fraction = inFile.variables['landIceFraction'][tIndex,:]
+for fileName in fluxFiles:
+  inFile = Dataset(fileName, 'r')
+  freshwaterFlux = inFile.variables['timeMonthly_avg_landIceFreshwaterFlux'][0, :]
   meanMeltFlux += numpy.sum(freshwaterFlux*areaCell)
-  meanIceArea += numpy.sum(fraction*areaCell)
+  inFile.close()
 
-meanMeltFlux /= len(tIndices)
-meanIceArea /= len(tIndices)
+meanMeltFlux /= len(fluxFiles)
 
 # convert to volume flux in m^3/s
 meanMeltFlux /= rho_sw
@@ -91,5 +92,4 @@ flux = seaIceHeatFluxVar[0,:]
 flux[evapMask] = evapRate*Tsurf/hflux_factor
 seaIceHeatFluxVar[0,:] = flux
 
-inFile.close()
 outFile.close()
