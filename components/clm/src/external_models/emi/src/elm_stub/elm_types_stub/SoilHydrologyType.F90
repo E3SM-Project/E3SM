@@ -67,11 +67,10 @@ Module SoilHydrologyType
 contains
   
   !------------------------------------------------------------------------
-  subroutine Init(this, bounds, NLFilename)
+  subroutine Init(this, bounds)
 
     class(soilhydrology_type) :: this
     type(bounds_type), intent(in)    :: bounds  
-    character(len=*), intent(in) :: NLFilename
 
     call this%InitAllocate(bounds)
 

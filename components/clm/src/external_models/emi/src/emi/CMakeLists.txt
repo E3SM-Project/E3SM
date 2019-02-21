@@ -13,6 +13,7 @@ include_directories(${CMAKE_BINARY_DIR}/emi_data_exchange)
 include_directories(${CMAKE_BINARY_DIR}/em/betr)
 include_directories(${CMAKE_BINARY_DIR}/em/fates)
 include_directories(${CMAKE_BINARY_DIR}/em/ptm)
+include_directories(${CMAKE_BINARY_DIR}/em/stub)
 include_directories(${CMAKE_BINARY_DIR}/em/vsfm)
 
 include(add_emi_library)

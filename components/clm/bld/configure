@@ -664,6 +664,7 @@ sub write_filepath_cesmbld
 		     "external_models/emi/src/em/betr",
 		     "external_models/emi/src/em/fates",
 		     "external_models/emi/src/em/ptm",
+		     "external_models/emi/src/em/stub",
 		     "external_models/emi/src/em/vsfm",
 		     "external_models/emi/src/emi",
 		     "external_models/emi/src/emi_data_definition",

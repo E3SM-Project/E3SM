@@ -17,6 +17,7 @@ module ExternalModelInterfaceMod
   use ExternalModelPTMMod                   , only : em_ptm_type
 #endif
   use ExternalModelFATESMod                 , only : em_fates_type
+  use ExternalModelStubMod                  , only : em_stub_type
   use EMI_TemperatureType_ExchangeMod       , only : EMI_Pack_TemperatureType_at_Column_Level_for_EM
   use EMI_TemperatureType_ExchangeMod       , only : EMI_Unpack_TemperatureType_at_Column_Level_from_EM
   use EMI_WaterStateType_ExchangeMod        , only : EMI_Pack_WaterStateType_at_Column_Level_for_EM
@@ -45,6 +46,7 @@ module ExternalModelInterfaceMod
   integer :: index_em_betr
   integer :: index_em_fates
   integer :: index_em_pflotran
+  integer :: index_em_stub
   integer :: index_em_vsfm
   integer :: index_em_ptm
 
@@ -56,6 +58,7 @@ module ExternalModelInterfaceMod
   class(em_ptm_type)                 , pointer :: em_ptm(:)
 #endif
   class(em_fates_type)               , pointer :: em_fates
+  class(em_stub_type)                , pointer :: em_stub(:)
 
   public :: EMI_Determine_Active_EMs
   public :: EMI_Init_EM
@@ -77,6 +80,7 @@ contains
     use clm_varctl, only : use_vsfm
 #endif
     use clm_varctl, only : use_petsc_thermal_model
+    use clm_varctl, only : use_em_stub
     !
     implicit none
     !
@@ -88,6 +92,7 @@ contains
     index_em_betr        = 0
     index_em_fates       = 0
     index_em_pflotran    = 0
+    index_em_stub        = 0
     index_em_vsfm        = 0
 
     nclumps = get_proc_clumps()
@@ -132,12 +137,21 @@ contains
 
 #endif
 
+    ! Is Stub EM active?
+    if (use_em_stub) then
+       num_em            = num_em + 1
+       index_em_stub     = num_em
+       allocate(em_stub(nclumps))
+    endif
+
     if ( masterproc ) then
-       write(iulog,*) 'Number of Exteranl Models = ', num_em
-       write(iulog,*) '  BeTR is present     ',(index_em_betr     >0)
-       write(iulog,*) '  FATES is present    ',(index_em_fates    >0)
-       write(iulog,*) '  PFLOTRAN is present ',(index_em_pflotran >0)
-       write(iulog,*) '  VSFM is present     ',(index_em_vsfm     >0)
+       write(iulog,*) 'Number of External Models = ', num_em
+       write(iulog,*) '  Is BeTR is present?     ',(index_em_betr     >0)
+       write(iulog,*) '  Is FATES is present?    ',(index_em_fates    >0)
+       write(iulog,*) '  Is PFLOTRAN is present? ',(index_em_pflotran >0)
+       write(iulog,*) '  Is PTM is present?      ',(index_em_ptm      >0)
+       write(iulog,*) '  Is Stub EM is present?  ',(index_em_stub     >0)
+       write(iulog,*) '  Is VSFM is present?     ',(index_em_vsfm     >0)
     endif
 
     if (num_em > 1) then
@@ -170,6 +184,7 @@ contains
     use ExternalModelConstants, only : EM_ID_PFLOTRAN
     use ExternalModelConstants, only : EM_ID_VSFM
     use ExternalModelConstants, only : EM_ID_PTM
+    use ExternalModelConstants, only : EM_ID_STUB
 #ifndef FATES_VIA_EMI
     use clm_instMod           , only : soilstate_vars
     use clm_instMod           , only : soilhydrology_vars
@@ -479,6 +494,94 @@ contains
        call endrun('PTM is on but code was not compiled with -DUSE_PETSC_LIB')
 #endif
 
+    case (EM_ID_STUB)
+
+       !write(iulog,*)'*******************************************'
+       write(iulog,*)'  In ELM: Initialization'
+       write(iulog,*)'  1.1 Populate lists of variables that will be exchanged between ELM and EM'
+       write(iulog,*)'      during initialization and timestepping.'
+
+       ! Initialize lists of data to be exchanged between ALM and VSFM
+       ! during initialization step
+       allocate(l2e_init_list(nclumps))
+       allocate(e2l_init_list(nclumps))
+
+       do clump_rank = 1, nclumps
+
+          iem = (index_em_stub-1)*nclumps + clump_rank
+
+          call l2e_init_list(clump_rank)%Init()
+          call e2l_init_list(clump_rank)%Init()
+
+          ! Fill the data list:
+          !  - Data need during the initialization
+          call em_stub(clump_rank)%Populate_L2E_Init_List(l2e_init_list(clump_rank))
+          call em_stub(clump_rank)%Populate_E2L_Init_List(e2l_init_list(clump_rank))
+
+          !  - Data need during timestepping
+          call em_stub(clump_rank)%Populate_L2E_List(l2e_driver_list(iem))
+          call em_stub(clump_rank)%Populate_E2L_List(e2l_driver_list(iem))
+
+       enddo
+
+       write(iulog,*)'  1.2 Exchange variables between ELM and EM during initialization'
+
+       !$OMP PARALLEL DO PRIVATE (clump_rank, iem, bounds_clump)
+       do clump_rank = 1, nclumps
+
+          call get_clump_bounds(clump_rank, bounds_clump)
+          iem = (index_em_stub-1)*nclumps + clump_rank
+
+          ! Allocate memory for data
+          call EMI_Setup_Data_List(l2e_init_list(clump_rank), bounds_clump)
+          call EMI_Setup_Data_List(e2l_init_list(clump_rank), bounds_clump)
+          call EMI_Setup_Data_List(l2e_driver_list(iem)     , bounds_clump)
+          call EMI_Setup_Data_List(e2l_driver_list(iem)     , bounds_clump)
+
+          ! Reset values in the data list
+          call EMID_Reset_Data_for_EM(l2e_init_list(clump_rank), em_stage)
+          call EMID_Reset_Data_for_EM(e2l_init_list(clump_rank), em_stage)
+
+          ! GB_FIX_ME: Create a temporary filter
+          num_filter_col = bounds_clump%endc - bounds_clump%begc + 1
+          num_filter_lun = bounds_clump%endl - bounds_clump%begl + 1
+
+          allocate(filter_col(num_filter_col))
+          allocate(filter_lun(num_filter_lun))
+
+          do ii = 1, num_filter_col
+             filter_col(ii) = bounds_clump%begc + ii - 1
+          enddo
+
+          do ii = 1, num_filter_lun
+             filter_lun(ii) = bounds_clump%begl + ii - 1
+          enddo
+
+          ! Pack all ALM data needed by the external model
+          call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
+               num_filter_col, filter_col, soilstate_vars)
+
+          ! Ensure all data needed by external model is packed
+          write(iulog,*)'     1.2.1 Value of variables send by ELM'
+          call EMID_Verify_All_Data_Is_Set(l2e_init_list(clump_rank), em_stage, print_data=.true.)
+
+          ! Initialize the external model
+          call em_stub(clump_rank)%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), &
+               iam, bounds_clump)
+
+          ! Unpack all data sent from the external model
+          call EMI_Unpack_WaterStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
+               num_filter_col, filter_col, waterstate_vars)
+
+          ! Ensure all data sent by external model is unpacked
+          write(iulog,*)'     1.2.4 Value of variables received by ELM'
+          call EMID_Verify_All_Data_Is_Set(e2l_init_list(clump_rank), em_stage, print_data=.true.)
+
+          call l2e_init_list(clump_rank)%Destroy()
+          call e2l_init_list(clump_rank)%Destroy()
+
+       enddo
+
     case default
        call endrun('Unknown External Model')
     end select
@@ -610,6 +713,7 @@ contains
     use ExternalModelConstants , only : EM_ID_PFLOTRAN
     use ExternalModelConstants , only : EM_ID_VSFM
     use ExternalModelConstants , only : EM_ID_PTM
+    use ExternalModelConstants , only : EM_ID_STUB
     use SoilStateType          , only : soilstate_type
     use SoilHydrologyType      , only : soilhydrology_type
     use TemperatureType        , only : temperature_type
@@ -670,6 +774,9 @@ contains
        index_em = index_em_vsfm
     case (EM_ID_PTM)
        index_em = index_em_ptm
+    case (EM_ID_STUB)
+       index_em = index_em_stub
+       write(iulog,*)'     2.1 Value of variables send by ELM'
     case default
        call endrun('Unknown External Model')
     end select
@@ -862,6 +969,11 @@ contains
        call endrun('PTM is on but code was not compiled with -DUSE_PETSC_LIB')
 #endif
 
+    case (EM_ID_STUB)
+       call EMID_Verify_All_Data_Is_Set(l2e_driver_list(iem), em_stage, print_data=.true.)
+       call em_stub(clump_rank)%Solve(em_stage, dtime, nstep, clump_rank, &
+            l2e_driver_list(iem), e2l_driver_list(iem), bounds_clump)
+
     case default
        call endrun('Unknown External Model')
     end select
@@ -926,7 +1038,12 @@ contains
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, temperature_vars)
     endif
 
-    call EMID_Verify_All_Data_Is_Set(e2l_driver_list(iem), em_stage)
+    if (em_id == EM_ID_STUB) then
+       write(iulog,*)'     2.4 Value of variables received by ELM'
+       call EMID_Verify_All_Data_Is_Set(e2l_driver_list(iem), em_stage, print_data=.true.)
+    else
+       call EMID_Verify_All_Data_Is_Set(e2l_driver_list(iem), em_stage)
+    endif
 
   end subroutine EMI_Driver
   
@@ -962,7 +1079,7 @@ contains
   end subroutine EMID_Reset_Data_for_EM
 
 !-----------------------------------------------------------------------
-  subroutine EMID_Verify_All_Data_Is_Set(data_list, em_stage)
+  subroutine EMID_Verify_All_Data_Is_Set(data_list, em_stage, print_data)
     !
     ! !DESCRIPTION:
     ! Verify that all EMI data that will be exchanged between ALM and external
@@ -972,10 +1089,13 @@ contains
     !
     class(emi_data_list)   , intent(in) :: data_list
     integer                , intent(in) :: em_stage
+    logical, optional                   :: print_data
     !
     class(emi_data), pointer            :: cur_data
     integer                             :: istage
+    integer                             :: rank
 
+    rank = 0
     cur_data => data_list%first
     do
        if (.not.associated(cur_data)) exit
@@ -986,6 +1106,13 @@ contains
                 write(iulog,*)'EMID%id   = ', cur_data%id
                 write(iulog,*)'EMID%name = ', trim(cur_data%name)
                 call endrun(msg='EMID is not set.')
+             endif
+             if (present(print_data)) then
+                if (print_data) then
+                   rank = rank + 1
+                   call cur_data%PrintInfo(rank)
+                   call cur_data%Print()
+                endif
              endif
              exit
           endif

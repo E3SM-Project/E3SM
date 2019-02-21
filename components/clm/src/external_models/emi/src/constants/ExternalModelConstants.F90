@@ -24,6 +24,10 @@ module ExternalModelConstants
   integer, public, parameter :: EM_ID_PTM                                        = 400
   integer, parameter, public :: EM_PTM_TBASED_SOLVE_STAGE                        = 401
 
+  integer, public, parameter :: EM_ID_STUB                                       = 500
+  integer, parameter, public :: EM_STUB_SOIL_HYDRO_STAGE                         = 501
+  integer, parameter, public :: EM_STUB_SOIL_THERMAL_STAGE                       = 502
+
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! IDs for variable sent from ALM to External Model
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
