@@ -277,6 +277,12 @@
       <grid name="ocnice">tx0.66v1</grid>
     </model_grid>
 
+    <model_grid alias="T62_t025" not_compset="_CAM">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">tx0.25v1</grid>
+    </model_grid>
+
     <model_grid alias="T62_g16" not_compset="_CAM">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -974,18 +980,18 @@
       <mask>tx0.66v1</mask>
     </model_grid>
 
-    <model_grid alias="C96_t016" not_compset="_POP" >
+    <model_grid alias="C96_t061" not_compset="_POP" >
       <grid name="atm">C96</grid>
       <grid name="lnd">C96</grid>
       <grid name="ocnice">tx0.66v1</grid>
       <mask>tx0.66v1</mask>
     </model_grid>
 
-    <model_grid alias="C96_t016" not_compset="_POP" >
+    <model_grid alias="C96_t025" not_compset="_POP" >
       <grid name="atm">C96</grid>
       <grid name="lnd">C96</grid>
-      <grid name="ocnice">tx0.66v1</grid>
-      <mask>tx0.66v1</mask>
+      <grid name="ocnice">tx0.25v1</grid>
+      <mask>tx0.25v1</mask>
     </model_grid>
 
     <!-- The following grid is only used for ADWAV testing -->
@@ -1141,6 +1147,7 @@
       <file grid="ocnice"  mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.fv10x15_USGS_070807.nc</file>
       <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.fv10x15_gx3v7.180321.nc</file>
       <file grid="ocnice"  mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.fv10x15_gx3v7.180321.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/10x15_nomask_c110308_ESMFmesh.nc</mesh>
       <desc>10x15 is FV 10-deg grid:</desc>
       <support>For low resolution testing</support>
     </domain>
@@ -1409,6 +1416,14 @@
       <support>Experimental for MOM6 experiments</support>
     </domain>
 
+    <domain name="tx0.25v1">
+      <nx>1440</nx> <ny>1080</ny>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.25v1.190207.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/tx0.25v1_190204_ESMFmesh.nc</mesh>
+      <desc>tx0.25v1 is tripole v1 0.25-deg MOM6 grid:</desc>
+      <support>Experimental for MOM6 experiments</support>
+    </domain>
+
     <domain name="tx0.1v2">
       <nx>3600</nx> <ny>2400</ny>
       <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.1v2.161014.nc</file>
@@ -1530,13 +1545,21 @@
     <required_gridmap grid1="ocn_grid" grid2="wav_grid">OCN2WAV_SMAPNAME</required_gridmap>
     <required_gridmap grid1="ocn_grid" grid2="wav_grid">ICE2WAV_SMAPNAME</required_gridmap> <!-- ??? -->
     <!-- <required_gridmap grid1="ocn_grid" grid2="rof_grid" not_compset="_POP">ROF2OCN_FMAPNAME</required_gridmap> ?? -->
-    <required_gridmap grid1="ocn_grid" grid2="rof_grid" >ROF2OCN_LIQ_RMAPNAME</required_gridmap>
-    <required_gridmap grid1="ocn_grid" grid2="rof_grid" >ROF2OCN_ICE_RMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="rof_grid">ROF2OCN_LIQ_RMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="rof_grid">ROF2OCN_ICE_RMAPNAME</required_gridmap>
     <required_gridmap grid1="lnd_grid" grid2="rof_grid">LND2ROF_FMAPNAME</required_gridmap>
     <required_gridmap grid1="lnd_grid" grid2="rof_grid">ROF2LND_FMAPNAME</required_gridmap>
   </required_gridmaps>
 
   <gridmaps>
+
+    <gridmap atm_grid="T62" ocn_grid="tx0.25v1">
+      <map name="ATM2OCN_FMAPNAME">unset</map>
+      <map name="ATM2OCN_SMAPNAME">unset</map>
+      <map name="ATM2OCN_VMAPNAME">unset</map>
+      <map name="OCN2ATM_FMAPNAME">unset</map>
+      <map name="OCN2ATM_SMAPNAME">unset</map>   
+    </gridmap>
 
     <!--- atm to ocean and ocean to atm mapping files -->
 

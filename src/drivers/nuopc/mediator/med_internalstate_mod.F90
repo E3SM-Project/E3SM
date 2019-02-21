@@ -4,16 +4,17 @@ module med_internalstate_mod
   ! Mediator Internal State Datatype.
   !-----------------------------------------------------------------------------
 
-  use ESMF                  , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
-  use ESMF                  , only : ESMF_VM
-  use esmFlds               , only : ncomps, nmappers
+  use ESMF    , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
+  use ESMF    , only : ESMF_VM
+  use esmFlds , only : ncomps, nmappers
 
   implicit none
   private
 
-  integer, public :: logunit  ! logunit for mediator log output
-  integer, public :: loglevel ! loglevel for mediator log output
+  integer, public :: logunit            ! logunit for mediator log output
+  integer, public :: loglevel           ! loglevel for mediator log output
   logical, public :: mastertask=.false. ! is this the mastertask
+  integer, public :: med_id             ! needed currently in med_io_mod and set in esm.F90
 
   ! Active coupling definitions
   ! This defines the med_mapping_allowed is a starting point for what is
@@ -41,6 +42,7 @@ module med_internalstate_mod
 
   ! private internal state to keep instance data
   type InternalStateStruct
+
     ! NState_Imp and NState_Exp are the standard NUOPC coupling datatypes
     ! FBImp and FBExp are the internal mediator datatypes
     ! NState_Exp(n) = FBExp(n), copied in the connector prep phase
@@ -48,29 +50,43 @@ module med_internalstate_mod
     ! FBImp(n,k) is the FBImp(n,n) interpolated to grid k
     ! RH(n,k,m) is a RH from grid n to grid k, map type m
 
-    logical               :: comp_present(ncomps)               ! comp present flag
-    logical               :: med_coupling_active(ncomps,ncomps) ! computes the active coupling
-    type(ESMF_RouteHandle):: RH(ncomps,ncomps,nmappers)         ! Routehandles for pairs of components and different mappers
-    type(ESMF_FieldBundle):: FBfrac(ncomps)                     ! Fraction data for various components, on their grid
-    type(ESMF_FieldBundle):: FBNormOne(ncomps,ncomps,nmappers)  ! Unity static normalization
-    type(ESMF_State)      :: NStateImp(ncomps)                  ! Import data from various component, on their grid
-    type(ESMF_State)      :: NStateExp(ncomps)                  ! Export data to various component, on their grid
-    type(ESMF_FieldBundle):: FBImp(ncomps,ncomps)               ! Import data from various components interpolated to various grids
-    type(ESMF_FieldBundle):: FBImpAccum(ncomps)                 ! Accumulator for various components import on their grid
-    integer               :: FBImpAccumcnt(ncomps)              ! Accumulator counter for each FBImpAccum
-    type(ESMF_FieldBundle):: FBExp(ncomps)                      ! Export data for various components, on their grid
-    type(ESMF_FieldBundle):: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
-    integer               :: FBExpAccumcnt(ncomps)              ! Accumulator counter for each FBExpAccum
-    logical               :: FBExpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
-    integer               :: conn_prep_cnt(ncomps)              ! Connector prep count
-    integer               :: conn_post_cnt(ncomps)              ! Connector post count
-    type(ESMF_VM)         :: vm
+    ! Present/Active logical flags
+    logical                :: comp_present(ncomps)               ! comp present flag
+    logical                :: med_coupling_active(ncomps,ncomps) ! computes the active coupling
 
-    ! CESM-specific internal state fields
-    type(ESMF_FieldBundle):: FBMed_ocnalb_o                     ! Ocn albedo on ocn grid
-    type(ESMF_FieldBundle):: FBMed_ocnalb_a                     ! Ocn albedo on atm grid
-    type(ESMF_FieldBundle):: FBMed_aoflux_o                     ! Ocn/Atm flux fields on ocn grid
-    type(ESMF_FieldBundle):: FBMed_aoflux_a                     ! Ocn/Atm flux fields on atm grid
+    ! Import/export States and field bundles
+    type(ESMF_State)       :: NStateImp(ncomps)                  ! Import data from various component, on their grid
+    type(ESMF_State)       :: NStateExp(ncomps)                  ! Export data to various component, on their grid
+    type(ESMF_FieldBundle) :: FBImp(ncomps,ncomps)               ! Import data from various components interpolated to various grids
+    type(ESMF_FieldBundle) :: FBExp(ncomps)                      ! Export data for various components, on their grid
+
+    ! Mediator field bundles
+    type(ESMF_FieldBundle) :: FBMed_ocnalb_o                     ! Ocn albedo on ocn grid
+    type(ESMF_FieldBundle) :: FBMed_ocnalb_a                     ! Ocn albedo on atm grid
+    type(ESMF_FieldBundle) :: FBMed_aoflux_o                     ! Ocn/Atm flux fields on ocn grid
+    type(ESMF_FieldBundle) :: FBMed_aoflux_a                     ! Ocn/Atm flux fields on atm grid
+
+    ! Mapping
+    type(ESMF_RouteHandle) :: RH(ncomps,ncomps,nmappers)         ! Routehandles for pairs of components and different mappers
+    type(ESMF_FieldBundle) :: FBNormOne(ncomps,ncomps,nmappers)  ! Unity static normalization
+
+    ! Fractions
+    type(ESMF_FieldBundle) :: FBfrac(ncomps)                     ! Fraction data for various components, on their grid
+
+    ! Accumulators for export field bundles
+    type(ESMF_FieldBundle) :: FBExpAccum(ncomps)                 ! Accumulator for various components export on their grid
+    integer                :: FBExpAccumCnt(ncomps)              ! Accumulator counter for each FBExpAccum
+    logical                :: FBExpAccumFlag(ncomps) = .false.   ! Accumulator flag, if true accumulation was done
+
+    ! Accumulators for import field bundles
+    type(ESMF_FieldBundle) :: FBImpAccum(ncomps,ncomps)          ! Accumulator for various components import
+    integer                :: FBImpAccumCnt(ncomps)              ! Accumulator counter for each FBImpAccum
+
+    ! Connectors
+    integer                :: conn_prep_cnt(ncomps)              ! Connector prep count
+    integer                :: conn_post_cnt(ncomps)              ! Connector post count
+    type(ESMF_VM)          :: vm
+
  end type InternalStateStruct
 
   type, public :: InternalState

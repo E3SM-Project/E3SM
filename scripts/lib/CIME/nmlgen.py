@@ -694,6 +694,8 @@ class NamelistGenerator(object):
         """ Write nuopc component modelio files"""
         self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
 
+
+    # For NUOPC
     def write_nuopc_config_file(self, filename, data_list_path=None, skip_comps=None):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
