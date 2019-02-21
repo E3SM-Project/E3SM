@@ -133,6 +133,7 @@ contains
     real(R8), pointer   :: Faxa_swvdf(:), Faxa_swndf(:)
     real(R8), pointer   :: Faxa_swvdr(:), Faxa_swndr(:)
     real(R8), pointer   :: Foxx_swnet(:)
+    real(R8), pointer   :: Foxx_swnet_afracr(:)
     real(R8), pointer   :: Foxx_swnet_vdr(:), Foxx_swnet_vdf(:)
     real(R8), pointer   :: Foxx_swnet_idr(:), Foxx_swnet_idf(:)
     real(R8), pointer   :: Fioi_swpen_vdr(:), Fioi_swpen_vdf(:)
@@ -142,6 +143,7 @@ contains
     real(R8), pointer   :: Foxx_lwnet(:)
     real(R8), pointer   :: Faox_lwup(:)
     real(R8), pointer   :: Faxa_lwdn(:)
+    real(R8), pointer   :: dataptr_i(:), dataptr_o(:)
     real(R8)            :: ifrac_scaled, ofrac_scaled
     real(R8)            :: ifracr_scaled, ofracr_scaled
     real(R8)            :: frac_sum
@@ -270,7 +272,7 @@ contains
          end if
        end if
 
-       ! Output to ocean
+       ! Output to ocean swnet 
        if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -278,6 +280,8 @@ contains
           lsize = size(Faxa_swvdr)
           allocate(Foxx_swnet(lsize))
        end if
+
+       ! Output to ocean swnet by radiation bands
        if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', rc=rc)) then
           export_swnet_by_bands = .true.
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', Foxx_swnet_vdr, rc=rc)
@@ -290,6 +294,12 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           export_swnet_by_bands = .false.
+       end if
+
+       ! Swnet without swpen from sea-ice
+       if ( fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr',rc=rc)) then
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr', Foxx_swnet_afracr, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        do n = 1,lsize
@@ -311,6 +321,7 @@ contains
           fswabsv  = Faxa_swvdr(n) * (1.0_R8 - albvis_dir) + Faxa_swvdf(n) * (1.0_R8 - albvis_dif)
           fswabsi  = Faxa_swndr(n) * (1.0_R8 - albnir_dir) + Faxa_swndf(n) * (1.0_R8 - albnir_dif)
           Foxx_swnet(n) = fswabsv + fswabsi
+          Foxx_swnet_afracr(n) = fswabsv + fswabsi
 
           ! Add swpen from sea ice if sea ice is present
           if (is_local%wrap%comp_present(compice)) then
@@ -354,14 +365,41 @@ contains
                    Foxx_swnet_idf(n) = c4 * Foxx_swnet(n)
                 end if
              end if
-             ! TODO (mvertens, 2018-12-16): fill in the following
-             ! if (i2o_per_cat) then
-             !   Sf_ofrac(n)  = ofrac(n)
-             !   Sf_ofracr(n) = ofracr(n)
-             !   Foxx_swnet_ofracr(n) = (fswabsv + fswabsi) * ofracr_scaled
-             ! end if
           end if  ! if sea-ice is present
        end do
+
+       ! Output to ocean per ice thickness fraction and sw penetrating into ocean
+       if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)        , 'Si_ifrac_n', rc=rc)) then
+
+          call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', dataptr_i, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Si_ifrac_n', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = dataptr_i(:)
+       end if
+
+       if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen_ifrac_n', rc=rc)) then
+
+          call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', dataptr_i, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Fioi_swpen_ifrac_n', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = dataptr_i(:)
+       end if
+
+       if ( fldchk(is_local%wrap%FBExp(compocn), 'Sf_afrac', rc=rc)) then
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afrac', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = ofrac(:)
+       end if
+
+       if ( fldchk(is_local%wrap%FBExp(compocn), 'Sf_afracr', rc=rc)) then
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afracr', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = ofracr(:)
+       end if
 
        !-------------
        ! custom calculation for cesm coupling

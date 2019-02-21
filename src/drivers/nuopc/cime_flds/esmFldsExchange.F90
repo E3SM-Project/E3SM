@@ -47,7 +47,6 @@ contains
 
     ! local variables:
     type(InternalState) :: is_local
-    integer             :: ice_ncat                   ! number of sea ice thickness categories
     integer             :: glc_nec                    ! number of land-ice elevation classes
     integer             :: max_megan
     integer             :: max_ddep
@@ -155,7 +154,6 @@ contains
     max_ddep  = 80
     max_fire  = 10
     glc_nec   = 10
-    ice_ncat  =  5
     flds_i2o_per_cat = .true.
 
     iso(1) = ''
@@ -1126,24 +1124,26 @@ contains
     ! ---------------------------------------------------------------------
     ! to ocn: per ice thickness fraction and sw penetrating into ocean from ice
     ! ---------------------------------------------------------------------
-    if (phase == 'advertise') then
-       if (flds_i2o_per_cat) then
+    if (flds_i2o_per_cat) then
+       if (phase == 'advertise') then
           ! 'fractional ice coverage wrt ocean for each thickness category '
           call addfld(fldListFr(compice)%flds, 'Si_ifrac_n')
+          call addfld(fldListTo(compocn)%flds, 'Si_ifrac_n')
+
           ! net shortwave radiation penetrating into ocean for each thickness category
           call addfld(fldListFr(compice)%flds, 'Fioi_swpen_ifrac_n')
-          ! 'fractional atmosphere coverage wrt ocean'
+          call addfld(fldListTo(compocn)%flds, 'Fioi_swpen_ifrac_n')
+
+          ! 'fractional atmosphere coverage wrt ocean' (computed in med_phases_prep_ocn)
           call addfld(fldListTo(compocn)%flds, 'Sf_afrac')
-          ! 'net shortwave radiation times atmosphere fraction'
-          call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
-          ! 'fractional atmosphere coverage used in radiation computations wrt ocean'
+          ! 'fractional atmosphere coverage used in radiation computations wrt ocean' (computed in med_phases_prep_ocn)
           call addfld(fldListTo(compocn)%flds, 'Sf_afracr')
-       end if
-    else
-       if (flds_i2o_per_cat) then
-          call addmap(fldListFr(compice)%flds, 'Si_ifrac_n', compocn, mapfcopy, 'unset', 'unset')
+          ! 'net shortwave radiation times atmosphere fraction' (computed in med_phases_prep_ocn)
+          call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
+       else
+          call addmap(fldListFr(compice)%flds, 'Si_ifrac_n'        , compocn, mapfcopy, 'unset', 'unset')
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen_ifrac_n', compocn, mapfcopy, 'unset', 'unset')
-          ! TODO (mvertens, 2018-12-21): add mapping and merging
+          ! Note that 'Sf_afrac, 'Sf_afracr' and 'Foxx_swnet_afracr' will have explicit merging in med_phases_prep_ocn
        end if
     end if
 
