@@ -139,7 +139,7 @@ gridfile="default"
 
 while [ $# -gt 0 ]; do
     case $1 in
-        -v|-V)
+        -v|--verbose)
             verbose="YES"
             ;;
         -b|--batch) 
@@ -210,6 +210,8 @@ if [ "$gridfile" != "default" ]; then
     DST_LRGFIL="none"
     DST_TYPE="SCRIP"
 else
+    echo "Error: no grid file specified"
+    exit 1
     if [ "$res" = "default" ]; then
        res=$default_res
     fi
@@ -258,39 +260,39 @@ fi
 #----------------------------------------------------------------------
 
 if [ "$phys" = "clm4_0" ]; then
-    grids=(                    \
-       "0.5x0.5_USGS"      \
-       "0.5x0.5_AVHRR"     \
-       "0.5x0.5_MODIS"     \
-       "3x3min_LandScan2004" \
-       "3x3min_MODIS"      \
-       "3x3min_USGS"       \
-       "5x5min_nomask"     \
-       "5x5min_IGBP-GSDP"  \
-       "5x5min_ISRIC-WISE" \
-       "10x10min_nomask"   \
-       "3x3min_GLOBE-Gardner" \
-       "3x3min_GLOBE-Gardner-mergeGIS" )
-
+    grids=(                             \
+        "0.5x0.5_USGS"                  \
+        "0.5x0.5_AVHRR"                 \
+        "0.5x0.5_MODIS"                 \
+        "3x3min_LandScan2004"           \
+        "3x3min_MODIS"                  \
+        "3x3min_USGS"                   \
+        "5x5min_nomask"                 \
+        "5x5min_IGBP-GSDP"              \
+        "5x5min_ISRIC-WISE"             \
+        "10x10min_nomask"               \
+        "3x3min_GLOBE-Gardner"          \
+        "3x3min_GLOBE-Gardner-mergeGIS" \
+    )
 elif [ "$phys" = "clm4_5" ]; then
-    grids=(                    \
-           "0.5x0.5_AVHRR"     \
-           "0.5x0.5_MODIS"     \
-           "3x3min_LandScan2004" \
-           "3x3min_MODIS"      \
-           "3x3min_USGS"       \
-           "5x5min_nomask"     \
-           "5x5min_IGBP-GSDP"  \
-           "5x5min_ISRIC-WISE" \
-           "10x10min_nomask"   \
-           "10x10min_IGBPmergeICESatGIS" \
-           "3x3min_GLOBE-Gardner" \
-           "3x3min_GLOBE-Gardner-mergeGIS" \
-           "0.9x1.25_GRDC" \
-           "360x720cru_cruncep" \
-           "1km-merge-10min_HYDRO1K-merge-nomask" \
-           "0.5x0.5_GSDTG2000" )
-
+    grids=(                                     \
+        "0.5x0.5_AVHRR"                         \
+        "0.5x0.5_MODIS"                         \
+        "3x3min_LandScan2004"                   \
+        "3x3min_MODIS"                          \
+        "3x3min_USGS"                           \
+        "5x5min_nomask"                         \
+        "5x5min_IGBP-GSDP"                      \
+        "5x5min_ISRIC-WISE"                     \
+        "10x10min_nomask"                       \
+        "10x10min_IGBPmergeICESatGIS"           \
+        "3x3min_GLOBE-Gardner"                  \
+        "3x3min_GLOBE-Gardner-mergeGIS"         \
+        "0.9x1.25_GRDC"                         \
+        "360x720cru_cruncep"                    \
+        "1km-merge-10min_HYDRO1K-merge-nomask"  \
+        "0.5x0.5_GSDTG2000"                     \
+    )
 else
     echo "ERROR: Unknown value for phys: $phys"
     exit 1
