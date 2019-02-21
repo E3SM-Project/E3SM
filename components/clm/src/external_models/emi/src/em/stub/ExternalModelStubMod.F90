@@ -460,7 +460,7 @@ contains
 
     write(iulog,*)''
     write(iulog,*)'     2.3 Value of variables send by Stub EM after'
-    write(iulog,*)'         solving the hydrology model'
+    write(iulog,*)'         solving the thermal model'
     call Print2DData('e2l_tsoil', begc, endc, 1, nlevgrnd, e2l_tsoil)
     write(iulog,*)''
 
