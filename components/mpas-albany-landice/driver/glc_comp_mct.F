@@ -1447,7 +1447,7 @@ contains
    real (kind=RKIND), dimension(:), pointer :: upperSurface
    real (kind=RKIND), dimension(:,:), pointer :: layerThickness
    real (kind=RKIND), dimension(:), pointer :: thickness
-   real (kind=RKIND), dimension(:), pointer :: basalTemperature
+   real (kind=RKIND), dimension(:,:), pointer :: temperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
 
@@ -1470,7 +1470,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
-         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
@@ -1485,7 +1485,7 @@ contains
             g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
-            g2x_g % rAttr(index_g2x_Sg_tbot, n) = basalTemperature(i)
+            g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
             g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
             g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
 
