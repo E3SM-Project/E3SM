@@ -7,7 +7,7 @@ include_directories(${CMAKE_BINARY_DIR}/elm_stub/utils)
 include_directories(${CMAKE_BINARY_DIR}/constants)
 include_directories(${CMAKE_BINARY_DIR}/emi_data_types)
 include_directories(${CMAKE_BINARY_DIR}/emi_data_definition)
-include_directories(${CMAKE_BINARY_DIR}/em)
+include_directories(${CMAKE_BINARY_DIR}/em/base)
 
 include(add_emi_library)
 add_emi_library(emi_em_vsfm ${EMI_EM_VSFM_SOURCES})

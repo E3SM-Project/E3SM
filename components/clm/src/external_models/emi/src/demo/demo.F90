@@ -6,7 +6,6 @@ program demo
   use clm_instMod               , only : clm_inst_biogeophys
   use clm_varpar                , only : clm_varpar_init
   use clm_varcon                , only : clm_varcon_init
-  use ExternalModelInterfaceMod , only : EMI_Determine_Active_EMs
   use spmdMod                   , only : spmd_init
   use ExternalModelConstants    , only : EM_ID_STUB, EM_STUB_SOIL_HYDRO_STAGE, EM_STUB_SOIL_THERMAL_STAGE
   use clm_instMod               , only : soilstate_vars, waterstate_vars, waterflux_vars
