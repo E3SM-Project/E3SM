@@ -76,6 +76,9 @@ int PIOc_strerror(int pioerr, char *errmsg)
         case PIO_EBADIOTYPE:
             strcpy(errmsg, "Bad IO type");
             break;
+	case PIO_EVARDIMMISMATCH:
+	    strcpy(errmsg, "Variable dim mismatch in multivar call");
+	    break;
         default:
             strcpy(errmsg, "Unknown Error: Unrecognized error code");
         }
@@ -702,6 +705,7 @@ int malloc_iodesc(iosystem_desc_t *ios, int piotype, int ndims,
 
     /* Set the swap memory settings to defaults for this IO system. */
     (*iodesc)->rearr_opts = ios->rearr_opts;
+
     return PIO_NOERR;
 }
 
@@ -1853,6 +1857,7 @@ int PIOc_createfile_int(int iosysid, int *ncidp, int *iotype, const char *filena
 
     /* Return the ncid to the caller. */
     *ncidp = file->pio_ncid;
+
     /* Add the struct with this files info to the global list of
      * open files. */
     pio_add_to_file_list(file);
@@ -2047,6 +2052,7 @@ int inq_file_metadata(file_desc_t *file, int ncid, int iotype, int *nvars, int *
         else
         {
             size_t type_size;
+
             if ((ret = nc_inq_var(ncid, v, NULL, &my_type, &var_ndims, NULL, NULL)))
                 return pio_err(NULL, file, ret, __FILE__, __LINE__);
             (*pio_type)[v] = (int)my_type;
@@ -2079,6 +2085,7 @@ int inq_file_metadata(file_desc_t *file, int ncid, int iotype, int *nvars, int *
                 if ((ret = nc_inq_vardimid(ncid, v, var_dimids)))
                     return pio_err(NULL, file, ret, __FILE__, __LINE__);
             }
+
             /* Check against each variable dimid agains each unlimited
              * dimid. */
             for (int d = 0; d < var_ndims; d++)
@@ -2328,7 +2335,6 @@ int PIOc_openfile_retry(int iosysid, int *ncidp, int *iotype, const char *filena
     if (ios->ioroot == ios->union_rank)
 	LOG((2, "Bcasting error code ierr %d ios->ioroot %d ios->my_comm %d",
 	     ierr, ios->ioroot, ios->my_comm));
-
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
         return check_mpi(file, mpierr, __FILE__, __LINE__);
     LOG((2, "Bcast openfile_retry error code ierr = %d", ierr));
