@@ -198,8 +198,8 @@ if [ "$gridfile" != "default" ]; then
     GRIDFILE=$gridfile
     echo "Using user specified scrip grid file: $GRIDFILE" 
     if [ "$res" = "default" ]; then
-       echo "When user specified grid file is given you MUST set the resolution (as the name of your grid)\n";
-       exit 1
+        echo "When user specified grid file is given you MUST set the resolution (as the name of your grid)\n";
+        exit 1
     fi
     
     # For now, make some assumptions about user-specified grids --
@@ -213,7 +213,7 @@ else
     echo "Error: no grid file specified"
     exit 1
     if [ "$res" = "default" ]; then
-       res=$default_res
+        res=$default_res
     fi
 
     QUERYARGS="-res $res -options lmask=nomask"
@@ -221,7 +221,7 @@ else
     # Find the output grid file for this resolution using the XML database
     QUERYFIL="$QUERY -var scripgriddata $QUERYARGS -onlyfiles"
     if [ "$verbose" = "YES" ]; then
-    echo $QUERYFIL
+        echo $QUERYFIL
     fi
     GRIDFILE=`$QUERYFIL`
     echo "Using default scrip grid file: $GRIDFILE" 
@@ -231,28 +231,31 @@ else
     DST_TYPE=`$QUERY -var scripgriddata_type $QUERYARGS`
     if [ "$DST_TYPE" = "UGRID" ]; then
         # For UGRID, we need extra information: the meshname variable
-    dst_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
-    DST_EXTRA_ARGS="$DST_EXTRA_ARGS --dst_meshname $dst_meshname"
+        dst_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
+        DST_EXTRA_ARGS="$DST_EXTRA_ARGS --dst_meshname $dst_meshname"
     fi
 fi
 
+# Make sure grid type is consistent
 if [ "$type" = "global" ] && [ `echo "$res" | grep -c "1x1_"` = 1 ]; then
-   echo "This is a regional resolution and yet it is being run as global, set type with '-t' option\n";
-   exit 1
+    echo "This is a regional resolution and yet it is being run as global, set type with '-t' option\n";
+    exit 1
 fi
 echo "Output grid resolution is $res"
+
+# Make sure we found a gridfile for given resolution
 if [ -z "$GRIDFILE" ]; then
-   echo "Output grid file was NOT found for this resolution: $res\n";
-   exit 1
+    echo "Output grid file was NOT found for this resolution: $res\n";
+    exit 1
 fi
 
 if [ "$list" = "YES" ]; then
-   echo "outgrid = $GRIDFILE"
-   echo "outgrid = $GRIDFILE" > $outfilelist
+    echo "outgrid = $GRIDFILE"
+    echo "outgrid = $GRIDFILE" > $outfilelist
 elif [ ! -f "$GRIDFILE" ]; then
-   echo "Input SCRIP grid file does NOT exist: $GRIDFILE\n";
-   echo "Make sure CSMDATA environment variable is set correctly"
-   exit 1
+    echo "Input SCRIP grid file does NOT exist: $GRIDFILE\n";
+    echo "Make sure CSMDATA environment variable is set correctly"
+    exit 1
 fi
 
 #----------------------------------------------------------------------
@@ -339,6 +342,8 @@ done
 
 #----------------------------------------------------------------------
 # Determine supported machine specific stuff
+# TODO: machine-specific stuff should be handled by CIME now, so this
+# should all be ripped out.
 #----------------------------------------------------------------------
 
 hostname=`hostname`
@@ -420,13 +425,6 @@ case $hostname in
 
 esac
 
-# Error checks
-if [ ! -d "$ESMFBIN_PATH" ]; then
-    echo "Path to ESMF binary directory does NOT exist: $ESMFBIN_PATH"
-    echo "Set the environment variable: ESMFBIN_PATH"
-    exit 1
-fi
-
 #----------------------------------------------------------------------
 # Generate the mapping files needed for surface dataset generation
 #----------------------------------------------------------------------
@@ -454,7 +452,13 @@ else
    mpirun=""
 fi
   
-ESMF_REGRID="$ESMFBIN_PATH/ESMF_RegridWeightGen"
+# Look for ESMF_RegridWeightGen. If ESMFBIN_PATH is set, then look for binary
+# there. Otherwise, assume it exists in PATH and use which to find command.
+if [ -z "${ESMFBIN_PATH}" ]; then
+    ESMF_REGRID=`which ESMF_RegridWeightGen`
+else
+    ESMF_REGRID="${ESMFBIN_PATH}/ESMF_RegridWeightGen"
+fi
 if [ ! -x "$ESMF_REGRID" ]; then
     echo "ESMF_RegridWeightGen does NOT exist in ESMF binary directory: $ESMFBIN_PATH\n"
     echo "Upgrade to a newer version of ESMF with this utility included"
