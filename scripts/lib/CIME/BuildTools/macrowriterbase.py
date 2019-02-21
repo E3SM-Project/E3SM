@@ -132,7 +132,7 @@ class MacroWriterBase(object):
 
         A trailing newline is added, whether or not the input has one.
         """
-        self.output.write(str(self.indent_string() + line + "\n"))
+        self.output.write(u"{}{}\n".format(self.indent_string(), line))
 
     @abstractmethod
     def environment_variable_string(self, name):
