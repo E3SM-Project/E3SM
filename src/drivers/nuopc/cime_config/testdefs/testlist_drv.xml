@@ -197,8 +197,26 @@
       <option name="wallclock"> 00:10:00 </option>
     </options>
   </test>
-
   <test compset="I2000Clm50SpNuopc" grid="f45_f45_mg37" name="SMS_Vmct_Ln5" testmods="clm/nuopc_cap">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="mctcheck"/>
+      <machine name="theia" compiler="intel" category="mctcheck"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:10:00 </option>
+    </options>
+  </test>
+
+  <test compset="I2000Clm50SpGs" grid="f19_f19_mg17" name="SMS_Vnuopc_Ln5" testmods="clm/nuopc_cap">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="nuopc"/>
+      <machine name="theia" compiler="intel" category="nuopc"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:10:00 </option>
+    </options>
+  </test>
+  <test compset="I2000Clm50SpGs" grid="f19_f19_mg17" name="SMS_Vmct_Ln5" testmods="clm/nuopc_cap">
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>

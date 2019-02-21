@@ -18,7 +18,8 @@ runSeq::
     MED med_phases_prep_wav
     MED med_connectors_prep_med2wav
     MED -> WAV :remapMethod=redist
-    MED med_phases_prep_rof
+    MED med_phases_prep_rof_accum_fast
+    MED med_phases_prep_rof_avg
     MED med_connectors_prep_med2rof
     MED -> ROF :remapMethod=redist
     ICE
