@@ -1,8 +1,16 @@
 module dyn_grid
-  !----------------------------------------------------------------------- 
+  !------------------------------------------------------------------------------------------------- 
   ! 
   ! Purpose: Definition of dynamics computational grid.
-  !
+  ! 
+  !          The grid used by the SE dynamics is called the GLL grid, which is 
+  !          made up up of elements that correspond to "blocks". The columns 
+  !          within each element are located at the Gauss-Lobatto-Legendre (GLL)
+  !          quadrature points. The GLL nodes can be used as the physics columns
+  !          as well, but this can lead to grid imprinting. The physics can also
+  !          be done on a quasi-equal area FV grid when fv_nphys>0, which will 
+  !          define fv_nphys^2 cells per element.
+  ! 
   ! Method: Variables are private; interface routines used to extract
   !         information for use in user code. Global column index range
   !         defined using full (unreduced) grid. 
@@ -31,14 +39,15 @@ module dyn_grid
   !
   ! Author: Jim Edwards and Patrick Worley
   ! 
-  !-----------------------------------------------------------------------
-  use element_mod,            only: element_t
-  use cam_logfile,            only: iulog
-  use cam_abortutils,         only: endrun
-  use shr_kind_mod,           only: r8 => shr_kind_r8
-  use shr_const_mod,          only: SHR_CONST_PI
-  use cam_grid_support,       only: iMap
+  !-------------------------------------------------------------------------------------------------
+  use element_mod,        only: element_t
+  use cam_logfile,        only: iulog
+  use cam_abortutils,     only: endrun
+  use shr_kind_mod,       only: r8 => shr_kind_r8
+  use shr_const_mod,      only: SHR_CONST_PI
+  use cam_grid_support,   only: iMap
   use scamMod,                only: single_column
+  use dimensions_mod,     only: nelem, nelemd, nelemdmax, ne, np, npsq, fv_nphys
 
   implicit none
   private
@@ -87,155 +96,122 @@ module dyn_grid
   integer(iMap), pointer :: pemap(:) => null()  ! pe-local map for PIO decomp
 
 
-!========================================================================
+!===================================================================================================
 contains
-!========================================================================
+!===================================================================================================
 
   subroutine dyn_grid_init()
 
   end subroutine dyn_grid_init
-
-  !========================================================================
+  !
+  !=================================================================================================
   !
   subroutine get_block_bounds_d(block_first,block_last)
-    use dimensions_mod, only: nelem
-    !----------------------------------------------------------------------- 
-    ! 
-    !                          
+    !-----------------------------------------------------------------------                    
     ! Purpose: Return first and last indices used in global block ordering
     ! 
-    ! Method: 
-    ! 
     ! Author: Jim Edwards
-    ! 
-    !-----------------------------------------------------------------------
     !------------------------------Arguments--------------------------------
     integer, intent(out) :: block_first  ! first (global) index used for blocks
     integer, intent(out) :: block_last   ! last (global) index used for blocks
-
     !-----------------------------------------------------------------------
     block_first = 1
     block_last = nelem
-
     return
   end subroutine get_block_bounds_d
   !
-  !========================================================================
+  !=================================================================================================
   !
   subroutine get_block_gcol_d(blockid,size,cdex)
-    !----------------------------------------------------------------------- 
-    ! 
-    !                          
+    !-----------------------------------------------------------------------                  
     ! Purpose: Return list of dynamics column indices in given block
     ! 
-    ! Method: 
-    ! 
     ! Author: Jim Edwards
-    ! 
     !-----------------------------------------------------------------------
     implicit none
     !------------------------------Arguments--------------------------------
-    integer, intent(in) :: blockid      ! global block id
-    integer, intent(in) :: size         ! array size
-
+    integer, intent(in ):: blockid      ! global block id
+    integer, intent(in ):: size         ! array size
     integer, intent(out):: cdex(size)   ! global column indices
-    !
+    !----------------------------Local-Variables----------------------------
     integer :: ic
-    if(gblocks_need_initialized) call gblocks_init()
-    do ic=1,size
-       cdex(ic)=gblocks(blockid)%UniquePtOffset+ic-1
-    end do
+    !-----------------------------------------------------------------------
+    if (fv_nphys > 0) then
+      cdex(1) = (blockid-1)*fv_nphys*fv_nphys + 1
+      do ic = 2, size
+         cdex(ic) = cdex(1) + ic - 1
+      end do
+    else
+      if(gblocks_need_initialized) call gblocks_init()
+      do ic=1,size
+         cdex(ic)=gblocks(blockid)%UniquePtOffset+ic-1
+      end do
+    end if ! fv_nphys > 0
 
     return
   end subroutine get_block_gcol_d
-
   !
-  !========================================================================
+  !=================================================================================================
   !
   integer function get_block_gcol_cnt_d(blockid)
-    !----------------------------------------------------------------------- 
-    ! 
-    !                          
+    !-----------------------------------------------------------------------                   
     ! Purpose: Return number of dynamics columns in indicated block
     ! 
-    ! Method: 
-    ! 
     ! Author: Jim Edwards
-    ! 
-    !-----------------------------------------------------------------------
+    !------------------------------Arguments--------------------------------
     integer, intent(in) :: blockid
     integer :: ie
-
-    if(gblocks_need_initialized) call gblocks_init()
-    get_block_gcol_cnt_d=gblocks(blockid)%NumUniqueP
+    !-----------------------------------------------------------------------
+    if (fv_nphys > 0) then
+      get_block_gcol_cnt_d = fv_nphys*fv_nphys
+    else
+      if(gblocks_need_initialized) call gblocks_init()
+      get_block_gcol_cnt_d=gblocks(blockid)%NumUniqueP
+    end if ! fv_nphys > 0
 
     return
   end function get_block_gcol_cnt_d
-
   !
-  !========================================================================
+  !=================================================================================================
   !
   integer function get_block_lvl_cnt_d(blockid,bcid)
     use pmgrid, only: plevp
-
     !-----------------------------------------------------------------------
-    !
-    !
     ! Purpose: Return number of levels in indicated column. If column
     !          includes surface fields, then it is defined to also
     !          include level 0.
     !
-    ! Method:
-    !
     ! Author: Patrick Worley
-    !
     !-----------------------------------------------------------------------
-
     implicit none
     !------------------------------Arguments--------------------------------
     integer, intent(in) :: blockid  ! global block id
     integer, intent(in) :: bcid    ! column index within block
-
     !-----------------------------------------------------------------------
-
     get_block_lvl_cnt_d = plevp
-
     return
   end function get_block_lvl_cnt_d
   !
-  !========================================================================
+  !=================================================================================================
   !
   subroutine get_block_levels_d(blockid, bcid, lvlsiz, levels)
     use pmgrid,         only: plev
     use cam_abortutils, only: endrun
-
     !-----------------------------------------------------------------------
-    !
-    !
     ! Purpose: Return level indices in indicated column. If column
     !          includes surface fields, then it is defined to also
     !          include level 0.
     !
-    ! Method:
-    !
     ! Author: Patrick Worley
-    !
     !-----------------------------------------------------------------------
-
     implicit none
     !------------------------------Arguments--------------------------------
-    integer, intent(in) :: blockid  ! global block id
-    integer, intent(in) :: bcid    ! column index within block
-    integer, intent(in) :: lvlsiz   ! dimension of levels array
-
-    integer, intent(out) :: levels(lvlsiz) ! levels indices for block
-
-    !---------------------------Local workspace-----------------------------
-    !
-
-    !---------------------------Local workspace-----------------------------
-    !
-    integer k                      ! loop index
+    integer, intent(in ) :: blockid         ! global block id
+    integer, intent(in ) :: bcid            ! column index within block
+    integer, intent(in ) :: lvlsiz          ! dimension of levels array
+    integer, intent(out) :: levels(lvlsiz)  ! levels indices for block
+    !----------------------------Local-Variables----------------------------
+    integer k                        ! loop index
     !-----------------------------------------------------------------------
     !  latitude slice block
     if (lvlsiz < plev + 1) then
@@ -253,99 +229,84 @@ contains
 
     return
   end subroutine get_block_levels_d
-
   !
-  !========================================================================
+  !=================================================================================================
   !
-  subroutine get_gcol_block_d(gcol,cnt,blockid,bcid,localblockid)
-    use dimensions_mod, only: nelemd, nelem
+  subroutine get_gcol_block_d(gcol, cnt, blockid, bcid, localblockid)
     use kinds,          only: int_kind
     use cam_abortutils, only: endrun
+    use spmd_utils,     only: iam
     !----------------------------------------------------------------------- 
-    ! 
-    !                          
-    ! Purpose: Return global block index and local column index
-    !          for global column index
-    !           element array is naturally ordered
-    ! 
-    ! Method: 
+    ! Purpose: Return global block index and local column index for 
+    !          global column index. Element array is naturally ordered.
     ! 
     ! Author: Jim Edwards
     ! Modified: replaced linear search with best guess and binary search   
     !           (Pat Worley, 7/2/09)
-    ! 
     !-----------------------------------------------------------------------
     implicit none
     !------------------------------Arguments--------------------------------
-    integer, intent(in) :: gcol     ! global column index
-    integer, intent(in) :: cnt      ! size of blockid and bcid arrays
-
-    integer, intent(out) :: blockid(cnt) ! block index
-    integer, intent(out) :: bcid(cnt)    ! column index within block
+    integer, intent(in ) :: gcol          ! global column index
+    integer, intent(in ) :: cnt           ! size of blockid and bcid arrays
+    integer, intent(out) :: blockid(cnt)  ! block index
+    integer, intent(out) :: bcid(cnt)     ! column index within block
     integer, intent(out), optional :: localblockid(cnt)
+    !----------------------------Local-Variables----------------------------
     integer :: sb, eb, ie, high, low
     logical :: found
     integer, save :: iedex_save = 1
-    !---------------------------Local workspace-----------------------------
-    !
-    if(gblocks_need_initialized) call gblocks_init()
-    found = .false.
-    low = 1
-    high = nelem
+    !-----------------------------------------------------------------------
+    if (fv_nphys > 0) then
 
-    ! check whether previous found element is the same here
-    if (.not. found) then
-      ie = iedex_save
-      sb = gblocks(ie)%UniquePtOffset
-      if (gcol >= sb) then
-        eb = sb+gblocks(ie)%NumUniqueP
-        if (gcol < eb) then
-          found = .true.
+      blockid(1) = 1 + ( (gcol-1) / (fv_nphys*fv_nphys) )
+      bcid(1) = 1 + mod(gcol-1, fv_nphys*fv_nphys)
+
+      !!! need to create dp_owner for this to work
+      ! if (present(localblockid)) then
+      !    localblockid = -1
+      !    if (iam == dp_owner(blockid(1))) then
+      !       if (blockid(1) == elem(iedex_save)%globalid) then
+      !          localblockid = iedex_save
+      !       else
+      !          do ie = 1,nelemd
+      !             if (blockid(1) == elem(ie)%globalid) then
+      !                localblockid = ie
+      !                iedex_save = ie
+      !                exit
+      !             end if
+      !          end do
+      !       end if
+      !    end if
+      ! end if
+
+    else ! physics is on GLL grid
+
+      if(gblocks_need_initialized) call gblocks_init()
+      found = .false.
+      low = 1
+      high = nelem
+
+      ! check whether previous found element is the same here
+      if (.not. found) then
+        ie = iedex_save
+        sb = gblocks(ie)%UniquePtOffset
+        if (gcol >= sb) then
+          eb = sb+gblocks(ie)%NumUniqueP
+          if (gcol < eb) then
+            found = .true.
+          else
+            low = ie
+          endif
         else
-          low = ie
+          high = ie
         endif
-      else
-        high = ie
       endif
-    endif
 
-    ! check whether next element  is the one wanted
-    if ((.not. found) .and. &
-         ((low .eq. iedex_save) .or. (iedex_save .eq. nelem))) then
-      ie = iedex_save + 1
-      if (ie > nelem) ie = 1
-
-      sb = gblocks(ie)%UniquePtOffset
-      if (gcol >= sb) then
-        eb = sb+gblocks(ie)%NumUniqueP
-        if (gcol < eb) then
-          found = .true.
-        else
-          low = ie
-        endif
-      else
-        high = ie
-      endif
-    endif
-
-    ! otherwise, use a binary search to find element
-    if (.not. found) then
-      ! (start with a sanity check)
-      ie = low
-      sb = gblocks(ie)%UniquePtOffset
-
-      ie = high
-      eb = gblocks(ie)%UniquePtOffset + gblocks(ie)%NumUniqueP
-
-      if ((gcol < sb) .or.  (gcol >= eb)) then
-        do ie=1,nelemd
-          write(iulog,*) __LINE__,ie,elem(ie)%idxP%UniquePtOffset,elem(ie)%idxP%NumUniquePts
-        end do
-        call endrun()
-      end if
-
-      do while (.not. found)
-        ie = low + (high-low)/2;
+      ! check whether next element  is the one wanted
+      if ((.not. found) .and. &
+           ((low .eq. iedex_save) .or. (iedex_save .eq. nelem))) then
+        ie = iedex_save + 1
+        if (ie > nelem) ie = 1
 
         sb = gblocks(ie)%UniquePtOffset
         if (gcol >= sb) then
@@ -353,135 +314,140 @@ contains
           if (gcol < eb) then
             found = .true.
           else
-            low = ie+1
+            low = ie
           endif
         else
-          high = ie-1
+          high = ie
         endif
-      enddo
-    endif
+      endif
 
-    blockid(1)=ie
-    if(present(localblockid)) localblockid(1)=gblocks(ie)%LocalID
-    bcid(1)=gcol-sb+1
-    iedex_save = ie
+      ! otherwise, use a binary search to find element
+      if (.not. found) then
+        ! (start with a sanity check)
+        ie = low
+        sb = gblocks(ie)%UniquePtOffset
+
+        ie = high
+        eb = gblocks(ie)%UniquePtOffset + gblocks(ie)%NumUniqueP
+
+        if ((gcol < sb) .or.  (gcol >= eb)) then
+          do ie=1,nelemd
+            write(iulog,*) __LINE__,ie,elem(ie)%idxP%UniquePtOffset,elem(ie)%idxP%NumUniquePts
+          end do
+          call endrun()
+        end if
+
+        do while (.not. found)
+          ie = low + (high-low)/2;
+
+          sb = gblocks(ie)%UniquePtOffset
+          if (gcol >= sb) then
+            eb = sb+gblocks(ie)%NumUniqueP
+            if (gcol < eb) then
+              found = .true.
+            else
+              low = ie+1
+            endif
+          else
+            high = ie-1
+          endif
+        enddo
+      endif
+
+      blockid(1)=ie
+      if(present(localblockid)) localblockid(1)=gblocks(ie)%LocalID
+      bcid(1)=gcol-sb+1
+      iedex_save = ie
+
+    end if ! fv_nphys > 0
 
     return
   end subroutine get_gcol_block_d
-
-!
-!========================================================================
-!
-integer function get_gcol_block_cnt_d(gcol)
-
-  !----------------------------------------------------------------------- 
-  ! 
-  !                          
-  ! Purpose: Return number of blocks contain data for the vertical column
-  !          with the given global column index
-  ! 
-  ! Method: 
-  ! 
-  ! Author: Patrick Worley
-  ! 
-  !-----------------------------------------------------------------------
-
- implicit none
- !------------------------------Arguments--------------------------------
- integer, intent(in) :: gcol     ! global column index
- !-----------------------------------------------------------------------
- get_gcol_block_cnt_d = 1
-
- return
-end function get_gcol_block_cnt_d
-
-!
-!========================================================================
-!
-integer function get_block_owner_d(blockid)
- !----------------------------------------------------------------------- 
- ! 
- !                          
- ! Purpose: Return id of processor that "owns" the indicated block
- ! 
- ! Method: 
- ! 
- ! Author: Jim Edwards
- ! 
- !-----------------------------------------------------------------------
-
- implicit none
- !------------------------------Arguments--------------------------------
- integer, intent(in) :: blockid  ! global block id
-
- !-----------------------------------------------------------------------
- if(gblocks_need_initialized) call gblocks_init()
-
- if(gblocks(blockid)%Owner>-1) then
-    get_block_owner_d=gblocks(blockid)%Owner
- else
-    call endrun('Block owner not assigned in gblocks_init')
- end if
-
- return
-end function get_block_owner_d
-
   !
-  !========================================================================
+  !=================================================================================================
+  !
+  integer function get_gcol_block_cnt_d(gcol)
+    !----------------------------------------------------------------------- 
+    ! Purpose: Return number of blocks contain data for the vertical column
+    !          with the given global column index
+    ! 
+    ! Author: Patrick Worley
+    !-----------------------------------------------------------------------
+    implicit none
+    !------------------------------Arguments--------------------------------
+    integer, intent(in) :: gcol     ! global column index
+    !-----------------------------------------------------------------------
+    get_gcol_block_cnt_d = 1
+    return
+  end function get_gcol_block_cnt_d
+  !
+  !=================================================================================================
+  !
+  integer function get_block_owner_d(blockid)
+    !-----------------------------------------------------------------------                          
+    ! Purpose: Return id of processor that "owns" the indicated block
+    ! 
+    ! Author: Jim Edwards
+    !-----------------------------------------------------------------------
+    implicit none
+    !------------------------------Arguments--------------------------------
+    integer, intent(in) :: blockid  ! global block id
+    !-----------------------------------------------------------------------
+    if (gblocks_need_initialized) call gblocks_init()
+    
+    if (gblocks(blockid)%Owner>-1) then
+      get_block_owner_d=gblocks(blockid)%Owner
+    else
+      call endrun('Block owner not assigned in gblocks_init')
+    end if
+
+   return
+  end function get_block_owner_d
+  !
+  !=================================================================================================
   !
   subroutine get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-
     !----------------------------------------------------------------------- 
-    ! 
-    !                          
     ! Purpose: Returns declared horizontal dimensions of computational grid.
     !          For non-lon/lat grids, declare grid to be one-dimensional,
     !          i.e., (ngcols_d x 1)
     ! 
-    ! Method: 
-    ! 
     ! Author: Patrick Worley
-    ! 
-    !-----------------------------------------------------------------------
-
     !------------------------------Arguments--------------------------------
-    integer, intent(out) :: hdim1_d           ! first horizontal dimension
-    integer, intent(out), optional :: hdim2_d           ! second horizontal dimension
+    integer, intent(out)           :: hdim1_d  ! first horizontal dimension
+    integer, intent(out), optional :: hdim2_d  ! second horizontal dimension
     !-----------------------------------------------------------------------
-    hdim1_d = ngcols_d
-    if(present(hdim2_d)) hdim2_d = 1
+    if (fv_nphys > 0) then
+      hdim1_d = fv_nphys*fv_nphys*nelem
+    else
+      hdim1_d = ngcols_d
+    end if ! fv_nphys > 0
+    
+    if (present(hdim2_d)) hdim2_d = 1
 
     return
   end subroutine get_horiz_grid_dim_d
   !
-  !========================================================================
+  !=================================================================================================
   !
   subroutine set_horiz_grid_cnt_d(NumUniqueCols)
+    !----------------------------------------------------------------------- 
+    ! Purpose: Set number of columns in the dynamics computational grid
+    ! 
+    ! Author: Jim Edwards
+    !-----------------------------------------------------------------------
     use dimensions_mod, only: nelem, nelemd, np, npsq
     use element_mod,    only: index_t
     use dof_mod,        only: UniqueCoords, UniquePoints
     use physconst,      only: pi
-
-    ! Input variable
-    integer,                     intent(in)  :: NumUniqueCols
-
-    ! Local variables
-    integer             :: ie, i, j, ii
-    logical, save       :: local_coords_initialized = .false.
-    real(r8)            :: areaw(np, np)
-    type(index_t), pointer  :: idx     
-
-    !----------------------------------------------------------------------- 
-    ! 
-    !                          
-    ! Purpose: Set number of columns in the dynamics computational grid
-    ! 
-    ! Method: 
-    ! 
-    ! Author: Jim Edwards
-    ! 
+    !------------------------------Arguments--------------------------------
+    integer, intent(in) :: NumUniqueCols
+    !----------------------------Local-Variables----------------------------
+    integer                :: ie, i, j, ii
+    logical, save          :: local_coords_initialized = .false.
+    real(r8)               :: areaw(np, np)
+    type(index_t), pointer :: idx     
     !-----------------------------------------------------------------------
-
     if (.not. local_coords_initialized) then
       ngcols_d = NumUniqueCols
       ! Calculate the master mapping between element points and file order
@@ -516,7 +482,6 @@ end function get_block_owner_d
             ii = ii + 1
           end do
         end do
-!        bb = bb + nuniq
       end do
       local_coords_initialized = .true.
     else if (ngcols_d /= NumUniqueCols) then
@@ -525,16 +490,12 @@ end function get_block_owner_d
 
     return
   end subroutine set_horiz_grid_cnt_d
-
   !
-  !========================================================================
+  !=================================================================================================
   !
-  subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out, &
-       wght_d_out,lat_d_out,lon_d_out,cost_d_out)
-
+  subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out,
+                              wght_d_out,lat_d_out,lon_d_out,cost_d_out)
     !----------------------------------------------------------------------- 
-    ! 
-    !                          
     ! Purpose: Return latitude and longitude (in radians), column surface
     !          area (in radians squared) and surface integration weights
     !          for global column indices that will be passed to/from
@@ -542,54 +503,55 @@ end function get_block_owner_d
     !          computational cost per global column for use in load 
     !          balancing.
     ! 
-    ! Method: 
-    ! 
     ! Author: Jim Edwards
-    ! 
-    !-----------------------------------------------------------------------
-    integer, intent(in)   :: nxy                     ! array sizes
-
-    real(r8), intent(out), optional :: clat_d_out(:) ! column latitudes
-    real(r8), intent(out), optional :: clon_d_out(:) ! column longitudes
-    real(r8), intent(out), target, optional :: area_d_out(:) ! column surface 
-    !  area
-    real(r8), intent(out), target, optional :: wght_d_out(:) ! column integration
-    !  weight
-    real(r8), intent(out), optional :: lat_d_out(:)  ! column degree latitudes
-    real(r8), intent(out), optional :: lon_d_out(:)  ! column degree longitudes
+    !------------------------------Arguments--------------------------------
+    integer,  intent(in )                   :: nxy           ! array sizes
+    real(r8), intent(out),         optional :: clat_d_out(:) ! column latitudes
+    real(r8), intent(out),         optional :: clon_d_out(:) ! column longitudes
+    real(r8), intent(out), target, optional :: area_d_out(:) ! column surface area
+    real(r8), intent(out), target, optional :: wght_d_out(:) ! column integration weight
+    real(r8), intent(out),         optional :: lat_d_out(:)  ! column degree latitudes
+    real(r8), intent(out),         optional :: lon_d_out(:)  ! column degree longitudes
     real(r8), intent(out), optional :: cost_d_out(:) ! column cost
-
+    !----------------------------Local-Variables----------------------------
     real(r8), pointer :: area_d(:)
     real(r8), pointer :: temp(:)
-
-    if (nxy < ngcols_d) then
-      write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-           nxy,' < ',ngcols_d,' ) '
-      call endrun('GET_HORIZ_GRID_D: arrays not large enough')
-    endif
-
+    !-----------------------------------------------------------------------
+    ! Check that nxy is correct
+    if (fv_nphys > 0) then
+      if (nxy < fv_nphys*fv_nphys*nelem) then
+         write(iulog, *) 'GET_HORIZ_GRID_D: arrays too small; Passed',     &
+            nxy, ', needs to be at least', fv_nphys*fv_nphys*nelem
+         call endrun('GET_HORIZ_GRID_D: arrays too small')
+      end if
+    else
+      if (nxy < ngcols_d) then
+        write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
+             nxy,' < ',ngcols_d,' ) '
+        call endrun('GET_HORIZ_GRID_D: arrays not large enough')
+      end if
+    end if ! fv_nphys > 0
+    !-----------------------------------------------------------------------
+    ! Area and/or integration weights
     if ( present(area_d_out) ) then
-      !! area_d_out
       if (size(area_d_out) /= nxy) then
         call endrun('bad area_d_out array size in dyn_grid')
       end if
       area_d => area_d_out
       call compute_global_area(area_d)
     else if ( present(wght_d_out) ) then
-      !! wght_d_out
       if (size(wght_d_out) /= nxy) then
         call endrun('bad wght_d_out array size in dyn_grid')
       end if
       area_d => wght_d_out
       call compute_global_area(area_d)
     endif
-
-    !if one of area_d_out  or wght_d_out was present, than it was computed
-    !above.  if they were *both* present, then do this: 
+    ! if both area_d_out or wght_d_out are present, then only wght_d_out was computed above
     if ( present(area_d_out) .and. present(wght_d_out) ) then
       wght_d_out(:) = area_d_out(:)
     end if
-
+    !-----------------------------------------------------------------------
+    ! Lat/Lon coordinates
     if (present(clon_d_out)) then
       if (size(clon_d_out) .ne. nxy) then
         call endrun('bad clon_d_out array size in dyn_grid')
@@ -611,7 +573,7 @@ end function get_block_owner_d
       call compute_global_coords(temp, clon_d_out, lat_d_out, lon_d_out)
       deallocate(temp)
     end if
-
+    !-----------------------------------------------------------------------
     ! just a placeholder for now, until a mechanism for setting cost_d_out
     ! is designed and implemented
     if (present(cost_d_out)) then
@@ -621,31 +583,48 @@ end function get_block_owner_d
         cost_d_out(:) = 1.0_r8
       end if
     end if
-
+    !-----------------------------------------------------------------------
     return
   end subroutine get_horiz_grid_d
-
+  !
+  !=================================================================================================
+  !
   subroutine define_cam_grids()
-    use dimensions_mod,   only: np, ne
     use cam_grid_support, only: horiz_coord_t, horiz_coord_create
     use cam_grid_support, only: cam_grid_register, cam_grid_attribute_register
-
+    !----------------------------Local-Variables----------------------------
+    character(len=8)             :: latname, lonname, ncolname, areaname
     type(horiz_coord_t), pointer :: lat_coord
     type(horiz_coord_t), pointer :: lon_coord
     integer(iMap),       pointer :: grid_map(:,:)
-    integer                :: i, j, mapind  ! Loop variables
+    integer :: i, j, mapind  ! Loop variables
     real(r8) :: area_scm(1)
+    
+    !-----------------------------------------------------------------------
+    ! Create grid for data on HOMME GLL nodes
+    !-----------------------------------------------------------------------
+    ! When the FV physics grid is used the GLL grid variables will use the '_d' suffix. 
+    ! The physics grid output will always use the normal names.
+    if (fv_nphys > 0) then
+      latname  = 'lat_d'
+      lonname  = 'lon_d'
+      ncolname = 'ncol_d'
+      areaname = 'area_d'
+    else
+      latname  = 'lat'
+      lonname  = 'lon'
+      ncolname = 'ncol'
+      areaname = 'area'
+    end if
 
-    !NB: These will change once a separate column-parameterization grid is supported.
-    ! Note: not using get_horiz_grid_dim_d or get_horiz_grid_d since those
-    !       are deprecated ('cause I said so' -- goldy)
-    ! Coordinates for the HOMME GLL points
-    lat_coord => horiz_coord_create('lat', 'ncol', ngcols_d, 'latitude',      &
-         'degrees_north', 1, size(pelat_deg), pelat_deg, map=pemap)
-    lon_coord => horiz_coord_create('lon', 'ncol', ngcols_d, 'longitude',     &
-         'degrees_east', 1, size(pelon_deg), pelon_deg, map=pemap)
+    lat_coord => horiz_coord_create(trim(latname), trim(ncolname), ngcols_d,  &
+                                    'latitude', 'degrees_north', 1,           &
+                                    size(pelat_deg), pelat_deg, map=pemap)
+    lon_coord => horiz_coord_create(trim(lonname), trim(ncolname), ngcols_d,  &
+                                    'longitude', 'degrees_east', 1,           &
+                                    size(pelon_deg), pelon_deg, map=pemap)
 
-    ! Map for dynamics grid
+    ! Map for dynamics GLL grid
     allocate(grid_map(3, SIZE(fdofP_local)))
     grid_map = 0
     mapind = 1
@@ -659,67 +638,95 @@ end function get_block_owner_d
     end do
 
     ! The native HOMME GLL grid
-    call cam_grid_register('GLL', dyn_decomp, lat_coord, lon_coord,           &
-         grid_map, block_indexed=.false., unstruct=.true.) 
-	 
-    if (.not. single_column) then 
-      call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
-         'ncol', pearea, pemap)
+    call cam_grid_register('GLL', dyn_decomp, lat_coord, lon_coord, grid_map,  &
+                           block_indexed=.false., unstruct=.true.)
+    if (.not. single_column) then
+      call cam_grid_attribute_register('GLL', trim(areaname), 'gll grid areas',&
+                                        trim(ncolname), pearea, pemap)
     else
-      ! if single column model, then this attribute has to be handled 
-      !  by assigning just the SCM point. Else, the model will bomb out
-      !  when writing the header information to history output
+      ! if single column model, then this attribute has to be handled by 
+      ! assigning just the SCM point. Else, the model will bomb out when 
+      ! writing the header information to history output
       area_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
-      call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
-          'ncol', area_scm)
-    endif
-      
+      call cam_grid_attribute_register('GLL', trim(areaname), 'gll grid areas',&
+                                        trim(ncolname), area_scm)
+    end if
     call cam_grid_attribute_register('GLL', 'np', '', np)
     call cam_grid_attribute_register('GLL', 'ne', '', ne)
     nullify(grid_map) ! Map belongs to grid now
 
-  end subroutine define_cam_grids
+    !-----------------------------------------------------------------------
+    ! Create grid object for physics grid on the dynamics decomposition
+    !-----------------------------------------------------------------------
+    ! if (fv_nphys > 0) then
 
+      ! in CAM6-SE another grid 'physgrid_d' is created here and used to load 
+      ! the PHIS field on the FV physics grid and then interpolated to the GLL grid.
+      ! The physics grid topo/phis then has consistent treatment of the SGH field, 
+      ! which is apparently important for physics. I was initially under the 
+      ! impression that sfc topo input data would stay on the dynamics (GLL) grid, 
+      ! but now I'm not sure... 
+      ! - Walter Hannah
+
+    ! end if ! fv_nphys > 0
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+    nullify(lat_coord)         ! Belongs to grid
+    nullify(lon_coord)         ! Belongs to grid
+  end subroutine define_cam_grids
+  !
+  !=================================================================================================
+  !
   subroutine physgrid_copy_attributes_d(gridname, grid_attribute_names)
     use cam_grid_support, only: max_hcoordname_len
-
-    ! Dummy arguments
+    !------------------------------Arguments--------------------------------
     character(len=max_hcoordname_len),          intent(out) :: gridname
     character(len=max_hcoordname_len), pointer, intent(out) :: grid_attribute_names(:)
-
-    gridname = 'GLL'
-    allocate(grid_attribute_names(3))
-    grid_attribute_names(1) = 'area'
-    grid_attribute_names(2) = 'np'
-    grid_attribute_names(3) = 'ne'
+    !-----------------------------------------------------------------------
+    ! if (fv_nphys > 0) then
+    !   gridname = 'physgrid_d'
+    !   allocate(grid_attribute_names(2))
+    !   grid_attribute_names(1) = 'fv_nphys'
+    !   grid_attribute_names(2) = 'ne'
+    ! else
+      gridname = 'GLL'
+      allocate(grid_attribute_names(3))
+      grid_attribute_names(1) = 'area'
+      grid_attribute_names(2) = 'np'
+      grid_attribute_names(3) = 'ne'
+    ! end if ! fv_nphys > 0
 
   end subroutine physgrid_copy_attributes_d
-
+  !
+  !=================================================================================================
+  !
   subroutine gblocks_init()
-    use dimensions_mod, only: nelem, nelemd, nelemdmax
     use spmd_utils,     only: iam, npes, mpi_integer, mpicom
     use spmd_utils,     only: masterproc
+    !----------------------------Local-Variables----------------------------
     integer :: ie, p
     integer :: ibuf
     integer :: ierr
-    integer :: rdispls(npes), recvcounts(npes), gid(npes), lid(npes)
-
-
-    if(.not.allocated(gblocks)) then
+    integer :: rdispls(npes)
+    integer :: recvcounts(npes)
+    integer :: gid(npes)
+    integer :: lid(npes)
+    !-----------------------------------------------------------------------
+    if (.not.allocated(gblocks)) then
       if (masterproc) then
-        write(iulog, *) 'WARNING: Non-scalable action: Allocating global blocks in SE dycore.'
+        write(iulog, *) 'INFO: Non-scalable action: Allocating global blocks in SE dycore.'
       end if
       allocate(gblocks(nelem))
       do ie=1,nelem
-        gblocks(ie)%Owner=-1
-        gblocks(ie)%UniquePtOffset=-1
-        gblocks(ie)%NumUniqueP    =-1
-        gblocks(ie)%LocalID       =-1
+        gblocks(ie)%Owner          = -1
+        gblocks(ie)%UniquePtOffset = -1
+        gblocks(ie)%NumUniqueP     = -1
+        gblocks(ie)%LocalID        = -1
       end do
     end if
 
-    do ie=1,nelemdmax        
-      if(ie<=nelemd) then
+    do ie = 1,nelemdmax        
+      if (ie<=nelemd) then
         rdispls(iam+1)=elem(ie)%idxP%UniquePtOffset-1
         gid(iam+1)=elem(ie)%GlobalID
         lid(iam+1)=ie
@@ -728,22 +735,17 @@ end function get_block_owner_d
         rdispls(iam+1) = 0
         recvcounts(iam+1) = 0
         gid(iam+1)=0
-      endif
+      end if
+
       ibuf=lid(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, lid, &
-           1, mpi_integer, mpicom, ierr)
-
+      call mpi_allgather(ibuf, 1, mpi_integer, lid       , 1, mpi_integer, mpicom, ierr)
       ibuf=gid(iam+1)
-      call mpi_allgather(ibuf,1,mpi_integer, gid, &
-           1, mpi_integer, mpicom, ierr)
-
+      call mpi_allgather(ibuf, 1, mpi_integer, gid       , 1, mpi_integer, mpicom, ierr)
       ibuf=rdispls(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, rdispls, &
-           1, mpi_integer, mpicom, ierr)
-
+      call mpi_allgather(ibuf, 1, mpi_integer, rdispls   , 1, mpi_integer, mpicom, ierr)
       ibuf=recvcounts(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, recvcounts, &
-           1, mpi_integer, mpicom, ierr)
+      call mpi_allgather(ibuf, 1, mpi_integer, recvcounts, 1, mpi_integer, mpicom, ierr)
+
       do p=1,npes
         if(gid(p)>0) then
           gblocks(gid(p))%UniquePtOffset=rdispls(p)+1
@@ -751,82 +753,149 @@ end function get_block_owner_d
           gblocks(gid(p))%LocalID=lid(p)
           gblocks(gid(p))%Owner=p-1
         end if
-      end do
-    end do
+      end do ! p
+    end do ! ie
     gblocks_need_initialized=.false.
 
   end subroutine gblocks_init
-
+  !
+  !=================================================================================================
+  !
   subroutine compute_global_area(area_d)
     use dof_mod,        only: UniqueCoords, UniquePoints
-    use dimensions_mod, only: nelemd, nelemdmax, np
     use spmd_utils,     only: iam, mpi_integer, mpi_real8, mpicom, npes
     use spmd_utils,     only: masterproc
-
-    ! Input variables
-    real(r8), pointer           :: area_d(:)
-
-    ! Local variables
-    real(r8)                    :: areaw(np,np)
-    real(r8)                    :: rbuf(ngcols_d)
-    integer                     :: rdispls(npes), recvcounts(npes)
-    integer                     :: ie, sb, eb
-    integer                     :: ierr
-    integer                     :: ibuf
-
+    !------------------------------Arguments--------------------------------
+    real(r8), pointer :: area_d(:)
+    !----------------------------Local-Variables----------------------------
+    real(r8), dimension(np,np)  :: areaw
+    real(r8), allocatable       :: area_fv(:,:)
+    real(r8), allocatable       :: rbuf(:)
+    integer,  dimension(npes)   :: displace  ! MPI data displacement for gathering
+    integer,  dimension(npes)   :: recvcnts  ! MPI send buffer count for gathering
+    integer,  dimension(nelem)  :: elem_id_global
+    integer,  dimension(nelemd) :: elem_id_local
+    real(r8), dimension(nelemd) :: area_local
+    integer  :: ncol_fv_gbl, ncol_fv_lcl
+    integer  :: ie, sb, eb, fv_cnt
+    integer  :: ierr
+    integer  :: ibuf
+    !-----------------------------------------------------------------------
     if (masterproc) then
-      write(iulog, *) 'WARNING: Non-scalable action: Conputing global area in SE dycore.'
+      write(iulog,*) 'INFO: Non-scalable action: Conputing global area in SE dycore.'
     end if
 
-    do ie = 1, nelemdmax        
-      if(ie <= nelemd) then
-        rdispls(iam+1) = elem(ie)%idxp%UniquePtOffset-1
-        eb = rdispls(iam+1) + elem(ie)%idxp%NumUniquePts
-        recvcounts(iam+1) = elem(ie)%idxP%NumUniquePts
-        areaw = 1.0_r8 / elem(ie)%rspheremp(:,:)         
-        call UniquePoints(elem(ie)%idxP, areaw, area_d(rdispls(iam+1)+1:eb))
-      else
-        rdispls(iam+1) = 0
-        recvcounts(iam+1) = 0
-      end if
-      ibuf = rdispls(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, rdispls, &
-           1, mpi_integer, mpicom, ierr)
+    if (fv_nphys > 0) then
+      
+#if defined( PHYS_GRID_MODS )
 
-      ibuf = recvcounts(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, recvcounts, &
-           1, mpi_integer, mpicom, ierr)
+      ncol_fv_gbl = fv_nphys*fv_nphys*nelem
+      ncol_fv_lcl = fv_nphys*fv_nphys*nelemd
+      allocate( rbuf(ncol_fv_gbl) )
+      allocate( area_local(fv_nphys*fv_nphys,nelemd) )
 
-      sb = rdispls(iam+1) + 1
-      eb = rdispls(iam+1) + recvcounts(iam+1)
+      ! Calculate area for local elements
+      do ie = 1, nelemd
+        fv_cnt = 1
+        do j = 1, fv_nphys
+          do i = 1, fv_nphys
+            call sphere_tri_area( elem(ie)%corners3D(1), &
+                                  elem(ie)%corners3D(2), &
+                                  elem(ie)%corners3D(3), area1 )
+            call sphere_tri_area( elem(ie)%corners3D(1), &
+                                  elem(ie)%corners3D(3), &
+                                  elem(ie)%corners3D(4), area2 )
+            area_local(fv_cnt,ie)  = area1 + area2
+            fv_cnt = fv_cnt + 1
+          end do ! i
+        end do ! j
+      end do ! ie
 
-      rbuf(1:recvcounts(iam+1)) = area_d(sb:eb)
-      call mpi_allgatherv(rbuf, recvcounts(iam+1), mpi_real8, area_d,          &
-           recvcounts(:), rdispls(:), mpi_real8, mpicom, ierr)
-    end do
+      ! gather send buffer count as local cell count
+      recvcnts(:) = 0
+      call mpi_allgather(ncol_fv_lcl, 1, mpi_integer, recvcnts, 1, mpi_integer, mpicom, ierr)
+
+      ! determine displacement for MPI gather
+      if (masterproc) then
+        displace(1) = 0
+        do ip = 2,npes
+          displace(ip) = displace(ip-1) + recvcnts(ip-1)
+        end do
+        ! Check to make sure we counted correctly
+        if ( displace(npes) + recvcnts(npes) /= ncol_fv_gbl ) then
+          call endrun('compute_global_area: bad MPI displace array size')
+        end if
+      end if ! masterproc
+
+      ! gather element IDs for sorting
+      elem_id_global = -1
+      do ie = 1, nelemd
+        elem_id_local(ie) = elem(ie)%GlobalId
+      end do
+      call mpi_allgatherv( elem_id_local(1:nelemd), recvcnts(iam+1), mpi_integer, elem_id_global, &
+                           recvcnts(:), displace(:), mpi_integer, mpicom, ierr)
+
+      call mpi_allgatherv( area_local(1:nelemd), recvcnts(iam+1), mpi_real8, rbuf, &
+                           recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+
+      area_d = rbuf
+
+      ! sort so that data is ordered by element id
+      ! do ie = 1, nelem
+      !   area_out( elem_id_global(ie) ) = rbuf(ie)
+      ! end do
+
+#endif /* PHYS_GRID_MODS */
+
+    else ! physics is on GLL grid
+    
+      allocate(rbuf(ngcols_d))
+      do ie = 1, nelemdmax        
+        if(ie <= nelemd) then
+          displace(iam+1) = elem(ie)%idxp%UniquePtOffset-1
+          recvcnts(iam+1) = elem(ie)%idxP%NumUniquePts
+          eb = displace(iam+1) + elem(ie)%idxp%NumUniquePts
+          areaw = 1.0_r8 / elem(ie)%rspheremp(:,:)         
+          call UniquePoints(elem(ie)%idxP, areaw, area_d(displace(iam+1)+1:eb))
+        else
+          displace(iam+1) = 0
+          recvcnts(iam+1) = 0
+        end if
+        ibuf = displace(iam+1)
+        call mpi_allgather(ibuf, 1, mpi_integer, displace, 1, mpi_integer, mpicom, ierr)
+        ibuf = recvcnts(iam+1)
+        call mpi_allgather(ibuf, 1, mpi_integer, recvcnts, 1, mpi_integer, mpicom, ierr)
+        sb = displace(iam+1) + 1
+        eb = displace(iam+1) + recvcnts(iam+1)
+        rbuf(1:recvcnts(iam+1)) = area_d(sb:eb)
+        call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, area_d,       &
+                            recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+      end do ! ie
+
+    end if ! fv_nphys > 0
   end subroutine compute_global_area
-
-  subroutine compute_global_coords (clat, clon, lat_out, lon_out)
+  !
+  !=================================================================================================
+  !
+  subroutine compute_global_coords(clat, clon, lat_out, lon_out)
     use dof_mod,        only: UniqueCoords, UniquePoints
-    use dimensions_mod, only: nelemd, nelemdmax
     use spmd_utils,     only: iam, mpi_integer, mpi_real8, mpicom, npes
     use spmd_utils,     only: masterproc
-
-    ! Dummy variables
+    !------------------------------Arguments--------------------------------
     real(r8),           intent(out) :: clat(:)
     real(r8),           intent(out) :: clon(:)
     real(r8), optional, intent(out) :: lat_out(:)
     real(r8), optional, intent(out) :: lon_out(:)
-
-    ! Local variables
-    real(r8)                        :: rbuf(ngcols_d)
-    integer                         :: rdispls(npes), recvcounts(npes)
-    integer                         :: ie, sb, eb
-    integer                         :: ierr
-    integer                         :: ibuf
-
+    !----------------------------Local-Variables----------------------------
+    real(r8) :: rbuf(ngcols_d)
+    integer  :: rdispls(npes)
+    integer  :: recvcounts(npes)
+    integer  :: ie, sb, eb
+    integer  :: ierr
+    integer  :: ibuf
+    !-----------------------------------------------------------------------
     if (masterproc) then
-      write(iulog, *) 'WARNING: Non-scalable action: Computing global coords in SE dycore.'
+      write(iulog,*) 'INFO: Non-scalable action: Computing global coords in SE dycore.'
     end if
 
     clat(:) = -iam
@@ -886,60 +955,54 @@ end function get_block_owner_d
     end do
 
   end subroutine compute_global_coords
-
-  !#######################################################################
+  !
+  !=================================================================================================
+  !
   function get_dyn_grid_parm_real2d(name) result(rval)
-
+    !------------------------------Arguments--------------------------------
     character(len=*), intent(in) :: name
-    real(r8), pointer :: rval(:,:)
-
-!!XXgoldyXX: Killing off global variables
+    real(r8),            pointer :: rval(:,:)
+    !-----------------------------------------------------------------------
     if(name.eq.'clon') then
       call endrun('get_dyn_grid_parm_real2d: clon not supported, use get_horiz_grid_d')
-!      rval => clon
     else if(name.eq.'londeg') then
       ! This is never set so I'm calling bogus and stomping calls --goldy
       call endrun('get_dyn_grid_parm_real2d: londeg not defined')
-!      rval => londeg
     else
       nullify(rval)
     end if
-!!XXgoldyXX: Killing off global variables
   end function get_dyn_grid_parm_real2d
-
-  !#######################################################################
+  !
+  !=================================================================================================
+  !
   function get_dyn_grid_parm_real1d(name) result(rval)
-
+    !------------------------------Arguments--------------------------------
     character(len=*), intent(in) :: name
-    real(r8), pointer :: rval(:)
-
+    real(r8),            pointer :: rval(:)
+    !-----------------------------------------------------------------------
     if(name.eq.'w') then
       if (.not. associated(w)) then
         call endrun('get_dyn_grid_parm_real1d: w not defined')
       end if
       rval => w
-!!XXgoldyXX: Killing off global variables
     else if(name.eq.'clat') then
       call endrun('get_dyn_grid_parm_real1d: clat not supported, use get_horiz_grid_d')
-!      rval => clat
     else if(name.eq.'latdeg') then
       ! This is never set so I'm calling bogus and stomping calls --goldy
       call endrun('get_dyn_grid_parm_real1d: latdeg not defined')
-!      rval => latdeg
-!!XXgoldyXX: Killing off global variables
     else
       nullify(rval)
     end if
   end function get_dyn_grid_parm_real1d
-
-
-  !#######################################################################
+  !
+  !=================================================================================================
+  !
   integer function get_dyn_grid_parm(name) result(ival)
     use pmgrid,          only: beglat, endlat, plat, plon, plev, plevp
-    use dimensions_mod,  only: ne, np, nelemd, npsq
     use interpolate_mod, only: get_interp_parameter
+    !------------------------------Arguments--------------------------------
     character(len=*), intent(in) :: name
-
+    !-----------------------------------------------------------------------
     if(name.eq.'ne') then
       ival = ne
     else if(name.eq.'np') then
@@ -961,7 +1024,6 @@ end function get_block_owner_d
       ival=1
     else if(name.eq.'endlatxy') then
       ival=nelemd
-
     else if(name.eq.'plat') then
       ival = plat
     else if(name.eq.'plon') then
@@ -980,24 +1042,22 @@ end function get_block_owner_d
       ival = -1
     end if
   end function get_dyn_grid_parm
-
-  !#######################################################################
-
+  !
+  !=================================================================================================
+  !
   subroutine dyn_grid_get_pref(pref_edge, pref_mid, num_pr_lev)
-
-    ! return reference pressures for the dynamics grid
-
+    !-----------------------------------------------------------------------
+    ! Purpose: return reference pressures for the dynamics grid
+    !-----------------------------------------------------------------------
     use pmgrid, only: plev
     use hycoef, only: hypi, hypm, nprlev
-
-    ! arguments
+    !------------------------------Arguments--------------------------------
     real(r8), intent(out) :: pref_edge(:) ! reference pressure at layer edges (Pa)
     real(r8), intent(out) :: pref_mid(:)  ! reference pressure at layer midpoints (Pa)
     integer,  intent(out) :: num_pr_lev   ! number of top levels using pure pressure representation
-
+    !----------------------------Local-Variables----------------------------
     integer :: k
     !-----------------------------------------------------------------------
-
     do k = 1, plev
       pref_edge(k) = hypi(k)
       pref_mid(k)  = hypm(k)
@@ -1007,36 +1067,40 @@ end function get_block_owner_d
     num_pr_lev = nprlev
 
   end subroutine dyn_grid_get_pref
-
-  !#######################################################################
-
-  !-------------------------------------------------------------------------------
-  ! This returns the lat/lon information (and corresponding MPI task numbers (owners)) 
-  ! of the global model grid columns nearest to the input satellite coordinate (lat,lon)
-  !-------------------------------------------------------------------------------
+  !
+  !=================================================================================================
+  !
   subroutine dyn_grid_find_gcols( lat, lon, nclosest, owners, col, lbk, rlat, rlon, idyn_dists ) 
+    !-----------------------------------------------------------------------
+    ! This returns the lat/lon information (and corresponding MPI task 
+    ! numbers (owners))  of the global model grid columns nearest to the 
+    ! input satellite coordinate (lat,lon)
+    !-----------------------------------------------------------------------
     use spmd_utils,     only: iam
-    use dimensions_mod, only: np
     use shr_const_mod,  only: SHR_CONST_REARTH
-
-    real(r8), intent(in) :: lat
-    real(r8), intent(in) :: lon
-    integer, intent(in)  :: nclosest
-    integer, intent(out) :: owners(nclosest)
-    integer, intent(out) :: col(nclosest)
-    integer, intent(out) :: lbk(nclosest)
-
+    !------------------------------Arguments--------------------------------
+    real(r8),          intent(in ) :: lat
+    real(r8),          intent(in ) :: lon
+    integer,           intent(in ) :: nclosest
+    integer,           intent(out) :: owners(nclosest)
+    integer,           intent(out) :: col(nclosest)
+    integer,           intent(out) :: lbk(nclosest)
     real(r8),optional, intent(out) :: rlon(nclosest)
     real(r8),optional, intent(out) :: rlat(nclosest)
     real(r8),optional, intent(out) :: idyn_dists(nclosest)
-
-    real(r8) :: dist            ! the distance (in radians**2 from lat, lon)
-    real(r8) :: latr, lonr      ! lat, lon inputs converted to radians
-    integer  :: blockid(1), bcid(1), lclblockid(1)
+    !----------------------------Local-Variables----------------------------
+    real(r8) :: dist            ! distance (in radians**2 from lat, lon)
+    real(r8) :: latr            ! lat inputs converted to radians
+    real(r8) :: lonr            ! lon inputs converted to radians
+    integer  :: blockid(1)
+    integer  :: bcid(1)
+    integer  :: lclblockid(1)
     integer  :: i,j,k, ii
-    real(r8), allocatable :: clat_d(:), clon_d(:), distmin(:)
-    integer, allocatable :: igcol(:)
-
+    real(r8), allocatable :: clat_d(:)
+    real(r8), allocatable :: clon_d(:)
+    real(r8), allocatable :: distmin(:)
+    integer,  allocatable :: igcol(:)
+    !-----------------------------------------------------------------------
     latr = lat/rad2deg
     lonr = lon/rad2deg
 
@@ -1100,57 +1164,61 @@ end function get_block_owner_d
     deallocate( igcol )
     deallocate( distmin )
 
-  endsubroutine dyn_grid_find_gcols
+  end subroutine dyn_grid_find_gcols
+  !
+  !=================================================================================================
+  !
+  subroutine dyn_grid_get_colndx( igcol, nclosest, owners, col, lbk ) 
+    use spmd_utils, only: iam
+    !------------------------------Arguments--------------------------------
+    integer, intent(in)  :: nclosest
+    integer, intent(in)  :: igcol(nclosest)
+    integer, intent(out) :: owners(nclosest)
+    integer, intent(out) :: col(nclosest)
+    integer, intent(out) :: lbk(nclosest)
+    !----------------------------Local-Variables----------------------------
+    integer  :: i,j,k, ii
+    integer  :: blockid(1)
+    integer  :: bcid(1)
+    integer  :: lclblockid(1)
+    !-----------------------------------------------------------------------
+    do i = 1,nclosest
 
-!#######################################################################
-subroutine dyn_grid_get_colndx( igcol, nclosest, owners, col, lbk ) 
-  use spmd_utils, only: iam
-  use dimensions_mod, only: np
+       call  get_gcol_block_d( igcol(i), 1, blockid, bcid, lclblockid )
+       owners(i) = get_block_owner_d(blockid(1))
+       
+       if (owners(i)==iam) then
+          lbk(i) = lclblockid(1)
+          ii = igcol(i)-elem(lbk(i))%idxp%UniquePtoffset+1
+          k=elem(lbk(i))%idxp%ia(ii)
+          j=elem(lbk(i))%idxp%ja(ii)
+          col(i) = k+(j-1)*np
+       else
+          lbk(i) = -1
+          col(i) = -1
+       endif
+       
+    end do
 
-  integer, intent(in)  :: nclosest
-  integer, intent(in)  :: igcol(nclosest)
-  integer, intent(out) :: owners(nclosest)
-  integer, intent(out) :: col(nclosest)
-  integer, intent(out) :: lbk(nclosest)
-
-  integer  :: i,j,k, ii
-  integer  :: blockid(1), bcid(1), lclblockid(1)
-
-  do i = 1,nclosest
-
-     call  get_gcol_block_d( igcol(i), 1, blockid, bcid, lclblockid )
-     owners(i) = get_block_owner_d(blockid(1))
-     
-     if (owners(i)==iam) then
-        lbk(i) = lclblockid(1)
-        ii = igcol(i)-elem(lbk(i))%idxp%UniquePtoffset+1
-        k=elem(lbk(i))%idxp%ia(ii)
-        j=elem(lbk(i))%idxp%ja(ii)
-        col(i) = k+(j-1)*np
-     else
-        lbk(i) = -1
-        col(i) = -1
-     endif
-     
-  end do
-
-end subroutine dyn_grid_get_colndx
-
-  !#######################################################################
-  ! this returns coordinates of a specified block element of the dyn grid
+  end subroutine dyn_grid_get_colndx
+  !
+  !=================================================================================================
+  !
   subroutine dyn_grid_get_elem_coords( ie, rlon, rlat, cdex )
+    !-----------------------------------------------------------------------
+    ! Purpose: this returns coordinates of a specified block element of the dyn grid
+    !-----------------------------------------------------------------------
     use dof_mod, only: UniqueCoords
-    use dimensions_mod, only: np
-
-    integer, intent(in) :: ie ! block element index
-
+    !------------------------------Arguments--------------------------------
+    integer,           intent(in ) :: ie      ! block element index
     real(r8),optional, intent(out) :: rlon(:) ! longitudes of the columns in the element
     real(r8),optional, intent(out) :: rlat(:) ! latitudes of the columns in the element
     integer, optional, intent(out) :: cdex(:) ! global column index
-
+    !----------------------------Local-Variables----------------------------
     integer :: sb,eb, ii, i,j, icol, igcol
-    real(r8), allocatable :: clat(:), clon(:)
-
+    real(r8), allocatable :: clat(:)
+    real(r8), allocatable :: clon(:)
+    !-----------------------------------------------------------------------
     sb = elem(ie)%idxp%UniquePtOffset
     eb = sb + elem(ie)%idxp%NumUniquePts-1
 
@@ -1174,7 +1242,7 @@ end subroutine dyn_grid_get_colndx
     deallocate( clat, clon )
 
   end subroutine dyn_grid_get_elem_coords
-
-!#######################################################################
-
+  !
+  !=================================================================================================
+  !
 end module dyn_grid
