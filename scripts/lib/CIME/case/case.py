@@ -615,6 +615,8 @@ class Case(object):
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
+        expect(os.path.isfile(drv_config_file_model_specific),
+               "No {} specific file found for driver {}".format(get_model(),driver))
         drv_comp_model_specific = Component(drv_config_file_model_specific, 'CPL')
 
         self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)

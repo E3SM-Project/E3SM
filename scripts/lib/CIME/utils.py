@@ -278,6 +278,7 @@ def set_model(model):
     cime_config = get_cime_config()
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
+    expect(model == 'cesm' or model == 'e3sm',"model {} not recognized".format(model))
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -286,16 +287,25 @@ def get_model():
     The CIME_MODEL env variable may or may not be set
 
     >>> os.environ["CIME_MODEL"] = "garbage"
+    >>> get_model() # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    CIMEError: ERROR: model garbage not recognized
     >>> del os.environ["CIME_MODEL"]
-    >>> set_model('rocky')
+    >>> set_model('rocky') # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    CIMEError: ERROR: model rocky not recognized
+    >>> set_model('e3sm')
     >>> get_model()
-    'rocky'
+    'e3sm'
     >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
-    if (model is not None):
+    if (model == 'cesm' or model == 'e3sm'):
         logger.debug("Setting CIME_MODEL={} from environment".format(model))
     else:
+        expect(model is None,"model {} not recognized".format(model))
         cime_config = get_cime_config()
         if (cime_config.has_option('main','CIME_MODEL')):
             model = cime_config.get('main','CIME_MODEL')
