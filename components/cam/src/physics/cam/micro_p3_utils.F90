@@ -2,6 +2,8 @@ module micro_p3_utils
 
 #ifdef CAM
     use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
+#else
+    use iso_c_binding, only: c_double, c_float
 #endif
 
     implicit none
@@ -9,7 +11,15 @@ module micro_p3_utils
     save
 
 #ifndef CAM
-  integer,parameter :: rtype = selected_real_kind(12) ! 8 byte real
+#ifdef SCREAM_CONFIG_IS_CMAKE
+#include "scream_config.f"
+#endif
+
+#ifdef SCREAM_DOUBLE_PRECISION
+  integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
+#else
+  integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
+#endif
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
 #endif
 
@@ -286,7 +296,7 @@ end interface var_coef
   
     ! Mean ice diameter can not grow bigger than twice the autoconversion
     ! threshold for snow.
-    ice_lambda_bounds = 1._rtype/[2._rtype*400.e-6, 10.e-6_rtype] !! dcs 400.e-6
+    ice_lambda_bounds = 1._rtype/[2.*400.e-6_rtype, 10.e-6_rtype] !! dcs 400.e-6
     mg_ice_props = MGHydrometeorProps(rhoi, dsph, &
          ice_lambda_bounds, min_mean_mass_ice)
   
