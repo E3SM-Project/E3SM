@@ -48,6 +48,7 @@ module dyn_grid
   use cam_grid_support,   only: iMap
   use scamMod,                only: single_column
   use dimensions_mod,     only: nelem, nelemd, nelemdmax, ne, np, npsq, fv_nphys
+  use spmd_utils,         only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
 
   implicit none
   private
@@ -235,7 +236,6 @@ contains
   subroutine get_gcol_block_d(gcol, cnt, blockid, bcid, localblockid)
     use kinds,          only: int_kind
     use cam_abortutils, only: endrun
-    use spmd_utils,     only: iam
     !----------------------------------------------------------------------- 
     ! Purpose: Return global block index and local column index for 
     !          global column index. Element array is naturally ordered.
@@ -256,32 +256,31 @@ contains
     logical :: found
     integer, save :: iedex_save = 1
     !-----------------------------------------------------------------------
+    if(gblocks_need_initialized) call gblocks_init()
     if (fv_nphys > 0) then
 
       blockid(1) = 1 + ( (gcol-1) / (fv_nphys*fv_nphys) )
       bcid(1) = 1 + mod(gcol-1, fv_nphys*fv_nphys)
 
-      !!! need to create dp_owner for this to work
-      ! if (present(localblockid)) then
-      !    localblockid = -1
-      !    if (iam == dp_owner(blockid(1))) then
-      !       if (blockid(1) == elem(iedex_save)%globalid) then
-      !          localblockid = iedex_save
-      !       else
-      !          do ie = 1,nelemd
-      !             if (blockid(1) == elem(ie)%globalid) then
-      !                localblockid = ie
-      !                iedex_save = ie
-      !                exit
-      !             end if
-      !          end do
-      !       end if
-      !    end if
-      ! end if
+      if (present(localblockid)) then
+         localblockid = -1
+         if (iam == gblocks(blockid(1))%Owner) then
+            if (blockid(1) == elem(iedex_save)%globalid) then
+               localblockid = iedex_save
+            else
+               do ie = 1,nelemd
+                  if (blockid(1) == elem(ie)%globalid) then
+                     localblockid = ie
+                     iedex_save = ie
+                     exit
+                  end if
+               end do
+            end if
+         end if
+      end if
 
     else ! physics is on GLL grid
 
-      if(gblocks_need_initialized) call gblocks_init()
       found = .false.
       low = 1
       high = nelem
@@ -701,8 +700,6 @@ contains
   !=================================================================================================
   !
   subroutine gblocks_init()
-    use spmd_utils,     only: iam, npes, mpi_integer, mpicom
-    use spmd_utils,     only: masterproc
     !----------------------------Local-Variables----------------------------
     integer :: ie, p
     integer :: ibuf
@@ -762,9 +759,8 @@ contains
   !=================================================================================================
   !
   subroutine compute_global_area(area_d)
-    use dof_mod,        only: UniqueCoords, UniquePoints
-    use spmd_utils,     only: iam, mpi_integer, mpi_real8, mpicom, npes
-    use spmd_utils,     only: masterproc
+    use dof_mod,                only: UniqueCoords, UniquePoints
+    use coordinate_systems_mod, only: sphere_tri_area
     !------------------------------Arguments--------------------------------
     real(r8), pointer :: area_d(:)
     !----------------------------Local-Variables----------------------------
@@ -775,11 +771,13 @@ contains
     integer,  dimension(npes)   :: recvcnts  ! MPI send buffer count for gathering
     integer,  dimension(nelem)  :: elem_id_global
     integer,  dimension(nelemd) :: elem_id_local
-    real(r8), dimension(nelemd) :: area_local
+    real(r8), allocatable       :: area_local(:,:)
     integer  :: ncol_fv_gbl, ncol_fv_lcl
-    integer  :: ie, sb, eb, fv_cnt
+    integer  :: ie, sb, eb, i, j, ip, fv_cnt
     integer  :: ierr
     integer  :: ibuf
+
+    real(r8)  :: area1, area2
     !-----------------------------------------------------------------------
     if (masterproc) then
       write(iulog,*) 'INFO: Non-scalable action: Conputing global area in SE dycore.'
@@ -787,18 +785,17 @@ contains
 
     if (fv_nphys > 0) then
       
-#if defined( PHYS_GRID_MODS )
-
       ncol_fv_gbl = fv_nphys*fv_nphys*nelem
       ncol_fv_lcl = fv_nphys*fv_nphys*nelemd
       allocate( rbuf(ncol_fv_gbl) )
       allocate( area_local(fv_nphys*fv_nphys,nelemd) )
 
-      ! Calculate area for local elements
+      ! Calculate area for local blocks
       do ie = 1, nelemd
         fv_cnt = 1
         do j = 1, fv_nphys
           do i = 1, fv_nphys
+            ! Note - this version only works for pg1
             call sphere_tri_area( elem(ie)%corners3D(1), &
                                   elem(ie)%corners3D(2), &
                                   elem(ie)%corners3D(3), area1 )
@@ -835,17 +832,15 @@ contains
       call mpi_allgatherv( elem_id_local(1:nelemd), recvcnts(iam+1), mpi_integer, elem_id_global, &
                            recvcnts(:), displace(:), mpi_integer, mpicom, ierr)
 
-      call mpi_allgatherv( area_local(1:nelemd), recvcnts(iam+1), mpi_real8, rbuf, &
+      call mpi_allgatherv( area_local(:,1:nelemd), recvcnts(iam+1), mpi_real8, rbuf, &
                            recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
 
       area_d = rbuf
 
-      ! sort so that data is ordered by element id
-      ! do ie = 1, nelem
-      !   area_out( elem_id_global(ie) ) = rbuf(ie)
-      ! end do
+      ! Do we need to sort this array? - Walter Hannah
 
-#endif /* PHYS_GRID_MODS */
+      deallocate(rbuf)
+      deallocate(area_local)
 
     else ! physics is on GLL grid
     
@@ -871,26 +866,31 @@ contains
         call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, area_d,       &
                             recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
       end do ! ie
+      deallocate(rbuf)
 
     end if ! fv_nphys > 0
+
   end subroutine compute_global_area
   !
   !=================================================================================================
   !
   subroutine compute_global_coords(clat, clon, lat_out, lon_out)
     use dof_mod,        only: UniqueCoords, UniquePoints
-    use spmd_utils,     only: iam, mpi_integer, mpi_real8, mpicom, npes
-    use spmd_utils,     only: masterproc
     !------------------------------Arguments--------------------------------
     real(r8),           intent(out) :: clat(:)
     real(r8),           intent(out) :: clon(:)
     real(r8), optional, intent(out) :: lat_out(:)
     real(r8), optional, intent(out) :: lon_out(:)
     !----------------------------Local-Variables----------------------------
-    real(r8) :: rbuf(ngcols_d)
-    integer  :: rdispls(npes)
-    integer  :: recvcounts(npes)
-    integer  :: ie, sb, eb
+    real(r8), allocatable       :: rbuf(:)
+    integer,  dimension(npes)   :: displace  ! MPI data displacement for gathering
+    integer,  dimension(npes)   :: recvcnts  ! MPI send buffer count for gathering
+    integer,  dimension(nelem)  :: elem_id_global
+    integer,  dimension(nelemd) :: elem_id_local
+    real(r8), allocatable       :: lat_rad_local(:,:)
+    real(r8), allocatable       :: lon_rad_local(:,:)
+    integer  :: ncol_fv_gbl, ncol_fv_lcl
+    integer  :: ie, sb, eb, j, i, ip, fv_cnt
     integer  :: ierr
     integer  :: ibuf
     !-----------------------------------------------------------------------
@@ -898,61 +898,157 @@ contains
       write(iulog,*) 'INFO: Non-scalable action: Computing global coords in SE dycore.'
     end if
 
-    clat(:) = -iam
-    clon(:) = -iam
-    if (present(lon_out)) then
-      lon_out(:) = -iam
-    end if
-    if (present(lat_out)) then
-      lat_out(:) = -iam
-    end if
-    do ie = 1, nelemdmax
-      if(ie <= nelemd) then
-        rdispls(iam+1) = elem(ie)%idxp%UniquePtOffset-1
-        eb = rdispls(iam+1) + elem(ie)%idxp%NumUniquePts
-        recvcounts(iam+1) = elem(ie)%idxP%NumUniquePts
-        call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,                    &
-             clat(rdispls(iam+1)+1:eb),                                       &
-             clon(rdispls(iam+1)+1:eb))
-        if (present(lat_out)) then
-          lat_out(rdispls(iam+1)+1:eb) = clat(rdispls(iam+1)+1:eb) * rad2deg
+    if (fv_nphys > 0) then
+
+      ncol_fv_gbl = fv_nphys*fv_nphys*nelem
+      ncol_fv_lcl = fv_nphys*fv_nphys*nelemd
+      allocate( rbuf(ncol_fv_gbl) )
+      allocate(lat_rad_local(fv_nphys*fv_nphys,nelemd))
+      allocate(lon_rad_local(fv_nphys*fv_nphys,nelemd))
+
+      ! calculate coordinates for local blocks
+      do ie = 1, nelemd
+        fv_cnt = 1
+        do j = 1, fv_nphys
+          do i = 1, fv_nphys
+
+            ! Note - this version only works for pg1
+
+            ! if ( present(lat_rad_out) .or. present(lat_deg_out) ) then
+            !   lat_rad_local(fv_cnt,ie)  = sum( elem(ie)%spherep(2:np-1,2:np-1)%lat ) * avg_wgt
+            ! end if
+
+            ! if ( present(lon_rad_out) .or. present(lon_deg_out) ) then
+            !   tmp_lon = elem(ie)%spherep(2:np-1,2:np-1)%lon
+            !   ! adjust longitudes if the element crosses the prime meridian
+            !   max_lon_change = maxval(tmp_lon) - minval(tmp_lon)
+            !   if ( max_lon_change < DD_PI ) then
+            !     do ii = 1,np-2
+            !       do jj = 1,np-2
+            !         if ( tmp_lon(ii,jj)>DD_PI ) tmp_lon(ii,jj) = tmp_lon(ii,jj) - 2.*DD_PI
+            !       end do
+            !     end do
+            !   end if ! present(lon_rad_out) .or. present(lon_deg_out)
+            !   ! average adjusted longitude values to get centroid lon
+            !   lon_rad_local(fv_cnt,ie) = sum( tmp_lon ) * avg_wgt 
+            ! end if
+
+            fv_cnt = fv_cnt + 1
+
+          end do ! i
+        end do ! j
+      end do ! ie
+
+      ! gather send buffer count as local cell count
+      recvcnts(:) = 0
+      call mpi_allgather(ncol_fv_lcl, 1, mpi_integer, recvcnts, 1, mpi_integer, mpicom, ierr)
+
+      ! determine displacement for MPI gather
+      if (masterproc) then
+        displace(1) = 0
+        do ip = 2,npes
+          displace(ip) = displace(ip-1) + recvcnts(ip-1)
+        end do
+        ! Check to make sure we counted correctly
+        if ( displace(npes) + recvcnts(npes) /= ncol_fv_gbl ) then
+          call endrun('compute_global_area: bad MPI displace array size')
         end if
-        if (present(lon_out)) then
-          lon_out(rdispls(iam+1)+1:eb) = clon(rdispls(iam+1)+1:eb) * rad2deg
-        end if
-      else
-        rdispls(iam+1) = 0
-        recvcounts(iam+1) = 0
-      end if
-      ibuf = rdispls(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, rdispls, &
-           1, mpi_integer, mpicom, ierr)
+      end if ! masterproc
 
-      ibuf = recvcounts(iam+1)
-      call mpi_allgather(ibuf, 1, mpi_integer, recvcounts, &
-           1, mpi_integer, mpicom, ierr)
+      ! gather element IDs for sorting
+      elem_id_global = -1
+      do ie = 1, nelemd
+        elem_id_local(ie) = elem(ie)%GlobalId
+      end do
+      call mpi_allgatherv( elem_id_local(1:nelemd), recvcnts(iam+1), mpi_integer, elem_id_global, &
+                           recvcnts(:), displace(:), mpi_integer, mpicom, ierr)
 
-      sb = rdispls(iam+1) + 1
-      eb = rdispls(iam+1) + recvcounts(iam+1)
+      ! Gather global longitudes
+      call mpi_allgatherv( lat_rad_local(:,1:nelemd), recvcnts(iam+1), mpi_real8, rbuf, &
+                           recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+      clat = rbuf
 
-      rbuf(1:recvcounts(iam+1)) = clat(sb:eb)  ! whats going to happen if end=0?
-      call mpi_allgatherv(rbuf, recvcounts(iam+1), mpi_real8, clat,            &
-             recvcounts(:), rdispls(:), mpi_real8, mpicom, ierr)
+      ! Gather global latitudes
+      call mpi_allgatherv( lon_rad_local(:,1:nelemd), recvcnts(iam+1), mpi_real8, rbuf, &
+                           recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+      clon = rbuf
+
+      ! Create degree versions if requested
       if (present(lat_out)) then
-        rbuf(1:recvcounts(iam+1)) = lat_out(sb:eb) 
-        call mpi_allgatherv(rbuf, recvcounts(iam+1), mpi_real8, lat_out,       &
-             recvcounts(:), rdispls(:), mpi_real8, mpicom, ierr)
+         lat_out(:) = clat(:) * rad2deg
+      end if
+      if (present(lon_out)) then
+         lon_out(:) = clon(:) * rad2deg
       end if
 
-      rbuf(1:recvcounts(iam+1)) = clon(sb:eb)
-      call mpi_allgatherv(rbuf, recvcounts(iam+1), mpi_real8, clon,            &
-             recvcounts(:), rdispls(:), mpi_real8, mpicom, ierr)
+      deallocate(rbuf)
+      deallocate(lat_rad_local)
+      deallocate(lon_rad_local)
+
+    else ! physics is on GLL grid
+
+      allocate(rbuf(ngcols_d))
+
+      clat(:) = -iam
+      clon(:) = -iam
       if (present(lon_out)) then
-        rbuf(1:recvcounts(iam+1)) = lon_out(sb:eb) 
-        call mpi_allgatherv(rbuf, recvcounts(iam+1), mpi_real8, lon_out,       &
-             recvcounts(:), rdispls(:), mpi_real8, mpicom, ierr)
+        lon_out(:) = -iam
       end if
-    end do
+      if (present(lat_out)) then
+        lat_out(:) = -iam
+      end if
+
+      do ie = 1, nelemdmax
+        if(ie <= nelemd) then
+          displace(iam+1) = elem(ie)%idxp%UniquePtOffset-1
+          eb = displace(iam+1) + elem(ie)%idxp%NumUniquePts
+          recvcnts(iam+1) = elem(ie)%idxP%NumUniquePts
+          call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,                    &
+               clat(displace(iam+1)+1:eb),                                       &
+               clon(displace(iam+1)+1:eb))
+          if (present(lat_out)) then
+            lat_out(displace(iam+1)+1:eb) = clat(displace(iam+1)+1:eb) * rad2deg
+          end if
+          if (present(lon_out)) then
+            lon_out(displace(iam+1)+1:eb) = clon(displace(iam+1)+1:eb) * rad2deg
+          end if
+        else
+          displace(iam+1) = 0
+          recvcnts(iam+1) = 0
+        end if
+        ibuf = displace(iam+1)
+        call mpi_allgather(ibuf, 1, mpi_integer, displace, &
+             1, mpi_integer, mpicom, ierr)
+
+        ibuf = recvcnts(iam+1)
+        call mpi_allgather(ibuf, 1, mpi_integer, recvcnts, &
+             1, mpi_integer, mpicom, ierr)
+
+        sb = displace(iam+1) + 1
+        eb = displace(iam+1) + recvcnts(iam+1)
+
+        rbuf(1:recvcnts(iam+1)) = clat(sb:eb)  ! whats going to happen if end=0?
+        call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, clat,            &
+               recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+        if (present(lat_out)) then
+          rbuf(1:recvcnts(iam+1)) = lat_out(sb:eb) 
+          call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, lat_out,       &
+               recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+        end if
+
+        rbuf(1:recvcnts(iam+1)) = clon(sb:eb)
+        call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, clon,            &
+               recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+        if (present(lon_out)) then
+          rbuf(1:recvcnts(iam+1)) = lon_out(sb:eb) 
+          call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, lon_out,       &
+               recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
+        end if
+      end do
+      
+      deallocate(rbuf)
+
+    end if ! fv_nphys > 0
 
   end subroutine compute_global_coords
   !
@@ -1076,7 +1172,6 @@ contains
     ! numbers (owners))  of the global model grid columns nearest to the 
     ! input satellite coordinate (lat,lon)
     !-----------------------------------------------------------------------
-    use spmd_utils,     only: iam
     use shr_const_mod,  only: SHR_CONST_REARTH
     !------------------------------Arguments--------------------------------
     real(r8),          intent(in ) :: lat
@@ -1169,7 +1264,6 @@ contains
   !=================================================================================================
   !
   subroutine dyn_grid_get_colndx( igcol, nclosest, owners, col, lbk ) 
-    use spmd_utils, only: iam
     !------------------------------Arguments--------------------------------
     integer, intent(in)  :: nclosest
     integer, intent(in)  :: igcol(nclosest)
