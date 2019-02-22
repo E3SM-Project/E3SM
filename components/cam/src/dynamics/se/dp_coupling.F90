@@ -50,35 +50,37 @@ CONTAINS
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend 
     ! LOCAL VARIABLES
-    type(element_t), pointer :: elem(:)                       ! pointer to dyn_out element array
-    integer (kind=int_kind)  :: ie                            ! indices over elements
-    integer (kind=int_kind)  :: lchnk, icol, ilyr             ! indices over chunks, columns, layers
-    real (kind=real_kind)    :: ps_tmp(npsq,nelemd)           ! temporary array to hold ps
-    real (kind=real_kind)    :: phis_tmp(npsq,nelemd)         ! temporary array to hold phis  
-    real (kind=real_kind)    :: T_tmp(npsq,pver,nelemd)       ! temporary array to hold T
-    real (kind=real_kind)    :: uv_tmp(npsq,2,pver,nelemd)    ! temporary array to hold u and v
-    real (kind=real_kind)    :: q_tmp(npsq,pver,pcnst,nelemd) ! temporary to hold advected constituents
-    real (kind=real_kind)    :: omega_tmp(npsq,pver,nelemd)   ! temporary array to hold omega
-
+    real (kind=real_kind), allocatable :: ps_tmp(:,:)      ! temp array to hold ps
+    real (kind=real_kind), allocatable :: phis_tmp(:,:)    ! temp array to hold phis  
+    real (kind=real_kind), allocatable :: T_tmp(:,:,:)     ! temp array to hold T
+    real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
+    real (kind=real_kind), allocatable :: q_tmp(:,:,:,:)   ! temp to hold advected constituents
+    real (kind=real_kind), allocatable :: omega_tmp(:,:,:) ! temp array to hold omega
+    type(element_t), pointer:: elem(:)                     ! pointer to dyn_out element array
+    integer (kind=int_kind) :: ie                          ! indices over elements
+    integer (kind=int_kind) :: lchnk, icol, ilyr           ! indices over chunks, columns, layers
+    integer                 :: tl_f                        ! time level
+    integer                 :: ncols,ierr                  ! 
+    integer                 :: i,j,m                       ! loop iterators
+    integer (kind=int_kind) :: ioff                        ! column index within block
+    integer                 :: pgcols(pcols)               ! global column indices for chunk
+    integer                 :: idmb1(1)                    ! block id
+    integer                 :: idmb2(1)                    ! column index within block
+    integer                 :: idmb3(1)                    ! local block id
+    integer                 :: tsize                       ! # vars per grid point passed to physics
+    integer,    allocatable :: bpter(:,:)                  ! offsets into block buffer for packing 
+    integer                 :: cpter(pcols,0:pver)         ! offsets into chunk buffer for unpacking 
+    integer                 :: nphys, nphys_sq             ! physics grid parameters
+    real (kind=real_kind)   :: temperature(np,np,nlev)     ! 
+    ! Transpose buffers
+    real (kind=real_kind), allocatable, dimension(:) :: bbuffer 
+    real (kind=real_kind), allocatable, dimension(:) :: cbuffer 
     ! Frontogenesis
-    real (kind=real_kind), allocatable :: frontgf(:,:,:) ! temporary arrays to hold frontogenesis
-    real (kind=real_kind), allocatable :: frontga(:,:,:) !   function (frontgf) and angle (frontga)
+    real (kind=real_kind), allocatable :: frontgf(:,:,:) ! frontogenesis function
+    real (kind=real_kind), allocatable :: frontga(:,:,:) ! frontogenesis angle 
     ! Pointers to pbuf
-    real (kind=r8),        pointer     :: pbuf_frontgf(:,:)
-    real (kind=r8),        pointer     :: pbuf_frontga(:,:)
-
-    integer                 :: ncols,i,j,ierr
-    integer (kind=int_kind) :: ioff, m
-    integer                 :: pgcols(pcols), idmb1(1), idmb2(1), idmb3(1)
-    integer                 :: tsize                 ! amount of data per grid point passed to physics
-    integer,    allocatable :: bpter(:,:)            ! offsets into block buffer for packing data
-    integer                 :: cpter(pcols,0:pver)   ! offsets into chunk buffer for unpacking data
-    integer                 :: nphys, nphys_sq
-    real (kind=real_kind)   :: temperature(np,np,nlev) 
-
-    real (kind=real_kind), allocatable, dimension(:) :: bbuffer, cbuffer ! transpose buffers
-    integer :: tl_f
-
+    real (kind=r8),            pointer :: pbuf_frontgf(:,:)
+    real (kind=r8),            pointer :: pbuf_frontga(:,:)
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
     !---------------------------------------------------------------------------
 
@@ -87,11 +89,20 @@ CONTAINS
     nullify(pbuf_frontga)
 
     if (fv_nphys > 0) then
-      nphys  = fv_nphys
+      nphys = fv_nphys
     else
       nphys = np
-    end if ! fv_nphys > 0
+    end if
     nphys_sq = nphys*nphys
+
+    ! Allocate temporary arrays to hold data for physics decomposition
+    allocate(ps_tmp   (nphys_sq,nelemd))
+    allocate(dp3d_tmp (nphys_sq,pver,nelemd))
+    allocate(phis_tmp (nphys_sq,nelemd))
+    allocate(T_tmp    (nphys_sq,pver,nelemd))
+    allocate(uv_tmp   (nphys_sq,2,pver,nelemd))
+    allocate(q_tmp    (nphys_sq,pver,pcnst,nelemd))
+    allocate(omega_tmp(nphys_sq,pver,nelemd))
 
     if (use_gw_front) then
        allocate(frontgf(npsq,pver,nelemd), stat=ierr)
@@ -242,8 +253,8 @@ CONTAINS
           call get_gcol_block_d(pgcols(icol),1,idmb1,idmb2,idmb3)
           ie = idmb3(1)
           ioff = idmb2(1)
-          phys_state(lchnk)%ps(icol)=ps_tmp(ioff,ie)
-          phys_state(lchnk)%phis(icol)=phis_tmp(ioff,ie)
+          phys_state(lchnk)%ps(icol) = ps_tmp(ioff,ie)
+          phys_state(lchnk)%phis(icol) = phis_tmp(ioff,ie)
           do ilyr = 1,pver
             phys_state(lchnk)%t(icol,ilyr) = T_tmp(ioff,ilyr,ie)	   
             phys_state(lchnk)%u(icol,ilyr) = uv_tmp(ioff,1,ilyr,ie)
@@ -347,6 +358,15 @@ CONTAINS
     end if ! local_dp_map
     call t_stopf('dpcopy')
 
+    ! Deallocate the temporary arrays
+    deallocate(ps_tmp)
+    deallocate(dp3d_tmp)
+    deallocate(phis_tmp)
+    deallocate(T_tmp)
+    deallocate(uv_tmp)
+    deallocate(q_tmp)
+    deallocate(omega_tmp)
+
     call t_startf('derived_phys')
     call derived_phys(phys_state,phys_tend,pbuf2d)
     call t_stopf('derived_phys')
@@ -392,19 +412,25 @@ CONTAINS
     ! OUTPUT PARAMETERS:
     type(dyn_import_t),  intent(inout)   :: dyn_in
     ! LOCAL VARIABLES
-    integer :: ic , ncols                                     ! index
-    type(element_t), pointer :: elem(:)                       ! pointer to dyn_in element array
-    integer(kind=int_kind)   :: ie, iep                       ! indices over elements
-    integer(kind=int_kind)   :: lchnk, icol, ilyr             ! indices over chunks, columns, layers
-    real   (kind=real_kind)  :: T_tmp(npsq,pver,nelemd)       ! temporary array to hold T
-    real   (kind=real_kind)  :: uv_tmp(npsq,2,pver,nelemd)    ! temporary array to hold uv
-    real   (kind=real_kind)  :: q_tmp(npsq,pver,pcnst,nelemd) ! temporary array to hold q
-    integer(kind=int_kind)   :: ioff, m, i, j, k
-    integer(kind=int_kind)   :: pgcols(pcols), idmb1(1), idmb2(1), idmb3(1)
-    integer :: tsize                 ! amount of data per grid point passed to physics
-    integer :: cpter(pcols,0:pver)   ! offsets into chunk buffer for packing data
-    integer :: bpter(npsq,0:pver)    ! offsets into block buffer for unpacking data
-    real (kind=real_kind), allocatable, dimension(:) :: bbuffer, cbuffer ! transpose buffers
+    integer :: ic , ncols                                  ! index
+    type(element_t), pointer :: elem(:)                    ! pointer to dyn_in element array
+    integer(kind=int_kind)   :: ie, iep                    ! indices over elements
+    integer(kind=int_kind)   :: lchnk, icol, ilyr          ! indices over chunks, columns, layers
+    real (kind=real_kind), allocatable :: T_tmp(:,:,:)     ! temp array to hold T
+    real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
+    real (kind=real_kind), allocatable :: q_tmp(:,:,:,:)   ! temp to hold advected constituents
+    integer(kind=int_kind)   :: m, i, j, k
+    integer(kind=int_kind)   :: pgcols(pcols)
+    integer(kind=int_kind)   :: ioff
+    integer(kind=int_kind)   :: idmb1(1)
+    integer(kind=int_kind)   :: idmb2(1)
+    integer(kind=int_kind)   :: idmb3(1)
+    integer                  :: nphys, nphys_sq
+    integer                  :: tsize                 ! # vars per grid point passed to physics
+    integer                  :: cpter(pcols,0:pver)   ! offsets into chunk buffer for packing 
+    integer,     allocatable :: bpter(:,:)            ! offsets into block buffer for unpacking 
+    ! Transpose buffers
+    real (kind=real_kind), allocatable, dimension(:) :: bbuffer, cbuffer 
     !---------------------------------------------------------------------------
     if (par%dynproc) then
       elem => dyn_in%elem
@@ -412,9 +438,21 @@ CONTAINS
       nullify(elem)
     end if
 
-    T_tmp=0.0_r8
-    uv_tmp=0.0_r8
-    q_tmp=0.0_r8
+    if (fv_nphys > 0) then
+      nphys = fv_nphys
+    else
+      nphys = np
+    end if
+    nphys_sq = nphys*nphys
+
+    allocate(T_tmp  (nphys_sq,pver,nelemd))
+    allocate(uv_tmp (nphys_sq,2,pver,nelemd))
+    allocate(dq_tmp (nphys_sq,pver,pcnst,nelemd))
+    allocate(dp_phys(nphys_sq,pver,nelemd))
+
+    T_tmp  = 0.0_r8
+    uv_tmp = 0.0_r8
+    q_tmp  = 0.0_r8
 
     if(adiabatic) return
 
@@ -472,6 +510,11 @@ CONTAINS
       call t_stopf  ('chunk_to_block')
 
       if (par%dynproc) then
+        if (fv_nphys > 0) then
+            allocate(bpter(fv_nphys*fv_nphys,0:pver))
+         else
+            allocate(bpter(npsq,0:pver))
+         end if
         !$omp parallel do private (ie, bpter, icol, ilyr, m)
         do ie = 1,nelemd
           call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pver+1,tsize,bpter)
@@ -486,6 +529,7 @@ CONTAINS
             end do ! ilyr
           end do ! icol
         end do ! ie
+        deallocate(bpter)
       end if ! par%dynproc
       deallocate( bbuffer )
       deallocate( cbuffer )
@@ -497,14 +541,20 @@ CONTAINS
       call t_startf('putUniquePoints')
       do ie = 1,nelemd
         ncols = elem(ie)%idxP%NumUniquePts
-        call putUniquePoints(elem(ie)%idxP, nlev, T_tmp(1:ncols,:,ie), elem(ie)%derived%fT(:,:,:))
-        call putUniquePoints(elem(ie)%idxP, 2, nlev, uv_tmp(1:ncols,:,:,ie), &
-             elem(ie)%derived%fM(:,:,:,:))
-        call putUniquePoints(elem(ie)%idxP, nlev,pcnst, q_tmp(1:ncols,:,:,ie), &
-             elem(ie)%derived%fQ(:,:,:,:))
+        call putUniquePoints(elem(ie)%idxP,    nlev,       T_tmp(1:ncols,:,ie),   &
+                             elem(ie)%derived%fT(:,:,:))
+        call putUniquePoints(elem(ie)%idxP, 2, nlev,       uv_tmp(1:ncols,:,:,ie), &
+                             elem(ie)%derived%fM(:,:,:,:))
+        call putUniquePoints(elem(ie)%idxP,    nlev,pcnst, q_tmp(1:ncols,:,:,ie),   &
+                             elem(ie)%derived%fQ(:,:,:,:))
       end do ! ie
       call t_stopf('putUniquePoints')
     end if ! par%dynproc
+
+    deallocate(T_tmp)
+    deallocate(uv_tmp)
+    deallocate(dq_tmp)
+    deallocate(dp_phys)
 
   end subroutine p_d_coupling
   !=================================================================================================
