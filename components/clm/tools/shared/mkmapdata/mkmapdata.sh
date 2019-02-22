@@ -22,10 +22,10 @@
 #
 # You can also set the following env variables:
 #
-# ESMFBIN_PATH - Path to ESMF binaries
-# CSMDATA ------ Path to CESM input data
-# MPIEXEC ------ Name of mpirun executable
-# REGRID_PROC -- Number of MPI processors to use
+# ESMFBIN_PATH   -- Path to ESMF binaries
+# INPUTDATA_PATH -- Path to root of input data directory
+# MPIEXEC        -- Name of mpirun executable
+# REGRID_PROC    -- Number of MPI processors to use
 #
 #----------------------------------------------------------------------
 echo $0
@@ -39,8 +39,8 @@ default_res="10x15"
 #----------------------------------------------------------------------
 # SET SOME DEFAULTS -- if not set via env variables outside
 
-if [ -z "$CSMDATA" ]; then
-   CSMDATA=/glade/p/cesm/cseg/inputdata
+if [ -z "$INPUTDATA_PATH" ]; then
+   INPUTDATA_PATH=/glade/p/cesm/cseg/inputdata
 fi
 if [ -z "$REGRID_PROC" ]; then
    REGRID_PROC=8
@@ -54,47 +54,56 @@ usage() {
   echo ""
   echo "valid arguments: "
   echo "[-f|--gridfile <gridname>] "
-  echo "     Full pathname of model SCRIP grid file to use "
-  echo "     This variable should be set if this is not a supported grid" 
-  echo "     This variable will override the automatic generation of the"
-  echo "     filename generated from the -res argument "
-  echo "     the filename is generated ASSUMING that this is a supported "
-  echo "     grid that has entries in the file namelist_defaults_clm.xml"
-  echo "     the -r|--res argument MUST be specied if this argument is specified" 
+  echo "    Full pathname of model SCRIP grid file to use "
+  echo "    This variable should be set if this is not a supported grid" 
+  echo "    This variable will override the automatic generation of the"
+  echo "    filename generated from the -res argument "
+  echo "    the filename is generated ASSUMING that this is a supported "
+  echo "    grid that has entries in the file namelist_defaults_clm.xml"
+  echo "    the -r|--res argument MUST be specied if this argument is specified" 
   echo "[-r|--res <res>]"
-  echo "     Model output resolution (default is $default_res)"
+  echo "    Model output resolution (default is $default_res)"
   echo "[-t|--gridtype <type>]"
-  echo "     Model output grid type"
-  echo "     supported values are [regional,global], (default is global)"
+  echo "    Model output grid type"
+  echo "    supported values are [regional,global], (default is global)"
   echo "[-p|--phys <CLM-version>]"
-  echo "     Whether to generate mapping files for clm4_0 or clm4_5"
-  echo "     supported values are [clm4_0,clm4_5], (default is clm4_5)"
+  echo "    Whether to generate mapping files for clm4_0 or clm4_5"
+  echo "    supported values are [clm4_0,clm4_5], (default is clm4_5)"
+  echo "[-i|--inputdata-path <inputdata_path>]"
+  echo "    Full path to root of inputdata directory"
+  echo "[-n|--ntasks <ntasks>]"
+  echo "    Number of MPI tasks to use in regrid command"
+  echo "[-m|--mpiexec <command>]"
+  echo "    Command used to run mpi jobs (mpirun, aprun, etc)"
+  echo "[-o|--output-filetype <filetype>]"
+  echo "    Specific type for output file [netcdf4, 64bit_offset]"
   echo "[-b|--batch]"
-  echo "     Toggles batch mode usage. If you want to run in batch mode"
-  echo "     you need to have a separate batch script for a supported machine"
-  echo "     that calls this script interactively - you cannot submit this"
-  echo "     script directory to the batch system"
+  echo "    Toggles batch mode usage. If you want to run in batch mode"
+  echo "    you need to have a separate batch script for a supported machine"
+  echo "    that calls this script interactively - you cannot submit this"
+  echo "    script directory to the batch system"
   echo "[-l|--list]"
-  echo "     List mapping files required (use check_input_data to get them)"
-  echo "     also writes data to $outfilelist"
+  echo "    List mapping files required (use check_input_data to get them)"
+  echo "    also writes data to $outfilelist"
   echo "[-d|--debug]"
-  echo "     Toggles debug-only (don't actually run mkmapdata just echo what would happen)"
+  echo "    Toggles debug-only (don't actually run mkmapdata just echo what would happen)"
   echo "[-h|--help]  "
-  echo "     Displays this help message"
+  echo "    Displays this help message"
   echo "[-v|--verbose]"
-  echo "     Toggle verbose usage -- log more information on what is happening "
+  echo "    Toggle verbose usage -- log more information on what is happening "
   echo ""
-  echo " You can also set the following env variables:"
-  echo "  ESMFBIN_PATH - Path to ESMF binaries "
-  echo "  CSMDATA ------ Path to CESM input data"
-  echo "                 (default is /glade/p/cesm/cseg/inputdata)"
-  echo "  MPIEXEC ------ Name of mpirun executable"
-  echo "                 (default is mpirun.lsf)"
-  echo "  REGRID_PROC -- Number of MPI processors to use"
-  echo "                 (default is 8)"
+  echo "You can also set the following env variables:"
+  echo "    ESMFBIN_PATH   -- Path to ESMF binaries "
+  echo "                      (default assume ESMF_RegridWeightGen is in PATH)"
+  echo "    INPUTDATA_PATH -- Path to root of input data directory"
+  echo "                      (default is /glade/p/cesm/cseg/inputdata)"
+  echo "    MPIEXEC        -- Name of mpirun executable"
+  echo "                      (default is mpirun.lsf)"
+  echo "    REGRID_PROC    -- Number of MPI processors to use"
+  echo "                      (default is 8)"
   echo ""
-  echo "**pass environment variables by preceding above commands "
-  echo "  with 'env var1=setting var2=setting '"
+  echo "NOTE: environment variables can be passed by preceding command with"
+  echo "      'env var1=setting var2=setting '"
   echo "**********************"
 }
 #----------------------------------------------------------------------
@@ -136,6 +145,7 @@ verbose="no"
 list="no"
 outgrid=""
 gridfile="default"
+output_filetype=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -168,6 +178,22 @@ while [ $# -gt 0 ]; do
             phys=$2
             shift
             ;;
+        -i|--inputdata-path)
+            INPUTDATA_PATH=$2
+            shift
+            ;;
+        -n|--ntasks)
+            REGRID_PROC=$2
+            shift
+            ;;
+        -m|--mpiexec)
+            MPIEXEC=$2
+            shift
+            ;;
+        -o|--output-filetype)
+            output_filetype=$2
+            shift
+            ;;
         -h|--help )
             usage
             exit 0
@@ -189,7 +215,7 @@ echo "Script to create mapping files required by mksurfdata_map"
 
 # Set general query command used below
 QUERY="$dir/../../../bld/queryDefaultNamelist.pl -silent -namelist clmexp -phys $phys "
-QUERY="$QUERY -justvalue -options sim_year=2000 -csmdata $CSMDATA"
+QUERY="$QUERY -justvalue -options sim_year=2000 -csmdata $INPUTDATA_PATH"
 echo "query command is $QUERY"
 
 echo ""
@@ -249,12 +275,13 @@ if [ -z "$GRIDFILE" ]; then
     exit 1
 fi
 
+# Make sure gridfile exists for given resolution
 if [ "$list" = "YES" ]; then
     echo "outgrid = $GRIDFILE"
     echo "outgrid = $GRIDFILE" > $outfilelist
 elif [ ! -f "$GRIDFILE" ]; then
-    echo "Input SCRIP grid file does NOT exist: $GRIDFILE\n";
-    echo "Make sure CSMDATA environment variable is set correctly"
+    echo "Output grid file does NOT exist: $GRIDFILE\n";
+    echo "Make sure INPUTDATA_PATH environment variable is set correctly"
     exit 1
 fi
 
@@ -434,7 +461,7 @@ esac
 # batch file that calls this script interactively - you cannot submit
 # this script to the batch system
 
-if [ "$interactive" = "NO" ]; then
+if [ "$interactive" == "NO" ]; then
    echo "Running in batch mode using MPI"
    if [ -z "$MPIEXEC" ]; then
       echo "Name of MPI exec to use was NOT set"
@@ -467,7 +494,7 @@ if [ ! -x "$ESMF_REGRID" ]; then
 fi
 
 # Remove previous log files
-rm PET*.Log
+rm -f PET*.Log
 
 #
 # Now run the mapping for each file, checking that input files exist
@@ -479,13 +506,17 @@ until ((nfile>${#INGRID[*]})); do
    echo "From input grid: ${INGRID[nfile]}"
    echo "For output grid: $GRIDFILE"
    echo " "
+
+   # Check that input and output grid files exist
    if [ -z "${INGRID[nfile]}" ] || [ -z "$GRIDFILE" ] || [ -z "${OUTFILE[nfile]}" ]; then
       echo "Either input or output grid or output mapping file is NOT set"
       exit 3
    fi
    if [ ! -f "${INGRID[nfile]}" ]; then
       echo "Input grid file does NOT exist: ${INGRID[nfile]}"
-      if [ ! "$list" = "YES" ]; then
+      if [ "$list" != "YES" ]; then
+         echo "Set --list argument to output list of grid files to $outfilelist"
+         echo "and then download separately using check_input_data (in CIME)."
          exit 2
       fi
    fi
@@ -510,34 +541,40 @@ until ((nfile>${#INGRID[*]})); do
        exit 4
    fi
 
+   # Override file type
+   if [ "${output_filetype}" != "" ]; then
+       lrgfil="--${output_filetype}"
+   fi
+
    # Skip if file already exists
    if [ -f "${OUTFILE[nfile]}" ]; then
       echo "Skipping creation of ${OUTFILE[nfile]} as already exists"
    else
 
+      # Build regrid command
       cmd="$mpirun $ESMF_REGRID --ignore_unmapped -s ${INGRID[nfile]} "
       cmd="$cmd -d $GRIDFILE -m conserve -w ${OUTFILE[nfile]}"
       if [ $type = "regional" ]; then
         cmd="$cmd --dst_regional"
       fi
-
       cmd="$cmd --src_type ${SRC_TYPE[nfile]} ${SRC_EXTRA_ARGS[nfile]} --dst_type $DST_TYPE $DST_EXTRA_ARGS"
       cmd="$cmd $lrgfil"
 
+      # Run regrid command
       runcmd $cmd
-
       if [ "$debug" != "YES" ] && [ ! -f "${OUTFILE[nfile]}" ]; then
          echo "Output mapping file was NOT created: ${OUTFILE[nfile]}"
          exit 6
       fi
-      # add some metadata to the file
+
+      # Add some metadata to the file
       HOST=`hostname`
       history="$ESMF_REGRID"
       runcmd "ncatted -a history,global,a,c,"$history"  ${OUTFILE[nfile]}"
       runcmd "ncatted -a hostname,global,a,c,$HOST   -h ${OUTFILE[nfile]}"
       runcmd "ncatted -a logname,global,a,c,$LOGNAME -h ${OUTFILE[nfile]}"
 
-      # check for duplicate mapping weights
+      # Check for duplicate mapping weights
       newfile="rmdups_${OUTFILE[nfile]}"
       runcmd "rm -f $newfile"
       runcmd "env MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
@@ -549,6 +586,14 @@ until ((nfile>${#INGRID[*]})); do
    nfile=nfile+1
 done
 
-echo "Successffully created needed mapping files for $res"
+if [ "${debug}" != "YES" ]; then
+    echo ""
+    echo "Successfully created needed mapping files for $res"
+    echo ""
+else
+    echo ""
+    echo "Script ran to completion; disable debug mode to generate mapping files."
+    echo ""
+fi
 
 exit 0
