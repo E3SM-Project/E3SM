@@ -110,27 +110,33 @@ class GenericXML(object):
 
     def read_fd(self, fd):
         expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"               .format(self.filename))
+        read_only = self.read_only
         if self.tree:
             addroot = _Element(ET.parse(fd).getroot())
-            read_only = self.read_only
             # we need to override the read_only mechanism here to append the xml object
-            if read_only:
-                self.read_only = False
+            self.read_only = False
             if addroot.xml_element.tag == self.name(self.root):
                 for child in self.get_children(root=addroot):
                     self.add_child(child)
             else:
                 self.add_child(addroot)
-            if read_only:
-                self.read_only = True
+            self.read_only = read_only
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
-            include_elems = self.scan_children("xi:include")
-            for elem in include_elems:
-                path = os.path.abspath(os.path.join(os.getcwd(), os.path.dirname(self.filename) ,self.get(elem, "href")))
-                logger.debug("Include file {}".format(path))
-                self.read(path)
+        include_elems = self.scan_children("xi:include")
+        # First remove all includes found from the list
+        for elem in include_elems:
+            self.read_only = False
+            self.remove_child(elem)
+            self.read_only = read_only
+        # Then recursively add the included files.
+        for elem in include_elems:
+            path = os.path.abspath(
+                os.path.join(os.getcwd(), os.path.dirname(self.filename),
+                             self.get(elem, "href")))
+            logger.debug("Include file {}".format(path))
+            self.read(path)
 
     def lock(self):
         """
