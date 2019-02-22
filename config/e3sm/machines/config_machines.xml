@@ -1560,7 +1560,7 @@
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>OceanClimate,ClimateEnergy_2,OceanClimate_2</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_3,OceanClimate_2</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
