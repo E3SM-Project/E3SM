@@ -720,12 +720,17 @@ class J_TestCreateNewcase(unittest.TestCase):
     def test_m_createnewcase_alternate_drivers(self):
         # Test that case.setup runs for nuopc and moab drivers
         cls = self.__class__
+        model = CIME.utils.get_model()
         for driver in ("nuopc", "moab"):
+            if ((model == 'cesm' and driver == 'moab') or
+                (model == 'e3sm' and driver == 'nuopc')):
+                continue
+
             testdir = os.path.join(cls._testroot, 'testcreatenewcase.{}'.format( driver))
             if os.path.exists(testdir):
                 shutil.rmtree(testdir)
             args =  " --driver {} --case {} --compset X --res f19_g16 --output-root {} --handle-preexisting-dirs=r".format(driver, testdir, cls._testroot)
-            if CIME.utils.get_model() == "cesm":
+            if model == "cesm":
                 args += " --run-unsupported"
             if TEST_COMPILER is not None:
                 args = args +  " --compiler %s"%TEST_COMPILER
