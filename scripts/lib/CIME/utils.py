@@ -287,12 +287,12 @@ def get_model():
     The CIME_MODEL env variable may or may not be set
 
     >>> os.environ["CIME_MODEL"] = "garbage"
-    >>> get_model()
+    >>> get_model() # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: model garbage not recognized
     >>> del os.environ["CIME_MODEL"]
-    >>> set_model('rocky')
+    >>> set_model('rocky') # doctest:+ELLIPSIS +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     CIMEError: ERROR: model rocky not recognized
