@@ -9,7 +9,7 @@
 <solar_data_ymd>19500101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
-<!-- 1850 GHG values from CMIP6 input4MIPS -->
+<!-- 1950 GHG values from CMIP6 input4MIPS -->
 <!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
 <ch4vmr>1163.821e-9</ch4vmr>
 <n2ovmr>289.739e-9</n2ovmr>
@@ -155,7 +155,7 @@
 <sim_year>1955</sim_year>
 
 <!-- land datasets -->
-<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/1950_CMIP6LR_control.xml -->
 
 
 </namelist_defaults>

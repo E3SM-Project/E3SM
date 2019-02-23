@@ -46,11 +46,9 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             initialize_paths (NetCDF_${NCDFcomp}_PATHS
                               INCLUDE_DIRECTORIES ${MPI_${NCDFcomp}_INCLUDE_PATH}
                               LIBRARIES ${MPI_${NCDFcomp}_LIBRARIES})
-            find_package_component(NetCDF COMPONENT ${NCDFcomp}
-                                   PATHS ${NetCDF_${NCDFcomp}_PATHS})
-        else ()
-            find_package_component(NetCDF COMPONENT ${NCDFcomp})
         endif ()
+        find_package_component(NetCDF COMPONENT ${NCDFcomp}
+                               PATHS ${NetCDF_${NCDFcomp}_PATHS})
 
         # Continue only if component found
         if (NetCDF_${NCDFcomp}_FOUND)

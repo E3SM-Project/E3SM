@@ -388,7 +388,7 @@ int get_var_desc(int varid, var_desc_t **varlist, var_desc_t **var_desc)
     var_desc_t *my_var;
 
     /* Check inputs. */
-    pioassert(varlist, "invalid input", __FILE__, __LINE__);    
+    pioassert(varlist, "invalid input", __FILE__, __LINE__);
 
     /* Empty varlist. */
     if (!*varlist)

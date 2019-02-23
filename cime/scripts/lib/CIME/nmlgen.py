@@ -8,6 +8,7 @@
 
 import datetime
 import re
+import hashlib
 
 from CIME.XML.standard_module_setup import *
 from CIME.namelist import Namelist, parse, \
@@ -93,7 +94,7 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
+    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=False):
         """Return array of names of all definition nodes
         """
         # first clean out any settings left over from previous calls
@@ -126,8 +127,8 @@ class NamelistGenerator(object):
         if not skip_entry_loop:
             for entry in entry_nodes:
                 self.add_default(self._definition.get(entry, "id"))
-        else:
-            return [self._definition.get(entry, "id") for entry in entry_nodes]
+
+        return [self._definition.get(entry, "id") for entry in entry_nodes]
 
     @staticmethod
     def quote_string(string):
@@ -144,37 +145,39 @@ class NamelistGenerator(object):
         """Transform a literal list as needed for `get_value`."""
         var_type, _, var_size, = self._definition.split_type_string(name)
         if len(literals) > 0:
-            value = expand_literal_list(literals)
+            values = expand_literal_list(literals)
         else:
-            value = ''
-            return value
-        for i, scalar in enumerate(value):
-            if scalar == '':
-                value[i] = None
-            elif var_type == 'character':
-                value[i] = character_literal_to_string(scalar)
-        if var_size == 1:
-            return value[0]
-        else:
-            return value
+            return ""
 
-    def _to_namelist_literals(self, name, value):
+        for i, scalar in enumerate(values):
+            if scalar == '':
+                values[i] = None
+            elif var_type == 'character':
+                values[i] = character_literal_to_string(scalar)
+
+        if var_size == 1:
+            return values[0]
+        else:
+            return values
+
+    def _to_namelist_literals(self, name, values):
         """Transform a literal list as needed for `set_value`.
 
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
         var_type, _, var_size, =  self._definition.split_type_string(name)
-        if var_size == 1 and not isinstance(value, list):
-            value = [value]
-        for i, scalar in enumerate(value):
+        if var_size == 1 and not isinstance(values, list):
+            values = [values]
+
+        for i, scalar in enumerate(values):
             if scalar is None:
-                value[i] = ""
+                values[i] = ""
             elif var_type == 'character':
                 expect(not isinstance(scalar, list), name)
-                value[i] = self.quote_string(scalar)
-        return compress_literal_list(value)
+                values[i] = self.quote_string(scalar)
 
+        return compress_literal_list(values)
 
     def get_value(self, name):
         """Get the current value of a given namelist variable.
@@ -294,7 +297,6 @@ class NamelistGenerator(object):
         """ Clean the object just enough to introduce a new instance """
         self.clean_streams()
         self._namelist.clean_groups()
-
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.
@@ -467,17 +469,25 @@ class NamelistGenerator(object):
 
         with open(stream_path, 'w') as stream_file:
             stream_file.write(stream_file_text)
+
+        lines_hash = self._get_input_file_hash(data_list_path)
         with open(data_list_path, 'a') as input_data_list:
             for i, filename in enumerate(domain_filenames.split("\n")):
                 if filename.strip() == '':
                     continue
                 filepath = os.path.join(domain_filepath, filename.strip())
-                input_data_list.write("domain{:d} = {}\n".format(i+1, filepath))
+                string = "domain{:d} = {}\n".format(i+1, filepath)
+                hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
+                if hashValue not in lines_hash:
+                    input_data_list.write(string)
             for i, filename in enumerate(data_filenames.split("\n")):
                 if filename.strip() == '':
                     continue
                 filepath = os.path.join(data_filepath, filename.strip())
-                input_data_list.write("file{:d} = {}\n".format(i+1, filepath))
+                string = "file{:d} = {}\n".format(i+1, filepath)
+                hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
+                if hashValue not in lines_hash:
+                    input_data_list.write(string)
         self.update_shr_strdata_nml(config, stream, stream_path)
 
     def update_shr_strdata_nml(self, config, stream, stream_path):
@@ -563,7 +573,7 @@ class NamelistGenerator(object):
                         continue
                     file_path = character_literal_to_string(literal)
                     # NOTE - these are hard-coded here and a better way is to make these extensible
-                    if file_path == 'UNSET' or file_path == 'idmap':
+                    if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore' or file_path == 'unset':
                         continue
                     if file_path == 'null':
                         continue
@@ -589,39 +599,57 @@ class NamelistGenerator(object):
     def get_group_variables(self, group_name):
         return self._namelist.get_group_variables(group_name)
 
+    def _get_input_file_hash(self, data_list_path):
+        lines_hash = set()
+        if os.path.isfile(data_list_path):
+            with open(data_list_path, "r") as input_data_list:
+                for line in input_data_list:
+                    hashValue = hashlib.md5(line.rstrip().encode('utf-8')).hexdigest()
+                    logger.debug( "Found line {} with hash {}".format(line,hashValue))
+                    lines_hash.add(hashValue)
+        return lines_hash
 
-    def _write_input_files(self, input_data_list):
+    def _write_input_files(self, data_list_path):
         """Write input data files to list."""
-        for group_name in self._namelist.get_group_names():
-            for variable_name in self._namelist.get_variable_names(group_name):
-                input_pathname = self._definition.get_node_element_info(variable_name, "input_pathname")
-                if input_pathname is not None:
-                    # This is where we end up for all variables that are paths
-                    # to input data files.
-                    literals = self._namelist.get_variable_value(group_name, variable_name)
-                    for literal in literals:
-                        file_path = character_literal_to_string(literal)
-                        # NOTE - these are hard-coded here and a better way is to make these extensible
-                        if file_path == 'UNSET' or file_path == 'idmap':
-                            continue
-                        if input_pathname == 'abs':
-                            # No further mangling needed for absolute paths.
-                            # At this point, there are overwrites that should be ignored
-                            if not os.path.isabs(file_path):
+        # append to input_data_list file
+        lines_hash = self._get_input_file_hash(data_list_path)
+        with open(data_list_path, "a") as input_data_list:
+            for group_name in self._namelist.get_group_names():
+                for variable_name in self._namelist.get_variable_names(group_name):
+                    input_pathname = self._definition.get_node_element_info(variable_name, "input_pathname")
+                    if input_pathname is not None:
+                        # This is where we end up for all variables that are paths
+                        # to input data files.
+                        literals = self._namelist.get_variable_value(group_name, variable_name)
+                        for literal in literals:
+                            file_path = character_literal_to_string(literal)
+                            # NOTE - these are hard-coded here and a better way is to make these extensible
+                            if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore':
                                 continue
+                            if input_pathname == 'abs':
+                                # No further mangling needed for absolute paths.
+                                # At this point, there are overwrites that should be ignored
+                                if not os.path.isabs(file_path):
+                                    continue
+                                else:
+                                    pass
+                            elif input_pathname.startswith('rel:'):
+                                # The part past "rel" is the name of a variable that
+                                # this variable specifies its path relative to.
+                                root_var = input_pathname[4:]
+                                root_dir = self.get_value(root_var)
+                                file_path = os.path.join(root_dir, file_path)
                             else:
-                                pass
-                        elif input_pathname.startswith('rel:'):
-                            # The part past "rel" is the name of a variable that
-                            # this variable specifies its path relative to.
-                            root_var = input_pathname[4:]
-                            root_dir = self.get_value(root_var)
-                            file_path = os.path.join(root_dir, file_path)
-                        else:
-                            expect(False,
-                                   "Bad input_pathname value: {}.".format(input_pathname))
-                        # Write to the input data list.
-                        input_data_list.write("{} = {}\n".format(variable_name, file_path))
+                                expect(False,
+                                       "Bad input_pathname value: {}.".format(input_pathname))
+                            # Write to the input data list.
+                            string = "{} = {}".format(variable_name, file_path)
+                            hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
+                            if hashValue not in lines_hash:
+                                logger.debug("Adding line {} with hash {}".format(string,hashValue))
+                                input_data_list.write(string+"\n")
+                            else:
+                                logger.debug("Line already in file {}".format(string))
 
     def write_output_file(self, namelist_file, data_list_path=None, groups=None, sorted_groups=True):
         """Write out the namelists and input data files.
@@ -645,18 +673,42 @@ class NamelistGenerator(object):
         self._namelist.write(namelist_file, groups=groups, sorted_groups=sorted_groups)
 
         if data_list_path is not None:
-            # append to input_data_list file
-            with open(data_list_path, "a") as input_data_list:
-                self._write_input_files(input_data_list)
+            self._write_input_files(data_list_path)
 
+    # For MCT
     def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
         """ Write only contents of nml group """
         self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
 
+    # For MCT
     def write_seq_maps(self, filename):
         """ Write out seq_maps.rc"""
         self._namelist.write(filename, groups=["seq_maps"], format_="rc")
 
+    # For MCT
     def write_modelio_file(self, filename):
         """ Write  component modelio files"""
         self._namelist.write(filename, groups=["modelio", "pio_inparm"], format_="nml")
+
+    # For NUOPC
+    def write_nuopc_modelio_file(self, filename):
+        """ Write  nuopc component modelio files"""
+        self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
+
+    # For NUOPC
+    def write_nuopc_config_file(self, filename, data_list_path=None,
+                                skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+        """ Write the nuopc config file"""
+        self._definition.validate(self._namelist)
+        groups = self._namelist.get_group_names()
+        if "nuopc_runseq" in groups:
+            self._namelist.write(os.path.dirname(filename)+os.sep+"nuopc.runseq", groups=["nuopc_runseq"],
+                                 format_='nuopc',sorted_groups=False,
+                             skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+            groups.remove("nuopc_runseq")
+
+        self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
+
+        if data_list_path is not None:
+            # append to input_data_list file
+            self._write_input_files(data_list_path)

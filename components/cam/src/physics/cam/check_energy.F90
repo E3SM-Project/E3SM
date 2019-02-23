@@ -266,6 +266,7 @@ end subroutine check_energy_get_integrals
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
+    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -274,6 +275,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('BVRIM',  ixrim,  abort=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -320,15 +322,22 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+!AaronDonahue P3 doesn't have snow but MG does, so it is necessary to 
+!separate snow mass from rain mass to accurately track mass conservation
+    if (ixsnow > 1) then 
+       do k = 1, pver
+          do i = 1, ncol
              ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
     end if
-
 
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
@@ -416,6 +425,7 @@ end subroutine check_energy_get_integrals
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
+    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -424,6 +434,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('BVRIM',  ixrim,  abort=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -470,10 +481,18 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+!AaronDonahue P3 doesn't have snow but MG does, so it is necessary to 
+!separate snow mass from rain mass to accurately track mass conservation
+    if (ixsnow > 1) then 
+       do k = 1, pver
+          do i = 1, ncol
              ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
@@ -711,9 +730,9 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 !DIR$ CONCURRENT
     do lchnk = begchunk, endchunk
 
-       ieflx(:ncol) = ieflx_glob
+       ieflx = ieflx_glob
 
-       call outfld('IEFLX', ieflx(:ncol), pcols, lchnk)
+       call outfld('IEFLX', ieflx, pcols, lchnk)
 
     end do
 
@@ -813,17 +832,23 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
 
+    use cam_history, only: outfld
+    use scamMod, only: heat_glob_scm, single_column, use_camiop
+
     type(physics_state), intent(in   ) :: state
     type(physics_ptend), intent(out)   :: ptend
 
     integer , intent(in   ) :: nstep          ! time step number
     real(r8), intent(out  ) :: eshflx(pcols)  ! effective sensible heat flux
+    real(r8) :: heat_out(pcols)
 
 !---------------------------Local storage-------------------------------
     integer  :: i                        ! column
     integer  :: ncol                     ! number of atmospheric columns in chunk
+    integer  :: lchnk
 !-----------------------------------------------------------------------
     ncol = state%ncol
+    lchnk = state%lchnk
 
     call physics_ptend_init(ptend, state%psetcols, 'chkenergyfix', ls=.true.)
 
@@ -832,8 +857,18 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     heat_glob = 0._r8
 #endif
 ! add (-) global mean total energy difference as heating
+    if (single_column .and. use_camiop) then
+      heat_glob = heat_glob_scm(1)
+    endif
     ptend%s(:ncol,:pver) = heat_glob
 !!$    write(iulog,*) "chk_fix: heat", state%lchnk, ncol, heat_glob
+
+#if ( defined BFB_CAM_SCAM_IOP )
+    if (nstep > 0) then
+      heat_out(:ncol) = heat_glob
+      call outfld('heat_glob',  heat_out(:ncol), pcols, lchnk)
+    endif
+#endif
 
 ! compute effective sensible heat flux
     do i = 1, ncol

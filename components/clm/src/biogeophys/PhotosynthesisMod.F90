@@ -25,7 +25,7 @@ module  PhotosynthesisMod
   use SurfaceAlbedoType   , only : surfalb_type
   use PhotosynthesisType  , only : photosyns_type
   use VegetationType           , only : veg_pp
-  use CNAllocationMod     , only : nu_com_leaf_physiology
+  use AllocationMod     , only : nu_com_leaf_physiology
   use PhosphorusStateType , only : phosphorusstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use clm_varctl          , only : cnallocate_carbon_only
@@ -33,7 +33,8 @@ module  PhotosynthesisMod
   use clm_varctl          , only : cnallocate_carbonphosphorus_only
   use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
-  use CNSharedParamsMod   , only : CNParamsShareInst      
+  use SharedParamsMod   , only : ParamsShareInst
+  use TopounitType        , only : top_as  
   !
   implicit none
   save
@@ -148,7 +149,7 @@ contains
     real(r8) :: theta_ip          ! empirical curvature parameter for ap photosynthesis co-limitation
 
     ! Other
-    integer  :: f,p,c,iv          ! indices
+    integer  :: f,p,c,t,iv        ! indices
     real(r8) :: cf                ! s m**2/umol -> s/m
     real(r8) :: rsmax0            ! maximum stomatal resistance [s/m]
     real(r8) :: gb                ! leaf boundary layer conductance (m/s)
@@ -236,7 +237,7 @@ contains
          fnitr         => veg_vp%fnitr                         , & ! Input:  [real(r8) (:)   ]  foliage nitrogen limitation factor (-)                                
          slatop        => veg_vp%slatop                        , & ! Input:  [real(r8) (:)   ]  specific leaf area at top of canopy, projected area basis [m^2/gC]    
 
-         forc_pbot     => atm2lnd_vars%forc_pbot_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_pbot     => top_as%pbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
 
          t_veg         => temperature_vars%t_veg_patch             , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
          t10           => temperature_vars%t_a10_patch             , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)                        
@@ -321,6 +322,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
 
          ! vcmax25 parameters, from CN
 
@@ -392,8 +394,8 @@ contains
          ! cp to account for variation in O2 using cp = 0.5 O2 / sco
          !
 
-         kc25 = (404.9_r8 / 1.e06_r8) * forc_pbot(c)
-         ko25 = (278.4_r8 / 1.e03_r8) * forc_pbot(c)
+         kc25 = (404.9_r8 / 1.e06_r8) * forc_pbot(t)
+         ko25 = (278.4_r8 / 1.e03_r8) * forc_pbot(t)
          sco  = 0.5_r8 * 0.209_r8 / (42.75_r8 / 1.e06_r8)
          cp25 = 0.5_r8 * oair(p) / sco
 
@@ -561,7 +563,7 @@ contains
             !
             ! Then scale this value at the top of the canopy for canopy depth
 
-            lmr25top = 2.525e-6_r8 * (CNParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
+            lmr25top = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
             lmr25top = lmr25top * lnc(p) / 12.e-06_r8
 
          else
@@ -665,10 +667,11 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
 
          ! Leaf boundary layer conductance, umol/m**2/s
 
-         cf = forc_pbot(c)/(rgas*1.e-3_r8*tgcm(p))*1.e06_r8
+         cf = forc_pbot(t)/(rgas*1.e-3_r8*tgcm(p))*1.e06_r8
          gb = 1._r8/rb(p)
          gb_mol(p) = gb * cf
 
@@ -726,7 +729,7 @@ contains
                ciold = ci_z(p,iv)
 
                !find ci and stomatal conductance
-               call hybrid(ciold, p, iv, c, gb_mol(p), je, cair(p), oair(p), &
+               call hybrid(ciold, p, iv, c, t, gb_mol(p), je, cair(p), oair(p), &
                     lmr_z(p,iv), par_z(p,iv), rh_can, gs_mol(p,iv), niter, &
                     atm2lnd_vars, photosyns_vars)
 
@@ -736,9 +739,9 @@ contains
 
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
-               cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(c)
+               cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
-               ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+               ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
 
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
@@ -773,7 +776,7 @@ contains
 
                hs = (gb_mol(p)*ceair + gs_mol(p,iv)*esat_tv(p)) / ((gb_mol(p)+gs_mol(p,iv))*esat_tv(p))
                rh_leaf(p) = hs
-               gs_mol_err = mbb(p)*max(an(p,iv), 0._r8)*hs/cs*forc_pbot(c) + bbb(p)
+               gs_mol_err = mbb(p)*max(an(p,iv), 0._r8)*hs/cs*forc_pbot(t) + bbb(p)
 
                if (abs(gs_mol(p,iv)-gs_mol_err) > 1.e-01_r8) then
                   write (iulog,*) 'Ball-Berry error check - stomatal conductance error:'
@@ -850,13 +853,13 @@ contains
     type(photosyns_type)   , intent(inout) :: photosyns_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: f,fp,p,l,g               ! indices
+    integer :: f,fp,p,l,t,g               ! indices
     !-----------------------------------------------------------------------
 
     associate(                                             &
-         forc_pco2   => atm2lnd_vars%forc_pco2_grc       , & ! Input:  [real(r8) (:) ]  partial pressure co2 (Pa)                                             
-         forc_pc13o2 => atm2lnd_vars%forc_pc13o2_grc     , & ! Input:  [real(r8) (:) ]  partial pressure c13o2 (Pa)                                           
-         forc_po2    => atm2lnd_vars%forc_po2_grc        , & ! Input:  [real(r8) (:) ]  partial pressure o2 (Pa)                                              
+         forc_pco2   => top_as%pco2bot                   , & ! Input:  [real(r8) (:) ]  partial pressure co2 (Pa)                                             
+         forc_pc13o2 => top_as%pc13o2bot                 , & ! Input:  [real(r8) (:) ]  partial pressure c13o2 (Pa)                                           
+         forc_po2    => top_as%po2bot                    , & ! Input:  [real(r8) (:) ]  partial pressure o2 (Pa)                                              
 
          rc14_atm    => cnstate_vars%rc14_atm_patch      , & ! Input : [real(r8) (:) ]  C14O2/C12O2 in atmosphere 
 
@@ -889,6 +892,7 @@ contains
       do f = 1, fn
          p = filterp(f)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
 
          if (.not.use_fates) then
             fpsn(p)    = psnsun(p)   *laisun(p) + psnsha(p)   *laisha(p)
@@ -899,7 +903,7 @@ contains
 
          if (use_cn) then
             if ( use_c13 ) then
-               rc13_canair(p) = forc_pc13o2(g)/(forc_pco2(g) - forc_pc13o2(g))
+               rc13_canair(p) = forc_pc13o2(t)/(forc_pco2(t) - forc_pc13o2(t))
                rc13_psnsun(p) = rc13_canair(p)/alphapsnsun(p)
                rc13_psnsha(p) = rc13_canair(p)/alphapsnsha(p)
                c13_psnsun(p)  = psnsun(p) * (rc13_psnsun(p)/(1._r8+rc13_psnsun(p)))
@@ -946,16 +950,16 @@ contains
     ! !LOCAL VARIABLES:
     real(r8) , pointer :: par_z (:,:)   ! needed for backwards compatiblity
     real(r8) , pointer :: alphapsn (:)  ! needed for backwards compatiblity
-    integer  :: f,p,c,g,iv              ! indices
+    integer  :: f,p,c,t,g,iv            ! indices
     real(r8) :: co2(bounds%begp:bounds%endp)  ! atmospheric co2 partial pressure (pa)
     real(r8) :: ci
     !------------------------------------------------------------------------------
 
     associate(                                                  & 
-         forc_pbot   => atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
-         forc_pco2   => atm2lnd_vars%forc_pco2_grc            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
+         forc_pbot   => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_pco2   => top_as%pco2bot                        , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
 
-         c3psn       => veg_vp%c3psn                      , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3                              
+         c3psn       => veg_vp%c3psn                          , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3
 
          nrad        => surfalb_vars%nrad_patch               , & ! Input:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer             
 
@@ -976,16 +980,17 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c= veg_pp%column(p)
-         g= veg_pp%gridcell(p)
+         c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
+         g = veg_pp%gridcell(p)
 
-         co2(p) = forc_pco2(g)
+         co2(p) = forc_pco2(t)
          do iv = 1,nrad(p)
             if (par_z(p,iv) <= 0._r8) then           ! night time
                alphapsn(p) = 1._r8
             else                                     ! day time
                ci = co2(p) - ((an(p,iv) * (1._r8-downreg(p)) ) * &
-                    forc_pbot(c) * &
+                    forc_pbot(t) * &
                     (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv)))
                alphapsn(p) = 1._r8 + (((c3psn(veg_pp%itype(p)) * &
                     (4.4_r8 + (22.6_r8*(ci/co2(p))))) + &
@@ -999,7 +1004,7 @@ contains
   end subroutine Fractionation
 
   !-------------------------------------------------------------------------------
-  subroutine hybrid(x0, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z,&
+  subroutine hybrid(x0, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z,&
        rh_can, gs_mol,iter, &
        atm2lnd_vars, photosyns_vars)
     !
@@ -1026,7 +1031,7 @@ contains
     real(r8), intent(in) :: je                 ! electron transport rate (umol electrons/m**2/s)
     real(r8), intent(in) :: cair               ! Atmospheric CO2 partial pressure (Pa)
     real(r8), intent(in) :: oair               ! Atmospheric O2 partial pressure (Pa)
-    integer,  intent(in) :: p, iv, c           ! pft, c3/c4, and column index
+    integer,  intent(in) :: p, iv, c, t        ! pft, c3/c4, column, and topounit index
     real(r8), intent(out) :: gs_mol            ! leaf stomatal conductance (umol H2O/m**2/s)
     integer,  intent(out) :: iter              !number of iterations used, for record only   
     type(atm2lnd_type)  , intent(in)    :: atm2lnd_vars
@@ -1042,7 +1047,7 @@ contains
     integer,  parameter :: itmax = 40          !maximum number of iterations
     real(r8) :: tol,minx,minf
 
-    call ci_func(x0, f0, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+    call ci_func(x0, f0, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
     if(f0 == 0._r8)return
@@ -1051,7 +1056,7 @@ contains
     minf=f0
     x1 = x0 * 0.99_r8
 
-    call ci_func(x1,f1, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+    call ci_func(x1,f1, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
     if(f1==0._r8)then
@@ -1078,7 +1083,7 @@ contains
        f0 = f1
        x1 = x   
 
-       call ci_func(x1,f1, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+       call ci_func(x1,f1, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
             atm2lnd_vars, photosyns_vars)
 
        if(f1<minf)then
@@ -1093,7 +1098,7 @@ contains
        !if a root zone is found, use the brent method for a robust backup strategy
        if(f1 * f0 < 0._r8)then
 
-          call brent(x, x0,x1,f0,f1, tol, p, iv, c, gb_mol, je, cair, oair, &
+          call brent(x, x0,x1,f0,f1, tol, p, iv, c, t, gb_mol, je, cair, oair, &
                lmr_z, par_z, rh_can, gs_mol, &
                atm2lnd_vars, photosyns_vars)
 
@@ -1106,7 +1111,7 @@ contains
           !this happens because of some other issues besides the stomatal conductance calculation
           !and it happens usually in very dry places and more likely with c4 plants.
 
-          call ci_func(minx,f1, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+          call ci_func(minx,f1, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
                atm2lnd_vars, photosyns_vars)
 
           exit
@@ -1116,7 +1121,7 @@ contains
   end subroutine hybrid
 
   !------------------------------------------------------------------------------
-  subroutine brent(x, x1,x2,f1, f2, tol, ip, iv, ic, gb_mol, je, cair, oair,&
+  subroutine brent(x, x1,x2,f1, f2, tol, ip, iv, ic, it, gb_mol, je, cair, oair,&
        lmr_z, par_z, rh_can, gs_mol, &
        atm2lnd_vars, photosyns_vars)
     !
@@ -1138,7 +1143,7 @@ contains
     real(r8), intent(in) :: cair              ! Atmospheric CO2 partial pressure (Pa)
     real(r8), intent(in) :: oair              ! Atmospheric O2 partial pressure (Pa)
     real(r8), intent(in) :: rh_can            ! inside canopy relative humidity 
-    integer,  intent(in) :: ip, iv, ic        ! pft, c3/c4, and column index
+    integer,  intent(in) :: ip, iv, ic, it    ! pft, c3/c4, column, and topounit index
     real(r8), intent(out) :: gs_mol           ! leaf stomatal conductance (umol H2O/m**2/s)
     type(atm2lnd_type)  , intent(in)    :: atm2lnd_vars
     type(photosyns_type), intent(inout) :: photosyns_vars
@@ -1216,7 +1221,7 @@ contains
           b=b+sign(tol1,xm)
        endif
 
-       call ci_func(b, fb, ip, iv, ic, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+       call ci_func(b, fb, ip, iv, ic, it, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
        if(fb==0._r8)exit
@@ -1306,7 +1311,7 @@ contains
   end function fth25
 
   !------------------------------------------------------------------------------
-  subroutine ci_func(ci, fval, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z,&
+  subroutine ci_func(ci, fval, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z,&
        rh_can, gs_mol, atm2lnd_vars, photosyns_vars)
     !
     !! DESCRIPTION:
@@ -1327,7 +1332,7 @@ contains
     real(r8)             , intent(in)    :: cair     ! Atmospheric CO2 partial pressure (Pa)
     real(r8)             , intent(in)    :: oair     ! Atmospheric O2 partial pressure (Pa)
     real(r8)             , intent(in)    :: rh_can   ! canopy air realtive humidity
-    integer              , intent(in)    :: p, iv, c ! pft, vegetation type and column indexes
+    integer              , intent(in)    :: p,iv,c,t ! pft, vegetation type, column, and topounit indexes
     real(r8)             , intent(out)   :: fval     ! return function of the value f(ci)
     real(r8)             , intent(out)   :: gs_mol   ! leaf stomatal conductance (umol H2O/m**2/s)
     type(atm2lnd_type)   , intent(in)    :: atm2lnd_vars
@@ -1345,7 +1350,7 @@ contains
     !------------------------------------------------------------------------------
 
     associate(& 
-         forc_pbot  => atm2lnd_vars%forc_pbot_downscaled_col   , & ! Output: [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
+         forc_pbot  => top_as%pbot                             , & ! Output: [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          c3flag     => photosyns_vars%c3flag_patch             , & ! Output: [logical  (:)   ]  true if C3 and false if C4                                             
          ac         => photosyns_vars%ac_patch                 , & ! Output: [real(r8) (:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)              
          aj         => photosyns_vars%aj_patch                 , & ! Output: [real(r8) (:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)                 
@@ -1388,7 +1393,7 @@ contains
          aj(p,iv) = qe(p) * par_z * 4.6_r8
 
          ! C4: PEP carboxylase-limited (CO2-limited)
-         ap(p,iv) = kp_z(p,iv) * max(ci, 0._r8) / forc_pbot(c)
+         ap(p,iv) = kp_z(p,iv) * max(ci, 0._r8) / forc_pbot(t)
 
       end if
 
@@ -1416,17 +1421,17 @@ contains
       ! Quadratic gs_mol calculation with an known. Valid for an >= 0.
       ! With an <= 0, then gs_mol = bbb
 
-      cs = cair - 1.4_r8/gb_mol * an(p,iv) * forc_pbot(c)
+      cs = cair - 1.4_r8/gb_mol * an(p,iv) * forc_pbot(t)
       cs = max(cs,1.e-06_r8)
       aquad = cs
-      bquad = cs*(gb_mol - bbb(p)) - mbb(p)*an(p,iv)*forc_pbot(c)
-      cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(c)*rh_can)
+      bquad = cs*(gb_mol - bbb(p)) - mbb(p)*an(p,iv)*forc_pbot(t)
+      cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(t)*rh_can)
       call quadratic (aquad, bquad, cquad, r1, r2)
       gs_mol = max(r1,r2)
 
       ! Derive new estimate for ci
 
-      fval =ci - cair + an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
+      fval =ci - cair + an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
 
     end associate
 

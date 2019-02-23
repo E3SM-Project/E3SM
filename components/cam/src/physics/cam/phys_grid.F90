@@ -99,6 +99,10 @@ module phys_grid
    use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,      only: iulog
+   use scamMod,          only: single_column, scmlat, scmlon
+   use shr_const_mod,    only: SHR_CONST_PI
+   use dyn_grid,         only: dyn_grid_find_gcols
+   use dycore,           only: dycore_is
 
    implicit none
    save
@@ -123,7 +127,7 @@ module phys_grid
    integer, public :: ngcols_p         ! global column count in physics grid 
                                        ! (without holes)
 
-   integer, dimension(:), allocatable, private :: dyn_to_latlon_gcol_map
+   integer, dimension(:), allocatable, public :: dyn_to_latlon_gcol_map
                                        ! map from unsorted (dynamics) to lat/lon sorted grid indices
    integer, dimension(:), allocatable, public :: latlon_to_dyn_gcol_map !now beingh used in RRTMG radiation.F90
                                        ! map from lat/lon sorted grid to unsorted (dynamics) indices
@@ -264,7 +268,7 @@ module phys_grid
 !  4: concatenated blocks, no load balancing, no interprocess communication
    integer, private, parameter :: min_lbal_opt = -1
    integer, private, parameter :: max_lbal_opt = 5
-   integer, private, parameter :: def_lbal_opt = 2               ! default
+   integer, private, parameter :: def_lbal_opt = 2               ! default 
    integer, private :: lbal_opt = def_lbal_opt
 
 ! Physics grid load balancing options:  
@@ -368,6 +372,7 @@ contains
     integer :: owner_p                    ! process owning given chunk column
     integer :: blockids(plev+1)           ! block indices
     integer :: bcids(plev+1)              ! block column indices
+    real(r8), parameter :: deg2rad = SHR_CONST_PI/180.0
 
 
     ! column surface area (from dynamics)
@@ -420,9 +425,13 @@ contains
     !
     ! Initialize physics grid, using dynamics grid
     ! a) column coordinates
-
+    if (single_column .and. dycore_is ('SE')) lbal_opt = -1 !+PAB make this default option for SCM
     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-    ngcols = hdim1_d*hdim2_d
+    if (single_column .and. dycore_is('SE')) then
+      ngcols = 1
+    else
+      ngcols = hdim1_d*hdim2_d
+    endif
     allocate( clat_d(1:ngcols) )
     allocate( clon_d(1:ngcols) )
     allocate( lat_d(1:ngcols) )
@@ -430,7 +439,14 @@ contains
     allocate( cdex(1:ngcols) )
     clat_d = 100000.0_r8
     clon_d = 100000.0_r8
-    call get_horiz_grid_d(ngcols, clat_d_out=clat_d, clon_d_out=clon_d, lat_d_out=lat_d, lon_d_out=lon_d)
+    if (single_column .and. dycore_is('SE')) then
+      lat_d = scmlat
+      lon_d = scmlon
+      clat_d = scmlat * deg2rad
+      clon_d = scmlon * deg2rad
+    else
+      call get_horiz_grid_d(ngcols, clat_d_out=clat_d, clon_d_out=clon_d, lat_d_out=lat_d, lon_d_out=lon_d)
+    endif
     latmin = MINVAL(ABS(lat_d))
     lonmin = MINVAL(ABS(lon_d))
 !!XXgoldyXX: To do: replace collection above with local physics points
@@ -601,14 +617,19 @@ contains
 
     !
     ! Option -1: each dynamics block is a single chunk
-    !            
+    !          
     if (lbal_opt == -1) then
+
        !
        ! Check that pcols >= maxblksiz
        !
        maxblksiz = 0
        do jb=firstblock,lastblock
-          maxblksiz = max(maxblksiz,get_block_gcol_cnt_d(jb))
+          if (single_column .and. dycore_is('SE')) then
+	    maxblksiz = 1
+	  else
+            maxblksiz = max(maxblksiz,get_block_gcol_cnt_d(jb))
+	  endif
        enddo
        if (pcols < maxblksiz) then
 	  write(iulog,*) 'pcols = ',pcols, ' maxblksiz=',maxblksiz
@@ -618,7 +639,11 @@ contains
        !
        ! Determine total number of chunks
        !
-       nchunks = (lastblock-firstblock+1)
+       if (single_column .and. dycore_is('SE')) then
+         nchunks = 1
+       else
+	 nchunks = (lastblock-firstblock+1)
+       endif
 
        !
        ! Set max virtual SMP node size
@@ -633,7 +658,11 @@ contains
 
        do cid=1,nchunks
           ! get number of global column indices in block
-          max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
+          if (single_column .and. dycore_is('SE')) then
+	    max_ncols = 1
+	  else
+	    max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
+	  endif
           ! fill cdex array with global indices from current block
           call get_block_gcol_d(cid+firstblock-1,max_ncols,cdex)
 
@@ -647,7 +676,7 @@ contains
                 ncols = ncols + 1
                 chunks(cid)%gcol(ncols) = curgcol_d
                 chunks(cid)%lat(ncols) = lat_p(curgcol_d)
-                chunks(cid)%lon(ncols) = lon_p(curgcol_d)
+                chunks(cid)%lon(ncols) = lon_p(curgcol_d)		
              endif
           enddo
           chunks(cid)%ncols = ncols
@@ -706,6 +735,7 @@ contains
        ! Allocate and initialize chunks data structure, then
        ! assign chunks to processes.
        !
+
        if  (twin_alg .eq. 1) then
           ! precompute clon_p_idx: index in lonlat ordering for first 
           ! occurrence of longitude corresponding to given latitude index,
@@ -750,6 +780,7 @@ contains
     !
     ! Allocate and initialize data structures for gather/scatter
     !  
+
     allocate( pgcols(1:ngcols_p) )
     allocate( gs_col_offset(0:npes) )
     allocate( pchunkid(0:npes) )
@@ -823,8 +854,12 @@ contains
     area_d = 0.0_r8
     wght_d = 0.0_r8
 
-    call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
-
+    if (single_column .and. dycore_is('SE')) then
+      area_d = 4.0_r8*pi
+      wght_d = 4.0_r8*pi
+    else
+      call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
+    endif
 
     if ( abs(sum(area_d) - 4.0_r8*pi) > 1.e-10_r8 ) then
        write(iulog,*) ' ERROR: sum of areas on globe does not equal 4*pi'
@@ -849,6 +884,7 @@ contains
     deallocate( wght_d )
 
     if (.not. local_dp_map) then
+
        !
        ! allocate and initialize data structures for transposes
        !  
@@ -892,6 +928,7 @@ contains
              endif
           enddo
        enddo
+       
        btofc_blk_num(curp) = curcnt
        block_buf_nrecs = glbcnt
        !  
@@ -952,6 +989,7 @@ contains
        !
        ! Second, determine swap partners.
        !
+
        allocate( dp_coup_proc(dp_coup_steps) )
        dp_coup_steps = 0
        do i=1,ceil2(npes)-1
@@ -4118,7 +4156,7 @@ logical function phys_grid_initialized ()
    enddo
    max_nproc_smpx = maxval(nsmpprocs)
 !
-   deallocate( nsmpprocs )
+   deallocate( nsmpprocs )   
 
 !
 ! Determine number of columns assigned to each
@@ -4145,7 +4183,7 @@ logical function phys_grid_initialized ()
       write(iulog,*) "PHYS_GRID_INIT error: opt", opt, "specified, ", &
                "but vertical decomposition not limited to virtual SMP"
       call endrun()
-   endif
+   endif  
 !
    allocate( nsmpcolumns(0:nsmpx-1) )
    nsmpcolumns(:) = 0
@@ -4209,7 +4247,7 @@ logical function phys_grid_initialized ()
             nsmpchunks(smp) = nsmpcolumns(smp)
          endif
          nchunks = nchunks + nsmpchunks(smp)
-      enddo
+      enddo      
 !
 ! Determine maximum number of columns to assign to chunks
 ! in a given SMP
@@ -4229,7 +4267,7 @@ logical function phys_grid_initialized ()
             maxcol_chk(smp) = 0
             maxcol_chks(smp) = 0
          endif
-      enddo
+      enddo      
 !
 ! Allocate chunks and knuhcs data structures
 !
@@ -4249,10 +4287,11 @@ logical function phys_grid_initialized ()
       do smp=1,nsmpx-1
          cid_offset(smp) = cid_offset(smp-1) + nsmpchunks(smp-1)
          local_cid(smp) = 0
-      enddo
+      enddo    
 !
 ! Assign columns to chunks
 !
+
       do jb=firstblock,lastblock
          p = get_block_owner_d(jb)
          smp = proc_smp_mapx(p)
@@ -4408,7 +4447,7 @@ logical function phys_grid_initialized ()
 ! Assign chunks to processes.
 !
    call assign_chunks(npthreads, nsmpx, proc_smp_mapx, &
-                      nsmpthreads, nsmpchunks)
+                      nsmpthreads, nsmpchunks)		      
 !
 ! Clean up
 !
@@ -4836,7 +4875,7 @@ logical function phys_grid_initialized ()
    integer :: blockids(plev+1)           ! block indices
    integer :: bcids(plev+1)              ! block column indices
    integer :: ntsks_smpx(0:nsmpx-1)      ! number of processes per virtual SMP
-   integer :: smp_proc_mapx(0:nsmpx-1,max_nproc_smpx)   
+   integer :: smp_proc_mapx(max_nproc_smpx,0:nsmpx-1)   
                                          ! virtual smp to process id map
    integer :: cid_offset(0:nsmpx)        ! chunk id virtual smp offset
    integer :: ntmp1_smp(0:nsmpx-1)       ! minimum number of chunks per thread
@@ -4856,6 +4895,15 @@ logical function phys_grid_initialized ()
    integer :: column_count(0:npes-1)     ! number of columns from current chunk
                                          !  assigned to each process in dynamics
                                          !  decomposition
+   integer :: first_nonfull              ! first process (in smp_proc_mapx 
+                                         !  ordering) that has room to be assigned
+                                         !  another chunk
+   integer :: ndyn_task                  ! number of processes in the dynamics 
+                                         !  decomposition that were assigned columns
+                                         !  in the current chunk
+   integer :: dyn_task(npes)             ! list of process ids that were assigned
+                                         !  columns in the current chunk in the
+                                         !  dynamics decomposition
 !-----------------------------------------------------------------------
 !
 ! Count number of processes per virtual SMP and determine virtual SMP
@@ -4866,7 +4914,7 @@ logical function phys_grid_initialized ()
    do p=0,npes-1
       smp = proc_smp_mapx(p)
       ntsks_smpx(smp) = ntsks_smpx(smp) + 1
-      smp_proc_mapx(smp,ntsks_smpx(smp)) = p
+      smp_proc_mapx(ntsks_smpx(smp),smp) = p
    enddo
 !
 ! Determine chunk id ranges for each virtual SMP
@@ -4923,52 +4971,96 @@ logical function phys_grid_initialized ()
 !
 ! Assign chunks to processes: 
 !
+!  First, initialize number of chunks assigned to each process.
+!  Then initialize number of chunk columns assigned to each process 
+!  in the dynamics decomposition (column_count). column_count is
+!  chunk-specific, and is reset for each chunk in the loop over
+!  chunks below, except that '-1' values are retained, where '-1' indicates
+!  that the process has already been assigned its quota of chunks.
+!
    cur_npchunks(:) = 0
+   column_count(:) = 0
 !
    do smp=0,nsmpx-1
+!
+!  Initialize pointer to first process (in smp_proc_mapx ordering) that
+!  has room to be assigned another chunk
+      first_nonfull = 1
+!
       do cid=cid_offset(smp),cid_offset(smp+1)-1
 !
-         do i=1,ntsks_smpx(smp)
-            p = smp_proc_mapx(smp,i)
-            column_count(p) = 0
-         enddo
-!
-!  For each chunk, determine number of columns in each
-!  process within the dynamics.
+!  Determine number of chunk columns assigned to each process in
+!  the dynamics decomposition (excepting processes that have already been
+!  assigned their quota of chunks). Also build a list of these processes.
+         ndyn_task = 0
          do i=1,chunks(cid)%ncols
             curgcol = chunks(cid)%gcol(i)
             block_cnt = get_gcol_block_cnt_d(curgcol)
             call get_gcol_block_d(curgcol,block_cnt,blockids,bcids)
             do jb=1,block_cnt
                p = get_block_owner_d(blockids(jb)) 
-               column_count(p) = column_count(p) + 1
+               if (column_count(p) > -1) then
+                  column_count(p) = column_count(p) + 1
+                  if (column_count(p) == 1) then
+                     ndyn_task = ndyn_task + 1
+                     dyn_task(ndyn_task) = p
+                  endif
+               endif
             enddo
          enddo
-!
-!  Eliminate processes that already have their quota of chunks
-         do i=1,ntsks_smpx(smp)
-            p = smp_proc_mapx(smp,i)
-            if (cur_npchunks(p) == npchunks(p)) then
-               column_count(p) = -1
-            endif
-         enddo
-!
-!  Assign chunk to process with most
-!  columns from chunk, from among those still available
+!                              
+!  Identify process with most chunk columns in dynamics decomposition,
+!  from among those that do not already have their assigned chunk quota 
          ntmp1 = -1
          ntmp2 = -1
-         do i=1,ntsks_smpx(smp)
-            p = smp_proc_mapx(smp,i)
+         do i=1,ndyn_task
+            p = dyn_task(i)
             if (column_count(p) > ntmp1) then
                ntmp1 = column_count(p)
                ntmp2 = p
             endif
          enddo
-         cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
+!
+!  If no processes found that qualify, identify some other process that can
+!  accept a new chunk
+         if (ntmp1 == -1) then
+            do i=first_nonfull,ntsks_smpx(smp)
+               p = smp_proc_mapx(i,smp)
+               if (column_count(p) /= -1) then
+                  ntmp2 = p
+                  exit
+               endif
+            enddo
+         endif
+!
+!  Assign chunk to indicated process, and check whether process now
+!  has its quota of chunks
          chunks(cid)%owner   = ntmp2
-
+         cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
+         if (cur_npchunks(ntmp2) == npchunks(ntmp2)) then
+            column_count(ntmp2) = -1
+         endif
+!
 !  Update total number of columns assigned to this process
          gs_col_num(ntmp2)   = gs_col_num(ntmp2) + chunks(cid)%ncols
+!
+!  Zero out per process chunk columns counts, but retain -1 value
+!  (indicating that process cannot accept any more chunks)
+         do i=1,ndyn_task
+            p = dyn_task(i)
+            if (column_count(p) > 0) then
+               column_count(p) = 0
+            endif
+         enddo
+!
+!  Update pointer to first nonfull process
+         do i=first_nonfull,ntsks_smpx(smp)
+            p = smp_proc_mapx(i,smp)
+            if (column_count(p) /= -1) then
+               first_nonfull = i
+               exit
+            endif
+         enddo
 !
       enddo
 !

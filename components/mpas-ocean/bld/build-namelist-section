@@ -145,7 +145,12 @@ add_default($nl, 'config_use_Redi_surface_layer_tapering');
 add_default($nl, 'config_Redi_surface_layer_tapering_extent');
 add_default($nl, 'config_use_Redi_bottom_layer_tapering');
 add_default($nl, 'config_Redi_bottom_layer_tapering_depth');
+add_default($nl, 'config_GM_Bolus_kappa_function');
 add_default($nl, 'config_standardGM_tracer_kappa');
+add_default($nl, 'config_GM_Bolus_kappa_min');
+add_default($nl, 'config_GM_Bolus_kappa_max');
+add_default($nl, 'config_GM_Bolus_cell_size_min');
+add_default($nl, 'config_GM_Bolus_cell_size_max');
 add_default($nl, 'config_Redi_kappa');
 add_default($nl, 'config_gravWaveSpeed_trunc');
 add_default($nl, 'config_max_relative_slope');
@@ -267,6 +272,7 @@ add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 ############################
 
 add_default($nl, 'config_ssh_grad_relax_timescale');
+add_default($nl, 'config_remove_AIS_coupler_runoff');
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -483,6 +489,7 @@ add_default($nl, 'config_use_debugTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers');
 add_default($nl, 'config_ecosys_atm_co2_option');
 add_default($nl, 'config_ecosys_atm_alt_co2_option');
+add_default($nl, 'config_ecosys_atm_alt_co2_use_eco');
 add_default($nl, 'config_ecosys_atm_co2_constant_value');
 add_default($nl, 'config_use_ecosysTracers_surface_bulk_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_restoring');

@@ -11,9 +11,10 @@ module initSubgridMod
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog
-  use clm_varcon     , only : namep, namec, namel
+  use clm_varcon     , only : namep, namec, namel, namet
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc_pp                
+  Use TopounitType   , only : top_pp
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
@@ -26,6 +27,7 @@ module initSubgridMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: clm_ptrs_compdown ! fill in data pointing down
   public :: clm_ptrs_check    ! checks and writes out a summary of subgrid data
+  public :: add_topounit      ! add an entry in the topounit-level arrays
   public :: add_landunit      ! add an entry in the landunit-level arrays
   public :: add_column        ! add an entry in the column-level arrays
   public :: add_patch         ! add an entry in the patch-level arrays
@@ -58,14 +60,15 @@ contains
     !
     ! !USES
     use clm_varcon, only : ispval
+    use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS
     implicit none
     type(bounds_type), intent(in) :: bounds  ! bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: l,c,p               ! loop counters
-    integer :: curg,curl,curc,curp ! tracks g,l,c,p indexes in arrays
+    integer :: t,l,c,p               ! loop counters
+    integer :: curg,curt,curl,curc,curp ! tracks g,l,c,p indexes in arrays
     integer :: ltype               ! landunit type
     !------------------------------------------------------------------------------
 
@@ -120,27 +123,67 @@ contains
        lun_pp%colf(curl) = c
        lun_pp%ncolumns(curl) = lun_pp%colf(curl) - lun_pp%coli(curl) + 1
     enddo
+    
+    ! Gridcell down pointers to topounits are monotonic, so those can be done like the 
+    ! previous monotonic down pointers
+    curg = 0
+    do t = bounds%begt,bounds%endt
+       if (top_pp%gridcell(t) /= curg) then
+          curg = top_pp%gridcell(t)
+          if (curg < bounds%begg .or. curg > bounds%endg) then
+             write(iulog,*) 'clm_ptrs_compdown ERROR: tgridcell ',t,curg,bounds%begg,bounds%endg
+             call endrun(decomp_index=t, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+          endif
+          grc_pp%topi(curg) = t
+       endif
+       grc_pp%topf(curg) = t
+       grc_pp%ntopounits(curg) = grc_pp%topf(curg) - grc_pp%topi(curg) + 1
+    enddo
 
     ! Determine landunit_indices: indices into landunit-level arrays for each grid cell.
     ! Note that landunits not present in a given grid cell are set to ispval.
+    ! Preliminary implementation of topounits: leave this unchanged, but will only work 
+    ! for max_topounits = 1
     grc_pp%landunit_indices(:,bounds%begg:bounds%endg) = ispval
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
        curg = lun_pp%gridcell(l)
        if (curg < bounds%begg .or. curg > bounds%endg) then
-          write(iulog,*) 'clm_ptrs_compdown ERROR: landunit_indices ', l,curg,bounds%begg,bounds%endg
+          write(iulog,*) 'clm_ptrs_compdown ERROR: gridcell landunit_indices ', l,curg,bounds%begg,bounds%endg
           call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
 
        if (grc_pp%landunit_indices(ltype, curg) == ispval) then
           grc_pp%landunit_indices(ltype, curg) = l
        else
-          write(iulog,*) 'clm_ptrs_compdown ERROR: This landunit type has already been set for this gridcell'
-          write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
-          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          if (max_topounits == 1) then
+            write(iulog,*) 'clm_ptrs_compdown ERROR: This landunit type has already been set for this gridcell'
+            write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
+            call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          end if
        end if
     end do
 
+    ! Determine landunit_indices: indices into landunit-level arrays for each topounit.
+    ! Note that landunits not present in a given topounit are set to ispval.
+    top_pp%landunit_indices(:,bounds%begt:bounds%endt) = ispval
+    do l = bounds%begl,bounds%endl
+       ltype = lun_pp%itype(l)
+       curt = lun_pp%topounit(l)
+       if (curt < bounds%begt .or. curg > bounds%endt) then
+          write(iulog,*) 'clm_ptrs_compdown ERROR: topounit landunit_indices ', l,curt,bounds%begt,bounds%endt
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
+
+       if (top_pp%landunit_indices(ltype, curt) == ispval) then
+          top_pp%landunit_indices(ltype, curt) = l
+       else
+          write(iulog,*) 'clm_ptrs_compdown ERROR: This landunit type has already been set for this topounit'
+          write(iulog,*) 'l, ltype, curt = ', l, ltype, curt
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+    
   end subroutine clm_ptrs_compdown
 
   !------------------------------------------------------------------------------
@@ -158,7 +201,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: g,l,c,p       ! loop counters
+    integer :: g,t,l,c,p     ! loop counters
     integer :: l_prev        ! l value of previous point
     integer :: ltype         ! landunit type
     logical :: error         ! error flag
@@ -167,6 +210,8 @@ contains
     associate( &
          begg => bounds%begg, &
          endg => bounds%endg, &
+         begt => bounds%begt, &
+         endt => bounds%endt, &
          begl => bounds%begl, &
          endl => bounds%endl, &
          begc => bounds%begc, &
@@ -196,6 +241,7 @@ contains
 
     error = .false.
     if (minval(lun_pp%gridcell(begl:endl)) < begg .or. maxval(lun_pp%gridcell(begl:endl)) > endg) error=.true.
+    if (minval(lun_pp%topounit(begl:endl)) < begt .or. maxval(lun_pp%topounit(begl:endl)) > endt) error=.true.
     if (minval(lun_pp%coli(begl:endl)) < begc .or. maxval(lun_pp%coli(begl:endl)) > endc) error=.true.
     if (minval(lun_pp%colf(begl:endl)) < begc .or. maxval(lun_pp%colf(begl:endl)) > endc) error=.true.
     if (minval(lun_pp%pfti(begl:endl)) < begp .or. maxval(lun_pp%pfti(begl:endl)) > endp) error=.true.
@@ -208,6 +254,7 @@ contains
 
     error = .false.
     if (minval(col_pp%gridcell(begc:endc)) < begg .or. maxval(col_pp%gridcell(begc:endc)) > endg) error=.true.
+    if (minval(col_pp%topounit(begc:endc)) < begt .or. maxval(col_pp%topounit(begc:endc)) > endt) error=.true.
     if (minval(col_pp%landunit(begc:endc)) < begl .or. maxval(col_pp%landunit(begc:endc)) > endl) error=.true.
     if (minval(col_pp%pfti(begc:endc)) < begp .or. maxval(col_pp%pfti(begc:endc)) > endp) error=.true.
     if (minval(col_pp%pftf(begc:endc)) < begp .or. maxval(col_pp%pftf(begc:endc)) > endp) error=.true.
@@ -219,6 +266,7 @@ contains
 
     error = .false.
     if (minval(veg_pp%gridcell(begp:endp)) < begg .or. maxval(veg_pp%gridcell(begp:endp)) > endg) error=.true.
+    if (minval(veg_pp%topounit(begp:endp)) < begt .or. maxval(veg_pp%topounit(begp:endp)) > endt) error=.true.
     if (minval(veg_pp%landunit(begp:endp)) < begl .or. maxval(veg_pp%landunit(begp:endp)) > endl) error=.true.
     if (minval(veg_pp%column(begp:endp)) < begc .or. maxval(veg_pp%column(begp:endp)) > endc) error=.true.
     if (error) then
@@ -325,7 +373,31 @@ contains
   end subroutine clm_ptrs_check
 
   !-----------------------------------------------------------------------
-  subroutine add_landunit(li, gi, ltype, wtgcell)
+  subroutine add_topounit(ti, gi, wtgcell)
+    !
+    ! !DESCRIPTION:
+    ! Add an entry in the topounit-level arrays. ti gives the index of the last topounit
+    ! added; the new topounit is added at ti+1, and the ti argument is incremented
+    ! accordingly.
+    !
+    ! !ARGUMENTS:
+    integer  , intent(inout) :: ti      ! input value is index of last topounit added; output value is index of this newly-added topounit
+    integer  , intent(in)    :: gi      ! gridcell index on which this topounit should be placed 
+    real(r8) , intent(in)    :: wtgcell ! weight of the topounit relative to the gridcell
+    !
+    ! !LOCAL VARIABLES:
+    character(len=*), parameter :: subname = 'add_topounit'
+    !-----------------------------------------------------------------------
+
+    ti = ti + 1
+
+    top_pp%gridcell(ti) = gi
+    top_pp%wtgcell(ti) = wtgcell
+    
+  end subroutine add_topounit
+
+  !-----------------------------------------------------------------------
+  subroutine add_landunit(li, ti, ltype, wttopounit)
     !
     ! !DESCRIPTION:
     ! Add an entry in the landunit-level arrays. li gives the index of the last landunit
@@ -336,10 +408,10 @@ contains
     use landunit_varcon , only : istsoil, istcrop, istice_mec, istdlak, isturb_MIN, isturb_MAX
     !
     ! !ARGUMENTS:
-    integer  , intent(inout) :: li      ! input value is index of last landunit added; output value is index of this newly-added landunit
-    integer  , intent(in)    :: gi      ! grid cell index on which this landunit should be placed
-    integer  , intent(in)    :: ltype   ! landunit type
-    real(r8) , intent(in)    :: wtgcell ! weight of the landunit relative to the grid cell
+    integer  , intent(inout) :: li         ! input value is index of last landunit added; output value is index of this newly-added landunit
+    integer  , intent(in)    :: ti         ! topounit index on which this landunit should be placed
+    integer  , intent(in)    :: ltype      ! landunit type
+    real(r8) , intent(in)    :: wttopounit ! weight of the landunit relative to the topounit
     !
     ! !LOCAL VARIABLES:
     
@@ -348,8 +420,10 @@ contains
     
     li = li + 1
 
-    lun_pp%gridcell(li) = gi
-    lun_pp%wtgcell(li) = wtgcell
+    lun_pp%topounit(li) = ti
+    lun_pp%gridcell(li) = top_pp%gridcell(ti)
+    
+    lun_pp%wttopounit(li) = wttopounit
     lun_pp%itype(li) = ltype
     
     if (ltype == istsoil .or. ltype == istcrop) then
@@ -399,7 +473,9 @@ contains
     ci = ci + 1
 
     col_pp%landunit(ci) = li
+    col_pp%topounit(ci) = lun_pp%topounit(li)
     col_pp%gridcell(ci) = lun_pp%gridcell(li)
+    
     col_pp%wtlunit(ci) = wtlunit
     col_pp%itype(ci) = ctype
     
@@ -424,7 +500,7 @@ contains
     real(r8) , intent(in)    :: wtcol ! weight of the patch relative to the column
     !
     ! !LOCAL VARIABLES:
-    integer :: li        ! landunit index
+    integer :: li  ! landunit index, for convenience
     integer :: lb_offset ! offset between natpft_lb and 1
     
     character(len=*), parameter :: subname = 'add_patch'
@@ -433,21 +509,20 @@ contains
     pi = pi + 1
 
     veg_pp%column(pi) = ci
-    li = col_pp%landunit(ci)
-    veg_pp%landunit(pi) = li
+    veg_pp%landunit(pi) = col_pp%landunit(ci)
+    veg_pp%topounit(pi) = col_pp%topounit(ci)
     veg_pp%gridcell(pi) = col_pp%gridcell(ci)
-
+    
     veg_pp%wtcol(pi) = wtcol
-
     veg_pp%itype(pi) = ptype
 
+    li = veg_pp%landunit(pi)
     if (lun_pp%itype(li) == istsoil .or. lun_pp%itype(li) == istcrop) then
        lb_offset = 1 - natpft_lb
        veg_pp%mxy(pi) = ptype + lb_offset
     else
        veg_pp%mxy(pi) = ispval
     end if
-    
 
   end subroutine add_patch
 

@@ -1121,7 +1121,7 @@ int inq_var_fill_handler(iosystem_desc_t *ios)
     char fill_mode_present, fill_value_present;
     PIO_Offset type_size;
     int fill_mode, *fill_modep = NULL;
-    PIO_Offset *fill_value, *fill_valuep = NULL;
+    void *fill_value, *fill_valuep = NULL;
     int mpierr;
 
     assert(ios);
@@ -1154,11 +1154,21 @@ int inq_var_fill_handler(iosystem_desc_t *ios)
         fill_valuep = fill_value;
 
     /* Call the inq function to get the values. */
+    LOG((3, "inq_var_fill_handlder about to call inq_var_fill"));
     PIOc_inq_var_fill(ncid, varid, fill_modep, fill_valuep);
+    if (fill_modep)
+        LOG((3, "after inq_var_fill fill_modep %d", *fill_modep));
 
     /* Free fill value storage if we allocated some. */
     if (fill_value_present)
+    {
+        LOG((3, "about to free fill_value"));
         free(fill_value);
+        LOG((3, "freed fill_value"));
+    }
+
+    if (fill_modep)
+        LOG((3, "done with inq_var_fill_handler", *fill_modep));
 
     return PIO_NOERR;
 }
@@ -2028,7 +2038,6 @@ int initdecomp_dof_handler(iosystem_desc_t *ios)
     char iocount_present;
     PIO_Offset *iocountp = NULL;
     int mpierr = MPI_SUCCESS;  /* Return code from MPI function codes. */
-    int ret; /* Return code. */
 
     LOG((1, "initdecomp_dof_handler called"));
     assert(ios);
@@ -2090,10 +2099,10 @@ int initdecomp_dof_handler(iosystem_desc_t *ios)
         iocountp = iocount;
 
     /* Call the function. */
-    ret = PIOc_InitDecomp(iosysid, pio_type, ndims, dims, maplen, compmap, &ioid, rearrangerp,
-                          iostartp, iocountp);
+    PIOc_InitDecomp(iosysid, pio_type, ndims, dims, maplen, compmap, &ioid, rearrangerp,
+                    iostartp, iocountp);
 
-    LOG((1, "PIOc_InitDecomp returned %d", ret));
+    LOG((1, "PIOc_InitDecomp returned"));
     return PIO_NOERR;
 }
 
@@ -2428,7 +2437,6 @@ int freedecomp_handler(iosystem_desc_t *ios)
     int iosysid;
     int ioid;
     int mpierr = MPI_SUCCESS;  /* Return code from MPI function codes. */
-    int ret; /* Return code. */
 
     LOG((1, "freedecomp_handler called"));
     assert(ios);
@@ -2442,9 +2450,9 @@ int freedecomp_handler(iosystem_desc_t *ios)
     LOG((2, "freedecomp_handler iosysid = %d ioid = %d", iosysid, ioid));
 
     /* Call the function. */
-    ret = PIOc_freedecomp(iosysid, ioid);
+    PIOc_freedecomp(iosysid, ioid);
 
-    LOG((1, "PIOc_freedecomp returned %d", ret));
+    LOG((1, "PIOc_freedecomp returned"));
     return PIO_NOERR;
 }
 

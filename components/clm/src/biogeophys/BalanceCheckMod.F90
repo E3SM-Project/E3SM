@@ -19,7 +19,8 @@ module BalanceCheckMod
   use SoilHydrologyType  , only : soilhydrology_type  
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
-  use GridcellType       , only : grc_pp                
+  use GridcellType       , only : grc_pp
+  use TopounitType       , only : top_af ! atmospheric flux variables  
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use VegetationType          , only : veg_pp                
@@ -29,14 +30,16 @@ module BalanceCheckMod
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: BeginWaterBalance  ! Initialize water balance check
-  public :: BalanceCheck       ! Water and energy balance check
+  public :: BeginColWaterBalance  ! Initialize water balance check
+  public :: ColWaterBalanceCheck  ! Water and energy balance check
+  public :: BeginGridWaterBalance
+  public :: GridBalanceCheck
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine BeginWaterBalance(bounds, &
+  subroutine BeginColWaterBalance(bounds, &
        num_nolakec, filter_nolakec, num_lakec, filter_lakec, &
        num_hydrologyc, filter_hydrologyc, &
        soilhydrology_vars, waterstate_vars)
@@ -45,10 +48,11 @@ contains
     ! Initialize column-level water balance at beginning of time step
     !
     ! !USES:
-    use subgridAveMod , only : p2c
-    use clm_varpar    , only : nlevgrnd, nlevsoi, nlevurb
-    use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall 
-    use column_varcon , only : icol_road_perv, icol_road_imperv
+    use subgridAveMod    , only : p2c, c2g
+    use clm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
+    use clm_varcon       , only : spval
+    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
+    use column_varcon    , only : icol_road_perv, icol_road_imperv
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds     
@@ -77,7 +81,7 @@ contains
          zwt                    =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)                   
          wa                     =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)    
          h2ocan_col             =>    waterstate_vars%h2ocan_col                 , & ! Output: [real(r8) (:)   ]  canopy water (mm H2O) (column level)    
-         begwb                  =>    waterstate_vars%begwb_col                    & ! Output: [real(r8) (:)   ]  water mass begining of the time step    
+         begwb                  =>    waterstate_vars%begwb_col                    & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          )
 
       ! Determine beginning water balance for time step
@@ -92,13 +96,6 @@ contains
             c = filter_hydrologyc(f)
       	    wa(c) = 0._r8                ! Made 0 for variable soil thickness
 	 end do
-      else
-	 do f = 1, num_hydrologyc
-            c = filter_hydrologyc(f)
-            if (zwt(c) <= zi(c,nlevsoi)) then
-               wa(c) = 5000._r8
-	    end if
-         end do
       end if
       
       do f = 1, num_nolakec
@@ -111,6 +108,7 @@ contains
          end if
          
       end do
+
       do j = 1, nlevgrnd
          do f = 1, num_nolakec
             c = filter_nolakec(f)
@@ -139,12 +137,12 @@ contains
          begwb(c) = h2osno(c)
       end do
 
-    end associate 
+    end associate
 
-   end subroutine BeginWaterBalance
+  end subroutine BeginColWaterBalance
 
    !-----------------------------------------------------------------------
-   subroutine BalanceCheck( bounds, num_do_smb_c, filter_do_smb_c, &
+   subroutine ColWaterBalanceCheck( bounds, num_do_smb_c, filter_do_smb_c, &
         atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars, waterstate_vars, &
         energyflux_vars, canopystate_vars)
      !
@@ -172,6 +170,7 @@ contains
      use clm_initializeMod , only : surfalb_vars
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
+     use clm_time_manager  , only : get_curr_date, get_nstep
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)    :: bounds  
@@ -186,22 +185,22 @@ contains
      type(canopystate_type), intent(inout) :: canopystate_vars
      !
      ! !LOCAL VARIABLES:
-     integer  :: p,c,l,g,fc                             ! indices
+     integer  :: p,c,l,t,g,fc                           ! indices
      real(r8) :: dtime                                  ! land model time step (sec)
      integer  :: nstep                                  ! time step number
      logical  :: found                                  ! flag in search loop
-     integer  :: indexp,indexc,indexl,indexg            ! index of first found in search loop
+     integer  :: indexp,indexc,indexl,indext,indexg     ! index of first found in search loop
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
      !-----------------------------------------------------------------------
 
      associate(                                                                         & 
           volr                       =>    atm2lnd_vars%volr_grc                      , & ! Input:  [real(r8) (:)   ]  river water storage (m3)                 
-          forc_solad                 =>    atm2lnd_vars%forc_solad_grc                , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll )
-          forc_solai                 =>    atm2lnd_vars%forc_solai_grc                , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld)
-          forc_rain                  =>    atm2lnd_vars%forc_rain_downscaled_col      , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]
-          forc_snow                  =>    atm2lnd_vars%forc_snow_downscaled_col      , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]
-          forc_lwrad                 =>    atm2lnd_vars%forc_lwrad_downscaled_col     , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
+          forc_solad                 =>    top_af%solad                               , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll) (W/m**2)
+          forc_solai                 =>    top_af%solai                               , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld) (W/m**2)
+          forc_rain                  =>    top_af%rain                                , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)
+          forc_snow                  =>    top_af%snow                                , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)
+          forc_lwrad                 =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
           glc_dyn_runoff_routing     =>    glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
 
           do_capsnow                 =>    waterstate_vars%do_capsnow_col             , & ! Input:  [logical (:)    ]  true => do snow capping                  
@@ -290,19 +289,21 @@ contains
        nstep = get_nstep()
        dtime = get_step_size()
 
-       ! Determine column level incoming snow and rain
+       ! Determine column level incoming snow and rain.
+       ! Assume that all columns on a topounit have the same atmospheric forcing.
        ! Assume no incident precipitation on urban wall columns (as in CanopyHydrologyMod.F90).
 
        do c = bounds%begc,bounds%endc
           g = col_pp%gridcell(c)
+          t = col_pp%topounit(c)
           l = col_pp%landunit(c)       
 
           if (col_pp%itype(c) == icol_sunwall .or.  col_pp%itype(c) == icol_shadewall) then
              forc_rain_col(c) = 0.
              forc_snow_col(c) = 0.
           else
-             forc_rain_col(c) = forc_rain(c)
-             forc_snow_col(c) = forc_snow(c)
+             forc_rain_col(c) = forc_rain(t)
+             forc_snow_col(c) = forc_snow(t)
           end if
        end do
 
@@ -532,6 +533,7 @@ contains
           if (veg_pp%active(p)) then
              c = veg_pp%column(p)
              l = veg_pp%landunit(p)
+             t = veg_pp%topounit(p)
              g = veg_pp%gridcell(p)
 
              ! Solar radiation energy balance
@@ -540,7 +542,7 @@ contains
              ! in the urban radiation module
              if (.not. lun_pp%urbpoi(l)) then
                 errsol(p) = fsa(p) + fsr(p) &
-                     - (forc_solad(g,1) + forc_solad(g,2) + forc_solai(g,1) + forc_solai(g,2))
+                     - (forc_solad(t,1) + forc_solad(t,2) + forc_solai(t,1) + forc_solai(t,2))
              else
                 errsol(p) = spval
              end if
@@ -550,7 +552,7 @@ contains
              ! level because of interactions between columns and since a separate check is done
              ! in the urban radiation module
              if (.not. lun_pp%urbpoi(l)) then
-                errlon(p) = eflx_lwrad_out(p) - eflx_lwrad_net(p) - forc_lwrad(c)
+                errlon(p) = eflx_lwrad_out(p) - eflx_lwrad_net(p) - forc_lwrad(t)
              else
                 errlon(p) = spval
              end if
@@ -562,7 +564,7 @@ contains
              ! and a separate check is done above for these terms.
 
              if (.not. lun_pp%urbpoi(l)) then
-                errseb(p) = sabv(p) + sabg_chk(p) + forc_lwrad(c) - eflx_lwrad_out(p) &
+                errseb(p) = sabv(p) + sabg_chk(p) + forc_lwrad(t) - eflx_lwrad_out(p) &
                      - eflx_sh_tot(p) - eflx_lh_tot(p) - eflx_soil_grnd(p)
              else
                 errseb(p) = sabv(p) + sabg(p) &
@@ -583,6 +585,7 @@ contains
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
                 found = .true.
                 indexp = p
+                indext = veg_pp%topounit(indexp)
                 indexg = veg_pp%gridcell(indexp)
              end if
           end if
@@ -595,12 +598,12 @@ contains
              write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
              write(iulog,*)'fsa           = ',fsa(indexp)
              write(iulog,*)'fsr           = ',fsr(indexp)
-             write(iulog,*)'forc_solad(1) = ',forc_solad(indexg,1)
-             write(iulog,*)'forc_solad(2) = ',forc_solad(indexg,2)
-             write(iulog,*)'forc_solai(1) = ',forc_solai(indexg,1)
-             write(iulog,*)'forc_solai(2) = ',forc_solai(indexg,2)
-             write(iulog,*)'forc_tot      = ',forc_solad(indexg,1)+forc_solad(indexg,2) &
-               +forc_solai(indexg,1)+forc_solai(indexg,2)
+             write(iulog,*)'forc_solad(1) = ',forc_solad(indext,1)
+             write(iulog,*)'forc_solad(2) = ',forc_solad(indext,2)
+             write(iulog,*)'forc_solai(1) = ',forc_solai(indext,1)
+             write(iulog,*)'forc_solai(2) = ',forc_solai(indext,2)
+             write(iulog,*)'forc_tot      = ',forc_solad(indext,1)+forc_solad(indext,2) &
+               +forc_solai(indext,1)+forc_solai(indext,2)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
@@ -636,6 +639,7 @@ contains
                 found = .true.
                 indexp = p
                 indexc = veg_pp%column(indexp)
+                indext = veg_pp%topounit(indexp)
              end if
           end if
        end do
@@ -650,8 +654,8 @@ contains
              write(iulog,*)'sabg           = ' ,sabg(indexp), ((1._r8- frac_sno(indexc))*sabg_soil(indexp) + &
                   frac_sno(indexc)*sabg_snow(indexp)),sabg_chk(indexp)
 
-             write(iulog,*)'forc_tot      = '  ,forc_solad(indexg,1) + forc_solad(indexg,2) + &
-                  forc_solai(indexg,1) + forc_solai(indexg,2)
+             write(iulog,*)'forc_tot      = '  ,forc_solad(indext,1) + forc_solad(indext,2) + &
+                  forc_solai(indext,1) + forc_solai(indext,2)
 
              write(iulog,*)'eflx_lwrad_net = ' ,eflx_lwrad_net(indexp)
              write(iulog,*)'eflx_sh_tot    = ' ,eflx_sh_tot(indexp)
@@ -690,6 +694,367 @@ contains
 
      end associate
 
-   end subroutine BalanceCheck
+   end subroutine ColWaterBalanceCheck
 
-end module BalanceCheckMod
+  !-----------------------------------------------------------------------
+  subroutine BeginGridWaterBalance(bounds, &
+       num_nolakec, filter_nolakec, num_lakec, filter_lakec, &
+       num_hydrologyc, filter_hydrologyc, &
+       soilhydrology_vars, waterstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! Initialize column-level water balance at beginning of time step
+    !
+    ! !USES:
+    use subgridAveMod , only : p2c,c2g
+    use clm_varpar    , only : nlevgrnd, nlevsoi, nlevurb
+    use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon , only : icol_road_perv, icol_road_imperv
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)         , intent(in)    :: bounds
+    integer                   , intent(in)    :: num_nolakec          ! number of column non-lake points in column filter
+    integer                   , intent(in)    :: filter_nolakec(:)    ! column filter for non-lake points
+    integer                   , intent(in)    :: num_lakec            ! number of column non-lake points in column filter
+    integer                   , intent(in)    :: filter_lakec(:)      ! column filter for non-lake points
+    integer                   , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
+    integer                   , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+    type(soilhydrology_type)  , intent(inout) :: soilhydrology_vars
+    type(waterstate_type)     , intent(inout) :: waterstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c, p, f, j, fc,g                  ! indices
+    real(r8) :: h2osoi_vol
+    real(r8) :: h2ocan_col(bounds%begc:bounds%endc)
+    real(r8) :: begwb_col (bounds%begc:bounds%endc)
+    real(r8) :: h2osoi_liq_depth_intg(bounds%begc:bounds%endc)
+    real(r8) :: h2osoi_ice_depth_intg(bounds%begc:bounds%endc)
+    real(r8) :: wa_local_col(bounds%begc:bounds%endc)
+
+    associate(                                                                        &
+         zi                        =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         h2ocan_patch              =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)
+         h2osfc                    =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)
+         h2osno                    =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+         h2osoi_ice                =>    waterstate_vars%h2osoi_ice_col             , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq                =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         total_plant_stored_h2o    =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input:  [real(r8) (:)   ]  dynamic water stored in plants
+         zwt                       =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)
+         wa                        =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)
+         beg_wa_grc                =>    soilhydrology_vars%beg_wa_grc              , & ! Output: [real(r8) (:)   ]  grid-level water in the unconfined aquifer at begining of the time step (mm)
+         begwb_grc                 =>    waterstate_vars%begwb_grc                  , & ! Output: [real(r8) (:)   ]  grid-level water mass at begining of the time step (mm)
+         beg_h2ocan_grc            =>    waterstate_vars%beg_h2ocan_grc             , & ! Output: [real(r8) (:)   ]  grid-level canopy water at begining of the time step (mm)
+         beg_h2osno_grc            =>    waterstate_vars%beg_h2osno_grc             , & ! Output: [real(r8) (:)   ]  grid-level snow at begining of the time step (mm)
+         beg_h2osfc_grc            =>    waterstate_vars%beg_h2osfc_grc             , & ! Output: [real(r8) (:)   ]  grid-level surface water at begining of the time step (mm)
+         beg_h2osoi_liq_grc        =>    waterstate_vars%beg_h2osoi_liq_grc         , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water at begining of the time step (mm)
+         beg_h2osoi_ice_grc        =>    waterstate_vars%beg_h2osoi_ice_grc         , & ! Output: [real(r8) (:)   ]  grid-level depth integrated ice soil water at begining of the time step (mm)
+         h2osoi_liq_depth_intg_col =>    waterstate_vars%h2osoi_liq_depth_intg_col  , &
+         h2osoi_ice_depth_intg_col =>    waterstate_vars%h2osoi_ice_depth_intg_col    &
+         )
+
+      ! Set to zero
+      begwb_col (bounds%begc:bounds%endc) = 0._r8
+      h2ocan_col(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_liq_depth_intg(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_ice_depth_intg(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_liq_depth_intg_col(bounds%begc:bounds%endc) = 0._r8
+      h2osoi_ice_depth_intg_col(bounds%begc:bounds%endc) = 0._r8
+
+      ! Determine beginning water balance for time step
+      ! pft-level canopy water averaged to column
+
+      call p2c(bounds, num_nolakec, filter_nolakec, &
+            h2ocan_patch(bounds%begp:bounds%endp), &
+            h2ocan_col(bounds%begc:bounds%endc))
+
+      wa_local_col(bounds%begc:bounds%endc) = wa(bounds%begc:bounds%endc)
+
+      do f = 1, num_nolakec
+         c = filter_nolakec(f)
+         g = col_pp%gridcell(c)
+         if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
+              .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
+            begwb_col(c) = h2ocan_col(c) + h2osno(c)
+            wa_local_col(c) = 0._r8
+         else
+            begwb_col(c) = h2ocan_col(c) + h2osno(c) + h2osfc(c) + wa(c)
+         end if
+         begwb_col(c) = begwb_col(c) + total_plant_stored_h2o(c)
+      end do
+
+      do j = 1, nlevgrnd
+         do f = 1, num_nolakec
+            c = filter_nolakec(f)
+            if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                 .or. col_pp%itype(c) == icol_roof) .and. j > nlevurb) then
+            else
+               begwb_col(c) = begwb_col(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+            end if
+         end do
+      end do
+
+      do f = 1, num_lakec
+         c = filter_lakec(f)
+         begwb_col(c) = h2osno(c)
+         do j = 1, nlevgrnd
+            begwb_col(c) = begwb_col(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+            h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
+            h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+         enddo
+      end do
+
+      call c2g(bounds, begwb_col(bounds%begc:bounds%endc), &
+           begwb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc), &
+           beg_wa_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc), &
+           beg_h2ocan_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osno(bounds%begc:bounds%endc), &
+           beg_h2osno_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osfc(bounds%begc:bounds%endc), &
+           beg_h2osfc_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
+           beg_h2osoi_liq_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
+           beg_h2osoi_ice_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+      
+    end associate
+
+  end subroutine BeginGridWaterBalance
+
+   !-----------------------------------------------------------------------
+   subroutine GridBalanceCheck( bounds, num_do_smb_c, filter_do_smb_c, &
+        atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars, &
+        waterstate_vars, energyflux_vars, canopystate_vars, soilhydrology_vars)
+     !
+     ! !DESCRIPTION:
+     !
+     ! !USES:
+     use clm_varcon        , only : spval
+     use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
+     use column_varcon     , only : icol_road_perv, icol_road_imperv
+     use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
+     use clm_varctl        , only : create_glacier_mec_landunit
+     use clm_time_manager  , only : get_step_size, get_nstep
+     use clm_initializeMod , only : surfalb_vars
+     use CanopyStateType   , only : canopystate_type
+     use subgridAveMod
+     !
+     ! !ARGUMENTS:
+     type(bounds_type)     , intent(in)    :: bounds  
+     integer               , intent(in)    :: num_do_smb_c        ! number of columns in filter_do_smb_c
+     integer               , intent(in)    :: filter_do_smb_c (:) ! column filter for points where SMB calculations are done
+     type(atm2lnd_type)    , intent(in)    :: atm2lnd_vars
+     type(glc2lnd_type)    , intent(in)    :: glc2lnd_vars
+     type(solarabs_type)   , intent(in)    :: solarabs_vars
+     type(waterflux_type)  , intent(inout) :: waterflux_vars
+     type(waterstate_type) , intent(inout) :: waterstate_vars
+     type(energyflux_type) , intent(inout) :: energyflux_vars
+     type(canopystate_type), intent(inout) :: canopystate_vars
+     type(soilhydrology_type), intent(inout) :: soilhydrology_vars
+     !
+     ! !LOCAL VARIABLES:
+     integer  :: p,c,l,g,fc                             ! indices
+     real(r8) :: dtime                                  ! land model time step (sec)
+     real(r8) :: qflx_net_col (bounds%begc:bounds%endc)
+     real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
+     real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
+     real(r8) :: wa_local_col(bounds%begc:bounds%endc)
+
+     associate(                                                                         & 
+          volr                       =>    atm2lnd_vars%volr_grc                      , & ! Input:  [real(r8) (:)   ]  river water storage (m3)                 
+          forc_solad                 =>    atm2lnd_vars%forc_solad_grc                , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (vis=forc_sols , nir=forc_soll )
+          forc_solai                 =>    atm2lnd_vars%forc_solai_grc                , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (vis=forc_solsd, nir=forc_solld)
+          forc_rain                  =>    atm2lnd_vars%forc_rain_downscaled_col      , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]
+          forc_snow                  =>    atm2lnd_vars%forc_snow_downscaled_col      , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]
+          forc_lwrad                 =>    atm2lnd_vars%forc_lwrad_downscaled_col     , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
+          glc_dyn_runoff_routing     =>    glc2lnd_vars%glc_dyn_runoff_routing_grc    , & ! Input:  [real(r8) (:)   ]  whether we're doing runoff routing appropriate for having a dynamic icesheet
+
+          do_capsnow                 =>    waterstate_vars%do_capsnow_col             , & ! Input:  [logical (:)    ]  true => do snow capping                  
+          h2osno_col                 =>    waterstate_vars%h2osno_col                 , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+          h2osno_old                 =>    waterstate_vars%h2osno_old_col             , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O) at previous time step
+          frac_sno_eff               =>    waterstate_vars%frac_sno_eff_col           , & ! Input:  [real(r8) (:)   ]  effective snow fraction                 
+          frac_sno                   =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+          begwb_col                  =>    waterstate_vars%begwb_col                  , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
+          begwb_grc                  =>    waterstate_vars%begwb_grc                  , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
+          errh2o                     =>    waterstate_vars%errh2o_col                 , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)       
+          errh2o_grc                 =>    waterstate_vars%errh2o_grc                 , & ! Output: [real(r8) (:)   ]  water conservation error (mm H2O)
+          errh2osno                  =>    waterstate_vars%errh2osno_col              , & ! Output: [real(r8) (:)   ]  error in h2osno (kg m-2)                
+          endwb_col                  =>    waterstate_vars%endwb_col                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
+          endwb_grc                  =>    waterstate_vars%endwb_grc                  , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
+          total_plant_stored_h2o_col =>    waterstate_vars%total_plant_stored_h2o_col , & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
+          dwb                        =>    waterflux_vars%dwb_col                     , & ! Output: [real(r8) (:)   ]  change of water mass within the time step [kg/m2/s]
+          qflx_rain_grnd_col         =>    waterflux_vars%qflx_rain_grnd_col          , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
+          qflx_snow_grnd_col         =>    waterflux_vars%qflx_snow_grnd_col          , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
+          qflx_evap_soi              =>    waterflux_vars%qflx_evap_soi_col           , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+          qflx_irrig                 =>    waterflux_vars%qflx_irrig_col              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
+          qflx_snwcp_ice             =>    waterflux_vars%qflx_snwcp_ice_col          , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
+          qflx_evap_tot              =>    waterflux_vars%qflx_evap_tot_col           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+          qflx_dew_snow              =>    waterflux_vars%qflx_dew_snow_col           , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
+          qflx_sub_snow              =>    waterflux_vars%qflx_sub_snow_col           , & ! Input:  [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
+          qflx_evap_grnd             =>    waterflux_vars%qflx_evap_grnd_col          , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
+          qflx_dew_grnd              =>    waterflux_vars%qflx_dew_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+          qflx_prec_grnd             =>    waterflux_vars%qflx_prec_grnd_col          , & ! Input:  [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+          qflx_snwcp_liq             =>    waterflux_vars%qflx_snwcp_liq_col          , & ! Input:  [real(r8) (:)   ]  excess liquid water due to snow capping (mm H2O /s) [+]`
+          qflx_snow_h2osfc           =>    waterflux_vars%qflx_snow_h2osfc_col        , & ! Input:  [real(r8) (:)   ]  snow falling on surface water (mm/s)    
+          qflx_h2osfc_to_ice         =>    waterflux_vars%qflx_h2osfc_to_ice_col      , & ! Input:  [real(r8) (:)   ]  conversion of h2osfc to ice             
+          qflx_drain_perched         =>    waterflux_vars%qflx_drain_perched_col      , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
+          qflx_floodc                =>    waterflux_vars%qflx_floodc_col             , & ! Input:  [real(r8) (:)   ]  total runoff due to flooding            
+          qflx_h2osfc_surf           =>    waterflux_vars%qflx_h2osfc_surf_col        , & ! Input:  [real(r8) (:)   ]  surface water runoff (mm/s)              
+          qflx_snow_melt             =>    waterflux_vars%qflx_snow_melt_col          , & ! Input:  [real(r8) (:)   ]  snow melt (net)                         
+          qflx_surf                  =>    waterflux_vars%qflx_surf_col               , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)              
+          qflx_qrgwl                 =>    waterflux_vars%qflx_qrgwl_col              , & ! Input:  [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes  
+          qflx_drain                 =>    waterflux_vars%qflx_drain_col              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
+          qflx_runoff                =>    waterflux_vars%qflx_runoff_col             , & ! Input:  [real(r8) (:)   ]  total runoff (mm H2O /s)                
+          qflx_glcice                =>    waterflux_vars%qflx_glcice_col             , & ! Input:  [real(r8) (:)   ]  flux of new glacier ice (mm H2O /s) [+ if ice grows]
+          qflx_glcice_melt           =>    waterflux_vars%qflx_glcice_melt_col        , & ! Input:  [real(r8) (:)   ]  ice melt (mm H2O/s)              
+          qflx_glcice_frz            =>    waterflux_vars%qflx_glcice_frz_col         , & ! Input:  [real(r8) (:)   ]  ice growth (mm H2O/s) [+]               
+          qflx_top_soil              =>    waterflux_vars%qflx_top_soil_col           , & ! Input:  [real(r8) (:)   ]  net water input into soil from top (mm/s)
+          qflx_sl_top_soil           =>    waterflux_vars%qflx_sl_top_soil_col        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+          qflx_liq_dynbal            =>    waterflux_vars%qflx_liq_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
+          qflx_ice_dynbal            =>    waterflux_vars%qflx_ice_dynbal_grc         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
+          snow_sources               =>    waterflux_vars%snow_sources_col            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
+          snow_sinks                 =>    waterflux_vars%snow_sinks_col              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
+          qflx_lateral               =>    waterflux_vars%qflx_lateral_col            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
+
+          eflx_lwrad_out             =>    energyflux_vars%eflx_lwrad_out_patch       , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
+          eflx_lwrad_net             =>    energyflux_vars%eflx_lwrad_net_patch       , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+          eflx_sh_tot                =>    energyflux_vars%eflx_sh_tot_patch          , & ! Input:  [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+          eflx_lh_tot                =>    energyflux_vars%eflx_lh_tot_patch          , & ! Input:  [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]
+          eflx_soil_grnd             =>    energyflux_vars%eflx_soil_grnd_patch       , & ! Input:  [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil] 
+          eflx_wasteheat_patch       =>    energyflux_vars%eflx_wasteheat_patch       , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
+          eflx_heat_from_ac_patch    =>    energyflux_vars%eflx_heat_from_ac_patch    , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
+          eflx_traffic_patch         =>    energyflux_vars%eflx_traffic_patch         , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)     
+          eflx_dynbal                =>    energyflux_vars%eflx_dynbal_grc            , & ! Input:  [real(r8) (:)   ]  energy conversion flux due to dynamic land cover change(W/m**2) [+ to atm]
+
+          sabg_soil                  =>    solarabs_vars%sabg_soil_patch              , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by soil (W/m**2)
+          sabg_snow                  =>    solarabs_vars%sabg_snow_patch              , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by snow (W/m**2)
+          sabg_chk                   =>    solarabs_vars%sabg_chk_patch               , & ! Input:  [real(r8) (:)   ]  sum of soil/snow using current fsno, for balance check
+          fsa                        =>    solarabs_vars%fsa_patch                    , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed (total) (W/m**2)
+          fsr                        =>    solarabs_vars%fsr_patch                    , & ! Input:  [real(r8) (:)   ]  solar radiation reflected (W/m**2)      
+          sabv                       =>    solarabs_vars%sabv_patch                   , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by vegetation (W/m**2)
+          sabg                       =>    solarabs_vars%sabg_patch                   , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
+          
+          errsoi_col                 =>    energyflux_vars%errsoi_col                 , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
+          errsol                     =>    energyflux_vars%errsol_patch               , & ! Output: [real(r8) (:)   ]  solar radiation conservation error (W/m**2)
+          errseb                     =>    energyflux_vars%errseb_patch               , & ! Output: [real(r8) (:)   ]  surface energy conservation error (W/m**2)
+          errlon                     =>    energyflux_vars%errlon_patch               , & ! Output: [real(r8) (:)   ]  longwave radiation conservation error (W/m**2)
+
+          fabd                       =>    surfalb_vars%fabd_patch                    , & ! Input:  [real(r8) (:,:)]  flux absorbed by canopy per unit direct flux
+          fabi                       =>    surfalb_vars%fabi_patch                    , & ! Input:  [real(r8) (:,:)]  flux absorbed by canopy per unit indirect flux
+          elai                       =>    canopystate_vars%elai_patch                , & ! Input:  [real(r8) (:,:)]  
+          esai                       =>    canopystate_vars%esai_patch                , & ! Input:  [real(r8) (:,:)]  
+
+          albd                       =>    surfalb_vars%albd_patch                    , & ! Output: [real(r8) (:,:)]  surface albedo (direct)
+          albi                       =>    surfalb_vars%albi_patch                    , & ! Output: [real(r8) (:,:)]  surface albedo (diffuse)
+          ftdd                       =>    surfalb_vars%ftdd_patch                    , & ! Input:  [real(r8) (:,:)]  down direct flux below canopy per unit direct flux
+          ftid                       =>    surfalb_vars%ftid_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit direct flux
+          ftii                       =>    surfalb_vars%ftii_patch                    , & ! Input:  [real(r8) (:,:)]  down diffuse flux below canopy per unit diffuse flux
+
+          netrad                     =>    energyflux_vars%netrad_patch               , & ! Output: [real(r8) (:)   ]  net radiation (positive downward) (W/m**2)
+          h2ocan_patch               =>    waterstate_vars%h2ocan_patch               , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O) (pft-level)
+          wa                         =>    soilhydrology_vars%wa_col                  , & ! Output: [real(r8) (:)   ]  water in the unconfined aquifer (mm)
+          h2ocan_col                 =>    waterstate_vars%h2ocan_col                 , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
+          h2osfc_col                 =>    waterstate_vars%h2osfc_col                 , & ! Input:  [real(r8) (:)   ]  surface water (mm)
+          h2osoi_liq_depth_intg      =>    waterstate_vars%h2osoi_liq_depth_intg_col  , & ! Input:  [real(r8) (:)   ]  depth integrated liquid soil water (kg/m**2)
+          h2osoi_ice_depth_intg      =>    waterstate_vars%h2osoi_ice_depth_intg_col  , & ! Input:  [real(r8) (:)   ]  depth integrated ice soil water (kg/m**2)
+          end_wa_grc                 =>    soilhydrology_vars%end_wa_grc              , & ! Output: [real(r8) (:)   ]  grid-level water in the unconfined aquifer at end of the time step (mm)
+          end_h2ocan_grc             =>    waterstate_vars%end_h2ocan_grc             , & ! Output: [real(r8) (:)   ]  grid-level canopy water at end of the time step (mm)
+          end_h2osno_grc             =>    waterstate_vars%end_h2osno_grc             , & ! Output: [real(r8) (:)   ]  grid-level snow at end of the time step (mm)
+          end_h2osfc_grc             =>    waterstate_vars%end_h2osfc_grc             , & ! Output: [real(r8) (:)   ]  grid-level surface water at end of the time step (mm)
+          end_h2osoi_liq_grc         =>    waterstate_vars%end_h2osoi_liq_grc         , & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water at end of the time step (mm)
+          end_h2osoi_ice_grc         =>    waterstate_vars%end_h2osoi_ice_grc           & ! Output: [real(r8) (:)   ]  grid-level depth integrated liquid soil water at end of the time step (mm)
+          )
+
+       dtime = get_step_size()
+
+       wa_local_col(bounds%begc:bounds%endc) = wa(bounds%begc:bounds%endc)
+
+       do c = bounds%begc,bounds%endc
+          g = col_pp%gridcell(c)
+          l = col_pp%landunit(c)       
+
+          if (col_pp%itype(c) == icol_sunwall .or.  col_pp%itype(c) == icol_shadewall) then
+             forc_rain_col(c) = 0.
+             forc_snow_col(c) = 0.
+          else
+             forc_rain_col(c) = forc_rain(c)
+             forc_snow_col(c) = forc_snow(c)
+          end if
+          if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
+               .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
+             wa_local_col(c) = 0._r8
+          end if
+       end do
+
+      do c = bounds%begc, bounds%endc
+
+         ! add qflx_drain_perched and qflx_flood
+         if (col_pp%active(c)) then
+
+            qflx_net_col(c) = &
+                 - forc_rain_col(c) - forc_snow_col(c)  - qflx_floodc(c) - qflx_irrig(c) &
+                 + qflx_evap_tot(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) &
+                 + qflx_qrgwl(c) + qflx_drain(c) + qflx_drain_perched(c) + qflx_snwcp_ice(c) &
+                 + qflx_lateral(c)
+
+         else
+
+            qflx_net_col(c) = 0.0_r8
+
+         end if
+
+      end do
+
+      call c2g(bounds, endwb_col(bounds%begc:bounds%endc)             , &
+           endwb_grc(bounds%begg:bounds%endg)                         , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc)          , &
+           end_wa_grc(bounds%begg:bounds%endg)                        , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc)            , &
+           end_h2ocan_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osno_col(bounds%begc:bounds%endc)            , &
+           end_h2osno_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osfc_col(bounds%begc:bounds%endc)            , &
+           end_h2osfc_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc) , &
+           end_h2osoi_liq_grc(bounds%begg:bounds%endg)                , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc) , &
+           end_h2osoi_ice_grc(bounds%begg:bounds%endg)                , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+      call c2g(bounds, errh2o(bounds%begc:bounds%endc)                , &
+           errh2o_grc(bounds%begg:bounds%endg)                        , &
+           c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    end associate
+
+    end subroutine GridBalanceCheck
+
+ end module BalanceCheckMod

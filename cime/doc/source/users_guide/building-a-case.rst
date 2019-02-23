@@ -4,7 +4,10 @@
 Building a Case
 ******************
 
-The following describes the process of building the model executable.
+Once the case has been created and setup, its time to build the executable.
+Several directories full of source code must be built all with the same compiler and flags.
+**case.build** performs all build operations (setting dependecies, invoking Make,
+creating the executable).
 
 .. _building-the-model:
 
@@ -15,20 +18,20 @@ Calling **case.build**
 After calling `case.setup <../Tools_user/case.setup.html>`_ , run `case.build <../Tools_user/case.build.html>`_  to build the model executable. Running this will:
 
 1. Create the component namelists in ``$RUNDIR`` and ``$CASEROOT/CaseDocs``.
-2. Create the necessary compiled libraries ``mct``, ``pio``, ``gptl`` and ``csm_share``.
+2. Create the necessary compiled libraries used by coupler and component models ``mct``, ``pio``, ``gptl`` and ``csm_share``.
    The libraries will be placed in a path below ``$SHAREDLIBROOT``.
-3. Create the necessary compiled libraries. These are be placed in ``$EXEROOT/bld/lib``.
+3. Create the necessary compiled libraries for each component model. These are be placed in ``$EXEROOT/bld/lib``.
 4. Create the model executable (``$MODEL.exe``), which is placed in ``$EXEROOT``.
 
 You do not need to change the default build settings to create the executable, but it is useful to become familiar with them in order to make optimal use of the system. The CIME scripts provide you with a great deal of flexibility in customizing the build process.
 
 The **env_build.xml** variables control various aspects of building the executable. Most of the variables should not be modified, but users can modify these:
 
-- ``$BUILD_THREADED``
+- ``$BUILD_THREADED`` : if TRUE, the model will be built with OpenMP.
 
-- ``$DEBUG``
+- ``$DEBUG`` : if TRUE, the model is compiled with debugging instead of optimization flags.
 
-- ``$GMAKE_J``
+- ``$GMAKE_J`` : How many threads GNUMake should use while building.
 
 The best way to see what xml variables are in your ``$CASEROOT`` directory is to use the `xmlquery <../Tools_user/xmlquery.html>`_  command. For usage information, run:
 ::

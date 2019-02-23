@@ -1,42 +1,1431 @@
 ======================================================================
 
-Originator: Chris Fischer
-Date: 5-22-2018
-Tag: cime_cesm2_0_rel_03
+Originator: Chris Fischer 
+Date: 01-07-2019
+Tag: cime5.7.6
 Answer Changes: None
-Tests: scripts_regression_tests, build tests on Cori.
+Tests: scripts_regression_tests.py, hand testing of cesm cases 
+       scripts_regression_tests.py with PIO_VERSION=2
+       code-checker, by-hand
 Dependencies:
 
-Brief Summary: Third release candidate.
-    - Update environment modules for Cori.
-    - Change PRE.f09_f09.ADESP_TEST.hobart_nag test to f19_f19.
-    - Tweaks to cism-specific documentation.
-    - Update for Sphinx v1.7 and doc version 5.6.
-    - More doc updates.
-    - Maint 5.6 - documentation updates.
+Brief Summary:
+    - case.cmpgen_namelists needs to be able to write to the case
+    - Improve errors messages coming from generic_xml.
+    - Update to the latest pio2 master from https://github.com/NCAR/ParallelIO
+      pio hash is 317963f
+    - Improve the logic of the continue run check.
+    - Merge latest maint-5.6 changes into master.
+    - Make sure optional arg exists before using.
+    - Improve error/exception handling throughout CIME.
+    - Update esmf in mapping master.
+    - Minor fix for e3sm_cime_mgmt.
+    - Fix issues found in cesm testing.
+    - Big improvement to robustness of CIME's XML handling.
+    - Correct timer merge issue.
+    - Fix PFS generate issue.
+    - Nuopc merge to master.
+    - Merge branch for acme split 2018-11-27.
+    - Resolve conflicts.
+    - Merge latest maint-5.6 changes into master.
+    - Fix new pylint errors.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+486c579 Merge pull request #2966 from jedwards4b/cmpgen_needs_write
+ac2d671 Merge pull request #2964 from ESMCI/jgfouca/improve_xml_err_msgs
+37d7afb Merge pull request #2955 from jedwards4b/jedwards/pio2-merge
+18c822b Merge pull request #2956 from jedwards4b/improve_continue_run_check
+59c158c Merge pull request #2958 from jedwards4b/jedwards/maint-5.6merge
+3e2f45e Merge pull request #2950 from jedwards4b/docn_optional_arg_fix
+2686d66 Merge pull request #2948 from ESMCI/jgfouca/improve_error_handling
+a909466 Merge pull request #2941 from mnlevy1981/mlevy/update_esmf_in_mapping-master
+ea8f9b8 Merge pull request #2946 from ESMCI/jgfouca/fix_e3sm_cime_mgmt
+3c17731 Merge pull request #2944 from jedwards4b/cesmtestissues
+d712b83 Merge pull request #2932 from ESMCI/jgfouca/xml_cache_upgrade
+920ffca Merge pull request #2934 from jedwards4b/correct_timer_merge_issue
+ba2f030 Merge pull request #2931 from jedwards4b/fixforpfsgenerate
+25649e9 Merge pull request #2930 from jedwards4b/nuopc_merge_to_master
+392eca0 Merge pull request #2926 from ESMCI/jgfouca/branch-for-acme-split-2018-11-27
+56563f7 resolve conflicts
+c81376f Merge branch 'maint-5.6' update master with maint-5.6
+c0ff78e Merge pull request #2920 from ESMCI/jgfouca/fix_new_pylint_errs
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/allactive/config_compsets.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_grids_v2.xsd
+M	doc/source/users_guide/testing.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+M	scripts/Tools/case.build
+M	scripts/Tools/case.cmpgen_namelists
+M	scripts/Tools/case_diff
+M	scripts/Tools/cime_bisect
+M	scripts/Tools/simple_compare
+M	scripts/Tools/testreporter.py
+M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/SystemTests/erio.py
+M	scripts/lib/CIME/SystemTests/ers.py
+M	scripts/lib/CIME/SystemTests/ers2.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/component.py
+M	scripts/lib/CIME/XML/env_archive.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_build.py
+M	scripts/lib/CIME/XML/env_case.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/env_run.py
+M	scripts/lib/CIME/XML/env_test.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/case/case_cmpgen_namelists.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/case_test.py
+M	scripts/lib/CIME/case/check_lockedfiles.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/compare_namelists.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/locked_files.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/simple_compare.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/test_user_mod_support.py
+M	scripts/lib/CIME/user_mod_support.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/lib/get_tests.py
+M	scripts/query_config
+M	scripts/testlist_cmeps.xml
+M	scripts/tests/scripts_regression_tests.py
+M	scripts/tests/user_mods_test3/shell_commands
+M	src/CMake/FindpFUnit.cmake
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+M	src/build_scripts/buildlib.internal_components
+M	src/build_scripts/buildlib.mct
+M	src/build_scripts/buildlib.mpi-serial
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/datm/cime_config/buildnml
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/nuopc/atm_comp_nuopc.F90
+M	src/components/data_comps/datm/nuopc/datm_comp_mod.F90
+M	src/components/data_comps/datm/nuopc/datm_shr_mod.F90
+M	src/components/data_comps/dice/nuopc/dice_comp_mod.F90
+M	src/components/data_comps/dice/nuopc/dice_shr_mod.F90
+M	src/components/data_comps/dice/nuopc/ice_comp_nuopc.F90
+M	src/components/data_comps/dlnd/nuopc/dlnd_comp_mod.F90
+M	src/components/data_comps/dlnd/nuopc/dlnd_shr_mod.F90
+M	src/components/data_comps/dlnd/nuopc/lnd_comp_nuopc.F90
+M	src/components/data_comps/docn/mct/docn_comp_mod.F90
+M	src/components/data_comps/docn/nuopc/docn_comp_mod.F90
+M	src/components/data_comps/docn/nuopc/docn_shr_mod.F90
+M	src/components/data_comps/docn/nuopc/ocn_comp_nuopc.F90
+M	src/components/data_comps/drof/cime_config/config_component.xml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/components/data_comps/drof/nuopc/drof_comp_mod.F90
+M	src/components/data_comps/drof/nuopc/drof_shr_mod.F90
+M	src/components/data_comps/drof/nuopc/rof_comp_nuopc.F90
+M	src/components/data_comps/dshr_nuopc/dshr_nuopc_mod.F90
+M	src/components/data_comps/dwav/nuopc/dwav_comp_mod.F90
+M	src/components/data_comps/dwav/nuopc/dwav_shr_mod.F90
+M	src/components/data_comps/dwav/nuopc/wav_comp_nuopc.F90
+M	src/components/xcpl_comps/xatm/nuopc/atm_comp_nuopc.F90
+M	src/components/xcpl_comps/xglc/nuopc/glc_comp_nuopc.F90
+M	src/components/xcpl_comps/xice/nuopc/ice_comp_nuopc.F90
+M	src/components/xcpl_comps/xlnd/nuopc/lnd_comp_nuopc.F90
+M	src/components/xcpl_comps/xocn/nuopc/ocn_comp_nuopc.F90
+M	src/components/xcpl_comps/xrof/nuopc/rof_comp_nuopc.F90
+M	src/components/xcpl_comps/xshare/nuopc/dead_nuopc_mod.F90
+M	src/components/xcpl_comps/xwav/nuopc/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/nuopc/cime_config/buildexe
+M	src/drivers/nuopc/cime_config/buildnml
+M	src/drivers/nuopc/cime_config/config_component.xml
+M	src/drivers/nuopc/cime_config/config_component_cesm.xml
+M	src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+M	src/drivers/nuopc/cime_driver/ensemble_driver.F90
+M	src/drivers/nuopc/cime_driver/esm.F90
+M	src/drivers/nuopc/cime_flds/esmFlds.F90
+M	src/drivers/nuopc/mediator/med.F90
+M	src/drivers/nuopc/mediator/med_connectors_mod.F90
+M	src/drivers/nuopc/mediator/med_fraction_mod.F90
+M	src/drivers/nuopc/mediator/med_infodata_mod.F90
+M	src/drivers/nuopc/mediator/med_internalstate_mod.F90
+M	src/drivers/nuopc/mediator/med_io_mod.F90
+M	src/drivers/nuopc/mediator/med_map_mod.F90
+M	src/drivers/nuopc/mediator/med_merge_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_aofluxes_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_history_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_ocnalb_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_atm_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_glc_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ice_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_lnd_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ocn_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_rof_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_wav_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_profile_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_restart_mod.F90
+M	src/drivers/nuopc/shr/med_constants_mod.F90
+M	src/drivers/nuopc/shr/seq_comm_mct.F90
+D	src/drivers/nuopc/shr/seq_timemgr_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_grid_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_methods_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_time_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_utils_mod.F90
+M	src/externals/pio1/pio/piodarray.F90.in
+M	src/externals/pio2/.gitignore
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/Makefile.am
+M	src/externals/pio2/README.md
+M	src/externals/pio2/cmake/LibFind.cmake
+M	src/externals/pio2/cmake/LibMPI.cmake
+D	src/externals/pio2/cmake/mpiexec.nwsc
+M	src/externals/pio2/cmake/mpiexec.nwscla
+M	src/externals/pio2/cmake_config.h.in
+M	src/externals/pio2/configure.ac
+D	src/externals/pio2/ctest/CTestEnvironment-nwsc.cmake
+M	src/externals/pio2/ctest/CTestEnvironment-nwscla.cmake
+D	src/externals/pio2/ctest/runcdash-nwsc-gnu.sh
+D	src/externals/pio2/ctest/runcdash-nwsc-pgi.sh
+A	src/externals/pio2/ctest/runcdash-nwscla-gnu.sh
+M	src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+A	src/externals/pio2/ctest/runcdash-nwscla-pgi.sh
+D	src/externals/pio2/ctest/runctest-nwsc.sh
+A	src/externals/pio2/examples/Makefile.am
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite.3
+A	src/externals/pio2/examples/basic/perl5lib/XML/man3/XML_Lite_Element.3
+A	src/externals/pio2/examples/c/Makefile.am
+M	src/externals/pio2/examples/c/darray_async.c
+M	src/externals/pio2/examples/c/darray_no_async.c
+M	src/externals/pio2/examples/c/example1.c
+M	src/externals/pio2/examples/c/examplePio.c
+A	src/externals/pio2/examples/c/run_tests.sh
+M	src/externals/pio2/src/Makefile.am
+M	src/externals/pio2/src/clib/CMakeLists.txt
+M	src/externals/pio2/src/clib/Makefile.am
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/flib/CMakeLists.txt
+M	src/externals/pio2/src/flib/piodarray.F90.in
+M	src/externals/pio2/tests/Makefile.am
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+M	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/run_tests.sh
+M	src/externals/pio2/tests/cunit/test_async_multi2.c
+M	src/externals/pio2/tests/cunit/test_async_multicomp.c
+M	src/externals/pio2/tests/cunit/test_darray_1d.c
+M	src/externals/pio2/tests/cunit/test_darray_2sync.c
+M	src/externals/pio2/tests/cunit/test_darray_async.c
+A	src/externals/pio2/tests/cunit/test_darray_fill.c
+M	src/externals/pio2/tests/cunit/test_darray_frame.c
+A	src/externals/pio2/tests/cunit/test_decomp_frame.c
+M	src/externals/pio2/tests/cunit/test_intercomm2.c
+M	src/externals/pio2/tests/general/CMakeLists.txt
+M	src/externals/pio2/tests/general/ncdf_simple_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests_1d.F90.in
+M	src/externals/pio2/tests/general/util/pio_tf_f90gen.pl
+M	src/externals/pio2/tests/performance/pioperformance.F90
+M	src/externals/pio2/tests/unit/basic_tests.F90
+M	src/externals/pio2/tests/unit/driver.F90
+M	src/share/streams/shr_dmodel_mod.F90
+M	src/share/streams/shr_strdata_mod.F90
+M	src/share/timing/ChangeLog
+M	src/share/timing/Makefile
+M	src/share/timing/f_wrappers.c
+M	src/share/timing/gptl.c
+M	src/share/timing/gptl.h
+M	src/share/timing/gptl.inc
+M	src/share/timing/perf_mod.F90
+M	src/share/util/shr_file_mod.F90
+M	src/share/util/shr_log_mod.F90
+M	tools/configure
+M	tools/load_balancing_tool/load_balancing_submit.py
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+M	tools/statistical_ensemble_test/addmetadata.sh
+M	tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSumPop.rst
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+D	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop_test.sh
+M	tools/statistical_ensemble_test/pyCECT/test_pop_CECT.sh
+D	tools/statistical_ensemble_test/pyCECT/test_pop_ensemble.sh
+A	tools/statistical_ensemble_test/pyCECT/test_pyEnsSumPop.sh
+
+======================================================================
+
+Originator: Bill Sacks
+Date: 11-01-2018
+Tag: cime5.7.5
+Answer Changes: None
+Tests: scripts_regression_tests, CTSM's aux_clm test suite
+Dependencies:
+
+Brief Summary: Miscellaneous minor bug fixes, including getting
+               mpi-serial working again
+
+User interface changes: none
+
+Originator: Chris Fischer 
+Date: 11-29-2018
+Tag: cime_cesm2_1_rel_06
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix new pylint errors.
+    - Update addmetadata for POP-ECT tests.
 
 User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master 
-ed9ced8 Merge pull request #2619 from ESMCI/fischer/nersc
-c1dade4 Merge pull request #2618 from ESMCI/fischer/testfix
-1f41bc6 Merge pull request #2617 from billsacks/update_cism_doc
-08f12ea Merge pull request #2616 from bertinia/maint-5.6
-72ed273 Merge pull request #2615 from ESMCI/mvertens/more_doc_updates
-7049dab Merge pull request #2614 from bertinia/maint-5.6
+5a86646 Merge pull request #2921 from jedwards4b/fixpylint3errors
+98821ff Merge pull request #2919 from ESMCI/fischer/addmetadata
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/BuildTools/macrowriterbase.py
+M       scripts/lib/CIME/SystemTests/erio.py
+M       scripts/lib/CIME/SystemTests/ers.py
+M       scripts/lib/CIME/SystemTests/ers2.py
+M       scripts/lib/CIME/SystemTests/homme.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M       scripts/lib/CIME/case/case_run.py
+M       scripts/lib/CIME/case/case_setup.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/provenance.py
+M       scripts/lib/e3sm_cime_mgmt.py
+M       src/build_scripts/buildlib.gptl
+M       src/build_scripts/buildlib.pio
+M       tools/statistical_ensemble_test/addmetadata.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+PR summary: git log --oneline --first-parent [previous_tag]..master
+e882c1c06 Merge pull request #2897 from billsacks/fix_histutils_regex
+fc14d5870 Merge pull request #2895 from billsacks/fix_lnd2glc_averaged_now
+beff2289e Merge pull request #2892 from ESMCI/jhkennedy/mpi-serial-2890
+44aa1f2c8 Merge pull request #2888 from ESMCI/jhkennedy/charge-account-2886
+610ac40c5 Merge pull request #2889 from dabail10/pop_som_frc
+a25d2b4c1 Merge pull request #2887 from billsacks/funit_fix_path
+6c7981abd Merge pull request #2872 from billsacks/datm_wiso_typo
+9087ed3ab Merge pull request #2883 from ESMCI/jgfouca/add_nuopc_e3sm_config
+90e595c21 Merge pull request #2882 from jedwards4b/resolve_mpi_run_command
+14bb217ec Merge pull request #2876 from ESMCI/jgfouca/fix_pet_no_batch
+7720b1e83 Merge pull request #2877 from ESMCI/sarich/update-e3sm-config-driver
+ddec7ebf0 Merge pull request #2854 from ESMCI/jhkennedy/machine-missing-2686
+
+Modified files: git diff --name-status [previous_tag]
+M       ChangeLog
+M       config/e3sm/config_files.xml
+M       config/e3sm/machines/config_machines.xml
+M       config/e3sm/machines/config_pio.xml
+M       config/xml_schemas/config_machines.xsd
+M       doc/source/users_guide/cime-config.rst
+M       scripts/create_clone
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/lib/CIME/SystemTests/funit.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M       scripts/lib/CIME/utils.py
+M       scripts/lib/get_tests.py
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/docn/tools/pop_som_frc/README
+M       src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlann.ncl
+M       src/components/data_comps/docn/tools/pop_som_frc/pop_frc_mlt.ncl
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/component_mod.F90
+A       src/drivers/nuopc/cime_config/config_component_e3sm.xml
+M       src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+
+Originator: Chris Fischer
+Date: 11-17-2018
+Tag: cime_cesm2_1_rel_05
+Answer Changes: None
+Tests:  ./create_test cime_developer on cheyenne
+Dependencies:
+
+Brief Summary:
+    - Do not include time of day in cpl auxiliary hist file names.
+
+User interface changes:
+    - Changes names of cpl auxiliary history files.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+b3fc9d6 Merge pull request #2914 from billsacks/auxhist_no_time
+
+Modified files: git diff --name-status [previous_tag]
+M       src/drivers/mct/main/seq_hist_mod.F90
+
+======================================================================
+======================================================================
+
+Originator: Chris Fischer
+Date: 11-13-2018
+Tag: cime_cesm2_1_rel_04
+Answer Changes: None
+Tests:
+Dependencies:
+
+Brief Summary:
+    - Fix 2010 period for datm GSWP3v1.
+    - Update pyCECT to v3.0.8
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+2e72d20 Merge pull request #2908 from ekluzek/fix2010datm
+5f4a911 Merge pull request #2905 from ESMCI/fischer/pyCECT_v3.0.8
+
+Modified files: git diff --name-status [previous_tag]
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M       tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M       tools/statistical_ensemble_test/pyCECT/README_pyEnsSumPop.rst
+M       tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M       tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
+D       tools/statistical_ensemble_test/pyCECT/pyEnsSumPop_test.sh
+M       tools/statistical_ensemble_test/pyCECT/test_pop_CECT.sh
+D       tools/statistical_ensemble_test/pyCECT/test_pop_ensemble.sh
+A       tools/statistical_ensemble_test/pyCECT/test_pyEnsSumPop.sh
+
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 10-22-2018
+Tag: cime5.7.4
+Answer Changes: I compsets (with datm) change answers due to #2828
+                (merged to master as #2847)
+Tests: scripts_regression_tests, by hand
+Dependencies:
+
+Brief Summary:
+    - Remove all references to BATCHQUERY and BATCHSUBMIT.
+    - Bug fix.
+    - Update to CIME statistical ensemble test ensemble generation scripts.
+    - Fix debug builds for pio.
+    - Remove commented-out code
+    - Merge ACME split 2018-10-16
+    - Fix floating-point mpiprocs for Python 3.
+    - Fix floating-point mpiprocs for Python 3.
+    - Merge latest nuopc-cmeps development.
+    - Don't exceed maximum MPI tag value.
+    - maint-5.6 merge.
+    - Propagate logging settings to submitted jobs.
+    - mlchange: Give user guidance on what to do next.
+    - Dont hide ctest output in run_tests.py.
+    - Add FUNIT fake test.
+    - Improve continue run checks in case_submit.
+    - Some minor cleanup for nmlgen.py.
+    - ntasks_per_inst should never be <=0
+    - one more driver issue
+    - another driver issue
+    - fix e3sm cdash issue
+    - fix cdash issues
+    - Merge of the nuopc development branch.
+    - OS is not an environment variable on all systems.
+    - Add Daint and Euler machines.
+    - Merge acme split 2018-09-10.
+    - Fix ESMF library before version 8 build.
+    - Add /cluster/torque/bin to path on hobart.
+
+
+User interface changes:
+    - Python scripts instead of shell scripts for ECT.
+    - Adds CIME_DRIVER env and config variable to set the default driver.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+9355d97 Merge pull request #2868 from ESMCI/jgfouca/remove_old_batch_stuff
+479c666 Merge pull request #2869 from ESMCI/jgfouca/f90_bug_fix
+9839983 Merge pull request #2864 from allibco/master
+5850391 Fix debug builds of pio
+374dce4 Remove commented-out code
+eaeff0c Merge pull request #2858 from ESMCI/jgfouca/branch-for-acme-split-2018-10-16
+8d642a1 Merge pull request #2859 from ESMCI/fix_mpiprocs
+00b2252 Merge pull request #2857 from jedwards4b/add_mpilibs_query_config
+532d4ca Merge pull request #2848 from jedwards4b/nuopc-cmeps
+490074f Merge pull request #2804 from ESMCI/jhkennedy/mpi_tags
+00908db Merge pull request #2847 from jedwards4b/maint-5.6-merge
+fb05358 Merge pull request #2833 from ESMCI/jgfouca/propagate_logging
+6fb5659 Merge pull request #2829 from ESMCI/jgfouca/xmlchange_help_user
+e002ac3 Merge pull request #2834 from ESMCI/jgfouca/dont_hide_ctest_output
+3a5b47a Merge pull request #2826 from ESMCI/jgfouca/funit_fake_test
+a4fb22e Merge pull request #2825 from ESMCI/jgfouca/improve_cont_run_guard
+1df4dca Merge pull request #2830 from ESMCI/jgfouca/nmlgen_cleanup
+9ca93ca ntasks_per_inst should never be <=0
+4e621e6 one more driver issue
+bdd0563 another driver issue
+868c273 fix e3sm cdash issue
+83ea95c fix cdash issues
+6d383cc Merge pull request #2811 from jedwards4b/jedwards/merge_cmeps
+3effd6a OS is not an environment variable on all systems
+922f6e7 Merge pull request #2805 from beyerle/ethz
+9de1492 Merge pull request #2800 from ESMCI/jgfouca/branch-for-acme-split-2018-09-10
+eeae4e3 Merge pull request #2803 from ekluzek/fixesmflog
+e075cac Merge pull request #2797 from billsacks/hobart_path
+
+Modified files: git diff --name-status [previous_tag]
+M	.travis.yml
+M	ChangeLog
+M	config/cesm/config_files.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_tests.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/env_mach_specific.xsd
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+M	scripts/Tools/case.build
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/xmlchange
+A	scripts/climate_reproducibility/README.md
+A	scripts/climate_reproducibility/requirements.txt
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/Servers/wget.py
+A	scripts/lib/CIME/SystemTests/funit.py
+A	scripts/lib/CIME/SystemTests/mvk.py
+A	scripts/lib/CIME/SystemTests/pgn.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+A	scripts/lib/CIME/SystemTests/tsc.py
+M	scripts/lib/CIME/XML/archive.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/XML/namelist_definition.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_cmpgen_namelists.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/simple_compare.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/tests/test_utils.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/query_config
+A	scripts/testlist_cmeps.xml
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps/datm/cime_config/buildnml
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+D	src/components/data_comps/datm/datm_comp_mod.F90
+D	src/components/data_comps/datm/datm_shr_mod.F90
+A	src/components/data_comps/datm/mct/datm_comp_mod.F90
+A	src/components/data_comps/datm/mct/datm_shr_mod.F90
+A	src/components/data_comps/datm/nuopc/atm_comp_nuopc.F90
+A	src/components/data_comps/datm/nuopc/datm_comp_mod.F90
+A	src/components/data_comps/datm/nuopc/datm_shr_mod.F90
+M	src/components/data_comps/desp/cime_config/buildnml
+M	src/components/data_comps/desp/desp_comp_mod.F90
+M	src/components/data_comps/dice/cime_config/buildnml
+M	src/components/data_comps/dice/cime_config/config_archive.xml
+M	src/components/data_comps/dice/cime_config/namelist_definition_dice.xml
+D	src/components/data_comps/dice/dice_comp_mod.F90
+D	src/components/data_comps/dice/dice_shr_mod.F90
+A	src/components/data_comps/dice/mct/dice_comp_mod.F90
+A	src/components/data_comps/dice/mct/dice_flux_atmice_mod.F90
+A	src/components/data_comps/dice/mct/dice_shr_mod.F90
+A	src/components/data_comps/dice/nuopc/dice_comp_mod.F90
+A	src/components/data_comps/dice/nuopc/dice_flux_atmice_mod.F90
+A	src/components/data_comps/dice/nuopc/dice_shr_mod.F90
+A	src/components/data_comps/dice/nuopc/ice_comp_nuopc.F90
+M	src/components/data_comps/dlnd/cime_config/buildnml
+D	src/components/data_comps/dlnd/dlnd_comp_mod.F90
+D	src/components/data_comps/dlnd/dlnd_shr_mod.F90
+A	src/components/data_comps/dlnd/mct/dlnd_comp_mod.F90
+A	src/components/data_comps/dlnd/mct/dlnd_shr_mod.F90
+A	src/components/data_comps/dlnd/nuopc/dlnd_comp_mod.F90
+A	src/components/data_comps/dlnd/nuopc/dlnd_shr_mod.F90
+A	src/components/data_comps/dlnd/nuopc/lnd_comp_nuopc.F90
+M	src/components/data_comps/docn/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+D	src/components/data_comps/docn/docn_comp_mod.F90
+D	src/components/data_comps/docn/docn_shr_mod.F90
+A	src/components/data_comps/docn/mct/docn_comp_mod.F90
+A	src/components/data_comps/docn/mct/docn_shr_mod.F90
+M	src/components/data_comps/docn/mct/ocn_comp_mct.F90
+A	src/components/data_comps/docn/nuopc/docn_comp_mod.F90
+A	src/components/data_comps/docn/nuopc/docn_shr_mod.F90
+A	src/components/data_comps/docn/nuopc/ocn_comp_nuopc.F90
+M	src/components/data_comps/drof/cime_config/buildnml
+D	src/components/data_comps/drof/drof_comp_mod.F90
+D	src/components/data_comps/drof/drof_shr_mod.F90
+A	src/components/data_comps/drof/mct/drof_comp_mod.F90
+A	src/components/data_comps/drof/mct/drof_shr_mod.F90
+A	src/components/data_comps/drof/nuopc/drof_comp_mod.F90
+A	src/components/data_comps/drof/nuopc/drof_shr_mod.F90
+A	src/components/data_comps/drof/nuopc/rof_comp_nuopc.F90
+A	src/components/data_comps/dshr_nuopc/dshr_nuopc_mod.F90
+M	src/components/data_comps/dwav/cime_config/buildnml
+D	src/components/data_comps/dwav/dwav_comp_mod.F90
+D	src/components/data_comps/dwav/dwav_shr_mod.F90
+A	src/components/data_comps/dwav/mct/dwav_comp_mod.F90
+A	src/components/data_comps/dwav/mct/dwav_shr_mod.F90
+A	src/components/data_comps/dwav/nuopc/dwav_comp_mod.F90
+A	src/components/data_comps/dwav/nuopc/dwav_shr_mod.F90
+A	src/components/data_comps/dwav/nuopc/wav_comp_nuopc.F90
+D	src/components/stub_comps/satm/cpl/atm_comp_mct.F90
+A	src/components/stub_comps/satm/mct/atm_comp_mct.F90
+A	src/components/stub_comps/satm/nuopc/atm_comp_nuopc.F90
+D	src/components/stub_comps/sesp/cpl/esp_comp_mct.F90
+A	src/components/stub_comps/sesp/mct/esp_comp_mct.F90
+D	src/components/stub_comps/sglc/cpl/glc_comp_mct.F90
+A	src/components/stub_comps/sglc/mct/glc_comp_mct.F90
+A	src/components/stub_comps/sglc/nuopc/glc_comp_nuopc.F90
+D	src/components/stub_comps/sice/cpl/ice_comp_mct.F90
+A	src/components/stub_comps/sice/mct/ice_comp_mct.F90
+A	src/components/stub_comps/sice/nuopc/ice_comp_nuopc.F90
+D	src/components/stub_comps/slnd/cpl/lnd_comp_mct.F90
+A	src/components/stub_comps/slnd/mct/lnd_comp_mct.F90
+A	src/components/stub_comps/slnd/nuopc/lnd_comp_nuopc.F90
+D	src/components/stub_comps/socn/cpl/ocn_comp_mct.F90
+A	src/components/stub_comps/socn/mct/ocn_comp_mct.F90
+A	src/components/stub_comps/socn/nuopc/ocn_comp_nuopc.F90
+D	src/components/stub_comps/srof/cpl/rof_comp_mct.F90
+A	src/components/stub_comps/srof/mct/rof_comp_mct.F90
+A	src/components/stub_comps/srof/nuopc/rof_comp_nuopc.F90
+D	src/components/stub_comps/swav/cpl/wav_comp_mct.F90
+A	src/components/stub_comps/swav/mct/wav_comp_mct.F90
+A	src/components/stub_comps/swav/nuopc/wav_comp_nuopc.F90
+D	src/components/xcpl_comps/xatm/cpl/atm_comp_mct.F90
+A	src/components/xcpl_comps/xatm/mct/atm_comp_mct.F90
+A	src/components/xcpl_comps/xatm/nuopc/atm_comp_nuopc.F90
+D	src/components/xcpl_comps/xglc/cpl/glc_comp_mct.F90
+A	src/components/xcpl_comps/xglc/mct/glc_comp_mct.F90
+A	src/components/xcpl_comps/xglc/nuopc/glc_comp_nuopc.F90
+D	src/components/xcpl_comps/xice/cpl/ice_comp_mct.F90
+A	src/components/xcpl_comps/xice/mct/ice_comp_mct.F90
+A	src/components/xcpl_comps/xice/nuopc/ice_comp_nuopc.F90
+D	src/components/xcpl_comps/xlnd/cpl/lnd_comp_mct.F90
+A	src/components/xcpl_comps/xlnd/mct/lnd_comp_mct.F90
+A	src/components/xcpl_comps/xlnd/nuopc/lnd_comp_nuopc.F90
+D	src/components/xcpl_comps/xocn/cpl/ocn_comp_mct.F90
+A	src/components/xcpl_comps/xocn/mct/ocn_comp_mct.F90
+A	src/components/xcpl_comps/xocn/nuopc/ocn_comp_nuopc.F90
+D	src/components/xcpl_comps/xrof/cpl/rof_comp_mct.F90
+A	src/components/xcpl_comps/xrof/mct/rof_comp_mct.F90
+A	src/components/xcpl_comps/xrof/nuopc/rof_comp_nuopc.F90
+D	src/components/xcpl_comps/xshare/dead_data_mod.F90
+D	src/components/xcpl_comps/xshare/dead_mct_mod.F90
+D	src/components/xcpl_comps/xshare/dead_mod.F90
+A	src/components/xcpl_comps/xshare/mct/dead_data_mod.F90
+A	src/components/xcpl_comps/xshare/mct/dead_mct_mod.F90
+A	src/components/xcpl_comps/xshare/mct/dead_mod.F90
+A	src/components/xcpl_comps/xshare/nuopc/dead_nuopc_mod.F90
+D	src/components/xcpl_comps/xwav/cpl/wav_comp_mct.F90
+A	src/components/xcpl_comps/xwav/mct/wav_comp_mct.F90
+A	src/components/xcpl_comps/xwav/nuopc/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/buildexe
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/cime_driver.F90
+M	src/drivers/mct/main/component_mod.F90
+M	src/drivers/mct/main/prep_ocn_mod.F90
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+A	src/drivers/moab/cime_config/buildexe
+A	src/drivers/moab/cime_config/buildnml
+A	src/drivers/moab/cime_config/config_archive.xml
+A	src/drivers/moab/cime_config/config_component.xml
+A	src/drivers/moab/cime_config/config_component_cesm.xml
+A	src/drivers/moab/cime_config/config_component_e3sm.xml
+A	src/drivers/moab/cime_config/config_compsets.xml
+A	src/drivers/moab/cime_config/config_pes.xml
+A	src/drivers/moab/cime_config/namelist_definition_drv.xml
+A	src/drivers/moab/cime_config/namelist_definition_drv_flds.xml
+A	src/drivers/moab/cime_config/namelist_definition_modelio.xml
+A	src/drivers/moab/cime_config/user_nl_cpl
+A	src/drivers/moab/main/CMakeLists.txt
+A	src/drivers/moab/main/cime_comp_mod.F90
+A	src/drivers/moab/main/cime_driver.F90
+A	src/drivers/moab/main/component_mod.F90
+A	src/drivers/moab/main/component_type_mod.F90
+A	src/drivers/moab/main/cplcomp_exchange_mod.F90
+A	src/drivers/moab/main/map_glc2lnd_mod.F90
+A	src/drivers/moab/main/map_lnd2glc_mod.F90
+A	src/drivers/moab/main/map_lnd2rof_irrig_mod.F90
+A	src/drivers/moab/main/mrg_mod.F90
+A	src/drivers/moab/main/prep_aoflux_mod.F90
+A	src/drivers/moab/main/prep_atm_mod.F90
+A	src/drivers/moab/main/prep_glc_mod.F90
+A	src/drivers/moab/main/prep_ice_mod.F90
+A	src/drivers/moab/main/prep_lnd_mod.F90
+A	src/drivers/moab/main/prep_ocn_mod.F90
+A	src/drivers/moab/main/prep_rof_mod.F90
+A	src/drivers/moab/main/prep_wav_mod.F90
+A	src/drivers/moab/main/seq_diag_mct.F90
+A	src/drivers/moab/main/seq_domain_mct.F90
+A	src/drivers/moab/main/seq_flux_mct.F90
+A	src/drivers/moab/main/seq_frac_mct.F90
+A	src/drivers/moab/main/seq_hist_mod.F90
+A	src/drivers/moab/main/seq_io_mod.F90
+A	src/drivers/moab/main/seq_map_mod.F90
+A	src/drivers/moab/main/seq_map_type_mod.F90
+A	src/drivers/moab/main/seq_rest_mod.F90
+A	src/drivers/moab/main/t_driver_timers_mod.F90
+A	src/drivers/moab/shr/CMakeLists.txt
+A	src/drivers/moab/shr/glc_elevclass_mod.F90
+A	src/drivers/moab/shr/seq_cdata_mod.F90
+A	src/drivers/moab/shr/seq_comm_mct.F90
+A	src/drivers/moab/shr/seq_drydep_mod.F90
+A	src/drivers/moab/shr/seq_flds_mod.F90
+A	src/drivers/moab/shr/seq_infodata_mod.F90
+A	src/drivers/moab/shr/seq_io_read_mod.F90
+A	src/drivers/moab/shr/seq_timemgr_mod.F90
+A	src/drivers/moab/shr/shr_carma_mod.F90
+A	src/drivers/moab/shr/shr_expr_parser_mod.F90
+A	src/drivers/moab/shr/shr_fire_emis_mod.F90
+A	src/drivers/moab/shr/shr_megan_mod.F90
+A	src/drivers/moab/shr/shr_ndep_mod.F90
+A	src/drivers/nuopc/cime_config/buildexe
+A	src/drivers/nuopc/cime_config/buildnml
+A	src/drivers/nuopc/cime_config/config_archive.xml
+A	src/drivers/nuopc/cime_config/config_component.xml
+A	src/drivers/nuopc/cime_config/config_component_cesm.xml
+A	src/drivers/nuopc/cime_config/config_compsets.xml
+A	src/drivers/nuopc/cime_config/config_pes.xml
+A	src/drivers/nuopc/cime_config/fd.yaml
+A	src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+A	src/drivers/nuopc/cime_config/namelist_definition_drv_flds.xml
+A	src/drivers/nuopc/cime_config/namelist_definition_modelio.xml
+A	src/drivers/nuopc/cime_config/testdefs/testlist_drv.xml
+A	src/drivers/nuopc/cime_config/testdefs/testmods_dirs/drv/5steps/shell_commands
+A	src/drivers/nuopc/cime_config/testdefs/testmods_dirs/drv/default/shell_commands
+A	src/drivers/nuopc/cime_config/testdefs/testmods_dirs/drv/glcnec10/include_user_mods
+A	src/drivers/nuopc/cime_config/testdefs/testmods_dirs/drv/glcnec10/shell_commands
+A	src/drivers/nuopc/cime_config/testdefs/testmods_dirs/drv/som/shell_commands
+A	src/drivers/nuopc/cime_config/user_nl_cpl
+A	src/drivers/nuopc/cime_driver/ensemble_driver.F90
+A	src/drivers/nuopc/cime_driver/esm.F90
+A	src/drivers/nuopc/cime_driver/esmApp.F90
+A	src/drivers/nuopc/cime_driver/t_driver_timers_mod.F90
+A	src/drivers/nuopc/cime_driver/util.F90
+A	src/drivers/nuopc/cime_flds/esmDict.F90
+A	src/drivers/nuopc/cime_flds/esmFlds.F90
+A	src/drivers/nuopc/cime_flds/glc_elevclass_mod.F90
+A	src/drivers/nuopc/cime_flds/seq_drydep_mod.F90
+A	src/drivers/nuopc/cime_flds/shr_carma_mod.F90
+A	src/drivers/nuopc/cime_flds/shr_fire_emis_mod.F90
+A	src/drivers/nuopc/cime_flds/shr_flds_mod.F90
+A	src/drivers/nuopc/cime_flds/shr_megan_mod.F90
+A	src/drivers/nuopc/cime_flds/shr_ndep_mod.F90
+A	src/drivers/nuopc/mediator/ESMFConvenienceMacros.h
+A	src/drivers/nuopc/mediator/ESMFVersionDefine.h
+A	src/drivers/nuopc/mediator/med.F90
+A	src/drivers/nuopc/mediator/med_connectors_mod.F90
+A	src/drivers/nuopc/mediator/med_fraction_mod.F90
+A	src/drivers/nuopc/mediator/med_infodata_mod.F90
+A	src/drivers/nuopc/mediator/med_internalstate_mod.F90
+A	src/drivers/nuopc/mediator/med_io_mod.F90
+A	src/drivers/nuopc/mediator/med_map_mod.F90
+A	src/drivers/nuopc/mediator/med_merge_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_aofluxes_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_history_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_ocnalb_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_atm_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_glc_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_ice_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_lnd_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_ocn_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_rof_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_prep_wav_mod.F90
+A	src/drivers/nuopc/mediator/med_phases_restart_mod.F90
+A	src/drivers/nuopc/shr/CMakeLists.txt
+A	src/drivers/nuopc/shr/med_constants_mod.F90
+A	src/drivers/nuopc/shr/seq_comm_mct.F90
+A	src/drivers/nuopc/shr/seq_timemgr_mod.F90
+A	src/drivers/nuopc/shr/shr_expr_parser_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_fldList_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_grid_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_methods_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_scalars_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_time_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_utils_mod.F90
+M	src/externals/pio1/pio/piodarray.F90.in
+M	src/externals/pio2/cmake/FindNetCDF.cmake
+M	src/share/streams/shr_dmodel_mod.F90
+M	src/share/streams/shr_stream_mod.F90
+M	src/share/util/mct_mod.F90
+M	src/share/util/shr_file_mod.F90
+M	src/share/util/shr_flds_mod.F90
+M	src/share/util/shr_frz_mod.F90.in
+M	src/share/util/shr_taskmap_mod.F90
+M	tools/statistical_ensemble_test/README
+M	tools/statistical_ensemble_test/ensemble.py
+D	tools/statistical_ensemble_test/ensemble.sh
+M	tools/statistical_ensemble_test/single_run.py
+D	tools/statistical_ensemble_test/single_run.sh
+
+Originator: Chris Fischer
+Date: 11-5-2018
+Tag: cime_cesm2_1_rel_03
+Answer Changes: None
+Tests: code_checker, stand-alone tests, scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Add Total Time parsing for timeseries and xconform to archive_metadata
+    - Fine tuning for CMIP6 cases in archive_metadata.
+    - CESM-CECT update.
+    - Python3 compatibility update for archive_metadata.
+    - Remove reference to deleted testmods directories.
+    - Compute tasks_per_node via floor division.
+    - Response to review comments of pr 2844 and remove user-grid option.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+c515c37 Merge pull request #2900 from bertinia/maint-5.6_archive_metadata
+47f3970 Merge pull request #2884 from bertinia/maint-5.6_archive_metadata
+3ad6a6e Merge pull request #2866 from jedwards4b/set_update
+a2b6885 Merge pull request #2865 from bertinia/maint-5.6_archive_metadata
+b56664c Merge pull request #2862 from billsacks/doc_testmods
+ad361d2 Merge pull request #2860 from jedwards4b/py3fix
+7e82e9b Merge pull request #2853 from jedwards4b/cleanuppr
+
+
+Modified files: git diff --name-status [previous_tag]
+M       doc/source/users_guide/testing.rst
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       tools/statistical_ensemble_test/README
+M       tools/statistical_ensemble_test/ensemble.py
+D       tools/statistical_ensemble_test/ensemble.sh
+M       tools/statistical_ensemble_test/single_run.py
+D       tools/statistical_ensemble_test/single_run.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 10-12-2018
+Tag: cime_cesm2_1_rel_02
+Answer Changes: None
+Tests: Z_FullSystemTest, scripts_regression_tests, hand tests
+Dependencies:
+
+Brief Summary:
+    - Add a default value of idmap_ignore for certain mapping files.
+    - Improve clean function.
+    - Add ability for testfile to contain comments.
+    - Clean and alphabetize (by MACH name) the config/cesm/machines/*.xml files.
+    - Improve case clone functionality.
+    - Improve error message for issues in user_nl_* namelist files.
+    - Write cpl.hr2x files at ENDOFRUN when forecast is < 24 hours.
+    - Backporting PR #2833(Propagate logging settings to submitted jobs) to maint-5.6 branch.
+    - Remove overzelous debug code.
+    - Change default for flux_convergence for all but 1 degree case.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+fd439ba Merge pull request #2845 from jedwards4b/improve_idmap_test
+be6c214 Merge pull request #2844 from jedwards4b/run_tests_clean
+c2cab2f Merge pull request #2838 from jedwards4b/testfile_comments
+d68fa9c Merge pull request #2849 from jedwards4b/cleanup_xml
+cb81444 Merge pull request #2843 from jedwards4b/clone_modified_Tools
+f3f5f69 Merge pull request #2840 from jedwards4b/user_nl_error_msg
+61132ee Merge pull request #2832 from kdraeder/hr2x_at_endofrun
+d3457ec Merge pull request #2842 from jedwards4b/propagate_logging
+ad9c0f5 Merge pull request #2839 from jedwards4b/remove_debug_code
+6a7d374 Merge pull request #2837 from jedwards4b/tuning1.9
+
+
+Modified files: git diff --name-status [previous_tag]
+M       .travis.yml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/create_test
+M       scripts/fortran_unit_testing/run_tests.py
+M       scripts/lib/CIME/XML/batch.py
+M       scripts/lib/CIME/XML/compilers.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/XML/namelist_definition.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_clone.py
+M       scripts/lib/CIME/nmlgen.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/CMake/FindpFUnit.cmake
+M       src/drivers/mct/cime_config/buildnml
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/share/streams/shr_stream_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 10-8-2018
+Tag: cime_cesm2_1_rel_01
+Answer Changes: None
+Tests: scripts_regression_test
+Dependencies:
+
+Brief Summary:
+    - Update presaero and CO2 datasets for datm7 to new CMIP6 version.
+    - Better format for seq_flds_YYY_{fluxes,states} log messages.
+    - Attach the instance number to 'cpl' in cpl history file names.
+    - Fix inputdata issue for multi_instance cases.
+
+
+User interface changes:
+    - Added clim_2010 option for DATM_PRESAERO
+      Added 20tr.latbnd option for DATM_CO2_TSERIES
+      GSWP3v1 and CRUNCEPv7 forcing sets appropriate years for compsets starting with 2010
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+88d9297 Merge pull request #2828 from ekluzek/newpresaero
+6568ded Merge pull request #2824 from kdraeder/kdr_seq_flds_log_msgs
+fcf60c8 Merge pull request #2782 from kdraeder/kdr_fix_cpl_hist_names
+6511798 Merge pull request #2823 from jedwards4b/multi_inst_check_input
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/nmlgen.py
+M       src/components/data_comps/datm/cime_config/buildnml
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/desp/cime_config/buildnml
+M       src/components/data_comps/dice/cime_config/buildnml
+M       src/components/data_comps/dlnd/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/drof/cime_config/buildnml
+M       src/components/data_comps/dwav/cime_config/buildnml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/seq_hist_mod.F90
+M       src/drivers/mct/shr/seq_flds_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 10-2-2018
+Tag: cime_cesm2_0_rel_06
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Archive_metadata updates for CMIP6 experiments.
+    - OS is not generic env var.
+    - New machines at ETH and CSCS.
+    - Update ESMF library on cheyenne.
+    - Fix documentation for histaux_r2x namelist variable.
+    - Dont allow zero ntasks nthrds.
+    - Add lapack and blas libraries to pgi compile on cheyenne.
+    - Updates for compatibility with XML to html tools.
+    - Remove additional rad->deg conversion to radians when creating ocean
+      domain files.
+    - ESMF logging fix.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+12e1c4d41 (HEAD -> maint-5.6, origin/maint-5.6) Merge pull request #2815 from bertinia/maint-5.6_archive_metadata
+767511a79 OS is not generic env var
+bec49f0c2 Merge pull request #2807 from beyerle/euler_daint
+9e74b8ab3 Merge pull request #2806 from ESMCI/fischer/ESMF_710r
+0f20ab46e Merge pull request #2774 from billsacks/fix_histaux_r2x_docs
+1c10e58e8 Merge pull request #2768 from jedwards4b/dont_allow_zero_ntasks_nthrds
+6a1069ce3 Merge pull request #2753 from jedwards4b/pgi_lapack
+5a0a56721 Merge pull request #2742 from bertinia/maint-5.6-component-return-values
+cbf8f2216 Merge pull request #2736 from jtruesdal/domainfix
+2e34a0305 Merge pull request #2733 from gold2718/esmf_log_fix
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/compsets.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/utils.py
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/cime_driver.F90
+M       src/drivers/mct/shr/seq_comm_mct.F90
+M       src/drivers/mct/shr/seq_infodata_mod.F90
+M       src/share/esmf_wrf_timemgr/ESMF_Stubs.F90
+M       tools/mapping/gen_domain_files/src/gen_domain.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 7-24-2018
+Tag: cime_cesm2_0_rel_05
+Date: 8-30-2018
+Tag: cime5.7.3
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Fix pruning of test_hists with refcase in their name.
+    - Do not report BFAIL for a test that is missing a file.
+    - Fix use of test_utils.
+    - Rewrite array code as loops to appease NAG.
+    - Make a new grid to ensure ADWAV works with f19_f19.
+    - Add options to cs.status to allow just summarizing failures.
+    - Fix DAE test for scripts_regression_tests.
+
+User interface changes:
+    - Adds some optional arguments to cs.status, but no other changes.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+33b347b Merge pull request #2794 from billsacks/fix_eri
+442c6a6 Merge pull request #2789 from billsacks/no_bfail_if_no_original
+bc8166b Merge pull request #2785 from billsacks/fix_create_test
+04075df Merge pull request #2784 from gold2718/fix_mct_mod
+1a2724e Merge pull request #2780 from ESMCI/jgfouca/fix_e3sm_adwav_test
+4ec710a Merge pull request #2775 from billsacks/cs_status_fails_only
+9b09698 Merge pull request #2777 from gold2718/fix_dae
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/e3sm/config_grids.xml
+D       scripts/Tools/cimeteststatus
+M       scripts/Tools/cs.status
+M       scripts/create_test
+M       scripts/data_assimilation/da_no_data_mod.sh
+M       scripts/lib/CIME/SystemTests/dae.py
+A       scripts/lib/CIME/cs_status.py
+M       scripts/lib/CIME/cs_status_creator.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/test_status.py
+A       scripts/lib/CIME/tests/test_cs_status.py
+M       scripts/lib/cs.status.template
+M       scripts/lib/get_tests.py
+A       scripts/lib/six_additions.py
+M       src/share/util/mct_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 8-23-2018
+Tag: cime5.7.2
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+   - Add a comment to special interfaces.
+   - Merge maint-5.6 branch.
+   - Update DWAV model to be compatible with the new post-data-assimilation functionality.
+   - Propagate --project value to CHARGE_ACCOUNT.
+   - Re-implementation of pause/resume with a few features.
+   - Allow TestStatus file to be copied into baselines.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+c4f0206 add a comment to special interfaces
+b4bb592 Merge branch 'mymaint-5.6'
+aa3c8db Merge pull request #2765 from gold2718/fix_dwav
+b1bc5d6 Merge pull request #2763 from ESMCI/sarich/fix-charge-account
+ca3ac20 Merge pull request #2751 from gold2718/new_resume_method
+2f57f3e Merge pull request #2761 from ESMCI/jgfouca/generate_test_status
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/data_assimilation/da_no_data_mod.sh
+M       scripts/lib/CIME/Servers/wget.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/component.py
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/XML/machines.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/hist_utils.py
+M       scripts/lib/CIME/test_scheduler.py
+M       src/components/data_comps/desp/desp_comp_mod.F90
+M       src/components/data_comps/desp/mct/esp_comp_mct.F90
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/dwav/mct/wav_comp_mct.F90
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/cime_driver.F90
+M       src/drivers/mct/main/component_mod.F90
+M       src/drivers/mct/main/component_type_mod.F90
+M       src/drivers/mct/main/seq_rest_mod.F90
+M       src/drivers/mct/shr/CMakeLists.txt
+M       src/drivers/mct/shr/seq_cdata_mod.F90
+M       src/drivers/mct/shr/seq_comm_mct.F90
+M       src/drivers/mct/shr/seq_infodata_mod.F90
+A       src/drivers/mct/shr/seq_pauseresume_mod.F90
+M       src/share/esmf_wrf_timemgr/ESMF_Stubs.F90
+M       tools/mapping/gen_domain_files/src/gen_domain.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 8-20-2018
+Tag: cime5.7.1
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - DAE test improve.
+    - Extract code for creating a test suite-specific cs.status script.
+    - Disable problematic task-node output by default.
+    - Add BFAIL in more contexts when doing baseline comparisons.
+    - Do a better job of handling exceptions in sub-phases of run.
+    - Merge acme split 2018-08-08.
+    - Use information from env_archive.xml to determine history files for baselines and compares.
+    - For inputdata servers make it so key members are always defined.
+    - Add exception for archive_metadata.
+    - Fix merge issue
+    - Merge maint-5.6 to master
+    - Need to specify compiler to mpilibs.
+    - Use RawConfigParser instead of ConfigParser.
+    - Fix pylint error.
+    - Improve compiler not support msg.
+    - Couple minor fixes to e3sm cime mgmt tools.
+    - Turn off auto conflict resolution by default for e3sm cime mgmt tools.
+    - Rework machine overrides in config_compilers.
+    - Merge acme split 2018-07-11.
+    - Merge acme split 2018-07-06.
+    - More fixes and tests for V2 compiler macro system.
+    - Automatically handle easy conflicts in e3sm cime management.
+    - Add return_values to machines.py for XML to HTML machine script.
+    - Needed a function to get all compset longnames from config_compsets.xml.
+    - Fix for passing run arguments in LSF.
+    - Use ConfigParser rather than SafeConfigParser.
+    - Merge acme split 2018-06-25.
+
+User interface changes:
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+84d14aeac Merge pull request #2759 from gold2718/dae_test_improve
+f1349f993 Merge pull request #2755 from billsacks/custom_cs_status
+86c25a010 Merge pull request #2750 from ESMCI/jgfouca/fix_fortran_unit_tests
+9d352467d Merge pull request #2744 from ESMCI/jgfouca/more_bfails
+955ecba43 Merge pull request #2745 from ESMCI/jgfouca/fix_exc_handling_systest
+07d476de1 (tag: to-acme-2018-08-09) Merge pull request #2743 from ESMCI/jgfouca/branch-for-acme-split-2018-08-08
+4723dd25f Merge pull request #2728 from jedwards4b/hist_utils_use_archive_xml
+4da37d863 Merge pull request #2740 from ESMCI/jgfouca/fixes_for_servers
+dfbbe0827 add exception for archive_metadata :-(
+4f41034b0 fix merge issue
+194640859 merge maint-5.6 to master
+b0dc6ee0f Merge pull request #2723 from jedwards4b/multi_mpilibs_fix
+9fd318849 Merge pull request #2722 from ESMCI/mfdeakin-sandia/submit/ConfigParser
+ea7d206fe Merge pull request #2721 from ESMCI/jgfouca/fix_py3_pylint_errs
+23f27bafa Merge pull request #2720 from ESMCI/jgfouca/improve_msg
+1aa9cbf6e Couple minor fixes to e3sm cime mgmt tools
+5885138c2 (tag: to-acme-2018-07-12) Merge pull request #2712 from ESMCI/jgfouca/turn_off_autoconf_by_de
+869115d64 Merge pull request #2710 from ESMCI/quantheory/redo_machine_specific_compilers
+df89bcec5 Merge pull request #2711 from ESMCI/jgfouca/branch-for-acme-split-2018-07-11
+d52719d86 (tag: to-acme-2018-07-06) Merge pull request #2704 from ESMCI/jgfouca/branch-for-acme-split-2018-07-06
+516831614 Merge pull request #2703 from ESMCI/jgfouca/compilers_fix
+290b78033 Merge pull request #2696 from ESMCI/jgfouca/e3sm_mgmt_autohandle_ez_confs
+25630d675 (tag: to-acme-2018-06-28) Merge pull request #2694 from bertinia/maint-5.6-machines
+1f4215d1f Merge pull request #2691 from jedwards4b/compsets
+fc534795f Merge pull request #2692 from ESMCI/mfdeakin-sandia/lsf-fix
+b76de49d5 Merge pull request #2680 from ESMCI/mfdeakin-sandia/case_submit/config_no_interpolate
+4948d663b Merge pull request #2689 from ESMCI/jgfouca/branch-for-acme-split-2018-06-25
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_tests.xml
+M	config/e3sm/allactive/config_compsets.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_files.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/config_pio.xml
+A	config/e3sm/machines/syslog.summit
+M	config/e3sm/machines/template.st_archive
+M	config/e3sm/testmods_dirs/allactive/mach/pet/shell_commands
+M	config/e3sm/testmods_dirs/allactive/v1cmip6/shell_commands
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_compilers_v2.xsd
+M	config/xml_schemas/config_machines.xsd
+M	doc/source/users_guide/create-a-case.rst
+M	scripts/Tools/Makefile
+A	scripts/Tools/archive_metadata
+M	scripts/Tools/case.submit
+M	scripts/Tools/e3sm_cime_merge
+M	scripts/Tools/e3sm_cime_split
+M	scripts/Tools/jenkins_generic_job
+M	scripts/Tools/preview_run
+M	scripts/Tools/testreporter.py
+M	scripts/Tools/wait_for_tests
+M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/data_assimilation/da_no_data_mod.sh
+M	scripts/lib/CIME/BuildTools/possiblevalues.py
+M	scripts/lib/CIME/BuildTools/valuesetting.py
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/svn.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/rep.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/compsets.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/XML/pio.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/compare_test_results.py
+A	scripts/lib/CIME/cs_status_creator.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/tests/SystemTests/test_utils/test_user_nl_utils.py
+M	scripts/lib/CIME/tests/test_case_fake.py
+M	scripts/lib/CIME/tests/test_utils.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/lib/get_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps/dwav/mct/wav_comp_mct.F90
+M	src/drivers/mct/cime_config/config_archive.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_diag_mct.F90
+M	src/drivers/mct/main/seq_map_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/share/util/mct_mod.F90
+M	src/share/util/shr_const_mod.F90
+M	src/share/util/shr_reprosum_mod.F90
+A	src/share/util/shr_taskmap_mod.F90
+======================================================================
+
+======================================================================
+
+Originator:Chris Fischer
+Date: 6-25-2018
+Tag: cime5.7.0
+Answer Changes: None
+Tests: scripts_regression_tests
+       xmllint of env_mach_specific.xml
+Dependencies:
+
+Brief Summary:
+    - Merge in changes from maint-5.6(CESM release) branch.
+    - Fix issue with e3sm mali file archiving.
+    - Config compiler parser fix.
+    - XSD definitions did not match implementation.
+    - config_compilers.xml updates from e3sm.
+    - Fix minor issue with recent non-local PR.
+    - Allow users to go up through the setup phase on non-local machines.
+    - e3sm st_archive fix for ESP.
+    - Import fixes and updates from e3sm.
+    - Update e3sm to compilers v2.
+    - Maint 5.6 merge to master.
+    - Add the allow_error flag to schema.
+    - Fix weird whitespace.
+    - Improve robustness of compare-two tests.
+    - Fix find_circular_dependency.py.
+    - Maint 5.6 merge to master.
+    - Jgfouca/branch for acme split 2018 05 18.
+    - Add commas to output using --value.
+    - Multisubmit tests were not resubmitting.
+    - New script to add additional metadata for stat ensemble test.
+    - Fix formatting issue.
+    - Update iyear for 2000 runs.
+    - Merge branch 'master' of github.com:ESMCI/cime.
+    - Add grid neede for cime standalone testing.
+    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines.
+
+User interface changes:
+    - New --non-local flag for create_test/create_newcase.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+6ceaf73 Merge pull request #2690 from ESMCI/maint-5.6
+aeaac31 Merge pull request #2683 from jedwards4b/e3sm_st_archive_fix
+b78593b Merge pull request #2671 from jedwards4b/config_compiler_test
+58a5e43 Merge pull request #2670 from ESMCI/jgfouca/fix_directive_selection
+95fe393 config_compilers.xml updates from e3sm
+4888867 Fix minor issue with recent non-local PR
+43a6812 Merge pull request #2665 from ESMCI/jgfouca/allow_non_local_machine_setup
+8a2f9d5 Merge pull request #2663 from jedwards4b/e3sm_st_archive
+22ab62b Merge pull request #2661 from ESMCI/jgfouca/fix_e3sm_compilers
+18f23fc Merge pull request #2655 from ESMCI/jgfouca/update_e3sm_to_compilersv2
+c1eff51 Merge pull request #2657 from ESMCI/maint-5.6
+6b01d3b Merge pull request #2654 from jedwards4b/validate_allow_error
+8e4054b Fix weird whitespace
+ed9d13b Merge pull request #2635 from ESMCI/jgfouca/preemptively_add_compare_pend
+3d65363 Merge pull request #2630 from gold2718/fix_circular
+5dd50b1 Merge pull request #2627 from ESMCI/maint-5.6
+6933518 Merge pull request #2613 from ESMCI/jgfouca/branch-for-acme-split-2018-05-18
+2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
+f1d501f Merge pull request #2600 from jedwards4b/test_issues
+5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
+8ce38a4 fix formatting issue
+6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
+c04da3c Merge branch 'master' of github.com:ESMCI/cime
+166a40c these grids are needed for cime standalone testing
+7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
+
 
 Modified files: git diff --name-status [previous_tag]
 M	.gitignore
+M	config/cesm/config_archive.xml
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
 M	config/cesm/machines/config_machines.xml
 M	config/cesm/machines/template.case.run
 M	config/cesm/machines/template.case.test
 M	config/cesm/machines/template.st_archive
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/template.st_archive
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/config_machines.xsd
+M	config/xml_schemas/testlist.xsd
 M	doc/Makefile
 M	doc/README
 D	doc/source/README
 M	doc/source/conf.py
 M	doc/source/users_guide/building-a-case.rst
 A	doc/source/users_guide/cime-change-namelist.rst
+A	doc/source/users_guide/cime-dir.rst
 M	doc/source/users_guide/cloning-a-case.rst
 M	doc/source/users_guide/compsets.rst
 M	doc/source/users_guide/create-a-case.rst
@@ -62,85 +1451,48 @@ D	doc/source/users_guide/use_cases/use-cases.rst
 A	doc/source/users_guide/workflows.rst
 M	doc/tools_autodoc.cfg
 M	doc/tools_autodoc.py
+M	scripts/Tools/Makefile
 M	scripts/Tools/xmlquery
-D	scripts/manage_pes
-M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer 
-Date: 5-17-2018
-Tag: cime_cesm2_0_rel_02
-Answer Changes: Round Off for Cheyenne gnu
-Tests: scripts_regression_tests, prealpha gnu tests on cheyenne
-Dependencies:
-
-Brief Summary:
-    - Update Cheyenne gnu compiler to 7.3.0
-
-User interface changes: 
-
-PR summary: git log --oneline --first-parent [previous_tag]..master 
-    Merge pull request #2611 from ESMCI/fischer/gnu7
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/machines/config_compilers.xml
-M       config/cesm/machines/config_machines.xml
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer 
-Date: 5-17-2018
-Tag: cime_cesm2_0_rel_01
-Answer Changes: None
-Tests: scripts_regression_tests
-Dependencies:
-
-Brief Summary:
-    - Move cam section out of config archive.
-    - Add commas to output using --value.
-    - Fix multisubmit tests were not resubmitting.
-    - A new script to add additional metadata for stat ensemble test.
-    - Fix formatting issue.
-    - Update iyear for 2000 runs.
-    - Merge branch 'master' of github.com:ESMCI/cime
-    - These grids are needed for cime standalone testing.
-    - Updated the wrappers for the ESMF mapping tools to work on NCAR machines. 
-
-User interface changes: 
-
-PR summary: git log --oneline --first-parent [previous_tag]..master 
-950cda0 Merge pull request #2608 from jedwards4b/config_archive_dist
-2e997e0 Merge pull request #2607 from jedwards4b/xmlquery_multivalue
-f1d501f Merge pull request #2600 from jedwards4b/test_issues
-5c256ec Merge pull request #2582 from jedwards4b/stattest_add_metadata
-8ce38a4 fix formatting issue
-6c53cfc Merge pull request #2594 from jedwards4b/orb_iyear_2000
-c04da3c Merge branch 'master' of github.com:ESMCI/cime
-166a40c these grids are needed for cime standalone testing
-7cef855 Merge pull request #2589 from mnlevy1981/mlevy/mapping_on_geyser
-
-Modified files: git diff --name-status [previous_tag]
-M	config/cesm/config_archive.xml
-M	config/cesm/config_grids.xml
-M	config/cesm/machines/config_machines.xml
-M	config/cesm/machines/template.case.test
-M	config/cesm/machines/template.st_archive
-M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/BuildTools/possiblevalues.py
+M	scripts/lib/CIME/Servers/gftp.py
 M	scripts/lib/CIME/SystemTests/pet.py
 M	scripts/lib/CIME/SystemTests/system_tests_common.py
 M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/XML/compilerblock.py
+M	scripts/lib/CIME/XML/compilers.py
 M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
 M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_setup.py
 M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/compare_namelists.py
 M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_status.py
+M	scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+D	scripts/manage_pes
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
 M	src/components/data_comps/datm/datm_comp_mod.F90
 M	src/components/data_comps/datm/mct/atm_comp_mct.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
 M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/externals/pio1/pio/box_rearrange.F90.in
+M	src/externals/pio1/pio/pio_support.F90
+M	src/externals/pio1/pio/piolib_mod.F90
 M	tools/mapping/check_maps/README
 M	tools/mapping/check_maps/check_map.sh
 M	tools/mapping/check_maps/src/ESMF_RegridWeightGenCheck.F90
@@ -162,14 +1514,140 @@ M	tools/mapping/map_field/src/Makefile
 M	tools/statistical_ensemble_test/README
 A	tools/statistical_ensemble_test/addmetadata.sh
 A	tools/statistical_ensemble_test/ensemble.py
+A	tools/statistical_ensemble_test/pyCECT/.gitignore
+A	tools/statistical_ensemble_test/pyCECT/EET.py
+M	tools/statistical_ensemble_test/pyCECT/LICENSE.txt
+M	tools/statistical_ensemble_test/pyCECT/README_pyCECT.rst
+M	tools/statistical_ensemble_test/pyCECT/README_pyEnsSum.rst
+M	tools/statistical_ensemble_test/pyCECT/ens_excluded_varlist.json
+A	tools/statistical_ensemble_test/pyCECT/ens_sub.pbs
+M	tools/statistical_ensemble_test/pyCECT/ens_sub.sh
+A	tools/statistical_ensemble_test/pyCECT/exclude_empty.json
+A	tools/statistical_ensemble_test/pyCECT/included_varlist.json
+M	tools/statistical_ensemble_test/pyCECT/pyCECT.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsLib.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSum.py
+M	tools/statistical_ensemble_test/pyCECT/pyEnsSumPop.py
 A	tools/statistical_ensemble_test/single_run.py
+M	tools/utils/find_circular_dependency.py
 
+======================================================================
+=======
+Originator: Chris Fischer
+Date: 7-13-2018
+Tag: cime5.6.10
+Answer Changes: None
+Tests: hand test
+       code_checker on create_newcase; manually checked create_newcase --help
+       ERS_Ln9.f19_g17.X.hobart_intel , ERS_Ln9.f19_g17.X.hobart_gnu,
+       ERS_Ln9.f19_g17.X.hobart_nag
+Dependencies:
+
+Brief Summary:
+   - Add scripts/Tools/archive_metadata to CIME for use in CESM cases only.
+   - Change DIN_LOC_ROOT_CLMFORC for new glade setup on cheyenne.
+   - Make docs more consistent.
+   - cprnc compiler updates for hobart.
+
+User interface changes:
+    - archive_metadata --help stand_alone script.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+9f4377c Merge pull request #2715 from bertinia/maint-5.6_archive_metadata
+ef2f2e4 Merge pull request #2714 from ekluzek/newgladedinlocclmfrc
+154b475 Merge pull request #2693 from billsacks/make_docs_more_consistent
+631869c Merge pull request #2709 from ESMCI/fischer/hobart_cprnc
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       doc/source/users_guide/create-a-case.rst
+A       scripts/Tools/archive_metadata
+M       scripts/create_newcase
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/utils.py
 
 ======================================================================
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fiscehr
+Date: 7-5-2018
+Tag: cime5.6.9
+Answer Changes: None
+Tests: prealpha on edison, cori-haswell, cori-knl
+       scripts_regression_tests, ect-uf on bluewaters
+Dependencies:
+
+Brief Summary:
+    - Maint-5.6 nersc update.
+    - Maint-5.6 hobart update.
+    - Fix issue with rebuilding csm_share.
+    - Bluewaters update.
+    - Edit and cleanup parts of CCS users guide.
+    - Change -v to --env for theta.
+    - Fix unittest.
+    - Tryagain with tput code.
+    - ww3 data staging fix.
+    - Fix refcase logiv.
+    - Add and clarify pieces that describe adding a test to the prebeta testing.
+    - Archive test refinement.
+
+User interface changes:
+    -  --test becomes --test-all and --test-case is added
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+3ee8b07 Merge pull request #2697 from jedwards4b/maint-5.6-nersc-update
+b76c449 Merge pull request #2701 from jedwards4b/maint-5.6-hobart-update
+34677a4 Merge pull request #2684 from jedwards4b/improve_shared_build_performance
+57c8924 Merge pull request #2675 from jedwards4b/bluewaters_update
+3a5281d Merge pull request #2662 from ESMCI/rljacob/doc/ug1-read
+f8cc2a7 Merge pull request #2666 from jedwards4b/theta_fix
+2e9973f fix unittest
+49f59b6 tryagain with tput code
+0819198 Merge branch 'ww3_data_staging' into maint-5.6
+7478f2f Merge branch 'fix_refcase_logic' into maint-5.6
+cd64838 Merge pull request #2647 from ESMCI/fischer/augment_testing_doc
+3016427 Merge pull request #2656 from jedwards4b/archive_test_refinement
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       config/cesm/machines/template.st_archive
+M       config/e3sm/machines/template.st_archive
+M       config/xml_schemas/config_machines.xsd
+M       config/xml_schemas/testlist.xsd
+M       doc/source/users_guide/building-a-case.rst
+M       doc/source/users_guide/cime-change-namelist.rst
+A       doc/source/users_guide/cime-dir.rst
+M       doc/source/users_guide/compsets.rst
+M       doc/source/users_guide/create-a-case.rst
+M       doc/source/users_guide/index.rst
+M       doc/source/users_guide/introduction-and-overview.rst
+M       doc/source/users_guide/pes-threads.rst
+M       doc/source/users_guide/running-a-case.rst
+M       doc/source/users_guide/setting-up-a-case.rst
+M       doc/source/users_guide/testing.rst
+M       scripts/Tools/Makefile
+M       scripts/Tools/preview_run
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/case/case_submit.py
+M       scripts/lib/CIME/case/check_input_data.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/test_status.py
+M       scripts/lib/CIME/tests/SystemTests/test_system_tests_compare_two.py
+M       scripts/tests/scripts_regression_tests.py
+M       src/build_scripts/buildlib.csm_share
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
 Date: 5-14-2018
 Tag: cime5.6.7
 Answer Changes: None
@@ -186,9 +1664,9 @@ Brief Summary:
     - Adds T85_T85_mg17 grid.
     - Correct spelling of protocol.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 5a54b88 Merge pull request #2588 from jedwards4b/xmlquery_fix
 0b07cb5 Merge pull request #2591 from jedwards4b/configure_mpilib
 5f4c8e4 Merge pull request #2586 from gold2718/pelayout_fixes
@@ -243,19 +1721,19 @@ M	tools/configure
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 5-02-2018
 Tag: cime5.6.3
 Answer Changes: None
-Tests: 
+Tests:
 Dependencies:
 
 Brief Summary:
     - Fix config write of logical.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 974839b fix config write of logical
 
 Modified files: git diff --name-status [previous_tag]
@@ -266,21 +1744,21 @@ M       scripts/Tools/case.submit
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 5-01-2018
 Tag: cime5.6.2
 Answer Changes: None
 Tests: load_balancing_test.py
-       hand tested create_newcase --case foo --compset QSC6 --res f19_f19_mg17 
+       hand tested create_newcase --case foo --compset QSC6 --res f19_f19_mg17
 Dependencies:
 
 Brief Summary:
     - Refine distinction of E vs Q compset.
     - Update load balance tool.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 b2a19cd Merge pull request #2525 from jedwards4b/better_distinguish_compset_Q_from_E
 28b8634 Merge pull request #2520 from ESMCI/sarich/update-loadbalancingtool
 
@@ -319,12 +1797,12 @@ Brief Summary:
     - wait_for_tests needs to upload case2 logs if there are some
     - Another fix for testreporter.py.
 
-User interface changes: 
+User interface changes:
     - manage_testlist was removed.
     - Changes to matching behavior in env_mach_specific.
     - New option to wait_for_tests.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 5af0e02 Merge pull request #2516 from jedwards4b/refine_retry
 5e8a173 Merge pull request #2518 from jedwards4b/save_submit_options
 1d7a27d need schema description for NODE_FAIL_REGEX
@@ -388,11 +1866,11 @@ M	src/share/util/shr_flux_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-19-2018
 Tag: cime5.6.0
 Answer Changes: None
-Tests: scripts_regression_tests 
+Tests: scripts_regression_tests
 Dependencies:
 
 Brief Summary:
@@ -409,10 +1887,10 @@ Brief Summary:
     - Transition CIME to using a custom util for copying files.
     - Minor fix to help msgs for options for e3sm mgmt tools.
 
-User interface changes: 
+User interface changes:
     - case.st_archive now has a --test option.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 0cd58a7 Merge pull request #2489 from jedwards4b/nodatanoserver
 aeb0f47 Merge pull request #2470 from jedwards4b/st_archive_test
 f1c2759 Improve help message for resubmitting to dash
@@ -477,11 +1955,11 @@ M	src/drivers/mct/cime_config/namelist_definition_drv.xml
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-17-2018
 Tag: cime5.4.0-alpha.30
 Answer Changes: None
-Tests: scripts_regression_tests, code checker 
+Tests: scripts_regression_tests, code checker
 Dependencies:
 
 Brief Summary:
@@ -489,10 +1967,10 @@ Brief Summary:
     - Fix totalpes to properly include threads.
     - Refactor BUILD_THREADED case value.
 
-User interface changes: 
+User interface changes:
     - New FORCE_BUILD_THREADED.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 9af0120 Merge pull request #2477 from ESMCI/fischer/gftp_svn_ftp
 d556876 Merge pull request #2465 from jedwards4b/fix_totalpes
 ed78b14 Merge pull request #2466 from ESMCI/jgfouca/refactor_build_threaded
@@ -518,7 +1996,7 @@ M       src/drivers/mct/cime_config/config_component.xml
 ======================================================================
 
 ======================================================================
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-13-2018
 Tag: cime5.4.0-alpha.29
 Answer Changes: None
@@ -547,9 +2025,9 @@ Brief Summary:
     - Fixes the potential leak reported by address sanitizer in PIO.
     - Reorganize Users Guide part 1 and 2 content.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 057e8a5 fix variable initialization
 4913315 Merge pull request #2468 from ESMCI/mvertens/model_doi_url
 37985f4 Merge pull request #2461 from jedwards4b/remove_logdir
@@ -673,11 +2151,11 @@ M	tools/statistical_ensemble_test/single_run.sh
 ======================================================================
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-06-2018
 Tag: cime5.4.0-alpha.28
 Answer Changes: None
-Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio 
+Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio
        scripts_regression_tests.py
        code_checker
 Dependencies:
@@ -693,10 +2171,10 @@ Brief Summary:
     - Refactor crucial run_sub_or_cmd method.
     - Restore shell batch capability.
 
-User interface changes: 
+User interface changes:
     - New custom script option.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 35fd3d1 py3 fix
 6c6d3b5 Merge pull request #2429 from jedwards4b/eri_fix
 83ef1ba Merge pull request #2426 from jedwards4b/archiver_and_test_fixes
@@ -739,15 +2217,15 @@ Originator: Chris Fischer
 Date: 4-03-2018
 Tag: cime5.4.0-alpha.27
 Answer Changes: None
-Tests: 
+Tests:
 Dependencies:
 
 Brief Summary:
     - Avoid encode error.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 018c8e9 avoid encode error
 
 
@@ -758,7 +2236,7 @@ M       scripts/lib/CIME/test_scheduler.py
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-02-2018
 Tag: cime5.4.0-alpha.26
 Answer Changes: None
@@ -788,7 +2266,7 @@ Brief Summary:
     - Branch for acme split 2018-03-27.
     - Allow case_diff to work on cases that are not tests.
     - Locals method did not work in py3, using getattr instead works in both.
-    - env_mach_specific was coded to always try to combine module operations. 
+    - env_mach_specific was coded to always try to combine module operations.
       Instead, it should only do that for "module" module systems.
     - Rearrange case subdirectory.
     - Remove text 'ccsm' and 'cesm' and replace appropriately.
@@ -807,13 +2285,13 @@ Brief Summary:
     - Support full matching restrictions for batch directives.
     - Ignore files beginning in test_.
     - More updates to e3sm cime mgmt.
-    - Rename and reorg upper level contents. 
+    - Rename and reorg upper level contents.
     - Move example of query_config to introduction.
     - Add switch to list of module actions that cannot be batched.
     - Improve create_test error message.
     - Allow custom batch directive prefixes.
     - Provide infrastructure to allow single column model to run with SE dycore.
-    - Branch for acme split 2018-03-13. 
+    - Branch for acme split 2018-03-13.
     - Add better output to cime mgmt tool.
     - Add stack size modifier to hobart.
     - Add ability to xmlquery derived attributes.
@@ -827,7 +2305,7 @@ Brief Summary:
     - Implement improvements to st_archive regular expressions.
     - Remove the run_e3sm testing scripts from the CIME repo.
 
-User interface changes: 
+User interface changes:
     - env_archive.xml
     - .case.run.sh file generated for E3SM.
     - New selectors allowed for batch directives.
@@ -837,7 +2315,7 @@ User interface changes:
     - Users may run on lawrencium lr3/lr2.
     - In env_archive.xml.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 de9dc73 Merge pull request #2418 from ESMCI/mfdeakin-sandia/rm_run_e3sm_testing
 e9e89bc Fix pylint
 150db63 Merge pull request #2362 from mnlevy1981/cesm/hobart_updates
@@ -1073,7 +2551,7 @@ M	tools/cprnc/Makefile
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 3-06-2018
 Tag: cime5.4.0-alpha.25
 Answer Changes: Climate Changing for non-B 1850 compsets in CESM
@@ -1120,13 +2598,13 @@ Brief Summary:
     - Update components' communicator initialization.
     - Make get_components return None instead of fail.
 
-User interface changes: 
+User interface changes:
     - (cesm only) create_test and query_testlist now have --supported-only flag
-    - New allow_error attribute for module systems. 
+    - New allow_error attribute for module systems.
     - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 c9c5695 Merge pull request #2341 from jedwards4b/mpirun_depends_on_queue
 7dff579 Fix mistake in scripts-regression-tests help dump
 bfb23dd Merge pull request #2339 from jedwards4b/env_batch_cleanup
@@ -1382,11 +2860,11 @@ M	src/drivers/mct/shr/seq_infodata_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-06-2018
 Tag: cime5.4.0-alpha.28
 Answer Changes: None
-Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio 
+Tests: ERI.f09_g17.B1850.cheyenne_intel.allactive-defaultio
        scripts_regression_tests.py
        code_checker
 Dependencies:
@@ -1402,10 +2880,10 @@ Brief Summary:
     - Refactor crucial run_sub_or_cmd method.
     - Restore shell batch capability.
 
-User interface changes: 
+User interface changes:
     - New custom script option.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 35fd3d1 py3 fix
 6c6d3b5 Merge pull request #2429 from jedwards4b/eri_fix
 83ef1ba Merge pull request #2426 from jedwards4b/archiver_and_test_fixes
@@ -1447,15 +2925,15 @@ Originator: Chris Fischer
 Date: 4-03-2018
 Tag: cime5.4.0-alpha.27
 Answer Changes: None
-Tests: 
+Tests:
 Dependencies:
 
 Brief Summary:
     - Avoid encode error.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 018c8e9 avoid encode error
 
 
@@ -1466,7 +2944,7 @@ M       scripts/lib/CIME/test_scheduler.py
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 4-02-2018
 Tag: cime5.4.0-alpha.26
 Answer Changes: None
@@ -1496,7 +2974,7 @@ Brief Summary:
     - Branch for acme split 2018-03-27.
     - Allow case_diff to work on cases that are not tests.
     - Locals method did not work in py3, using getattr instead works in both.
-    - env_mach_specific was coded to always try to combine module operations. 
+    - env_mach_specific was coded to always try to combine module operations.
       Instead, it should only do that for "module" module systems.
     - Rearrange case subdirectory.
     - Remove text 'ccsm' and 'cesm' and replace appropriately.
@@ -1515,13 +2993,13 @@ Brief Summary:
     - Support full matching restrictions for batch directives.
     - Ignore files beginning in test_.
     - More updates to e3sm cime mgmt.
-    - Rename and reorg upper level contents. 
+    - Rename and reorg upper level contents.
     - Move example of query_config to introduction.
     - Add switch to list of module actions that cannot be batched.
     - Improve create_test error message.
     - Allow custom batch directive prefixes.
     - Provide infrastructure to allow single column model to run with SE dycore.
-    - Branch for acme split 2018-03-13. 
+    - Branch for acme split 2018-03-13.
     - Add better output to cime mgmt tool.
     - Add stack size modifier to hobart.
     - Add ability to xmlquery derived attributes.
@@ -1535,7 +3013,7 @@ Brief Summary:
     - Implement improvements to st_archive regular expressions.
     - Remove the run_e3sm testing scripts from the CIME repo.
 
-User interface changes: 
+User interface changes:
     - env_archive.xml
     - .case.run.sh file generated for E3SM.
     - New selectors allowed for batch directives.
@@ -1545,7 +3023,7 @@ User interface changes:
     - Users may run on lawrencium lr3/lr2.
     - In env_archive.xml.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 de9dc73 Merge pull request #2418 from ESMCI/mfdeakin-sandia/rm_run_e3sm_testing
 e9e89bc Fix pylint
 150db63 Merge pull request #2362 from mnlevy1981/cesm/hobart_updates
@@ -1781,7 +3259,7 @@ M	tools/cprnc/Makefile
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 3-06-2018
 Tag: cime5.4.0-alpha.25
 Answer Changes: Climate Changing for non-B 1850 compsets in CESM
@@ -1828,13 +3306,13 @@ Brief Summary:
     - Update components' communicator initialization.
     - Make get_components return None instead of fail.
 
-User interface changes: 
+User interface changes:
     - (cesm only) create_test and query_testlist now have --supported-only flag
-    - New allow_error attribute for module systems. 
+    - New allow_error attribute for module systems.
     - check_input_data replace --svn-loc with --server and --protocol
     - Some Tools with "acme" in the name now say "e3sm".
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 c9c5695 Merge pull request #2341 from jedwards4b/mpirun_depends_on_queue
 7dff579 Fix mistake in scripts-regression-tests help dump
 bfb23dd Merge pull request #2339 from jedwards4b/env_batch_cleanup
@@ -2090,7 +3568,7 @@ M	src/drivers/mct/shr/seq_infodata_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 2-13-2018
 Tag: cime5.4.0-alpha.24
 Answer Changes: None
@@ -2102,7 +3580,7 @@ Brief Summary:
     - Leverage env command options to assist parsing.
     - Add a test that compares a case created using the compset alias to
       one created using the longname for the same compset.
-    - Disable caching withing the main test_scheduler process. 
+    - Disable caching withing the main test_scheduler process.
     - Upgrade cime_bisect.
     - Another exception for read only in config files.
     - Add pstrid to pes.
@@ -2117,14 +3595,14 @@ Brief Summary:
     - Jgfouca/branch for acme split 2018-01-30.
     - Fix bug in generic env load.
     - Improve python interface to environment modules.
-    
 
-User interface changes: 
+
+User interface changes:
     - cime_bisect changes.
     - New XML variables, PAUSE_ACTIVE_XXX.
     - module_lmod no longer a support module type.
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 b4eae37 Merge pull request #2293 from jedwards4b/query_config_fix
 c20690e Merge pull request #2292 from ESMCI/jgfouca/fix_soft_env_handling
 efcd17f Merge pull request #2288 from jedwards4b/test_compset_vs_alias
@@ -2199,19 +3677,19 @@ M	src/drivers/mct/shr/seq_timemgr_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 01-27-2018
 Tag: cime5.4.0-alpha.23
 Answer Changes: None
-Tests: scripts_regression_tests.py on hobart 
+Tests: scripts_regression_tests.py on hobart
 Dependencies:
 
 Brief Summary:
     - Fix compare of env_batch.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 7b88f00 Merge pull request #2261 from jedwards4b/check_locked_files2
 
 Modified files: git diff --name-status [previous_tag]
@@ -2222,8 +3700,8 @@ M       scripts/lib/CIME/XML/env_batch.py
 
 ======================================================================
 
-Originator: Chris Fischer 
-Date: 01-26-2018 
+Originator: Chris Fischer
+Date: 01-26-2018
 Tag: cime5.4.0-alpha.22
 Answer Changes: None
 Tests: scripts_regression_tests.py
@@ -2232,7 +3710,7 @@ Dependencies:
 Brief Summary:
     - Remove debug print statement
     - Second fix for user compsets.
-    - Rearrange code in case.py so that compset alias and 
+    - Rearrange code in case.py so that compset alias and
       compset longname get the same result.
     - Minor fix to get acme provenance test working again.
     - Fix for LockedFiles.
@@ -2240,9 +3718,9 @@ Brief Summary:
     - Minor fix to get query config test working on melvin.
     - Disable file caching for now.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 2a235e5 remove debug print statement
 d6f6e08 Merge pull request #2257 from jedwards4b/user_compset_fix
 fea933c Merge pull request #2253 from jedwards4b/user_compset_fix
@@ -2291,9 +3769,9 @@ Brief Summary:
     - Merge branch 'master' of github.com:ESMCI/cime.
     - Hot fix for acme xsd error.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 d2850d5 Merge pull request #2247 from ESMCI/jgfouca/turn_off_caching_in_testsched
 29006c6 Fix typo in cime_bisect
 263c909 Merge pull request #2243 from ESMCI/jgfouca/cache_file_reads
@@ -2334,19 +3812,19 @@ M       src/drivers/mct/shr/seq_timemgr_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 01-16-2018
 Tag: cime5.4.0-alpha.20
 Answer Changes: None
-Tests: 
+Tests:
 Dependencies:
 
 Brief Summary:
     - Revert src/share/util/changes in shr_spfn_mod.F90
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 b146127 revert changes in this file (failing pgi test)
 
 Modified files: git diff --name-status [previous_tag]
@@ -2357,7 +3835,7 @@ M       src/share/util/shr_spfn_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer 
+Originator: Chris Fischer
 Date: 01-16-2018
 Tag: cime5.4.0-alpha.19
 Answer Changes: None
@@ -2377,9 +3855,9 @@ Brief Summary:
     - Fix K_TestCimeCase.test_cime_case_prereq for LSF machines.
     - Fix regression test K_TestCimeCase.test_cime_case_test_custom_project.
 
-User interface changes: 
+User interface changes:
 
-PR summary: git log --oneline --first-parent [previous_tag]..master 
+PR summary: git log --oneline --first-parent [previous_tag]..master
 16766d6 Merge pull request #2231 from jedwards4b/CPL_USER_MODS
 0722686 Merge pull request #2233 from ESMCI/fischer/nersc_cori
 45e4895 Merge pull request #2232 from ekluzek/testlistschema

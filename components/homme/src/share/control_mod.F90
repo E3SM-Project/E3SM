@@ -17,8 +17,9 @@ module control_mod
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
 
-! set to .true. to run the theta nonydrostatic model in hydrostatic mode
-  logical, public :: theta_hydrostatic_mode = .false.  
+! flag used by preqx, theta-l and theta-c models
+! should be renamed to "hydrostatic_mode"
+  logical, public :: theta_hydrostatic_mode
 
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
@@ -34,13 +35,17 @@ module control_mod
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
-! vert_remap_q_alg:    0  default value, Zerroukat monotonic splines
+! vert_remap_q_alg:   -1  remap without monotone filter, used for some test cases
+!                      0  default value, Zerroukat monotonic splines
 !                      1  PPM vertical remap with mirroring at the boundaries
 !                         (solid wall bc's, high-order throughout)
 !                      2  PPM vertical remap without mirroring at the boundaries
 !                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
-  integer, public :: vert_remap_q_alg = 0
+ integer, public :: vert_remap_q_alg = 0
 
+! advect theta 0: conservation form 
+!              1: expanded divergence form (less noisy, non-conservative)
+ integer, public :: theta_advect_form = 0
 
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)
@@ -70,8 +75,6 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
   character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
   integer              , public :: tasknum
-  integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
-  character(len=MAX_STRING_LEN) :: remap_type     ! selected remapping option
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
   integer              , public :: runtype 
@@ -138,7 +141,6 @@ module control_mod
 
   ! hyperviscosity parameters used for smoothing topography
   integer, public :: smooth_phis_numcycle = 0   ! 0 = disable
-  integer, public :: smooth_sgh_numcycle = 0   ! 0 = disabled
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?

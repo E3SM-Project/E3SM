@@ -32,37 +32,41 @@ module ColumnType
   private
   !
   type, public :: column_physical_properties_type
-     ! g/l/c/p hierarchy, local g/l/c/p cells only
-     integer , pointer :: landunit             (:)   ! index into landunit level quantities
-     real(r8), pointer :: wtlunit              (:)   ! weight (relative to landunit)
-     integer , pointer :: gridcell             (:)   ! index into gridcell level quantities
-     real(r8), pointer :: wtgcell              (:)   ! weight (relative to gridcell)
-     integer , pointer :: pfti                 (:)   ! beginning pft index for each column
-     integer , pointer :: pftf                 (:)   ! ending pft index for each column
-     integer , pointer :: npfts                (:)   ! number of patches for each column
+     ! indices and weights for higher subgrid levels (landunit, topounit, gridcell)
+     integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
+     real(r8), pointer :: wtgcell      (:) => null() ! weight (relative to gridcell)
+     integer , pointer :: topounit     (:) => null() ! index into topounit level quantities
+     real(r8), pointer :: wttopounit   (:) => null() ! weight (relative to topounit)
+     integer , pointer :: landunit     (:) => null() ! index into landunit level quantities
+     real(r8), pointer :: wtlunit      (:) => null() ! weight (relative to landunit)
+
+     ! Starting and ending indices for subgrid types below the column level
+     integer , pointer :: pfti         (:) => null() ! beginning pft index for each column
+     integer , pointer :: pftf         (:) => null() ! ending pft index for each column
+     integer , pointer :: npfts        (:) => null() ! number of patches for each column
 
      ! topological mapping functionality
-     integer , pointer :: itype                (:)   ! column type
-     logical , pointer :: active               (:)   ! true=>do computations on this column 
+     integer , pointer :: itype        (:) => null() ! column type
+     logical , pointer :: active       (:) => null() ! true=>do computations on this column 
 
      ! topography
-     real(r8), pointer :: glc_topo             (:)   ! surface elevation (m)
-     real(r8), pointer :: micro_sigma          (:)   ! microtopography pdf sigma (m)
-     real(r8), pointer :: n_melt               (:)   ! SCA shape parameter
-     real(r8), pointer :: topo_slope           (:)   ! gridcell topographic slope
-     real(r8), pointer :: topo_std             (:)   ! gridcell elevation standard deviation
-     integer, pointer  :: nlevbed             (:)   ! number of layers to bedrock
-     real(r8), pointer :: zibed                (:)   ! bedrock depth in model (interface level at nlevbed)
+     real(r8), pointer :: glc_topo     (:) => null() ! surface elevation (m)
+     real(r8), pointer :: micro_sigma  (:) => null() ! microtopography pdf sigma (m)
+     real(r8), pointer :: n_melt       (:) => null() ! SCA shape parameter
+     real(r8), pointer :: topo_slope   (:) => null() ! gridcell topographic slope
+     real(r8), pointer :: topo_std     (:) => null() ! gridcell elevation standard deviation
+     integer, pointer  :: nlevbed      (:) => null() ! number of layers to bedrock
+     real(r8), pointer :: zibed        (:) => null() ! bedrock depth in model (interface level at nlevbed)
 
      ! vertical levels
-     integer , pointer :: snl                  (:)   ! number of snow layers
-     real(r8), pointer :: dz                   (:,:) ! layer thickness (m)  (-nlevsno+1:nlevgrnd) 
-     real(r8), pointer :: z                    (:,:) ! layer depth (m) (-nlevsno+1:nlevgrnd) 
-     real(r8), pointer :: zi                   (:,:) ! interface level below a "z" level (m) (-nlevsno+0:nlevgrnd) 
-     real(r8), pointer :: zii                  (:)   ! convective boundary height [m]
-     real(r8), pointer :: dz_lake              (:,:) ! lake layer thickness (m)  (1:nlevlak)
-     real(r8), pointer :: z_lake               (:,:) ! layer depth for lake (m)
-     real(r8), pointer :: lakedepth            (:)   ! variable lake depth (m)                             
+     integer , pointer :: snl          (:)   => null() ! number of snow layers
+     real(r8), pointer :: dz           (:,:) => null() ! layer thickness (m)  (-nlevsno+1:nlevgrnd) 
+     real(r8), pointer :: z            (:,:) => null() ! layer depth (m) (-nlevsno+1:nlevgrnd) 
+     real(r8), pointer :: zi           (:,:) => null() ! interface level below a "z" level (m) (-nlevsno+0:nlevgrnd) 
+     real(r8), pointer :: zii          (:)   => null() ! convective boundary height [m]
+     real(r8), pointer :: dz_lake      (:,:) => null() ! lake layer thickness (m)  (1:nlevlak)
+     real(r8), pointer :: z_lake       (:,:) => null() ! layer depth for lake (m)
+     real(r8), pointer :: lakedepth    (:)   => null() ! variable lake depth (m)                             
 
      ! other column characteristics
      logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
@@ -90,6 +94,8 @@ contains
     ! The following is set in initGridCellsMod
     allocate(this%gridcell    (begc:endc))                     ; this%gridcell    (:)   = ispval
     allocate(this%wtgcell     (begc:endc))                     ; this%wtgcell     (:)   = nan
+    allocate(this%topounit    (begc:endc))                     ; this%topounit    (:)   = ispval
+    allocate(this%wttopounit  (begc:endc))                     ; this%wttopounit  (:)   = nan
     allocate(this%landunit    (begc:endc))                     ; this%landunit    (:)   = ispval
     allocate(this%wtlunit     (begc:endc))                     ; this%wtlunit     (:)   = nan
     allocate(this%pfti        (begc:endc))                     ; this%pfti        (:)   = ispval
@@ -129,6 +135,8 @@ contains
 
     deallocate(this%gridcell   )
     deallocate(this%wtgcell    )
+    deallocate(this%topounit   )
+    deallocate(this%wttopounit )
     deallocate(this%landunit   )
     deallocate(this%wtlunit    )
     deallocate(this%pfti       )

@@ -2304,6 +2304,12 @@ Updraft velocity paramterization option for ice nucleation.
 Default: 1
 </entry>
 
+<entry id="microp_aero_wsubmin" type="real" category="microphysics"
+       group="microp_aero_nl" valid_values="" >
+Minimum subgrid vertical velocity
+Default: 0.2
+</entry>
+
 <entry id="use_hetfrz_classnuc" type="logical" category="microphys"
        group="phys_ctl_nl" valid_values="" >
 Switch to turn on heterogeneous freezing code.
@@ -2538,7 +2544,11 @@ Bottom layer adjustment for setting "launching" level(mx) (to be at maximum mois
 Default: set by build-namelist
 </entry>
 
-
+<entry id="zmconv_tp_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Tpert scale factor in ZM deep convection scheme.
+Default: 0.D0
+</entry>
 
 
 <!-- Cloud sedimentation -->
@@ -2722,11 +2732,17 @@ Default: 'ZM' unless using 'UNICON'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="RK,MG" >
+       group="phys_ctl_nl" valid_values="RK,MG,P3" >
 Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
 (1998); 'MG' for Morrison and Gettelman (2008), Gettelman et al (2010)
-two moment scheme for CAM5.1
+two moment scheme for CAM5.1; P3 for the P3 microphysics scheme, 
+Morrison et al (2015)
 Default: set by build-namelist (depends on value set in configure).
+</entry>
+
+<entry id="p3_lookup_dir" type="char*128" input_pathname="abs" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Directory where P3 initialization files are located.
 </entry>
 
 <entry id="macrop_scheme" type="char*16" category="conv"
@@ -2755,7 +2771,7 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="Hack,UW,CLUBB_SGS,UNICON" >
+       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS,UNICON" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
 'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS'
 for CLUBB_SGS; or UNICON which doesn't distinquish shallow and deep.
@@ -2880,6 +2896,12 @@ Default: .false.
 <entry id="clubb_stabcorrect" type="logical"  category="pblrad"
        group="clubbpbl_diff_nl" valid_values="" >
 CLUBB do explicit diffusion with a stability correction
+Default: .false.
+</entry>
+
+<entry id="clubb_use_sgv" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Enables subgrid features gustiness, tpert, and thv fix
 Default: .false.
 </entry>
 
@@ -3979,7 +4001,7 @@ Default: set by build-namelist.
 </entry>
 
 <entry id="iradae" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Interval between absorptivity/emissivity calculations in time steps (if
 positive) or model hours (if negative).  To avoid having the abs/ems values
 saved on the restart output, make sure that the interval of the abs/ems
@@ -3988,34 +4010,34 @@ Default: -12
 </entry>
 
 <entry id="iradlw" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Interval of long-wave radiation calculation in timesteps (if positive) or
 model hours (if negative).
 Default: -1
 </entry>
 
 <entry id="iradsw" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Interval of short-wave radiation calculation in timesteps (if positive) or
 model hours (if negative).
 Default: -1
 </entry>
 
 <entry id="irad_always" type="integer"  category="radiation"
-       group="cam_inparm" valid_values="">
+       group="radiation_nl" valid_values="">
 Specifies length of time in timesteps (positive) or hours (negative) SW/LW
 radiation will be run for every timestep from the start of an initial run.
 Default: 0
 </entry>
 
 <entry id="spectralflux" type="logical"  category="radiation"
-       group="cam_inparm" valid_values="" >
+       group="radiation_nl" valid_values="" >
 Return fluxes per band in addition to the total fluxes.
 Default: FALSE
 </entry>
 
 <entry id="use_rad_dt_cosz" type="logical"  category="radiation"
-       group="cam_inparm" valid_values="" >
+       group="radiation_nl" valid_values="" >
 If true, then use the radiation timestep for all cosz calculations.
 NOTE: This logical flag is *temporary*. It should be REMOVED after we decide
 to make this functionality default
@@ -4170,6 +4192,16 @@ filepath and name for liquid cloud (gamma distributed) optics data for rrtmg
 Default: none
 </entry>
 
+<!-- RRTMGP gaseous absorption coefficients -->
+<entry id="rrtmgp_coefficients_file_lw" type="char*256" input_pathname="abs" 
+       category="radiation" group="radiation_nl" valid_values="">
+File path for RRTMGP longwave gaseous absorption coefficients file.
+</entry>
+
+<entry id="rrtmgp_coefficients_file_sw" type="char*256" input_pathname="abs"
+       category="radiation" group="radiation_nl" valid_values="">
+File path for RRTMGP shortwave gaseous absorption coefficients file.
+</entry>
 
 <!-- Rayleigh Friction Parameterization -->
 
@@ -5760,7 +5792,7 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="se_ftype" type="integer" category="se"
-       group="ctl_nl" valid_values="0,1,2" >
+       group="ctl_nl" valid_values="0,1,2,3,4" >
 CAM physics forcing option:
 0: tendencies
 1: adjustments

@@ -57,7 +57,10 @@ def _main_func(description):
     else:
         logging.info("Using case: '{}'".format(case))
 
-    success, comments = CIME.simple_compare.compare_files(gold_file, compare_file, case)
+    if gold_file.endswith('runconfig'):
+        success, comments = CIME.simple_compare.compare_runconfigfiles(gold_file, compare_file, case)
+    else:
+        success, comments = CIME.simple_compare.compare_files(gold_file, compare_file, case)
     expect(success,
            "Diff between files {} and {}:\n{}".format(gold_file, compare_file, comments))
 

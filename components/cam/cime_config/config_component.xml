@@ -28,7 +28,7 @@
 
   <entry id="CAM_TARGET">
          <type>char</type>
-         <valid_values>preqx,preqx_acc</valid_values>
+         <valid_values>preqx,preqx_kokkos,preqx_acc</valid_values>
          <default_value>preqx</default_value>
          <group>build_component_cam</group>
          <file>env_build.xml</file>
@@ -174,7 +174,7 @@
       <value compset="1950_CAM5.*CMIP6-LR"  >1950_cam5_CMIP6-LR</value>
       <value compset="1950_CAM5.*CMIP6-HR"  >1950_cam5_CMIP6-HR</value>
       <value compset="1950_CAM5.*CMIP6-LRtunedHR"  >1950_cam5_CMIP6-LRtunedHR</value>
-      <value compset="1850_CAM5.*CMIP6*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
+      <value compset="1850_CAM5.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>

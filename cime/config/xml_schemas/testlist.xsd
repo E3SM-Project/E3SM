@@ -53,8 +53,18 @@
 
   <xs:element name="option">
     <xs:complexType mixed="true">
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
+     <xs:attribute name="name" use="required" type="OptionType"/>
     </xs:complexType>
   </xs:element>
+  <xs:simpleType name="OptionType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="wallclock"/>
+      <xs:enumeration value="comment"/>
+      <xs:enumeration value="memleak_tolerance"/>
+      <xs:enumeration value="tput_tolerance"/>
+      <!-- Queue can't actually be set, but is currently in the CAM testlist -->
+      <xs:enumeration value="queue"/>
+    </xs:restriction>
+  </xs:simpleType>
 
 </xs:schema>

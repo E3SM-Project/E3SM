@@ -11,7 +11,7 @@ module LakeTemperatureMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use ch4Mod            , only : ch4_type
+  use CH4Mod            , only : ch4_type
   use EnergyFluxType    , only : energyflux_type
   use LakeStateType     , only : lakestate_type
   use SoilStateType     , only : soilstate_type

@@ -8,12 +8,12 @@ project (PIOC C)
 
 add_library (pioc topology.c pio_file.c pioc_support.c pio_lists.c
   pioc.c pioc_sc.c pio_spmd.c pio_rearrange.c pio_nc4.c bget.c
-  pio_nc.c pio_put_nc.c pio_get_nc.c pio_getput_int.c pio_msg.c pio_varm.c
+  pio_nc.c pio_put_nc.c pio_get_nc.c pio_getput_int.c pio_msg.c
   pio_darray.c pio_darray_int.c)
 
 # set up include-directories
 include_directories(
-  "${CMAKE_BINARY_DIR}"   
+  "${CMAKE_BINARY_DIR}"
   "${PROJECT_SOURCE_DIR}"   # to find foo/foo.h
   "${PROJECT_BINARY_DIR}")  # to find foo/config.h
 
@@ -36,7 +36,7 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
     PRIVATE -c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
   target_compile_options (pioc
-    PRIVATE -std=c99)
+    PRIVATE -std=c99 -debug minimal)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options (pioc
     PRIVATE -std=c99)

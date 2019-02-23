@@ -117,19 +117,19 @@ module pftvarcon
   real(r8), allocatable :: fleafi(:)       !parameter used in CNAllocation
   real(r8), allocatable :: allconsl(:)     !parameter used in CNAllocation
   real(r8), allocatable :: allconss(:)     !parameter used in CNAllocation
-  real(r8), allocatable :: ztopmx(:)       !parameter used in CNVegStructUpdate
-  real(r8), allocatable :: laimx(:)        !parameter used in CNVegStructUpdate
-  real(r8), allocatable :: gddmin(:)       !parameter used in CNPhenology
-  real(r8), allocatable :: hybgdd(:)       !parameter used in CNPhenology
-  real(r8), allocatable :: lfemerg(:)      !parameter used in CNPhenology
-  real(r8), allocatable :: grnfill(:)      !parameter used in CNPhenology
-  integer , allocatable :: mxmat(:)        !parameter used in CNPhenology
+  real(r8), allocatable :: ztopmx(:)       !parameter used in VegStructUpdate
+  real(r8), allocatable :: laimx(:)        !parameter used in VegStructUpdate
+  real(r8), allocatable :: gddmin(:)       !parameter used in Phenology
+  real(r8), allocatable :: hybgdd(:)       !parameter used in Phenology
+  real(r8), allocatable :: lfemerg(:)      !parameter used in Phenology
+  real(r8), allocatable :: grnfill(:)      !parameter used in Phenology
+  integer , allocatable :: mxmat(:)        !parameter used in Phenology
   integer , allocatable :: mnNHplantdate(:)!minimum planting date for NorthHemisphere (YYYYMMDD)
   integer , allocatable :: mxNHplantdate(:)!maximum planting date for NorthHemisphere (YYYYMMDD)
   integer , allocatable :: mnSHplantdate(:)!minimum planting date for SouthHemisphere (YYYYMMDD)
   integer , allocatable :: mxSHplantdate(:)!maximum planting date for SouthHemisphere (YYYYMMDD)
-  real(r8), allocatable :: planttemp(:)    !planting temperature used in CNPhenology (K)
-  real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in CNPhenology (K)
+  real(r8), allocatable :: planttemp(:)    !planting temperature used in Phenology (K)
+  real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in Phenology (K)
   real(r8), allocatable :: froot_leaf(:)   !allocation parameter: new fine root C per new leaf C (gC/gC) 
   real(r8), allocatable :: stem_leaf(:)    !allocation parameter: new stem c per new leaf C (gC/gC)
   real(r8), allocatable :: croot_stem(:)   !allocation parameter: new coarse root C per new stem C (gC/gC)

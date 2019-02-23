@@ -76,7 +76,7 @@
   </grid>
   <grid name="a%0.9x1.25">
     <mach name="any">
-      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALISIA.+SWAV" pesize="any">
+      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALI%SIA.+SWAV" pesize="any">
         <comment>MALISIA.</comment>
         <ntasks>
           <ntasks_atm>8</ntasks_atm>

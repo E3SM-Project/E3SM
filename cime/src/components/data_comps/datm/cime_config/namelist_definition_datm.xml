@@ -97,6 +97,7 @@
     CLMGSWP3v1.TPQW
 
     co2tseries.20tr
+    co2tseries.20tr.latbnd
     co2tseries.rcp2.6
     co2tseries.rcp4.5
     co2tseries.rcp6.0
@@ -127,6 +128,7 @@
 
     presaero.clim_1850
     presaero.clim_2000
+    presaero.clim_2010
     presaero.trans_1850-2000
     presaero.rcp2.6
     presaero.rcp4.5
@@ -233,6 +235,7 @@
       <value stream="presaero.cplhist">null</value>
       <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
+      <value stream="presaero.clim_2010">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="presaero.rcp">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
@@ -245,7 +248,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
-    <values>
+    <values match="first">
       <value>null</value>
       <value stream="CLM1PT.1x1_mexicocityMEX">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</value>
       <value stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
@@ -291,7 +294,9 @@
       <value stream="CORE_IAF_JRA.NCEP.U_10">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
+      <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
+      <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp6.0">fco2_datm_rcp6.0_1765-2500_c130312.nc</value>
@@ -306,9 +311,14 @@
       <value stream="presaero.rcp4.5" atm_grid="CLM_USRDAT">aerosoldep_rcp4.5_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp6.0" atm_grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
 
-      <value stream="presaero.clim_1850">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.clim_2000">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.trans_1850-2000">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
+      <value stream="presaero.clim_1850" cime_model="e3sm">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
+      <value stream="presaero.clim_2000" cime_model="e3sm">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
+      <value stream="presaero.clim_1850" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.trans_1850-2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+
       <value stream="presaero.rcp2.6">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
       <value stream="presaero.rcp4.5">aerosoldep_rcp4.5_monthly_1849-2104_1.9x2.5_c100402.nc</value>
       <value stream="presaero.rcp6.0">aerosoldep_rcp6.0_monthly_1849-2104_1.9x2.5_c100830.nc</value>
@@ -386,7 +396,7 @@
       <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Precip6Hrly</value>
-      <value stream="CLM_QIAN_WISO.TPQW	">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
+      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly</value>
       <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly</value>
       <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly</value>
@@ -431,7 +441,7 @@
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
-    <values>
+    <values match="first">
       <value>null</value>
       <value  stream="CLM1PT.1x1_mexicocityMEX">clm1pt-1993-12.nc</value>
       <value  stream="CLM1PT.1x1_vancouverCAN">clm1pt-1992-08.nc</value>
@@ -1618,9 +1628,11 @@
         JRA.v1.3.v_10.TL319.2014.171019.nc
         JRA.v1.3.v_10.TL319.2015.171019.nc
         JRA.v1.3.v_10.TL319.2016.171019.nc
-      </value> 
+      </value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
-      <value stream="co2tseries.20tr">fco2_datm_1765-2007_c100614.nc</value>
+      <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
+      <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
       <value stream="co2tseries.rcp2.6">fco2_datm_rcp2.6_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp4.5">fco2_datm_rcp4.5_1765-2500_c130312.nc</value>
       <value stream="co2tseries.rcp6.0">fco2_datm_rcp6.0_1765-2500_c130312.nc</value>
@@ -1637,9 +1649,14 @@
       <value stream="Anomaly.Forcing.Shortwave">af.rsds.ccsm4.rcp45.2006-2300.nc</value>
       <value stream="Anomaly.Forcing.Longwave">af.rlds.ccsm4.rcp45.2006-2300.nc</value>
 
-      <value stream="presaero.clim_1850">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.clim_2000">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.trans_1850-2000">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
+      <value stream="presaero.clim_1850" cime_model="e3sm">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
+      <value stream="presaero.clim_2000" cime_model="e3sm">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
+      <value stream="presaero.clim_1850" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.trans_1850-2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+
       <value stream="presaero.rcp2.6">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
       <value stream="presaero.rcp2.6" atm_grid="CLM_USRDAT">aerosoldep_rcp2.6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp4.5">aerosoldep_rcp4.5_monthly_1849-2104_1.9x2.5_c100402.nc</value>
@@ -2011,7 +2028,12 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
-      <value stream="presaero.clim">1</value>
+
+      <value stream="presaero.clim" cime_model="e3sm">1</value>
+      <value stream="presaero.clim_1850" cime_model="cesm">1</value>
+      <value stream="presaero.clim_2000" cime_model="cesm">1</value>
+      <value stream="presaero.clim_2010" cime_model="cesm">1</value>
+
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
@@ -2072,7 +2094,12 @@
       <value stream="BC.CRUNCEP">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_START</value>
-      <value stream="presaero.clim">1</value>
+
+      <value stream="presaero.clim" cime_model="e3sm">1</value>
+      <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
+      <value stream="presaero.clim_2000" cime_model="cesm">2000</value>
+      <value stream="presaero.clim_2010" cime_model="cesm">2010</value>
+
       <value stream="presaero.trans_1850-2000">1849</value>
       <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
@@ -2127,15 +2154,22 @@
       <value stream="CORE_IAF_JRA.NCEP.U_10">2016</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">2016</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">2016</value>
-      <value stream="co2tseries.20tr">2007</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">2007</value>
+      <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
       <value stream="co2tseries.rcp">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">2012</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">2010</value>
       <value stream="Anomaly.Forcing">2300</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_END</value>
-      <value stream="presaero.clim">1</value>
-      <value stream="presaero.trans_1850-2000">2006</value>
+
+      <value stream="presaero.clim" cime_model="e3sm">1</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">2006</value>
+      <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
+      <value stream="presaero.clim_2000" cime_model="cesm">2000</value>
+      <value stream="presaero.clim_2010" cime_model="cesm">2010</value>
+      <value stream="presaero.trans_1850-2000" cime_model="cesm">2014</value>
+
       <value stream="presaero.rcp">2104</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>

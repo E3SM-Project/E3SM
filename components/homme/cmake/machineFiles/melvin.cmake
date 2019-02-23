@@ -16,4 +16,4 @@ SET (CPRNC_DIR /sems-data-store/ACME/cprnc/build CACHE FILEPATH "")
 SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
-SET (USE_MPI_OPTIONS "--bind-to core" CACHE FILEPATH "")
+SET (USE_MPI_OPTIONS "--bind-to core:overload-allowed " CACHE FILEPATH "")

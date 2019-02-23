@@ -26,14 +26,38 @@ while [ $i -le ${#Args[@]} ]; do
         exit 4
       fi
     ;;
+    --help )
+      echo "usage: addmetadata --histroot CASEROOT --histfile HISTFILE [--help]
+      "
+      echo "Script to add metadata to validation files.
+      "
+       echo "Optional arguments:
+     --help           show this help message and exit
+     --caseroot       Full pathname to the CASE directory.
+     --histfile       Full filename of the history file to add the metadata."
+      exit
+    ;;
   esac
   i=$((i+1))
 done
 
+if [ "$caseroot" = "" ] || [ "$histfile" = "" ]; then
+  echo "Please run ./addmetadata.sh --help for correct usage."
+  exit
+fi
+
 cd $caseroot
 
+stop_option=`./xmlquery --value STOP_OPTION`
+test_type="UF-ECT"
+if [ "$stop_option" = "nmonths" ]; then
+    test_type="ECT"
+elif [ "$stop_option" = "nyears" ]; then
+    test_type="POP-ECT"
+fi
+
 if hash ncks 2>/dev/null; then
- ncks --glb compset=`./xmlquery --value COMPSET` --glb grid=`./xmlquery --value GRID` --glb testtype="uf" --glb compiler=`./xmlquery --value COMPILER` --glb machineid=`./xmlquery --value MACH`  --glb model_version=`./xmlquery --value MODEL_VERSION`   $histfile $histfile.tmp
+ ncks --glb compset=`./xmlquery --value COMPSET` --glb grid=`./xmlquery --value GRID` --glb testtype="$test_type" --glb compiler=`./xmlquery --value COMPILER` --glb machineid=`./xmlquery --value MACH`  --glb model_version=`./xmlquery --value MODEL_VERSION`   $histfile $histfile.tmp
   mv $histfile.tmp $histfile
 else
   echo "This script requires the ncks tool"

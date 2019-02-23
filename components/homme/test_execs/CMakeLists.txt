@@ -189,6 +189,10 @@ IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(theta-nlev30)
   ADD_SUBDIRECTORY(theta-nlev40)
   ADD_SUBDIRECTORY(theta-nlev60)
+  ADD_SUBDIRECTORY(theta-l-nlev20)
+  ADD_SUBDIRECTORY(theta-l-nlev30)
+  ADD_SUBDIRECTORY(theta-l-nlev40)
+  ADD_SUBDIRECTORY(theta-l-nlev60)
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -201,12 +205,37 @@ IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(swim5)
 ENDIF()
 
+IF (${HOMME_USE_KOKKOS})
+  # Test some stuff in the shared folder
+  ADD_SUBDIRECTORY (share_kokkos_ut)
+ENDIF ()
+
+IF (${BUILD_HOMME_PREQX_KOKKOS})
+  ADD_SUBDIRECTORY(preqx-nlev26)
+  ADD_SUBDIRECTORY(preqx-nlev26-kokkos)
+  ADD_SUBDIRECTORY(preqx-nlev72)
+  ADD_SUBDIRECTORY(preqx-nlev72-kokkos)
+ENDIF ()
+
 # Read the test-list.cmake file to get the HOMME_TESTS list
 INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 # Need a properly scoped variable to store the test directories for the
 #  replaceBaselineResults target
 SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
+
+IF (${BUILD_HOMME_PREQX_KOKKOS})
+  MESSAGE("-- Generating tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
+    "   Example ctest lines:\n"
+    "     ctest -LE \"nightly\": All tests except nightly.\n"
+    "     ctest -L \"dev|unit\": Tests label dev or unit.")
+  make_profiles_up_to(${HOMME_TESTING_PROFILE} profiles)
+  FOREACH (p ${profiles})
+    MESSAGE("-- For profile ${p}:")
+    createTestsWithProfile(HOMME_PREQX_TESTS_WITH_PROFILE ${p})
+    CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
+  ENDFOREACH ()
+ENDIF()
 
 IF(${BUILD_HOMME_PREQX} AND ${BUILD_HOMME_PREQX_ACC})
   # add a test dependency here:

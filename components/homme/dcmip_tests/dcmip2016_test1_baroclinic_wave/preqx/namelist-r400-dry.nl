@@ -7,12 +7,12 @@
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2016_test1"         ! test identifier
   ne                = 8                         ! number of elements per cube face
-  qsize             = 5                         ! num tracer fields
+  qsize             = 6                         ! num tracer fields
   ndays             = 30
-  statefreq         = 10                        ! number of steps between screen dumps
+  statefreq         = 24                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 400                       ! largest timestep in seconds
+  tstep             = 900                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5 
   rsplit            = 0
@@ -21,7 +21,7 @@
   nu_s              = 3e16
   nu_p              = 3e16  
   nu_top            = 0                         ! default = 2.5e5
-  limiter_option    = 8
+  limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = 'dry'
@@ -34,16 +34,18 @@
   vfile_int         = "../vcoord/cami-30.ascii"
 /
 &analysis_nl
-  output_prefix     = "r400-dry-"
+!  output_prefix     = "r400-dry-"
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 3                         ! every 3 hours
-  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','Q4','Q5','rho','precl','zeta'   ! variables to write to file
-  interp_type       = 0                         ! 0=native grid, 1=bilinear
+  output_frequency  = 24                         ! every 24 hours
+!  output_varnames1  ='T','ps','pnh','geo','u','v','w','omega','Th','Q','Q2','Q3','Q4','Q5','rho','precl','zeta'   ! variables to write to file
+  output_varnames1  ='T','ps','pnh','geo','u','Th','Q','Q2','Q3','Q4','Q5','precl','zeta'   ! variables to write to file
+  interp_type       = 1                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16
-  interp_nlon       = 360
-  interp_nlat       = 181
+!  interp_nlon       = 360
+!  interp_nlat       = 181
+  interp_gridtype   = 1
 /
 &prof_inparm
   profile_outpe_num   = 100

@@ -33,6 +33,7 @@ def buildnml(case, caseroot, compname):
     ic_mode          = case.get_value("MPASSI_IC_MODE")
     ice_bgc          = case.get_value("MPASSI_BGC")
     surface_mode     = case.get_value("MPASSI_SURFACE_MODE")
+    iceberg_mode     = case.get_value("MPASSI_ICEBERG_MODE")
     ice_pio_typename = case.get_value("ICE_PIO_TYPENAME")
     #ninst_ice       = case.get_value("NINST_ICE")
     ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
@@ -56,6 +57,7 @@ def buildnml(case, caseroot, compname):
     grid_prefix = ''
     decomp_date = ''
     decomp_prefix = ''
+    data_iceberg_file = ''
     points_file = ''
 
     if ice_grid == 'oEC60to30':
@@ -93,6 +95,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.EC60to30v3wLI'
         decomp_date += '170905'
         decomp_prefix += 'mpas-cice.graph.info.'
+        data_iceberg_file += 'data_iceberg_181022.EC60to30v3wLI.nc'
     elif ice_grid == 'oEC60to30v3wLI_ICG':
         grid_date += '171116'
         grid_prefix += 'seaiceEC60to30v3wLI60lev.restart_theta_year26'
@@ -118,6 +121,11 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'cice.QU240wLI'
         decomp_date += '160929'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oQU480':
+        grid_date += '180705'
+        grid_prefix += 'seaice.oQU480'
+        decomp_date += '180705'
+        decomp_prefix += 'mpas-seaice.graph.legacy.'
     elif ice_grid == 'mpasgx1':
         grid_date += '121116'
         grid_prefix += 'grid_gx1'
@@ -143,6 +151,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.RRS30to10v3wLI'
         decomp_date += '171109'
         decomp_prefix += 'mpas-cice.graph.info.'
+        data_iceberg_file += 'data_iceberg_181022.RRS30to10v3wLI.nc'
     elif ice_grid == 'oRRS18to6':
         grid_date += '160830'
         grid_prefix += 'seaice.RRS.18to6km'
@@ -163,6 +172,17 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.RRS.15to5km'
         decomp_date += '151209'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oARRM60to10':
+        grid_date += '180715'
+        grid_prefix += 'seaice.ARRM60to10'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oARRM60to6':
+        grid_date += '180803'
+        grid_prefix += 'seaice.ARRM60to6'
+        decomp_date += '180820'
+        decomp_prefix += 'mpas-cice.graph.info.'
+
 
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs
@@ -182,6 +202,8 @@ def buildnml(case, caseroot, compname):
         input_list.write("mesh = {}\n".format(input_file))
         if points_file != '':
             input_list.write("points = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
+        if iceberg_mode == 'data':
+            input_list.write("data_iceberg = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpassiconf
@@ -196,7 +218,7 @@ def buildnml(case, caseroot, compname):
 
         inst_string = ""
         if ninst_ice > 1:
-            inst_string = "{0:04d}".format(inst_counter)
+            inst_string = "_{0:04d}".format(inst_counter)
 
             # If multi-instance case does not have restart file, use single-case restart
             # for each instance
@@ -229,6 +251,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ic_mode '{}'".format(ic_mode)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
         sysmod += " -surface_mode '{}'".format(surface_mode)
+        sysmod += " -iceberg_mode '{}'".format(iceberg_mode)
         sysmod += " -ntasks_ice '{}'".format(ntasks_ice)
         sysmod += " -ninst_ice '{}'".format(ninst_ice_real)
 
@@ -321,7 +344,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        reference_time="01-01-01_00:00:00"')
-        lines.append('        output_interval="00-01-00_00:00:00">')
+        lines.append('        output_interval="none">')
         lines.append('')
         lines.append('    <stream name="mesh"/>')
         lines.append('    <var name="xtime"/>')
@@ -407,6 +430,18 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="xtime"/>')
         lines.append('</stream>')
         lines.append('')
+        if iceberg_mode == 'data':
+            lines.append('<stream name="dataIcebergForcing"')
+            lines.append('                  type="input"')
+            lines.append('                  filename_template="{}/ice/mpas-cice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
+            lines.append('                  filename_interval="none"')
+            lines.append('                  input_interval="none" >')
+            lines.append('')
+            lines.append('    <var name="bergFreshwaterFluxData"/>')
+            lines.append('    <var name="xtime"/>')
+            lines.append('</stream>')
+            lines.append('')
+
         lines.append('<stream name="highFrequencyOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
@@ -611,6 +646,10 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="oceanSaltFlux"/>')
         lines.append('    <var name="uAirVelocity"/>')
         lines.append('    <var name="vAirVelocity"/>')
+        if iceberg_mode != 'none':
+            lines.append('    <var name="bergFreshwaterFlux"/>')
+            lines.append('    <var name="bergLatentHeatFlux"/>')
+
         if ice_bgc == 'ice_bgc':
             lines.append('    <var name="totalVerticalBiologyIce"/>')
             lines.append('    <var name="totalChlorophyll"/>')

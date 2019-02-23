@@ -1,8 +1,10 @@
 module module_perturb
   use phys_debug_util, only: phys_debug_col
+  use cam_instance,    only: inst_index
+
   implicit none
   
-  integer :: kprnt = 30
+  integer :: kprnt = 61
 contains
 
   function icolprnt(lchnk) result(icol)

@@ -44,7 +44,8 @@ contains
 !
 !       theta_dp_cp * ep = -dphi/ds    OR    rho_R_theta * dphi/ds = -theta_dp_cp*kappa
 !
-! with  ep = d(exner)/dp = kappa*exner/p            
+! with  ep = d(exner)/dp = kappa*exner/p  ( used in tech report)
+! rho_R_theta = p/exner  (used here)
 !
 ! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
 ! output:  pnh, dphn, exner, exner_i, pnh_i

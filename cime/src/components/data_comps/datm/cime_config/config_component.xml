@@ -57,10 +57,12 @@
 
   <entry id="DATM_PRESAERO">
     <type>char</type>
-    <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,cplhist</valid_values>
+    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,cplhist</valid_values>
     <default_value>clim_2000</default_value>
     <values match="last">
       <value compset="^1850_">clim_1850</value>
+      <value compset="^2000_">clim_2000</value>
+      <value compset="^2010_">clim_2010</value>
       <value compset="^RCP8_">rcp8.5</value>
       <value compset="^RCP6_">rcp6.0</value>
       <value compset="^RCP4_">rcp4.5</value>
@@ -91,7 +93,7 @@
 
   <entry id="DATM_CO2_TSERIES">
     <type>char</type>
-    <valid_values>none,20tr,rcp2.6,rcp4.5,rcp6.0,rcp8.5</valid_values>
+    <valid_values>none,20tr,20tr.latbnd,rcp2.6,rcp4.5,rcp6.0,rcp8.5</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="^RCP8">rcp8.5</value>
@@ -203,8 +205,10 @@
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="2000.*_DATM%CRU">1</value>
       <value compset="2003.*_DATM%CRU">1</value>
+      <value compset="2010.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
       <value compset="2000.*_DATM%GSW">1</value>
+      <value compset="2010.*_DATM%GSW">1</value>
       <value compset="2003.*_DATM%GSW">1</value>
     </values>
     <group>run_component_datm</group>
@@ -237,8 +241,10 @@
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="2000.*_DATM%CRU">1991</value>
       <value compset="2003.*_DATM%CRU">2002</value>
+      <value compset="2010.*_DATM%CRU">2005</value>
       <value compset="1850.*_DATM%GSW">1901</value>
       <value compset="2000.*_DATM%GSW">1991</value>
+      <value compset="2010.*_DATM%GSW">2005</value>
       <value compset="2003.*_DATM%GSW">2002</value>
     </values>
     <group>run_component_datm</group>
@@ -271,8 +277,10 @@
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="2000.*_DATM%CRU">2010</value>
       <value   compset="2003.*_DATM%CRU">2003</value>
+      <value   compset="2010.*_DATM%CRU">2014</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
       <value   compset="2000.*_DATM%GSW">2010</value>
+      <value   compset="2010.*_DATM%GSW">2014</value>
       <value   compset="2003.*_DATM%GSW">2003</value>
     </values>
     <group>run_component_datm</group>
