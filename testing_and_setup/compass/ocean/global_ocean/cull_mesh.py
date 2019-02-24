@@ -15,12 +15,13 @@ includes:
 10. create masks from transects on the final culled mesh*
 * skipped if flag --with_critical_passages not present
 
-Optionally, the -p flag provides the path to the geometric_features
-repository, which is assumed to be the current directory by default.
-Also, the optional --with_cavities flag indicates that ice-shelf cavities
-are present and the grounded-ice mask from Bedmap2 should be used.
-The optional --with_critical_passages flag indicates that critical
-passages are to be opened. Otherwise, steps 2, 5 and 9 are skipped
+Optionally, the -p flag provides the path to the geometric_data
+directory from the geometric_features repository, which is assumed
+to be the current directory by default. Also, the optional
+--with_cavities flag indicates that ice-shelf cavities are present
+and the grounded-ice mask from Bedmap2 should be used. The optional
+--with_critical_passages flag indicates that critical passages are
+to be opened. Otherwise, steps 2, 5 and 9 are skipped
 """
 
 from __future__ import absolute_import, division, print_function, \
@@ -30,6 +31,8 @@ import os
 import os.path
 import subprocess
 from optparse import OptionParser
+
+from geometric_features import GeometricFeatures
 
 
 def removeFile(fileName):
@@ -43,44 +46,41 @@ parser = OptionParser()
 parser.add_option("--with_cavities", action="store_true", dest="with_cavities")
 parser.add_option("--with_critical_passages", action="store_true",
                   dest="with_critical_passages")
-parser.add_option("-p", "--geom_feat_path", type="string", dest="path",
-                  default="geometric_features",
-                  help="Path to the geometric_features repository.")
-parser.add_option("--preserve_floodplain", action="store_true", dest="preserve_floodplain", default=False)
+parser.add_option("-p", "--geom_data_path", type="string", dest="path",
+                  default="geometric_data",
+                  help="Path to the geometric_data from the geometric_features"
+                       " repository.")
+parser.add_option("--preserve_floodplain", action="store_true",
+                  dest="preserve_floodplain", default=False)
 options, args = parser.parse_args()
 
-path = options.path
+gf = GeometricFeatures(cacheLocation='{}'.format(options.path),
+                       remoteBranchOrTag='0.1')
 
-landCoverage = '{}/natural_earth/region/Land_Coverage/' \
-    'region.geojson'.format(path)
+# start with the land coverage from Natural Earth
+fcLandCoverage = gf.read(componentName='natural_earth', objectType='region',
+                         featureNames=['Land Coverage'])
 
-landCoverageMask = '{}/ocean/region/Global_Ocean_90S_to_60S/' \
-    'region.geojson'.format(path)
+# remove the region south of 60S so we can replace it based on ice-sheet
+# topography
+fcSouthMask = gf.read(componentName='ocean', objectType='region',
+                      featureNames=['Global Ocean 90S to 60S'])
 
-removeFile('land_coverage.geojson')
-# Mask the land coverage to exclude the region below 60S.
-args = ['{}/difference_features.py'.format(path),
-        '-f', landCoverage,
-        '-m', landCoverageMask,
-        '-o', 'land_coverage.geojson']
-print("running {}".format(' '.join(args)))
+fcLandCoverage = fcLandCoverage.difference(fcSouthMask)
 
-subprocess.check_call(args, env=os.environ.copy())
-
-# Add the appropriate land coverage below 60S (either all ice or grounded ice).
+# Add "land" coverage from either the full ice sheet or just the grounded
+# part
 if options.with_cavities:
-    antarcticLandCoverage = '{}/bedmap2/region/AntarcticGroundedIceCoverage/' \
-        'region.geojson'.format(path)
+    fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
+                              featureNames=['AntarcticGroundedIceCoverage'])
 else:
-    antarcticLandCoverage = '{}/bedmap2/region/AntarcticIceCoverage/' \
-        'region.geojson'.format(path)
+    fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
+                              featureNames=['AntarcticIceCoverage'])
 
-args = ['{}/merge_features.py'.format(path), '-f', antarcticLandCoverage,
-        '-o', 'land_coverage.geojson']
-print("running {}".format(' '.join(args)))
+fcLandCoverage.merge(fcAntarcticLand)
 
-subprocess.check_call(args, env=os.environ.copy())
-
+# save the feature collection to a geojson file
+fcLandCoverage.to_geojson('land_coverage.geojson')
 
 # Create the land mask based on the land coverage, i.e. coastline data.
 # Run command is:
@@ -113,25 +113,15 @@ subprocess.check_call(args, env=os.environ.copy())
 # create seed points for a flood fill of the ocean
 # use all points in the ocean directory, on the assumption that they are, in
 # fact, in the ocean
-removeFile('seed_points.geojson')
-args = ['{}/merge_features.py'.format(path),
-        '-d', '{}/ocean/point'.format(path),
-        '-t', 'seed_point',
-        '-o', 'seed_points.geojson']
-print("running {}".format(' '.join(args)))
-
-subprocess.check_call(args, env=os.environ.copy())
+fcSeed = gf.read(componentName='ocean', objectType='point',
+                 tags=['seed_point'])
+fcSeed.to_geojson('seed_points.geojson')
 
 if options.with_critical_passages:
     # merge transects for critical passages into critical_passages.geojson
-    removeFile('critical_passages.geojson')
-    args = ['{}/merge_features.py'.format(path),
-            '-d', '{}/ocean/transect'.format(path),
-            '-t', 'Critical_Passage',
-            '-o', 'critical_passages.geojson']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    fcCritPassages = gf.read(componentName='ocean', objectType='transect',
+                             tags=['Critical_Passage'])
+    fcCritPassages.to_geojson('critical_passages.geojson')
 
     # create masks from the transects
     # Run command is:
@@ -155,14 +145,9 @@ if options.with_critical_passages:
 
     # merge transects for critical land blockages into
     # critical_land_blockages.geojson
-    removeFile('critical_land_blockages.geojson')
-    args = ['{}/merge_features.py'.format(path),
-            '-d', '{}/ocean/transect'.format(path),
-            '-t', 'Critical_Land_Blockage',
-            '-o', 'critical_land_blockages.geojson']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    fcCritBlockages = gf.read(componentName='ocean', objectType='transect',
+                              tags=['Critical_Land_Blockage'])
+    fcCritBlockages.to_geojson('critical_land_blockages.geojson')
 
     # create masks from the transects for critical land blockages
     args = ['./MpasMaskCreator.x', 'base_mesh.nc',
