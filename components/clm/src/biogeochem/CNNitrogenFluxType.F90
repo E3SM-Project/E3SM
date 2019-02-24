@@ -3208,7 +3208,14 @@ contains
                      this%f_n2o_denit_col(c) + &
                      this%f_n2o_denit_vr_col(c,j) * dzsoi_decomp(j)
 
-                ! leaching/runoff flux
+             end do
+          end do
+
+          if ( .not. is_active_betr_bgc) then
+            ! leaching/runoff flux
+            do j = 1, nlev
+              do fc = 1,num_soilc
+                c = filter_soilc(fc)
                 this%smin_no3_leached_col(c) = &
                         this%smin_no3_leached_col(c) + &
                         this%smin_no3_leached_vr_col(c,j) * dzsoi_decomp(j)
@@ -3216,9 +3223,9 @@ contains
                 this%smin_no3_runoff_col(c) = &
                         this%smin_no3_runoff_col(c) + &
                         this%smin_no3_runoff_vr_col(c,j) * dzsoi_decomp(j)
-             end do
-          end do
-
+              enddo
+            enddo
+          endif
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%denit_col(c) = this%f_denit_col(c)

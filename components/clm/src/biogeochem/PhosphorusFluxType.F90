@@ -2564,17 +2564,17 @@ contains
        end do
     end do
 
-
+    if ( .not. is_active_betr_bgc) then
     ! vertically integrate leaching flux
-    do j = 1, nlevdecomp
-       do fc = 1,num_soilc
+      do j = 1, nlevdecomp
+        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%sminp_leached_col(c) = &
                this%sminp_leached_col(c) + &
                this%sminp_leached_vr_col(c,j) * dzsoi_decomp(j)
-       end do
-    end do
-
+        end do
+      end do
+    endif
     ! vertically integrate column-level fire P losses
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp

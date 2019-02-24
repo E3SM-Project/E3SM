@@ -945,10 +945,10 @@ module EcosystemDynBeTRMod
 !            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 !       call t_stopf('NitrogenLeaching')
 
-!       call t_startf('PhosphorusLeaching')
-!       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
-!            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-!       call t_stopf('PhosphorusLeaching')
+       call t_startf('PhosphorusLeaching')
+       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+       call t_stopf('PhosphorusLeaching')
 
        call t_startf('CNUpdate3')
        call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &

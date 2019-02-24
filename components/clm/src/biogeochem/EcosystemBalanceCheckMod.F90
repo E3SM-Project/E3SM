@@ -390,17 +390,12 @@ contains
          col_noutputs(c) = col_noutputs(c) + &
               hrv_deadstemn_to_prod10n(c) + hrv_deadstemn_to_prod100n(c)
 
-         if (is_active_betr_bgc)then
-            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-
-            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+         if (.not. use_nitrif_denitrif) then
+           col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
          else
-           if (.not. use_nitrif_denitrif) then
-            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-           else
-            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
+           col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
 
-            if(use_pflotran .and. pf_cmode) then
+           if(use_pflotran .and. pf_cmode) then
                ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
                col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
             else
@@ -409,8 +404,7 @@ contains
 
             endif
 
-           end if
-         endif
+         end if
 
          col_noutputs(c) = col_noutputs(c) + col_prod1n_loss(c)
          
@@ -530,7 +524,8 @@ contains
          sminp_to_plant            => phosphorusflux_vars%sminp_to_plant_col            , &
          cascade_receiver_pool     => decomp_cascade_con%cascade_receiver_pool          , &
          pf                        =>  phosphorusflux_vars                              , &
-         ps                        =>  phosphorusstate_vars                               &
+         ps                        =>  phosphorusstate_vars                             , &
+         sminp_runoff              => phosphorusflux_vars%sminp_runoff_col                &
          )
 
       ! set time steps
@@ -606,7 +601,7 @@ contains
              end if
          end if
 
-         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
+         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + sminp_runoff(c)
 
          ! Fluxes to product pools are included in column-level outputs: the product
          ! pools are not included in totcolc, so are outside the system with respect to
