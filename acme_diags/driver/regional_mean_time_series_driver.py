@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
+from acme_diags.driver.utils.general import get_output_dir
 
 
 RefsTestMetrics = collections.namedtuple('RefsTestMetrics', ['refs', 'test', 'metrics'])
@@ -64,9 +65,10 @@ def run_diag(parameter):
             print("Selected region: {}".format(region))
             test_data = utils.dataset.Dataset(parameter, test=True)
             test = test_data.get_timeseries_variable(var)
+            
             # Make sure data have correct montly Bounds
             cdutil.setTimeBoundsMonthly(test)
-            print('test shape',test.shape)
+            print('test shape',test.shape, test.units)
 
             # TODO: Remove this if using the A-Prime viewer.
             parameter.viewer_descr[var] = test.long_name if hasattr(
@@ -97,6 +99,7 @@ def run_diag(parameter):
                 test_domain_year = cdutil.YEAR(test_domain)
                 ref_domain = cdutil.averager(ref_domain,axis = 'xy')
                 ref_domain_year = cdutil.YEAR(ref_domain)
+                ref_domain_year.ref_name = ref_name
 
                 refs.append(ref_domain_year)
 
@@ -107,6 +110,8 @@ def run_diag(parameter):
 
             result = RefsTestMetrics(test=test_domain_year, refs=refs, metrics=metrics_dict)
             regions_to_data[region] = result
+        #print('test_domain_year',test_domain_year)
+            
             
         #print(regions_to_data.values())
         # plot(parameter.current_set, data, parameter)
@@ -132,6 +137,7 @@ def plot(regions_to_data, parameter):
     
     # Position and sizes of subplot axes in page coordinates (0 to 1)
     # The dimensions [left, bottom, width, height] of the new axes. All quantities are in fractions of figure width and height.
+    line_color = ['r', 'b', 'g', 'm']
     
     panel = [(0.1500, 0.5500, 0.7500, 0.3000),
              (0.1500, 0.1300, 0.7500, 0.3000),
@@ -154,22 +160,68 @@ def plot(regions_to_data, parameter):
     dpi = 150
     fig = plt.figure(figsize=figsize, dpi=dpi)
     #fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
+    num_year = int(parameter.test_end_yr) - int(parameter.test_start_yr) +1
 
     for i_region, data_set_for_region in enumerate(regions_to_data.values()):
-        print('*****',i_region)
         refs = data_set_for_region.refs
         test = data_set_for_region.test
         ax1 = fig.add_axes(panel[i_region])
-        print('refs',refs)
-        print('test',test)
-        ax1.plot(test.asma()[:-1], 'k', linewidth=2,label = parameter.test_name +'{0:.1f}'.format(np.mean(test.asma()[:-1])))
-        for ref in refs:
-            ax1.plot(ref.asma(), 'b', linewidth=2,label = 'label' +'{0:.1f}'.format(np.mean(ref.asma())))
+        ax1.plot(test.asma()[:-1], 'k', linewidth=2,label = 'model' +'{0:.1f}'.format(np.mean(test.asma()[:-1])))
+        for i_ref, ref in enumerate(refs):
+            ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +'{0:.1f}'.format(np.mean(ref.asma())))
+
+        x = np.arange(num_year)
+        ax1.set_xticks(x)
+        x_ticks_labels = [str(x) for x in range(int(parameter.test_start_yr),int(parameter.test_end_yr)+1)]
+        ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=6)
+
         if i_region % 3 == 0 :
-            ax1.set_ylabel('Surface air temperature (K)')
+            ax1.set_ylabel('variable name (units)')
+            #ax1.set_ylabel(test.long_name + ' (' + test.units + ')')
         ax1.legend(loc=1, prop={'size': 6})
         fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
-    plt.savefig('/global/project/projectdirs/acme/www/zhang40/figs/test_pr.png')
+    # Figure title
+    fig.suptitle('Annual mean ' + parameter.var_id + ' over regions ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
+
+    # Save figure
+    parameter.output_file = 'time_series'
+    for f in parameter.output_format:
+        f = f.lower().split('.')[-1]
+        fnm = os.path.join(get_output_dir(parameter.current_set,
+            parameter), parameter.output_file + '.' + f)
+        plt.savefig(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+            ignore_container=True), parameter.output_file + '.' + f)
+        print('Plot saved in: ' + fnm)
+
+    # Save individual subplots
+    for f in parameter.output_format_subplot:
+        fnm = os.path.join(get_output_dir(
+            parameter.current_set, parameter), parameter.output_file)
+        page = fig.get_size_inches()
+        i = 0
+        for p in panel:
+            # Extent of subplot
+            subpage = np.array(p).reshape(2,2)
+            subpage[1,:] = subpage[0,:] + subpage[1,:]
+            subpage = subpage + np.array(border).reshape(2,2)
+            subpage = list(((subpage)*page).flatten())
+            extent = matplotlib.transforms.Bbox.from_extents(*subpage)
+            # Save subplot
+            fname = fnm + '.%i.' %(i) + f
+            plt.savefig(fname, bbox_inches=extent)
+
+            orig_fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+                ignore_container=True), parameter.output_file)
+            fname = orig_fnm + '.%i.' %(i) + f
+            print('Sub-plot saved in: ' + fname)
+            
+            i += 1
+
+    plt.close()
+#    plt.savefig('/global/project/projectdirs/acme/www/zhang40/figs/test_pr.png')
 
 
 #        # You can have multiple reference data, so we
