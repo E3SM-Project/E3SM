@@ -26,7 +26,8 @@ contains
     !
     ! !USES:
     use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
-                                 metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
+                                 metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file, &
+                                 use_nofire, use_fates
     use clm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
@@ -680,8 +681,9 @@ contains
         nindex(2) = nindex(1)+1
         if (yr .lt. 1850) nindex(1:2) = 2
         if (yr .ge. 2010) nindex(1:2) = 161
-      
-        if (atm2lnd_vars%loaded_bypassdata == 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then  
+       
+        if (use_fates == .false.) then 
+        if (atm2lnd_vars%loaded_bypassdata == 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
               ! Read pop_dens streams namelist to get filename
               nu_nml = getavu()
@@ -897,6 +899,7 @@ contains
   
         atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
                                             atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
+       end if   !end of FATES if statement
 
    !------------------------------------Aerosol forcing--------------------------------------------------
        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
