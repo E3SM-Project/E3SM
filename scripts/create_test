@@ -437,7 +437,8 @@ def parse_command_line(args, description):
     # for e3sm, sort by walltime
     if model == "e3sm":
         if args.walltime is None:
-            test_names.sort(cmp=get_tests.sort_by_time)
+            # Longest tests should run first
+            test_names.sort(key=get_tests.key_test_time, reverse=True)
         else:
             test_names.sort()
 

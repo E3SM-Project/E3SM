@@ -680,6 +680,8 @@
     <values>
       <value cime_model='e3sm'>.false.</value>
       <value cime_model='cesm'>.true.</value>
+      <value cime_model='cesm' atm_grid="T62">.false.</value>
+      <value cime_model='cesm' atm_grid="TL319">.false.</value>
     </values>
   </entry>
 
@@ -2880,6 +2882,32 @@
     </desc>
     <values>
       <value>$PSTRID_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_model">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for the whole model 
+      (0: no output; 1: compact; 2: verbose)
+    </desc>
+    <values>
+      <value>$INFO_TASKMAP_MODEL</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_comp">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for individual component models
+      (0: no output; 1: compact; 2: verbose)
+    </desc>
+    <values>
+      <value>$INFO_TASKMAP_COMP</value>
     </values>
   </entry>
 

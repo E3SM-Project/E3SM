@@ -1,6 +1,7 @@
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_timestamp, CIMEError
 
 import getpass, logging, os
+import stat as osstat
 
 # Constants
 ESMCI_REMOTE_NAME = "esmci_remote_for_split"
@@ -28,6 +29,8 @@ def get_tag(prefix, expected_num=1):
 ###############################################################################
     tags = run_cmd_no_fail("git tag").split()
     tags = [tag for tag in tags if tag.startswith(prefix)]
+
+    expect(len(tags) >= expected_num, "Did not see enough {} tags".format(prefix))
 
     if expected_num == 1:
         return tags[-1]
@@ -81,19 +84,20 @@ def do_subtree_split(new_split_tag, merge_tag):
     return subtree_branch
 
 ###############################################################################
-def touches_file(start_range, end_range, filepath):
+def touches_file(start_range, end_range, filepath, title, skip=None):
 ###############################################################################
-    return run_cmd_no_fail("git log {}..{} {}".format(start_range, end_range, filepath)) != ""
+    skip_str = "--grep={} --invert-grep".format(skip) if skip is not None else ""
+    result = run_cmd_no_fail("git log {} {}..{} -- {}".format(skip_str, start_range, end_range, filepath))
 
-###############################################################################
-def has_non_local_commits(filepath, non_local_path, local_tag):
-###############################################################################
-    most_recent = get_tag(local_tag)
-    return run_cmd_no_fail("git diff MERGE_HEAD:{} {}:{}".format(non_local_path, most_recent, filepath)) != ""
+    if result:
+        logging.debug("  touched by {} within range {}..{} by commits\n{}".format(title, start_range, end_range, result))
+
+    return result != ""
 
 ###############################################################################
 def reset_file(version, srcpath, dstpath):
 ###############################################################################
+    is_exe = os.access(dstpath, os.X_OK)
     os.remove(dstpath)
     try:
         run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
@@ -101,35 +105,76 @@ def reset_file(version, srcpath, dstpath):
         # If the above failes, then the file was deleted
         run_cmd_no_fail("git rm -f {}".format(dstpath))
     else:
+        if is_exe:
+            os.chmod(dstpath, os.stat(dstpath) | osstat.S_IXUSR | osstat.S_IXGRP | osstat.S_IXOTH)
+
         run_cmd_no_fail("git add {}".format(dstpath))
 
 ###############################################################################
-def get_last_merge(branch_name):
+def get_last_instance_of(branch_name, head):
 ###############################################################################
-    return run_cmd_no_fail("git log --first-parent ORIG_HEAD --grep='{}' -1 --oneline".format(branch_name)).split()[0]
+    return run_cmd_no_fail("git log --first-parent {} --grep='{}' -1 --oneline".format(head, branch_name)).split()[0]
 
 ###############################################################################
-def handle_easy_conflict(filepath, is_merge):
+def handle_easy_conflict(dst_filepath, is_merge):
 ###############################################################################
-    non_local_tag = MERGE_TAG_PREFIX if is_merge else SPLIT_TAG_PREFIX
-    local_tag     = MERGE_TAG_PREFIX if non_local_tag == SPLIT_TAG_PREFIX else SPLIT_TAG_PREFIX
+    """
+    src = repo we are coming from
+    dst = repo we merging something into
 
-    local_branch = "branch-for-{}".format(non_local_tag)
+    for a "split"
+    src = e3sm
+    dst = cime
 
-    non_local_path = filepath.replace("cime/", "", 1) if is_merge else os.path.join("cime", filepath)
+    for a "merge"
+    src = cime
+    dst = e3sm
+    """
+    src_tag_prefix = MERGE_TAG_PREFIX if is_merge else SPLIT_TAG_PREFIX
+    dst_tag_prefix = SPLIT_TAG_PREFIX if is_merge else MERGE_TAG_PREFIX
 
-    last_merge = get_last_merge(local_branch)
+    # For split, src_tag_prefix = acme-split-, dst_tag_prefix = to-acme-
 
-    if not touches_file(last_merge, "ORIG_HEAD", filepath):
-        logging.info("File '{}' appears to have had no recent local mods, setting to non-local".format(filepath))
-        reset_file("MERGE_HEAD", non_local_path, filepath)
+    src_branch_prefix = "branch-for-{}".format(dst_tag_prefix) # NOTE: opposite of tag
+    dst_branch_prefix = "branch-for-{}".format(src_tag_prefix) # NOTE: opposite of tag
+
+    # For split, dst_branch_prefix = branch-for-acme-split
+
+    # we can't use ORIG_HEAD for src_head for splits
+    # because ORIG_HEAD has been re-written by subtree, making the tag
+    # we want to use useless in a range operation
+    src_head = "MERGE_HEAD" if is_merge else "origin/master"
+    dst_head = "ORIG_HEAD"  if is_merge else "MERGE_HEAD"
+
+    # For split, src_head = origin/master, dst_head = MERGE_HEAD
+
+    src_filepath = dst_filepath.replace("cime/", "", 1) if is_merge else os.path.join("cime", dst_filepath)
+
+    # For split, src_filepath = cime/xxx/yyy, dst_filepath = xxx/yyy
+
+    # There's no tag for last dst operation
+    try:
+        last_dst_operation = get_last_instance_of(dst_branch_prefix, dst_head)
+    except Exception as e:
+        logging.warning("Could not get most recent merge for branch {}, {}".format(dst_branch_prefix, e))
+        return False
+
+    # Use tag for last src operation
+    last_src_operation = get_tag(src_tag_prefix, expected_num=2)[0]
+
+    logging.info("Examining file {} ...".format(dst_filepath))
+
+    if not touches_file(last_dst_operation, dst_head, dst_filepath, "dst"):
+        logging.info("  File '{}' appears to have had no recent dst mods, setting to src".format(dst_filepath))
+        reset_file(src_head, src_filepath, dst_filepath)
         return True
-    elif not has_non_local_commits(filepath, non_local_path, local_tag):
-        logging.info("File '{}' appears to have had no recent non-local mods, setting to local".format(filepath))
-        reset_file("ORIG_HEAD", filepath, filepath)
+    # We don't want to pick up the last dst->src operation as a src modification of this file
+    elif not touches_file(last_src_operation, src_head, src_filepath, "src", skip=src_branch_prefix):
+        logging.info("  File '{}' appears to have had no recent src mods, setting to dst".format(src_filepath))
+        reset_file(dst_head, dst_filepath, dst_filepath)
         return True
     else:
-        logging.info("File '{}' appears to have real conflicts".format(filepath))
+        logging.info("  File '{}' appears to have real conflicts".format(dst_filepath))
         return False
 
 ###############################################################################

@@ -83,13 +83,13 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
-
-HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
-ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
-   USE_CXX = true
-   USE_KOKKOS = TRUE
+ifeq ($(CIME_MODEL),e3sm)
+  HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+  ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+     USE_CXX = true
+     USE_KOKKOS = TRUE
+  endif
 endif
-
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -197,9 +197,8 @@ ifdef CPRE
   CONTIGUOUS_FLAG := $(patsubst -D%,$(CPRE)%,$(CONTIGUOUS_FLAG))
 endif
 
-ifndef AR
-   AR := ar
-endif
+AR ?= ar
+ARFLAGS ?= -r
 
 ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
@@ -241,9 +240,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-	ifdef PNETCDF_PATH
-		undefine PNETCDF_PATH
-	endif
+  ifdef PNETCDF_PATH
+    undefine PNETCDF_PATH
+  endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)
@@ -922,7 +921,7 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
 $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
+	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
