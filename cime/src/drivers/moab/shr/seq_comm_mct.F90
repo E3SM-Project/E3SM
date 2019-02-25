@@ -198,10 +198,11 @@ module seq_comm_mct
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
   integer, external :: iMOAB_InitializeFortran
-  integer, public :: mhid, mhfid, mpoid
+  integer, public :: mhid, mhfid, mpoid, mlnid ! homme, homme fine, ocean, land moab ids
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
+  integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
 
   !=======================================================================
 contains
