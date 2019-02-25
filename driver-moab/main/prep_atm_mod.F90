@@ -362,7 +362,7 @@ contains
     endif
     if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
       ! receive on atm on coupler pes, that was redistributed according to coverage
-       ierr = iMOAB_ReceiveElementTag(mbaxid, id_join, atmid, tagName, mpicom_join)
+       ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
