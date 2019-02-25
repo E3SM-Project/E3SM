@@ -10,6 +10,19 @@ import glob
 
 logger = logging.getLogger(__name__)
 
+def _download_checksum_file(server, input_data_root):
+    """
+    Return True if successfully downloaded
+    """
+    rel_path = "../inputdata_checksum.dat"
+    full_path = os.path.join(input_data_root, "inputdata_checksum.dat")
+    logging.info("Trying to download file: '{}' to path '{}'".format(rel_path, full_path))
+
+    # Use umask to make sure files are group read/writable. As long as parent directories
+    # have +s, then everything should work.
+    with SharedArea():
+        return server.getfile(rel_path, full_path)
+
 def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     """
     Return True if successfully downloaded
@@ -161,7 +174,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
-
+    firstdownload = True
 
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))
@@ -205,6 +218,10 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             no_files_missing = False
 
                             if (download):
+                                if firstdownload:
+                                    # Get the md5 checksum file
+                                    _download_checksum_file(server, input_data_root)
+                                    firstdownload = False
                                 no_files_missing = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
                                                                isdirectory=rel_path.endswith(os.sep))
                         else:
