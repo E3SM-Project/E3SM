@@ -24,7 +24,13 @@ def _download_checksum_file(server, input_data_root):
     # Use umask to make sure files are group read/writable. As long as parent directories
     # have +s, then everything should work.
     with SharedArea():
-        return server.getfile(rel_path, full_path)
+        success = server.getfile(rel_path, full_path)
+        if not success:
+            logger.warning("Could not automatically download file {} "+
+                           "download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat".
+                           format(full_path))
+        return success
+
 
 def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     """
@@ -225,12 +231,12 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             if (download):
                                 if firstdownload:
                                     # Get the md5 checksum file
-                                    _download_checksum_file(server, input_data_root)
+                                    got_chksum = _download_checksum_file(server, input_data_root)
                                     firstdownload = False
                                 isdirectory=rel_path.endswith(os.sep)
                                 no_files_missing = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
                                                                         isdirectory=isdirectory)
-                                if no_files_missing and not isdirectory:
+                                if got_chksum and no_files_missing and not isdirectory:
                                     verify_chksum(input_data_root,"inputdata_checksum.dat", rel_path.strip(os.sep))
                         else:
                             if chksum:
@@ -239,7 +245,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             logging.debug("  Already had input file: '{}'".format(full_path))
 
 
-                            
+
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
                     logging.warning("Model {} no file specified for {}".format(model, description))
@@ -249,22 +255,27 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
 def verify_chksum(input_data_root, checksumfile, filename):
     if not chksum_hash:
-        if os.path.isfile(os.path.join(input_data_root,checksumfile)):
-            with open(os.path.join(input_data_root,checksumfile)) as fd:
-                lines = fd.readlines()
-                for line in lines:
-                    lsplit = line.split()
-                    if len(lsplit) < 8:
-                        continue
-                    fname = (lsplit[7])[10:]
-                    chksum_hash[fname] = lsplit[0]
-                    
+        hashfile = os.path.join(input_data_root,checksumfile)
+        if not os.path.isfile(hashfile):
+            expect(False, "Failed to find or download file {}. "+
+                   "download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat".
+                   format(hashfile))
+
+        with open(hashfile) as fd:
+            lines = fd.readlines()
+            for line in lines:
+                lsplit = line.split()
+                if len(lsplit) < 8:
+                    continue
+                fname = (lsplit[7])[10:]
+                chksum_hash[fname] = lsplit[0]
+
     chksum = md5(os.path.join(input_data_root, filename))
     if chksum_hash:
         expect(filename in chksum_hash.keys() and chksum == chksum_hash[filename],
                "chksum mismatch for file {} expected {} found {}".
                format(os.path.join(input_data_root,filename),chksum, chksum_hash[filename]))
-        
+
 
 
 def md5(fname):
