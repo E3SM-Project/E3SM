@@ -20,6 +20,7 @@ module ocn_time_varying_forcing
   use mpas_forcing
   use mpas_stream_manager
   use ocn_framework_forcing
+  use ocn_constants
   use mpas_log, only: mpas_log_write
 
   implicit none
@@ -53,12 +54,12 @@ contains
     type (domain_type) :: domain
 
     logical, pointer :: &
-         config_use_atmospheric_forcing
+         config_use_time_varying_atmospheric_forcing
 
-    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_atmospheric_forcing)
+    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_time_varying_atmospheric_forcing)
 
     ! init the atmospheric forcing
-    if (config_use_atmospheric_forcing) then
+    if (config_use_time_varying_atmospheric_forcing) then
        call init_atmospheric_forcing(domain)
     endif
 
@@ -245,11 +246,11 @@ contains
     type (MPAS_clock_type) :: simulationClock
 
     logical, pointer :: &
-         config_use_atmospheric_forcing
+         config_use_time_varying_atmospheric_forcing
 
-    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_atmospheric_forcing)
+    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_time_varying_atmospheric_forcing)
 
-    if (config_use_atmospheric_forcing) then
+    if (config_use_time_varying_atmospheric_forcing) then
 
         call atmospheric_forcing(&
              streamManager, &
@@ -415,6 +416,7 @@ contains
 
     ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_forcing_ramp)
 
+    !$omp do schedule(runtime) private(iCell, windStressCoefficient)
     do iCell = 1, nCells
 
        windSpeedU(iCell) = ramp*windSpeedU(iCell)
@@ -425,9 +427,10 @@ contains
        windStressZonal(iCell) = windSpeedU(iCell) * windSpeedMagnitude(iCell) * windStressCoefficient
        windStressMeridional(iCell) = windSpeedV(iCell) * windSpeedMagnitude(iCell) * windStressCoefficient
 
-       atmosphericPressure(iCell) = ((1.0_RKIND-ramp)*101325.0_RKIND + ramp*atmosPressure(iCell)) - 101325.0_RKIND
+       atmosphericPressure(iCell) = ((1.0_RKIND-ramp)*atm_ref_pressure + ramp*atmosPressure(iCell)) - atm_ref_pressure
 
     enddo
+    !$omp end do
 
   end subroutine post_atmospheric_forcing!}}}
 
