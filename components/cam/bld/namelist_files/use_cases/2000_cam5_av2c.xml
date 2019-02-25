@@ -61,6 +61,7 @@
 <zmconv_dmpdz>      -1.2e-3</zmconv_dmpdz>
 <zmconv_ke>          5.0E-6 </zmconv_ke>
 <zmconv_alfa>        0.14D0 </zmconv_alfa>
+<zmconv_tp_fac>      2.0D0  </zmconv_tp_fac>
 <effgw_oro>          0.25    </effgw_oro>
 <seasalt_emis_scale> 0.6     </seasalt_emis_scale> 
 <dust_emis_fact>     2.8D0 </dust_emis_fact>
