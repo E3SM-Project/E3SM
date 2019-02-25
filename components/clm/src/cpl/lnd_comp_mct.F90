@@ -51,7 +51,7 @@ contains
     use domainMod        , only : ldomain
     use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
-    use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
+    use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO, shr_file_freeunit
     use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
     use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
     use seq_infodata_mod , only : seq_infodata_type, seq_infodata_GetData, seq_infodata_PutData, &
@@ -64,6 +64,9 @@ contains
     use clm_cpl_indices  , only : clm_cpl_indices_set
     use mct_mod
     use ESMF
+#ifdef HAVE_MOAB
+    use seq_comm_mct,      only: mlnid  ! id of moab land app
+#endif
     !
     ! !ARGUMENTS:
     type(ESMF_Clock),           intent(inout) :: EClock           ! Input synchronization clock
@@ -108,6 +111,14 @@ contains
     type(bounds_type) :: bounds                      ! bounds
     character(len=32), parameter :: sub = 'lnd_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+#ifdef HAVE_MOAB
+    integer, external :: iMOAB_RegisterFortranApplication
+    integer :: ierr
+    character*32  appname
+    ! debugIuli
+    integer   ::        debugGSMapFile, n
+#endif
     !-----------------------------------------------------------------------
 
     ! Set cdata data
@@ -222,6 +233,32 @@ contains
 
     call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd ) 	
     lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
+#ifdef HAVE_MOAB
+    appname="LNDMB"//CHAR(0)
+    ! first land instance, should be 9
+    ierr = iMOAB_RegisterFortranApplication(appname, mpicom_lnd, LNDID, mlnid)
+    if (ierr > 0 )  &
+       call endrun('Error: cannot register moab app')
+    if(masterproc) then
+       write(iulog,*) " "
+       write(iulog,*) "register MOAB app:", trim(appname), "  mlnid=", mlnid
+       write(iulog,*) " "
+    endif
+! debugIuli
+    if (masterproc) then
+      debugGSMapFile = shr_file_getUnit()
+      open( debugGSMapFile, file='LndGSmapC.txt')
+      write(debugGSMapFile,*) gsMap_lnd%comp_id
+      write(debugGSMapFile,*) gsMap_lnd%ngseg
+      write(debugGSMapFile,*) gsMap_lnd%gsize
+      do n=1,gsMap_lnd%ngseg
+          write(debugGSMapFile,*) gsMap_lnd%start(n),gsMap_lnd%length(n),gsMap_lnd%pe_loc(n)
+      end do
+      close(debugGSMapFile)
+      call shr_file_freeunit(debugGSMapFile)
+    endif
+!end debugIULI
+#endif
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 
