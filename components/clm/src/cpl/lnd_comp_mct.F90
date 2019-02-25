@@ -244,7 +244,7 @@ contains
        write(iulog,*) "register MOAB app:", trim(appname), "  mlnid=", mlnid
        write(iulog,*) " "
     endif
-! debugIuli
+#if 0
     if (masterproc) then
       debugGSMapFile = shr_file_getUnit()
       open( debugGSMapFile, file='LndGSmapC.txt')
@@ -257,7 +257,8 @@ contains
       close(debugGSMapFile)
       call shr_file_freeunit(debugGSMapFile)
     endif
-!end debugIULI
+#endif
+!  endif HAVE_MOAB
 #endif
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
