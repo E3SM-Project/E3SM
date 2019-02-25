@@ -45,9 +45,9 @@ let NMPI*=$PER_NODE
 if (( 0 )) ; then
   echo running cmake
   cd ../../..
-  #cmake -DQSIZE_D=3 -DPREQX_PLEV=40 -DPREQX_NP=4  \
-  # -DBUILD_HOMME_SWEQX=FALSE  -DPREQX_USE_PIO=TRUE             \
-  # -DPREQX_USE_ENERGY=FALSE  .
+  cmake -DQSIZE_D=3 -DPREQX_PLEV=40 -DPREQX_NP=4  \
+   -DBUILD_HOMME_SWEQX=FALSE  -DPREQX_USE_PIO=TRUE             \
+   -DPREQX_USE_ENERGY=FALSE  .
   make -j4 theta-l
   cd dcmip_tests/dcmip2016_test3_supercell/theta-l
   exit
