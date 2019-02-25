@@ -254,8 +254,8 @@ while ($inst_counter <= $NINST_ICE) {
 
 # Write streams file if there isn't one in SourceMods
 
-if ( -e "$CASEROOT/SourceMods/src.mpassi/$STREAM_NAME" ) {
-	$sysmod = "cp $CASEROOT/SourceMods/src.mpassi/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpascice/$STREAM_NAME $RUNDIR/$STREAM_NAME";
 	system($sysmod) == 0 or die "ERROR mpassi buildnml: $sysmod fails: $?\n";
 } else {
 	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
