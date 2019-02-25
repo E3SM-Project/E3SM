@@ -6,9 +6,12 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob
+import glob, hashlib
 
 logger = logging.getLogger(__name__)
+# The inputdata_checksum.dat file will be read into this hash if it's available
+chksum_hash = dict()
+
 
 def _download_checksum_file(server, input_data_root):
     """
@@ -50,15 +53,16 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
             return server.getfile(rel_path, full_path)
 
 ###############################################################################
-def check_all_input_data(self, protocol=None, address=None, input_data_root=None, data_list_dir="Buildconf", download=True):
+def check_all_input_data(self, protocol=None, address=None, input_data_root=None, data_list_dir="Buildconf",
+                         download=True, chksum=False):
 ###############################################################################
     success = False
     if protocol is not None and address is not None:
         success = self.check_input_data(protocol=protocol, address=address, download=download,
-                                   input_data_root=input_data_root, data_list_dir=data_list_dir)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
     else:
         success = self.check_input_data(protocol=protocol, address=address, download=False,
-                                   input_data_root=input_data_root, data_list_dir=data_list_dir)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
@@ -142,7 +146,8 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
             os.remove(os.path.join("Buildconf","refcase.input_data_list"))
     return True
 
-def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf", download=False):
+def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
+                     download=False, chksum=False):
     """
     Return True if no files missing
     """
@@ -222,13 +227,49 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                                     # Get the md5 checksum file
                                     _download_checksum_file(server, input_data_root)
                                     firstdownload = False
+                                isdirectory=rel_path.endswith(os.sep)
                                 no_files_missing = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
-                                                               isdirectory=rel_path.endswith(os.sep))
+                                                                        isdirectory=isdirectory)
+                                if no_files_missing and not isdirectory:
+                                    verify_chksum(input_data_root,"inputdata_checksum.dat", rel_path.strip(os.sep))
                         else:
+                            if chksum:
+                                verify_chksum(input_data_root,"inputdata_checksum.dat", rel_path.strip(os.sep))
+                                logger.info("Chksum passed for file {}".format(os.path.join(input_data_root,rel_path)))
                             logging.debug("  Already had input file: '{}'".format(full_path))
 
+
+                            
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
                     logging.warning("Model {} no file specified for {}".format(model, description))
 
     return no_files_missing
+
+
+def verify_chksum(input_data_root, checksumfile, filename):
+    if not chksum_hash:
+        if os.path.isfile(os.path.join(input_data_root,checksumfile)):
+            with open(os.path.join(input_data_root,checksumfile)) as fd:
+                lines = fd.readlines()
+                for line in lines:
+                    lsplit = line.split()
+                    if len(lsplit) < 8:
+                        continue
+                    fname = (lsplit[7])[10:]
+                    chksum_hash[fname] = lsplit[0]
+                    
+    chksum = md5(os.path.join(input_data_root, filename))
+    if chksum_hash:
+        expect(filename in chksum_hash.keys() and chksum == chksum_hash[filename],
+               "chksum mismatch for file {} expected {} found {}".
+               format(os.path.join(input_data_root,filename),chksum, chksum_hash[filename]))
+        
+
+
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
