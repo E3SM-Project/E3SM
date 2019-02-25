@@ -866,6 +866,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityMeridionalSquared"/>')
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
         if ocn_iceberg == 'true':
             lines.append('    <var name="icebergHeatFlux"/>')
             lines.append('    <var name="icebergFreshWaterFlux"/>')
