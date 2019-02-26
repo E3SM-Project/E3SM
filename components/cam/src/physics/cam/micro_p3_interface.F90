@@ -742,6 +742,46 @@ end subroutine micro_p3_readnl
 !      call addfld('QCRAT', (/ 'lev' /), 'A', 'fraction', 'Qc Limiter: Fraction of qc tendency applied')
 !   end if
 
+   ! Record of microphysics tendencies
+   ! warm-phase process rates
+   call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
+   call addfld('P3_qcacc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet accretion by rain')
+   call addfld('P3_qcaut',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet autoconversion to rain')
+   call addfld('P3_ncacc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from accretion by rain')
+   call addfld('P3_ncautc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from autoconversion')
+   call addfld('P3_ncslf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from self-collection  (Not in paper?)')
+   call addfld('P3_nrslf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from self-collection  (Not in paper?)')
+   call addfld('P3_ncnuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from activation of CCN')
+   call addfld('P3_qccon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet condensation')
+   call addfld('P3_qcnuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for activation of cloud droplets from CCN')
+   call addfld('P3_qrevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain evaporation')
+   call addfld('P3_qcevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet evaporation')
+   call addfld('P3_nrevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from evaporation')
+   call addfld('P3_ncautr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from autoconversion of cloud water')
+   ! ice-phase process rates
+   call addfld('P3_qccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection of cloud water by ice')
+   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for wet growth rate')
+   call addfld('P3_qidep',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for vapor deposition')
+   call addfld('P3_qrcol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection rain mass by ice')
+   call addfld('P3_qinuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for deposition/condensation freezing nuc')
+   call addfld('P3_nccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from collection by ice')
+   call addfld('P3_nrcol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from collection by ice')
+   call addfld('P3_ninuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in ice number from deposition/cond-freezing nucleation')
+   call addfld('P3_qisub',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for sublimation of ice')
+   call addfld('P3_qimlt',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for melting of ice')
+   call addfld('P3_nimlt',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for melting of ice')
+   call addfld('P3_nisub',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in ice number from sublimation')
+   call addfld('P3_nislf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in ice number from collection within a category (Not in paper?)')
+   call addfld('P3_qcheti', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for immersion freezing droplets')
+   call addfld('P3_qrheti', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for immersion freezing rain')
+   call addfld('P3_ncheti', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for immersion freezing droplets')
+   call addfld('P3_nrheti', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for immersion freezing rain')
+   call addfld('P3_nrshdr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number from collision of rain/ice above freezing and shedding')
+   call addfld('P3_qcshd',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding')
+   call addfld('P3_qcmul',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)')
+   call addfld('P3_ncshdc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)')
+
+
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
                      history_verbose_out        = history_verbose      , &
@@ -775,6 +815,45 @@ end subroutine micro_p3_readnl
       call add_default ('CLOUDFRAC_LIQ_MICRO', 1, ' ')
       call add_default ('CLOUDFRAC_ICE_MICRO', 1, ' ')
       call add_default ('CLOUDFRAC_RAIN_MICRO', 1, ' ')
+      ! Microphysics tendencies !TODO, AaronDonahue, would like to make this a
+      ! namelist option instead of hardcoded as default output
+      ! warm-phase process rates
+      call add_default('P3_qrcon',  1, ' ')
+      call add_default('P3_qcacc',  1, ' ')
+      call add_default('P3_qcaut',  1, ' ')
+      call add_default('P3_ncacc',  1, ' ')
+      call add_default('P3_ncautc', 1, ' ')
+      call add_default('P3_ncslf',  1, ' ')
+      call add_default('P3_nrslf',  1, ' ')
+      call add_default('P3_ncnuc',  1, ' ')
+      call add_default('P3_qccon',  1, ' ')
+      call add_default('P3_qcnuc',  1, ' ')
+      call add_default('P3_qrevp',  1, ' ')
+      call add_default('P3_qcevp',  1, ' ')
+      call add_default('P3_nrevp',  1, ' ')
+      call add_default('P3_ncautr', 1, ' ')
+      ! ice-phase process rates
+      call add_default('P3_qccol',  1, ' ')
+      call add_default('P3_qwgrth', 1, ' ')
+      call add_default('P3_qidep',  1, ' ')
+      call add_default('P3_qrcol',  1, ' ')
+      call add_default('P3_qinuc',  1, ' ')
+      call add_default('P3_nccol',  1, ' ')
+      call add_default('P3_nrcol',  1, ' ')
+      call add_default('P3_ninuc',  1, ' ')
+      call add_default('P3_qisub',  1, ' ')
+      call add_default('P3_qimlt',  1, ' ')
+      call add_default('P3_nimlt',  1, ' ')
+      call add_default('P3_nisub',  1, ' ')
+      call add_default('P3_nislf',  1, ' ')
+      call add_default('P3_qcheti', 1, ' ')
+      call add_default('P3_qrheti', 1, ' ')
+      call add_default('P3_ncheti', 1, ' ')
+      call add_default('P3_nrheti', 1, ' ')
+      call add_default('P3_nrshdr', 1, ' ')
+      call add_default('P3_qcshd',  1, ' ')
+      call add_default('P3_qcmul',  1, ' ')
+      call add_default('P3_ncshdc', 1, ' ')
    end if
 
   end subroutine micro_p3_init
@@ -837,6 +916,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: rcldm(pcols,pver)      !rain cloud fraction
     real(rtype) :: lcldm(pcols,pver)      !liquid cloud fraction
     real(rtype) :: icldm(pcols,pver)      !ice cloud fraction
+    real(rtype) :: tend_out(pcols,pver,35) !microphysical tendencies
 
     ! PBUF Variables
     real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
@@ -1214,7 +1294,8 @@ end subroutine micro_p3_readnl
          sflx(its:ite,kts:kte+1),     & ! OUT grid-box average ice/snow flux (kgm^-2 s^-1) pverp
          rcldm(its:ite,kts:kte),      & ! OUT rain cloud fraction
          lcldm(its:ite,kts:kte),      & ! OUT liquid cloud fraction
-         icldm(its:ite,kts:kte)       & ! OUT ice cloud fraction
+         icldm(its:ite,kts:kte),      & ! OUT ice cloud fraction
+         tend_out(its:ite,kts:kte,:)  & ! OUT p3 microphysics tendencies
          )
 
     ! UPDATE TH AND QV OLD FOR NEXT P3 STEP
@@ -1554,6 +1635,45 @@ end subroutine micro_p3_readnl
 !   call outfld('FREQS',       freqs,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 !   call outfld('ANSNOW',      nsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 !   call outfld('AQSNOW',      qsout2,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+
+   ! Write p3 tendencies as output 
+   ! warm-phase process rates
+   call outfld('P3_qrcon',  tend_out(:,:, 1), pcols, lchnk) 
+   call outfld('P3_qcacc',  tend_out(:,:, 2), pcols, lchnk) 
+   call outfld('P3_qcaut',  tend_out(:,:, 3), pcols, lchnk) 
+   call outfld('P3_ncacc',  tend_out(:,:, 4), pcols, lchnk) 
+   call outfld('P3_ncautc', tend_out(:,:, 5), pcols, lchnk) 
+   call outfld('P3_ncslf',  tend_out(:,:, 6), pcols, lchnk) 
+   call outfld('P3_nrslf',  tend_out(:,:, 7), pcols, lchnk) 
+   call outfld('P3_ncnuc',  tend_out(:,:, 8), pcols, lchnk) 
+   call outfld('P3_qccon',  tend_out(:,:, 9), pcols, lchnk) 
+   call outfld('P3_qcnuc',  tend_out(:,:,10), pcols, lchnk) 
+   call outfld('P3_qrevp',  tend_out(:,:,11), pcols, lchnk) 
+   call outfld('P3_qcevp',  tend_out(:,:,12), pcols, lchnk) 
+   call outfld('P3_nrevp',  tend_out(:,:,13), pcols, lchnk) 
+   call outfld('P3_ncautr', tend_out(:,:,14), pcols, lchnk) 
+   ! ice-phase process rate
+   call outfld('P3_qccol',  tend_out(:,:,15), pcols, lchnk) 
+   call outfld('P3_qwgrth', tend_out(:,:,16), pcols, lchnk) 
+   call outfld('P3_qidep',  tend_out(:,:,17), pcols, lchnk) 
+   call outfld('P3_qrcol',  tend_out(:,:,18), pcols, lchnk) 
+   call outfld('P3_qinuc',  tend_out(:,:,19), pcols, lchnk) 
+   call outfld('P3_nccol',  tend_out(:,:,20), pcols, lchnk) 
+   call outfld('P3_nrcol',  tend_out(:,:,21), pcols, lchnk) 
+   call outfld('P3_ninuc',  tend_out(:,:,22), pcols, lchnk) 
+   call outfld('P3_qisub',  tend_out(:,:,23), pcols, lchnk) 
+   call outfld('P3_qimlt',  tend_out(:,:,24), pcols, lchnk) 
+   call outfld('P3_nimlt',  tend_out(:,:,25), pcols, lchnk) 
+   call outfld('P3_nisub',  tend_out(:,:,26), pcols, lchnk) 
+   call outfld('P3_nislf',  tend_out(:,:,27), pcols, lchnk) 
+   call outfld('P3_qcheti', tend_out(:,:,28), pcols, lchnk) 
+   call outfld('P3_qrheti', tend_out(:,:,29), pcols, lchnk) 
+   call outfld('P3_ncheti', tend_out(:,:,30), pcols, lchnk) 
+   call outfld('P3_nrheti', tend_out(:,:,31), pcols, lchnk) 
+   call outfld('P3_nrshdr', tend_out(:,:,32), pcols, lchnk) 
+   call outfld('P3_qcshd',  tend_out(:,:,33), pcols, lchnk) 
+   call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) 
+   call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk) 
     
     !call outfld('P3_QCAUT',   qcaut,  pcols, lchnk)
 

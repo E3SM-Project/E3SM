@@ -20,6 +20,7 @@ struct FortranData {
 
   using Array1 = Kokkos::View<Scalar*, Layout, ExeSpace>;
   using Array2 = Kokkos::View<Scalar**, Layout, ExeSpace>;
+  using Array3 = Kokkos::View<Scalar***, Layout, ExeSpace>;
 
   static constexpr bool log_predictnc = true;
 
@@ -32,6 +33,7 @@ struct FortranData {
   // Out
   Array1 prt_liq, prt_sol;
   Array2 diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, cmeiout, prain, nevapr, prer_evap, rflx, sflx, rcldm, lcldm, icldm;
+  Array3 p3_tend_out;
 
   FortranData(Int ncol, Int nlev);
 };

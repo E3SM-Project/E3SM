@@ -307,7 +307,7 @@ contains
   SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
-       pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm)
+       pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -375,6 +375,7 @@ contains
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: ast        ! relative humidity cloud fraction
 
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
+    real(rtype), intent(out),   dimension(its:ite,kts:kte,35)      :: p3_tend_out ! micro physics tendencies
     !----- Local variables and parameters:  -------------------------------------------------!
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
@@ -562,6 +563,7 @@ contains
     nevapr  = 0.
     rflx    = 0.
     sflx    = 0.
+    p3_tend_out = 0.
 
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
@@ -1630,6 +1632,44 @@ contains
 
           call impose_max_total_Ni(nitot(i,k),max_total_Ni,inv_rho(i,k))
 
+          ! Record microphysics tendencies for output:
+          ! warm-phase process rates
+          p3_tend_out(i,k, 1) = qrcon   ! rain condensation   (Not in paper?)
+          p3_tend_out(i,k, 2) = qcacc   ! cloud droplet accretion by rain
+          p3_tend_out(i,k, 3) = qcaut   ! cloud droplet autoconversion to rain
+          p3_tend_out(i,k, 4) = ncacc   ! change in cloud droplet number from accretion by rain
+          p3_tend_out(i,k, 5) = ncautc  ! change in cloud droplet number from autoconversion
+          p3_tend_out(i,k, 6) = ncslf   ! change in cloud droplet number from self-collection  (Not in paper?)
+          p3_tend_out(i,k, 7) = nrslf   ! change in rain number from self-collection  (Not in paper?)
+          p3_tend_out(i,k, 8) = ncnuc   ! change in cloud droplet number from activation of CCN
+          p3_tend_out(i,k, 9) = qccon   ! cloud droplet condensation
+          p3_tend_out(i,k,10) = qcnuc   ! activation of cloud droplets from CCN
+          p3_tend_out(i,k,11) = qrevp   ! rain evaporation
+          p3_tend_out(i,k,12) = qcevp   ! cloud droplet evaporation
+          p3_tend_out(i,k,13) = nrevp   ! change in rain number from evaporation
+          p3_tend_out(i,k,14) = ncautr  ! change in rain number from autoconversion of cloud water
+          ! ice-phase  process rates
+          p3_tend_out(i,k,15) = qccol     ! collection of cloud water by ice
+          p3_tend_out(i,k,16) = qwgrth    ! wet growth rate
+          p3_tend_out(i,k,17) = qidep     ! vapor deposition
+          p3_tend_out(i,k,18) = qrcol     ! collection rain mass by ice
+          p3_tend_out(i,k,19) = qinuc     ! deposition/condensation freezing nuc
+          p3_tend_out(i,k,20) = nccol     ! change in cloud droplet number from collection by ice
+          p3_tend_out(i,k,21) = nrcol     ! change in rain number from collection by ice
+          p3_tend_out(i,k,22) = ninuc     ! change in ice number from deposition/cond-freezing nucleation
+          p3_tend_out(i,k,23) = qisub     ! sublimation of ice
+          p3_tend_out(i,k,24) = qimlt     ! melting of ice
+          p3_tend_out(i,k,25) = nimlt     ! melting of ice
+          p3_tend_out(i,k,26) = nisub     ! change in ice number from sublimation
+          p3_tend_out(i,k,27) = nislf     ! change in ice number from collection within a category (Not in paper?)
+          p3_tend_out(i,k,28) = qcheti    ! immersion freezing droplets
+          p3_tend_out(i,k,29) = qrheti    ! immersion freezing rain
+          p3_tend_out(i,k,30) = ncheti    ! immersion freezing droplets
+          p3_tend_out(i,k,31) = nrheti    ! immersion freezing rain
+          p3_tend_out(i,k,32) = nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
+          p3_tend_out(i,k,33) = qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
+          p3_tend_out(i,k,34) = qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
+          p3_tend_out(i,k,35) = ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper) 
           !---------------------------------------------------------------------------------
 
 555       continue
