@@ -96,7 +96,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(pdel); fdipb(exner); fdipb(ast); fdipb(cmeiout); fdipb(prain);
   fdipb(nevapr); fdipb(prer_evap);
   fdipb(rflx); fdipb(sflx);
-  fdipb(rcldm); fdipb(lcldm); fdipb(icldm), fdipb(p3_tend_out);
+  fdipb(rcldm); fdipb(lcldm); fdipb(icldm); fdipb(p3_tend_out);
 #undef fdipb
 }
 
