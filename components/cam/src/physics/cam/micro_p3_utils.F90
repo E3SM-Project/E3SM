@@ -24,7 +24,7 @@ module micro_p3_utils
 #endif
 
     public :: get_latent_heat, get_precip_fraction, micro_p3_utils_init, size_dist_param_liq, &
-              size_dist_param_basic,avg_diameter, rising_factorial
+              size_dist_param_basic,avg_diameter, rising_factorial, rtype
 
     integer, public :: iulog_e3sm
     logical, public :: masterproc_e3sm
