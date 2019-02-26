@@ -37,9 +37,8 @@
 
 module micro_p3
 
-#ifdef CAM
-   use shr_kind_mod,   only: rtype=>shr_kind_r8
-#endif
+   ! get real kind from utils
+   use micro_p3_utils, only: rtype
 
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
@@ -55,10 +54,6 @@ module micro_p3
 
   implicit none
   save
-
-#ifndef CAM
-  integer,parameter :: rtype = selected_real_kind(12) ! 8 byte real
-#endif
 
   public  :: p3_init,p3_main
 

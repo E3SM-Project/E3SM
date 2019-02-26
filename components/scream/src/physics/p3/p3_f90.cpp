@@ -105,14 +105,15 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void micro_p3_utils_init (const FortranData& d) {
-  using c = Constants<double>;
+void micro_p3_utils_init () {
+  using c = Constants<Real>;
   micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RhoH2O, 
                  c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce, 
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 
 void p3_init () {
+  micro_p3_utils_init();
   static const char* dir = ".";
   Int info;
   p3_init_c(&dir, &info);
