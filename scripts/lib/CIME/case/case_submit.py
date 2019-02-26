@@ -50,7 +50,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     env_batch_has_changed = False
     try:
         case.check_lockedfile(os.path.basename(env_batch.filename))
-    except CIMEError:
+    except:
         env_batch_has_changed = True
 
     if batch_system != "none" and env_batch_has_changed:
