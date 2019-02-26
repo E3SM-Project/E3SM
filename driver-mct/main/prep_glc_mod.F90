@@ -1499,6 +1499,7 @@ contains
                                  SHR_CONST_RHOSW,  &
                                  SHR_CONST_DTF_DP, &
                                  SHR_CONST_DTF_DS, &
+                                 SHR_CONST_DTF_DPDS, &
                                  SHR_CONST_TF0,    &
                                  SHR_CONST_KAPPA_LAND_ICE
 
@@ -1541,11 +1542,15 @@ contains
     !-----------------------------------------------------------------
 
     real (kind=r8) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
-                         iceHeatFluxCoeff, iceDeltaT
+                         iceHeatFluxCoeff, iceDeltaT, dTf_dS
     integer :: iCell
     character(*), parameter :: subname = '(compute_melt_fluxes)'
 
     real (kind=r8), parameter :: minInterfaceSalinity = 0.001_r8
+
+    real (kind=r8), parameter :: referencePressure = 0.0_r8 ! Using reference pressure of 0
+
+    real (kind=r8) :: pressureOffset
 
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
@@ -1553,12 +1558,16 @@ contains
 
       iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
       nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))
-      T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP*interfacePressure(iCell)
+      pressureOffset = max(interfacePressure(iCell) - referencePressure, 0.0_r8)
+      T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP * pressureOffset
+         !Note: These two terms for T0 are not needed because we are evaluating at salinity=0:
+         !+ SHR_CONST_DTF_DS * oceanSalinity(iCell) + SHR_CONST_DTF_DPDS * pressureOffset * oceanSalinity(iCell)
       iceDeltaT = T0 - iceTemperature(iCell)
+      dTf_dS = SHR_CONST_DTF_DS + SHR_CONST_DTF_DPDS * pressureOffset
 
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
-      a = -SHR_CONST_DTF_DS*(1.0_r8 + nu)
+      a = -1.0_r8 * dTf_dS * (1.0_r8 + nu)
       b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
       c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_r8)
       ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
@@ -1570,7 +1579,7 @@ contains
       ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
       outInterfaceSalinity(iCell) = max(-(2.0_r8*c)/(b + sqrt(b**2 - 4.0_r8*a*c)), minInterfaceSalinity)
 
-      outInterfaceTemperature(iCell) = SHR_CONST_DTF_DS*outInterfaceSalinity(iCell)+T0
+      outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
       outFreshwaterFlux(iCell) = SHR_CONST_RHOSW*oceanSaltTransferVelocity(iCell) &
         * (oceanSalinity(iCell)/outInterfaceSalinity(iCell) - 1.0_r8)
