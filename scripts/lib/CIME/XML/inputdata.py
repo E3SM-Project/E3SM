@@ -42,5 +42,12 @@ class Inputdata(GenericXML):
         if self._servernode is not None:
             protocol = self.text(self.get_child("protocol", root = self._servernode))
             address =  self.text(self.get_child("address", root = self._servernode))
-
-        return protocol, address
+            user = None
+            passwd = None
+            unode = self.get_optional_child("user", root = self._servernode)
+            if unode:
+                user =  self.text(unode)
+            pnode = self.get_optional_child("password", root = self._servernode)
+            if pnode:
+                passwd =  self.text(pnode)
+        return protocol, address, user, passwd

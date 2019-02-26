@@ -11,19 +11,23 @@
   </server>
 
   <server>
-    <protocol>svn</protocol>
-    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
-  </server>
-
-  <server>
     <protocol>wget</protocol>
     <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
+    <user>anonymous</user>
+    <password>user@example.edu</password>
   </server>
 
   <server>
     <comment> ftp requires the python package ftplib </comment>
     <protocol>ftp</protocol>
     <address>ftp.cgd.ucar.edu/cesm/inputdata</address>
+    <user>anonymous</user>
+    <password>user@example.edu</password>
+  </server>
+
+  <server>
+    <protocol>svn</protocol>
+    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>
 
 </inputdata>

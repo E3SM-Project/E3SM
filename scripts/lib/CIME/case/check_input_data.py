@@ -19,16 +19,26 @@ def _download_checksum_file(server, input_data_root):
     """
     rel_path = "../inputdata_checksum.dat"
     full_path = os.path.join(input_data_root, "inputdata_checksum.dat")
-    logging.info("Trying to download file: '{}' to path '{}'".format(rel_path, full_path))
-
+    logging.info("Trying to download file: '{}' to path '{}' using {} protocal.".format(rel_path, full_path, type(server).__name__))
+    tmpfile = None
+    if os.path.isfile(full_path):
+        tmpfile = full_path+".tmp"
+        os.rename(full_path, tmpfile)
     # Use umask to make sure files are group read/writable. As long as parent directories
     # have +s, then everything should work.
     with SharedArea():
         success = server.getfile(rel_path, full_path)
-        if not success:
-            logger.warning("Could not automatically download file {} "+
-                           "download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat".
-                           format(full_path))
+        if success:
+            if tmpfile:
+                os.remove(tmpfile)
+        else:
+            if os.path.isfile(tmpfile):
+                os.rename(tmpfile, full_path)
+                logger.warning("Could not automatically download file "+full_path+
+                           " Restoring existing version.")
+            else:
+                logger.warning("Could not automatically download file "+full_path+
+                           "download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat")
         return success
 
 
@@ -40,7 +50,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
-    logging.info("Trying to download file: '{}' to path '{}'".format(rel_path, full_path))
+    logging.info("Trying to download file: '{}' to path '{}' using {} protocal.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
         if not os.path.exists(full_path):
@@ -82,10 +92,11 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
     protocol = 'svn'
     inputdata = Inputdata()
     while not success and protocol is not None:
-        protocol, address = inputdata.get_next_server()
+        protocol, address, user, passwd = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
         success = case.check_input_data(protocol=protocol, address=address, download=True,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
+#        input_data_root=input_data_root, data_list_dir=data_list_dir, user=user, passwd=passwd)
+        input_data_root=input_data_root, data_list_dir=data_list_dir)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
@@ -153,7 +164,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
     return True
 
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
-                     download=False, chksum=False):
+                     download=False, chksum=False, user=None, passwd=None):
     """
     Return True if no files missing
     """
@@ -175,12 +186,13 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
             return False
 
         if protocol == "svn":
-            server = CIME.Servers.SVN(address)
+            server = CIME.Servers.SVN(address, user, passwd)
         elif protocol == "gftp":
-            server = CIME.Servers.GridFTP(address)
+            server = CIME.Servers.GridFTP(address, user, passwd)
         elif protocol == "ftp":
-            server = CIME.Servers.FTP(address)
+            server = CIME.Servers.FTP(address, user, passwd)
         elif protocol == "wget":
+#            server = CIME.Servers.WGET(address, user, passwd)
             server = CIME.Servers.WGET(address)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
@@ -257,9 +269,8 @@ def verify_chksum(input_data_root, checksumfile, filename):
     if not chksum_hash:
         hashfile = os.path.join(input_data_root,checksumfile)
         if not os.path.isfile(hashfile):
-            expect(False, "Failed to find or download file {}. "+
-                   "download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat".
-                   format(hashfile))
+            expect(False, "Failed to find or download file "+hashfile+
+                   " download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat")
 
         with open(hashfile) as fd:
             lines = fd.readlines()

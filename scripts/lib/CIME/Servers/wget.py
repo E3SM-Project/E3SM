@@ -4,17 +4,15 @@ WGET Server class.  Interact with a server using WGET protocol
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
-
 logger = logging.getLogger(__name__)
 
 class WGET(GenericServer):
     def __init__(self, address, user='', passwd=''):
         self._args = ''
         if user:
-            self._args += "--user {}".format(user)
+            self._args += "--user {} ".format(user)
         if passwd:
-            self._args += "--password {}".format(passwd)
-
+            self._args += "--password {} ".format(passwd)
         err = run_cmd("wget {} --spider {}".format(self._args, address))[0]
         expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
         self._server_loc = address
