@@ -21,6 +21,8 @@ module micro_p3_utils
   integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
 #endif
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
+#else
+    public :: rtype
 #endif
 
     public :: get_latent_heat, get_precip_fraction, micro_p3_utils_init, size_dist_param_liq, &
