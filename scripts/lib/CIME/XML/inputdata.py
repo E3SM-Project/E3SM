@@ -27,6 +27,8 @@ class Inputdata(GenericXML):
     def get_next_server(self):
         protocol = None
         address = None
+        user = ''
+        passwd = ''
         servernodes = self.get_children("server")
         if self._servernode is None:
             self._servernode = servernodes[0]
@@ -42,8 +44,6 @@ class Inputdata(GenericXML):
         if self._servernode is not None:
             protocol = self.text(self.get_child("protocol", root = self._servernode))
             address =  self.text(self.get_child("address", root = self._servernode))
-            user = None
-            passwd = None
             unode = self.get_optional_child("user", root = self._servernode)
             if unode:
                 user =  self.text(unode)

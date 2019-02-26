@@ -19,7 +19,11 @@ def _download_checksum_file(server, input_data_root):
     """
     rel_path = "../inputdata_checksum.dat"
     full_path = os.path.join(input_data_root, "inputdata_checksum.dat")
-    logging.info("Trying to download file: '{}' to path '{}' using {} protocal.".format(rel_path, full_path, type(server).__name__))
+    protocol = type(server).__name__
+    if protocol == 'svn':
+        # svn server does not have this file
+        return False
+    logging.info("Trying to download file: '{}' to path '{}' using {} protocal.".format(rel_path, full_path, protocol))
     tmpfile = None
     if os.path.isfile(full_path):
         tmpfile = full_path+".tmp"
@@ -95,8 +99,7 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
         protocol, address, user, passwd = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
         success = case.check_input_data(protocol=protocol, address=address, download=True,
-#        input_data_root=input_data_root, data_list_dir=data_list_dir, user=user, passwd=passwd)
-        input_data_root=input_data_root, data_list_dir=data_list_dir)
+        input_data_root=input_data_root, data_list_dir=data_list_dir, user=user, passwd=passwd)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
