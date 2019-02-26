@@ -335,7 +335,7 @@ subroutine phys_ctl_readnl(nlfile)
    endif
    
    ! Add a check to make sure SHOC and MG are used together
-   if ( do_shoc_sgs .and. ( microp_scheme .ne. 'MG')) then
+   if ( do_shoc_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3')) then
       write(iulog,*)'SHOC is only compatible with MG microphysics.  Quiting'
       call endrun('SHOC and microphysics schemes incompatible')
    endif   

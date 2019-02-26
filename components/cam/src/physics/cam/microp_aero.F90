@@ -429,9 +429,7 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: num_pcarbon(:,:)! number m.r. of primary carbon
 
    real(r8), pointer :: kvh(:,:)        ! vertical eddy diff coef (m2 s-1)
-#ifndef FIVE
    real(r8), pointer :: tke(:,:)        ! TKE from the UW PBL scheme (m2 s-2)
-#endif
    real(r8), pointer :: wp2(:,:)        ! CLUBB vertical velocity variance
 
    real(r8), pointer :: cldn(:,:)       ! cloud fraction
@@ -444,9 +442,6 @@ subroutine microp_aero_run ( &
    real(r8)          :: icecldf(pcols,pver)    ! ice cloud fraction   
    real(r8)          :: liqcldf(pcols,pver)    ! liquid cloud fraction
 
-#ifdef FIVE
-   real(r8) :: tke(pcols,pverp)
-#endif
    real(r8) :: rho(pcols,pver)     ! air density (kg m-3)
 
    real(r8) :: lcldm(pcols,pver)   ! liq cloud fraction

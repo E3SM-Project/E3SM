@@ -986,16 +986,6 @@ if (defined $opts{'shoc_sgs'}) {
 }
 my $shoc_sgs = $cfg_ref->get('shoc_sgs');
 
-# consistency checks...
-
-# SHOC_SGS only works with mg microphysics
-if ($shoc_sgs and $microphys_pkg !~ m/^mg/) {
-    die <<"EOF";
-**    ERROR: microphysics package set to: $microphys_pkg
-**    SHOC only works with MG microphysics.
-EOF
-}
-
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
 

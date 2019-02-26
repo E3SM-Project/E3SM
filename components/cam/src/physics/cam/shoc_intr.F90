@@ -601,11 +601,6 @@ end function shoc_implements_cnst
    real(r8), pointer, dimension(:,:) :: relvar
    
    logical :: lqice(pcnst)   
-
-#endif
-   det_s(:)   = 0.0_r8
-   det_ice(:) = 0.0_r8
-#ifdef SHOC_SGS
    
    !------------------------------------------------------------------!
    !------------------------------------------------------------------!
@@ -1250,9 +1245,8 @@ end function shoc_implements_cnst
     call outfld('CONCLD',concld,pcols,lchnk)
     call outfld('BRUNT',brunt,pcols,lchnk)
 
-	 
-    return
-#endif             
+#endif    
+    return         
   end subroutine shoc_tend_e3sm      
 
 end module shoc_intr
