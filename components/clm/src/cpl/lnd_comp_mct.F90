@@ -760,18 +760,18 @@ contains
     use seq_comm_mct,      only: mlnid  ! id of moab land app
     use m_GeneralGrid       , only:  mct_ggrid_indexIA      => indexIA
     use m_GeneralGrid       , only : MCT_GGrid_indexRA      => indexRA
-
+    use spmdMod     , only: iam  ! rank on the land communicator
     type(mct_gGrid),        pointer :: mct_ldom                ! Land model domain data
     integer        , intent(in)    :: lsz     ! land model domain data size
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
-         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage
+         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
     ! number of vertices is the size of land domain
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     real(r8)   :: latv, lonv
-    integer   dims, i, ilat, ilon, igdx, ierr, tagindex
+    integer   dims, i, ilat, ilon, igdx, ierr, tagindex, ixarea, ixfrac
     integer tagtype, numco, ent_type
     character*100 outfile, wopts, localmeshfile, tagname
     real(R8),parameter :: SHR_CONST_PI      = 3.14159265358979323846_R8  ! pi
@@ -806,6 +806,49 @@ contains
     ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
     if (ierr > 0 )  &
       call endrun('Error: fail to set GLOBAL_ID tag ')
+
+    !there are no shared entities, but we will set a special partition tag, in order to see the
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+    tagname='partition'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create new partition tag ')
+
+    vgids = iam
+    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set partition tag ')
+
+    ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
+    !   on the vertices; do not allocate other data array
+    !  do not be confused by this !
+    ixfrac = MCT_GGrid_indexRA(mct_ldom,'frac')
+    ixarea = MCT_GGrid_indexRA(mct_ldom,'area')
+    tagname='frac'//CHAR(0)
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create frac tag ')
+
+    do i = 1, lsz
+      moab_vert_coords(i) = mct_ldom%data%rAttr(ixfrac, i)
+    enddo
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set frac tag ')
+
+    tagname='area'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create area tag ')
+    do i = 1, lsz
+      moab_vert_coords(i) = mct_ldom%data%rAttr(ixarea, i) ! use the same doubles for second tag :)
+    enddo
+
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set area tag ')
+
     deallocate(moab_vert_coords)
     deallocate(vgids)
 
