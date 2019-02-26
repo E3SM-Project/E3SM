@@ -57,9 +57,14 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_CONDICE = 2.1_R8          ! thermal conductivity of ice ~ W/m/K
    real(R8),parameter :: SHR_CONST_KAPPA_LAND_ICE = &        ! Diffusivity of heat in land ice ~
                          SHR_CONST_CONDICE / (SHR_CONST_RHOICE*SHR_CONST_CPICE)
-   real(R8),parameter :: SHR_CONST_DTF_DP = -7.53e-8_R8      !Jer TODO: add on description
-   real(R8),parameter :: SHR_CONST_DTF_DS = -5.73e-2_R8      !Jer TODO: add on description
-   real(R8),parameter :: SHR_CONST_TF0    = 9.39e-2_R8       !Jer TODO: add on description
+   real(R8),parameter :: SHR_CONST_TF0    = 6.22e-2_R8       ! The freezing temperature at zero pressure in
+   ! sub-ice-shelf ocean cavities ~ C
+   real(R8),parameter :: SHR_CONST_DTF_DP = -7.43e-8_R8      ! The coefficient for the term proportional to the (limited)
+   ! pressure in the freezing temperature in sub-ice-shelf ocean cavities. ~ C Pa^{-1}
+   real(R8),parameter :: SHR_CONST_DTF_DS = -5.63e-2_R8      !The coefficient for the term proportional to salinity in
+   ! the freezing temperature in sub-ice-ice ocean cavities ~ C PSU^{-1}
+   real(R8),parameter :: SHR_CONST_DTF_DPDS = -1.74e-10_R8   ! The coefficient for the term proportional to salinity times
+   ! pressure in the freezing temperature in sub-ice-shelf ocean cavities ~ C PSU^{-1} Pa^{-1}
    real(R8),parameter :: SHR_CONST_OCN_REF_SAL = 34.7_R8     ! ocn ref salinity (psu)
    real(R8),parameter :: SHR_CONST_ICE_REF_SAL =  4.0_R8     ! ice ref salinity (psu)
 
