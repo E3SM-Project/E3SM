@@ -795,11 +795,11 @@ contains
     type(mct_aVect), pointer :: x2g_gx ! Glc import, glc grid, cpl pes
     type(mct_aVect), pointer :: g2x_gx ! Glc import, glc grid, cpl pes
 
-    integer :: index_o2x_So_blt
-    integer :: index_o2x_So_bls
-    integer :: index_o2x_So_htv
-    integer :: index_o2x_So_stv
-    integer :: index_o2x_So_rhoeff
+    integer :: index_x2g_So_blt
+    integer :: index_x2g_So_bls
+    integer :: index_x2g_So_htv
+    integer :: index_x2g_So_stv
+    integer :: index_x2g_So_rhoeff
     integer :: index_g2x_Sg_tbot
     integer :: index_g2x_Sg_dztbot
     integer :: index_g2x_Sg_icemask_floating
@@ -814,13 +814,8 @@ contains
     character(*), parameter :: subname = '(prep_glc_calculate_subshelf_boundary_fluxes)'
     !---------------------------------------------------------------
 
-!    if  (associated(o2x_gx)) then
-!       write(logunit,*) 'size of o2x_gx = ', size(o2x_gx)
-!    endif
-
     if (.not.(glc_present)) return
-
-    gsize = mct_aVect_lsize(o2x_gx(1))
+    !write(logunit,*) 'Starting prep_glc_calculate_subshelf_boundary_fluxes'
 
     o2x_ox => component_get_c2x_cx(ocn(1))
     g2x_gx => component_get_c2x_cx(glc(1))
@@ -830,18 +825,21 @@ contains
 
     !Remap relevant ocean variables to ice sheet grid.
     !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
-    call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(1), &
+    call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
     fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
 
-    index_o2x_So_blt =    mct_avect_indexra(o2x_gx(1),'So_blt',perrwith='quiet')
-    index_o2x_So_bls =    mct_avect_indexra(o2x_gx(1),'So_bls',perrwith='quiet')
-    index_o2x_So_htv =    mct_avect_indexra(o2x_gx(1),'So_htv',perrwith='quiet')
-    index_o2x_So_stv =    mct_avect_indexra(o2x_gx(1),'So_stv',perrwith='quiet')
-    index_o2x_So_rhoeff = mct_avect_indexra(o2x_gx(1),'So_rhoeff',perrwith='quiet')
+    ! inputs to melt flux calculation
+    index_x2g_So_blt =    mct_avect_indexra(x2g_gx,'So_blt',perrwith='quiet')
+    index_x2g_So_bls =    mct_avect_indexra(x2g_gx,'So_bls',perrwith='quiet')
+    index_x2g_So_htv =    mct_avect_indexra(x2g_gx,'So_htv',perrwith='quiet')
+    index_x2g_So_stv =    mct_avect_indexra(x2g_gx,'So_stv',perrwith='quiet')
+    index_x2g_So_rhoeff = mct_avect_indexra(x2g_gx,'So_rhoeff',perrwith='quiet')
+
     index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
     index_g2x_Sg_icemask_floating = mct_avect_indexra(g2x_gx,'Sg_icemask_floating',perrwith='quiet')
 
+    ! outputs to melt flux calculation
     index_g2x_Sg_blis = mct_avect_indexra(g2x_gx,'Sg_blis',perrwith='quiet')
     index_g2x_Sg_blit = mct_avect_indexra(g2x_gx,'Sg_blit',perrwith='quiet')
     index_g2x_Fogx_qiceho = mct_avect_indexra(g2x_gx,'Fogx_qiceho',perrwith='quiet')
@@ -849,24 +847,22 @@ contains
     index_x2g_Fogx_qiceli = mct_avect_indexra(x2g_gx,'Fogx_qiceli',perrwith='quiet')
     index_x2g_Fogx_qicehi = mct_avect_indexra(x2g_gx,'Fogx_qicehi',perrwith='quiet')
 
+    gsize = mct_aVect_lsize(g2x_gx)
+    write(logunit,*) 'gsize=',gsize
+
     do n=1,gsize
       !Extract glc and ocn-sourced coupler fields used as input to compute_melt_fluxes to local arrays...
-      oceanTemperature(n) =               o2x_gx(1)%rAttr(index_o2x_So_blt,n)
-      oceanSalinity(n) =                  o2x_gx(1)%rAttr(index_o2x_So_bls,n)
-      oceanHeatTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_htv,n)
-      oceanSaltTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_stv,n)
-      interfacePressure(n) =              o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)
 
-!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_blt,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_blt,n)
-!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_bls,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_bls,n)
-!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_htv,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_htv,n)
-!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_stv,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_stv,n)
-!      write(logunit,*) 'o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)=',n,o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)
+      ! Fields from the ocean, now on the GLC grid
+      oceanTemperature(n) =               x2g_gx%rAttr(index_x2g_So_blt,n)
+      oceanSalinity(n) =                  x2g_gx%rAttr(index_x2g_So_bls,n)
+      oceanHeatTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_htv,n)
+      oceanSaltTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_stv,n)
+      interfacePressure(n) =              x2g_gx%rAttr(index_x2g_So_rhoeff,n)
 
-
+      ! Fields from the ice sheet model (still on the GLC grid)
       iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
       iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
-
       iceFloatingMask(n) =                g2x_gx%rAttr(index_g2x_Sg_icemask_floating,n)
 
       !... initialize local compute_melt_fluxes output arrays...
