@@ -1545,6 +1545,8 @@ contains
     integer :: iCell
     character(*), parameter :: subname = '(compute_melt_fluxes)'
 
+    real (kind=r8), parameter :: minInterfaceSalinity = 0.001_r8
+
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
       if (iceFloatingMask(iCell) == 0) cycle ! Only calculate on floating cells
@@ -1558,16 +1560,16 @@ contains
 
       a = -SHR_CONST_DTF_DS*(1.0_r8 + nu)
       b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
-      c = -transferVelocityRatio*Tlatent
+      c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_r8)
+      ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
+      ! Since a can be zero, we need a solution of the quadratic equation for 1/Si instead of Si.
+      ! Following: https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+      ! Since a and -c are are non-negative, the term in the square root is also always >= |b|.
+      ! In all reasonable cases, b will be strictly positive, since transferVelocityRatio*Tlatent ~ 2 C,
+      ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -3 C
+      ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
+      outInterfaceSalinity(iCell) = max(-(2.0_r8*c)/(b + sqrt(b**2 - 4.0_r8*a*c)), minInterfaceSalinity)
 
-      ! a is strictly positive; c is strictly negative so we never get imaginary roots
-      ! The positive root is the one we want (salinity is strictly positive)
-      outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_r8*a*c*oceanSalinity(iCell)))/(2.0_r8*a)
-      if (outInterfaceSalinity(iCell) .lt. 0.0_r8) then
-	write(logunit,*) subname,' ERROR: Negative interface salinity in subshelf boundary calculation: ', &
-	                           'iCell,outInterfaceSalinity(iCell)=', iCell,outInterfaceSalinity(iCell)
-        call shr_sys_abort(subname//' ERROR: Negative interface salinity in subshelf boundary calculation.')
-      end if
       outInterfaceTemperature(iCell) = SHR_CONST_DTF_DS*outInterfaceSalinity(iCell)+T0
 
       outFreshwaterFlux(iCell) = SHR_CONST_RHOSW*oceanSaltTransferVelocity(iCell) &
