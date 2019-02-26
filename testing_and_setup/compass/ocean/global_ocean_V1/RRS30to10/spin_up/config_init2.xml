@@ -32,12 +32,12 @@
 	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
 
 	<namelist name="namelist.ocean" mode="init">
-		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_init2.xml" path_base="script_configuration_dir"/>
 		<option name="config_global_ocean_deepen_critical_passages">.false.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
-		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_init2.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">

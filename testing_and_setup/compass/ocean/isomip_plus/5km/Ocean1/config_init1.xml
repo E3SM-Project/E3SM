@@ -17,6 +17,7 @@
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
 	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 	<add_link source_path="script_configuration_dir" source="processInputGeometry.py" dest="processInputGeometry.py"/>
+	<add_link source_path="script_configuration_dir" source="removePeriodic.py" dest="removePeriodic.py"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init.xml" path_base="script_configuration_dir"/>
@@ -50,6 +51,9 @@
 
 		<step executable="./MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
+		</step>
+		<step executable="./removePeriodic.py">
+			<argument flag="">culled_mesh.nc</argument>
 		</step>
 	</run_script>
 </config>

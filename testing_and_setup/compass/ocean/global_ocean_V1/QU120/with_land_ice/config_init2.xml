@@ -34,14 +34,14 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
-		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_critical_passages.xml" path_base="script_configuration_dir"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
 		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
-		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_critical_passages.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">
