@@ -422,6 +422,7 @@
 			<var name="zb3"/>
 			<var name="dss"/>
 			<var name="u_init"/>
+			<var name="v_init"/>
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
@@ -546,6 +547,7 @@
 			<var name="zb3"/>
 			<var name="dss"/>
 			<var name="u_init"/>
+			<var name="v_init"/>
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
@@ -1262,6 +1264,9 @@
                 <!-- Reference profiles -->
                 <var name="u_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
                      description="u reference profile"/>
+
+                <var name="v_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
+                     description="v reference profile"/>
 
                 <var name="t_init" type="real" dimensions="nVertLevels nCells" units="K"
                      description="theta reference profile"/>

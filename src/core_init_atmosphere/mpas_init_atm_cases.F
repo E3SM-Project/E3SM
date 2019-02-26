@@ -75,29 +75,6 @@ module init_atm_cases
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_init_case', config_init_case)
 
-      !
-      ! Do some quick checks to make sure compile options are compatible with the chosen test case
-      !
-      if (config_init_case == 6) then
-#ifndef ROTATED_GRID
-         call mpas_log_write('*****************************************************************',  messageType=MPAS_LOG_ERR)
-         call mpas_log_write('To initialize and run the mountain wave test case (case 6),',        messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   please clean and re-compile init_atmosphere with -DROTATED_GRID', messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   added to the specification of MODEL_FORMULATION',                 messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   at the top of the Makefile.',                                     messageType=MPAS_LOG_ERR)
-         call mpas_log_write('*****************************************************************',  messageType=MPAS_LOG_CRIT)
-#endif
-      else
-#ifdef ROTATED_GRID
-         call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
-         call mpas_log_write('Only test case 6 should use code compiled with -DROTATED_GRID',     messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   specified in the Makefile.',                                     messageType=MPAS_LOG_ERR)
-         call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_CRIT)
-#endif
-      end if
-
-
-
       if ((config_init_case == 1) .or. (config_init_case == 2) .or. (config_init_case == 3)) then
 
          call mpas_log_write(' Jablonowski and Williamson baroclinic wave test case ')
@@ -1857,7 +1834,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
       real (kind=RKIND) :: d1, d2, d3, cof1, cof2
-      real (kind=RKIND) :: um, us,  rcp, rcv
+      real (kind=RKIND) :: um, vm, us, vs, rcp, rcv
       real (kind=RKIND) :: xmid, temp, pres, a_scale
 
       real (kind=RKIND) :: xi, xa, xc, xla, zinv, xn2, xn2m, xn2l, sm, dzh, dzht, dzmin, z_edge, z_edge3 
@@ -1879,7 +1856,7 @@ module init_atm_cases
       real (kind=RKIND), pointer :: cf1, cf2, cf3
 
       real (kind=RKIND), dimension(:,:), pointer :: t_init, w, rw, v, rho, theta
-      real (kind=RKIND), dimension(:), pointer :: u_init, angleEdge, fEdge, fVertex
+      real (kind=RKIND), dimension(:), pointer :: u_init, v_init, angleEdge, fEdge, fVertex
 
 
       call mpas_pool_get_array(mesh, 'xCell', xCell)
@@ -1912,6 +1889,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 't_init', t_init)
       call mpas_pool_get_array(mesh, 'u_init', u_init)
+      call mpas_pool_get_array(mesh, 'v_init', v_init)
       call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
       call mpas_pool_get_array(mesh, 'fEdge', fEdge)
       call mpas_pool_get_array(mesh, 'fVertex', fVertex)
@@ -2160,8 +2138,8 @@ module init_atm_cases
          xn2m = 0.0000
          xn2l = 0.0001
 
-         um = 10.
-         us = 0.
+         vm = 10.
+         um = 0.
 
          do i=1,nCells
             do k=1,nz1
@@ -2185,13 +2163,15 @@ module init_atm_cases
             do k=1,nz1
                ztemp = .25*( zgrid(k,cell1 )+zgrid(k+1,cell1 )  &
                             +zgrid(k,cell2)+zgrid(k+1,cell2))
-               u(k,i) = um
-               if(i == 1 ) u_init(k) = u(k,i) - us
-#ifdef ROTATED_GRID
-               u(k,i) = sin(angleEdge(i)) * (u(k,i) - us)
-#else
-               u(k,i) = cos(angleEdge(i)) * (u(k,i) - us)
-#endif
+               u(k,i) = vm
+
+               if(i == 1 ) then 
+                 v_init(k) = vm
+                 u_init(k) = 0.
+               end if
+
+               u(k,i) =   vm*sin(angleEdge(i)) + um*cos(angleEdge(i))
+                        
             end do
             end if
          end do

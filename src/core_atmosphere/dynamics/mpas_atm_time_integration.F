@@ -3953,7 +3953,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
-      real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, angleEdge, u_init
+      real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, angleEdge, u_init, v_init
 
       integer, dimension(:,:), pointer :: advCellsForEdge
       integer, dimension(:), pointer :: nAdvCellsForEdge
@@ -4059,6 +4059,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
       call mpas_pool_get_array(mesh, 'u_init', u_init)
+      call mpas_pool_get_array(mesh, 'v_init', v_init)
       call mpas_pool_get_array(mesh, 't_init', t_init)
       call mpas_pool_get_array(mesh, 'qv_init', qv_init)
 
@@ -4126,7 +4127,7 @@ module atm_time_integration
          h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save, &
          theta_m_save, exner, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
          cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
-         latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
+         latCell, latEdge, angleEdge, u_init, v_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
          rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
          config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
@@ -4151,7 +4152,7 @@ module atm_time_integration
       h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save, &
       theta_m_save, exner, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
       cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
-      latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
+      latCell, latEdge, angleEdge, u_init, v_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
       rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
       config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
@@ -4235,7 +4236,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nCells+1) :: latCell
       real (kind=RKIND), dimension(nEdges+1) :: latEdge
       real (kind=RKIND), dimension(nEdges+1) :: angleEdge
-      real (kind=RKIND), dimension(nVertLevels) :: u_init
+      real (kind=RKIND), dimension(nVertLevels) :: u_init, v_init
 
       integer, dimension(15,nEdges+1) :: advCellsForEdge
       integer, dimension(nEdges+1) :: nAdvCellsForEdge
@@ -4619,11 +4620,8 @@ module atm_time_integration
                   cell2 = cellsOnEdge(2,iEdge)
 
                   do k=1,nVertLevels
-#ifdef ROTATED_GRID
-                     u_mix(k) = u(k,iEdge) - u_init(k) * sin( angleEdge(iEdge) )
-#else
-                     u_mix(k) = u(k,iEdge) - u_init(k) * cos( angleEdge(iEdge) )
-#endif
+                     u_mix(k) = u(k,iEdge) - u_init(k) * cos( angleEdge(iEdge) ) &
+                                           - v_init(k) * sin( angleEdge(iEdge) )
                   end do
 
                   do k=2,nVertLevels-1
