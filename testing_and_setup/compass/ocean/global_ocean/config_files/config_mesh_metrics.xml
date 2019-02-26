@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <config case="mesh_metrics">
 
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source_path="mpas_tools" source="visualization/paraview_vtk_field_extractor/paraview_vtk_field_extractor.py" dest="paraview_vtk_field_extractor.py"/>
 	<add_link source_path="mpas_tools" source="mesh_tools/mesh_comparison.py" dest="mesh_comparison.py"/>
@@ -9,9 +8,9 @@
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/inject_bathymetry.py" dest="inject_bathymetry.py"/>
 
 	<run_script name="run.py">
-		<step executable="./MpasMeshConverter.x">
-			<argument flag="mesh.nc"></argument>
-			<argument flag="mesh_with_metrics.nc"></argument>
+		<step executable="MpasMeshConverter.x">
+                     <argument flag="mesh.nc"></argument>
+                     <argument flag="mesh_with_metrics.nc"></argument>
 		</step>
 
 		<step executable="./inject_bathymetry.py">

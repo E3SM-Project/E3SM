@@ -14,8 +14,6 @@
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 	<add_link source_path="script_configuration_dir" source="processInputGeometry.py" dest="processInputGeometry.py"/>
 	<add_link source_path="script_configuration_dir" source="removePeriodic.py" dest="removePeriodic.py"/>
 
@@ -39,7 +37,7 @@
 			<argument flag="">100.0</argument>
 		</step>
 
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
@@ -49,7 +47,7 @@
 
 		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 
-		<step executable="./MpasCellCuller.x">
+		<step executable="MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
 		</step>
 		<step executable="./removePeriodic.py">

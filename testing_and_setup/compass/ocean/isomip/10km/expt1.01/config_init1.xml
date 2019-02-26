@@ -9,8 +9,6 @@
 
 	<add_executable source="metis" dest="metis"/>
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init.xml" path_base="script_configuration_dir"/>
@@ -23,7 +21,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
@@ -33,7 +31,7 @@
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 
-		<step executable="./MpasCellCuller.x">
+		<step executable="MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
 		</step>
 	</run_script>

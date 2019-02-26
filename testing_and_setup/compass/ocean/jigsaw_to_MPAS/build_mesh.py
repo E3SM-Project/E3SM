@@ -51,7 +51,7 @@ print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
 print 'Step 4. Convert from triangles to MPAS mesh'
-args = ['./MpasMeshConverter.x',
+args = ['MpasMeshConverter.x',
         'mesh_triangles.nc',
         'base_mesh.nc']
 print "running", ' '.join(args)

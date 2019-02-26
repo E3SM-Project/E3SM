@@ -75,8 +75,8 @@ subprocess.check_call(args, env=os.environ.copy())
 
 # Create the land mask based on the land coverage, i.e. coastline data.
 # Run command is:
-# ./MpasMaskCreator.x  base_mesh.nc land_mask.nc -f land_coverage.geojson
-args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'land_mask_1_from_land_coverage.nc',
+# MpasMaskCreator.x  base_mesh.nc land_mask.nc -f land_coverage.geojson
+args = ['MpasMaskCreator.x', 'base_mesh.nc', 'land_mask_1_from_land_coverage.nc',
         '-f', 'land_coverage.geojson']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
@@ -114,9 +114,9 @@ if options.with_critical_passages:
 
     # create masks from the transects
     # Run command is:
-    # ./MpasMaskCreator.x  base_mesh.nc critical_passages_mask.nc
+    # MpasMaskCreator.x  base_mesh.nc critical_passages_mask.nc
     # -f critical_passages.geojson
-    args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'critical_passages_mask.nc',
+    args = ['MpasMaskCreator.x', 'base_mesh.nc', 'critical_passages_mask.nc',
             '-f', 'critical_passages.geojson']
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
@@ -132,9 +132,9 @@ if options.with_critical_passages:
 
     # Cull the mesh based on the land mask while keeping critical passages open
     # Run command is:
-    # ./MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask_final.nc
+    # MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask_final.nc
     # -p critical_passages_mask.nc
-    args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh.nc',
+    args = ['MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh.nc',
             '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc']
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
@@ -142,16 +142,16 @@ else:
 
     # cull the mesh based on the land mask
     # Run command is:
-    # ./MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask_final.nc
-    args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh.nc',
+    # MpasCellCuller.x  base_mesh.nc culled_mesh.nc -m land_mask_final.nc
+    args = ['MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh.nc',
             '-m', 'land_mask_final.nc']
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
 
 # create a mask for the flood fill seed points
 # Run command is:
-# ./MpasMaskCreator.x  culled_mesh.nc seed_mask.nc -s seed_points.geojson
-args = ['./MpasMaskCreator.x', 'culled_mesh.nc', 'seed_mask.nc',
+# MpasMaskCreator.x  culled_mesh.nc seed_mask.nc -s seed_points.geojson
+args = ['MpasMaskCreator.x', 'culled_mesh.nc', 'seed_mask.nc',
         '-s', 'seed_points.geojson']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
@@ -159,8 +159,8 @@ subprocess.check_call(args, env=os.environ.copy())
 
 # cull the mesh a second time using a flood fill from the seed points
 # Run command is:
-# ./MpasCellCuller.x  culled_mesh.nc culled_mesh_final.nc -i seed_mask.nc
-args = ['./MpasCellCuller.x', 'culled_mesh.nc', 'culled_mesh_final.nc',
+# MpasCellCuller.x  culled_mesh.nc culled_mesh_final.nc -i seed_mask.nc
+args = ['MpasCellCuller.x', 'culled_mesh.nc', 'culled_mesh_final.nc',
         '-i', 'seed_mask.nc']
 
 print "running", ' '.join(args)
@@ -169,9 +169,9 @@ subprocess.check_call(args, env=os.environ.copy())
 if options.with_critical_passages:
     # make a new version of the critical passages mask on the culled mesh
     # Run command is:
-    # ./MpasMaskCreator.x  culled_mesh_final.nc critical_passages_mask_final.nc
+    # MpasMaskCreator.x  culled_mesh_final.nc critical_passages_mask_final.nc
     # -f critical_passages.geojson
-    args = ['./MpasMaskCreator.x', 'culled_mesh_final.nc',
+    args = ['MpasMaskCreator.x', 'culled_mesh_final.nc',
             'critical_passages_mask_final.nc',
             '-f', 'critical_passages.geojson']
     print "running", ' '.join(args)
