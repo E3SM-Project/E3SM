@@ -26,6 +26,10 @@ module lnd_comp_mct
   ! !private member functions:
   private :: lnd_setgsmap_mct ! set the land model mct gs map
   private :: lnd_domain_mct   ! set the land model domain information
+
+#ifdef HAVE_MOAB
+  private :: init_land_moab   ! create moab mesh (cloud of points)
+#endif
   !---------------------------------------------------------------------------
 
 contains
@@ -281,6 +285,7 @@ contains
        write(iulog,*) "register MOAB app:", trim(appname), "  mlnid=", mlnid
        write(iulog,*) " "
     endif
+
 #if 0
     if (masterproc) then
       debugGSMapFile = shr_file_getUnit()
@@ -299,7 +304,9 @@ contains
 #endif
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
-
+#ifdef HAVE_MOAB
+    call init_land_moab(dom_l, lsz)
+#endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
 
@@ -748,4 +755,68 @@ contains
 
   end subroutine lnd_domain_mct
 
+#ifdef HAVE_MOAB
+  subroutine init_land_moab(mct_ldom, lsz)
+    use seq_comm_mct,      only: mlnid  ! id of moab land app
+    use m_GeneralGrid       , only:  mct_ggrid_indexIA      => indexIA
+    use m_GeneralGrid       , only : MCT_GGrid_indexRA      => indexRA
+
+    type(mct_gGrid),        pointer :: mct_ldom                ! Land model domain data
+    integer        , intent(in)    :: lsz     ! land model domain data size
+    integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
+         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage
+    ! local variables to fill in data
+    integer, dimension(:), allocatable :: vgids
+    !  retrieve everything we need from land domain mct_ldom
+    ! number of vertices is the size of land domain
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(r8)   :: latv, lonv
+    integer   dims, i, ilat, ilon, igdx, ierr, tagindex
+    integer tagtype, numco, ent_type
+    character*100 outfile, wopts, localmeshfile, tagname
+    real(R8),parameter :: SHR_CONST_PI      = 3.14159265358979323846_R8  ! pi
+
+    dims  =3 ! store as 3d mesh
+    allocate(moab_vert_coords(lsz*dims))
+    allocate(vgids(lsz))
+    ilat = MCT_GGrid_indexRA(mct_ldom,'lat')
+    ilon = MCT_GGrid_indexRA(mct_ldom,'lon')
+    igdx = MCT_GGrid_indexIA(mct_ldom,'GlobGridNum')
+    do i = 1, lsz
+      latv = mct_ldom%data%rAttr(ilat, i) *SHR_CONST_PI/180.
+      lonv = mct_ldom%data%rAttr(ilon, i) *SHR_CONST_PI/180.
+      moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+      moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+      moab_vert_coords(3*i  )=SIN(latv)
+      vgids(i) = mct_ldom%data%iAttr(igdx, i)
+    enddo
+
+    ierr = iMOAB_CreateVertices(mlnid, lsz*3, dims, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create MOAB vertices in land model')
+
+    tagtype = 0  ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
+
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set GLOBAL_ID tag ')
+    deallocate(moab_vert_coords)
+    deallocate(vgids)
+
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeLnd.h5m'//CHAR(0)
+    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the land mesh file')
+
+
+  end subroutine init_land_moab
+#endif
 end module lnd_comp_mct
