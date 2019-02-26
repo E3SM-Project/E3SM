@@ -23,7 +23,7 @@ extern "C" {
                  Real* pdel, Real* exner, Real* ast, Real* cmeiout, Real* prain,
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
-                 Real* rcldm, Real* lcldm, Real* icldm);
+                 Real* rcldm, Real* lcldm, Real* icldm, Real* p3_tend_out);
 }
 
 namespace scream {
@@ -72,6 +72,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   rcldm = Array2("Rain cloud fraction", ncol, nlev);
   lcldm = Array2("Liquid cloud fraction", ncol, nlev);
   icldm = Array2("Ice cloud fraction", ncol, nlev);
+  p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 35);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -95,7 +96,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(pdel); fdipb(exner); fdipb(ast); fdipb(cmeiout); fdipb(prain);
   fdipb(nevapr); fdipb(prer_evap);
   fdipb(rflx); fdipb(sflx);
-  fdipb(rcldm); fdipb(lcldm); fdipb(icldm);
+  fdipb(rcldm); fdipb(lcldm); fdipb(icldm), fdipb(p3_tend_out);
 #undef fdipb
 }
 
@@ -132,7 +133,7 @@ void p3_main (const FortranData& d) {
             d.pdel.data(), d.exner.data(), d.ast.data(), d.cmeiout.data(), d.prain.data(),
             d.nevapr.data(), d.prer_evap.data(),
             d.rflx.data(), d.sflx.data(),
-            d.rcldm.data(), d.lcldm.data(), d.icldm.data());
+            d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.p3_tend_out.data());
 }
 
 Int check_against_python (const FortranData& d) {
