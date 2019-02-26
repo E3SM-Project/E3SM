@@ -1551,9 +1551,9 @@ contains
 
       iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
       nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))
+      T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP*interfacePressure(iCell)
       iceDeltaT = T0 - iceTemperature(iCell)
 
-      T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP*interfacePressure(iCell)
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
       a = -SHR_CONST_DTF_DS*(1.0_r8 + nu)
