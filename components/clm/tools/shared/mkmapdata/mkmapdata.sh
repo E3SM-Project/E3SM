@@ -577,7 +577,7 @@ until ((nfile>${#INGRID[*]})); do
       # Check for duplicate mapping weights
       newfile="rmdups_${OUTFILE[nfile]}"
       runcmd "rm -f $newfile"
-      runcmd "env MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
+      runcmd "export MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
       if [ -f "$newfile" ]; then
          runcmd "mv $newfile ${OUTFILE[nfile]}"
       fi
