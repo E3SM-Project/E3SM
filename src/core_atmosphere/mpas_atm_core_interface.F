@@ -119,6 +119,7 @@ module atm_core_interface
 
       logical, pointer :: iauActive
       character(len=StrKIND), pointer :: config_iau_option
+      logical, pointer :: config_jedi_da, jedi_daActive
 
       ierr = 0
 
@@ -133,6 +134,14 @@ module atm_core_interface
       else
          iauActive = .false.
       end if
+
+      nullify(config_jedi_da)
+      call mpas_pool_get_config(configs, 'config_jedi_da', config_jedi_da)
+
+      nullify(jedi_daActive)
+      call mpas_pool_get_package(packages, 'jedi_daActive', jedi_daActive)
+
+      jedi_daActive = config_jedi_da
 
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at
