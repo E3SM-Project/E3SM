@@ -823,9 +823,10 @@ contains
     x2g_gx => component_get_x2c_cx(glc(1))
 
     !TO DO: CONSIDER HOW ENSEMBLES ARE GOING TO BE IMPLEMENTED (i.e. change hard-coded '1' index to e*i indices
-
     !Remap relevant ocean variables to ice sheet grid.
     !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
+    ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
+    ! these fields on the GLC grid of the coupler history file, which helps with debugging.
     call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
     fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
 
@@ -834,7 +835,7 @@ contains
     index_x2g_So_bls =    mct_avect_indexra(x2g_gx,'So_bls',perrwith='quiet')
     index_x2g_So_htv =    mct_avect_indexra(x2g_gx,'So_htv',perrwith='quiet')
     index_x2g_So_stv =    mct_avect_indexra(x2g_gx,'So_stv',perrwith='quiet')
-    index_x2g_So_rhoeff = mct_avect_indexra(x2g_gx,'So_rhoeff',perrwith='quiet')
+    !index_x2g_So_rhoeff = mct_avect_indexra(x2g_gx,'So_rhoeff',perrwith='quiet')
 
     index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
