@@ -16,6 +16,10 @@ local_chksum_file = 'inputdata_checksum.dat'
 def _download_checksum_file(server, input_data_root, chksum_file, user):
     """
     Return True if successfully downloaded
+    server is an object handle of type CIME.Servers
+    input_data_root is the local path to inputdata (DIN_LOC_ROOT)
+    chksum_file is the file to be downloaded (specified in config_inputdata.xml)
+    user is the user name of the person running the script
     """
     success = False
     rel_path = chksum_file
@@ -43,12 +47,17 @@ def _download_checksum_file(server, input_data_root, chksum_file, user):
                 logger.warning("Could not automatically download file "+full_path+
                            " Restoring existing version.")
             else:
-                logger.warning("Could not automatically download file "+full_path+
-                           " download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_checksum.dat")
+                logger.warning("Could not automatically download file {}".
+                               format(full_path))
+
     os.remove(lockfile)
     return success
 
 def _reformat_chksum_file(chksum_file, server_file):
+    """
+    The checksum file on the server has 8 space seperated columns, I need the first and last ones.
+    This function gets the first and last column of server_file and saves it to chksum_file
+    """
     with open(server_file) as fd, open(chksum_file,"w") as fout:
         lines = fd.readlines()
         for line in lines:
@@ -63,6 +72,10 @@ def _reformat_chksum_file(chksum_file, server_file):
     os.remove(server_file)
 
 def _merge_chksum_files(new_file, old_file):
+    """
+    If more than one server checksum file is available, this merges the files and removes
+    any duplicate lines
+    """
     with open(old_file) as fin:
         lines = fin.readlines()
     with open(new_file) as fin:
@@ -77,6 +90,11 @@ def _merge_chksum_files(new_file, old_file):
 def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=False):
     """
     Return True if successfully downloaded
+    server is an object handle of type CIME.Servers
+    input_data_root is the local path to inputdata (DIN_LOC_ROOT)
+    rel_path is the path to the file or directory relative to input_data_root
+    user is the user name of the person running the script
+    isdirectory indicates that this is a directory download rather than a single file
     """
     if not server.fileexists(rel_path):
         return False
@@ -103,10 +121,15 @@ def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=Fa
     os.remove(lockfile)
     return success
 
-###############################################################################
 def check_all_input_data(self, protocol=None, address=None, input_data_root=None, data_list_dir="Buildconf",
                          download=True, chksum=False):
-###############################################################################
+    """
+    Read through all files of the form *.input_data_list in the data_list_dir directory.  These files
+    contain a list of input and boundary files needed by each model component.  For each file in the
+    list confirm that it is available in input_data_root and if not (optionally download it from a
+    server at address using protocol.  Perform a chksum of the downloaded file.
+    """
+
     success = False
     if protocol is not None and address is not None:
         success = self.check_input_data(protocol=protocol, address=address, download=download,
@@ -122,7 +145,9 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
     return success
 
 def _downloadfromserver(case, input_data_root, data_list_dir):
-    # needs to be downloaded
+    """
+    Download files
+    """
     success = False
     protocol = 'svn'
     inputdata = Inputdata()
@@ -139,6 +164,11 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
+    """
+    Get a REFCASE for a hybrid or branch run
+    This is the only case in which we are downloading an entire directory instead of
+    a single file at a time.
+    """
     get_refcase  = self.get_value("GET_REFCASE")
     run_type     = self.get_value("RUN_TYPE")
     continue_run = self.get_value("CONTINUE_RUN")
@@ -205,6 +235,10 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
                      download=False, chksum=False, user=None, passwd=None, chksum_file=None):
     """
+    For a given case check for the relevant input data as specified in data_list_dir/*.input_data_list
+    in the directory input_data_root, if not found optionally download it using the servers specified
+    in config_inputdata.xml.  If a chksum file is available compute the chksum and compare it to that
+    in the file.
     Return True if no files missing
     """
     case.load_env(reset=True)
@@ -301,6 +335,11 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     return no_files_missing
 
 def _check_permissions_and_lock_inputdata_file(file_path, user):
+    """
+    Check that the user has write permission to the given file_path and
+    add a file_path.LOCK file to avoid any race condition, the file_path.LOCK file should
+    be removed after the download is completed
+    """
     basedir = os.path.dirname(file_path)
     if not os.path.exists(basedir):
         try:
@@ -325,6 +364,10 @@ def _check_permissions_and_lock_inputdata_file(file_path, user):
     return lock_file
 
 def verify_chksum(input_data_root, checksumfile, filename):
+    """
+    For file in filename perform a chksum and compare the result to that stored in
+    the local checksumfile
+    """
     if not chksum_hash:
         hashfile = os.path.join(input_data_root, local_chksum_file)
         if not os.path.isfile(hashfile):
@@ -335,7 +378,7 @@ def verify_chksum(input_data_root, checksumfile, filename):
             for line in lines:
                 fchksum, fname = line.split()
                 if fname in chksum_hash:
-                    expect(chksum_hash[fname] == fchksum, " Inconsistant hashes in chksum for file {}".format(fname))
+                    expect(chksum_hash[fname] == fchksum, " Inconsistent hashes in chksum for file {}".format(fname))
                 else:
                     chksum_hash[fname] = fchksum
 
@@ -351,6 +394,9 @@ def verify_chksum(input_data_root, checksumfile, filename):
 
 
 def md5(fname):
+    """
+    performs an md5 sum one chunk at a time to avoid memory issues with large files.
+    """
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
