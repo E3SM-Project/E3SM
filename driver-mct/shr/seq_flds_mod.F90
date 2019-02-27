@@ -2505,6 +2505,7 @@ contains
 
      name = 'Sg_tbot'
      call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
      longname = 'Bottom layer ice temperature'
      stdname  = 'Bottom_layer_ice_temperature'
      units    = 'C'
@@ -2513,6 +2514,7 @@ contains
 
      name = 'Sg_dztbot'
      call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
      longname = 'Bottom layer ice layer half thickness'
      stdname  = 'Bottom_layer_ice_layer_half_thickness'
      units    = 'm'
