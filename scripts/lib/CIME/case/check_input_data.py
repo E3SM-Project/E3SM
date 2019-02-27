@@ -6,24 +6,22 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib
+import glob, hashlib, fileinput
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
 chksum_hash = dict()
+local_chksum_file = 'inputdata_checksum.dat'
 
-
-def _download_checksum_file(server, input_data_root):
+def _download_checksum_file(server, input_data_root, chksum_file):
     """
     Return True if successfully downloaded
     """
-    rel_path = "../inputdata_checksum.dat"
-    full_path = os.path.join(input_data_root, "inputdata_checksum.dat")
+    success = False
+    rel_path = chksum_file
+    full_path = os.path.join(input_data_root, local_chksum_file)
     protocol = type(server).__name__
-    if protocol == 'svn':
-        # svn server does not have this file
-        return False
-    logging.info("Trying to download file: '{}' to path '{}' using {} protocal.".format(rel_path, full_path, protocol))
+    logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, protocol))
     tmpfile = None
     if os.path.isfile(full_path):
         tmpfile = full_path+".tmp"
@@ -34,16 +32,28 @@ def _download_checksum_file(server, input_data_root):
         success = server.getfile(rel_path, full_path)
         if success:
             if tmpfile:
-                os.remove(tmpfile)
+                _merge_chksum_files(full_path, tmpfile)
+                chksum_hash = dict()
         else:
-            if os.path.isfile(tmpfile):
+            if tmpfile and os.path.isfile(tmpfile):
                 os.rename(tmpfile, full_path)
                 logger.warning("Could not automatically download file "+full_path+
                            " Restoring existing version.")
             else:
                 logger.warning("Could not automatically download file "+full_path+
-                           "download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat")
-        return success
+                           " download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_checksum.dat")
+    return success
+
+def _merge_chksum_files(new_file, old_file):
+    with open(old_file) as fin:
+        lines = fin.readlines()
+    with open(new_file) as fin:
+        lines += fin.readlines()
+    lines = set(lines)
+    with open(new_file, "w") as fout:
+        fout.write("".join(lines))
+    os.remove(old_file)
+
 
 
 def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
@@ -54,7 +64,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
-    logging.info("Trying to download file: '{}' to path '{}' using {} protocal.".format(rel_path, full_path, type(server).__name__))
+    logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
         if not os.path.exists(full_path):
@@ -96,10 +106,12 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
     protocol = 'svn'
     inputdata = Inputdata()
     while not success and protocol is not None:
-        protocol, address, user, passwd = inputdata.get_next_server()
+        protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
         success = case.check_input_data(protocol=protocol, address=address, download=True,
-        input_data_root=input_data_root, data_list_dir=data_list_dir, user=user, passwd=passwd)
+                                        input_data_root=input_data_root,
+                                        data_list_dir=data_list_dir,
+                                        user=user, passwd=passwd, chksum_file=chksum_file)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
@@ -167,7 +179,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
     return True
 
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
-                     download=False, chksum=False, user=None, passwd=None):
+                     download=False, chksum=False, user=None, passwd=None, chksum_file=None):
     """
     Return True if no files missing
     """
@@ -184,6 +196,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     no_files_missing = True
 
     if download:
+        chksum_hash = dict()
         if protocol not in vars(CIME.Servers):
             logger.warning("Client protocol {} not enabled".format(protocol))
             return False
@@ -195,8 +208,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
         elif protocol == "ftp":
             server = CIME.Servers.FTP(address, user, passwd)
         elif protocol == "wget":
-#            server = CIME.Servers.WGET(address, user, passwd)
-            server = CIME.Servers.WGET(address)
+            server = CIME.Servers.WGET(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
@@ -244,23 +256,20 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             no_files_missing = False
 
                             if (download):
-                                if firstdownload:
+                                if chksum_file and firstdownload:
                                     # Get the md5 checksum file
-                                    got_chksum = _download_checksum_file(server, input_data_root)
+                                    got_chksum = _download_checksum_file(server, input_data_root, chksum_file)
                                     firstdownload = False
                                 isdirectory=rel_path.endswith(os.sep)
                                 no_files_missing = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
                                                                         isdirectory=isdirectory)
                                 if got_chksum and no_files_missing and not isdirectory:
-                                    verify_chksum(input_data_root,"inputdata_checksum.dat", rel_path.strip(os.sep))
+                                    verify_chksum(input_data_root,chksum_file, rel_path.strip(os.sep))
                         else:
                             if chksum:
-                                verify_chksum(input_data_root,"inputdata_checksum.dat", rel_path.strip(os.sep))
+                                verify_chksum(input_data_root,chksum_file, rel_path.strip(os.sep))
                                 logger.info("Chksum passed for file {}".format(os.path.join(input_data_root,rel_path)))
                             logging.debug("  Already had input file: '{}'".format(full_path))
-
-
-
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
                     logging.warning("Model {} no file specified for {}".format(model, description))
@@ -270,10 +279,9 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
 def verify_chksum(input_data_root, checksumfile, filename):
     if not chksum_hash:
-        hashfile = os.path.join(input_data_root,checksumfile)
+        hashfile = os.path.join(input_data_root, local_chksum_file)
         if not os.path.isfile(hashfile):
-            expect(False, "Failed to find or download file "+hashfile+
-                   " download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_chksum.dat")
+            expect(False, "Failed to find or download file {}".format(hashfile))
 
         with open(hashfile) as fd:
             lines = fd.readlines()
@@ -281,14 +289,21 @@ def verify_chksum(input_data_root, checksumfile, filename):
                 lsplit = line.split()
                 if len(lsplit) < 8:
                     continue
-                fname = (lsplit[7])[10:]
-                chksum_hash[fname] = lsplit[0]
+                # remove the first directory ('inputdata/') from the filename
+                fname = (lsplit[7]).split('/',1)[1]
+                if fname in chksum_hash.keys():
+                    expect(chksum_hash[fname] == lsplit[0], " Inconsistant hashes in chksum for file {}".format(fname))
+                else:
+                    chksum_hash[fname] = lsplit[0]
 
     chksum = md5(os.path.join(input_data_root, filename))
     if chksum_hash:
-        expect(filename in chksum_hash.keys() and chksum == chksum_hash[filename],
-               "chksum mismatch for file {} expected {} found {}".
-               format(os.path.join(input_data_root,filename),chksum, chksum_hash[filename]))
+        if not filename in chksum_hash:
+            logger.warning("Did not find hash for file {} in chksum file {}".format(filename, checksumfile))
+        else:
+            expect(chksum == chksum_hash[filename],
+                   "chksum mismatch for file {} expected {} found {}".
+                   format(os.path.join(input_data_root,filename),chksum, chksum_hash[filename]))
 
 
 

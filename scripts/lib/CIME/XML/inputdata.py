@@ -29,6 +29,7 @@ class Inputdata(GenericXML):
         address = None
         user = ''
         passwd = ''
+        chksum = None
         servernodes = self.get_children("server")
         if self._servernode is None:
             self._servernode = servernodes[0]
@@ -50,4 +51,7 @@ class Inputdata(GenericXML):
             pnode = self.get_optional_child("password", root = self._servernode)
             if pnode:
                 passwd =  self.text(pnode)
-        return protocol, address, user, passwd
+            csnode = self.get_optional_child("checksum", root = self._servernode)
+            if csnode:
+                chksum_file =  self.text(csnode)
+        return protocol, address, user, passwd, chksum_file
