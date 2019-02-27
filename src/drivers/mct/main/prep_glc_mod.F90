@@ -802,6 +802,7 @@ contains
     integer :: index_x2g_So_rhoeff
     integer :: index_g2x_Sg_tbot
     integer :: index_g2x_Sg_dztbot
+    integer :: index_g2x_Sg_lithop
     integer :: index_g2x_Sg_icemask_floating
 
     integer :: index_g2x_Sg_blis
@@ -837,6 +838,7 @@ contains
 
     index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
+    index_g2x_Sg_lithop = mct_avect_indexra(g2x_gx,'Sg_lithop',perrwith='quiet')
     index_g2x_Sg_icemask_floating = mct_avect_indexra(g2x_gx,'Sg_icemask_floating',perrwith='quiet')
 
     ! outputs to melt flux calculation
@@ -858,11 +860,11 @@ contains
       oceanSalinity(n) =                  x2g_gx%rAttr(index_x2g_So_bls,n)
       oceanHeatTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_htv,n)
       oceanSaltTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_stv,n)
-      interfacePressure(n) =              x2g_gx%rAttr(index_x2g_So_rhoeff,n)
 
       ! Fields from the ice sheet model (still on the GLC grid)
       iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
       iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
+      interfacePressure(n) =              g2x_gx%rAttr(index_g2x_Sg_lithop,n)
       iceFloatingMask(n) =                g2x_gx%rAttr(index_g2x_Sg_icemask_floating,n)
 
       !... initialize local compute_melt_fluxes output arrays...
