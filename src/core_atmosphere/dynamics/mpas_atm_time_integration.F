@@ -3982,6 +3982,12 @@ module atm_time_integration
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2
       real (kind=RKIND), pointer :: config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
+      character (len=StrKIND), pointer :: config_horiz_absorbing_layer
+      real (kind=RKIND), pointer :: config_mpas_cam_coef
+      logical, pointer :: config_rayleigh_damp_u
+      real (kind=RKIND), pointer :: config_rayleigh_damp_u_timescale
+      integer, pointer :: config_number_rayleigh_damp_u_levels
+
       logical :: inactive_rthdynten
 
 
@@ -3999,6 +4005,11 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_visc4_2dsmag', config_visc4_2dsmag)
       call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
       call mpas_pool_get_config(configs, 'config_smagorinsky_coef', c_s)
+      call mpas_pool_get_config(configs, 'config_horiz_absorbing_layer', config_horiz_absorbing_layer)
+      call mpas_pool_get_config(configs, 'config_mpas_cam_coef', config_mpas_cam_coef)
+      call mpas_pool_get_config(configs, 'config_rayleigh_damp_u', config_rayleigh_damp_u)
+      call mpas_pool_get_config(configs, 'config_rayleigh_damp_u_timescale', config_rayleigh_damp_u_timescale)
+      call mpas_pool_get_config(configs, 'config_number_rayleigh_damp_u_levels', config_number_rayleigh_damp_u_levels)
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(state, 'u', u, 2)
@@ -4130,8 +4141,10 @@ module atm_time_integration
          rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
          config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
-         config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
-         tend_rtheta_adv, rthdynten, &
+         config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, &
+         config_horiz_absorbing_layer, config_mpas_cam_coef, &
+         config_rayleigh_damp_u, config_rayleigh_damp_u_timescale, config_number_rayleigh_damp_u_levels, &
+         dt, tend_rtheta_adv, rthdynten, &
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -4155,8 +4168,10 @@ module atm_time_integration
       rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
       config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
-      config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
-      tend_rtheta_adv, rthdynten, &
+      config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, &
+      config_horiz_absorbing_layer, config_mpas_cam_coef, &
+      config_rayleigh_damp_u, config_rayleigh_damp_u_timescale, config_number_rayleigh_damp_u_levels, &
+      dt, tend_rtheta_adv, rthdynten, &
       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -4272,6 +4287,13 @@ module atm_time_integration
       real (kind=RKIND) :: config_len_disp
       real (kind=RKIND) :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
+      character (len=StrKIND) :: config_horiz_absorbing_layer
+      real (kind=RKIND) :: config_mpas_cam_coef
+
+      logical, intent(in) :: config_rayleigh_damp_u
+      real (kind=RKIND), intent(in) :: config_rayleigh_damp_u_timescale
+      integer, intent(in) :: config_number_rayleigh_damp_u_levels
+
       integer, intent(in) :: rk_step
       real (kind=RKIND), intent(in) :: dt
 
@@ -4303,7 +4325,7 @@ module atm_time_integration
 
       real (kind=RKIND) :: kdiffu, z1, z2, z3, z4, zm, z0, zp
 
-      
+      real (kind=RKIND), dimension( nVertLevels ) :: rayleigh_damp_coef      
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -4358,6 +4380,24 @@ module atm_time_integration
             kdiff(1:nVertLevels,cellStart:cellEnd) = config_h_theta_eddy_visc2
             h_mom_eddy_visc4 = config_h_mom_eddy_visc4
             h_theta_eddy_visc4 = config_h_theta_eddy_visc4
+
+         end if
+
+         if(config_horiz_absorbing_layer == "mpas_cam") then
+
+            do iCell = cellStart,cellEnd
+
+            !
+            ! 2nd-order filter for top absorbing layer as in CAM-SE :  WCS 10 May 2017
+            ! From MPAS-CAM V4.0 code, with addition to config-specified coefficient (V4.0_coef = 0.2; SE_coef = 1.0)
+            !
+            kdiff(nVertLevels-2,iCell) = max(kdiff(nVertLevels-2,iCell),   2.0833*config_len_disp*config_mpas_cam_coef)
+            kdiff(nVertLevels-1,iCell) = max(kdiff(nVertLevels-1,iCell),2.*2.0833*config_len_disp*config_mpas_cam_coef)
+            kdiff(nVertLevels  ,iCell) = max(kdiff(nVertLevels  ,iCell),4.*2.0833*config_len_disp*config_mpas_cam_coef)
+            !
+            !  end of absorbing layer addition
+
+            end do
 
          end if
             
@@ -4651,7 +4691,7 @@ module atm_time_integration
 
 !$OMP BARRIER
 
-!  add in mixing for u
+!  add in mixing and physics tendency for u
 
       do iEdge=edgeSolveStart,edgeSolveEnd
 !DIR$ IVDEP
@@ -4660,6 +4700,24 @@ module atm_time_integration
             tend_u(k,iEdge) = tend_u(k,iEdge) + tend_u_euler(k,iEdge) + tend_ru_physics(k,iEdge)
          end do
       end do
+
+!  Rayleigh damping on u 
+
+      if(config_rayleigh_damp_u) then
+         do k=nVertlevels-config_number_rayleigh_damp_u_levels+1,nVertLevels
+            rayleigh_damp_coef(k) = (real(k - (nVertLevels-config_number_rayleigh_damp_u_levels))/ &
+                                     real(config_number_rayleigh_damp_u_levels))/                  &
+                                        (config_rayleigh_damp_u_timescale*86400.)
+           rayleigh_damp_coef(k) = max(0.,rayleigh_damp_coef(k))
+         end do
+
+         do iEdge=edgeSolveStart,edgeSolveEnd
+!DIR$ IVDEP
+            do k=nVertlevels-config_number_rayleigh_damp_u_levels+1,nVertLevels
+               tend_u(k,iEdge) = tend_u(k,iEdge) - rho_edge(k,iEdge)*u(k,iEdge)*rayleigh_damp_coef(k)
+            end do
+         end do
+      end if
 
 
 !----------- rhs for w
