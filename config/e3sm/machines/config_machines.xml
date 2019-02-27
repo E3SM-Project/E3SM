@@ -756,21 +756,17 @@
       <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="python">module</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
-        <command name="load">cuda/9.0.176</command>
-        <command name="load">gcc/7.2.0</command>
-        <command name="load">zlib/1.2.8</command>
-        <command name="load">openblas/0.2.20/gcc/7.2.0</command>
-        <command name="load">openmpi/2.1.2/gcc/7.2.0/cuda/9.0.176</command>
-        <command name="load">netcdf-exo/4.4.1.1/openmpi/2.1.2/gcc/7.2.0/cuda/9.0.176</command>
+        <command name="load">devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88</command>
       </modules>
     </module_system>
     <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
     <environment_variables>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_ROOT}</env>
-      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDFF_ROOT}</env>
+      <env name="NETCDF_FORTRAN_PATH">/ascldap/users/jgfouca/packages/netcdf-fortran-4.4.4-white</env>
+      <env name="E3SM_SRCROOT">$SRCROOT</env>
     </environment_variables>
   </machine>
 
