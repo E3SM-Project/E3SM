@@ -25,7 +25,6 @@
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
@@ -54,7 +53,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">480</argument>
 		</step>
 		<model_run procs="480" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>

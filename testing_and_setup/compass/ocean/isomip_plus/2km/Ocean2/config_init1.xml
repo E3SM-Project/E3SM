@@ -13,7 +13,6 @@
 	<add_link source_path="initial_condition_database" source="Ocean2_input_geom_v1.01.nc" dest="input_geometry.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 	<add_link source_path="script_configuration_dir" source="processInputGeometry.py" dest="processInputGeometry.py"/>
 	<add_link source_path="script_configuration_dir" source="removePeriodic.py" dest="removePeriodic.py"/>
 
@@ -43,7 +42,7 @@
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">16</argument>
 		</step>
 

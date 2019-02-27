@@ -7,7 +7,6 @@
 	<add_link source="../spin_up1/Restart_timestamp" dest="Restart_timestamp"/>
 	<add_link source="../spin_up1/restarts" dest="restarts"/>
 
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
@@ -55,7 +54,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">128</argument>
 		</step>
 

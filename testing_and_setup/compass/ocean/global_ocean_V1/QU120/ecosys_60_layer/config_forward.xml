@@ -8,7 +8,6 @@
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source_path="initial_condition_database" source="oQU120km.monthlySurfaceForcingBGC.160907.nc" dest="ecosys_monthly_forcing.nc"/>
 
@@ -63,7 +62,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">16</argument>
 		</step>
 

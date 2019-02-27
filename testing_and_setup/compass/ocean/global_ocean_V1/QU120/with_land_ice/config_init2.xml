@@ -21,7 +21,6 @@
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>

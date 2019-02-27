@@ -6,7 +6,6 @@
 	<add_link source="forcing_data_init.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source_path="script_configuration_dir" source="viz" dest="viz"/>
 	<add_link source_path="utility_scripts" source="setup_restart.py" dest="setup_restart.py"/>
@@ -26,7 +25,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">64</argument>
 		</step>
 		<model_run procs="64" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>

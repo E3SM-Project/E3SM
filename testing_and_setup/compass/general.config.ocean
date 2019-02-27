@@ -26,7 +26,6 @@ init    = FULL_PATH_TO_MPAS_MODEL_REPO/streams.ocean.init
 # anywhere on the machine.
 [executables]
 model = FULL_PATH_TO_MPAS_MODEL_REPO/ocean_model
-metis = FULL_PATH_TO_METIS
 mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
 
 # The paths section describes paths that are used within the ocean core test
