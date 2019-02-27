@@ -72,23 +72,24 @@ if __name__ == "__main__":
     os.chdir(script_path)
 
     # Iterate over all cores
-    for core_dir in os.listdir('.'):
+    for core_dir in sorted(os.listdir('.')):
         if os.path.isdir(core_dir) and core_dir != '.git':
             # Iterate over all configurations within a core
-            for config_dir in os.listdir(core_dir):
+            for config_dir in sorted(os.listdir(core_dir)):
                 config_path = '{}/{}'.format(core_dir, config_dir)
                 if os.path.isdir(config_path):
                     # Iterate over all resolutions within a configuration
-                    for res_dir in os.listdir(config_path):
+                    for res_dir in sorted(os.listdir(config_path)):
                         res_path = '{}/{}'.format(config_path, res_dir)
                         if os.path.isdir(res_path):
                             # Iterate over all tests within a resolution
-                            for test_dir in os.listdir(res_path):
+                            for test_dir in sorted(os.listdir(res_path)):
                                 test_path = '{}/{}'.format(res_path, test_dir)
                                 if os.path.isdir(test_path):
                                     do_print = False
                                     # Iterate over all files within a test
-                                    for case_file in os.listdir(test_path):
+                                    for case_file in sorted(
+                                            os.listdir(test_path)):
                                         if fnmatch.fnmatch(case_file, '*.xml'):
                                             tree = ET.parse('{}/{}'.format(
                                                 test_path, case_file))
