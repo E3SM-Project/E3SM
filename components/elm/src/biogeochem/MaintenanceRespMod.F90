@@ -34,13 +34,19 @@ module MaintenanceRespMod
   public :: MaintenanceResp
   public :: readMaintenanceRespParams
 
-   type, private :: MaintenanceRespParamsType
-      real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
-   end type MaintenanceRespParamsType
+  type, private :: MaintenanceRespParamsType
+     real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
+     real(r8):: dormant_mr_temp ! Temperature for dormancy (K)
+     real(r8):: dormant_mr_factor ! Dormancy multiplier for maint resp (unitless)
+  end type MaintenanceRespParamsType
 
   !type(MaintenanceRespParamsType),private ::  MaintenanceRespParamsInst
   real(r8), public :: br_mr_Inst
+  real(r8), public :: dormant_mr_temp_Inst
+  real(r8), public :: dormant_mr_factor_Inst
   !$acc declare create(br_mr_Inst)
+  !$acc declare create(dormant_mr_temp_Inst)
+  !$acc declare create(dormant_mr_factor_Inst)
   !-----------------------------------------------------------------------
 
 contains
@@ -71,6 +77,30 @@ contains
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      br_mr_Inst = tempr
 
+     ! Add parameters for dormant maintenance resp
+     tString='dormant_mr_temp'
+     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+     ! Default value: 0, so if it's missing the whole process is turned off
+     if ( .not. readv ) then
+        dormant_mr_temp_Inst=0.0_r8
+     else
+        dormant_mr_temp_Inst=tempr
+     end if
+
+
+     tString='dormant_mr_factor'
+     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+     if ( .not. readv .and. dormant_mr_temp_Inst == 0.0_r8) then
+        ! Neither dormancy param is defined, so we can ignore both
+        dormant_mr_temp_Inst=0.0_r8
+     elseif ( .not. readv ) then
+        ! Doesn't work if dormancy temp is defined and factor is not
+        call endrun(msg=trim('-Error: dormant_mr_temp defined but dormant_mr_factor is not')//trim(tString)//errMsg(__FILE__,__LINE__))
+     else
+        dormant_mr_factor_Inst=tempr
+     end if
+
+     
    end subroutine readMaintenanceRespParams
 
   !-----------------------------------------------------------------------
@@ -100,6 +130,8 @@ contains
     integer :: fp    ! soil filter patch index
     integer :: fc    ! soil filter column index
     real(r8):: br_mr ! base rate (gC/gN/s)
+    real(r8):: dormant_mr_temp ! Temperature for dormancy
+    real(r8):: dormant_mr_factor ! Multiplication factor that replaces Q10
     real(r8):: q10   ! temperature dependence
     real(r8):: tc    ! temperature correction, 2m air temp (unitless)
     real(r8):: tcsoi(bounds%begc:bounds%endc,nlevgrnd) ! temperature correction by soil layer (unitless)
@@ -144,7 +176,11 @@ contains
       ! set constants
       br_mr = br_mr_Inst
 
-      ! Peter Thornton: 3/13/09
+      ! Ben Sulman: Adding dormant maintenance resp
+      dormant_mr_temp = dormant_mr_temp_Inst
+      dormant_mr_factor = dormant_mr_factor_Inst
+
+      ! Peter Thornton: 3/13/09 
       ! Q10 was originally set to 2.0, an arbitrary choice, but reduced to 1.5 as part of the tuning
       ! to improve seasonal cycle of atmospheric CO2 concentration in global
       ! simulatoins
@@ -161,6 +197,13 @@ contains
             ! estimating fine root maintenance respiration with depth
             tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
 
+            ! Ben Sulman: Adding lower dormant maintenance resp below a certain
+            ! temperature
+            if (t_soisno(c,j) > dormant_mr_temp) then
+                tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+            else
+                tcsoi(c,j) = dormant_mr_factor
+            end if
          end do
       end do
 
@@ -172,7 +215,13 @@ contains
          ! gC/m2/s for each of the live plant tissues.
          ! Leaf and live wood MR
 
-         tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+         ! Ben Sulman: Add dormant MR level below a certain temperature
+         if(t_ref2m(p) > dormant_mr_temp) then
+             tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+         else
+             tc = dormant_mr_factor
+         end if
+
          if (frac_veg_nosno(p) == 1) then
             leaf_mr(p) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
                          lmrsha(p) * laisha(p) * 12.011e-6_r8
