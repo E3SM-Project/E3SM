@@ -1,19 +1,17 @@
 module micro_p3_utils
 
-#ifdef CAM
-    use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
-#else
+#ifdef SCREAM_CONFIG_IS_CMAKE
     use iso_c_binding, only: c_double, c_float
+#else
+    use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
 #endif
 
     implicit none
     private
     save
 
-#ifndef CAM
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #include "scream_config.f"
-#endif
 
 #ifdef SCREAM_DOUBLE_PRECISION
   integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
