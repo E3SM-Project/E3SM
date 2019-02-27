@@ -13,13 +13,14 @@ logger = logging.getLogger(__name__)
 chksum_hash = dict()
 local_chksum_file = 'inputdata_checksum.dat'
 
-def _download_checksum_file(server, input_data_root, chksum_file):
+def _download_checksum_file(server, input_data_root, chksum_file, user):
     """
     Return True if successfully downloaded
     """
     success = False
     rel_path = chksum_file
     full_path = os.path.join(input_data_root, local_chksum_file)
+    lockfile = _check_permissions_and_lock_inputdata(input_data_root, user)
     new_file = full_path + '.raw'
     protocol = type(server).__name__
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, new_file, protocol))
@@ -44,6 +45,7 @@ def _download_checksum_file(server, input_data_root, chksum_file):
             else:
                 logger.warning("Could not automatically download file "+full_path+
                            " download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_checksum.dat")
+    os.remove(lockfile)
     return success
 
 def _reformat_chksum_file(chksum_file, server_file):
@@ -72,7 +74,7 @@ def _merge_chksum_files(new_file, old_file):
 
 
 
-def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
+def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=False):
     """
     Return True if successfully downloaded
     """
@@ -80,6 +82,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
+    lockfile = _check_permissions_and_lock_inputdata(full_path, user)
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
@@ -94,9 +97,11 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     # have +s, then everything should work.
     with SharedArea():
         if isdirectory:
-            return server.getdirectory(rel_path, full_path)
+            success = server.getdirectory(rel_path, full_path)
         else:
-            return server.getfile(rel_path, full_path)
+            success = server.getfile(rel_path, full_path)
+    os.remove(lockfile)
+    return success
 
 ###############################################################################
 def check_all_input_data(self, protocol=None, address=None, input_data_root=None, data_list_dir="Buildconf",
@@ -123,7 +128,7 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
     inputdata = Inputdata()
     if not input_data_root:
         input_data_root = case.get_value('DIN_LOC_ROOT')
-    lockfile = _check_permissions_and_lock_inputdata(input_data_root, case.get_value('USER'))
+
     while not success and protocol is not None:
         protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
@@ -131,7 +136,6 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
                                         input_data_root=input_data_root,
                                         data_list_dir=data_list_dir,
                                         user=user, passwd=passwd, chksum_file=chksum_file)
-    os.remove(lockfile)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
@@ -213,7 +217,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
-
+    user = case.get_value('USER')
     if download:
         chksum_hash.clear()
         if protocol not in vars(CIME.Servers):
@@ -277,11 +281,12 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             if (download):
                                 if chksum_file and firstdownload:
                                     # Get the md5 checksum file
-                                    got_chksum = _download_checksum_file(server, input_data_root, chksum_file)
+                                    got_chksum = _download_checksum_file(server, input_data_root, chksum_file, user)
                                     firstdownload = False
                                 isdirectory=rel_path.endswith(os.sep)
-                                no_files_missing = _download_if_in_repo(server, input_data_root, rel_path.strip(os.sep),
-                                                                        isdirectory=isdirectory)
+                                no_files_missing = _download_if_in_repo(server,
+                                                                        input_data_root, rel_path.strip(os.sep),
+                                                                        user, isdirectory=isdirectory)
                                 if got_chksum and no_files_missing and not isdirectory:
                                     verify_chksum(input_data_root,chksum_file, rel_path.strip(os.sep))
                         else:
@@ -295,21 +300,29 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
     return no_files_missing
 
-def _check_permissions_and_lock_inputdata(input_data_root, user):
-    expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '{}'".format(input_data_root))
+def _check_permissions_and_lock_inputdata_file(file_path, user):
+    basedir = os.path.dirname(file_path)
+    fname = os.path.basename(file_path)
+    if not os.path.exists(basedir):
+        try:
+            os.makedirs(basedir)
+        except IOError as x:
+            expect(False, "Write to directory {} failed with error {}: {}".
+                   format(basedir, x.errno, x.strerror))
+
     # check for existing lock
-    lock_file = os.path.join(input_data_root,"inputdata.lock")
+    lock_file = file_path+".LOCK"
     # if the file exists print it's contents and error out
     if os.path.isfile(lock_file):
         with open(lock_file) as f:
             line = f.readline()
         expect(False,line)
-    # if it doesn't exist try to create it
-    try:
-        with open(lock_file, "w") as f:
-            f.write("Directory {} locked by user {} on {} at {}".format(input_data_root, user, time.strftime("%y%m%d"), time.strftime("%H%M%S")))
-    except IOError as x:
-        expect(False, "Write to directory {} failed with error {}: {}".format(input_data_root, x.errno, x.strerror))
+    # if it doesn't exist create it
+    with open(lock_file, "w") as f:
+        f.write("File {} locked by user {} on {} at {}".
+                format(file_path, user,
+                       time.strftime("%y%m%d"), time.strftime("%H%M%S")))
+
     return lock_file
 
 def verify_chksum(input_data_root, checksumfile, filename):

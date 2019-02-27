@@ -16,14 +16,6 @@
 
   <server>
     <protocol>wget</protocol>
-    <address>ftp://ftp.cgd.ucar.edu/pub/jedwards/inputdata</address>
-    <user>anonymous</user>
-    <password>user@example.edu</password>
-    <checksum>../inputdata_checksum.dat</checksum>
-  </server>
-
-  <server>
-    <protocol>wget</protocol>
     <address>ftp://ftp.cgd.ucar.edu/cesm/inputdata</address>
     <user>anonymous</user>
     <password>user@example.edu</password>
