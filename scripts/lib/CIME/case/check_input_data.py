@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib
+import glob, hashlib, time
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
@@ -121,6 +121,9 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
     success = False
     protocol = 'svn'
     inputdata = Inputdata()
+    if not input_data_root:
+        input_data_root = case.get_value('DIN_LOC_ROOT')
+    lockfile = _check_permissions_and_lock_inputdata(input_data_root, case.get_value('USER'))
     while not success and protocol is not None:
         protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
@@ -128,6 +131,7 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
                                         input_data_root=input_data_root,
                                         data_list_dir=data_list_dir,
                                         user=user, passwd=passwd, chksum_file=chksum_file)
+    os.remove(lockfile)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
@@ -203,7 +207,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     # Fill in defaults as needed
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
-    expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '{}'".format(input_data_root))
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
@@ -292,6 +295,22 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
     return no_files_missing
 
+def _check_permissions_and_lock_inputdata(input_data_root, user):
+    expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '{}'".format(input_data_root))
+    # check for existing lock
+    lock_file = os.path.join(input_data_root,"inputdata.lock")
+    # if the file exists print it's contents and error out
+    if os.path.isfile(lock_file):
+        with open(lock_file) as f:
+            line = f.readline()
+        expect(False,line)
+    # if it doesn't exist try to create it
+    try:
+        with open(lock_file, "w") as f:
+            f.write("Directory {} locked by user {} on {} at {}".format(input_data_root, user, time.strftime("%y%m%d"), time.strftime("%H%M%S")))
+    except IOError as x:
+        expect(False, "Write to directory {} failed with error {}: {}".format(input_data_root, x.errno, x.strerror))
+    return lock_file
 
 def verify_chksum(input_data_root, checksumfile, filename):
     if not chksum_hash:
