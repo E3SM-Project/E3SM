@@ -612,6 +612,9 @@ ifeq ($(USE_CXX), true)
   endif
 endif
 
+# Remove arch flag if it exists
+F90_LDFLAGS := $(filter-out -arch%,$(LDFLAGS))
+
 # Machine stuff to appear last on the link step
 ifndef MLIBS
      MLIBS  :=
@@ -772,18 +775,18 @@ db_flags:
 #-------------------------------------------------------------------------------
 
 test_fc: test_fc.o
-	$(LD) -o $@ test_fc.o $(LDFLAGS)
+	$(LD) -o $@ test_fc.o $(F90_LDFLAGS)
 ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 else ifeq ($(NETCDF_SEPARATE), true)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 endif
 test_mpi: test_mpi.o
-	$(LD) -o $@ test_mpi.o $(LDFLAGS)
+	$(LD) -o $@ test_mpi.o $(F90_LDFLAGS)
 test_esmf: test_esmf.o
-	$(LD) -o $@ test_esmf.o $(LDFLAGS)
+	$(LD) -o $@ test_esmf.o $(F90_LDFLAGS)
 
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
@@ -890,7 +893,7 @@ install_lib: $(COMPLIB)
 
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
-	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
+	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
 
 $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
