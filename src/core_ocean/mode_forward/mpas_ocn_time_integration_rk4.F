@@ -516,7 +516,7 @@ module ocn_time_integration_rk4
         !    y_{n+1} = y_n + sum ( b_j k_j )
         ! after the fourth iteration.
 
-        call mpas_timer_start("RK4-RK4 accumulate update")
+        call mpas_timer_start("RK4-accumulate update")
 
         block => domain % blocklist
         do while (associated(block))
@@ -525,7 +525,7 @@ module ocn_time_integration_rk4
            block => block % next
         end do
 
-        call mpas_timer_stop("RK4-RK4 accumulate update")
+        call mpas_timer_stop("RK4-accumulate update")
         call mpas_threading_barrier()
 
       end do
@@ -539,7 +539,7 @@ module ocn_time_integration_rk4
       !
       !  A little clean up at the end: rescale tracer fields and compute diagnostics for new state
       !
-      call mpas_timer_start("RK4-cleaup phase")
+      call mpas_timer_start("RK4-cleanup phase")
 
       ! Rescale tracers
       block => domain % blocklist
@@ -700,7 +700,7 @@ module ocn_time_integration_rk4
          call mpas_timer_stop("RK4-effective density halo")
       end if
 
-      call mpas_timer_stop("RK4-cleaup phase")
+      call mpas_timer_stop("RK4-cleanup phase")
 
       call mpas_threading_barrier()
 
