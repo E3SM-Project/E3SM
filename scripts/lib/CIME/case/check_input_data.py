@@ -217,13 +217,13 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
-    user = case.get_value('USER')
+    local_user = case.get_value('USER')
     if download:
         chksum_hash.clear()
         if protocol not in vars(CIME.Servers):
             logger.warning("Client protocol {} not enabled".format(protocol))
             return False
-
+        logger.info("Using protocol {} with user {} and passwd {}".format(protocol, user, passwd))
         if protocol == "svn":
             server = CIME.Servers.SVN(address, user, passwd)
         elif protocol == "gftp":
@@ -281,12 +281,12 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             if (download):
                                 if chksum_file and firstdownload:
                                     # Get the md5 checksum file
-                                    got_chksum = _download_checksum_file(server, input_data_root, chksum_file, user)
+                                    got_chksum = _download_checksum_file(server, input_data_root, chksum_file, local_user)
                                     firstdownload = False
                                 isdirectory=rel_path.endswith(os.sep)
                                 no_files_missing = _download_if_in_repo(server,
                                                                         input_data_root, rel_path.strip(os.sep),
-                                                                        user, isdirectory=isdirectory)
+                                                                        local_user, isdirectory=isdirectory)
                                 if got_chksum and no_files_missing and not isdirectory:
                                     verify_chksum(input_data_root,chksum_file, rel_path.strip(os.sep))
                         else:
