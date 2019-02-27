@@ -12,6 +12,9 @@ When cleaning a regression suite, this script will remove any generated files
 for each individual test case, and the run script that runs all test cases.
 """
 
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import sys
 import os
 import fnmatch
@@ -26,8 +29,8 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
     if verbose:
         stdout = open(work_dir + '/manage_regression_suite.py.out', 'a')
         stderr = stdout
-        print '     Script setup outputs to {}'.format(
-            work_dir + '/manage_regression_suite.py.out')
+        print('     Script setup outputs to {}'.format(
+            work_dir + '/manage_regression_suite.py.out'))
     else:
         dev_null = open('/dev/null', 'a')
         stderr = dev_null
@@ -37,40 +40,40 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
     try:
         test_name = test_tag.attrib['name']
     except KeyError:
-        print "ERROR: <test> tag is missing 'name' attribute."
-        print "Exiting..."
+        print("ERROR: <test> tag is missing 'name' attribute.")
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_core = test_tag.attrib['core']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'core' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'core' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_configuration = test_tag.attrib['configuration']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'configuration' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'configuration' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_resolution = test_tag.attrib['resolution']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'resolution' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'resolution' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_test = test_tag.attrib['test']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'test' " \
-               "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'test' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     # Determine the file name for the test case output
@@ -91,8 +94,8 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
              '-r', test_resolution, '-t', test_test,  '-m', model_runtime,
              '-b', baseline_dir], stdout=stdout, stderr=stderr)
 
-    print "   -- Setup case '{}': -o {} -c {} -r {} -t {}".format(
-        test_name, test_core, test_configuration, test_resolution, test_test)
+    print("   -- Setup case '{}': -o {} -c {} -r {} -t {}".format(
+        test_name, test_core, test_configuration, test_resolution, test_test))
 
     # Write step into suite script to cd into the base of the regression suite
     suite_script.write("os.chdir(base_path)\n")
@@ -111,8 +114,8 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
             try:
                 script_name = script.attrib['name']
             except KeyError:
-                print "ERROR: <script> tag is missing 'name' attribute."
-                print 'Exiting...'
+                print("ERROR: <script> tag is missing 'name' attribute.")
+                print('Exiting...')
                 sys.exit(1)
 
             command = "subprocess.check_call(['time', '-p', " \
@@ -123,13 +126,13 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
                 command)
 
             # Write test case run step
-            suite_script.write("print ' ** Running case {}'\n".format(
+            suite_script.write("print(' ** Running case {}'\n".format(
                 test_name))
             suite_script.write('try:\n')
             suite_script.write('    {}\n'.format(command))
-            suite_script.write("    print '      PASS'\n")
+            suite_script.write("    print('      PASS'\n")
             suite_script.write('except subprocess.CalledProcessError:\n')
-            suite_script.write("    print '   ** FAIL (See case_outputs/{} "
+            suite_script.write("    print('   ** FAIL (See case_outputs/{} "
                                "for more information)'\n".format(
                                        case_output_name))
             suite_script.write("    test_failed = True\n")
@@ -151,40 +154,40 @@ def process_test_clean(test_tag, work_dir, suite_script):  # {{{
     try:
         test_name = test_tag.attrib['name']
     except KeyError:
-        print "ERROR: <test> tag is missing 'name' attribute."
-        print "Exiting..."
+        print("ERROR: <test> tag is missing 'name' attribute.")
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_core = test_tag.attrib['core']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'core' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'core' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_configuration = test_tag.attrib['configuration']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'configuration' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'configuration' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_resolution = test_tag.attrib['resolution']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'resolution' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'resolution' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     try:
         test_test = test_tag.attrib['test']
     except KeyError:
-        print "ERROR: <test> tag with name '{}' is missing 'test' " \
-              "attribute.".format(test_name)
-        print "Exiting..."
+        print("ERROR: <test> tag with name '{}' is missing 'test' "
+              "attribute.".format(test_name))
+        print("Exiting...")
         sys.exit(1)
 
     # Clean test case
@@ -193,8 +196,8 @@ def process_test_clean(test_tag, work_dir, suite_script):  # {{{
          '-c',  test_configuration, '-r', test_resolution, '-t', test_test],
         stdout=dev_null, stderr=dev_null)
 
-    print "   -- Cleaned case '{}': -o {} -c {} -r {} -t {}".format(
-        test_name, test_core, test_configuration, test_resolution, test_test)
+    print("   -- Cleaned case '{}': -o {} -c {} -r {} -t {}".format(
+        test_name, test_core, test_configuration, test_resolution, test_test))
 
     dev_null.close()
 
@@ -207,8 +210,8 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     try:
         suite_name = suite_tag.attrib['name']
     except KeyError:
-        print "ERROR: <regression_suite> tag is missing 'name' attribute."
-        print 'Exiting...'
+        print("ERROR: <regression_suite> tag is missing 'name' attribute.")
+        print('Exiting...')
         sys.exit(1)
 
     if not os.path.exists('{}'.format(work_dir)):
@@ -248,7 +251,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
             process_test_setup(child, config_file, work_dir, model_runtime,
                                regression_script, baseline_dir, verbose)
 
-    regression_script.write("print 'TEST RUNTIMES:'\n")
+    regression_script.write("print('TEST RUNTIMES:'\n")
     regression_script.write("case_output = '/case_outputs/'\n")
     regression_script.write("totaltime = 0\n")
     regression_script.write("for _, _, files in os.walk(base_path + "
@@ -263,11 +266,11 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     regression_script.write("        totaltime += runtime\n")
     regression_script.write("        mins = int(np.floor(runtime/60.0))\n")
     regression_script.write("        secs = int(np.ceil(runtime - mins*60))\n")
-    regression_script.write("        print '{:02d}:{:02d} {}'.format(mins, "
+    regression_script.write("        print('{:02d}:{:02d} {}'.format(mins, "
                             "secs, afile)\n")
     regression_script.write("mins = int(np.floor(totaltime/60.0))\n")
     regression_script.write("secs = int(np.ceil(totaltime - mins*60))\n")
-    regression_script.write("print 'Total runtime {:02d}:{:02d}'.format(mins, "
+    regression_script.write("print('Total runtime {:02d}:{:02d}'.format(mins, "
                             "secs)\n")
     regression_script.write("\n")
 
@@ -289,8 +292,8 @@ def clean_suite(suite_tag, work_dir):  # {{{
     try:
         suite_name = suite_tag.attrib['name']
     except KeyError:
-        print "ERROR: <regression_suite> tag is missing 'name' attribute."
-        print 'Exiting...'
+        print("ERROR: <regression_suite> tag is missing 'name' attribute.")
+        print('Exiting...')
         sys.exit(1)
 
     # Remove the regression suite script, if it exists
@@ -316,40 +319,40 @@ def summarize_suite(suite_tag):  # {{{
             try:
                 test_name = child.attrib['name']
             except KeyError:
-                print "<test> tag is missing a 'name' attribute"
-                print "Exiting..."
+                print("<test> tag is missing a 'name' attribute")
+                print("Exiting...")
                 sys.exit(1)
 
             try:
                 test_core = child.attrib['core']
             except KeyError:
-                print "<test> tag named '{}' is missing a 'core' " \
-                      "attribute".format(test_name)
-                print "Exiting..."
+                print("<test> tag named '{}' is missing a 'core' "
+                      "attribute".format(test_name))
+                print("Exiting...")
                 sys.exit(1)
 
             try:
                 test_configuration = child.attrib['configuration']
             except KeyError:
-                print "<test> tag named '{}' is missing a 'configuration' " \
-                      "attribute".format(test_name)
-                print "Exiting..."
+                print("<test> tag named '{}' is missing a 'configuration' "
+                      "attribute".format(test_name))
+                print("Exiting...")
                 sys.exit(1)
 
             try:
                 test_resolution = child.attrib['resolution']
             except KeyError:
-                print "<test> tag named '{}' is missing a 'resolution' " \
-                      "attribute".format(test_name)
-                print "Exiting..."
+                print("<test> tag named '{}' is missing a 'resolution' "
+                      "attribute".format(test_name))
+                print("Exiting...")
                 sys.exit(1)
 
             try:
                 test_test = child.attrib['test']
             except KeyError:
-                print "<test> tag named '{}' is missing a 'test' " \
-                      "attribute".format(test_name)
-                print "Exiting..."
+                print("<test> tag named '{}' is missing a 'test' "
+                      "attribute".format(test_name))
+                print("Exiting...")
                 sys.exit(1)
 
             test_path = '{}/{}/{}/{}'.format(test_core, test_configuration,
@@ -406,11 +409,11 @@ def summarize_suite(suite_tag):  # {{{
                     del config_root
                     del config_tree
 
-    print "\n"
-    print " Summary of test cases:"
-    print "      Maximum MPI tasks used: {:d}".format(max_procs)
-    print "      Maximum OpenMP threads used: {:d}".format(max_threads)
-    print "      Maximum Total Cores used: {:d}".format(max_cores)
+    print("\n")
+    print(" Summary of test cases:")
+    print("      Maximum MPI tasks used: {:d}".format(max_procs))
+    print("      Maximum OpenMP threads used: {:d}".format(max_threads))
+    print("      Maximum Total Cores used: {:d}".format(max_cores))
 # }}}
 
 
@@ -447,8 +450,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.config_file:
-        print "WARNING: Not configuration file specified. Using the default " \
-              "of 'local.config'"
+        print("WARNING: Not configuration file specified. Using the default "
+              "of 'local.config'")
         args.config_file = 'local.config'
 
     if not os.path.exists(args.config_file):
@@ -464,16 +467,16 @@ if __name__ == "__main__":
     if not args.model_runtime:
         args.model_runtime = '{}/runtime_definitions/mpirun.xml'.format(
             os.path.dirname(os.path.realpath(__file__)))
-        print 'WARNING: No model runtime specified. Using the default of ' \
-              '{}'.format(args.model_runtime)
+        print('WARNING: No model runtime specified. Using the default of '
+              '{}'.format(args.model_runtime))
 
     if not args.baseline_dir:
         args.baseline_dir = 'NONE'
 
     if not args.setup and not args.clean:
-        print 'WARNING: Neither the setup (-s/--setup) nor the clean ' \
-              '(-c/--clean) flags were provided. Script will perform no ' \
-              'actions.'
+        print('WARNING: Neither the setup (-s/--setup) nor the clean '
+              '(-c/--clean) flags were provided. Script will perform no '
+              'actions.')
 
     write_history = False
 
@@ -485,21 +488,21 @@ if __name__ == "__main__":
     if suite_root.tag == 'regression_suite':
         # If cleaning, clean the suite
         if args.clean:
-            print "Cleaning Test Cases:"
+            print("Cleaning Test Cases:")
             clean_suite(suite_root, args.work_dir)
             write_history = True
         # If setting up, set up the suite
         if args.setup:
-            print "\n"
-            print "Setting Up Test Cases:"
+            print("\n")
+            print("Setting Up Test Cases:")
             setup_suite(suite_root, args.work_dir, args.model_runtime,
                         args.config_file, args.baseline_dir, args.verbose)
             summarize_suite(suite_root)
             if args.verbose:
                 cmd = ['cat',
                        args.work_dir + '/manage_regression_suite.py.out']
-                print '\nCase setup output:'
-                print subprocess.check_output(cmd)
+                print('\nCase setup output:')
+                print(subprocess.check_output(cmd))
             write_history = True
 
     # Write the history of this command to the command_history file, for

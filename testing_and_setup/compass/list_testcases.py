@@ -12,6 +12,9 @@ Additionally, if -n is passed in to get information about a single test case,
 it will only print the flags needed to setup that specific test case.
 """
 
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import os
 import fnmatch
 import argparse
@@ -19,9 +22,7 @@ import xml.etree.ElementTree as ET
 import re
 
 
-def print_case(quiet, args, core_dir, config_dir, res_dir, test_dir, case_num,
-               print_num):  # {{{
-    # Xylar: the indentation got out of hand and I had to make this a function
+def print_case(quiet, args, core_dir, config_dir, res_dir, test_dir, case_num):
 
     # Print the options if a case file was found.
     if not quiet:
@@ -30,15 +31,13 @@ def print_case(quiet, args, core_dir, config_dir, res_dir, test_dir, case_num,
                                                     config_dir):
                 if (not args.resolution) or re.match(args.resolution, res_dir):
                     if (not args.test) or re.match(args.test, test_dir):
-                        print "  {:d}: -o {} -c {} -r {} -t {}".format(
-                            case_num, core_dir, config_dir, res_dir, test_dir)
-    if quiet and case_num == print_num:
-        print "-o {} -c {} -r {} -t {}".format(
-            core_dir, config_dir, res_dir, test_dir)
+                        print("  {:d}: -o {} -c {} -r {} -t {}".format(
+                            case_num, core_dir, config_dir, res_dir, test_dir))
+    if quiet and case_num == args.number:
+        print("-o {} -c {} -r {} -t {}".format(
+            core_dir, config_dir, res_dir, test_dir))
     case_num += 1
     return case_num
-
-# }}}
 
 
 if __name__ == "__main__":
@@ -55,25 +54,16 @@ if __name__ == "__main__":
                         help="Resolution to search for", metavar="RES")
     parser.add_argument("-t", "--test", dest="test",
                         help="Test name to search for", metavar="TEST")
-    parser.add_argument("-n", "--number", dest="number",
+    parser.add_argument("-n", "--number", dest="number", type=int,
                         help="If set, script will print the flags to use a "
                              "the N'th configuraiton.")
 
     args = parser.parse_args()
 
-    quiet = False
-
-    try:
-        print_num = 0
-        if args.number:
-            quiet = True
-            print_num = int(args.number)
-    except ValueError:
-        args.number = 0
-        print_num = 0
+    quiet = args.number is not None
 
     if not quiet:
-        print "Available test cases are:"
+        print("Available test cases are:")
 
     # Start case numbering at 1
     case_num = 1
@@ -118,7 +108,6 @@ if __name__ == "__main__":
                                     if do_print:
                                         case_num = print_case(
                                             quiet, args, core_dir, config_dir,
-                                            res_dir, test_dir, case_num,
-                                            print_num)
+                                            res_dir, test_dir, case_num)
 
 # vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python
