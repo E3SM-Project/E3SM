@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib, fileinput
+import glob, hashlib
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
@@ -20,8 +20,9 @@ def _download_checksum_file(server, input_data_root, chksum_file):
     success = False
     rel_path = chksum_file
     full_path = os.path.join(input_data_root, local_chksum_file)
+    new_file = full_path + '.raw'
     protocol = type(server).__name__
-    logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, protocol))
+    logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, new_file, protocol))
     tmpfile = None
     if os.path.isfile(full_path):
         tmpfile = full_path+".tmp"
@@ -29,11 +30,12 @@ def _download_checksum_file(server, input_data_root, chksum_file):
     # Use umask to make sure files are group read/writable. As long as parent directories
     # have +s, then everything should work.
     with SharedArea():
-        success = server.getfile(rel_path, full_path)
+        success = server.getfile(rel_path, new_file)
         if success:
+            _reformat_chksum_file(full_path, new_file)
             if tmpfile:
                 _merge_chksum_files(full_path, tmpfile)
-                chksum_hash = dict()
+            chksum_hash.clear()
         else:
             if tmpfile and os.path.isfile(tmpfile):
                 os.rename(tmpfile, full_path)
@@ -43,6 +45,20 @@ def _download_checksum_file(server, input_data_root, chksum_file):
                 logger.warning("Could not automatically download file "+full_path+
                            " download from ftp:ftp.cgd.ucar.edu/cesm/inputdata_checksum.dat")
     return success
+
+def _reformat_chksum_file(chksum_file, server_file):
+    with open(server_file) as fd, open(chksum_file,"w") as fout:
+        lines = fd.readlines()
+        for line in lines:
+            lsplit = line.split()
+            if len(lsplit) < 8 or ' DIR ' in line:
+                continue
+
+            # remove the first directory ('inputdata/') from the filename
+            chksum = lsplit[0]
+            fname = (lsplit[7]).split('/',1)[1]
+            fout.write(" ".join((chksum, fname))+"\n")
+    os.remove(server_file)
 
 def _merge_chksum_files(new_file, old_file):
     with open(old_file) as fin:
@@ -196,7 +212,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     no_files_missing = True
 
     if download:
-        chksum_hash = dict()
+        chksum_hash.clear()
         if protocol not in vars(CIME.Servers):
             logger.warning("Client protocol {} not enabled".format(protocol))
             return False
@@ -286,15 +302,11 @@ def verify_chksum(input_data_root, checksumfile, filename):
         with open(hashfile) as fd:
             lines = fd.readlines()
             for line in lines:
-                lsplit = line.split()
-                if len(lsplit) < 8:
-                    continue
-                # remove the first directory ('inputdata/') from the filename
-                fname = (lsplit[7]).split('/',1)[1]
-                if fname in chksum_hash.keys():
-                    expect(chksum_hash[fname] == lsplit[0], " Inconsistant hashes in chksum for file {}".format(fname))
+                fchksum, fname = line.split()
+                if fname in chksum_hash:
+                    expect(chksum_hash[fname] == fchksum, " Inconsistant hashes in chksum for file {}".format(fname))
                 else:
-                    chksum_hash[fname] = lsplit[0]
+                    chksum_hash[fname] = fchksum
 
     chksum = md5(os.path.join(input_data_root, filename))
     if chksum_hash:

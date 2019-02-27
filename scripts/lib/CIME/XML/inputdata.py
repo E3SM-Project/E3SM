@@ -29,7 +29,7 @@ class Inputdata(GenericXML):
         address = None
         user = ''
         passwd = ''
-        chksum = None
+        chksum_file = None
         servernodes = self.get_children("server")
         if self._servernode is None:
             self._servernode = servernodes[0]
