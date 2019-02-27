@@ -1462,13 +1462,19 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="snl-white">
-  <MPICXX>${SHAREDLIBROOT}/bin/nvcc_wrapper</MPICXX>
+  <SCXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</SCXX>
+  <MPICXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</MPICXX>
+  <KOKKOS_OPTIONS> --arch=Pascal60 --with-cuda=$ENV{CUDA_ROOT} --with-cuda-options=enable_lambda </KOKKOS_OPTIONS>
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
   <LDFLAGS>
     <append> -lstdc++ -lcudart </append>
   </LDFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+  </SLIBS>
 </compiler>
 
 <compiler COMPILER="intel18" MACH="snl-blake">
