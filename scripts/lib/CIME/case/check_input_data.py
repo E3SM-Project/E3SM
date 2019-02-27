@@ -20,7 +20,7 @@ def _download_checksum_file(server, input_data_root, chksum_file, user):
     success = False
     rel_path = chksum_file
     full_path = os.path.join(input_data_root, local_chksum_file)
-    lockfile = _check_permissions_and_lock_inputdata(input_data_root, user)
+    lockfile = _check_permissions_and_lock_inputdata_file(input_data_root, user)
     new_file = full_path + '.raw'
     protocol = type(server).__name__
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, new_file, protocol))
@@ -82,7 +82,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=Fa
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
-    lockfile = _check_permissions_and_lock_inputdata(full_path, user)
+    lockfile = _check_permissions_and_lock_inputdata_file(full_path, user)
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
@@ -302,7 +302,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
 def _check_permissions_and_lock_inputdata_file(file_path, user):
     basedir = os.path.dirname(file_path)
-    fname = os.path.basename(file_path)
     if not os.path.exists(basedir):
         try:
             os.makedirs(basedir)
