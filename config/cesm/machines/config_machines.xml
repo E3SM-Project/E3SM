@@ -435,7 +435,7 @@ This allows using a different mpirun command to launch unit tests
 
   <machine MACH="coeus">
     <DESC>
-      Portland State University Coeus Cluster CentOS 7
+      Portland State University Coeus Cluster Dec 2019 CentOS 7
     </DESC>
     <NODENAME_REGEX>(login[1,2].cluster|compute[0-9]*.cluster)</NODENAME_REGEX>
     <OS>LINUX</OS>
@@ -444,15 +444,15 @@ This allows using a different mpirun command to launch unit tests
     <PROJECT>none</PROJECT>
     <CIME_OUTPUT_ROOT>$ENV{CESMDATAROOT}/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
-    <DOUT_S_ROOT>$ENV{CESMDATAROOT}/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/vol/apps/hpc/src/cesm-2.1.0/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>oit-rc-groups@pdx.edu</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>19</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>19</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>20</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
