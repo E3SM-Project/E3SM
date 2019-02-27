@@ -78,27 +78,25 @@ contains
      br_mr_Inst = tempr
 
      ! Add parameters for dormant maintenance resp
+     ! dormant_mr_factor is multiplied by maintenance respiration at temperatures below dormant_mr_temp
+
      tString='dormant_mr_temp'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-     ! Default value: 0, so if it's missing the whole process is turned off
+     ! Default value: 0 (K), so if it's missing the whole process is turned off
      if ( .not. readv ) then
         dormant_mr_temp_Inst=0.0_r8
      else
         dormant_mr_temp_Inst=tempr
      end if
 
-
      tString='dormant_mr_factor'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-     if ( .not. readv .and. dormant_mr_temp_Inst == 0.0_r8) then
-        ! Neither dormancy param is defined, so we can ignore both
-        dormant_mr_temp_Inst=0.0_r8
-     elseif ( .not. readv ) then
-        ! Doesn't work if dormancy temp is defined and factor is not
-        call endrun(msg=trim('-Error: dormant_mr_temp defined but dormant_mr_factor is not')//trim(tString)//errMsg(__FILE__,__LINE__))
+     if  ( .not. readv ) then
+        dormant_mr_factor_Inst=1.0_r8
      else
         dormant_mr_factor_Inst=tempr
      end if
+
 
      
    end subroutine readMaintenanceRespParams
@@ -131,7 +129,7 @@ contains
     integer :: fc    ! soil filter column index
     real(r8):: br_mr ! base rate (gC/gN/s)
     real(r8):: dormant_mr_temp ! Temperature for dormancy
-    real(r8):: dormant_mr_factor ! Multiplication factor that replaces Q10
+    real(r8):: dormant_mr_factor ! Multiplication factor that is applied to Q10 below dormancy temperature
     real(r8):: q10   ! temperature dependence
     real(r8):: tc    ! temperature correction, 2m air temp (unitless)
     real(r8):: tcsoi(bounds%begc:bounds%endc,nlevgrnd) ! temperature correction by soil layer (unitless)
@@ -199,10 +197,9 @@ contains
 
             ! Ben Sulman: Adding lower dormant maintenance resp below a certain
             ! temperature
-            if (t_soisno(c,j) > dormant_mr_temp) then
-                tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
-            else
-                tcsoi(c,j) = dormant_mr_factor
+            tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+            if (t_soisno(c,j) < dormant_mr_temp) then
+                tcsoi(c,j) = tcsoi(c,j)*dormant_mr_factor
             end if
          end do
       end do
@@ -216,10 +213,9 @@ contains
          ! Leaf and live wood MR
 
          ! Ben Sulman: Add dormant MR level below a certain temperature
-         if(t_ref2m(p) > dormant_mr_temp) then
-             tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
-         else
-             tc = dormant_mr_factor
+         tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+         if(t_ref2m(p) < dormant_mr_temp) then
+             tc = tc*dormant_mr_factor
          end if
 
          if (frac_veg_nosno(p) == 1) then
