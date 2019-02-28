@@ -1,0 +1,50 @@
+<template>
+	<namelist>
+		<option name="config_AM_sedimentTransport_enable">.true.</option>
+		<option name="config_AM_sedimentTransport_compute_on_startup">.true.</option>
+		<option name="config_AM_sedimentTransport_write_on_startup">.true.</option>
+		<option name="config_AM_sedimentTransport_compute_interval">'output_interval'</option>
+		<option name="config_AM_sedimentTransport_output_stream">'sedimentTransportOutput'</option>
+		<option name="config_AM_sedimentTransport_directory">'analysis_members'</option>
+		<option name="config_AM_sedimentTransport_grain_size">2.5e-4</option>
+		<option name="config_AM_sedimentTransport_drag_coefficient">2.5e-3</option>
+		<option name="config_AM_sedimentTransport_grain_porosity">0.5</option>
+		<option name="config_AM_sedimentTransport_erate">5.0e-4</option>
+		<option name="config_AM_sedimentTransport_tau_ce">0.1</option>
+		<option name="config_AM_sedimentTransport_tau_cd">0.1</option>
+		<option name="config_AM_sedimentTransport_grain_density">2650</option>
+		<option name="config_AM_sedimentTransport_water_density">1020</option>
+		<option name="config_AM_sedimentTransport_alpha">1e-3</option>
+		<option name="config_AM_sedimentTransport_kinematic_viscosity">1e-6</option>
+		<option name="config_AM_sedimentTransport_vertical_diffusion_coefficient">1e-2</option>
+		<option name="config_AM_sedimentTransport_bedload">.true.</option>
+		<option name="config_AM_sedimentTransport_suspended">.true.</option>
+		<option name="config_AM_sedimentTransport_use_lat_lon_coords">.true.</option>
+	</namelist>
+
+	<streams>
+		<stream name="sedimentTransportOutput">
+			<attribute name="runtime_format">single_file</attribute>
+			<attribute name="name">sedimentTransportOutput</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">00-00-00_00:01:00</attribute>
+			<attribute name="filename_template">analysis_members/sedimentTransport.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="packages">sedimentTransportAMPKG</attribute>
+			<attribute name="type">output</attribute>
+			<add_contents>
+				<member name="xtime" type="var"/>
+				<member name="sedimentFallVelocity" type="var"/>
+				<member name="sedimentErosionFlux" type="var"/>
+        <member name="sedimentDepositionFlux" type="var"/>
+				<member name="sedimentBedloadX" type="var"/>
+				<member name="sedimentBedloadY" type="var"/>
+				<member name="sedimentFluxVAX" type="var"/>
+				<member name="sedimentFluxVAY" type="var"/>
+				<member name="sedimentFluxBX" type="var"/>
+				<member name="sedimentFluxBY" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

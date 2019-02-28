@@ -1,0 +1,52 @@
+# This file is the ocean core's configuration file. It is specific to the ocean
+# core, and a specific machine. Each machine will configure this file
+# differently, but it can be used to point on version of the testing
+# infrastructure at a different version of the model.
+
+
+# The namelists section defines paths to template namelists that will be used
+# to generate specific namelists. Typically these will point to the forward and
+# init namelists in the default_inputs directory after a successful build of
+# the ocean model.
+[namelists]
+forward = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/namelist.ocean.forward
+init    = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/namelist.ocean.init
+
+# The streams section defines paths to template streams files that will be used
+# to generate specific streams files. Typically these will point to the forward and
+# init streams files in the default_inputs directory after a successful build of
+# the ocean model.
+[streams]
+forward = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/streams.ocean.forward
+init    = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/streams.ocean.init
+
+# The executables section defines paths to required executables. These
+# executables are provided for use by specific test cases.
+# Full paths should be provided in order to access the executables from
+# anywhere on the machine.
+[executables]
+model = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/ocean_model
+metis = /lustre/scratch4/turquoise/zhendong/metis/gpmetis 
+mesh_converter = /lustre/scratch4/turquoise/zhendong/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x
+cell_culler    = /lustre/scratch4/turquoise/zhendong/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasCellCuller.x
+mask_creator   = /lustre/scratch4/turquoise/zhendong/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasMaskCreator.x
+mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
+mpi_runtime = /usr/bin/srun
+
+# The paths section describes paths that are used within the ocean core test
+# cases.
+[paths]
+
+# The mesh_database and the initial_condition_database are locations where
+# meshes / initial conditions might be found on a specific machine. They can be
+# the same directory, or different directory. Additionally, if they are empty
+# some test cases might download data into them, which will then be reused if
+# the test case is run again later.
+mpas_model = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/
+mpas_tools = /lustre/scratch4/turquoise/zhendong/MPAS-Tools 
+geometric_features = /turquoise/usr/projects/climate/mpeterse/repos/geometric_features/master 
+jigsaw-geo-matlab = /lustre/scratch4/turquoise/zhendong/jigsaw-geo-matlab 
+mesh_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/mesh_database 
+initial_condition_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database 
+bathymetry_database = /lustre/scratch4/turquoise/sbrus/bathy_data
+jigsaw_to_MPAS = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/testing_and_setup/compass/ocean/jigsaw_to_MPAS

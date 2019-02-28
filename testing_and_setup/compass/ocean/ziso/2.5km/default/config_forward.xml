@@ -15,6 +15,7 @@
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="ziso_template.xml" path_base="script_configuration_dir"/>
+		<template file="sediment_transport.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_dt">'00:01:30'</option>
 		<option name="config_btr_dt">'00:00:04'</option>
 		<option name="config_run_duration">'0000_00:04:31'</option>
@@ -28,6 +29,7 @@
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="zonal_mean.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="okubo_weiss.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="sediment_transport.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="high_frequency_output.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="time_filters.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="eliassen_palm.xml" path_base="script_core_dir" path="templates/analysis_members"/>
