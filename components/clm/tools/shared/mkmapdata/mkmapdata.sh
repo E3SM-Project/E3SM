@@ -20,12 +20,18 @@
 # -v                 verbose usage -- log more information on what is happening
 # -h                 displays this help message
 #
+# See usage (below) for additional arguments.
+#
 # You can also set the following env variables:
 #
 # ESMFBIN_PATH   -- Path to ESMF binaries
 # INPUTDATA_PATH -- Path to root of input data directory
 # MPIEXEC        -- Name of mpirun executable
-# REGRID_PROC    -- Number of MPI processors to use
+# REGRID_PROC    -- Number of MPI processors to use; Note that this is only used
+#                   in setting MPIEXEC for the supported machines. This should
+#                   probably go away in the future, because the machines are
+#                   likely out of date, and it is just easier to set this via
+#                   setting MPIEXEC directly.
 #
 #----------------------------------------------------------------------
 echo $0
@@ -72,9 +78,18 @@ usage() {
   echo "[-i|--inputdata-path <inputdata_path>]"
   echo "    Full path to root of inputdata directory"
   echo "[-n|--ntasks <ntasks>]"
-  echo "    Number of MPI tasks to use in regrid command"
+  echo "    Number of MPI tasks to use in regrid command. Note that this is only"
+  echo "    used when using a recognized machine and MPIEXEC is not set. "
+  echo "    Otherwise, setting MPIEXEC (either via environment variable or by "
+  echo "    passing --mpiexec <command>) completely specifies the command and "
+  echo "    number of tasks. I.e., mkmapdata.sh --mpiexec \"srun --ntasks=10\" "
+  echo "    implies that ESMF_RegridWeightGen will be called with srun and 10 "
+  echo "    MPI tasks."
   echo "[-m|--mpiexec <command>]"
   echo "    Command used to run mpi jobs (mpirun, aprun, etc)"
+  echo "[-e|--esmf-path <path to esmf binaries>]"
+  echo "    Path to ESMF executables to use. If not present, will default to"
+  echo "    any executables in PATH environment variable"
   echo "[-o|--output-filetype <filetype>]"
   echo "    Specific type for output file [netcdf4, 64bit_offset]"
   echo "[-b|--batch]"
@@ -188,6 +203,10 @@ while [ $# -gt 0 ]; do
             ;;
         -m|--mpiexec)
             MPIEXEC=$2
+            shift
+            ;;
+        -e|--esmf-path)
+            ESMFBIN_PATH=$2
             shift
             ;;
         -o|--output-filetype)
@@ -577,7 +596,7 @@ until ((nfile>${#INGRID[*]})); do
       # Check for duplicate mapping weights
       newfile="rmdups_${OUTFILE[nfile]}"
       runcmd "rm -f $newfile"
-      runcmd "export MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
+      runcmd "env MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
       if [ -f "$newfile" ]; then
          runcmd "mv $newfile ${OUTFILE[nfile]}"
       fi
