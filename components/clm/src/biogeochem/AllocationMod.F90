@@ -2129,6 +2129,7 @@ contains
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         e_km_nh4 = e_km_nh4 + e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)/km_plant_nh4(ivt(p))
                         e_km_no3 = e_km_no3 + e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)/km_plant_no3(ivt(p))
+                        decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
                      end if
                   end do
                   e_km_nh4 = e_km_nh4 + e_decomp_scalar*decompmicc(c,j)*(1._r8/km_decomp_nh4 + 1._r8/km_nit)

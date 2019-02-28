@@ -1346,6 +1346,11 @@ contains
          avgflag='A', long_name='symbiotic/asymbiotic N fixation to soil mineral N', &
          ptr_col=this%nfix_to_sminn_col)
 
+    this%nfix_to_ecosysn_col(begc:endc) = spval
+    call hist_addfld1d (fname='NFIX_TO_ECOSYSN', units='gN/m^2/s', &
+         avgflag='A', long_name='symbiotic/asymbiotic N fixation to whole ecosystem N', &
+         ptr_col=this%nfix_to_ecosysn_col)
+
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
           this%m_decomp_npools_to_fire_col(begc:endc,k) = spval
