@@ -154,7 +154,7 @@ runcmd() {
 interactive="YES"
 debug="no"
 res="default"
-type="global"
+gridtype="global"
 phys="clm4_5"
 verbose="no"
 list="no"
@@ -186,7 +186,7 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         -t|--gridtype)
-            type=$2
+            gridtype=$2
             shift
             ;;
         -p|--phys)
@@ -282,7 +282,7 @@ else
 fi
 
 # Make sure grid type is consistent
-if [ "$type" = "global" ] && [ `echo "$res" | grep -c "1x1_"` = 1 ]; then
+if [ "$gridtype" = "global" ] && [ `echo "$res" | grep -c "1x1_"` = 1 ]; then
     echo "This is a regional resolution and yet it is being run as global, set type with '-t' option\n";
     exit 1
 fi
@@ -405,7 +405,7 @@ case $hostname in
   module load nco
 
   if [ -z "$ESMFBIN_PATH" ]; then
-     if [ "$type" = "global" ]; then
+     if [ "$gridtype" = "global" ]; then
         mpi=mpi
         mpitype="mpich2"
      else
@@ -426,7 +426,7 @@ case $hostname in
   module load nco
   if [ -z "$ESMFBIN_PATH" ]; then
      module use -a /project/projectdirs/ccsm1/modulefiles/hopper
-     if [ "$type" = "global" ]; then
+     if [ "$gridtype" = "global" ]; then
         mpi=mpi
         mpitype="mpi"
      else
@@ -449,7 +449,7 @@ case $hostname in
   module load nco
   if [ -z "$ESMFBIN_PATH" ]; then
      module use -a /project/projectdirs/ccsm1/modulefiles/edison
-     if [ "$type" = "global" ]; then
+     if [ "$gridtype" = "global" ]; then
         mpi=mpi
         mpitype="mpi"
      else
@@ -575,7 +575,7 @@ until ((nfile>${#INGRID[*]})); do
       # Build regrid command
       cmd="$mpirun $ESMF_REGRID --ignore_unmapped -s ${INGRID[nfile]} "
       cmd="$cmd -d $GRIDFILE -m conserve -w ${OUTFILE[nfile]}"
-      if [ $type = "regional" ]; then
+      if [ $gridtype = "regional" ]; then
         cmd="$cmd --dst_regional"
       fi
       cmd="$cmd --src_type ${SRC_TYPE[nfile]} ${SRC_EXTRA_ARGS[nfile]} --dst_type $DST_TYPE $DST_EXTRA_ARGS"
