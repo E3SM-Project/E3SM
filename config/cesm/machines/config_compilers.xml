@@ -601,6 +601,13 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="coeus" COMPILER="gnu">
+  <NETCDF_PATH>/vol/apps/hpc/stow/netcdf/4.4.1.1/gcc-6.3.0</NETCDF_PATH>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="constance" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
