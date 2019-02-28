@@ -81,6 +81,11 @@ def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_r
 
                     os.rename(the_dir, os.path.join(old_test_archive, target_area, os.path.basename(old_case)))
 
+                    # If parent dir is empty, remove it
+                    parent_dir = os.path.dirname(the_dir)
+                    if not os.listdir(parent_dir):
+                        os.rmdir(parent_dir)
+
     # Check size of archive
     bytes_of_old_test_data = int(run_cmd_no_fail("du -sb {}".format(old_test_archive)).split()[0])
     bytes_allowed = machine.get_value("MAX_GB_OLD_TEST_DATA") * 1000000000
@@ -124,7 +129,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
                         scratch_root, parallel_jobs, walltime,
-                        machine, compiler, real_baseline_name, baseline_root):
+                        machine, compiler, real_baseline_name, baseline_root,
+                        archive_only):
 ###############################################################################
     """
     Return True if all tests passed
@@ -161,73 +167,80 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     #
 
     test_id_root = "J{}{}".format(baseline_name.capitalize(), test_suite.replace("e3sm_", "").capitalize())
-    test_id = "%s%s" % (test_id_root, CIME.utils.get_timestamp())
+    if archive_only:
+        test_id = "%s%s" % (test_id_root, "string_that_will_never_appear")
+    else:
+        test_id = "%s%s" % (test_id_root, CIME.utils.get_timestamp())
+
     archiver_thread = threading.Thread(target=handle_old_test_data, args=(machine, compiler, test_id_root, scratch_root, test_root, test_id))
     archiver_thread.start()
 
-    #
-    # Set up create_test command and run it
-    #
+    tests_passed = True
+    if not archive_only:
 
-    create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
-    if (generate_baselines):
-        create_test_args.append("-g -b " + real_baseline_name)
-    elif (baseline_compare):
-        create_test_args.append("-c -b " + real_baseline_name)
+        #
+        # Set up create_test command and run it
+        #
 
-    if scratch_root != machine.get_value("CIME_OUTPUT_ROOT"):
-        create_test_args.append("--output-root=" + scratch_root)
+        create_test_args = [test_suite, "--test-root %s" % test_root, "-t %s" % test_id, "--machine %s" % machine.get_machine_name(), "--compiler %s" % compiler]
+        if (generate_baselines):
+            create_test_args.append("-g -b " + real_baseline_name)
+        elif (baseline_compare):
+            create_test_args.append("-c -b " + real_baseline_name)
 
-    if no_batch:
-        create_test_args.append("--no-batch")
+        if scratch_root != machine.get_value("CIME_OUTPUT_ROOT"):
+            create_test_args.append("--output-root=" + scratch_root)
 
-    if parallel_jobs is not None:
-        create_test_args.append("-j {:d}".format(parallel_jobs))
+        if no_batch:
+            create_test_args.append("--no-batch")
 
-    if walltime is not None:
-        create_test_args.append(" --walltime " + walltime)
+        if parallel_jobs is not None:
+            create_test_args.append("-j {:d}".format(parallel_jobs))
 
-    if baseline_root is not None:
-        create_test_args.append(" --baseline-root " + baseline_root)
+        if walltime is not None:
+            create_test_args.append(" --walltime " + walltime)
 
-    create_test_cmd = "./create_test " + " ".join(create_test_args)
+        if baseline_root is not None:
+            create_test_args.append(" --baseline-root " + baseline_root)
 
-    if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
-        create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
-                                             verbose=True, arg_stdout=None, arg_stderr=None)[0]
-        # Create_test should have either passed, detected failing tests, or timed out
-        expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
-               "Create_test script FAILED with error code '{:d}'!".format(create_test_stat))
+        create_test_cmd = "./create_test " + " ".join(create_test_args)
 
-    #
-    # Wait for tests
-    #
+        if (not CIME.wait_for_tests.SIGNAL_RECEIVED):
+            create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
+                                                 verbose=True, arg_stdout=None, arg_stderr=None)[0]
+            # Create_test should have either passed, detected failing tests, or timed out
+            expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
+                   "Create_test script FAILED with error code '{:d}'!".format(create_test_stat))
 
-    if (submit_to_cdash):
-        cdash_build_name = "_".join([test_suite, baseline_name, compiler]) if arg_cdash_build_name is None else arg_cdash_build_name
-    else:
-        cdash_build_name = None
+        #
+        # Wait for tests
+        #
 
-    os.environ["CIME_MACHINE"] = machine.get_machine_name()
+        if (submit_to_cdash):
+            cdash_build_name = "_".join([test_suite, baseline_name, compiler]) if arg_cdash_build_name is None else arg_cdash_build_name
+        else:
+            cdash_build_name = None
 
-    if submit_to_cdash:
-        logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus --no-wait -b {}".format(test_root, test_id, cdash_build_name))
+        os.environ["CIME_MACHINE"] = machine.get_machine_name()
 
-    tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
-                                                 no_wait=not use_batch, # wait if using queue
-                                                 check_throughput=False, # don't check throughput
-                                                 check_memory=False, # don't check memory
-                                                 ignore_namelists=False, # don't ignore namelist diffs
-                                                 cdash_build_name=cdash_build_name,
-                                                 cdash_project=cdash_project,
-                                                 cdash_build_group=cdash_build_group)
+        if submit_to_cdash:
+            logging.info("To resubmit to dashboard: wait_for_tests {}/*{}/TestStatus --no-wait -b {}".format(test_root, test_id, cdash_build_name))
+
+        tests_passed = CIME.wait_for_tests.wait_for_tests(glob.glob("{}/*{}/TestStatus".format(test_root, test_id)),
+                                                     no_wait=not use_batch, # wait if using queue
+                                                     check_throughput=False, # don't check throughput
+                                                     check_memory=False, # don't check memory
+                                                     ignore_namelists=False, # don't ignore namelist diffs
+                                                     cdash_build_name=cdash_build_name,
+                                                     cdash_project=cdash_project,
+                                                     cdash_build_group=cdash_build_group)
+
+        if use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED:
+            # Cleanup
+            cleanup_queue(test_root, test_id)
 
     logging.info("TEST ARCHIVER: Waiting for archiver thread")
     archiver_thread.join()
     logging.info("TEST ARCHIVER: Waiting for archiver finished")
-
-    if use_batch and CIME.wait_for_tests.SIGNAL_RECEIVED:
-        # Cleanup
-        cleanup_queue(test_root, test_id)
 
     return tests_passed
