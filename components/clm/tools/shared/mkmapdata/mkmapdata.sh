@@ -488,7 +488,7 @@ if [ "$interactive" == "NO" ]; then
         echo "Name of MPI exec to use was NOT set"
         echo "Set the environment variable: MPIEXEC"
         exit 1
-    elif [ ! $( command $MPIEXEC >& /dev/null ) ]; then
+    elif [ ! $( command -v $MPIEXEC >& /dev/null ) ]; then
         echo "The MPIEXEC pathname given is NOT an executable: $MPIEXEC"
         echo "Set the environment variable: MPIEXEC or run in interactive mode without MPI"
         exit 1
