@@ -32,7 +32,7 @@ def parse_command_line(args, description):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--protocol", default='svn',
+    parser.add_argument("--protocol", default=None,
                         help="The input data protocol to download data.")
 
     parser.add_argument("--server", default=None,

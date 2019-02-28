@@ -281,8 +281,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
     no_files_missing = True
     local_user = case.get_value('USER')
-    if download or chksum:
-        chksum_hash.clear()
+    if download:
         if protocol not in vars(CIME.Servers):
             logger.warning("Client protocol {} not enabled".format(protocol))
             return False
