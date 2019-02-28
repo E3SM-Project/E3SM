@@ -126,25 +126,25 @@ usage() {
 #----------------------------------------------------------------------
 
 runcmd() {
-   cmd=$@
-   if [ -z "$cmd" ]; then
-       echo "No command given to the runcmd function"
-       exit 3
-   fi
-   if [ "$verbose" = "YES" ]; then
-       echo "$cmd"
-   fi
-   if [ "$debug" != "YES" ]; then
-       ${cmd}
-       rc=$?
-   else
-       rc=0
-   fi
-   if [ $rc != 0 ]; then
-       echo "Error status returned from mkmapdata script"
-       exit 4
-   fi
-   return 0
+    cmd=$@
+    if [ -z "$cmd" ]; then
+        echo "No command given to the runcmd function"
+        exit 3
+    fi
+    if [ "$verbose" = "YES" ]; then
+        echo "$cmd"
+    fi
+    if [ "$debug" != "YES" ]; then
+        ${cmd}
+        rc=$?
+    else
+        rc=0
+    fi
+    if [ $rc != 0 ]; then
+        echo "Error status returned from mkmapdata script"
+        exit 4
+    fi
+    return 0
 }
 
 #----------------------------------------------------------------------
@@ -356,34 +356,34 @@ CDATE="c"`date +%y%m%d`
 declare -i nfile=1
 for gridmask in ${grids[*]}
 do
-   grid=${gridmask%_*}
-   lmask=${gridmask#*_}
-
-   QUERYARGS="-res $grid -options lmask=$lmask,glc_nec=10 "
-
-   QUERYFIL="$QUERY -var scripgriddata $QUERYARGS -onlyfiles"
-   if [ "$verbose" = "YES" ]; then
-      echo $QUERYFIL
-   fi
-   INGRID[nfile]=`$QUERYFIL`
-   if [ "$list" = "YES" ]; then
-      echo "ingrid = ${INGRID[nfile]}"
-      echo "ingrid = ${INGRID[nfile]}" >> $outfilelist
-   fi
-
-   OUTFILE[nfile]=map_${grid}_${lmask}_to_${res}_nomask_aave_da_$CDATE.nc
-
-   # Determine extra information about the source grid file
-   SRC_EXTRA_ARGS[nfile]=""
-   SRC_LRGFIL[nfile]=`$QUERY -var scripgriddata_lrgfile_needed $QUERYARGS`
-   SRC_TYPE[nfile]=`$QUERY -var scripgriddata_type $QUERYARGS`
-   if [ "${SRC_TYPE[nfile]}" = "UGRID" ]; then
-       # For UGRID, we need extra information: the meshname variable
-       src_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
-       SRC_EXTRA_ARGS[nfile]="${SRC_EXTRA_ARGS[nfile]} --src_meshname $src_meshname"
-   fi
-
-   nfile=nfile+1
+    grid=${gridmask%_*}
+    lmask=${gridmask#*_}
+ 
+    QUERYARGS="-res $grid -options lmask=$lmask,glc_nec=10 "
+ 
+    QUERYFIL="$QUERY -var scripgriddata $QUERYARGS -onlyfiles"
+    if [ "$verbose" = "YES" ]; then
+        echo $QUERYFIL
+    fi
+    INGRID[nfile]=`$QUERYFIL`
+    if [ "$list" = "YES" ]; then
+        echo "ingrid = ${INGRID[nfile]}"
+        echo "ingrid = ${INGRID[nfile]}" >> $outfilelist
+    fi
+ 
+    OUTFILE[nfile]=map_${grid}_${lmask}_to_${res}_nomask_aave_da_$CDATE.nc
+ 
+    # Determine extra information about the source grid file
+    SRC_EXTRA_ARGS[nfile]=""
+    SRC_LRGFIL[nfile]=`$QUERY -var scripgriddata_lrgfile_needed $QUERYARGS`
+    SRC_TYPE[nfile]=`$QUERY -var scripgriddata_type $QUERYARGS`
+    if [ "${SRC_TYPE[nfile]}" = "UGRID" ]; then
+        # For UGRID, we need extra information: the meshname variable
+        src_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
+        SRC_EXTRA_ARGS[nfile]="${SRC_EXTRA_ARGS[nfile]} --src_meshname $src_meshname"
+    fi
+ 
+    nfile=nfile+1
 done
 
 #----------------------------------------------------------------------
@@ -394,81 +394,81 @@ done
 
 hostname=`hostname`
 if [ -n "$NERSC_HOST" ]; then
-   hostname=$NERSC_HOST
+    hostname=$NERSC_HOST
 fi
 case $hostname in
-  ##yellowstone
-  ys* | caldera* | geyser* )
-  . /glade/apps/opt/lmod/lmod/init/bash
-  module load esmf
-  module load ncl
-  module load nco
-
-  if [ -z "$ESMFBIN_PATH" ]; then
-     if [ "$gridtype" = "global" ]; then
-        mpi=mpi
-        mpitype="mpich2"
-     else
-        mpi=uni
-        mpitype="mpiuni"
-     fi
-     ESMFBIN_PATH=/glade/apps/opt/esmf/6.3.0-ncdfio/intel/12.1.5/bin/binO/Linux.intel.64.${mpitype}.default
-  fi
-  if [ -z "$MPIEXEC" ]; then
-     MPIEXEC="mpirun.lsf"
-  fi
-  ;;
-
-  ## hopper
-  hopper* )
-  .  /opt/modules/default/init/bash
-  module load ncl/6.1.2
-  module load nco
-  if [ -z "$ESMFBIN_PATH" ]; then
-     module use -a /project/projectdirs/ccsm1/modulefiles/hopper
-     if [ "$gridtype" = "global" ]; then
-        mpi=mpi
-        mpitype="mpi"
-     else
-        mpi=uni
-        mpitype="mpiuni"
-     fi
-     module load esmf/6.3.0r-ncdfio-${mpitype}-O
-     ESMFBIN_PATH=$ESMF_LIBDIR/../bin
-  fi
-  if [ -z "$MPIEXEC" ]; then
-    MPIEXEC="aprun -n $REGRID_PROC"
-  fi
-
-  ;;
-
-  ## edison
-  edison* )
-  .  /opt/modules/default/init/bash
-  module load ncl/6.1.1
-  module load nco
-  if [ -z "$ESMFBIN_PATH" ]; then
-     module use -a /project/projectdirs/ccsm1/modulefiles/edison
-     if [ "$gridtype" = "global" ]; then
-        mpi=mpi
-        mpitype="mpi"
-     else
-        mpi=uni
-        mpitype="mpiuni"
-     fi
-     module load esmf/6.3.0r-ncdfio-${mpitype}-O
-     ESMFBIN_PATH=$ESMF_LIBDIR/../bin
-  fi
-  if [ -z "$MPIEXEC" ]; then
-    MPIEXEC="aprun -n $REGRID_PROC"
-  fi
-
-  ;;
-  ##no other machine currently supported    
-  *)
-  echo "Machine $hostname NOT recognized"
-  ;;
-
+    ##yellowstone
+    ys* | caldera* | geyser* )
+    . /glade/apps/opt/lmod/lmod/init/bash
+    module load esmf
+    module load ncl
+    module load nco
+  
+    if [ -z "$ESMFBIN_PATH" ]; then
+        if [ "$gridtype" = "global" ]; then
+            mpi=mpi
+            mpitype="mpich2"
+        else
+            mpi=uni
+            mpitype="mpiuni"
+        fi
+        ESMFBIN_PATH=/glade/apps/opt/esmf/6.3.0-ncdfio/intel/12.1.5/bin/binO/Linux.intel.64.${mpitype}.default
+    fi
+    if [ -z "$MPIEXEC" ]; then
+        MPIEXEC="mpirun.lsf"
+    fi
+    ;;
+  
+    ## hopper
+    hopper* )
+    .  /opt/modules/default/init/bash
+    module load ncl/6.1.2
+    module load nco
+    if [ -z "$ESMFBIN_PATH" ]; then
+        module use -a /project/projectdirs/ccsm1/modulefiles/hopper
+        if [ "$gridtype" = "global" ]; then
+            mpi=mpi
+            mpitype="mpi"
+        else
+            mpi=uni
+            mpitype="mpiuni"
+        fi
+        module load esmf/6.3.0r-ncdfio-${mpitype}-O
+        ESMFBIN_PATH=$ESMF_LIBDIR/../bin
+    fi
+    if [ -z "$MPIEXEC" ]; then
+        MPIEXEC="aprun -n $REGRID_PROC"
+    fi
+  
+    ;;
+  
+    ## edison
+    edison* )
+    .  /opt/modules/default/init/bash
+    module load ncl/6.1.1
+    module load nco
+    if [ -z "$ESMFBIN_PATH" ]; then
+        module use -a /project/projectdirs/ccsm1/modulefiles/edison
+        if [ "$gridtype" = "global" ]; then
+            mpi=mpi
+            mpitype="mpi"
+        else
+            mpi=uni
+            mpitype="mpiuni"
+        fi
+        module load esmf/6.3.0r-ncdfio-${mpitype}-O
+        ESMFBIN_PATH=$ESMF_LIBDIR/../bin
+    fi
+    if [ -z "$MPIEXEC" ]; then
+        MPIEXEC="aprun -n $REGRID_PROC"
+    fi
+  
+    ;;
+    ##no other machine currently supported    
+    *)
+    echo "Machine $hostname NOT recognized"
+    ;;
+ 
 esac
 
 #----------------------------------------------------------------------
@@ -517,94 +517,92 @@ fi
 # Remove previous log files
 rm -f PET*.Log
 
-#
 # Now run the mapping for each file, checking that input files exist
 # and then afterwards that the output mapping file exists
-#
 declare -i nfile=1
 until ((nfile>${#INGRID[*]})); do
-   echo "Creating mapping file: ${OUTFILE[nfile]}"
-   echo "From input grid: ${INGRID[nfile]}"
-   echo "For output grid: $GRIDFILE"
-   echo " "
-
-   # Check that input and output grid files exist
-   if [ -z "${INGRID[nfile]}" ] || [ -z "$GRIDFILE" ] || [ -z "${OUTFILE[nfile]}" ]; then
-      echo "Either input or output grid or output mapping file is NOT set"
-      exit 3
-   fi
-   if [ ! -f "${INGRID[nfile]}" ]; then
-      echo "Input grid file does NOT exist: ${INGRID[nfile]}"
-      if [ "$list" != "YES" ]; then
-         echo "Set --list argument to output list of grid files to $outfilelist"
-         echo "and then download separately using check_input_data (in CIME)."
-         exit 2
-      fi
-   fi
-   if [ ! -f "$GRIDFILE" ]; then
-      echo "Output grid file does NOT exist: $GRIDFILE"
-      exit 3
-   fi
-
-   # Determine what (if any) large file support is needed. Use the
-   # most extreme large file support needed by either the source file
-   # or the destination file.
-   if [ "$DST_LRGFIL" = "netcdf4" ] || [ "${SRC_LRGFIL[nfile]}" = "netcdf4" ]; then
-       lrgfil="--netcdf4"
-   elif [ "$DST_LRGFIL" = "64bit_offset" ] || [ "${SRC_LRGFIL[nfile]}" = "64bit_offset" ]; then
-       lrgfil="--64bit_offset"
-   elif [ "$DST_LRGFIL" = "none" ] && [ "${SRC_LRGFIL[nfile]}" = "none" ]; then
-       lrgfil=""
-   else
-       echo "Unknown LRGFIL type:"
-       echo "DST_LRGFIL = $DST_LRGFIL"
-       echo "SRC_LRGFIL = ${SRC_LRGFIL[nfile]}"
-       exit 4
-   fi
-
-   # Override file type
-   if [ "${output_filetype}" != "" ]; then
-       lrgfil="--${output_filetype}"
-   fi
-
-   # Skip if file already exists
-   if [ -f "${OUTFILE[nfile]}" ]; then
-      echo "Skipping creation of ${OUTFILE[nfile]} as already exists"
-   else
-
-      # Build regrid command
-      cmd="$mpirun $ESMF_REGRID --ignore_unmapped -s ${INGRID[nfile]} "
-      cmd="$cmd -d $GRIDFILE -m conserve -w ${OUTFILE[nfile]}"
-      if [ $gridtype = "regional" ]; then
-        cmd="$cmd --dst_regional"
-      fi
-      cmd="$cmd --src_type ${SRC_TYPE[nfile]} ${SRC_EXTRA_ARGS[nfile]} --dst_type $DST_TYPE $DST_EXTRA_ARGS"
-      cmd="$cmd $lrgfil"
-
-      # Run regrid command
-      runcmd $cmd
-      if [ "$debug" != "YES" ] && [ ! -f "${OUTFILE[nfile]}" ]; then
-         echo "Output mapping file was NOT created: ${OUTFILE[nfile]}"
-         exit 6
-      fi
-
-      # Add some metadata to the file
-      HOST=`hostname`
-      history="$ESMF_REGRID"
-      runcmd "ncatted -a history,global,a,c,"$history"  ${OUTFILE[nfile]}"
-      runcmd "ncatted -a hostname,global,a,c,$HOST   -h ${OUTFILE[nfile]}"
-      runcmd "ncatted -a logname,global,a,c,$LOGNAME -h ${OUTFILE[nfile]}"
-
-      # Check for duplicate mapping weights
-      newfile="rmdups_${OUTFILE[nfile]}"
-      runcmd "rm -f $newfile"
-      runcmd "env MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
-      if [ -f "$newfile" ]; then
-         runcmd "mv $newfile ${OUTFILE[nfile]}"
-      fi
-   fi
-
-   nfile=nfile+1
+    echo "Creating mapping file: ${OUTFILE[nfile]}"
+    echo "From input grid: ${INGRID[nfile]}"
+    echo "For output grid: $GRIDFILE"
+    echo " "
+ 
+    # Check that input and output grid files exist
+    if [ -z "${INGRID[nfile]}" ] || [ -z "$GRIDFILE" ] || [ -z "${OUTFILE[nfile]}" ]; then
+        echo "Either input or output grid or output mapping file is NOT set"
+        exit 3
+    fi
+    if [ ! -f "${INGRID[nfile]}" ]; then
+        echo "Input grid file does NOT exist: ${INGRID[nfile]}"
+        if [ "$list" != "YES" ]; then
+            echo "Set --list argument to output list of grid files to $outfilelist"
+            echo "and then download separately using check_input_data (in CIME)."
+            exit 2
+        fi
+    fi
+    if [ ! -f "$GRIDFILE" ]; then
+        echo "Output grid file does NOT exist: $GRIDFILE"
+        exit 3
+    fi
+ 
+    # Determine what (if any) large file support is needed. Use the
+    # most extreme large file support needed by either the source file
+    # or the destination file.
+    if [ "$DST_LRGFIL" = "netcdf4" ] || [ "${SRC_LRGFIL[nfile]}" = "netcdf4" ]; then
+        lrgfil="--netcdf4"
+    elif [ "$DST_LRGFIL" = "64bit_offset" ] || [ "${SRC_LRGFIL[nfile]}" = "64bit_offset" ]; then
+        lrgfil="--64bit_offset"
+    elif [ "$DST_LRGFIL" = "none" ] && [ "${SRC_LRGFIL[nfile]}" = "none" ]; then
+        lrgfil=""
+    else
+        echo "Unknown LRGFIL type:"
+        echo "DST_LRGFIL = $DST_LRGFIL"
+        echo "SRC_LRGFIL = ${SRC_LRGFIL[nfile]}"
+        exit 4
+    fi
+ 
+    # Override file type
+    if [ "${output_filetype}" != "" ]; then
+        lrgfil="--${output_filetype}"
+    fi
+ 
+    # Skip if file already exists
+    if [ -f "${OUTFILE[nfile]}" ]; then
+        echo "Skipping creation of ${OUTFILE[nfile]} as already exists"
+    else
+ 
+        # Build regrid command
+        cmd="$mpirun $ESMF_REGRID --ignore_unmapped -s ${INGRID[nfile]} "
+        cmd="$cmd -d $GRIDFILE -m conserve -w ${OUTFILE[nfile]}"
+        if [ $gridtype = "regional" ]; then
+            cmd="$cmd --dst_regional"
+        fi
+        cmd="$cmd --src_type ${SRC_TYPE[nfile]} ${SRC_EXTRA_ARGS[nfile]} --dst_type $DST_TYPE $DST_EXTRA_ARGS"
+        cmd="$cmd $lrgfil"
+  
+        # Run regrid command
+        runcmd $cmd
+        if [ "$debug" != "YES" ] && [ ! -f "${OUTFILE[nfile]}" ]; then
+            echo "Output mapping file was NOT created: ${OUTFILE[nfile]}"
+            exit 6
+        fi
+  
+        # Add some metadata to the file
+        HOST=`hostname`
+        history="$ESMF_REGRID"
+        runcmd "ncatted -a history,global,a,c,"$history"  ${OUTFILE[nfile]}"
+        runcmd "ncatted -a hostname,global,a,c,$HOST   -h ${OUTFILE[nfile]}"
+        runcmd "ncatted -a logname,global,a,c,$LOGNAME -h ${OUTFILE[nfile]}"
+  
+        # Check for duplicate mapping weights
+        newfile="rmdups_${OUTFILE[nfile]}"
+        runcmd "rm -f $newfile"
+        runcmd "env MAPFILE=${OUTFILE[nfile]} NEWMAPFILE=$newfile ncl $dir/rmdups.ncl"
+        if [ -f "$newfile" ]; then
+            runcmd "mv $newfile ${OUTFILE[nfile]}"
+        fi
+    fi
+ 
+    nfile=nfile+1
 done
 
 if [ "${debug}" != "YES" ]; then
