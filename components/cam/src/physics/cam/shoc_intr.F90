@@ -60,7 +60,8 @@ module shoc_intr
              qrl_idx, &          ! longwave cooling rate
              radf_idx, &
              tpert_idx, &
-             fice_idx 	     	     
+             fice_idx, &
+	     vmag_gust_idx 	     	     
   
   integer, public :: &
     ixtke = 0
@@ -157,6 +158,8 @@ module shoc_intr
     call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/), fice_idx)
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver/), radf_idx)
     call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/), cmeliq_idx)
+    
+    call pbuf_add_field('vmag_gust',  'global', dtype_r8, (/pcols/),      vmag_gust_idx)
   
 #endif
   
@@ -282,6 +285,7 @@ end function shoc_implements_cnst
     qrl_idx         = pbuf_get_index('QRL')
     cmfmc_sh_idx    = pbuf_get_index('CMFMC_SH')
     tke_idx         = pbuf_get_index('tke')   
+    vmag_gust_idx = pbuf_get_index('vmag_gust')
  
     if (is_first_step()) then
       call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8)
@@ -289,6 +293,9 @@ end function shoc_implements_cnst
       call pbuf_set_field(pbuf2d, tauresy_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tkh_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
+      
+      call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
+      
     endif
     
     if (prog_modal_aero) then
