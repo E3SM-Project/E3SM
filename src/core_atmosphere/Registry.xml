@@ -336,7 +336,7 @@
                      possible_values="Non-negative real values"/>
 	</nml_record>
 
-        <nml_record name="assimilation" in_defaults="true">
+        <nml_record name="assimilation" in_defaults="false">
                 <nml_option name="config_jedi_da" type="logical" default_value="false"
                      units="-"
                      description="Whether this run is within the JEDI data assimilation framework; used to add temperature and specific humidity as diagnostics"
