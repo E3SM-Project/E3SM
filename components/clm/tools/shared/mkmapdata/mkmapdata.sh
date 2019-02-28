@@ -479,23 +479,25 @@ esac
 # NOTE - if you want to run in batch mode - you need to have a separate
 # batch file that calls this script interactively - you cannot submit
 # this script to the batch system
-
+# NOTE - we only need this here because the machine-specific settings above set
+# MPIEXEC depending on if we are on a certain machine, so we need to override
+# them if we want interactive mode. This bit of logic should go away in the
+# future if we drop machine-specific support from this script.
 if [ "$interactive" == "NO" ]; then
-   echo "Running in batch mode using MPI"
-   if [ -z "$MPIEXEC" ]; then
-      echo "Name of MPI exec to use was NOT set"
-      echo "Set the environment variable: MPIEXEC"
-      exit 1
-   fi
-   if [ ! -x `which $MPIEXEC` ]; then
-      echo "The MPIEXEC pathname given is NOT an executable: $MPIEXEC"
-      echo "Set the environment variable: MPIEXEC or run in interactive mode without MPI"
-      exit 1
-   fi
-   mpirun=$MPIEXEC
-   echo "Running in batch mode"
+    if [ -z "$MPIEXEC" ]; then
+        echo "Name of MPI exec to use was NOT set"
+        echo "Set the environment variable: MPIEXEC"
+        exit 1
+    elif [ ! $( command $MPIEXEC >& /dev/null ) ]; then
+        echo "The MPIEXEC pathname given is NOT an executable: $MPIEXEC"
+        echo "Set the environment variable: MPIEXEC or run in interactive mode without MPI"
+        exit 1
+    fi
+    echo "Running with MPI via $MPIEXEC"
+    mpirun=$MPIEXEC
 else
-   mpirun=""
+    echo "Running without MPI"
+    mpirun=""
 fi
   
 # Look for ESMF_RegridWeightGen. If ESMFBIN_PATH is set, then look for binary
