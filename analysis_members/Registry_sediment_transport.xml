@@ -1,0 +1,225 @@
+	<nml_record name="AM_sedimentTransport" mode="forward;analysis">
+		<nml_option name="config_AM_sedimentTransport_enable"
+			type="logical"
+			default_value=".false."
+			units="unitless"
+			description="If true, ocean analysis member sedimentTransport is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_sedimentTransport_compute_on_startup"
+			type="logical"
+			default_value=".true."
+			units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_sedimentTransport_write_on_startup"
+			type="logical"
+			default_value=".true."
+			units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_sedimentTransport_compute_interval"
+			type="character"
+			default_value="output_interval"
+			units="unitless"
+			description="Time stamp for frequency of computation of the sedimentTransport analysis member."
+			possible_values="Any time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_sedimentTransport_output_stream"
+			type="character"
+			default_value="sedimentTransportOutput"
+			units="unitless"
+			description="Name of stream the sedimentTransport analysis member should be tied to"
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_sedimentTransport_directory"
+			type="character"
+			default_value="analysis_members"
+			units="unitless"
+			description="subdirectory to write text files (might useful)"
+			possible_values="any valid directory name"
+		/>
+		<nml_option name="config_AM_sedimentTransport_grain_size"
+			type="real"
+			default_value="2.5e-4"
+			units="m"
+			description="dimaeter of a spherical sediment particle"
+			possible_values="1e-4 ~1e-3"
+		/>
+		<nml_option name="config_AM_sedimentTransport_drag_coefficient"
+			type="real"
+			default_value="2.5e-3"
+			units=""
+			description="drag coefficient used for bottom shear stress computation"
+			possible_values="any values between 1~2.5e-3"
+		/>
+		<nml_option name="config_AM_sedimentTransport_erate"
+			type="real"
+			default_value="5.0e-4"
+      units="kg m^{-2} s^{-1}"
+			description="bed surface erosion rate"
+			possible_values="any positive values"
+		/>
+		<nml_option name="config_AM_sedimentTransport_tau_ce"
+			type="real"
+			default_value="0.1"
+      units="N m^{-2}"
+			description="critical shear for erosion"
+			possible_values="any positive values"
+		/>
+		<nml_option name="config_AM_sedimentTransport_tau_cd"
+			type="real"
+			default_value="0.1"
+      units="N m^{-2}"
+			description="critical shear for deposition"
+			possible_values="any positive values"
+		/>
+		<nml_option name="config_AM_sedimentTransport_grain_porosity"
+			type="real"
+			default_value="0.5"
+			units=""
+			description="sediment porosity"
+			possible_values="any positive value between 0 and 1"
+		/>
+		<nml_option name="config_AM_sedimentTransport_water_density"
+			type="real"
+			default_value="1020"
+      units="kg m^{-3}"
+			description="water density"
+			possible_values="any positive value between 1000 and 1030"
+		/>
+		<nml_option name="config_AM_sedimentTransport_grain_density"
+			type="real"
+			default_value="2650"
+      units="kg m^{-3}"
+			description="sediment density"
+			possible_values="any positive value"
+		/>
+		<nml_option name="config_AM_sedimentTransport_alpha"
+			type="real"
+			default_value="1e-2"
+			units="kg s m^{-4}"
+			description="A parameter related to the sediment property, with typical values of O(1e-4~1e-3)"
+			possible_values="1e-4 ~1e-3"
+		/>
+		<nml_option name="config_AM_sedimentTransport_kinematic_viscosity"
+			type="real"
+			default_value="1e-6"
+      units="m^2 s^{-1}"
+			description="kinematic viscosity of the fluild"
+			possible_values="any positive value"
+		/>
+		<nml_option name="config_AM_sedimentTransport_vertical_diffusion_coefficient"
+			type="real"
+			default_value="1e-2"
+      units="m^2 s^{-1}"
+			description="vertical diffsuion coefficient"
+			possible_values="any positive value"
+		/>
+		<nml_option name="config_AM_sedimentTransport_bedload"
+			type="logical"
+			default_value=".true."
+			units="unitless"
+			description="Logical flag determining if bedload transport is to be computed."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_sedimentTransport_suspended"
+			type="logical"
+			default_value=".true."
+			units="unitless"
+			description="Logical flag determining if suspended transport is to be computed."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_sedimentTransport_use_lat_lon_coords"
+			type="logical"
+			default_value=".true."
+			units="unitless"
+			description="If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="sedimentTransportAMPKG" description="This package includes variables required for the sediment flux index analysis member."
+		/>
+</packages>
+
+▸\<var_struct name="sedimentTransportAM" time_levs="1" packages="sedimentTransportAMPKG">
+		<var name="sedimentFallVelocity"
+			 type="real"
+			 dimensions=""
+       units="m s^{-1}"
+			 description="Sediment settling velocity in the water column"
+		/>
+		<var name="sedimentErosionFlux"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-2}"
+			 description="bed sediment erosion flux"
+		/>
+		<var name="sedimentDepositionFlux"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-2}"
+			 description="bed sediment deposition flux"
+		/>
+		<var name="sedimentBedloadX"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-2}"
+			 description="bedload sediment trnasport flux"
+		/>
+		<var name="sedimentBedloadY"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-2}"
+			 description="bedload sediment transport flux"
+		/>
+		<var name="sedimentFluxVAX"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-1} s^{-1}"
+			 description="Vertically-Averaged sediment flux in X-direction"
+		/>
+		<var name="sedimentFluxVAY"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-1} s^{-1}"
+			 description="Vertically-Averaged sediment flux in Y-direction"
+		/>
+		<var name="sedimentFluxBX"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-1} s^{-1}"
+			 description="Bottom sediment flux in X-direction"
+		/>
+		<var name="sedimentFluxBY"
+			 type="real"
+			 dimensions="nCells Time"
+       units="kg m^{-1} s^{-1}"
+			 description="Bottom sediment flux in Y-direction"
+		/>
+	</var_struct>
+	<streams>
+		<stream name="sedimentTransportOutput"
+				mode="forward;analysis"
+				type="output"
+				filename_template="analysis_members/sedimentTransport.$Y-$M-$D_$h.$m.$s.nc"
+				output_interval="00-00-00_00:01:00"
+				filename_interval="01-00-00_00:00:00"
+				packages="sedimentTransportAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var name="sedimentErosionFlux"/>
+			<var name="sedimentFallVelocity"/>
+			<var name="sedimentDepositionFlux"/>
+			<var name="sedimentFluxVAX"/>
+			<var name="sedimentFluxVAY"/>
+			<var name="sedimentFluxBX"/>
+			<var name="sedimentFluxBY"/>
+		</stream>
+	</streams>
