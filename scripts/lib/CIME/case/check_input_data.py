@@ -136,7 +136,7 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
     success = False
     if protocol is not None and address is not None:
         success = self.check_input_data(protocol=protocol, address=address, download=download,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
     else:
         if chksum or download:
             inputdata = Inputdata()
@@ -164,7 +164,7 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                                                   chksum_file, self.get_value("USER"))
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
@@ -183,12 +183,12 @@ def _downloadfromserver(case, input_data_root, data_list_dir):
         input_data_root = case.get_value('DIN_LOC_ROOT')
 
     while not success and protocol is not None:
-        protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
+        protocol, address, user, passwd, _ = inputdata.get_next_server()
         logger.info("Checking server {} with protocol {}".format(address, protocol))
         success = case.check_input_data(protocol=protocol, address=address, download=True,
                                         input_data_root=input_data_root,
                                         data_list_dir=data_list_dir,
-                                        user=user, passwd=passwd, chksum_file=chksum_file)
+                                        user=user, passwd=passwd)
     return success
 
 def stage_refcase(self, input_data_root=None, data_list_dir=None):
@@ -261,7 +261,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
     return True
 
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
-                     download=False, chksum=False, user=None, passwd=None, chksum_file=None):
+                     download=False, user=None, passwd=None):
     """
     For a given case check for the relevant input data as specified in data_list_dir/*.input_data_list
     in the directory input_data_root, if not found optionally download it using the servers specified
