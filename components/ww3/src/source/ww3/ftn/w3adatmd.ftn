@@ -1,0 +1,2726 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3ADATMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         27-Aug-2015 |
+!/                  +-----------------------------------+
+!/
+!/    28-Dec-2004 : Origination.                        ( version 3.06 )
+!/    04-May-2005 : Adding MPI_COMM_WAVE.               ( version 3.07 )
+!/    20-Jul-2005 : Adding output fields.               ( version 3.07 )
+!/    09-Nov-2005 : Removing soft boundary option.      ( version 3.08 )
+!/    13-Jun-2006 : Splitting STORE in G/SSTORE.        ( version 3.09 )
+!/    04-Oct-2006 : Add filter to array pointers.       ( version 3.10 )
+!/    28_Mar-2007 : Add partitioned data arrays.        ( version 3.11 )
+!/                  Add aditional undefined arrays.
+!/    22-Feb-2008 ; Modify MAPTH2 declaration.          ( version 3.13 )
+!/    29-May-2009 : Preparing distribution version.     ( version 3.14 )
+!/    29-Oct-2010 : Adding unstructured grid data.      ( version 3.14 )
+!/                  (A. Roland and F. Ardhuin) 
+!/    31-Oct-2010 : Adding output parameters            ( version 3.14 )
+!/    12-Dec-2012 : Adding SMC grid.  JG_Li             ( version 4.08 )
+!/    26-Dec-2012 : Memory reduction for outputs.       ( version 4.11 )
+!/                  Add W3XETA.
+!/    28-Jun-2013 : Bug fix initialization P2SMS.       ( version 4.11 )
+!/    11-Nov-2013 : SMC and rotated grid incorporated in the main 
+!/                  trunk                               ( version 4.13 )
+!/    14-Nov-2013 : Move orphaned arrays as scalar to W3SRCE.
+!/                  Here update of documentation only.
+!/                  (Z0S, CDS, EMN, FMN, WNM, AMX)      ( version 4.13 )
+!/    30-Apr-2014 : Memory reduction for group3.        ( version 5.00 )
+!/    10-Dec-2014 : Add checks for allocate status      ( version 5.04 )
+!
+!/
+!/    Copyright 2009-2013 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Define data structures to set up wave model auxiliary data for
+!     several models simultaneously.
+!
+!  2. Variables and types :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      NADATA    Int.  Public   Number of models in array dim.
+!      IADATA    Int.  Public   Selected model for output, init. at -1.
+!      MPIBUF    I.P.  Public   Number of buffer arrays for 'hidden'
+!                               MPI communications (no hiding for
+!                               MPIBUF = 1).
+!      WADAT     TYPE  Public   Basic data structure.
+!      WADATS    WADAT Public   Array of data structures.
+!     ----------------------------------------------------------------
+!
+!     All elements of WADAT are aliased to pointers with the same
+!     name. These pointers are defined as :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!     Internal model definition:
+!
+!      CG        R.A.  Public   Group velocities for all wave model
+!                               sea points and frequencies.
+!      WN        R.A.  Public   Idem, wavenumbers.
+!
+!     Aux. arrays for model input:
+!
+!      CA0-I     R.A.  Public   Absolute current velocity (initial
+!                               and inc.) in W3UCUR.
+!      CD0-I     R.A.  Public   Current direction (initial and
+!                               increment) in W3UCUR.
+!      UA0-I     R.A.  Public   Absolute wind speeds (initial and
+!                               incr.) in W3UWND                (m/s)
+!      UD0-I     R.A.  Public   Wind direction (initial and incr.)
+!                               in W3UWND                       (rad)
+!      AS0-I     R.A.  Public   Stability par. (initial and incr.)
+!                               in W3UWND                      (degr)
+!      ATRNX/Y   R.A.  Public   Actual transparency info.
+!
+!     Fields of mean wave parameters:
+!
+!      DW        R.A.  Public   Water depths.
+!      UA        R.A.  Public   Absolute wind speeds.
+!      UD        R.A.  Public   Absolute wind direction.
+!      U10       R.A.  Public   Wind speed used.
+!      U10D      R.A.  Public   Wind direction used.
+!      AS        R.A.  Public   Stability parameter.
+!      CX/Y      R.A.  Public   Current components.
+!
+!      HS        R.A.  Public   Wave Height.
+!      WLM       R.A.  Public   Mean wave length.
+!      T02       R.A.  Public   Mean wave period (m0,2).
+!      T0M1      R.A.  Public   Mean wave period (m0,-1).
+!      T01       R.A.  Public   Mean wave period (m0,1).
+!      FP0       R.A.  Public   Peak frequency.
+!      THM       R.A.  Public   Mean wave direction.
+!      THS       R.A.  Public   Mean directional spread.
+!      THP0      R.A.  Public   Peak direction.
+!      HSIG      R.A.  Public   Height of infragravity waves
+!      STMAXE    R.A.  Public   Expected maximum surface elevation (crest)
+!      STMAXD    R.A.  Public   STD of maximum surface elevation
+!      HMAXE     R.A.  Public   Expected maximum wave height (from covariance)
+!      HMAXD     R.A.  Public   Std of HMAXE
+!      HCMAXE    R.A.  Public   Expected maximum wave height (from crest)
+!      HCMAXD    R.A.  Public   STD of HCMAXE
+!
+!      CHARN     R.A.  Public   Charnock parameter for air-sea friction.
+!      CGE       R.A.  Public   Energy flux.
+!      PHIAW     R.A.  Public   Wind to wave energy flux.
+!      TAUWIX/Y  R.A.  Public   Wind to wave energy flux.
+!      TAUWNX/Y  R.A.  Public   Wind to wave energy flux.
+!      WHITECAP  R.A.  Public    1 : Whitecap coverage
+!                                2 : Whitecap thickness
+!                                3 : Mean breaking height
+!                                4 : Mean breaking height
+!
+!      Sxx       R.A.  Public   Radiation stresses.
+!      TAUOX/Y   R.A.  Public   Wave-ocean momentum flux.
+!      BHD       R.A.  Public   Wave-induced pressure (J term, Smith JPO 2006)
+!      PHIOC     R.A.  Public   Waves to ocean energy flux.
+!      TUSX/Y    R.A.  Public   Volume transport associated to Stokes drift.
+!      USSX/Y    R.A.  Public   Surface Stokes drift.
+!      TAUICE    R.A.  Public   Wave-ice momentum flux.
+!      PHICE     R.A.  Public   Waves to ice energy flux.
+!
+!      US3D      R.A.  Public   3D Stokes drift.
+!
+!      ABA       R.A.  Public   Near-bottom rms wave ex. amplitude.
+!      ABD       R.A.  Public   Corresponding direction.
+!      UBA       R.A.  Public   Near-bottom rms wave velocity.
+!      UBD       R.A.  Public   Corresponding direction.
+!      BEDFORMS  R.A.  Public   Bed for parameters
+!      PHIBBL    R.A.  Public   Energy loss in WBBL.
+!      TAUBBL    R.A.  Public   Momentum loss in WBBL.
+!
+!      MSSX/Y    R.A.  Public   Surface mean square slopes in X and Y direction.
+!      MSCX/Y    R.A.  Public   Phillips constant.
+!
+!      DTDYN     R.A.  Public   Mean dynamic time step (raw).
+!      FCUT      R.A.  Public   Cut-off frequency for tail.
+!      CFLXYMAX  R.A.  Public   Max. CFL number for spatial advection.
+!      CFLTHMAX  R.A.  Public   Max. CFL number for refraction.
+!      CFLKMAX   R.A.  Public   Max. CFL number for wavenumber shift.
+!
+!    Old parameters not yet in new structure ...
+!
+!      FP1       R.A.  Public   Wind sea peak frequency. (parked in 2)
+!      THP1      R.A.  Public   Wind sea peak direction. (parked in 2)
+!
+!    Orphans, commented out here, now automatic arrays in W3WAVE, ....
+!
+!      DRAT      R.A.  Public   Density ration air/water. Was
+!                               placeholder only. Now scalar in W3SRCE,
+!      TAUWX/Y   R.A.  Public   Stresses particularly for PALM.
+!
+!    Derivatives in space ....
+!
+!      DDDx      R.A.  Public   Spatial derivatives of the depth.
+!      DCxDx     R.A.  Public   Spatial dirivatives of the current.
+!
+!    Mean parameters from partitiones spectra, 2D array with el.
+!    0 holding wind sea data, and 1:NOSWLL holding swell fields.
+!    Last two arrays are regular single-entry arrays.
+!
+!      PHS       R.A.  Public   Wave height of partition.
+!      PTP       R.A.  Public   Peak period of partition.
+!      PLP       R.A.  Public   Peak wave leingth of partition.
+!      PDIR      R.A.  Public   Mean direction of partition.
+!      PSI       R.A.  Public   Mean spread of partition.
+!      PWS       R.A.  Public   Wind sea fraction of partition.
+!
+!      PWST      R.A.  Public   Total wind sea fraction.
+!      PNR       R.A.  Public   Number of partitions found.
+!
+!     Empty dummy fields (NOEXTR)
+!
+!      USERO     R.A.  Public   Empty output arrays than can be
+!                               used by users as a simple means to 
+!                               add output.
+!
+!     Map data for propagation schemes (1Up).
+!
+!      IS0/2     I.A.  Public   Spectral propagation maps.
+!      FACVX/Y   R.A.  Public   Spatial propagation factor map.
+!
+!     Map data for propagation schemes (UQ).
+!
+!      NMXn      Int.  Public    Counters for MAPX2, see W3MAP3.
+!      NMYn      Int.  Public 
+!      NMXY      Int.  Public    Dimension of MAPXY.
+!      NACTn     Int.  Public    Dimension of MAPAXY.
+!      NCENT     Int.  Public    Dimension of MAPAXY.
+!      MAPX2     I.A.  Public    Map for prop. in 'x' (longitude) dir.
+!      MAPY2     I.A.  Public    Idem in y' (latitude) direction.
+!      MAPXY     I.A.  Public    
+!      MAPAXY    I.A.  Public    List of active points used in W3QCK1.
+!      MAPCXY    I.A.  Public    List of central points used in avg.
+!      MAPTH2    I.A.  Public    Like MAPX2 for refraction (rotated
+!                                and shifted, see W3KTP3). Like MAPAXY.
+!      MAPWN2    I.A.  Public    Like MAPX2 for wavenumber shift.
+!      MAPTRN    L.A.  Public    Map to block out GSE mitigation in
+!                                proper grid points.
+!
+!     Nonlinear interactions ( !/NL1 ) :
+!
+!      NFR       Int.  Public   Nuber of frequencies ( NFR = NK )
+!      NFRHGH    Int.  Public   Auxiliary frequency counter.
+!      NFRCHG    Int.  Public   Id.
+!      NSPECX-Y  Int.  Public   Auxiliary spectral counter.
+!      IPnn      I.A.  Public   Spectral address for Snl.
+!      IMnn      I.A.  Public   Id.
+!      ICnn      I.A.  Public   Id.
+!      DALn      Real  Public   Lambda dependend weight factors.
+!      AWGn      Real  Public   Interpolation weights for Snl.
+!      SWGn      Real  Public   Interpolation weights for diag. term.
+!      AF11      R.A.  Public   Scaling array (f**11)
+!      NLINIT    Log.  Public   Flag for initialization.
+!
+!     MPP / MPI variables :
+!
+!      IAPPRO    I.A.  Public   Processor numbers for propagation calc.
+!                               for each spectral component.
+!      MPI_COMM_WAVE
+!                Int.  Public   Communicator used in the wave model.
+!      MPI_COMM_WCMP
+!                Int.  Public   Idem, computational proc. only.
+!      WW3_FIELD_VEC, WW3_SPEC_VEC
+!                Int.  Public   MPI derived vecor types.
+!      NRQSG1    Int.  Public   Number of handles in IRQSG1.
+!      NRQSG2    Int.  Public   Number of handles in IRQSG2.
+!      IBFLOC    Int.  Public   Present active buffer number.
+!      ISPLOC    Int.  Public   Corresponding local spectral bin number
+!                               (1,NSPLOC,1).
+!      NSPLOC    Int.  Public   Total number of spectral bins for which
+!                               prop. is performed on present CPU.
+!      BSTAT     I.A.  Public   Status of buffer (size MPIBUF): 
+!                                 0: Inactive.
+!                                 1: A --> STORE (active or finished).
+!                                 2: STORE --> A (active or finished).
+!      BISPL     I.A.  Public   Local spectral bin number for buffer
+!                               (size MPIBUF).
+!      IRQSG1    I.A.  Public   MPI request handles for scatters and
+!                               gathers to A() (persistent).
+!      IRQSG2    I.A.  Public   MPI request handles for gathers and
+!                               scatters to STORE (persistent).
+!    G/SSTORE    R.A.  Public   Communication buffer (NSEA,MPIBUF).
+!      SPPNT     R.A.  Public   Point output buffer.
+!
+!     Other:
+!
+!      ITIME     Int.  Public   Discrete time step counter.
+!      IPASS     Int.  Public   Pass counter for log file.
+!      IDLAST    Int.  Public   Last day ID for log file.
+!      NSEALM    Int.  Public   Maximum number of local sea points.
+!      ALPHA     R.A.  Public   Phillips' alpha.
+!      FLCOLD    Log.  Public   Flag for 'cold start' of model.
+!      FLIWND    Log.  Public   Flag for initialization of model
+!                               based on wind.
+!      AINIT(2)  Log.  Public   Flag for array initialization.
+!      FL_ALL    Log.  Public   Flag for all/partial  initialization.
+!     ----------------------------------------------------------------
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      W3NAUX    Subr. Public   Set number of grids/models.
+!      W3DIMA    Subr. Public   Set dimensions of arrays.
+!      W3DMNL    Subr. Public   Set dimensions of arrays.   ( !/NL1 )
+!      W3SETA    Subr. Public   Point to selected grid / model.
+!      W3XETA    Subr. Public   Like W3SETA for expanded output arrays.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SETG    Subr. W3GDATMD Point to proper model grid.
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!      EXTCDE    Subr. W3SERVMD Abort program with exit code.
+!     ----------------------------------------------------------------
+!
+!  5. Remarks :
+!
+!     - The number of grids is taken from W3GDATMD, and needs to be
+!       set first with W3DIMG.
+!
+!  6. Switches :
+!
+!     !/SHRD, !/DIST, !/MPI
+!              Shared / distributed memory model
+!
+!     !/PRn    Propagation scheme selection.
+!
+!     !/S      Enable subroutine tracing.
+!     !/T      Enable test output
+!
+!  7. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      PUBLIC
+!/
+!/ Module private variable for checking error returns
+!/
+      INTEGER, PRIVATE        :: ISTAT
+!/
+!/ Conventional declarations
+!/
+      INTEGER                 :: NADATA = -1, IADATA = -1
+!/MPI      INTEGER, PARAMETER      :: MPIBUF = 6
+!/
+!/ Data structure WADAT
+!/
+      TYPE WADAT
+!
+! The grid
+! 
+        REAL, POINTER         :: CG(:,:), WN(:,:)
+!/IC3   REAL, POINTER         :: IC3WN_R(:,:), IC3WN_I(:,:), IC3CG(:,:)
+!
+! Arrays for processing model input
+!
+        REAL, POINTER         :: CA0(:), CAI(:), CD0(:), CDI(:),      &
+                                 UA0(:), UAI(:), UD0(:), UDI(:),      &
+                                 AS0(:), ASI(:), ATRNX(:,:), ATRNY(:,:)
+!
+! Output fields group 1)
+!
+        REAL, POINTER         :: DW(:), UA(:), UD(:), U10(:), U10D(:),&
+                                 AS(:), CX(:), CY(:)
+!
+! Output fields group 2)
+!
+        REAL, POINTER         :: HS(:),  WLM(:),  T02(:), T0M1(:),   &
+                                 T01 (:),  FP0(:),  THM(:),          &
+                                 THS(:),  THP0(:),  FP1(:), THP1(:), &
+                                 HSIG(:), STMAXE(:), STMAXD(:),      &
+                                 HMAXE(:), HCMAXE(:), HMAXD(:),      &
+                                 HCMAXD(:)
+        REAL, POINTER         :: XHS(:), XWLM(:), XT02(:), XT0M1(:),  &
+                                 XT01 (:), XFP0(:), XTHM(:),          &
+                                 XTHS(:), XTHP0(:), XFP1(:), XTHP1(:),&
+                                 XHSIG(:), XSTMAXE(:), XSTMAXD(:),    &
+                                 XHMAXE(:), XHCMAXE(:), XHMAXD(:),    &
+                                 XHCMAXD(:)
+ 
+!
+! Output fields group 3)
+!
+        REAL, POINTER         ::  EF(:,:),  TH1M(:,:),  STH1M(:,:),   &
+                                  TH2M(:,:),  STH2M(:,:) !, WN(:,:)
+        REAL, POINTER         ::  XEF(:,:),  XTH1M(:,:),  XSTH1M(:,:),&
+                                  XTH2M(:,:),  XSTH2M(:,:) !, XWN(:,:)
+!
+! Output fields group 4)
+!
+        REAL, POINTER         ::  PHS(:,:),  PTP(:,:),  PLP(:,:),     &
+                                  PDIR(:,:),  PSI(:,:),  PWS(:,:),    &
+                                  PWST(:),  PNR(:)
+        REAL, POINTER         :: XPHS(:,:), XPTP(:,:), XPLP(:,:),     &
+                                 XPDIR(:,:), XPSI(:,:), XPWS(:,:),    &
+                                 XPWST(:), XPNR(:)
+!
+! Output fields group 5)
+!
+        REAL, POINTER         ::  CHARN(:),  CGE(:),  PHIAW(:),       &
+                                  TAUWIX(:),  TAUWIY(:),  TAUWNX(:),  &
+                                  TAUWNY(:),  WHITECAP(:,:)
+        REAL, POINTER         :: XCHARN(:), XCGE(:), XPHIAW(:),       &
+                                 XTAUWIX(:), XTAUWIY(:), XTAUWNX(:),  &
+                                 XTAUWNY(:), XWHITECAP(:,:)
+!
+! Output fields group 6)
+!
+        REAL, POINTER         ::  SXX(:),  SYY(:),  SXY(:),  TAUOX(:),&
+                                  TAUOY(:),  BHD(:),  PHIOC(:),       &
+                                  TUSX(:),  TUSY(:),  USSX(:),        &
+                                  USSY(:),  PRMS(:),  TPMS(:),        &
+                                  PHICE(:), TAUICE(:,:)
+        REAL, POINTER         ::  P2SMS(:,:),  US3D(:,:)
+        REAL, POINTER         :: XSXX(:), XSYY(:), XSXY(:), XTAUOX(:),&
+                                 XTAUOY(:), XBHD(:), XPHIOC(:),       &
+                                 XTUSX(:), XTUSY(:), XUSSX(:),        &
+                                 XUSSY(:), XPRMS(:), XTPMS(:),        &
+                                 XPHICE(:), XTAUICE(:,:)
+        REAL, POINTER         :: XP2SMS(:,:), XUS3D(:,:)
+!
+! Output fields group 7)
+!
+        REAL, POINTER         ::  ABA(:),  ABD(:),  UBA(:),  UBD(:),  &
+                                  BEDFORMS(:,:),  PHIBBL(:),          &
+                                  TAUBBL(:,:)
+        REAL, POINTER         :: XABA(:), XABD(:), XUBA(:), XUBD(:),  &
+                                 XBEDFORMS(:,:), XPHIBBL(:),          &
+                                 XTAUBBL(:,:)
+!
+! Output fields group 8)
+!
+        REAL, POINTER         ::  MSSX(:), MSSY(:), MSCX(:), MSCY(:)
+        REAL, POINTER         :: XMSSX(:), XMSSY(:), XMSCX(:),        &
+                                 XMSCY(:)
+!
+! Output fields group 9)
+!
+        REAL, POINTER         ::  DTDYN(:),  FCUT(:),  CFLXYMAX(:),   &
+                                  CFLTHMAX(:),  CFLKMAX(:)
+        REAL, POINTER         :: XDTDYN(:), XFCUT(:), XCFLXYMAX(:),   &
+                                 XCFLTHMAX(:), XCFLKMAX(:)
+!
+! Output fields group 10)
+!
+        REAL, POINTER         ::  USERO(:,:)
+        REAL, POINTER         :: XUSERO(:,:)
+!
+! Spatial derivatives
+!
+        REAL, POINTER         :: DDDX(:,:), DDDY(:,:), DCXDX(:,:),    &
+                                 DCYDX(:,:), DCXDY(:,:), DCYDY(:,:)
+        REAL, POINTER         :: DCDX(:,:,:), DCDY(:,:,:)
+!/SMC        REAL, POINTER         :: DHDX(:), DHDY(:), DHLMT(:,:)
+!
+!/PR1        INTEGER, POINTER      :: IS0(:), IS2(:)
+!/PR1        REAL, POINTER         :: FACVX(:), FACVY(:)
+!
+!/PR2        INTEGER               :: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2,  &
+!/PR2                                 NACT, NMXY
+!/PR2        INTEGER, POINTER      :: MAPX2(:), MAPY2(:), MAPAXY(:),       &
+!/PR2                                 MAPXY(:), MAPTH2(:), MAPWN2(:)
+!
+!/PR3        INTEGER               :: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2,  &
+!/PR3                                 NACT, NCENT
+!/PR3        INTEGER, POINTER      :: MAPX2(:), MAPY2(:), MAPAXY(:),       &
+!/PR3                                 MAPCXY(:), MAPTH2(:), MAPWN2(:)
+!/PR3        LOGICAL, POINTER      :: MAPTRN(:)
+!
+!/SMC        INTEGER               :: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2,  &
+!/SMC                                 NACT, NMXY
+!/SMC        INTEGER, POINTER      :: MAPX2(:), MAPY2(:), MAPAXY(:),       &
+!/SMC                                 MAPXY(:), MAPTH2(:), MAPWN2(:)
+!
+! Warning Defined but not set if UGTYPE .EQ. .T. 
+            INTEGER, POINTER      :: ITER(:,:)
+!
+!/NL1        INTEGER               :: NFR, NFRHGH, NFRCHG, NSPECX, NSPECY
+!/NL1        INTEGER, POINTER      :: IP11(:), IP12(:), IP13(:), IP14(:),  &
+!/NL1                                 IM11(:), IM12(:), IM13(:), IM14(:),  &
+!/NL1                                 IP21(:), IP22(:), IP23(:), IP24(:),  &
+!/NL1                                 IM21(:), IM22(:), IM23(:), IM24(:),  &
+!/NL1                                 IC11(:), IC12(:), IC21(:), IC22(:),  &
+!/NL1                                 IC31(:), IC32(:), IC41(:), IC42(:),  &
+!/NL1                                 IC51(:), IC52(:), IC61(:), IC62(:),  &
+!/NL1                                 IC71(:), IC72(:), IC81(:), IC82(:)
+!/NL1        REAL                  :: DAL1, DAL2, DAL3,                    &
+!/NL1                                 AWG1, AWG2, AWG3, AWG4, AWG5, AWG6,  &
+!/NL1                                 AWG7, AWG8, SWG1, SWG2, SWG3, SWG4,  &
+!/NL1                                 SWG5, SWG6, SWG7, SWG8
+!/NL1        REAL, POINTER         :: AF11(:)
+!/NL1        LOGICAL               :: NLINIT
+!
+        INTEGER, POINTER      :: IAPPRO(:)
+!/MPI        INTEGER               :: MPI_COMM_WAVE, MPI_COMM_WCMP,        &
+!/MPI                                 WW3_FIELD_VEC, WW3_SPEC_VEC,         &
+!/MPI                                 NRQSG1 = 0, NRQSG2, IBFLOC, ISPLOC,  &
+!/MPI                                 NSPLOC
+!/MPI        INTEGER               :: BSTAT(MPIBUF), BISPL(MPIBUF)
+!/MPI        INTEGER, POINTER      :: IRQSG1(:,:), IRQSG2(:,:)
+!/MPI        REAL, POINTER         :: GSTORE(:,:), SSTORE(:,:)
+        REAL, POINTER         :: SPPNT(:,:,:)
+!
+        INTEGER               :: ITIME, IPASS, IDLAST, NSEALM
+        REAL, POINTER         :: ALPHA(:,:)
+        LOGICAL               :: AINIT, AINIT2, FL_ALL, FLCOLD, FLIWND
+!
+      END TYPE WADAT
+!/
+!/ Data storage
+!/
+      TYPE(WADAT), TARGET, ALLOCATABLE :: WADATS(:)
+!/
+!/ Data aliases for structure WADAT(S)
+!/
+      REAL, POINTER           :: CG(:,:), WN(:,:)
+      REAL, POINTER           :: IC3WN_R(:,:), IC3WN_I(:,:), IC3CG(:,:)
+!
+      REAL, POINTER           :: CA0(:), CAI(:), CD0(:), CDI(:),      &
+                                 UA0(:), UAI(:), UD0(:), UDI(:),      &
+                                 AS0(:), ASI(:), ATRNX(:,:), ATRNY(:,:)
+!
+      REAL, POINTER           :: DW(:), UA(:), UD(:), U10(:), U10D(:),&
+                                 AS(:), CX(:), CY(:)
+!
+      REAL, POINTER           :: HS(:), WLM(:),  T02(:), T0M1(:),     &
+                                 T01 (:), FP0(:), THM(:), THS(:),     &
+                                 THP0(:), FP1(:), THP1(:), HSIG(:),   &
+                                 STMAXE(:), STMAXD(:), HMAXE(:),      &
+                                 HCMAXE(:), HMAXD(:), HCMAXD(:)
+!
+      REAL, POINTER           :: EF(:,:), TH1M(:,:), STH1M(:,:),      &
+                                 TH2M(:,:), STH2M(:,:)
+!
+      REAL, POINTER           :: PHS(:,:), PTP(:,:), PLP(:,:),        &
+                                 PDIR(:,:), PSI(:,:), PWS(:,:),       &
+                                 PWST(:), PNR(:)
+!
+      REAL, POINTER           :: CHARN(:), CGE(:), PHIAW(:),          &
+                                 TAUWIX(:), TAUWIY(:), TAUWNX(:),     &
+                                 TAUWNY(:), WHITECAP(:,:)
+!
+      REAL, POINTER           :: SXX(:), SYY(:), SXY(:), TAUOX(:),    &
+                                 TAUOY(:), BHD(:), PHIOC(:),          &
+                                 TUSX(:), TUSY(:), USSX(:), USSY(:),  &
+                                 PRMS(:), TPMS(:), PHICE(:),          &
+                                 TAUICE(:,:)
+      REAL, POINTER           :: P2SMS(:,:), US3D(:,:)
+!
+      REAL, POINTER           :: ABA(:), ABD(:), UBA(:), UBD(:),      &
+                                 BEDFORMS(:,:), PHIBBL(:), TAUBBL(:,:)
+!
+      REAL, POINTER           :: MSSX(:), MSSY(:), MSCX(:), MSCY(:)
+!
+      REAL, POINTER           :: DTDYN(:), FCUT(:), CFLXYMAX(:),      &
+                                 CFLTHMAX(:), CFLKMAX(:)
+!
+      REAL, POINTER           :: USERO(:,:)
+!
+!     REAL, POINTER           :: TAUWX(:), TAUWY(:)
+!
+      REAL, POINTER           :: DDDX(:,:), DDDY(:,:), DCXDX(:,:),    &
+                                 DCYDX(:,:), DCXDY(:,:), DCYDY(:,:)
+      REAL, POINTER           :: DCDX(:,:,:), DCDY(:,:,:)
+!/SMC        REAL, POINTER         :: DHDX(:), DHDY(:), DHLMT(:,:)
+!
+!/PR1      INTEGER, POINTER        :: IS0(:), IS2(:)
+!/PR1      REAL, POINTER           :: FACVX(:), FACVY(:)
+!
+!/PR2      INTEGER, POINTER        :: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2,  &
+!/PR2                                 NACT, NMXY
+!/PR2      INTEGER, POINTER        :: MAPX2(:), MAPY2(:), MAPAXY(:),       &
+!/PR2                                 MAPXY(:), MAPTH2(:), MAPWN2(:)
+!
+!/PR3      INTEGER, POINTER        :: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2,  &
+!/PR3                                 NACT, NCENT
+!/PR3      INTEGER, POINTER        :: MAPX2(:), MAPY2(:), MAPAXY(:),       &
+!/PR3                                 MAPCXY(:), MAPTH2(:), MAPWN2(:)
+!/PR3      LOGICAL, POINTER        :: MAPTRN(:)
+!
+!/SMC      INTEGER, POINTER        :: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2,  &
+!/SMC                                 NACT, NMXY
+!/SMC      INTEGER, POINTER        :: MAPX2(:), MAPY2(:), MAPAXY(:),       &
+!/SMC                                 MAPXY(:), MAPTH2(:), MAPWN2(:)
+!
+          INTEGER, POINTER        :: ITER(:,:)
+!
+!/NL1      INTEGER, POINTER        :: NFR, NFRHGH, NFRCHG, NSPECX, NSPECY
+!/NL1      INTEGER, POINTER        :: IP11(:), IP12(:), IP13(:), IP14(:),  &
+!/NL1                                 IM11(:), IM12(:), IM13(:), IM14(:),  &
+!/NL1                                 IP21(:), IP22(:), IP23(:), IP24(:),  &
+!/NL1                                 IM21(:), IM22(:), IM23(:), IM24(:),  &
+!/NL1                                 IC11(:), IC12(:), IC21(:), IC22(:),  &
+!/NL1                                 IC31(:), IC32(:), IC41(:), IC42(:),  &
+!/NL1                                 IC51(:), IC52(:), IC61(:), IC62(:),  &
+!/NL1                                 IC71(:), IC72(:), IC81(:), IC82(:)
+!/NL1      REAL, POINTER           :: DAL1, DAL2, DAL3,                    &
+!/NL1                                 AWG1, AWG2, AWG3, AWG4, AWG5, AWG6,  &
+!/NL1                                 AWG7, AWG8, SWG1, SWG2, SWG3, SWG4,  &
+!/NL1                                 SWG5, SWG6, SWG7, SWG8
+!/NL1      REAL, POINTER           :: AF11(:)
+!/NL1      LOGICAL, POINTER        :: NLINIT
+!
+      INTEGER, POINTER        :: IAPPRO(:)
+!/MPI      INTEGER, POINTER        :: MPI_COMM_WAVE, MPI_COMM_WCMP,        &
+!/MPI                                 WW3_FIELD_VEC, WW3_SPEC_VEC,         &
+!/MPI                                 NRQSG1, NRQSG2, IBFLOC, ISPLOC,      &
+!/MPI                                 NSPLOC
+!/MPI      INTEGER, POINTER        :: BSTAT(:), BISPL(:)
+!/MPI      INTEGER, POINTER        :: IRQSG1(:,:), IRQSG2(:,:)
+!/MPI      REAL, POINTER           :: GSTORE(:,:), SSTORE(:,:)
+      REAL, POINTER           :: SPPNT(:,:,:)
+!
+      INTEGER, POINTER        :: ITIME, IPASS, IDLAST, NSEALM
+      REAL, POINTER           :: ALPHA(:,:)
+      LOGICAL, POINTER        :: AINIT, AINIT2, FL_ALL, FLCOLD, FLIWND
+!/
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3NAUX ( NDSE, NDST )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         10-Dec-2014 !
+!/                  +-----------------------------------+
+!/
+!/    14-Dec-2004 : Origination.                        ( version 3.06 )
+!/    04-Oct-2006 : Add filter to array pointers.       ( version 3.10 )
+!/    10-Dec-2014 : Add checks for allocate status      ( version 5.04 )
+!/
+!  1. Purpose :
+!
+!     Set up the number of grids to be used.
+!
+!  2. Method :
+!
+!     Use data stored in NGRIDS in W3GDATMD.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       NDSE    Int.   I   Error output unit number.
+!       NDST    Int.   I   Test output unit number.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     See module documentation.
+!
+!  5. Called by :
+!
+!     Any program that uses this grid structure.
+!
+!  6. Error messages :
+!
+!     - Error checks on previous setting of variable NGRIDS.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+!     !/S    Enable subroutine tracing.
+!     !/T    Enable test output
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD, ONLY: NGRIDS
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: NDSE, NDST
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: I
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/S      CALL STRACE (IENT, 'W3NAUX')
+!
+! -------------------------------------------------------------------- /
+! 1.  Test input and module status
+!
+      IF ( NGRIDS .EQ. -1 ) THEN
+          WRITE (NDSE,1001) NGRIDS
+          CALL EXTCDE (1)
+        END IF
+!
+! -------------------------------------------------------------------- /
+! 2.  Set variable and allocate arrays
+!
+      ALLOCATE ( WADATS(NGRIDS), STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+      NADATA = NGRIDS
+!
+! -------------------------------------------------------------------- /
+! 3.  Initialize parameters
+!
+      DO I=1, NGRIDS
+        WADATS(I)%ITIME  = 0
+        WADATS(I)%IPASS  = 0
+        WADATS(I)%IDLAST = 0
+        WADATS(I)%AINIT  = .FALSE.
+        WADATS(I)%AINIT2 = .FALSE.
+        WADATS(I)%FL_ALL = .FALSE.
+!/NL1        WADATS(I)%NLINIT  = .FALSE.
+        END DO
+!
+!/T      WRITE (NDST,9000) NGRIDS
+!
+      RETURN
+!
+! Formats
+!
+ 1001 FORMAT (/' *** ERROR W3NAUX : NGRIDS NOT YET SET *** '/         &
+               '                    NGRIDS = ',I10/                   &
+               '                    RUN W3NMOD FIRST'/)
+!
+!/T 9000 FORMAT (' TEST W3NAUX : SETTING UP FOR ',I4,' GRIDS')
+!/
+!/ End of W3NAUX ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3NAUX
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3DIMA  ( IMOD, NDSE, NDST, D_ONLY )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         10-Dec-2014 !
+!/                  +-----------------------------------+
+!/
+!/    28-Dec-2004 : Origination.                        ( version 3.06 )
+!/    20-Jul-2005 : Adding output fields.               ( version 3.07 )
+!/    04-Oct-2006 : Add filter to array pointers.       ( version 3.10 )
+!/    28-Mar-2007 : Add partitioned data arrays.        ( version 3.11 )
+!/                  Add additional undefined arrays.
+!/    22-Feb-2008 ; Modify MAPTH2 declaration.          ( version 3.14 )
+!/    31-Oct-2010 : Added initialization of CX,CY,DW    ( version 3.14 )
+!/    25-Dec-2012 : Memory reduction for outputs.       ( version 4.11 )
+!/    28-Jul-2013 : Bug fix initialization P2SMS.       ( version 4.11 )
+!/    30-Apr-2014 : Memory reduction for group3.        ( version 5.00 )
+!/    10-Dec-2014 : Add checks for allocate status      ( version 5.04 )
+!/
+!  1. Purpose :
+!
+!     Initialize an individual data grid at the proper dimensions.
+!
+!  2. Method :
+!
+!     Allocate directly into the structure array. Note that
+!     this cannot be done through the pointer alias!
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       IMOD    Int.   I   Model number to point to.
+!       NDSE    Int.   I   Error output unit number.
+!       NDST    Int.   I   Test output unit number.
+!       D_ONLY  L.O.   I   FLag for initializing data arrays only.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     See module documentation.
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3IOGO    Subr. W3IOGOMD Grid output IO routine.
+!      WW3_SHEL  Prog.   N/A    Wave model driver.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!     - Check on input parameters.
+!     - Check on previous allocation.
+!
+!  7. Remarks :
+!
+!     - W3SETA needs to be called after allocation to point to 
+!       proper allocated arrays.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/SHRD, !/DIST
+!              Shared / distributed memory model
+!
+!     !/PRn    Propagation scheme selection.
+!
+!     !/S      Enable subroutine tracing.
+!     !/T    Enable test output
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD, ONLY: NGRIDS, IGRID, W3SETG, NK, NX, NY, NSEA,    &
+                          NSEAL, NSPEC, NTH, E3DF, P2MSF, US3DF, GTYPE, UNGTYPE
+      USE W3ODATMD, ONLY: IAPROC, NAPROC, NTPROC, NAPFLD,             &
+                          NOSWLL, NOEXTR, UNDEF, FLOGRD, FLOGR2
+      USE W3IDATMD, ONLY: FLCUR, FLWIND
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)           :: IMOD, NDSE, NDST
+      LOGICAL, INTENT(IN), OPTIONAL :: D_ONLY
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: JGRID, NXXX
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/S      CALL STRACE (IENT, 'W3DIMA')
+!
+! -------------------------------------------------------------------- /
+! 1.  Test input and module status
+!
+      IF ( PRESENT(D_ONLY) ) THEN
+          FL_ALL = .NOT. D_ONLY
+        ELSE
+          FL_ALL = .TRUE.
+        END IF
+!
+      IF ( NGRIDS .EQ. -1 ) THEN
+          WRITE (NDSE,1001)
+          CALL EXTCDE (1)
+        END IF
+!
+      IF ( IMOD.LT.1 .OR. IMOD.GT.NADATA ) THEN
+          WRITE (NDSE,1002) IMOD, NADATA
+          CALL EXTCDE (2)
+        END IF
+!
+      IF ( WADATS(IMOD)%AINIT ) THEN
+          WRITE (NDSE,1003)
+          CALL EXTCDE (3)
+        END IF
+!
+!/T      WRITE (NDST,9000) IMOD
+!
+      JGRID  = IGRID
+      IF ( JGRID .NE. IMOD ) CALL W3SETG ( IMOD, NDSE, NDST )
+!
+! -------------------------------------------------------------------- /
+! 2.  Allocate arrays
+!     Call W3SETA to assure of pointes FLCUR an FLWND
+!
+      CALL W3SETA ( IMOD, NDSE, NDST )
+!
+!/SHRD      NSEALM = NSEA
+!/DIST      NSEALM = 1 + (NSEA-1)/NAPROC
+      NXXX   = NSEALM * NAPROC
+!
+!     Output and input parameteres by output type
+!
+!  1) Forcing fields (these arrays are always needed)
+!
+      ALLOCATE ( WADATS(IMOD)%DW(0:NSEA) , STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+      WADATS(IMOD)%DW(:)=0.            
+!
+      ALLOCATE ( WADATS(IMOD)%CX(0:NSEA) , WADATS(IMOD)%CY(0:NSEA) , &
+                 STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+      WADATS(IMOD)%CX(:)=0.
+      WADATS(IMOD)%CY(:)=0.     
+!
+      ALLOCATE ( WADATS(IMOD)%UA(0:NSEA) , WADATS(IMOD)%UD(0:NSEA) , &
+                 WADATS(IMOD)%U10(NSEA)  , WADATS(IMOD)%U10D(NSEA) , &
+                 WADATS(IMOD)%AS(0:NSEA) , STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+!     Water level WLV stored in W3WDATMD
+!     Ice concentration ICE stored in W3WDATMD
+!     Ice floe sizes ICEF and ICEDMAX stored in W3WDATMD
+!     Iceberg damping BERG stored in W3WDATMD
+!
+! 2) Standard mean wave parameters
+!    Here, all short arrays are always allocated to reduce logical
+!    checks in all computations. The coresponding full size arrays
+!    are allocated in W3MPIO only as needed to keep the memory
+!    footprint down.
+!
+      ALLOCATE ( WADATS(IMOD)%HS   (NSEALM), WADATS(IMOD)%WLM (NSEALM), &
+                 WADATS(IMOD)%T02  (NSEALM), WADATS(IMOD)%T0M1(NSEALM), &
+                 WADATS(IMOD)%T01  (NSEALM), WADATS(IMOD)%FP0 (NSEALM), &
+                 WADATS(IMOD)%THM  (NSEALM), WADATS(IMOD)%THS (NSEALM), &
+                 WADATS(IMOD)%THP0 (NSEALM), WADATS(IMOD)%FP1 (NSEALM), &
+                 WADATS(IMOD)%THP1 (NSEALM), WADATS(IMOD)%HSIG(NSEALM), &
+                 WADATS(IMOD)%STMAXE (NSEALM),                          &
+                 WADATS(IMOD)%STMAXD(NSEALM),                           &
+                 WADATS(IMOD)%HMAXE(NSEALM), WADATS(IMOD)%HMAXD(NSEALM),&
+                 WADATS(IMOD)%HCMAXE(NSEALM),                           &
+                 WADATS(IMOD)%HCMAXD(NSEALM), STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%HS     = UNDEF
+      WADATS(IMOD)%WLM    = UNDEF
+      WADATS(IMOD)%T02    = UNDEF
+      WADATS(IMOD)%T0M1   = UNDEF
+      WADATS(IMOD)%T01    = UNDEF
+      WADATS(IMOD)%FP0    = UNDEF
+      WADATS(IMOD)%THM    = UNDEF
+      WADATS(IMOD)%THS    = UNDEF
+      WADATS(IMOD)%THP0   = UNDEF
+      WADATS(IMOD)%FP1    = UNDEF
+      WADATS(IMOD)%THP1   = UNDEF
+      WADATS(IMOD)%HSIG   = UNDEF
+      WADATS(IMOD)%STMAXE = UNDEF
+      WADATS(IMOD)%STMAXD= UNDEF
+      WADATS(IMOD)%HMAXE = UNDEF
+      WADATS(IMOD)%HMAXD = UNDEF
+      WADATS(IMOD)%HCMAXE= UNDEF
+      WADATS(IMOD)%HCMAXD= UNDEF
+!
+! 3) Frequency-dependent standard parameters
+!
+! For the 3D arrays: the allocation is performed only if these arrays are allowed
+!                    by specific variables defined through the mod_def file 
+!                    and read by w3iogr, which is called before W3DIMA. 
+      IF (  E3DF(1,1).GT.0 ) THEN
+          ALLOCATE(WADATS(IMOD)%EF(NSEALM,E3DF(2,1):E3DF(3,1)),    &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+      IF (  E3DF(1,2).GT.0 ) THEN
+          ALLOCATE(WADATS(IMOD)%TH1M(NSEALM,E3DF(2,2):E3DF(3,2)),  &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+      IF (  E3DF(1,3).GT.0 ) THEN
+          ALLOCATE(WADATS(IMOD)%STH1M(NSEALM,E3DF(2,3):E3DF(3,3)), &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+      IF (  E3DF(1,4).GT.0 ) THEN
+          ALLOCATE(WADATS(IMOD)%TH2M(NSEALM,E3DF(2,4):E3DF(3,4)),  &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+      IF (  E3DF(1,5).GT.0 ) THEN
+          ALLOCATE(WADATS(IMOD)%STH2M(NSEALM,E3DF(2,5):E3DF(3,5)), &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF (  E3DF(1,1).GT.0 ) WADATS(IMOD)%EF      = UNDEF
+      IF (  E3DF(1,2).GT.0 ) WADATS(IMOD)%TH1M    = UNDEF
+      IF (  E3DF(1,3).GT.0 ) WADATS(IMOD)%STH1M   = UNDEF
+      IF (  E3DF(1,4).GT.0 ) WADATS(IMOD)%TH2M    = UNDEF
+      IF (  E3DF(1,5).GT.0 ) WADATS(IMOD)%STH2M   = UNDEF
+
+!
+! 4) Spectral Partitions parameters
+!
+      ALLOCATE ( WADATS(IMOD)%PHS(NSEALM,0:NOSWLL),                   &
+                 WADATS(IMOD)%PTP(NSEALM,0:NOSWLL),                   &
+                 WADATS(IMOD)%PLP(NSEALM,0:NOSWLL),                   &
+                 WADATS(IMOD)%PDIR(NSEALM,0:NOSWLL),                  &
+                 WADATS(IMOD)%PSI(NSEALM,0:NOSWLL),                   &
+                 WADATS(IMOD)%PWS(NSEALM,0:NOSWLL),                   &
+                 WADATS(IMOD)%PWST(NSEALM),                           &
+                 WADATS(IMOD)%PNR(NSEALM),                            &
+                 STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%PHS    = UNDEF
+      WADATS(IMOD)%PTP    = UNDEF
+      WADATS(IMOD)%PLP    = UNDEF
+      WADATS(IMOD)%PDIR   = UNDEF
+      WADATS(IMOD)%PSI    = UNDEF
+      WADATS(IMOD)%PWS    = UNDEF
+      WADATS(IMOD)%PWST   = UNDEF
+      WADATS(IMOD)%PNR    = UNDEF
+!
+! 5) Atmosphere-waves layer
+!
+!    Friction velocity UST and USTDIR in W3WDATMD
+!
+      ALLOCATE ( WADATS(IMOD)%CHARN   (NSEALM),                       &
+                 WADATS(IMOD)%CGE     (NSEALM),                       &
+                 WADATS(IMOD)%PHIAW   (NSEALM),                       &
+                 WADATS(IMOD)%TAUWIX  (NSEALM),                       &
+                 WADATS(IMOD)%TAUWIY  (NSEALM),                       &
+                 WADATS(IMOD)%TAUWNX  (NSEALM),                       &
+                 WADATS(IMOD)%TAUWNY  (NSEALM),                       &
+                 WADATS(IMOD)%WHITECAP(NSEALM,4),                     &
+                 STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%CHARN    = UNDEF
+      WADATS(IMOD)%CGE      = UNDEF
+      WADATS(IMOD)%PHIAW    = UNDEF
+      WADATS(IMOD)%TAUWIX   = UNDEF
+      WADATS(IMOD)%TAUWIY   = UNDEF
+      WADATS(IMOD)%TAUWNX   = UNDEF
+      WADATS(IMOD)%TAUWNY   = UNDEF
+      WADATS(IMOD)%WHITECAP = UNDEF
+!
+! 6) Wave-ocean layer
+!
+      ALLOCATE ( WADATS(IMOD)%SXX   (NSEALM) ,                        &
+                 WADATS(IMOD)%SYY   (NSEALM) ,                        &
+                 WADATS(IMOD)%SXY   (NSEALM) ,                        &
+                 WADATS(IMOD)%TAUOX (NSEALM) ,                        &
+                 WADATS(IMOD)%TAUOY (NSEALM) ,                        &
+                 WADATS(IMOD)%BHD   (NSEALM) ,                        &
+                 WADATS(IMOD)%PHIOC (NSEALM) ,                        &
+                 WADATS(IMOD)%TUSX  (NSEALM) ,                        &
+                 WADATS(IMOD)%TUSY  (NSEALM) ,                        &
+                 WADATS(IMOD)%USSX  (NSEALM) ,                        &
+                 WADATS(IMOD)%USSY  (NSEALM) ,                        &
+                 WADATS(IMOD)%PRMS  (NSEALM) ,                        &
+                 WADATS(IMOD)%TPMS  (NSEALM) ,                        &
+                 WADATS(IMOD)%PHICE (NSEALM) ,                        &
+                 WADATS(IMOD)%TAUICE(NSEALM,2),                       &
+                 STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+! For the 3D arrays: the allocation is performed only if these arrays are allowed
+!                    by specific variables defined through the mod_def file 
+!                    and read by w3iogr, which is called before W3DIMA. 
+      IF (  P2MSF(1).GT.0 ) THEN
+          ALLOCATE(WADATS(IMOD)%P2SMS(NSEALM,P2MSF(2):P2MSF(3)), &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+      IF (  US3DF(1).GT.0 ) THEN ! maybe use US3DF(2:3)
+          ALLOCATE(WADATS(IMOD)%US3D(NSEALM,NK*2), &
+                   STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%SXX    = UNDEF
+      WADATS(IMOD)%SYY    = UNDEF
+      WADATS(IMOD)%SXY    = UNDEF
+      WADATS(IMOD)%TAUOX  = UNDEF
+      WADATS(IMOD)%TAUOY  = UNDEF
+      WADATS(IMOD)%BHD    = UNDEF
+      WADATS(IMOD)%PHIOC  = UNDEF
+      WADATS(IMOD)%TUSX   = UNDEF
+      WADATS(IMOD)%TUSY   = UNDEF
+      WADATS(IMOD)%USSX   = UNDEF
+      WADATS(IMOD)%USSY   = UNDEF
+      WADATS(IMOD)%PRMS   = UNDEF
+      WADATS(IMOD)%TPMS   = UNDEF
+      WADATS(IMOD)%PHICE  = UNDEF
+      WADATS(IMOD)%TAUICE = UNDEF
+      IF (  P2MSF(1).GT.0 ) WADATS(IMOD)%P2SMS  = UNDEF
+      IF (  US3DF(1).GT.0 ) WADATS(IMOD)%US3D   = UNDEF
+!
+! 7) Wave-bottom layer
+!
+      ALLOCATE ( WADATS(IMOD)%ABA(NSEALM) , WADATS(IMOD)%ABD(NSEALM) , &
+                 WADATS(IMOD)%UBA(NSEALM) , WADATS(IMOD)%UBD(NSEALM) , &
+                 WADATS(IMOD)%BEDFORMS(NSEALM,3),                      &
+                 WADATS(IMOD)%PHIBBL  (NSEALM)  ,                      &
+                 WADATS(IMOD)%TAUBBL  (NSEALM,2), STAT=ISTAT           )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%ABA    = UNDEF
+      WADATS(IMOD)%ABD    = UNDEF
+      WADATS(IMOD)%UBA    = UNDEF
+      WADATS(IMOD)%UBD    = UNDEF
+      WADATS(IMOD)%BEDFORMS = UNDEF
+      WADATS(IMOD)%PHIBBL = UNDEF
+      WADATS(IMOD)%TAUBBL = UNDEF
+!
+! 8) Spectrum parameters
+!
+      ALLOCATE ( WADATS(IMOD)%MSSX(NSEALM), WADATS(IMOD)%MSSY(NSEALM), &
+                WADATS(IMOD)%MSCX(NSEALM), WADATS(IMOD)%MSCY(NSEALM),  &
+                STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%MSSX   = UNDEF
+      WADATS(IMOD)%MSSY   = UNDEF
+      WADATS(IMOD)%MSCX   = UNDEF
+      WADATS(IMOD)%MSCY   = UNDEF
+!
+! 9) Numerical diagnostics
+!
+!
+      ALLOCATE ( WADATS(IMOD)%DTDYN   (NSEALM) ,                       &
+                 WADATS(IMOD)%FCUT    (NSEALM) ,                       &
+                 WADATS(IMOD)%CFLXYMAX(NSEALM) ,                       &
+                 WADATS(IMOD)%CFLTHMAX(NSEALM) ,                       &
+                 WADATS(IMOD)%CFLKMAX (NSEALM) , STAT=ISTAT            )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%DTDYN    = UNDEF
+      WADATS(IMOD)%FCUT     = UNDEF
+      WADATS(IMOD)%CFLXYMAX = UNDEF
+      WADATS(IMOD)%CFLTHMAX = UNDEF
+      WADATS(IMOD)%CFLKMAX  = UNDEF
+!
+! 10) User defined
+!
+      ALLOCATE ( WADATS(IMOD)%USERO(NSEALM,NOEXTR), STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+!
+      WADATS(IMOD)%USERO  = UNDEF
+!
+      ALLOCATE ( WADATS(IMOD)%WN(0:NK+1,0:NSEA), STAT=ISTAT )
+      CHECK_ALLOC_STATUS ( ISTAT )
+
+!/IC3     ALLOCATE (WADATS(IMOD)%IC3WN_R(0:NK+1,0:300), STAT=ISTAT )
+!/IC3     CHECK_ALLOC_STATUS ( ISTAT )
+!/IC3     ALLOCATE (WADATS(IMOD)%IC3WN_I(0:NK+1,0:300), STAT=ISTAT )
+!/IC3     CHECK_ALLOC_STATUS ( ISTAT )
+
+!
+      IF ( FL_ALL ) THEN
+!
+          ALLOCATE ( WADATS(IMOD)%CG(0:NK+1,0:NSEA), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+
+!/IC3     ALLOCATE (WADATS(IMOD)%IC3CG(0:NK+1,0:300), STAT=ISTAT )
+!/IC3     CHECK_ALLOC_STATUS ( ISTAT )
+
+!
+          IF ( FLCUR  ) THEN
+              ALLOCATE ( WADATS(IMOD)%CA0(NSEA) ,           &
+                         WADATS(IMOD)%CAI(NSEA) ,           &
+                         WADATS(IMOD)%CD0(NSEA) ,           &
+                         WADATS(IMOD)%CDI(NSEA) ,           &
+                         STAT=ISTAT )
+              CHECK_ALLOC_STATUS ( ISTAT )
+            END IF
+!
+          IF ( FLWIND ) THEN
+              ALLOCATE ( WADATS(IMOD)%UA0(NSEA) ,           &
+                         WADATS(IMOD)%UAI(NSEA) ,           &
+                         WADATS(IMOD)%UD0(NSEA) ,           &
+                         WADATS(IMOD)%UDI(NSEA) ,           &
+                         WADATS(IMOD)%AS0(NSEA) ,           &
+                         WADATS(IMOD)%ASI(NSEA) ,           &
+                         STAT=ISTAT )
+              CHECK_ALLOC_STATUS ( ISTAT )
+            END IF
+!
+          ALLOCATE ( WADATS(IMOD)%ATRNX(NY*NX,-1:1) ,                 &
+                     WADATS(IMOD)%ATRNY(NY*NX,-1:1) , STAT=ISTAT      )
+          CHECK_ALLOC_STATUS ( ISTAT )
+!
+          ALLOCATE ( WADATS(IMOD)%DDDX(NY,NX)  ,                      &
+                     WADATS(IMOD)%DDDY(NY,NX)  ,                      &
+                     WADATS(IMOD)%DCDX(0:NK+1,NY,NX)  ,               &
+                     WADATS(IMOD)%DCDY(0:NK+1,NY,NX)  ,               &
+                     WADATS(IMOD)%DCXDX(NY,NX) ,                      &
+                     WADATS(IMOD)%DCYDX(NY,NX) ,                      &
+                     WADATS(IMOD)%DCXDY(NY,NX) ,                      &
+                     WADATS(IMOD)%DCYDY(NY,NX) , STAT=ISTAT           )
+          CHECK_ALLOC_STATUS ( ISTAT )
+!
+!/SMC          ALLOCATE ( WADATS(IMOD)%DHDX(NSEA) ,                        &
+!/SMC                     WADATS(IMOD)%DHDY(NSEA) ,                        &
+!/SMC                     WADATS(IMOD)%DHLMT(NTH,NSEA) , STAT=ISTAT        )
+!/SMC          CHECK_ALLOC_STATUS ( ISTAT )
+!
+          ALLOCATE ( WADATS(IMOD)%ALPHA(NK,NSEAL) , STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+!
+!/PR1          ALLOCATE ( WADATS(IMOD)%IS0(NSPEC)   ,                 &
+!/PR1                     WADATS(IMOD)%IS2(NSPEC)   ,                 &
+!/PR1                     WADATS(IMOD)%FACVX(NY*NX) ,                 &
+!/PR1                     WADATS(IMOD)%FACVY(NY*NX) , STAT=ISTAT      )
+!/PR1          CHECK_ALLOC_STATUS ( ISTAT )
+!
+!/PR2          ALLOCATE ( WADATS(IMOD)%MAPX2(NY*NX)       ,           &
+!/PR2                     WADATS(IMOD)%MAPY2(NY*NX)       ,           &
+!/PR2                     WADATS(IMOD)%MAPAXY(NY*NX)      ,           &
+!/PR2                     WADATS(IMOD)%MAPXY(NSEA)        ,           &
+!/PR2                     WADATS(IMOD)%MAPTH2((NK+2)*NTH) ,           &
+!/PR2                     WADATS(IMOD)%MAPWN2(NSPEC+NTH) , STAT=ISTAT )
+!/PR2          CHECK_ALLOC_STATUS ( ISTAT )
+!/PR2          WADATS(IMOD)%MAPTH2 = 0
+!
+             IF (GTYPE .EQ. UNGTYPE) THEN
+                 ALLOCATE( WADATS(IMOD)%ITER(NK,NTH), STAT=ISTAT )
+                 CHECK_ALLOC_STATUS ( ISTAT )
+               END IF
+!
+!/PR3          ALLOCATE ( WADATS(IMOD)%MAPX2(NY*NX)       ,           &
+!/PR3                     WADATS(IMOD)%MAPY2(NY*NX)       ,           &
+!/PR3                     WADATS(IMOD)%MAPAXY(NY*NX)      ,           &
+!/PR3                     WADATS(IMOD)%MAPCXY(NSEA)       ,           &
+!/PR3                     WADATS(IMOD)%MAPTH2((NK+2)*NTH) ,           &
+!/PR3                     WADATS(IMOD)%MAPWN2(NSPEC+NTH)  ,           &
+!/PR3                     WADATS(IMOD)%MAPTRN(NY*NX) , STAT=ISTAT     )
+!/PR3          CHECK_ALLOC_STATUS ( ISTAT )
+!/PR3          WADATS(IMOD)%MAPTH2 = 0
+!
+!/SMC          ALLOCATE ( WADATS(IMOD)%MAPX2(NY*NX)     ,             &
+!/SMC                     WADATS(IMOD)%MAPY2(NY*NX)     ,             &
+!/SMC                     WADATS(IMOD)%MAPAXY(NY*NX)    ,             &
+!/SMC                     WADATS(IMOD)%MAPXY(NSEA)      ,             &
+!/SMC                     WADATS(IMOD)%MAPTH2(NSPEC)    ,             &
+!/SMC                     WADATS(IMOD)%MAPWN2(NSPEC+NTH), STAT=ISTAT  )
+!/SMC          CHECK_ALLOC_STATUS ( ISTAT )
+!/SMC          WADATS(IMOD)%MAPTH2 = 0
+!
+          ALLOCATE ( WADATS(IMOD)%IAPPRO(NSPEC) ,                     &
+                     WADATS(IMOD)%SPPNT(NTH,NK,4), STAT=ISTAT         )
+          CHECK_ALLOC_STATUS ( ISTAT )
+!
+        END IF
+!
+      WADATS(IMOD)%AINIT  = .TRUE.
+!
+!/T      WRITE (NDST,9001)
+!
+! -------------------------------------------------------------------- /
+! 3.  Point to allocated arrays
+!
+      CALL W3SETA ( IMOD, NDSE, NDST )
+!
+!/T      WRITE (NDST,9002)
+!
+! -------------------------------------------------------------------- /
+! 4.  Update counters in grid
+!
+!/T      WRITE (NDST,9003)
+!
+! -------------------------------------------------------------------- /
+! 5.  Restore previous grid setting if necessary
+!
+      IF ( JGRID .NE. IMOD ) CALL W3SETG ( JGRID, NDSE, NDST )
+!
+      RETURN
+!
+! Formats
+!
+ 1001 FORMAT (/' *** ERROR W3DIMA : GRIDS NOT INITIALIZED *** '/      &
+               '                    RUN W3NMOD FIRST '/)
+ 1002 FORMAT (/' *** ERROR W3DIMA : ILLEGAL MODEL NUMBER *** '/       &
+               '                    IMOD   = ',I10/                   &
+               '                    NADATA = ',I10/)
+ 1003 FORMAT (/' *** ERROR W3DIMA : ARRAY(S) ALREADY ALLOCATED *** ')
+!
+!/T 9000 FORMAT (' TEST W3DIMA : MODEL ',I4)
+!/T 9001 FORMAT (' TEST W3DIMA : ARRAYS ALLOCATED')
+!/T 9002 FORMAT (' TEST W3DIMA : POINTERS RESET')
+!/T 9003 FORMAT (' TEST W3DIMA : DIMENSIONS STORED')
+!/
+!/ End of W3DIMA ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3DIMA
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3XDMA  ( IMOD, NDSE, NDST, OUTFLAGS )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         10-Dec-2014 !
+!/                  +-----------------------------------+
+!/
+!/    26-Dec-2012 : Origination.                        ( version 3.06 )
+!/    10-Dec-2014 : Add checks for allocate status      ( version 5.04 )
+!/
+!  1. Purpose :
+!
+!     Version of W3DIMX for extended ouput arrays only.
+!
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD, ONLY: NGRIDS, IGRID, W3SETG, NK, NX, NY, NSEA,    &
+                          NSEAL, NSPEC, NTH, E3DF, P2MSF, US3DF, GTYPE, UNGTYPE
+      USE W3ODATMD, ONLY: IAPROC, NAPROC, NTPROC, NAPFLD,             &
+                          NOSWLL, NOEXTR, UNDEF, FLOGRD, FLOGR2,      &
+                          NOGRP, NGRPP
+      USE W3IDATMD, ONLY: FLCUR, FLWIND
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)           :: IMOD, NDSE, NDST
+      LOGICAL, INTENT(IN)           :: OUTFLAGS(NOGRP,NGRPP)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: JGRID, NXXX, I
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/S      CALL STRACE (IENT, 'W3XDMA')
+!
+! -------------------------------------------------------------------- /
+! 1.  Test input and module status
+!
+      IF ( NGRIDS .EQ. -1 ) THEN
+          WRITE (NDSE,1001)
+          CALL EXTCDE (1)
+        END IF
+!
+      IF ( IMOD.LT.1 .OR. IMOD.GT.NADATA ) THEN
+          WRITE (NDSE,1002) IMOD, NADATA
+          CALL EXTCDE (2)
+        END IF
+!
+      IF ( WADATS(IMOD)%AINIT2 ) THEN
+          WRITE (NDSE,1003)
+          CALL EXTCDE (3)
+        END IF
+!
+!/T      WRITE (NDST,9000) IMOD
+!
+      JGRID  = IGRID
+      IF ( JGRID .NE. IMOD ) CALL W3SETG ( IMOD, NDSE, NDST )
+!
+! -------------------------------------------------------------------- /
+! 2.  Allocate arrays
+!
+!/SHRD      NSEALM = NSEA
+!/DIST      NSEALM = 1 + (NSEA-1)/NAPROC
+      NXXX   = NSEALM * NAPROC
+!
+      IF ( OUTFLAGS( 2, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XHS(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XHS(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XWLM(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XWLM(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XT02(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XT02(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XT0M1(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XT0M1(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XT01 (NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XT01 (1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 6) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XFP0(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XFP0(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 7) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTHM(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTHM(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 8) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTHS(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTHS(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 9) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTHP0(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTHP0(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 10) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XHSIG(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XHSIG(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 11) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XSTMAXE(NXXX) )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XSTMAXE(1) )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 12) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XSTMAXD(NXXX) )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XSTMAXD(1) )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 13) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XHMAXE(NXXX) )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XHMAXE(1) )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 14) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XHCMAXE(NXXX) )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XHCMAXE(1) )
+        END IF
+!
+!
+      IF ( OUTFLAGS( 2, 15) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XHMAXD(NXXX) )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XHMAXD(1) )
+        END IF
+!
+      IF ( OUTFLAGS( 2, 16) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XHCMAXD(NXXX) )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XHCMAXD(1) )
+        END IF
+!
+!     IF ( OUTFLAGS( 2,xx) ) THEN
+!         ALLOCATE ( WADATS(IMOD)%XFP1(NXXX), STAT=ISTAT )
+!         CHECK_ALLOC_STATUS ( ISTAT )
+!       ELSE
+!         ALLOCATE ( WADATS(IMOD)%XFP1(1), STAT=ISTAT )
+!         CHECK_ALLOC_STATUS ( ISTAT )
+!       END IF
+!
+!     IF ( OUTFLAGS( 2,xx) ) THEN
+!         ALLOCATE ( WADATS(IMOD)%XTHP1(NXXX), STAT=ISTAT )
+!         CHECK_ALLOC_STATUS ( ISTAT )
+!       ELSE
+!         ALLOCATE ( WADATS(IMOD)%XTHP1(1), STAT=ISTAT )
+!         CHECK_ALLOC_STATUS ( ISTAT )
+!       END IF
+!
+      WADATS(IMOD)%XHS    = UNDEF
+      WADATS(IMOD)%XWLM   = UNDEF
+      WADATS(IMOD)%XT02   = UNDEF
+      WADATS(IMOD)%XT0M1  = UNDEF
+      WADATS(IMOD)%XT01   = UNDEF
+      WADATS(IMOD)%XFP0   = UNDEF
+      WADATS(IMOD)%XTHM   = UNDEF
+      WADATS(IMOD)%XTHS   = UNDEF
+      WADATS(IMOD)%XTHP0  = UNDEF
+      WADATS(IMOD)%XHSIG  = UNDEF
+      WADATS(IMOD)%XSTMAXE= UNDEF
+      WADATS(IMOD)%XSTMAXD= UNDEF
+      WADATS(IMOD)%XHMAXE = UNDEF
+      WADATS(IMOD)%XHMAXD = UNDEF
+      WADATS(IMOD)%XHCMAXE= UNDEF
+      WADATS(IMOD)%XHCMAXD= UNDEF
+!     WADATS(IMOD)%XFP1   = UNDEF
+!     WADATS(IMOD)%XTHP1  = UNDEF
+!
+      IF ( OUTFLAGS( 3, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XEF(NXXX,E3DF(2,1):E3DF(3,1)), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XEF(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF 
+
+        IF ( OUTFLAGS( 3, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTH1M(NXXX,E3DF(2,2):E3DF(3,2)), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTH1M(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+
+      IF ( OUTFLAGS( 3, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XSTH1M(NXXX,E3DF(2,3):E3DF(3,3)), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XSTH1M(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+
+      IF ( OUTFLAGS( 3, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTH2M(NXXX,E3DF(2,4):E3DF(3,4)), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTH2M(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 3, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XSTH2M(NXXX,E3DF(2,5):E3DF(3,5)), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XSTH2M(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XEF     = UNDEF
+      WADATS(IMOD)%XTH1M   = UNDEF
+      WADATS(IMOD)%XSTH1M  = UNDEF
+      WADATS(IMOD)%XTH2M   = UNDEF
+      WADATS(IMOD)%XSTH2M  = UNDEF
+!
+      IF ( OUTFLAGS( 4, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPHS(NXXX,0:NOSWLL), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPHS(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPTP(NXXX,0:NOSWLL), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPTP(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPLP(NXXX,0:NOSWLL), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPLP(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPDIR(NXXX,0:NOSWLL), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPDIR(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPSI(NXXX,0:NOSWLL), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPSI(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 6) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPWS(NXXX,0:NOSWLL), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPWS(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 7) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPWST(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPWST(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 4, 8) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPNR(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPNR(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XPHS   = UNDEF
+      WADATS(IMOD)%XPTP   = UNDEF
+      WADATS(IMOD)%XPLP   = UNDEF
+      WADATS(IMOD)%XPDIR  = UNDEF
+      WADATS(IMOD)%XPSI   = UNDEF
+      WADATS(IMOD)%XPWS   = UNDEF
+      WADATS(IMOD)%XPWST  = UNDEF
+      WADATS(IMOD)%XPNR   = UNDEF
+!
+      IF ( OUTFLAGS( 5, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XCHARN(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XCHARN(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 5, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XCGE(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XCGE(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 5, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPHIAW(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPHIAW(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 5, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTAUWIX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTAUWIY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTAUWIX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTAUWIY(1) )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 5, 6) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTAUWNX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTAUWNY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTAUWNX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTAUWNY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 5, 7) .OR. OUTFLAGS( 5, 8) .OR.                        &
+           OUTFLAGS( 5, 9) .OR. OUTFLAGS( 5,10)) THEN
+          ALLOCATE ( WADATS(IMOD)%XWHITECAP(NXXX,4), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XWHITECAP(1,4), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XCHARN    = UNDEF
+      WADATS(IMOD)%XCGE      = UNDEF
+      WADATS(IMOD)%XPHIAW    = UNDEF
+      WADATS(IMOD)%XTAUWIX   = UNDEF
+      WADATS(IMOD)%XTAUWIY   = UNDEF
+      WADATS(IMOD)%XTAUWNX   = UNDEF
+      WADATS(IMOD)%XTAUWNY   = UNDEF
+      WADATS(IMOD)%XWHITECAP = UNDEF
+!
+      IF ( OUTFLAGS( 6, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XSXX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XSYY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XSXY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XSXX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XSYY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XSXY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTAUOX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTAUOY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTAUOX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTAUOY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XBHD(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XBHD(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPHIOC(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPHIOC(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTUSX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTUSY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTUSX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTUSY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 6) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XUSSX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XUSSX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 7) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPRMS(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTPMS(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPRMS(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XTPMS(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6, 8) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XUS3D(NXXX,2*NK), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XUS3D(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF 
+!
+      IF ( OUTFLAGS( 6, 9) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XP2SMS(NXXX,P2MSF(2):P2MSF(3)), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XP2SMS(1,1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF 
+!
+      IF ( OUTFLAGS( 6,10) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTAUICE(NXXX,2), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTAUICE(1,2), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 6,11) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPHICE(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPHICE(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XSXX    = UNDEF
+      WADATS(IMOD)%XSYY    = UNDEF
+      WADATS(IMOD)%XSXY    = UNDEF
+      WADATS(IMOD)%XTAUOX  = UNDEF
+      WADATS(IMOD)%XTAUOY  = UNDEF
+      WADATS(IMOD)%XBHD    = UNDEF
+      WADATS(IMOD)%XPHIOC  = UNDEF
+      WADATS(IMOD)%XTUSX   = UNDEF
+      WADATS(IMOD)%XTUSY   = UNDEF
+      WADATS(IMOD)%XUSSX   = UNDEF
+      WADATS(IMOD)%XUSSY   = UNDEF
+      WADATS(IMOD)%XPRMS   = UNDEF
+      WADATS(IMOD)%XTPMS   = UNDEF
+      WADATS(IMOD)%XUS3D   = UNDEF
+      WADATS(IMOD)%XP2SMS  = UNDEF
+      WADATS(IMOD)%XPHICE  = UNDEF
+      WADATS(IMOD)%XTAUICE = UNDEF
+!
+      IF ( OUTFLAGS( 7, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XABA(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XABD(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XABA(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XABD(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 7, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XUBA(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUBD(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XUBA(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUBD(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 7, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XBEDFORMS(NXXX,3), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XBEDFORMS(1,3), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 7, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XPHIBBL(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XPHIBBL(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 7, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XTAUBBL(NXXX,2), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XTAUBBL(1,2), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XABA    = UNDEF
+      WADATS(IMOD)%XABD    = UNDEF
+      WADATS(IMOD)%XUBA    = UNDEF
+      WADATS(IMOD)%XUBD    = UNDEF
+      WADATS(IMOD)%XBEDFORMS = UNDEF
+      WADATS(IMOD)%XPHIBBL = UNDEF
+      WADATS(IMOD)%XTAUBBL = UNDEF
+!
+      IF ( OUTFLAGS( 8, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XMSSX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XMSSY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XMSSX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XMSSY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 8, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XMSCX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XMSCY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XMSCX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XMSCY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XMSSX   = UNDEF
+      WADATS(IMOD)%XMSSY   = UNDEF
+      WADATS(IMOD)%XMSCX   = UNDEF
+      WADATS(IMOD)%XMSCY   = UNDEF
+!
+      IF ( OUTFLAGS( 9, 1) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XDTDYN(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XDTDYN(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 9, 2) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XFCUT(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XFCUT(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 9, 3) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XCFLXYMAX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XCFLXYMAX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 9, 4) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XCFLTHMAX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XCFLTHMAX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      IF ( OUTFLAGS( 9, 5) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XCFLKMAX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XCFLKMAX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+!
+      WADATS(IMOD)%XDTDYN    = UNDEF
+      WADATS(IMOD)%XFCUT     = UNDEF
+      WADATS(IMOD)%XCFLXYMAX = UNDEF
+      WADATS(IMOD)%XCFLTHMAX = UNDEF
+      WADATS(IMOD)%XCFLKMAX  = UNDEF
+!
+      DO I=1, NOEXTR
+        IF ( OUTFLAGS(10, i) ) THEN
+            ALLOCATE ( WADATS(IMOD)%XUSERO(NXXX,I), STAT=ISTAT )
+            CHECK_ALLOC_STATUS ( ISTAT )
+          ELSE
+            ALLOCATE ( WADATS(IMOD)%XUSERO(1,I), STAT=ISTAT )
+            CHECK_ALLOC_STATUS ( ISTAT )
+          END IF
+        END DO
+!
+      WADATS(IMOD)%XUSERO  = UNDEF
+!
+      WADATS(IMOD)%AINIT2 = .TRUE.
+!
+!/T      WRITE (NDST,9001)
+!/T      WRITE (NDST,9001)
+!
+! -------------------------------------------------------------------- /
+! 5.  Restore previous grid setting if necessary
+!
+      IF ( JGRID .NE. IMOD ) CALL W3SETG ( JGRID, NDSE, NDST )
+!
+      RETURN
+!
+! Formats
+!
+ 1001 FORMAT (/' *** ERROR W3XDMA : GRIDS NOT INITIALIZED *** '/      &
+               '                    RUN W3NMOD FIRST '/)
+ 1002 FORMAT (/' *** ERROR W3XDMA : ILLEGAL MODEL NUMBER *** '/       &
+               '                    IMOD   = ',I10/                   &
+               '                    NADATA = ',I10/)
+ 1003 FORMAT (/' *** ERROR W3XDMA : ARRAY(S) ALREADY ALLOCATED *** ')
+!
+!/T 9000 FORMAT (' TEST W3XDMA : MODEL ',I4)
+!/T 9001 FORMAT (' TEST W3XDMA : ARRAYS ALLOCATED')
+!/T 9002 FORMAT (' TEST W3XDMA : POINTERS RESET')
+!/T 9003 FORMAT (' TEST W3XDMA : DIMENSIONS STORED')
+!/
+!/ End of W3XDMA ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3XDMA
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3DMNL  ( IMOD, NDSE, NDST, NSP, NSPX )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         10-Dec-2014 |
+!/                  +-----------------------------------+
+!/
+!/    24-Dec-2004 : Origination.                        ( version 3.06 )
+!/    04-Oct-2006 : Add filter to array pointers.       ( version 3.10 )
+!/    10-Dec-2014 : Add checks for allocate status      ( version 5.04 )
+!/
+!  1. Purpose :
+!
+!     Initialize an individual data grid at the proper dimensions (DIA).
+!
+!  2. Method :
+!
+!     Allocate directly into the structure array. Note that
+!     this cannot be done through the pointer alias!
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       IMOD    Int.   I   Model number to point to.
+!       NDSE    Int.   I   Error output unit number.
+!       NDST    Int.   I   Test output unit number.
+!       NSP(X)  Int.   I   Array dimensions.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     See module documentation.
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      INSNL1    Subr. W3SNL1MD Traditional DIA approach to Snl.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!     - Check on input parameters.
+!     - Check on previous allocation.
+!
+!  7. Remarks :
+!
+!     - W3SETA needs to be called after allocation to point to 
+!       proper allocated arrays.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S      Enable subroutine tracing.
+!     !/T    Enable test output
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD, ONLY: NGRIDS, IGRID, NK, NX, NY, NSEA, NSEAL,     &
+                         NSPEC, NTH, GTYPE, UNGTYPE
+      USE W3ODATMD, ONLY: NAPROC
+      USE W3IDATMD, ONLY: FLCUR, FLWIND
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)           :: IMOD, NDSE, NDST, NSP, NSPX
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/S      CALL STRACE (IENT, 'W3DMNL')
+!
+! -------------------------------------------------------------------- /
+! 1.  Test input and module status
+!
+      IF ( NGRIDS .EQ. -1 ) THEN
+          WRITE (NDSE,1001)
+          CALL EXTCDE (1)
+        END IF
+!
+      IF ( IMOD.LT.1 .OR. IMOD.GT.NADATA ) THEN
+          WRITE (NDSE,1002) IMOD, NADATA
+          CALL EXTCDE (2)
+        END IF
+!
+!/NL1      IF ( WADATS(IMOD)%NLINIT ) THEN
+!/NL1          WRITE (NDSE,1003)
+!/NL1          CALL EXTCDE (3)
+!/NL1        END IF
+!
+!/T      WRITE (NDST,9000) IMOD
+!
+! -------------------------------------------------------------------- /
+! 2.  Allocate arrays
+!
+!/NL1      ALLOCATE ( WADATS(IMOD)%IP11(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP12(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP13(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP14(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM11(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM12(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM13(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM14(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP21(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP22(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP23(NSPX),        &
+!/NL1                 WADATS(IMOD)%IP24(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM21(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM22(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM23(NSPX),        &
+!/NL1                 WADATS(IMOD)%IM24(NSPX),        &
+!/NL1                 WADATS(IMOD)%IC11(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC12(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC21(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC22(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC31(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC32(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC41(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC42(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC51(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC52(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC61(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC62(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC71(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC72(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC81(NSP) ,        &
+!/NL1                 WADATS(IMOD)%IC82(NSP) ,        &
+!/NL1                 WADATS(IMOD)%AF11(NSPX),        &
+!/NL1                 STAT=ISTAT                      )
+!/NL1      CHECK_ALLOC_STATUS ( ISTAT )
+!
+!/NL1      WADATS(IMOD)%NLINIT = .TRUE.
+!
+!/T      WRITE (NDST,9001)
+!
+! -------------------------------------------------------------------- /
+! 3.  Point to allocated arrays
+!
+      CALL W3SETA ( IMOD, NDSE, NDST )
+!
+!/T      WRITE (NDST,9002)
+!
+! -------------------------------------------------------------------- /
+! 4.  Update counters in grid
+!
+!/NL1      NSPECX = NSPX
+!
+!/T      WRITE (NDST,9003)
+!
+      RETURN
+!
+! Formats
+!
+ 1001 FORMAT (/' *** ERROR W3DMNL : GRIDS NOT INITIALIZED *** '/      &
+               '                    RUN W3NMOD FIRST '/)
+ 1002 FORMAT (/' *** ERROR W3DMNL : ILLEGAL MODEL NUMBER *** '/       &
+               '                    IMOD   = ',I10/                   &
+               '                    NADATA = ',I10/)
+!/NL1 1003 FORMAT (/' *** ERROR W3DMNL : ARRAY(S) ALREADY ALLOCATED *** ')
+!
+!/T 9000 FORMAT (' TEST W3DMNL : MODEL ',I4)
+!/T 9001 FORMAT (' TEST W3DMNL : ARRAYS ALLOCATED')
+!/T 9002 FORMAT (' TEST W3DMNL : POINTERS RESET')
+!/T 9003 FORMAT (' TEST W3DMNL : DIMENSIONS STORED')
+!/
+!/ End of W3DMNL ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3DMNL
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SETA ( IMOD, NDSE, NDST )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         28_Mar-2007 |
+!/                  +-----------------------------------+
+!/
+!/    28-Dec-2004 : Origination.                        ( version 3.06 )
+!/    04-May-2005 : Adding MPI_COMM_WAVE.               ( version 3.07 )
+!/    20-Jul-2005 : Adding output fields.               ( version 3.07 )
+!/    09-Nov-2005 : Removing soft boundary option.      ( version 3.08 )
+!/    13-Jun-2006 : Splitting STORE in G/SSTORE.        ( version 3.09 )
+!/    04-Oct-2006 : Add filter to array pointers.       ( version 3.10 )
+!/    28_Mar-2007 : Add partitioned data arrays.        ( version 3.11 )
+!/                  Add aditional undefined arrays.
+!/
+!  1. Purpose :
+!
+!     Select one of the WAVEWATCH III grids / models.
+!
+!  2. Method :
+!
+!     Point pointers to the proper variables in the proper element of
+!     the GRIDS array.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       IMOD    Int.   I   Model number to point to.
+!       NDSE    Int.   I   Error output unit number.
+!       NDST    Int.   I   Test output unit number.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     See module documentation below.
+!
+!  5. Called by :
+!
+!     Many subroutines in the WAVEWATCH system.
+!
+!  6. Error messages :
+!
+!     Checks on parameter list IMOD.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+!     !/MPI  Paralllel model environment.
+!
+!     !/PRn    Propagation scheme selection.
+!
+!     !/S    Enable subroutine tracing.
+!     !/T    Enable test output
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+!
+      USE W3IDATMD, ONLY: INPUTS
+      USE W3GDATMD, ONLY: E3DF, P2MSF, US3DF, GTYPE, UNGTYPE
+!
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: IMOD, NDSE, NDST
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/S      CALL STRACE (IENT, 'W3SETA')
+!
+! -------------------------------------------------------------------- /
+! 1.  Test input and module status
+!
+      IF ( NADATA .EQ. -1 ) THEN
+          WRITE (NDSE,1001)
+          CALL EXTCDE (1)
+        END IF   
+!
+      IF ( IMOD.LT.1 .OR. IMOD.GT.NADATA ) THEN
+          WRITE (NDSE,1002) IMOD, NADATA
+          CALL EXTCDE (2)
+        END IF
+!
+!/T      WRITE (NDST,9000) IMOD
+!
+! -------------------------------------------------------------------- /
+! 2.  Set model numbers
+!
+      IADATA = IMOD
+!
+! -------------------------------------------------------------------- /
+! 3.  Set pointers
+!
+      ITIME  => WADATS(IMOD)%ITIME
+      IPASS  => WADATS(IMOD)%IPASS
+      IDLAST => WADATS(IMOD)%IDLAST
+      NSEALM => WADATS(IMOD)%NSEALM
+      FLCOLD => WADATS(IMOD)%FLCOLD
+      FLIWND => WADATS(IMOD)%FLIWND
+      AINIT  => WADATS(IMOD)%AINIT
+      AINIT2 => WADATS(IMOD)%AINIT2
+      FL_ALL => WADATS(IMOD)%FL_ALL
+!
+!/PR2      NMX0   => WADATS(IMOD)%NMX0
+!/PR2      NMX1   => WADATS(IMOD)%NMX1
+!/PR2      NMX2   => WADATS(IMOD)%NMX2
+!/PR2      NMY0   => WADATS(IMOD)%NMY0
+!/PR2      NMY1   => WADATS(IMOD)%NMY1
+!/PR2      NMY2   => WADATS(IMOD)%NMY2
+!/PR2      NACT   => WADATS(IMOD)%NACT
+!/PR2      NMXY   => WADATS(IMOD)%NMXY
+!
+!/PR3      NMX0   => WADATS(IMOD)%NMX0
+!/PR3      NMX1   => WADATS(IMOD)%NMX1
+!/PR3      NMX2   => WADATS(IMOD)%NMX2
+!/PR3      NMY0   => WADATS(IMOD)%NMY0
+!/PR3      NMY1   => WADATS(IMOD)%NMY1
+!/PR3      NMY2   => WADATS(IMOD)%NMY2
+!/PR3      NACT   => WADATS(IMOD)%NACT
+!/PR3      NCENT  => WADATS(IMOD)%NCENT
+!
+!/SMC      NMX0   => WADATS(IMOD)%NMX0
+!/SMC      NMX1   => WADATS(IMOD)%NMX1
+!/SMC      NMX2   => WADATS(IMOD)%NMX2
+!/SMC      NMY0   => WADATS(IMOD)%NMY0
+!/SMC      NMY1   => WADATS(IMOD)%NMY1
+!/SMC      NMY2   => WADATS(IMOD)%NMY2
+!/SMC      NACT   => WADATS(IMOD)%NACT
+!/SMC      NMXY   => WADATS(IMOD)%NMXY
+!
+!/NL1      NFR    => WADATS(IMOD)%NFR
+!/NL1      NFRHGH => WADATS(IMOD)%NFRHGH
+!/NL1      NFRCHG => WADATS(IMOD)%NFRCHG
+!/NL1      NSPECX => WADATS(IMOD)%NSPECX
+!/NL1      NSPECY => WADATS(IMOD)%NSPECY
+!/NL1      DAL1   => WADATS(IMOD)%DAL1
+!/NL1      DAL2   => WADATS(IMOD)%DAL2
+!/NL1      DAL3   => WADATS(IMOD)%DAL3
+!/NL1      AWG1   => WADATS(IMOD)%AWG1
+!/NL1      AWG2   => WADATS(IMOD)%AWG2
+!/NL1      AWG3   => WADATS(IMOD)%AWG3
+!/NL1      AWG4   => WADATS(IMOD)%AWG4
+!/NL1      AWG5   => WADATS(IMOD)%AWG5
+!/NL1      AWG6   => WADATS(IMOD)%AWG6
+!/NL1      AWG7   => WADATS(IMOD)%AWG7
+!/NL1      AWG8   => WADATS(IMOD)%AWG8
+!/NL1      SWG1   => WADATS(IMOD)%SWG1
+!/NL1      SWG2   => WADATS(IMOD)%SWG2
+!/NL1      SWG3   => WADATS(IMOD)%SWG3
+!/NL1      SWG4   => WADATS(IMOD)%SWG4
+!/NL1      SWG5   => WADATS(IMOD)%SWG5
+!/NL1      SWG6   => WADATS(IMOD)%SWG6
+!/NL1      SWG7   => WADATS(IMOD)%SWG7
+!/NL1      SWG8   => WADATS(IMOD)%SWG8
+!/NL1      NLINIT => WADATS(IMOD)%NLINIT
+!
+!/MPI      MPI_COMM_WAVE => WADATS(IMOD)%MPI_COMM_WAVE
+!/MPI      MPI_COMM_WCMP => WADATS(IMOD)%MPI_COMM_WCMP
+!/MPI      WW3_FIELD_VEC => WADATS(IMOD)%WW3_FIELD_VEC
+!/MPI      WW3_SPEC_VEC => WADATS(IMOD)%WW3_SPEC_VEC
+!/MPI      NRQSG1 => WADATS(IMOD)%NRQSG1
+!/MPI      NRQSG2 => WADATS(IMOD)%NRQSG2
+!/MPI      IBFLOC => WADATS(IMOD)%IBFLOC
+!/MPI      ISPLOC => WADATS(IMOD)%ISPLOC
+!/MPI      NSPLOC => WADATS(IMOD)%NSPLOC
+!/MPI      BSTAT  => WADATS(IMOD)%BSTAT
+!/MPI      BISPL  => WADATS(IMOD)%BISPL
+!
+      IF ( AINIT ) THEN
+!
+          DW     => WADATS(IMOD)%DW
+          UA     => WADATS(IMOD)%UA
+          UD     => WADATS(IMOD)%UD
+          U10    => WADATS(IMOD)%U10
+          U10D   => WADATS(IMOD)%U10D
+          AS     => WADATS(IMOD)%AS
+          CX     => WADATS(IMOD)%CX
+          CY     => WADATS(IMOD)%CY
+!
+          HS     => WADATS(IMOD)%HS
+          WLM    => WADATS(IMOD)%WLM
+          T02    => WADATS(IMOD)%T02
+          T0M1   => WADATS(IMOD)%T0M1
+          T01    => WADATS(IMOD)%T01 
+          FP0    => WADATS(IMOD)%FP0
+          THM    => WADATS(IMOD)%THM
+          THS    => WADATS(IMOD)%THS
+          THP0   => WADATS(IMOD)%THP0
+          FP1    => WADATS(IMOD)%FP1
+          THP1   => WADATS(IMOD)%THP1
+          HSIG   => WADATS(IMOD)%HSIG
+          STMAXE => WADATS(IMOD)%STMAXE
+          STMAXD => WADATS(IMOD)%STMAXD
+          HMAXE  => WADATS(IMOD)%HMAXE
+          HMAXD  => WADATS(IMOD)%HMAXD
+          HCMAXE => WADATS(IMOD)%HCMAXE
+          HCMAXD => WADATS(IMOD)%HCMAXD
+!
+          EF     => WADATS(IMOD)%EF
+          TH1M   => WADATS(IMOD)%TH1M
+          STH1M  => WADATS(IMOD)%STH1M
+          TH2M   => WADATS(IMOD)%TH2M
+          STH2M  => WADATS(IMOD)%STH2M
+!
+          PHS    => WADATS(IMOD)%PHS
+          PTP    => WADATS(IMOD)%PTP
+          PLP    => WADATS(IMOD)%PLP
+          PDIR   => WADATS(IMOD)%PDIR
+          PSI    => WADATS(IMOD)%PSI
+          PWS    => WADATS(IMOD)%PWS
+          PWST   => WADATS(IMOD)%PWST
+          PNR    => WADATS(IMOD)%PNR
+!
+          CHARN    => WADATS(IMOD)%CHARN
+          CGE      => WADATS(IMOD)%CGE
+          PHIAW    => WADATS(IMOD)%PHIAW
+          TAUWIX   => WADATS(IMOD)%TAUWIX
+          TAUWIY   => WADATS(IMOD)%TAUWIY
+          TAUWNX   => WADATS(IMOD)%TAUWNX
+          TAUWNY   => WADATS(IMOD)%TAUWNY
+          WHITECAP => WADATS(IMOD)%WHITECAP
+!
+          SXX    => WADATS(IMOD)%SXX
+          SYY    => WADATS(IMOD)%SYY
+          SXY    => WADATS(IMOD)%SXY
+          TAUOX  => WADATS(IMOD)%TAUOX
+          TAUOY  => WADATS(IMOD)%TAUOY
+          BHD    => WADATS(IMOD)%BHD
+          PHIOC  => WADATS(IMOD)%PHIOC
+          TUSX   => WADATS(IMOD)%TUSX
+          TUSY   => WADATS(IMOD)%TUSY
+          USSX   => WADATS(IMOD)%USSX
+          USSY   => WADATS(IMOD)%USSY
+          PRMS   => WADATS(IMOD)%PRMS
+          TPMS   => WADATS(IMOD)%TPMS
+          P2SMS  => WADATS(IMOD)%P2SMS
+          US3D   => WADATS(IMOD)%US3D
+          PHICE  => WADATS(IMOD)%PHICE
+          TAUICE  => WADATS(IMOD)%TAUICE
+!
+          ABA    => WADATS(IMOD)%ABA
+          ABD    => WADATS(IMOD)%ABD
+          UBA    => WADATS(IMOD)%UBA
+          UBD    => WADATS(IMOD)%UBD
+          BEDFORMS=> WADATS(IMOD)%BEDFORMS
+          PHIBBL => WADATS(IMOD)%PHIBBL
+          TAUBBL => WADATS(IMOD)%TAUBBL
+!
+          MSSX   => WADATS(IMOD)%MSSX
+          MSSY   => WADATS(IMOD)%MSSY
+          MSCX   => WADATS(IMOD)%MSCX
+          MSCY   => WADATS(IMOD)%MSCY
+!
+          DTDYN    => WADATS(IMOD)%DTDYN
+          FCUT     => WADATS(IMOD)%FCUT
+          CFLXYMAX => WADATS(IMOD)%CFLXYMAX
+          CFLTHMAX => WADATS(IMOD)%CFLTHMAX
+          CFLKMAX =>  WADATS(IMOD)%CFLKMAX
+!
+          USERO  => WADATS(IMOD)%USERO
+!
+          WN     => WADATS(IMOD)%WN
+!/IC3     IC3WN_R=> WADATS(IMOD)%IC3WN_R
+!/IC3     IC3WN_I=> WADATS(IMOD)%IC3WN_I
+!
+          IF ( FL_ALL ) THEN
+!
+              CG     => WADATS(IMOD)%CG
+!/IC3         IC3CG  => WADATS(IMOD)%IC3CG
+!
+              ATRNX  => WADATS(IMOD)%ATRNX
+              ATRNY  => WADATS(IMOD)%ATRNY
+!
+              DDDX   => WADATS(IMOD)%DDDX
+              DDDY   => WADATS(IMOD)%DDDY
+              DCDX   => WADATS(IMOD)%DCDX
+              DCDY   => WADATS(IMOD)%DCDY
+              DCXDX  => WADATS(IMOD)%DCXDX
+              DCYDX  => WADATS(IMOD)%DCYDX
+              DCXDY  => WADATS(IMOD)%DCXDY
+              DCYDY  => WADATS(IMOD)%DCYDY
+!
+!/SMC              DHDX   => WADATS(IMOD)%DHDX
+!/SMC              DHDY   => WADATS(IMOD)%DHDY
+!/SMC              DHLMT  => WADATS(IMOD)%DHLMT
+!
+              ALPHA  => WADATS(IMOD)%ALPHA
+!
+              IF ( INPUTS(IMOD)%INFLAGS1(2) ) THEN
+                  CA0    => WADATS(IMOD)%CA0
+                  CAI    => WADATS(IMOD)%CAI
+                  CD0    => WADATS(IMOD)%CD0
+                  CDI    => WADATS(IMOD)%CDI
+                END IF
+!
+              IF ( INPUTS(IMOD)%INFLAGS1(3) ) THEN
+                  UA0    => WADATS(IMOD)%UA0
+                  UAI    => WADATS(IMOD)%UAI
+                  UD0    => WADATS(IMOD)%UD0
+                  UDI    => WADATS(IMOD)%UDI
+                  AS0    => WADATS(IMOD)%AS0
+                  ASI    => WADATS(IMOD)%ASI
+                END IF
+!
+!/PR1              IS0    => WADATS(IMOD)%IS0
+!/PR1              IS2    => WADATS(IMOD)%IS2
+!/PR1              FACVX  => WADATS(IMOD)%FACVX
+!/PR1              FACVY  => WADATS(IMOD)%FACVY
+!
+!/PR2              MAPX2  => WADATS(IMOD)%MAPX2
+!/PR2              MAPY2  => WADATS(IMOD)%MAPY2
+!/PR2              MAPAXY => WADATS(IMOD)%MAPAXY
+!/PR2              MAPXY  => WADATS(IMOD)%MAPXY
+!/PR2              MAPTH2 => WADATS(IMOD)%MAPTH2
+!/PR2              MAPWN2 => WADATS(IMOD)%MAPWN2
+!
+!/PR3              MAPX2  => WADATS(IMOD)%MAPX2
+!/PR3              MAPY2  => WADATS(IMOD)%MAPY2
+!/PR3              MAPAXY => WADATS(IMOD)%MAPAXY
+!/PR3              MAPCXY => WADATS(IMOD)%MAPCXY
+!/PR3              MAPTH2 => WADATS(IMOD)%MAPTH2
+!/PR3              MAPWN2 => WADATS(IMOD)%MAPWN2
+!/PR3              MAPTRN => WADATS(IMOD)%MAPTRN
+!
+!/SMC              MAPX2  => WADATS(IMOD)%MAPX2
+!/SMC              MAPY2  => WADATS(IMOD)%MAPY2
+!/SMC              MAPAXY => WADATS(IMOD)%MAPAXY
+!/SMC              MAPXY  => WADATS(IMOD)%MAPXY
+!/SMC              MAPTH2 => WADATS(IMOD)%MAPTH2
+!/SMC              MAPWN2 => WADATS(IMOD)%MAPWN2
+!
+               IF (GTYPE .EQ. UNGTYPE) ITER   => WADATS(IMOD)%ITER
+!
+              IAPPRO => WADATS(IMOD)%IAPPRO
+              SPPNT  => WADATS(IMOD)%SPPNT
+!
+            END IF
+!
+        END IF
+!
+!/NL1      IF ( NLINIT ) THEN
+!/NL1          IP11   => WADATS(IMOD)%IP11
+!/NL1          IP12   => WADATS(IMOD)%IP12
+!/NL1          IP13   => WADATS(IMOD)%IP13
+!/NL1          IP14   => WADATS(IMOD)%IP14
+!/NL1          IM11   => WADATS(IMOD)%IM11
+!/NL1          IM12   => WADATS(IMOD)%IM12
+!/NL1          IM13   => WADATS(IMOD)%IM13
+!/NL1          IM14   => WADATS(IMOD)%IM14
+!/NL1          IP21   => WADATS(IMOD)%IP21
+!/NL1          IP22   => WADATS(IMOD)%IP22
+!/NL1          IP23   => WADATS(IMOD)%IP23
+!/NL1          IP24   => WADATS(IMOD)%IP24
+!/NL1          IM21   => WADATS(IMOD)%IM21
+!/NL1          IM22   => WADATS(IMOD)%IM22
+!/NL1          IM23   => WADATS(IMOD)%IM23
+!/NL1          IM24   => WADATS(IMOD)%IM24
+!/NL1          IC11   => WADATS(IMOD)%IC11
+!/NL1          IC12   => WADATS(IMOD)%IC12
+!/NL1          IC21   => WADATS(IMOD)%IC21
+!/NL1          IC22   => WADATS(IMOD)%IC22
+!/NL1          IC31   => WADATS(IMOD)%IC31
+!/NL1          IC32   => WADATS(IMOD)%IC32
+!/NL1          IC41   => WADATS(IMOD)%IC41
+!/NL1          IC42   => WADATS(IMOD)%IC42
+!/NL1          IC51   => WADATS(IMOD)%IC51
+!/NL1          IC52   => WADATS(IMOD)%IC52
+!/NL1          IC61   => WADATS(IMOD)%IC61
+!/NL1          IC62   => WADATS(IMOD)%IC62
+!/NL1          IC71   => WADATS(IMOD)%IC71
+!/NL1          IC72   => WADATS(IMOD)%IC72
+!/NL1          IC81   => WADATS(IMOD)%IC81
+!/NL1          IC82   => WADATS(IMOD)%IC82
+!/NL1          AF11   => WADATS(IMOD)%AF11
+!/NL1        END IF
+
+!/MPI      IF ( NRQSG1 .NE. 0 ) THEN
+!/MPI          IRQSG1 => WADATS(IMOD)%IRQSG1
+!/MPI          IRQSG2 => WADATS(IMOD)%IRQSG2
+!/MPI        END IF
+!
+!/MPI      GSTORE => WADATS(IMOD)%GSTORE
+!/MPI      SSTORE => WADATS(IMOD)%SSTORE
+!
+      RETURN
+!
+! Formats
+!
+ 1001 FORMAT (/' *** ERROR W3SETA : GRIDS NOT INITIALIZED *** '/      &
+               '                    RUN W3NMOD FIRST '/)
+ 1002 FORMAT (/' *** ERROR W3SETA : ILLEGAL MODEL NUMBER *** '/       &
+               '                    IMOD   = ',I10/                   &
+               '                    NADATA = ',I10/)
+!
+!/T 9000 FORMAT (' TEST W3SETA : MODEL ',I4,' SELECTED')
+!/
+!/ End of W3SETA ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SETA
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3XETA ( IMOD, NDSE, NDST )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         30-Apr-2014 |
+!/                  +-----------------------------------+
+!/
+!/    25-Dec-2012 : Origination.                        ( version 4.11 )
+!/    30-Apr-2014 : Add s/th1-2m                        ( version 5.01 )
+!/
+!  1. Purpose :
+!
+!     Reduced version of W3SETA to point t expended output arrays.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+!
+      USE W3IDATMD, ONLY: INPUTS
+      USE W3GDATMD, ONLY: E3DF, P2MSF, US3DF, GTYPE, UNGTYPE
+!
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: IMOD, NDSE, NDST
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/S      CALL STRACE (IENT, 'W3XETA')
+!
+! -------------------------------------------------------------------- /
+! 1.  Test input and module status
+!
+      IF ( NADATA .EQ. -1 ) THEN
+          WRITE (NDSE,1001)
+          CALL EXTCDE (1)
+        END IF   
+!
+      IF ( IMOD.LT.1 .OR. IMOD.GT.NADATA ) THEN
+          WRITE (NDSE,1002) IMOD, NADATA
+          CALL EXTCDE (2)
+        END IF
+!
+!/T      WRITE (NDST,9000) IMOD
+!
+! -------------------------------------------------------------------- /
+! 2.  Set model numbers
+!
+      IADATA = IMOD
+!
+! -------------------------------------------------------------------- /
+! 3.  Set pointers
+!
+      IF ( AINIT2 ) THEN
+!
+          HS     => WADATS(IMOD)%XHS
+          WLM    => WADATS(IMOD)%XWLM
+          T02    => WADATS(IMOD)%XT02
+          T0M1   => WADATS(IMOD)%XT0M1
+          T01    => WADATS(IMOD)%XT01 
+          FP0    => WADATS(IMOD)%XFP0
+          THM    => WADATS(IMOD)%XTHM
+          THS    => WADATS(IMOD)%XTHS
+          THP0   => WADATS(IMOD)%XTHP0
+          HSIG   => WADATS(IMOD)%XHSIG
+          STMAXE => WADATS(IMOD)%XSTMAXE
+          STMAXD => WADATS(IMOD)%XSTMAXD
+          HMAXE  => WADATS(IMOD)%XHMAXE
+          HMAXD  => WADATS(IMOD)%XHMAXD
+          HCMAXE => WADATS(IMOD)%XHCMAXE
+          HCMAXD => WADATS(IMOD)%XHCMAXD
+!         FP1    => WADATS(IMOD)%XFP1
+!         THP1   => WADATS(IMOD)%XTHP1
+!
+          EF     => WADATS(IMOD)%XEF
+          TH1M   => WADATS(IMOD)%XTH1M
+          STH1M  => WADATS(IMOD)%XSTH1M
+          TH2M   => WADATS(IMOD)%XTH2M
+          STH2M  => WADATS(IMOD)%XSTH2M
+!
+          PHS    => WADATS(IMOD)%XPHS
+          PTP    => WADATS(IMOD)%XPTP
+          PLP    => WADATS(IMOD)%XPLP
+          PDIR   => WADATS(IMOD)%XPDIR
+          PSI    => WADATS(IMOD)%XPSI
+          PWS    => WADATS(IMOD)%XPWS
+          PWST   => WADATS(IMOD)%XPWST
+          PNR    => WADATS(IMOD)%XPNR
+!
+          CHARN    => WADATS(IMOD)%XCHARN
+          CGE      => WADATS(IMOD)%XCGE
+          PHIAW    => WADATS(IMOD)%XPHIAW
+          TAUWIX   => WADATS(IMOD)%XTAUWIX
+          TAUWIY   => WADATS(IMOD)%XTAUWIY
+          TAUWNX   => WADATS(IMOD)%XTAUWNX
+          TAUWNY   => WADATS(IMOD)%XTAUWNY
+          WHITECAP => WADATS(IMOD)%XWHITECAP
+!         
+          SXX    => WADATS(IMOD)%XSXX
+          SYY    => WADATS(IMOD)%XSYY
+          SXY    => WADATS(IMOD)%XSXY
+          TAUOX  => WADATS(IMOD)%XTAUOX
+          TAUOY  => WADATS(IMOD)%XTAUOY
+          BHD    => WADATS(IMOD)%XBHD
+          PHIOC  => WADATS(IMOD)%XPHIOC
+          TUSX   => WADATS(IMOD)%XTUSX
+          TUSY   => WADATS(IMOD)%XTUSY
+          USSX   => WADATS(IMOD)%XUSSX
+          USSY   => WADATS(IMOD)%XUSSY
+          PRMS   => WADATS(IMOD)%XPRMS
+          TPMS   => WADATS(IMOD)%XTPMS
+          P2SMS  => WADATS(IMOD)%XP2SMS
+          US3D   => WADATS(IMOD)%XUS3D
+          PHICE  => WADATS(IMOD)%XPHICE
+          TAUICE => WADATS(IMOD)%XTAUICE
+!         
+          ABA    => WADATS(IMOD)%XABA
+          ABD    => WADATS(IMOD)%XABD
+          UBA    => WADATS(IMOD)%XUBA
+          UBD    => WADATS(IMOD)%XUBD
+          BEDFORMS=> WADATS(IMOD)%XBEDFORMS
+          PHIBBL => WADATS(IMOD)%XPHIBBL
+          TAUBBL => WADATS(IMOD)%XTAUBBL
+!
+          MSSX   => WADATS(IMOD)%XMSSX
+          MSSY   => WADATS(IMOD)%XMSSY
+          MSCX   => WADATS(IMOD)%XMSCX
+          MSCY   => WADATS(IMOD)%XMSCY
+!
+          DTDYN    => WADATS(IMOD)%XDTDYN
+          FCUT     => WADATS(IMOD)%XFCUT
+          CFLXYMAX => WADATS(IMOD)%XCFLXYMAX
+          CFLTHMAX => WADATS(IMOD)%XCFLTHMAX
+          CFLKMAX =>  WADATS(IMOD)%XCFLKMAX
+!
+          USERO  => WADATS(IMOD)%XUSERO
+!         
+        END IF
+!
+      RETURN
+!
+! Formats
+!
+ 1001 FORMAT (/' *** ERROR W3XETA : GRIDS NOT INITIALIZED *** '/      &
+               '                    RUN W3NMOD FIRST '/)
+ 1002 FORMAT (/' *** ERROR W3XETA : ILLEGAL MODEL NUMBER *** '/       &
+               '                    IMOD   = ',I10/                   &
+               '                    NADATA = ',I10/)
+!
+!/T 9000 FORMAT (' TEST W3XETA : MODEL ',I4,' SELECTED')
+!/
+!/ End of W3XETA ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3XETA
+!/
+!/ End of module W3ADATMD -------------------------------------------- /
+!/
+      END MODULE W3ADATMD

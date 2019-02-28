@@ -1,0 +1,526 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      PROGRAM W3PRTIDE
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         17-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    29-Mar-2013 : Creation                            ( version 4.11 )   
+!/    17-Oct-2013 : Manages missing data for UNST grids ( version 4.12 )   
+!/
+!/    Copyright 2013 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Predicts tides (current or water level) to be used during 
+!     run by ww3_shel or ww3_multi  (this takes much less memory). 
+!
+!  2. Method :
+!
+!     See documented input file.
+!
+!  3. Parameters :
+!
+!     Local parameters.
+!     ----------------------------------------------------------------
+!       NDSI    Int.  Input unit number ("ww3_prep.inp").
+!       NDSLL   Int.  Unit number(s) of long-lat file(s)
+!       NDSF    I.A.  Unit number(s) of input file(s).
+!       NDSDAT  Int.  Unit number for output data file.
+!       FLTIME  Log.  Time flag for input fields, if false, single
+!                     field, time read from NDSI.
+!       IDLALL  Int.  Layout indicator used by INA2R. +
+!       IDFMLL  Int.  Id. FORMAT indicator.           |
+!       FORMLL  C*16  Id. FORMAT.                     | Long-lat
+!       FROMLL  C*4   'UNIT' / 'NAME' indicator       |    file(s)
+!       NAMELL  C*40  Name of long-lat file(s)        +
+!       IDLAF   I.A.   +
+!       IDFMF   I.A.   |
+!       FORMF   C.A.   | Idem. fields file(s)
+!       FROMF   C*4    |
+!       NAMEF   C*50   +
+!       FORMT   C.A.  Format or time in field.
+!       XC      R.A.  Components of input vector field or first
+!                     input scalar field
+!       YC      R.A.  Components of input vector field or second
+!                     input scalar field
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3NMOD    Subr. W3GDATMD Set number of model.
+!      W3SETG    Subr.   Id.    Point to selected model.
+!      W3NOUT    Subr. W3ODATMD Set number of model for output.
+!      W3SETO    Subr.   Id.    Point to selected model for output.
+!      ITRACE    Subr. W3SERVMD Subroutine tracing initialization.
+!      STRACE    Subr.   Id.    Subroutine tracing.
+!      NEXTLN    Subr.   Id.    Get next line from input filw
+!      EXTCDE    Subr.   Id.    Abort program as graceful as possible.
+!      STME21    Subr. W3TIMEMD Convert time to string.
+!      W3IOGR    Subr. W3IOGRMD Reading/writing model definition file.
+!      W3FLDO    Subr. W3FLDSMD Opening of WAVEWATCH III generic shell
+!                               data file.
+!      W3FLDG    Subr.   Id.    Reading/writing shell input data.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!     None, stand-alone program.
+!
+!  6. Error messages :
+!
+!     - Checks on files and reading from file.
+!     - Checks on validity of input parameters.
+!
+!  7. Remarks :
+!
+!     - Input fields need to be continuous in longitude and latitude.
+!
+!  8. Structure :
+!
+!     ----------------------------------------------------
+!        To be updated ... 
+!     ----------------------------------------------------
+!
+!  9. Switches :
+!
+!     !/S     Enable subroutine tracing.
+!     !/T     Enable test output,
+!
+!     !/NCO   NCEP NCO modifications for operational implementation.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS
+!/
+!     USE W3GDATMD, ONLY: W3NMOD, W3SETG
+!/NL1      USE W3ADATMD,ONLY: W3NAUX, W3SETA
+      USE W3ODATMD, ONLY: W3NOUT, W3SETO
+      USE W3SERVMD, ONLY : ITRACE, NEXTLN, EXTCDE, STRSPLIT
+!/S      USE W3SERVMD, ONLY : STRACE
+      USE W3TIMEMD 
+      USE W3ARRYMD, ONLY : INA2R, INA2I
+      USE W3IOGRMD, ONLY: W3IOGR
+      USE W3FLDSMD, ONLY: W3FLDO, W3FLDG, W3FLDD, W3FLDTIDE1, W3FLDTIDE2
+!/
+      USE W3GDATMD
+      USE W3GSRUMD
+      USE W3ODATMD, ONLY: NDSE, NDST, NDSO, FNMPRE
+      USE W3TIDEMD
+      USE W3IDATMD
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: NDSI, NDSF, NDSM, NDSDAT, NDSTRC, NTRACE,  &
+                                 IERR, IFLD, ITYPE, I, J, IX, IY, NFCOMP,   &
+                                 TIME(2), DTTST, JX,                        &
+                                 NXI, NYI, NXJ(2), NYJ(2),                  &
+                                 TIDE_START(2), PRTIDE_DT, TIDE_END(2)
+      INTEGER                 :: TIDE_PRMF, FLAGTIDE, TINDEX,               &
+                                 TIDEOK, TIDE_MAX, TIDE_MAXI, INDMAX(70)
+      CHARACTER*256           :: FILENAMEXT
+      CHARACTER               :: TIDECONSTNAMES*1024
+      CHARACTER(LEN=100)      :: TIDECON_PRNAMES(70), TIDECON_MAXNAMES(70), &
+                                 TIDECON_MAXVALS(70)
+      INTEGER                 :: PR_INDS(70), K, IND, IX2, SUMOK, NBAD, ITER
+      CHARACTER*23            :: IDTIME 
+      CHARACTER               :: COMSTR*1, IDFLD*3
+      REAL, ALLOCATABLE       :: FX(:,:), FY(:,:), FA(:,:)
+      INTEGER, ALLOCATABLE    :: BADPOINTS(:,:)
+      REAL                    :: MAXVALCON(70) 
+      REAL             :: WCURTIDEX, WCURTIDEY, TIDE_ARGX, TIDE_ARGY
+      INTEGER(KIND=4)  :: TIDE_KD0, INT24, INTDYS       ! "Gregorian day constant"
+      REAL             :: WLEVTIDE, TIDE_ARG, WLEVTIDE2(1)
+      REAL(KIND=8)     :: d1,h,TIDE_HOUR,HH,pp,s,p,enp,dh,dpp,ds,dp,dnp,tau
+      REAL             :: TIDE_FX(44),UX(44),VX(44), AMPCOS, AMPSIN
+      LOGICAL          :: TIDEFILL
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!
+! 1.a  Set number of models
+!
+      CALL W3NMOD ( 1, 6, 6 )
+      CALL W3SETG ( 1, 6, 6 )
+!/NL1      CALL W3NAUX (    6, 6 )
+!/NL1      CALL W3SETA ( 1, 6, 6 )
+      CALL W3NOUT (    6, 6 )
+      CALL W3SETO ( 1, 6, 6 )
+!
+! 1.b  IO set-up.
+!
+      NDSI   = 10
+      NDSO   =  6
+      NDSE   =  6
+      NDST   =  6
+      NDSM   = 11
+      NDSDAT = 12
+      NDSF   = 13
+!
+      NDSTRC =  6
+      NTRACE = 10
+      TIDEFILL =.TRUE.
+      CALL ITRACE ( NDSTRC, NTRACE )
+!
+!/NCO/!
+!/NCO/! Redo according to NCO
+!/NCO/!
+!/NCO      NDSI   = 11
+!/NCO      NDSO   =  6
+!/NCO      NDSE   = NDSO
+!/NCO      NDST   = NDSO
+!/NCO      NDSM   = 12
+!/NCO      NDSDAT = 51
+!/NCO      NDSTRC = NDSO
+!
+! 1.c Print header
+!
+      WRITE (NDSO,900)
+!/S      CALL STRACE (IENT, 'W3PREP')
+!
+      J      = LEN_TRIM(FNMPRE)
+      OPEN (NDSI,FILE=FNMPRE(:J)//'ww3_prtide.inp',STATUS='OLD',        &
+            ERR=800,IOSTAT=IERR)
+      REWIND (NDSI)
+      READ (NDSI,'(A)',END=801,ERR=802,IOSTAT=IERR) COMSTR
+      IF (COMSTR.EQ.' ') COMSTR = '$'
+      WRITE (NDSO,901) COMSTR
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 2.  Read model definition file.
+!
+      CALL W3IOGR ( 'READ', NDSM )
+      WRITE (NDSO,902) GNAME
+      ALLOCATE ( FX(NX,NY), FY(NX,NY), FA(NX,NY),  BADPOINTS(NX,NY) )
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 3.a Read types from input file.
+!
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) IDFLD
+!
+! 3.b Check types.
+!
+      IF        ( IDFLD.EQ.'LEV' ) THEN
+          IFLD    = 2
+        ELSE IF ( IDFLD.EQ.'CUR' ) THEN
+          IFLD    = 4
+        ELSE
+          WRITE (NDSE,1030) IDFLD
+          CALL EXTCDE ( 1 )
+        END IF
+!
+! 3.c Additional input for constituents and time
+!
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      READ (NDSI,'(A)',END=801,ERR=802,IOSTAT=IERR) TIDECONSTNAMES
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      TIDECON_PRNAMES(:)=''
+      CALL STRSPLIT(TIDECONSTNAMES,TIDECON_PRNAMES)
+!
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      READ (NDSI,'(A)',END=801,ERR=802,IOSTAT=IERR) TIDECONSTNAMES
+      TIDECON_MAXNAMES(:)=''
+      CALL STRSPLIT(TIDECONSTNAMES,TIDECON_MAXNAMES)
+!
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      TIDECON_MAXVALS(:)=''
+      READ (NDSI,'(A)',END=801,ERR=802,IOSTAT=IERR) TIDECONSTNAMES
+      CALL STRSPLIT(TIDECONSTNAMES,TIDECON_MAXVALS)
+!
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) TIDE_START,PRTIDE_DT,TIDE_END
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) FILENAMEXT
+!
+      CALL W3FLDO ('READ', IDFLD, NDSF, NDST,     &
+                                  NDSE, NX, NY, GTYPE,               &
+                                  IERR, FILENAMEXT, '', TIDEFLAGIN=FLAGTIDE )
+!
+      IF (FLAGTIDE.NE.1) GOTO 803 
+!
+      CALL VUF_SET_PARAMETERS
+      ALLOCATE(V_ARG(170,1),F_ARG(170,1),U_ARG(170,1))  ! to be removed later ...
+! 
+! Reads tidal amplitudes and phases        
+!
+!
+      CALL W3FLDTIDE1 ( 'READ',  NDSF, NDST, NDSE, NX, NY, IDFLD, IERR )
+      CALL W3FLDTIDE2 ( 'READ',  NDSF, NDST, NDSE, NX, NY, IDFLD, 0, IERR )
+      CLOSE(NDSF)
+!
+! Counts the number of tidal constituents
+!
+      CALL TIDE_FIND_INDICES_PREDICTION(TIDECON_PRNAMES,PR_INDS,TIDE_PRMF)
+      TIDE_MAX=0
+      TIDE_MAXI=0
+      DO WHILE (len_trim(TIDECON_MAXNAMES(TIDE_MAXI+1)).NE.0)
+        TIDE_MAXI=TIDE_MAXI+1
+        DO J=1,TIDE_MF
+          IF (TRIM(TIDECON_NAME(J)).EQ.TRIM(TIDECON_MAXNAMES(TIDE_MAXI))) THEN 
+            TIDE_MAX=TIDE_MAX+1
+            INDMAX(TIDE_MAX)=J
+            READ(TIDECON_MAXVALS(TIDE_MAXI),*) MAXVALCON(TIDE_MAX)
+            WRITE(6,*) 'Maximum allowed value for amplitude:',J,TRIM(TIDECON_NAME(J)),MAXVALCON(TIDE_MAX)
+            END IF
+          END DO
+        END DO
+!
+! Now writes new file 
+!
+      FLAGTIDE = 0
+      CALL W3FLDO ('WRITE', IDFLD, NDSDAT, NDST,     &
+                                  NDSE, NX, NY, GTYPE,               &
+                                  IERR, 'ww3', TIDEFLAGIN=FLAGTIDE)
+!
+! Loop on time steps
+!
+      DTTST  = DSEC21 ( TIDE_START , TIDE_END )
+      IF ( DTTST .LE. 0. .OR. PRTIDE_DT .LT. 1 ) GOTO 888 
+      TIME = TIDE_START
+      TIDE_KD0= 2415020
+!
+      TINDEX = 1
+!
+      DO    
+        DTTST  = DSEC21 ( TIME, TIDE_END )
+        IF ( DTTST .LT. 0. ) GOTO 888
+!
+        CALL STME21 ( TIME , IDTIME )
+        WRITE (NDSO,973) IDTIME
+
+        TIDE_HOUR = TIME2HOURS(TIME)
+!
+!*  THE ASTRONOMICAL ARGUMENTS ARE CALCULATED 
+!
+        d1=TIDE_HOUR/24.d0
+        d1=d1-dfloat(TIDE_kd0)-0.5d0
+        CALL ASTR(d1,h,pp,s,p,enp,dh,dpp,ds,dp,dnp)
+        INT24=24
+        INTDYS=int((TIDE_HOUR+0.00001)/INT24)
+        HH=TIDE_HOUR-dfloat(INTDYS*INT24)
+        TAU=HH/24.D0+H-S
+
+!
+! Treatment of 'bad points'
+!
+        BADPOINTS(:,:)=0
+        NBAD =0
+        DO IY = 1, NY
+          DO IX = 1, NX 
+            CALL SETVUF_FAST(h,pp,s,p,enp,dh,dpp,ds,dp,dnp,tau,YGRD(IY,IX),TIDE_FX,UX,VX)
+            IF (TINDEX.EQ.1) THEN 
+              TIDEOK=1
+              DO I=1,TIDE_MAX
+                IF (ABS(TIDAL_CONST(IX,IY,INDMAX(I),1,1)) .GT.MAXVALCON(I) &
+                  .OR.ABS(TIDAL_CONST(IX,IY,INDMAX(I),2,1)) .GT.MAXVALCON(I)) & 
+                  TIDEOK = 0
+                  BADPOINTS(IX,IY) = BADPOINTS(IX,IY) + (1-TIDEOK)
+                END DO
+                IF (BADPOINTS(IX,IY).GT.0) THEN 
+                  NBAD = NBAD +1
+                  WRITE(NDSE,*) 'BAD POINT:',IX,IY,NBAD, &
+                     TIDAL_CONST(IX,IY,:,1,1),'##',TIDAL_CONST(IX,IY,:,2,1)
+                  END IF
+              END IF
+            END DO
+          END DO
+!   
+        DO ITER=1,2
+        DO IY = 1, NY
+          DO IX = 1, NX 
+            IF (TINDEX.EQ.1) THEN 
+              IF (BADPOINTS(IX,IY).GT.0) THEN 
+                TIDAL_CONST(IX,IY,:,1,1)=0
+                TIDAL_CONST(IX,IY,:,2,1)=0
+                IF (TIDEFILL.AND.(GTYPE.EQ.UNGTYPE)) THEN 
+!
+! Performs a vector sum of tidal constituents over neighbor nodes
+!  
+                   DO J=1, TIDE_MF 
+                     DO K=1, 2
+                      AMPCOS = 0
+                      AMPSIN = 0
+                      SUMOK = 0
+                      DO IND=1,COUNTCON(IX) 
+                        IX2=VNEIGH(IX,IND)
+                        IF (BADPOINTS(IX2,IY).EQ.0) THEN 
+                          SUMOK = SUMOK + 1
+                          AMPCOS = AMPCOS+TIDAL_CONST(IX2,IY,J,K,1)*COS(TIDAL_CONST(IX2,IY,J,K,2)*DERA)
+                          AMPSIN = AMPSIN+TIDAL_CONST(IX2,IY,J,K,1)*SIN(TIDAL_CONST(IX2,IY,J,K,2)*DERA)
+                          END IF
+                        END DO
+                      IF (SUMOK.GT.1) THEN 
+!
+! Finalizes the amplitude and phase calculation from COS and SIN. Special case for mean value Z0. 
+!
+                        IF (TIDECON_NAME(J).NE.'Z0   ') THEN 
+                          TIDAL_CONST(IX,IY,J,K,1) = SQRT(AMPCOS**2+AMPSIN**2)/SUMOK
+                          TIDAL_CONST(IX,IY,J,K,2) = ATAN2(AMPSIN,AMPCOS)/DERA
+                        ELSE
+                          TIDAL_CONST(IX,IY,J,K,1) = AMPCOS/SUMOK
+                          TIDAL_CONST(IX,IY,J,K,2) = 0.
+                          END IF
+                        IF(K.EQ.2.AND.J.EQ.TIDE_MF) THEN 
+                          NBAD=NBAD-1
+                          BADPOINTS(IX,IY) = 0
+                          END IF 
+
+                         ENDIF
+                       END DO
+                     END DO
+                   END IF
+                 END IF
+              END IF
+            END DO
+          END DO
+          END DO
+
+        IF (TINDEX.EQ.1) WRITE(NDSE,*) 'Number of remaining bad points:',NBAD
+
+!
+! For currents: 2 components
+!
+        IF (IFLD.EQ.4) THEN 
+        DO IY = 1, NY
+          DO IX = 1, NX 
+            WCURTIDEX = 0.
+            WCURTIDEY = 0.
+            DO I=1,TIDE_PRMF
+              J=PR_INDS(I)
+              IF (TRIM(TIDECON_NAME(J)).EQ.'Z0') THEN 
+                 WCURTIDEX = WCURTIDEX+TIDAL_CONST(IX,IY,J,1,1)
+                 WCURTIDEY = WCURTIDEY+TIDAL_CONST(IX,IY,J,2,1)
+              ELSE 
+                TIDE_ARGX=(VX(J)+UX(J))*twpi-TIDAL_CONST(IX,IY,J,1,2)*DERA
+                TIDE_ARGY=(VX(J)+UX(J))*twpi-TIDAL_CONST(IX,IY,J,2,2)*DERA
+                WCURTIDEX = WCURTIDEX+TIDE_FX(J)*TIDAL_CONST(IX,IY,J,1,1)*COS(TIDE_ARGX)
+                WCURTIDEY = WCURTIDEY+TIDE_FX(J)*TIDAL_CONST(IX,IY,J,2,1)*COS(TIDE_ARGY)    
+                END IF         
+              END DO
+            IF (ABS(WCURTIDEX).GT.10..OR.ABS(WCURTIDEY).GT.10.)  &
+            WRITE(NDSE,*) &
+             'WARNING: VERY STRONG CURRENT... BAD CONSTITUENTS?', &
+                    IX, WCURTIDEX, WCURTIDEY ,  TIDAL_CONST(IX,IY,:,1,1),'##',TIDAL_CONST(IX,IY,:,2,1)
+            FX(IX,IY) = WCURTIDEX
+            FY(IX,IY) = WCURTIDEY
+            FA(IX,IY) = 0.
+            END DO
+          END DO
+          END IF
+!
+! For water levels: only 1 component
+!
+        IF (IFLD.EQ.2) THEN 
+        DO IY = 1, NY
+          DO IX = 1, NX 
+
+            CALL SETVUF_FAST(h,pp,s,p,enp,dh,dpp,ds,dp,dnp,tau,YGRD(IY,IX),TIDE_FX,UX,VX)
+!
+! Removes unlikely values ... 
+!
+            IF (TINDEX.EQ.1) THEN 
+              TIDEOK=1
+              DO I=1,TIDE_MAX
+                IF (ABS(TIDAL_CONST(IX,IY,INDMAX(I),1,1)) .GT.MAXVALCON(I)) & 
+                  TIDEOK = 0
+                END DO
+              IF (TIDEOK.EQ.0) THEN   
+                WRITE(NDSE,*) 'BAD POINT:',IX,IY, &
+                     TIDAL_CONST(IX,IY,:,1,1)
+                TIDAL_CONST(IX,IY,:,1,1)=0
+                END IF
+              END IF   
+
+            WCURTIDEX = 0.
+            DO I=1,TIDE_PRMF
+              J=PR_INDS(I)
+              IF (TRIM(TIDECON_NAME(J)).EQ.'Z0') THEN 
+                 WCURTIDEX = WCURTIDEX+TIDAL_CONST(IX,IY,J,1,1)
+              ELSE 
+                TIDE_ARGX=(VX(J)+UX(J))*twpi-TIDAL_CONST(IX,IY,J,1,2)*DERA
+                WCURTIDEX = WCURTIDEX+TIDE_FX(J)*TIDAL_CONST(IX,IY,J,1,1)*COS(TIDE_ARGX)
+                END IF         
+              END DO
+
+            FX(IX,IY) = 0.       
+            FY(IX,IY) = 0.
+            FA(IX,IY) = WCURTIDEX
+            END DO
+          END DO
+          END IF
+        CALL W3FLDG ('WRITE', IDFLD, NDSDAT, NDST, NDSE, NX, NY,  &
+                         NX, NY, TIME, TIME, TIME, FX, FY, FA, TIME,  &
+                         FX, FY, FA, IERR)
+
+!
+! Increments the clock
+!
+        CALL TICK21 ( TIME, FLOAT(PRTIDE_DT) )
+        TINDEX = TINDEX +1 
+        END DO
+!
+      GOTO 888
+!
+! Error escape locations
+!
+  800 CONTINUE
+      WRITE (NDSE,1000) IERR
+      CALL EXTCDE ( 40 )
+!
+  801 CONTINUE
+      WRITE (NDSE,1001)
+      CALL EXTCDE ( 41 )
+!
+  802 CONTINUE
+      WRITE (NDSE,1002) IERR
+      CALL EXTCDE ( 42 )
+!
+  803 CONTINUE
+      WRITE (NDSE,1003) IERR
+      CALL EXTCDE ( 43 )
+!
+  888 CONTINUE
+!
+! Formats
+!
+  900 FORMAT (/15X,'  *** WAVEWATCH III  tide prediction ***  '/ &
+               15X,'==============================================='/)
+  901 FORMAT ( '  Comment character is ''',A,''''/)
+  902 FORMAT ( '  Grid name : ',A/)
+  973 FORMAT ( '           Time : ',A)
+!
+ 1000 FORMAT (/' *** WAVEWATCH III ERROR IN W3PRTIDE : '/               &
+               '     ERROR IN OPENING INPUT FILE'/                    &
+               '     IOSTAT =',I5/)
+!
+ 1001 FORMAT (/' *** WAVEWATCH III ERROR IN W3PRTIDE : '/               &
+               '     PREMATURE END OF INPUT FILE'/)
+!
+ 1002 FORMAT (/' *** WAVEWATCH III ERROR IN W3PRTIDE : '/               &
+               '     ERROR IN READING FROM INPUT FILE'/               &
+               '     IOSTAT =',I5/)
+!
+ 1003 FORMAT (/' *** WAVEWATCH III ERROR IN W3PRTIDE : '/               &
+               '     THE INPUT FILE DOES NOT CONTAIN TIDAL DATA'/)
+!
+ 1030 FORMAT (/' *** WAVEWATCH III ERROR IN W3PRTIDE : '/               &
+               '     ILLEGAL FIELD ID -->',A,'<--'/)
+!
+!/
+!/ End of W3PRTIDE ----------------------------------------------------- /
+!/
+      END PROGRAM W3PRTIDE

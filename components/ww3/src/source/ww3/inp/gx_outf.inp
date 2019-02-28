@@ -1,0 +1,29 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Grid output post-processing ( GrADS )                  $
+$--------------------------------------------------------------------- $
+$ Time, time increment and number of outputs.
+$
+  19680606 000000  3600. 25
+$
+$ Output request flags identifying fields as in ww3_shel.inp. See that
+$ file for a full documentation of field output options. Namelist type
+$ selection is used here (for alternative F/T flags, see ww3_shel.inp).
+$
+  N
+  DPT HS FP T01
+$
+$----------------------------------------------------------------
+$ Grid range in discrete counters IXmin,max, IYmin,max, flags for
+$ including sea and boundary points in map
+$
+  0 999 0 999  T T
+$
+$ NOTE : In the Cartesian grid version of the code, X and Y are
+$        converted to longitude and latitude assuming that 1 degree
+$        equals 100 km if the maximum of X or Y is larger than 1000km.
+$        For maxima between 100 and 1000km 1 degree is assumed to be
+$        10km etc. Adjust labels in GrADS scripts accordingly.
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

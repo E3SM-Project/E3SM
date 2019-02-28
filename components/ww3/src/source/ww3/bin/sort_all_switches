@@ -1,0 +1,190 @@
+#!/bin/sh
+# --------------------------------------------------------------------------- #
+# sort_all_switches:  Run sort_switch on known switch files.                  #
+#                                                                             #
+# use        : sort_all_switches [options] switch_file                        #
+#              See usage function for options.                                #
+#                                                                             #
+# error codes : Program ends if error occurs in sort_switch.                  #
+#                                                                             #
+# remarks:                                                                    #
+#   * Use all_switches to update data in 1.a.6.                               #
+#                                                                             #
+#                                                      Hendrik L. Tolman      #
+#                                                      November 2013          #
+#                                                                             #
+#    Copyright 2013 National Weather Service (NWS),                           #
+#       National Oceanic and Atmospheric Administration.  All rights          #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                   #
+#       No unauthorized use without permission.                               #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# 1. Preparations                                                             #
+# --------------------------------------------------------------------------- #
+# 1.a Internal variables
+
+  set -e
+
+# 1.a.1 Setup file
+
+# The following line must not be removed: it is a switch for local install
+# so that all bin scripts point to the local wwatch3.env
+  export ww3_env=/users/sbrus/climate/ww3/wwatch3.env
+# For manual install (without install_ww3_tar or install_ww3_svn) make sure to
+# either use the generic ww3_env or to add your own ww3_env="${my_directory}"
+
+  if [ ${WWATCH3_ENV} ]; then ww3_env="${WWATCH3_ENV}"; fi # alternate
+
+  home_dir=`pwd`
+
+# 1.a.2 Usage function
+
+  scriptname="`basename $0`"
+  optstr="hu"
+
+  usage ()
+{
+cat 2>&1 << EOF
+
+Usage: $scriptname [options]
+Options:
+  -h               : help, print this.
+  -u               : allow updating (adding) switches,
+                     otherwise this gives an error exit
+EOF
+}
+ 
+# 1.a.3 Process input (part 1)
+
+  args=`getopt $optstr $*`
+
+  if [ $? != 0 ]
+  then
+    usage
+    exit 1
+  fi
+
+  set -- $args
+
+  while :
+  do
+    case "$1" in
+    -h) help=1 ;;
+    -u) update=1 ;;
+    --) break ;;
+    esac
+    shift
+  done
+  shift
+
+  if [ $help ]
+  then
+    usage
+    exit 1
+  fi
+
+# 1.a.4 Setup WW3 environment
+
+  if [ -f $ww3_env ]
+  then
+    set `grep WWATCH3_DIR $ww3_env` ; shift
+    main_dir="$*"
+    set `grep WWATCH3_TMP $ww3_env` ; shift
+    temp_dir="$*"
+    set `grep WWATCH3_SOURCE $ww3_env` ; shift
+    source="$*"
+    set `grep WWATCH3_LIST $ww3_env` ; shift
+    list="$*"
+  else
+    echo "*** Set-up file $ww3_env not found ***"; echo ' '
+    exit 3
+  fi
+
+# 1.a.5 Other parameters
+
+  options='-s -r'
+
+  if [ "$update" ] ; then
+    options="$options -u" ; fi
+
+  i_count='0'
+
+# 1.b ID header  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  echo ' '
+  echo '            ********************************************'
+  echo '          *** sorting most WAVEWATCH III switch files ***'
+  echo '            *******************************************'
+  echo ' '
+  echo " Main directory      : $main_dir"
+  echo " sort_switch options : $options"
+  echo ' '
+
+# --------------------------------------------------------------------------- #
+# 2. Switches in bin directory                                                #
+# --------------------------------------------------------------------------- #
+
+  echo ' '
+  echo " WAVEWATCH III bin directory ..."
+  echo " -------------------------------"
+  cd $main_dir/bin
+
+  for file in switch*
+  do
+    echo "   processing $file ..."
+    sort_switch $options $file
+    if [ "$?" != '0' ] ; then
+      exit 1 ; fi
+    i_count=`expr $i_count + 1`
+  done
+
+# --------------------------------------------------------------------------- #
+# 3. Switches in regtests directory                                           #
+# --------------------------------------------------------------------------- #
+
+  echo ' '
+  echo " WAVEWATCH III regtests directory ..."
+  echo " ------------------------------------"
+  cd $main_dir/regtests
+
+  for dir1 in `ls`
+  do
+    if [ -d $dir1 ] && [ "$dir1" != 'bin' ]
+    then
+      echo "   Directory $dir1 ..."
+      cd $dir1
+      for dir2 in `ls -d input*`
+      do
+        echo "     Directory $dir2 ..."
+        cd $dir2
+        for file in switch*
+        do
+          echo "       processing $file ..."
+          sort_switch $options $file
+          if [ "$?" != '0' ] ; then
+            exit 1 ; fi
+          i_count=`expr $i_count + 1`
+        done
+        cd ..
+      done
+      cd ..
+    fi
+  done
+
+# --------------------------------------------------------------------------- #
+# x. End of program ID / clean up                                             #
+# --------------------------------------------------------------------------- #
+
+# cd $home_dir
+# rm -rf $temp_dir
+
+  echo ' '
+  echo " A total of $i_count switch files processed."
+  echo ' '
+  echo ' '
+  echo '                     *************************'
+  echo '                   *** end of switch sorting ***'
+  echo '                     *************************'
+  echo ' '
+
+# End of sort_all_switches -------------------------------------------------- #

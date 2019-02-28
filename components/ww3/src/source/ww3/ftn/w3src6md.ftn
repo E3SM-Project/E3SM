@@ -1,0 +1,1040 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+   MODULE W3SRC6MD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III      NOAA/NCEP/NOPP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :            Apr-2016 |
+!/                  +-----------------------------------+
+!/
+!/    29-May-2009 : Origination (w3srcxmd.ftn)          ( version 3.14 )
+!/    10-Feb-2011 : Implementation of source terms      ( version 4.04 )
+!/                                                         (S. Zieger)
+!/
+!/    Copyright 2009 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!      Observation-based wind input and dissipation after Donelan et al (2006),
+!      and Babanin et al. (2010). Parameterisation is based on the field 
+!      data from Lake George, Australia. Initial implementation of input 
+!      and dissipation is based on work from Tsagareli et al. (2010) and 
+!      Rogers et al. (2012). Parameterisation extended and account for
+!      negative input due to opposing winds (see Donelan et al, 2006) and
+!      the vector version of the stress computation.
+!
+!      References: 
+!       Babanin   et al. 2010: JPO   40(4)  667- 683
+!       Donelan   et al. 2006: JPO   36(8) 1672-1689
+!       Tsagareli et al. 2010: JPO   40(4)  656- 666
+!       Rogers    et al. 2012: JTECH 29(9) 1329-1346
+!
+!  2. Variables and types :
+!
+!      Not applicable. 
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      W3SPR6    Subr. Public   Integral parameter calculation following !/ST1.
+!      W3SIN6    Subr. Public   Observation-based wind input.
+!      W3SDS6    Subr. Public   Observation-based dissipation.
+!
+!      IRANGE    Func. Private  Generate a sequence of integer values.
+!      LFACTOR   Func. Private  Calculate reduction factor for Sin.
+!      TAUWINDS  Func. Private  Normal stress calculation for Sin.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Remarks :
+!
+!  6. Switches :
+!  
+!      !/S   Enable subroutine tracing.
+!      !/T6  Enable test output for wind input and dissipation subroutines.
+!
+!  7. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      PUBLIC  ::  W3SPR6, W3SIN6, W3SDS6
+      PRIVATE ::  LFACTOR, TAUWINDS, IRANGE
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SPR6 (A, CG, WN, EMEAN, FMEAN, WNMEAN, AMAX, FP)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III      NOAA/NCEP/NOPP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         11-Feb-2011 |
+!/                  +-----------------------------------+
+!/
+!/    08-Oct-2007 : Origination.                        ( version 3.13 )
+!/    11-Feb-2011 : Implementation based on W3SPR1      ( version 4.04 )
+!/                                                        (S. Zieger)
+!/
+!  1. Purpose :
+!      Calculate mean wave parameters.
+!
+!  2. Method :
+!      See source term routines.
+!
+!  3. Parameters :
+!
+!      Parameter list
+!     ----------------------------------------------------------------
+!      A      R.A. I  Action as a function of direction and wavenumber
+!      CG     R.A. I  Group velocities
+!      WN     R.A. I  Wavenumbers
+!      EMEAN  REAL O  Mean wave energy
+!      FMEAN  REAL O  Mean wave frequency
+!      WNMEAN REAL O  Mean wavenumber
+!      AMAX   REAL O  Maximum action density in spectrum
+!      FP     REAL O  Peak frequency (rad)
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. W3SRCEMD Source term integration.
+!      W3EXPO    Subr.   N/A    Point output post-processor.
+!      GXEXPO    Subr.   N/A    GrADS point output post-processor.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!      See source code.
+!
+!  9. Switches :
+!
+!      !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: TPIINV
+      USE W3GDATMD,  ONLY: NK, NTH, SIG, DTH, DDEN, FTE, FTF, FTWN, DSII
+      USE W3ODATMD,  ONLY: NDST, NDSE
+      USE W3SERVMD,  ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      REAL, INTENT(IN)        :: A(NTH,NK), CG(NK), WN(NK)
+      REAL, INTENT(OUT)       :: EMEAN, FMEAN, WNMEAN, AMAX, FP
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+      INTEGER                 :: IMAX
+      REAL                    :: EB(NK), EBAND
+      REAL, PARAMETER         :: HSMIN = 0.05
+      REAL                    :: COEFF(3)
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3SPR6')
+!
+!
+! 1.  Integrate over directions -------------------------------------- /
+      EB   = SUM(A,1) * DDEN / CG
+      AMAX = MAXVAL(A)
+!
+! 2.  Integrate over wavenumbers ------------------------------------- /
+      EMEAN  = SUM(EB)
+      FMEAN  = SUM(EB / SIG(1:NK))
+      WNMEAN = SUM(EB / SQRT(WN))
+!
+! 3.  Add tail beyond discrete spectrum and get mean pars ------------ /
+!     ( DTH * SIG absorbed in FTxx )
+      EBAND  = EB(NK) / DDEN(NK)
+      EMEAN  = EMEAN  + EBAND * FTE
+      FMEAN  = FMEAN  + EBAND * FTF
+      WNMEAN = WNMEAN + EBAND * FTWN
+!
+! 4.  Final processing
+      FMEAN  = TPIINV * EMEAN / MAX(1.0E-7, FMEAN)
+      WNMEAN = ( EMEAN / MAX(1.0E-7,WNMEAN) )**2
+!
+! 5.  Determine peak frequency using a weighted integral ------------- /
+!     Young (1999) p239: integrate f F**4 df / integrate F**4 df ----- /
+      FP    = 0.0
+!
+      IF (4.0*SQRT(EMEAN) .GT. HSMIN) THEN
+         EB = SUM(A,1) * SIG /CG * DTH
+         FP = SUM(SIG * EB**4 * DSII) / SUM(EB**4 * DSII)
+         FP = FP * TPIINV
+      END IF
+!
+      RETURN
+!/
+!/ End of W3SPR6 ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SPR6
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SIN6 (A, CG, WN2, USTAR, USDIR, CD, TAUWX, TAUWY, &
+                         TAUNWX, TAUNWY, S, D )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III      NOAA/NCEP/NOPP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :            Apr-2016 |
+!/                  +-----------------------------------+
+!/
+!/    20-Dec-2010 : Origination.                        ( version 4.04 )
+!/                                                        (S. Zieger)
+!/
+!  1. Purpose :
+!
+!      Observation-based source term for wind input after Donelan, Babanin, 
+!      Young and Banner (Donelan et al ,2006) following the implementation
+!      by Rogers et al. (2012).
+!
+!      References:
+!       Donelan et al. 2006: JPO 36(8) 1672-1689.
+!       Rogers  et al. 2012: JTECH 29(9) 1329-1346
+!
+!  2. Method :
+!
+!      Sin = B * E 
+!
+!  3. Parameters :
+!
+!      Parameter list
+!     ----------------------------------------------------------------
+!      A¹       R.A. I  Action density spectrum
+!      CG       R.A. I  Group velocities
+!      WN2¹     R.A. I  Wavenumbers
+!      USTAR    Real I  Friction velocity
+!      USDIR    Real I  Direction of USTAR
+!      CD       Real I  Drag coefficient
+!      S¹       R.A. O  Source term 
+!      D¹       R.A. O  Diagonal term of derivative
+!      TAUWX-Y  Real O  Component of the wave-supported stress
+!      TAUNWX-Y Real O  Component of the negative part of the stress
+!      ¹ Stored as 1-D array with dimension NTH*NK (column by column).
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      LFACTOR   Subr. W3SRC6MD 
+!      IRANGE    Func. W3SRC6MD 
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. W3SRCEMD Source term integration.
+!      W3EXPO    Subr.   N/A    Point output post-processor.
+!      GXEXPO    Subr.   N/A    GrADS point output post-processor.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!      None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!      See comments in source code.
+!
+!  9. Switches :
+!
+!      !/S   Enable subroutine tracing.
+!      !/T6  Test and diagnostic output for tail reduction.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: DAIR, DWAT, TPI, GRAV
+      USE W3GDATMD,  ONLY: NK, NTH, NSPEC, DTH, SIG2, DDEN2
+      USE W3GDATMD,  ONLY: ECOS, ESIN, SIN6A0
+      USE W3ODATMD,  ONLY: NDSE
+      USE W3SERVMD,  ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+      REAL, INTENT(IN)       :: A (NSPEC), CG(NK), WN2(NSPEC)
+      REAL, INTENT(IN)       :: USTAR, USDIR, CD
+      REAL, INTENT(OUT)      :: TAUWX, TAUWY, TAUNWX, TAUNWY
+      REAL, INTENT(OUT)      :: S(NSPEC), D(NSPEC)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/S      INTEGER, SAVE          :: IENT = 0
+      INTEGER                :: IK, ITH, IKN(NK)
+      REAL                   :: COSU, SINU, U10
+      REAL, DIMENSION(NSPEC) :: CG2, ECOS2, ESIN2, DSII2
+      REAL, DIMENSION(NK)    :: DSII, SIG, WN
+      REAL                   :: K(NTH,NK), SDENSIG(NTH,NK)           ! 1,2,5)
+      REAL, DIMENSION(NK)    :: ADENSIG, KMAX, ANAR, SQRTBN          ! 1,2,3)
+      REAL, DIMENSION(NSPEC) :: W1, W2, SQRTBN2, CINV2               ! 4,7)
+      REAL, DIMENSION(NK)    :: LFACT, CINV                          ! 5)
+!/ ------------------------------------------------------------------- /
+!/S      CALL STRACE (IENT, 'W3SIN6')
+!
+!/ 0) --- set up a basic variables ----------------------------------- /
+      COSU   = COS(USDIR)
+      SINU   = SIN(USDIR)
+!
+      TAUNWX = 0.
+      TAUNWY = 0.
+      TAUWX  = 0.
+      TAUWY  = 0.
+!
+!/    --- scale  friction velocity to wind speed (10m) in 
+!/        the boundary layer ----------------------------------------- /
+      U10    = 28.0 * USTAR          ! Scale according to Komen et al (1984).
+!
+      ECOS2  = ECOS(1:NSPEC)         ! Only indices from 1 to NSPEC
+      ESIN2  = ESIN(1:NSPEC)         ! are requested.
+!
+      IKN    = IRANGE(1,NSPEC,NTH)   ! Index vector for elements of 1 ... NK 
+!                                    ! such that e.g. SIG(1:NK) = SIG2(IKN).
+      DSII2  = DDEN2 / DTH / SIG2    ! Frequency bandwidths (int.)  (rad)
+      DSII   = DSII2(IKN)
+      SIG    = SIG2(IKN)
+      WN     = WN2(IKN)
+      CINV2  = WN2 / SIG2            ! inverse phase speed
+!
+      DO ITH = 1, NTH
+         CG2(IKN+(ITH-1)) = CG       ! Apply CG to all directions.
+      END DO
+!
+!/ 1) --- calculate 1d action density spectrum (A(sigma)) and 
+!/        zero-out values less than 1.0E-32 to avoid NaNs when 
+!/        computing directional narrowness in step 4). --------------- /
+      K       = RESHAPE(A,(/ NTH,NK /))
+      ADENSIG = SUM(K,1) * SIG * DTH ! Integrate over directions.
+!
+!/ 2) --- calculate normalised directional spectrum K(theta,sigma) --- /
+      KMAX = MAXVAL(K,1)
+      DO IK = 1,NK
+         IF (KMAX(IK).LT.1.0E-34) THEN
+            K(1:NTH,IK) = 1.
+         ELSE
+            K(1:NTH,IK) = K(1:NTH,IK)/KMAX(IK)
+         END IF
+      END DO
+!
+!/ 3) --- calculate normalised spectral saturation BN(IK) ------------ /
+      ANAR    = 1.0/( SUM(K,1) * DTH )          ! directional narrowness
+!
+      SQRTBN  = SQRT( ANAR * ADENSIG * WN**3 )
+      DO ITH  = 1, NTH
+         SQRTBN2(IKN+(ITH-1)) = SQRTBN          ! Calculate SQRTBN for
+      END DO                                    ! the entire spectrum.
+!
+!/ 4) --- calculate growth rate GAMMA and S for all directions for
+!/        following winds (U10/c - 1 is positive; W1) and in 7) for
+!/        adverse winds (U10/c -1 is negative, W2). W1 and W2 
+!/        complement one another. ------------------------------------ /
+      W1      = MAX( 0., U10 * CINV2* ( ECOS2*COSU + ESIN2*SINU ) - 1. )**2
+!
+      D       = (DAIR / DWAT) * SIG2 * &
+                (2.8 - ( 1. + TANH(10.*SQRTBN2*W1 - 11.) )) *SQRTBN2*W1 
+!
+      S       = D * A
+!
+!/ 5) --- calculate reduction factor LFACT using non-directional 
+!         spectral density of the wind input ------------------------- /
+      CINV    = CINV2(IKN)
+      SDENSIG = RESHAPE(S*SIG2/CG2,(/ NTH,NK /))
+      CALL LFACTOR(SDENSIG, CINV, U10, USTAR, USDIR, SIG, DSII, &
+                   LFACT, TAUWX, TAUWY                          )
+!
+!/ 6) --- apply reduction (LFACT) to the entire spectrum ------------- /
+      IF (SUM(LFACT) .LT. NK) THEN
+         DO ITH = 1, NTH
+            D(IKN+ITH-1) = D(IKN+ITH-1) * LFACT
+         END DO
+         S = D * A
+      END IF
+!
+!/ 7) --- compute negative wind input for adverse winds. negative 
+!/        growth is typically smaller by a factor of ~2.5 (=.28/.11) 
+!/        than those for the favourable winds [Donelan, 2006, Eq. (7)]. 
+!/        the factor is adjustable with NAMELIST parameter in 
+!/        ww3_grid.inp: '&SIN6 SINA0 = 0.04 /' ----------------------- /
+      IF (SIN6A0.GT.0.0) THEN
+        W2    = MIN( 0., U10 * CINV2* ( ECOS2*COSU + ESIN2*SINU ) - 1. )**2
+        D     = D - ( (DAIR / DWAT) * SIG2 * SIN6A0 *                   &
+                (2.8 - ( 1. + TANH(10.*SQRTBN2*W2 - 11.) )) *SQRTBN2*W2 )
+        S     = D * A
+!     --- compute negative component of the wave supported stresses
+!         from negative part of the wind input  ---------------------- /
+        SDENSIG = RESHAPE(S*SIG2/CG2,(/ NTH,NK /))
+        CALL TAU_WAVE_ATMOS(SDENSIG, CINV, SIG, DSII, TAUNWX, TAUNWY )
+      END IF
+!
+!/
+!/ End of W3SIN6 ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SIN6
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SDS6 (A, CG, WN, S, D)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         23-Jun-2010 |
+!/                  +-----------------------------------+
+!/
+!/    23-Jun-2010 : Origination.                        ( version 4.04 )
+!/                                                        (S. Zieger)
+!/
+!  1. Purpose :
+!
+!      Observation-based source term for dissipation after Babanin et al.
+!      (2010) following the implementation by Rogers et al. (2012). The 
+!      dissipation function Sds accommodates an inherent breaking term T1
+!      and an additional cumulative term T2 at all frequencies above the 
+!      peak. The forced dissipation term T2 is an integral that grows 
+!      toward higher frequencies and dominates at smaller scales
+!      (Babanin et al. 2010).
+!
+!      References:
+!       Babanin et al. 2010: JPO 40(4), 667-683
+!       Rogers  et al. 2012: JTECH 29(9) 1329-1346
+!
+!  2. Method :
+!
+!      Sds = (T1 + T2) * E
+!
+!  3. Parameters :
+!
+!      Parameter list
+!     ----------------------------------------------------------------
+!      A¹      R.A. I  Action density spectrum
+!      CG      R.A. I  Group velocities
+!      WN      R.A. I  Wavenumbers
+!      S¹      R.A. O  Source term (1-D version)
+!      D¹      R.A. O  Diagonal term of derivative
+!      ¹ Stored as 1-D array with dimension NTH*NK (column by column).
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. W3SRCEMD Source term integration.
+!      W3EXPO    Subr.   N/A    Point output post-processor.
+!      GXEXPO    Subr.   N/A    GrADS point output post-processor.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!      None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!      See source code.
+!
+!  9. Switches :
+!
+!      !/S   Enable subroutine tracing.
+!      !/T6  Test output for dissipation terms T1 and T2.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: GRAV, TPI
+      USE W3GDATMD,  ONLY: NK, NTH, NSPEC, DDEN, DSII, SIG2, DTH, XFR
+      USE W3GDATMD,  ONLY: SDS6A1, SDS6A2, SDS6P1, SDS6P2, SDS6ET
+      USE W3ODATMD,  ONLY: NDSE
+      USE W3SERVMD,  ONLY: EXTCDE
+!/T6     USE W3TIMEMD,  ONLY: STME21
+!/T6     USE W3WDATMD,  ONLY: TIME
+!/T6     USE W3ODATMD,  ONLY: NDST
+!/S      USE W3SERVMD,  ONLY: STRACE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+      REAL, INTENT(IN)  :: A(NSPEC), CG(NK), WN(NK)
+      REAL, INTENT(OUT) :: S(NSPEC), D(NSPEC)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/S      INTEGER, SAVE     :: IENT = 0
+      INTEGER           :: IK, ITH, IKN(NK)
+      REAL              :: FREQ(NK)     ! frequencies [Hz]
+      REAL              :: DFII(NK)     ! frequency bandwiths [Hz]
+      REAL              :: ANAR(NK)     ! directional narrowness
+      REAL              :: BNT          ! empirical constant for
+                                        ! wave breaking probability
+      REAL              :: EDENS (NK)   ! spectral density E(f)
+      REAL              :: ETDENS(NK)   ! threshold spec. density ET(f)
+      REAL              :: EXDENS(NK)   ! excess spectral density EX(f)
+      REAL              :: NEXDENS(NK)  ! normalised excess spectral density
+      REAL              :: T1(NK)       ! inherent breaking term
+      REAL              :: T2(NK)       ! forced dissipation term
+      REAL              :: T12(NK)      ! = T1+T2 or combined dissipation
+      REAL              :: ADF(NK), XFAC, EDENSMAX ! temp. variables
+!/T6     CHARACTER(LEN=23) :: IDTIME
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3SDS6')
+!
+!/ 0) --- Initialize essential parameters ---------------------------- /
+      IKN     = IRANGE(1,NSPEC,NTH)    ! Index vector for elements of 1,
+!                                      ! 2,..., NK such that for example
+!                                      ! SIG(1:NK) = SIG2(IKN).
+      FREQ    = SIG2(IKN)/TPI
+      ANAR    = 1.0
+      BNT     = 0.035**2
+      T1      = 0.0
+      T2      = 0.0
+      NEXDENS = 0.0
+!
+!/ 1) --- Calculate threshold spectral density, spectral density, and
+!/        the level of exceedence EXDENS(f) -------------------------- /
+      ETDENS  = ( TPI * BNT ) / ( ANAR * CG * WN**3 )
+      EDENS   = SUM(RESHAPE(A,(/ NTH,NK /)),1) * TPI * SIG2(IKN) * DTH / CG  ! E(f)
+      EXDENS  = MAX(0.0,EDENS-ETDENS)
+!
+!/    --- normalise by a generic spectral density -------------------- /
+      IF (SDS6ET) THEN                ! ww3_grid.inp: &SDS6 SDSET = T or F
+         NEXDENS = EXDENS / ETDENS    ! normalise by threshold spectral density
+      ELSE                            ! normalise by spectral density
+         EDENSMAX = MAXVAL(EDENS)*1E-5
+         IF (ALL(EDENS .GT. EDENSMAX)) THEN
+            NEXDENS = EXDENS / EDENS
+         ELSE
+            DO IK = 1,NK
+               IF (EDENS(IK) .GT. EDENSMAX) NEXDENS(IK) = EXDENS(IK) / EDENS(IK)
+            END DO
+         END IF
+      END IF
+!
+!/ 2) --- Calculate inherent breaking component T1 ------------------- /
+      T1 = SDS6A1 * ANAR * FREQ * (NEXDENS**SDS6P1)
+!
+!/ 3) --- Calculate T2, the dissipation of waves induced by 
+!/        the breaking of longer waves T2 ---------------------------- /
+      ADF    = ANAR * (NEXDENS**SDS6P2)
+      XFAC   = (1.0-1.0/XFR)/(XFR-1.0/XFR)
+      DO IK = 1,NK
+         DFII = DSII/TPI
+         IF (IK .GT. 1) DFII(IK) = DFII(IK) * XFAC
+         T2(IK) = SDS6A2 * SUM( ADF(1:IK)*DFII(1:IK) )
+      END DO
+!
+!/ 4) --- Sum up dissipation terms and apply to all directions ------- /
+      T12 = -1.0 * ( MAX(0.0,T1)+MAX(0.0,T2) ) 
+      DO ITH = 1, NTH
+         D(IKN+ITH-1) = T12
+      END DO 
+!
+      S = D * A
+!
+!/ 5) --- Diagnostic output (switch !/T6) ---------------------------- /
+!/T6     CALL STME21 ( TIME , IDTIME )
+!/T6     WRITE (NDST,270) 'T1*E',IDTIME(1:19),(T1*EDENS)
+!/T6     WRITE (NDST,270) 'T2*E',IDTIME(1:19),(T2*EDENS)
+!/T6     WRITE (NDST,271) SUM(SUM(RESHAPE(S,(/ NTH,NK /)),1)*DDEN/CG)
+!
+!/T6     270 FORMAT (' TEST W3SDS6 : ',A,'(',A,')',':',70E11.3) 
+!/T6     271 FORMAT (' TEST W3SDS6 : Total SDS  =',E13.5) 
+!/
+!/ End of W3SDS6 ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SDS6
+!/ ------------------------------------------------------------------- /
+!/
+      SUBROUTINE LFACTOR(S, CINV, U10, USTAR, USDIR, SIG, DSII, &
+                         LFACT, TAUWX, TAUWY                    )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         15-Feb-2011 |
+!/                  +-----------------------------------+
+!/
+!/    15-Feb-2011 : Implemented following Rogers et al. (2012)
+!/                                                        (S. Zieger)
+!
+!     Rogers et al. (2012) JTECH 29(9), 1329-1346
+!
+!  1. Purpose :
+!
+!      Numerical approximation for the reduction factor LFACTOR(f) to
+!      reduce energy in the high-frequency part of the resolved part
+!      of the spectrum to meet the constraint on total stress (TAU).
+!      The constraint is TAU <= TAU_TOT (TAU_TOT = TAU_WAV + TAU_VIS),
+!      thus the wind input is reduced to match our constraint.
+!
+!  2. Method :
+!
+!     1) If required, extend resolved part of the spectrum to 10Hz using
+!        an approximation for the spectral slope at the high frequency
+!        limit: Sin(F) prop. F**(-2) and for E(F) prop. F**(-5).
+!     2) Calculate stresses:
+!        total stress:     TAU_TOT  = DAIR * USTAR**2
+!        viscous stress:   TAU_VIS  = DAIR * Cv * U10**2 
+!        viscous stress (x,y-components):
+!                          TAUV_X   = TAU_VIS * COS(USDIR)
+!                          TAUV_Y   = TAU_VIS * SIN(USDIR)
+!        wave supported stress (x,y-components):    /10Hz
+!                          TAUW_X,Y = GRAV * DWAT * | [SinX,Y(F)]/C(F) dF
+!                                                   /
+!        total stress (input):   TAU  = SQRT( (TAUW_X + TAUV_X)**2  
+!                                     + (TAUW_Y + TAUV_Y)**2 )
+!     3) If TAU does not meet our constraint reduce the wind input
+!        using reduction factor: 
+!                          LFACT(F) = MIN(1,exp((1-U/C(F))*RTAU))
+!        Then alter RTAU and repeat 3) until our constraint is matched.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      S       R.A. I  Wind input energy density spectrum 
+!      CINV    R.A. I  Inverse phase speed                  1/C(sigma)
+!      U10     Real I  Wind speed (10m)
+!      USTAR   Real I  Friction velocity
+!      USDIR   Real I  Wind direction
+!      SIG     R.A. I  Relative frequencies [in rad.]
+!      DSII    R.A. I  Frequency bandwiths [in rad.]
+!      LFACTOR R.A. O  Factor array                       LFACT(sigma)
+!      TAUWX-Y Real O  Component of the wave-supported stress
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!      IRANGE    Func. Private  Index generator (ie, array addressing)
+!      TAUWINDS  Func. Private  Normal stress calculation (TAU_NRM)
+!     ----------------------------------------------------------------
+!
+!     ----------------------------------------------------------------
+!
+!  5. Error messages :
+!
+!      A warning is issued to NDST using format 280 if the iteration 
+!      procedure reaches the upper iteration limit (ITERMAX). In this 
+!      case the last approximation for RTAU is used.
+!
+!/
+      USE CONSTANTS, ONLY: DAIR, GRAV, TPI
+      USE W3GDATMD,  ONLY: NK, NTH, NSPEC, DTH, XFR, ECOS, ESIN
+      USE W3ODATMD,  ONLY: NDST
+      USE W3TIMEMD,  ONLY: STME21
+      USE W3WDATMD,  ONLY: TIME
+!/S      USE W3SERVMD, ONLY: STRACE
+      IMPLICIT NONE 
+!
+!/ ------ I/O parameters --------------------------------------------- /
+      REAL, INTENT(IN)  :: S(NTH,NK)      ! wind-input source term Sin
+      REAL, INTENT(IN)  :: CINV(NK)       ! inverse phase speed 
+      REAL, INTENT(IN)  :: U10            ! wind speed
+      REAL, INTENT(IN)  :: USTAR, USDIR   ! friction velocity & direction
+      REAL, INTENT(IN)  :: SIG(NK)        ! relative frequencies
+      REAL, INTENT(IN)  :: DSII(NK)       ! frequency bandwidths
+      REAL, INTENT(OUT) :: LFACT(NK)      ! correction factor
+      REAL, INTENT(OUT) :: TAUWX, TAUWY   ! normal stress components
+!
+!/    --- local parameters (in order of appearance) ------------------ /
+!/S      INTEGER, SAVE     :: IENT = 0
+      REAL, PARAMETER   :: FRQMAX  = 10.  ! Upper freq. limit to extrapolate to.
+      INTEGER, PARAMETER:: ITERMAX = 80   ! Maximum number of iterations to
+                                          ! find numerical solution for LFACT.
+      INTEGER           :: IK, NK10Hz, SIGN_NEW, SIGN_OLD
+!
+      REAL              :: ECOS2(NSPEC), ESIN2(NSPEC)
+      REAL, ALLOCATABLE :: IK10Hz(:), LF10Hz(:), SIG10Hz(:), CINV10Hz(:)
+      REAL, ALLOCATABLE :: SDENS10Hz(:), SDENSX10Hz(:), SDENSY10Hz(:)
+      REAL, ALLOCATABLE :: DSII10Hz(:), UCINV10Hz(:)
+      REAL              :: TAU_TOT, TAU, TAU_VIS, TAU_WAV
+      REAL              :: TAUVX, TAUVY, TAUX, TAUY
+      REAL              :: TAU_NND, TAU_INIT(2)
+      REAL              :: RTAU, DRTAU, ERR
+      LOGICAL           :: OVERSHOT
+      CHARACTER(LEN=23) :: IDTIME
+!
+!/ ------------------------------------------------------------------- /
+!/S      CALL STRACE (IENT, 'LFACTOR')
+!
+!/ 0) --- Find the number of frequencies required to extend arrays 
+!/        up to f=10Hz and allocate arrays --------------------------- /
+      NK10Hz = CEILING(ALOG(FRQMAX/(SIG(1)/TPI))/ALOG(XFR))+1
+      NK10Hz = MAX(NK,NK10Hz)
+!
+      ALLOCATE(IK10Hz(NK10Hz))
+      IK10Hz = REAL( IRANGE(1,NK10Hz,1) )
+!
+      ALLOCATE(SIG10Hz(NK10Hz))
+      ALLOCATE(CINV10Hz(NK10Hz))
+      ALLOCATE(DSII10Hz(NK10Hz))
+      ALLOCATE(LF10Hz(NK10Hz))
+      ALLOCATE(SDENS10Hz(NK10Hz))
+      ALLOCATE(SDENSX10Hz(NK10Hz))
+      ALLOCATE(SDENSY10Hz(NK10Hz))
+      ALLOCATE(UCINV10Hz(NK10Hz))
+!
+      ECOS2  = ECOS(1:NSPEC)
+      ESIN2  = ESIN(1:NSPEC)
+!
+!/ 1) --- Either extrapolate arrays up to 10Hz or use discrete spectral 
+!         grid per se. Limit the constraint to the positive part of the 
+!         wind input only. ---------------------------------------------- /
+      IF (NK .LT. NK10Hz) THEN
+         SDENS10Hz(1:NK)         = SUM(S,1) * DTH
+         SDENSX10Hz(1:NK)        = SUM(MAX(0.,S)*RESHAPE(ECOS2,(/NTH,NK/)),1) * DTH 
+         SDENSY10Hz(1:NK)        = SUM(MAX(0.,S)*RESHAPE(ESIN2,(/NTH,NK/)),1) * DTH 
+         SIG10Hz                 = SIG(1)*XFR**(IK10Hz-1.0)
+         CINV10Hz(1:NK)          = CINV
+         CINV10Hz(NK+1:NK10Hz)   = SIG10Hz(NK+1:NK10Hz)*0.101978
+         DSII10Hz                = 0.5 * SIG10Hz * (XFR-1.0/XFR)
+!
+!        --- Spectral slope for S_IN(F) is proportional to F**(-2) ------ /
+         SDENS10Hz(NK+1:NK10HZ)  = SDENS10Hz(NK)  * (SIG10HZ(NK)/SIG10HZ(NK+1:NK10HZ))**2 
+         SDENSX10Hz(NK+1:NK10Hz) = SDENSX10Hz(NK) * (SIG10Hz(NK)/SIG10Hz(NK+1:NK10Hz))**2
+         SDENSY10hz(NK+1:NK10Hz) = SDENSY10Hz(NK) * (SIG10Hz(NK)/SIG10Hz(NK+1:NK10Hz))**2
+      ELSE
+         SIG10Hz          = SIG
+         CINV10Hz         = CINV
+         DSII10Hz         = DSII
+         SDENS10Hz(1:NK)  = SUM(S,1) * DTH
+         SDENSX10Hz(1:NK) = SUM(MAX(0.,S)*RESHAPE(ECOS2,(/NTH,NK/)),1) * DTH 
+         SDENSY10Hz(1:NK) = SUM(MAX(0.,S)*RESHAPE(ESIN2,(/NTH,NK/)),1) * DTH 
+      END IF
+!
+!/ 2) --- Stress calculation ----------------------------------------- /
+!     --- The total stress ------------------------------------------- /
+      TAU_TOT  = USTAR**2 * DAIR
+!
+!     --- The viscous stress and check that it does not exceed
+!         the total stress. ------------------------------------------ /
+      TAU_VIS  = MAX(0.0, -5.0E-5*U10 + 1.1E-3) * U10**2 * DAIR
+      TAU_VIS  = MIN(0.9 * TAU_TOT, TAU_VIS)
+!
+      TAUVX    = TAU_VIS * COS(USDIR)
+      TAUVY    = TAU_VIS * SIN(USDIR)
+!
+!     --- The wave supported stress. --------------------------------- /
+      TAUWX    = TAUWINDS(SDENSX10Hz,CINV10Hz,DSII10Hz)   ! normal stress (x-component)
+      TAUWY    = TAUWINDS(SDENSY10Hz,CINV10Hz,DSII10Hz)   ! normal stress (y-component)
+      TAU_NND  = TAUWINDS(SDENS10Hz, CINV10Hz,DSII10Hz)   ! normal stress (non-directional)
+      TAU_WAV  = SQRT(TAUWX**2 + TAUWY**2)                ! normal stress (magnitude)
+      TAU_INIT = (/TAUWX,TAUWY/)                          ! unadjusted normal stress components
+!
+      TAUX     = TAUVX + TAUWX                            ! total stress (x-component)
+      TAUY     = TAUVY + TAUWY                            ! total stress (y-component)
+      TAU      = SQRT(TAUX**2  + TAUY**2)                 ! total stress (magnitude)
+      ERR      = (TAU-TAU_TOT)/TAU_TOT                    ! initial error
+!
+!/ 3) --- Find reduced Sin(f) = L(f)*Sin(f) to satisfy our constraint
+!/        TAU <= TAU_TOT --------------------------------------------- /
+      CALL STME21 ( TIME , IDTIME )
+      LF10Hz = 1.0
+      IK = 0
+!
+      IF (TAU .GT. TAU_TOT) THEN
+         OVERSHOT    = .FALSE.
+         RTAU        = ERR / 90.
+         DRTAU       = 2.0
+         SIGN_NEW    = INT(SIGN(1.0,ERR))
+         UCINV10Hz   = 1.0 - (U10 * CINV10Hz)
+!
+!/T6          WRITE (NDST,270) IDTIME, U10
+!/T6          WRITE (NDST,271) 
+         DO IK=1,ITERMAX
+            LF10Hz   = MIN(1.0, EXP(UCINV10Hz * RTAU) )
+!
+            TAU_NND  = TAUWINDS(SDENS10Hz *LF10Hz,CINV10Hz,DSII10Hz)
+            TAUWX    = TAUWINDS(SDENSX10Hz*LF10Hz,CINV10Hz,DSII10Hz)
+            TAUWY    = TAUWINDS(SDENSY10Hz*LF10Hz,CINV10Hz,DSII10Hz)
+            TAU_WAV  = SQRT(TAUWX**2 + TAUWY**2)                      
+!
+            TAUX     = TAUVX + TAUWX
+            TAUY     = TAUVY + TAUWY
+            TAU      = SQRT(TAUX**2 + TAUY**2)  
+            ERR      = (TAU-TAU_TOT) / TAU_TOT   
+!
+            SIGN_OLD = SIGN_NEW
+            SIGN_NEW = INT(SIGN(1.0, ERR))
+!/T6             WRITE (NDST,272) IK, RTAU, DRTAU, TAU, TAU_TOT, ERR, &
+!/T6                              TAUWX, TAUWY, TAUVX, TAUVY, TAU_NND
+!
+!        --- Slow down DRTAU when overshot. -------------------------- /
+            IF (SIGN_NEW .NE. SIGN_OLD) OVERSHOT = .TRUE.
+            IF (OVERSHOT) DRTAU = MAX(0.5*(1.0+DRTAU),1.00010)
+!
+            RTAU = RTAU * (DRTAU**SIGN_NEW)
+!
+            IF (ABS(ERR) .LT. 1.54E-4) EXIT
+         END DO
+!
+         IF (IK .GE. ITERMAX) WRITE (NDST,280) IDTIME(1:19), U10, TAU, &
+                        TAU_TOT, ERR, TAUWX, TAUWY, TAUVX, TAUVY,TAU_NND
+      END IF
+!
+      LFACT(1:NK) = LF10Hz(1:NK)
+!
+!/T6      WRITE (NDST,273) 'Sin ', IDTIME(1:19), SDENS10Hz*TPI
+!/T6      WRITE (NDST,273) 'SinR', IDTIME(1:19), SDENS10Hz*LF10Hz*TPI
+!/T6      WRITE (NDST,274) 'Sin   ', SUM(SDENS10Hz(1:NK)*DSII)
+!/T6      WRITE (NDST,274) 'SinR  ', SUM(SDENS10Hz(1:NK)*LF10Hz(1:NK)*DSII)
+!/T6      WRITE (NDST,274) 'SinR/C', TAUWINDS(SDENS10Hz(1:NK)*LFACT,CINV,DSII)
+!
+!/T6      270 FORMAT (' TEST W3SIN6 : LFACTOR SUBROUTINE CALCULATING FOR ', &
+!/T6                  A,'  U10=',F5.1                                       )
+!/T6      271 FORMAT (' TEST W3SIN6 : IK    RTAU     DRTAU   TAU   TAU_TOT' &
+!/T6                  '    ERR    TAUW_X TAUW_Y TAUV_X TAUV_Y  TAU1D'       )
+!/T6      272 FORMAT (' TEST W3SIN6 : ',I2,2F9.5,2F8.5,E10.2,4F7.4,F7.3     )
+!/T6      273 FORMAT (' TEST W3SIN6 : ',A,'(',A,'):', 70E11.3               ) 
+      274 FORMAT (' TEST W3SIN6 : Total ',A,' =', E13.5                  ) 
+      280 FORMAT (' WARNING LFACTOR (TIME,U10,TAU,TAU_TOT,ERR,TAUW_XY,'  &
+                  'TAUV_XY,TAU_SCALAR): ',A,F6.1,2F7.4,E10.3,4F7.4,F7.3  )
+! 
+      DEALLOCATE(IK10Hz,SIG10Hz,CINV10Hz,DSII10Hz,LF10Hz)
+      DEALLOCATE(SDENS10Hz,SDENSX10Hz,SDENSY10Hz,UCINV10Hz)
+!/
+      END SUBROUTINE LFACTOR
+!/ ------------------------------------------------------------------- /
+!/
+     SUBROUTINE TAU_WAVE_ATMOS(S, CINV, SIG, DSII, TAUNWX, TAUNWY )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         24-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    24-Oct-2013 : Origination following LFACTOR
+!/                                                        (S. Zieger)
+!
+!  1. Purpose :
+!
+!     Calculated the stress for the negative part of the input term,
+!     that is the stress from the waves to the atmosphere. Relevant
+!     in the case of opposing winds.
+!
+!  2. Method :
+!     1) If required, extend resolved part of the spectrum to 10Hz using
+!        an approximation for the spectral slope at the high frequency
+!        limit: Sin(F) prop. F**(-2) and for E(F) prop. F**(-5).
+!     2) Calculate stresses:
+!        stress components (x,y):      /10Hz
+!            TAUNW_X,Y = GRAV * DWAT * | [SinX,Y(F)]/C(F) dF
+!                                      /
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      S        R.A. I  Wind input energy density spectrum 
+!      CINV     R.A. I  Inverse phase speed                 1/C(sigma)
+!      SIG      R.A. I  Relative frequencies [in rad.]
+!      DSII     R.A. I  Frequency bandwiths [in rad.]
+!      TAUNWX-Y Real O  Component of the negative wave-supported stress
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!      IRANGE    Func. Private  Index generator (ie, array addressing)
+!      TAUWINDS  Func. Private  Normal stress calculation (TAU_NRM)
+!     ----------------------------------------------------------------
+!
+!  5. Source code :
+!
+!/
+      USE CONSTANTS, ONLY: GRAV, TPI
+      USE W3GDATMD,  ONLY: NK, NTH, NSPEC, DTH, XFR, ECOS, ESIN
+!/S      USE W3SERVMD, ONLY: STRACE
+      IMPLICIT NONE 
+!
+!/ ------ I/O parameters --------------------------------------------- /
+      REAL, INTENT(IN)  :: S(NTH,NK)      ! wind-input source term Sin
+      REAL, INTENT(IN)  :: CINV(NK)       ! inverse phase speed 
+      REAL, INTENT(IN)  :: SIG(NK)        ! relative frequencies
+      REAL, INTENT(IN)  :: DSII(NK)       ! frequency bandwidths
+      REAL, INTENT(OUT) :: TAUNWX, TAUNWY ! stress components (wave->atmos)
+!
+!/    --- local parameters (in order of appearance) ------------------ /
+!/S      INTEGER, SAVE     :: IENT = 0
+      REAL, PARAMETER   :: FRQMAX  = 10.  ! Upper freq. limit to extrapolate to.
+      INTEGER           :: NK10Hz
+!
+      REAL              :: ECOS2(NSPEC), ESIN2(NSPEC)
+      REAL, ALLOCATABLE :: IK10Hz(:), SIG10Hz(:), CINV10Hz(:)
+      REAL, ALLOCATABLE :: SDENSX10Hz(:), SDENSY10Hz(:)
+      REAL, ALLOCATABLE :: DSII10Hz(:), UCINV10Hz(:)
+!
+!/ ------------------------------------------------------------------- /
+!/S      CALL STRACE (IENT, 'TAU_WAVE_ATMOS')
+!
+!/ 0) --- Find the number of frequencies required to extend arrays
+!/        up to f=10Hz and allocate arrays --------------------------- /
+      NK10Hz = CEILING(ALOG(FRQMAX/(SIG(1)/TPI))/ALOG(XFR))+1
+      NK10Hz = MAX(NK,NK10Hz)
+!
+      ALLOCATE(IK10Hz(NK10Hz))
+      IK10Hz = REAL( IRANGE(1,NK10Hz,1) )
+!
+      ALLOCATE(SIG10Hz(NK10Hz))
+      ALLOCATE(CINV10Hz(NK10Hz))
+      ALLOCATE(DSII10Hz(NK10Hz))
+      ALLOCATE(SDENSX10Hz(NK10Hz))
+      ALLOCATE(SDENSY10Hz(NK10Hz))
+      ALLOCATE(UCINV10Hz(NK10Hz))
+!
+      ECOS2  = ECOS(1:NSPEC)
+      ESIN2  = ESIN(1:NSPEC)
+!
+!/ 1) --- Either extrapolate arrays up to 10Hz or use discrete spectral
+!         grid per se. Limit the constraint to the positive part of the
+!         wind input only. ---------------------------------------------- /
+      IF (NK .LT. NK10Hz) THEN
+         SDENSX10Hz(1:NK)        = SUM(ABS(MIN(0.,S))*RESHAPE(ECOS2,(/NTH,NK/)),1) * DTH
+         SDENSY10Hz(1:NK)        = SUM(ABS(MIN(0.,S))*RESHAPE(ESIN2,(/NTH,NK/)),1) * DTH
+         SIG10Hz                 = SIG(1)*XFR**(IK10Hz-1.0)
+         CINV10Hz(1:NK)          = CINV
+         CINV10Hz(NK+1:NK10Hz)   = SIG10Hz(NK+1:NK10Hz)*0.101978
+         DSII10Hz                = 0.5 * SIG10Hz * (XFR-1.0/XFR)
+!
+!        --- Spectral slope for S_IN(F) is proportional to F**(-2) ------ /
+         SDENSX10Hz(NK+1:NK10Hz) = SDENSX10Hz(NK) * (SIG10Hz(NK)/SIG10Hz(NK+1:NK10Hz))**2
+         SDENSY10hz(NK+1:NK10Hz) = SDENSY10Hz(NK) * (SIG10Hz(NK)/SIG10Hz(NK+1:NK10Hz))**2
+      ELSE
+         SIG10Hz          = SIG
+         CINV10Hz         = CINV
+         DSII10Hz         = DSII
+         SDENSX10Hz(1:NK) = SUM(ABS(MIN(0.,S))*RESHAPE(ECOS2,(/NTH,NK/)),1) * DTH
+         SDENSY10Hz(1:NK) = SUM(ABS(MIN(0.,S))*RESHAPE(ESIN2,(/NTH,NK/)),1) * DTH
+      END IF
+!
+!/ 2) --- Stress calculation ----------------------------------------- /
+!     --- The wave supported stress (waves to atmosphere) ------------ /
+      TAUNWX = TAUWINDS(SDENSX10Hz,CINV10Hz,DSII10Hz)   ! x-component
+      TAUNWY = TAUWINDS(SDENSY10Hz,CINV10Hz,DSII10Hz)   ! y-component
+!/
+  END SUBROUTINE TAU_WAVE_ATMOS
+!/ ------------------------------------------------------------------- /
+!/
+  FUNCTION IRANGE(X0,X1,DX) RESULT(IX)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         15-Feb-2011 |
+!/                  +-----------------------------------+
+!/
+!/    15-Feb-2011 : Origination                         ( version 4.04 )
+!/                                                        (S. Zieger)
+!/
+!  1. Purpose :
+!         Generate a sequence of linear-spaced integer numbers. 
+!         Used for instance array addressing (indexing).
+!
+!/
+      IMPLICIT NONE
+      INTEGER, INTENT(IN)  :: X0, X1, DX
+      INTEGER, ALLOCATABLE :: IX(:)
+      INTEGER              :: N
+      INTEGER              :: I
+!
+      N = INT(REAL(X1-X0)/REAL(DX))+1
+      ALLOCATE(IX(N))
+      DO I = 1, N
+         IX(I) = X0+ (I-1)*DX
+      END DO
+!/
+  END FUNCTION IRANGE
+!/ ------------------------------------------------------------------- /
+!/
+  FUNCTION TAUWINDS(SDENSIG,CINV,DSII) RESULT(TAU_WINDS)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Aug-2012 |
+!/                  +-----------------------------------+
+!/
+!/    15-Feb-2011 : Origination                         ( version 4.04 )
+!/                                                        (S. Zieger)
+!/
+!  1. Purpose :
+!      Wind stress (tau) computation from wind-momentum-input
+!      function which can be obtained from wind-energy-input (Sin).
+!
+!                            / FRMAX
+!      tau = g * rho_water * | Sin(f)/C(f) df
+!                            /
+!/
+    USE CONSTANTS, ONLY: GRAV, DWAT    ! gravity, density of water
+    IMPLICIT NONE
+    REAL, INTENT(IN)  :: SDENSIG(:)    ! Sin(sigma) in [m2/rad-Hz]
+    REAL, INTENT(IN)  :: CINV(:)       ! inverse phase speed
+    REAL, INTENT(IN)  :: DSII(:)       ! freq. bandwidths in [radians]
+    REAL              :: TAU_WINDS     ! wind stress
+!
+    TAU_WINDS = GRAV * DWAT * SUM(SDENSIG*CINV*DSII)
+!/
+  END FUNCTION TAUWINDS
+!/ ------------------------------------------------------------------- /
+!/
+!/ End of module W3SRC6MD -------------------------------------------- /
+!/
+   END MODULE W3SRC6MD

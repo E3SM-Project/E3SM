@@ -1,0 +1,1 @@
+/users/sbrus/climate/ww3_utils/compile/set_nc_vars.sh

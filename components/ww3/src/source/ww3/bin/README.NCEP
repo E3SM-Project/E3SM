@@ -1,0 +1,22 @@
+At the NCEP operational center we run several wave models using the WAVEWATCH codes. The switch files and namelist values (other than default settings) for the different models are given below
+
+multi_1 : An operational global wave model driven by GFS winds
+  switch file : switch_NCEP_st4sbs 
+  Namelist values :
+    &SIN4 BETAMAX = 1.33 /
+    &MISC CICE0 = 0.25, CICEN = 0.75, FLAGTR = 4 /
+
+multi_2 : An operational global hurricane wave model driven by a blend of hurricane / atmospheric winds
+  switch file : switch_NCEP_st2 
+  Namelist values : 
+    &SBT1 GAMMA = -0.019 /
+    &PRO3 WDTHCG = 4.00, WDTHTH = 4.00 /
+    &MISC FLAGTR = 4, CICE0 = 0.25, CICEN = 0.75 /
+
+Great Lakes: the GLW/GLWN system caters for the five great lakes between USA and Canada. Settings for ST4 differ to account for specific wind forcing and dissipation designs
+  switch file : switch_NCEP_st4
+  Namelist values :
+    &SIN4 BETAMAX = 1.55, Z0MAX = 1.002 /
+    &SDS4 SDSC1 = 1.0, SDSC2 = 0.0, SDSBCK = 0.185, SDSHCK = 1.5, SDSDTH = 0 /
+    &SNL1 NLPROP = 2.5E7 /
+    &MISC FLAGTR = 0, CICE0 = 0.25, CICEN = 0.75 /

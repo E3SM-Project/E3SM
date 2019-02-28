@@ -1,0 +1,36 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Field preprocessor input file                          $
+$ -------------------------------------------------------------------- $
+$ types of field
+$   Field types  :  LEV   Water levels.
+$                   CUR   Currents.
+  'CUR'
+$
+$ List of tidal constituents------------------------------------------ $
+$
+ Z0 M2         
+$
+$ Maximum allowed values    ------------------------------------------ $
+$ First line: name of tidal constituents for which the max. are defined
+$             these should be chosen among the ones avaialable in the 
+$             tidal analysis. 
+$             If analysis was performed with ww3_prnc, the default list 
+$             is Z0 SSA MSM MSF MF 2N2 MU2 N2 NU2 M2 S2 K2 MSN2 MN4 M4 
+$                MS4  S4 M6 2MS6 M8  
+$ Second line: values of maximum magnitude of the amplitude 
+$ at points where not values are defined or where these maxima are 
+$ exceeded, the constituents are extrapolated from neighbors 
+$ (e.g. tidal flats ...) 
+ Z0   SSA MSF 
+ 1.0  0.5 0.5 
+$
+$  Start time  step        end time
+   19680606 000000  1800 19680607 120000
+$
+$ Define data files -------------------------------------------------- $
+$ The input line identifies the filename using for the forcing field.
+$
+  'ww3_tide'
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

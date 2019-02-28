@@ -1,0 +1,147 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Point output post-processing                           $
+$--------------------------------------------------------------------- $
+$ First output time (yyyymmdd hhmmss), increment of output (s), 
+$ and number of output times.
+$
+  19680606 060000  3600.  7
+$
+$ Points requested --------------------------------------------------- $
+$ Define points for which output is to be generated. 
+$
+$ 1
+$ 2
+  3
+$ 4
+$
+$ mandatory end of list
+ -1
+$
+$ Output type ITYPE [0,1,2,3,4]
+$
+  1
+$ -------------------------------------------------------------------- $
+$ ITYPE = 0, inventory of file.
+$            No additional input, the above time range is ignored.
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 1, Spectra.
+$          - Sub-type OTYPE :  1 : Print plots.
+$                              2 : Table of 1-D spectra
+$                              3 : Transfer file.
+$          - Scaling factors for 1-D and 2-D spectra Negative factor
+$            disables, output, factor = 0. gives normalized spectrum.
+$          - Unit number for transfer file, also used in table file
+$            name.
+$          - Flag for unformatted transfer file.
+$
+  1   0.  0.  33  F
+$
+$ The transfer file contains records with the following contents.
+$
+$ - File ID in quotes, number of frequencies, directions and points.
+$   grid name in quotes (for unformatted file C*21,3I,C*30).
+$ - Bin frequencies in Hz for all bins.
+$ - Bin directions in radians for all bins (Oceanographic conv.).
+$                                                         -+
+$ - Time in yyyymmdd hhmmss format                         | loop
+$                                             -+           |
+$ - Point name (C*10), lat, lon, d, U10 and    |  loop     | over
+$   direction, current speed and direction     |   over    |
+$ - E(f,theta)                                 |  points   | times
+$                                             -+          -+
+$
+$ The formatted file is readable using free format throughout.
+$ This data set can be used as input for the bulletin generator
+$ w3split.
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 2, Tables of (mean) parameter
+$          - Sub-type OTYPE :  1 : Depth, current, wind
+$                              2 : Mean wave pars.
+$                              3 : Nondimensional pars. (U*)
+$                              4 : Nondimensional pars. (U10)
+$                              5 : 'Validation table'
+$                              6 : WMO standard output 
+$          - Unit number for file, also used in file name.
+$
+$   6  66
+$
+$ If output for one point is requested, a time series table is made,
+$ otherwise the file contains a separate tables for each output time.
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 3, Source terms
+$          - Sub-type OTYPE :  1 : Print plots.
+$                              2 : Table of 1-D S(f).
+$                              3 : Table of 1-D inverse time scales
+$                                  (1/T = S/F).
+$                              4 : Transfer file
+$          - Scaling factors for 1-D and 2-D source terms. Negative
+$            factor disables print plots, factor = 0. gives normalized
+$            print plots.
+$          - Unit number for transfer file, also used in table file
+$            name.
+$          - Flags for spectrum, input, interactions, dissipation,
+$            bottom, ice and total source term.
+$          - scale ISCALE for OTYPE=2,3
+$                              0 : Dimensional.
+$                              1 : Nondimensional in terms of U10
+$                              2 : Nondimensional in terms of U*
+$                             3-5: like 0-2 with f normalized with fp.
+$          - Flag for unformatted transfer file.
+$
+$ 1  0. 0. 50   T T T T T T T 0  F
+$
+$ The transfer file contains records with the following contents.
+$
+$ - File ID in quotes, number of frequencies, directions and points,
+$   flags for spectrum and source terms (C*21, 3I, 6L)
+$ - Bin frequencies in Hz for all bins.
+$ - Bin directions in radians for all bins (Oceanographic conv.).
+$                                                         -+
+$ - Time in yyyymmdd hhmmss format                         | loop
+$                                             -+           |
+$ - Point name (C*10), depth, wind speed and   |  loop     | over
+$   direction, current speed and direction     |   over    |
+$ - E(f,theta) if requested                    |  points   | times
+$ - Sin(f,theta) if requested                  |           |
+$ - Snl(f,theta) if requested                  |           |
+$ - Sds(f,theta) if requested                  |           |
+$ - Sbt(f,theta) if requested                  |           |
+$ - Sice(f,theta) if requested                 |           |
+$ - Stot(f,theta) if requested                 |           |
+$                                             -+          -+
+$ -------------------------------------------------------------------- $
+$ ITYPE = 4, Spectral partitions and bulletins
+$          - Sub-type OTYPE :  1 : Spectral partitions
+$                              2 : Bulletins ASCII format
+$                              3 : Bulletins CSV format
+$                              4 : Bulletins ASCII and CSV formats
+$          - Unit number for transfer file, also used in table file
+$            name.
+$          - Reference date/time in YYYYMMDD HHMMSS format, used for 
+$            including in bulletin legend, and computing forecast time
+$            in CSV type output (if the first field is negative, the 
+$            reference time becomes the first simulation time slice)
+$          - Three-character code indicating time zone (UTC, EST etc)
+$
+$   4  2 19680606 060000 'UTC'
+$
+$ The transfer file contains records with the following contents.
+$
+$ - File ID in quotes, number of frequencies, directions and points.
+$   grid name in quotes (for unformatted file C*21,3I,C*30).
+$ - Bin frequencies in Hz for all bins.
+$ - Bin directions in radians for all bins (Oceanographic conv.).
+$                                                         -+
+$ - Time in yyyymmdd hhmmss format                         | loop
+$                                             -+           |
+$ - Point name (C*10), lat, lon, d, U10 and    |  loop     | over
+$   direction, current speed and direction     |   over    |
+$ - E(f,theta)                                 |  points   | times
+$                                             -+          -+
+$ 
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

@@ -1,0 +1,1609 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      PROGRAM W3PREP
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |             A. Chawla             |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         11-Nov-2013 |
+!/                  +-----------------------------------+
+!/
+!/    14-Jan-1999 : Final FORTRAN 77                    ( version 1.18 )
+!/    18-Jan-2000 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    11-Jan-2001 : Flat grid option added              ( version 2.06 )
+!/    17-Jul-2001 : Clean-up                            ( version 2.11 )
+!/    24-Jan-2002 : Add data for data assimilation.     ( version 2.17 )
+!/    30-Apr-2002 : Fix 'AI' bug for 1-D fields.        ( version 2.20 )
+!/    24-Apr-2003 : Fix bug for NDAT = 0 in data.       ( version 3.03 )
+!/    24-Dec-2004 : Multiple grid version.              ( version 3.06 )
+!/    28-Jun-2006 : Adding file name preamble.          ( version 3.09 )
+!/    25-Sep-2007 : Switch header of file on or off,    ( version 3.13 )
+!/                  Times to file (!/O15) (A. Chawla)
+!/    29-May-2009 : Preparing distribution version.     ( version 3.14 )
+!/    30-Oct-2009 : Implement run-time grid selection.  ( version 3.14 )
+!/                  (W. E. Rogers & T. J. Campbell, NRL)
+!/    30-Oct-2009 : Implement curvilinear grid type.    ( version 3.14 )
+!/                  (W. E. Rogers & T. J. Campbell, NRL)
+!/    15-May-2010 : Add ISI (icebergs and sea ice).     ( version 3.14.4 )   
+!/    29-Oct-2010 : Implement unstructured grids        ( version 3.14.4 )
+!/                  (A. Roland and F. Ardhuin) 
+!/    06-Dec-2010 : Change from GLOBAL (logical) to ICLOSE (integer) to
+!/                  specify index closure for a grid.   ( version 3.14 )
+!/                  (T. J. Campbell, NRL)
+!/     1-Apr-2011 : Fix bug GLOBX forcing with unst.    ( version 3.14.4 )
+!/    19-Sep-2011 : Fix bug prep forcing with unst.     ( version 4.04 )
+!/    26-Dec-2012 : Modified obsolete declarations.     ( version 4.OF )
+!/     3-Mar-2013 : Allows for longer input file name   ( version 4.09 )
+!/    11-Nov-2013 : Allows for input binary files to be of WAVEWATCH
+!/                  type (i.e. accounts for the header) ( version 4.13 )
+!/
+!/    Copyright 2009-2012 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Pre-processing of the input water level, current, wind and ice
+!     fields as well as assimilation data for the generic shell W3SHEL
+!     (ww3_shel.ftn).
+!
+!  2. Method :
+!
+!     See documented input file.
+!
+!  3. Parameters :
+!
+!     Local parameters.
+!     ----------------------------------------------------------------
+!       NDSI    Int.  Input unit number ("ww3_prep.inp").
+!       NDSLL   Int.  Unit number(s) of long-lat file(s)
+!       NDSF    I.A.  Unit number(s) of input file(s).
+!       NDSDAT  Int.  Unit number for output data file.
+!       IFLD    Int.  Integer input type.
+!       ITYPE   Int.  Integer input 'format' type.
+!       NFCOMP  Int.  Number of partial input to be processed.
+!       FLTIME  Log.  Time flag for input fields, if false, single
+!                     field, time read from NDSI.
+!       IDLALL  Int.  Layout indicator used by INA2R. +
+!       IDFMLL  Int.  Id. FORMAT indicator.           |
+!       FORMLL  C*16  Id. FORMAT.                     | Long-lat
+!       FROMLL  C*4   'UNIT' / 'NAME' indicator       |    file(s)
+!       NAMELL  C*65  Name of long-lat file(s)        +
+!       IDLAF   I.A.   +
+!       IDFMF   I.A.   |
+!       FORMF   C.A.   | Idem. fields file(s)
+!       FROMF   C*4    |
+!       NAMEF   C*65   +
+!       FORMT   C.A.  Format or time in field.
+!       XC      R.A.  Components of input vector field or first
+!                     input scalar field
+!       YC      R.A.  Components of input vector field or second
+!                     input scalar field
+!       FX,FY   R.A.  Output fields.
+!       ACC     Real  Required interpolation accuracy.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3NMOD    Subr. W3GDATMD Set number of model.
+!      W3SETG    Subr.   Id.    Point to selected model.
+!      W3NDAT    Subr. W3WDATMD Set number of model for wave data.
+!      W3SETW    Subr.   Id.    Point to selected model for wave data.
+!      W3NOUT    Subr. W3ODATMD Set number of model for output.
+!      W3SETO    Subr.   Id.    Point to selected model for output.
+!      ITRACE    Subr. W3SERVMD Subroutine tracing initialization.
+!      STRACE    Subr.   Id.    Subroutine tracing.
+!      NEXTLN    Subr.   Id.    Get next line from input filw
+!      EXTCDE    Subr.   Id.    Abort program as graceful as possible.
+!      STME21    Subr. W3TIMEMD Convert time to string.
+!      INAR2R    Subr. W3ARRYMD Read in an REAL array.
+!      INAR2I    Subr.   Id.    Read in an INTEGER array.
+!      PRTBLK    Subr.   Id.    Print plot of array.
+!      W3IOGR    Subr. W3IOGRMD Reading/writing model definition file.
+!      W3FLDO    Subr. W3FLDSMD Opening of WAVEWATCH III generic shell
+!                               data file.
+!      W3FLDP    Subr.   Id.    Prepare interp. from arbitrary grid.
+!      W3FLDG    Subr.   Id.    Reading/writing shell input data.
+!      W3FLDD    Subr.   Id.    Reading/writing shell assim. data.
+!      W3GSUC    Func. W3GSRUMD Create grid-search-utility object
+!      W3GSUD    Subr. W3GSRUMD Destroy grid-search-utility object
+!      W3GRMP    Func. W3GSRUMD Compute interpolation weights
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!     None, stand-alone program.
+!
+!  6. Error messages :
+!
+!     - Checks on files and reading from file.
+!     - Checks on validity of input parameters.
+!
+!  7. Remarks :
+!
+!     - Input fields need to be continuous in longitude and latitude.
+!     - Longitude - latitude grid (Section 4.a) : program attempts to 
+!       detect closure type (ICLO) using longitudes of the grid. Thus, 
+!       it does not allow the user to specify the closure type, and so
+!       tripole closure is not supported.
+!     - Grid(s) from file (Section 4.a) : program reads logical variable
+!       CLO(J) from .inp file. Thus, it does not allow the user to 
+!       specify more than two closure type (SMPL or NONE), and so
+!       tripole closure is not supported. 
+
+!  8. Structure :
+!
+!     ----------------------------------------------------
+!        1.a  Number of models.
+!                   ( W3NMOD , W3NOUT , W3SETG , W3SETO )
+!          b  I-O setup.
+!          c  Print heading(s).
+!        2.   Read model definition file.      ( W3IOGR )
+!        3.a  Read major types from input file.
+!          b  Check major types.
+!          c  Additional input format types and time.
+!        4.   Prepare interpolation.
+!          a  Longitude - latitude grid
+!          b  Grid(s) from file.               ( W3FLDP )
+!          c  Initialize fields.
+!          d  Input location and format.
+!        5    Prepare input and output files.
+!          a  Open input file
+!          b  Open and prepare output file     ( W3FLDO )
+!        6    Until end of file
+!          a  Read new time and fields
+!          b  Interpolate fields
+!          c  Write fields                     ( W3FLDG )
+!     ----------------------------------------------------
+!
+!  9. Switches :
+!
+!     !/WNT0  = !/WNT1
+!     !/WNT1  Correct wind speeds to (approximately) conserve the wind
+!             speed over the interpolation box.
+!     !/WNT2  Id. energy (USE ONLY ONE !)
+!     !/CRT1  Like !/WNT1 for currents.
+!     !/CRT2  Like !/WNT2 for currents.
+!
+!     !/O3    Additional output in fields processing loop.
+!     !/O15   Generate file with the times of the processed fields.
+!
+!     !/S     Enable subroutine tracing.
+!     !/T     Enable test output,
+!     !/T1    Full interpolation data.
+!     !/T1a   Echo of lat-long data in type Fn
+!     !/T2    Full input data.
+!     !/T3    Print-plot of output data.
+!
+!     !/NCO   NCEP NCO modifications for operational implementation.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS
+!/
+!     USE W3GDATMD, ONLY: W3NMOD, W3SETG
+!/NL1      USE W3ADATMD,ONLY: W3NAUX, W3SETA
+      USE W3ODATMD, ONLY: W3NOUT, W3SETO
+      USE W3SERVMD, ONLY : ITRACE, NEXTLN, EXTCDE
+!/S      USE W3SERVMD, ONLY : STRACE
+      USE W3TIMEMD, ONLY : STME21
+      USE W3ARRYMD, ONLY : INA2R, INA2I
+!/T2      USE W3ARRYMD, ONLY : PRTBLK
+!/T3      USE W3ARRYMD, ONLY : PRTBLK
+      USE W3IOGRMD, ONLY: W3IOGR
+      USE W3FLDSMD, ONLY: W3FLDO, W3FLDP, W3FLDG, W3FLDD
+!/
+      USE W3GDATMD
+      USE W3GSRUMD
+      USE W3ODATMD, ONLY: NDSE, NDST, NDSO, FNMPRE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: NDSI, NDSM, NDSDAT, NDSTRC, NTRACE,  &
+                                 IERR, IFLD, ITYPE, J, IX, IY, NFCOMP,&
+                                 TIME(2), NXI, NYI, NXJ(2), NYJ(2),   &
+                                 NDSLL, IDLALL, IDFMLL, NDSF(2),      &
+                                 IDLAF(2), IDFMF(2), TIME2(2),        &
+                                 MXM, MYM, DATTYP, RECLDT, IDAT,      &
+                                 NDAT, NDATMX, JJ, IS(4), JS(4)
+      INTEGER                 :: NXT, NYT, GTYPET, FILLER(2), TFLAGT
+      INTEGER                 :: NYB
+      INTEGER                 :: ILAND = -999
+!/O15      INTEGER                 :: NDSTIME
+      INTEGER, ALLOCATABLE    :: IX21(:,:), IX22(:,:),                &
+                                 IY21(:,:), IY22(:,:),                &
+                                 JX21(:,:), JX22(:,:),                &
+                                 JY21(:,:), JY22(:,:), MAPOVR(:,:)
+      INTEGER, ALLOCATABLE    :: MASK(:,:)
+      TYPE(T_GSU)             :: GSI
+!/S      INTEGER, SAVE           :: IENT = 0
+!/T2      INTEGER                 :: IXP0, IXPN, IXPWDT = 60
+!/T3      INTEGER                 :: IX0, IXN, IXWDT = 60
+!/T3      INTEGER, ALLOCATABLE    :: MAPOUT(:,:)
+      REAL                    :: X0I, XNI, Y0I, YNI, SXI, SYI, XDIF,  &
+                                 ADD, X, Y, FACTOR, EFAC, NODATA, RW(4)
+      REAL                    :: ACC = 0.05
+      REAL, ALLOCATABLE       :: RD11(:,:), RD21(:,:),                &
+                                 RD12(:,:), RD22(:,:),                &
+                                 XD11(:,:), XD21(:,:),                &
+                                 XD12(:,:), XD22(:,:),                &
+                                 FX(:,:), FY(:,:), FA(:,:),           &
+                                 A1(:,:), A2(:,:), A3(:,:)
+      REAL, POINTER           :: ALA(:,:), ALO(:,:)
+      REAL, ALLOCATABLE       :: XC(:,:), YC(:,:), AC(:,:), DATA(:,:)
+      LOGICAL                 :: INGRID
+      LOGICAL                 :: FLSTAB, FLBERG, CLO(2), FLTIME, FLHDR
+      INTEGER                 :: ICLO
+!/T      LOGICAL                 :: FLMOD
+      CHARACTER               :: COMSTR*1, IDFLD*3, IDTYPE*2,         &
+                                 IDTIME*23, FROMLL*4, FORMLL*16,      &
+                                 NAMELL*65, FROMF*4, NAMEF*65
+      CHARACTER(LEN=12)       :: IDSTR1(-7:5)
+      CHARACTER(LEN=15)       :: IDSTR3(3)
+      CHARACTER(LEN=32)       :: FORMT(2), FORMF(2)
+      CHARACTER(LEN=20)       :: IDSTR2(5)
+      CHARACTER(LEN=13)       :: TSTR, IDSTR = 'WAVEWATCH III'
+      CHARACTER(LEN=3)        :: TSFLD
+      INTEGER                 :: GTYPEDUM = 0
+!
+      EQUIVALENCE              ( NXI , NXJ(1) ) , ( NYI , NYJ(1) )
+!/
+!/ ------------------------------------------------------------------- /
+!/
+! notes: Is it possible to combine ice parameters into one group, 
+!        similar to the way 1D spectra are in one group?
+      DATA IDSTR1 / 'ice param. 1' , 'ice param. 2' ,                 &
+                    'ice param. 3' , 'ice param. 4' ,                 &
+                    'ice param. 5' , 'mud density ' ,                 &
+                    'mud thkness ' , 'mud viscos. ' ,                 &
+                    'ice         ' , 'water levels' ,                 &
+                    'winds       ' , 'currents    ' ,                 &
+                    'data        ' /
+      DATA IDSTR2 / 'pre-processed file  ' , 'long.-lat. grid     ' , &
+                    'grid from file (1)  ' , 'grid from file (2)  ' , &
+                    'data (assimilation) ' /
+      DATA IDSTR3 / 'mean parameters', '1D spectra     ',             &
+                    '2D spectra     ' /
+!
+!/NCO/!     CALL W3TAGB('WAVEPREP',1998,0007,0050,'NP21   ')
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 1.a  Set number of models
+!
+      CALL W3NMOD ( 1, 6, 6 )
+      CALL W3SETG ( 1, 6, 6 )
+!/NL1      CALL W3NAUX (    6, 6 )
+!/NL1      CALL W3SETA ( 1, 6, 6 )
+      CALL W3NOUT (    6, 6 )
+      CALL W3SETO ( 1, 6, 6 )
+!
+! 1.b  IO set-up.
+!
+      NDSI   = 10
+      NDSO   =  6
+      NDSE   =  6
+      NDST   =  6
+      NDSM   = 11
+      NDSDAT = 12
+!/O15      NDSTIME = 13
+!
+      NDSTRC =  6
+      NTRACE = 10
+      CALL ITRACE ( NDSTRC, NTRACE )
+!
+!/NCO/!
+!/NCO/! Redo according to NCO
+!/NCO/!
+!/NCO      NDSI   = 11
+!/NCO      NDSO   =  6
+!/NCO      NDSE   = NDSO
+!/NCO      NDST   = NDSO
+!/NCO      NDSM   = 12
+!/NCO      NDSDAT = 51
+!/NCO      NDSTRC = NDSO
+!
+! 1.c Print header
+!
+      WRITE (NDSO,900)
+!/S      CALL STRACE (IENT, 'W3PREP')
+!
+      J      = LEN_TRIM(FNMPRE)
+      OPEN (NDSI,FILE=FNMPRE(:J)//'ww3_prep.inp',STATUS='OLD',        &
+            ERR=800,IOSTAT=IERR)
+      REWIND (NDSI)
+      READ (NDSI,'(A)',END=801,ERR=802,IOSTAT=IERR) COMSTR
+      IF (COMSTR.EQ.' ') COMSTR = '$'
+      WRITE (NDSO,901) COMSTR
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 2.  Read model definition file.
+!
+      CALL W3IOGR ( 'READ', NDSM )
+      WRITE (NDSO,902) GNAME
+      ALLOCATE ( IX21(NX,NY), IX22(NX,NY), IY21(NX,NY), IY22(NX,NY),  &
+                 JX21(NX,NY), JX22(NX,NY), JY21(NX,NY), JY22(NX,NY),  &
+                 MAPOVR(NX,NY) )
+      ALLOCATE ( RD11(NX,NY), RD21(NX,NY), RD12(NX,NY), RD22(NX,NY),  &
+                 XD11(NX,NY), XD21(NX,NY), XD12(NX,NY), XD22(NX,NY),  &
+                 FX(NX,NY), FY(NX,NY), FA(NX,NY),                     &
+                 A1(NX,NY), A2(NX,NY), A3(NX,NY) )
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 3.a Read types from input file.
+!
+      CALL NEXTLN ( COMSTR , NDSI , NDSE )
+      READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) IDFLD, IDTYPE, FLTIME, &
+                                                FLHDR
+!
+! 3.b Check types.
+!
+      FLSTAB = IDFLD .EQ. 'WNS'
+      FLBERG = IDFLD .EQ. 'ISI'
+      IF        ( IDFLD.EQ.'IC1' ) THEN
+          IFLD    = -7
+        ELSE IF ( IDFLD.EQ.'IC2' ) THEN
+          IFLD    = -6
+        ELSE IF ( IDFLD.EQ.'IC3' ) THEN
+          IFLD    = -5
+        ELSE IF ( IDFLD.EQ.'IC4' ) THEN
+          IFLD    = -4
+        ELSE IF ( IDFLD.EQ.'IC5' ) THEN
+          IFLD    = -3
+        ELSE IF ( IDFLD.EQ.'MDN' ) THEN
+          IFLD    = -2
+        ELSE IF ( IDFLD.EQ.'MTH' ) THEN
+          IFLD    = -1
+        ELSE IF ( IDFLD.EQ.'MVS' ) THEN
+          IFLD    = 0
+        ELSE IF ( IDFLD.EQ.'ICE' .OR. FLBERG ) THEN
+          IFLD    = 1
+        ELSE IF ( IDFLD.EQ.'LEV' ) THEN
+          IFLD    = 2
+        ELSE IF ( IDFLD.EQ.'WND' .OR. FLSTAB ) THEN
+          IFLD    = 3
+        ELSE IF ( IDFLD.EQ.'CUR' ) THEN
+          IFLD    = 4
+        ELSE IF ( IDFLD.EQ.'DAT' ) THEN
+          IFLD    = 5
+        ELSE
+          WRITE (NDSE,1030) IDFLD
+          CALL EXTCDE ( 1 )
+        END IF
+!
+      NFCOMP = 1
+      IF (IDFLD.EQ.'DAT') THEN
+          ITYPE   = 5
+        ELSE IF (IDTYPE.EQ.'AI') THEN
+          ITYPE   = 1
+        ELSE IF (IDTYPE.EQ.'LL') THEN
+          ITYPE   = 2
+        ELSE IF (IDTYPE.EQ.'F1') THEN
+          ITYPE   = 3
+        ELSE IF (IDTYPE.EQ.'F2') THEN
+          ITYPE   = 4
+          NFCOMP = 2
+        ELSE
+          WRITE (NDSE,1031) IDTYPE
+          CALL EXTCDE ( 2 )
+        END IF
+!
+!/T      IF (ITYPE.NE.1 .AND. ITYPE.NE.5) WRITE (NDST,9000) ACC
+!
+      WRITE (NDSO,930) IDSTR1(IFLD), IDSTR2(ITYPE)
+      IF ( ITYPE.NE.1 ) THEN
+!/WNT0          IF (IFLD.EQ.3) WRITE (NDSO,1930)
+!/WNT1          IF (IFLD.EQ.3) WRITE (NDSO,1930)
+!/WNT2          IF (IFLD.EQ.3) WRITE (NDSO,2930)
+!/CRT1          IF (IFLD.EQ.4) WRITE (NDSO,1930)
+!/CRT2          IF (IFLD.EQ.4) WRITE (NDSO,2930)
+        END IF
+      IF ( FLBERG ) WRITE (NDSO,938)
+      IF ( FLSTAB ) WRITE (NDSO,939)
+      IF (ITYPE.EQ.4 .AND. IFLD.GT.2) THEN
+          WRITE (NDSE,1032)
+          CALL EXTCDE ( 3 )
+        END IF
+!
+! 3.c Additional input for format types and time
+! ... time
+!
+      IF (.NOT. FLTIME) THEN
+          CALL NEXTLN ( COMSTR , NDSI , NDSE )
+          READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) TIME
+          IF (TIME(1).LT.10000000) THEN
+              WRITE (NDSE,1035) TIME
+              CALL EXTCDE ( 4 )
+            END IF
+          CALL STME21 ( TIME , IDTIME )
+          WRITE (NDSO,931) IDTIME
+        END IF
+!
+      J      = 1
+      IF ( FLAGLL ) THEN
+          FACTOR = 1.
+        ELSE
+          FACTOR = 1.E-3
+        END IF
+!
+! ... type 1
+!
+      IF (ITYPE.EQ.1) THEN
+!
+          NXI    = NX
+          NYI    = NY
+          ALLOCATE ( MASK(NXI,NYI) )
+          MASK   = 1
+          IF(GTYPE .EQ. UNGTYPE) THEN
+!
+!  X0, Y0 are the coordinates of the lower-left point in mesh
+!
+              RW(1) = FACTOR*X0        ; RW(2) = FACTOR*MAXX
+              RW(3) = FACTOR*Y0        ; RW(4) = FACTOR*MAXY
+            ELSE
+              RW(1) = FACTOR*XGRD(1,1) ; RW(2) = FACTOR*XGRD(NY,NX)
+              RW(3) = FACTOR*YGRD(1,1) ; RW(4) = FACTOR*YGRD(NY,NX)
+            END IF
+          WRITE (NDSO,932) NXI, NYI
+          IF ( FLAGLL ) THEN
+              WRITE (NDSO,933) RW(1),RW(2),RW(3),RW(4)
+            ELSE
+              WRITE (NDSO,733) RW(1),RW(2),RW(3),RW(4)
+            END IF
+!
+! ... type 2
+!
+        ELSE IF (ITYPE.EQ.2) THEN
+!
+          CALL NEXTLN ( COMSTR , NDSI , NDSE )
+          READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR)                   &
+                X0I, XNI, NXI, Y0I, YNI, NYI
+          IF (NXI.LT.2 .OR. NYI.LT.2) THEN
+              WRITE (NDSE,1036) NXI, NYI
+              CALL EXTCDE ( 5 )
+            END IF
+          ALLOCATE ( MASK(NXI,NYI) )
+          MASK   = 1
+          WRITE (NDSO,932) NXI, NYI
+
+          IF ( FLAGLL ) THEN
+              WRITE (NDSO,933) FACTOR*X0I, FACTOR*XNI,                &
+                               FACTOR*Y0I, FACTOR*YNI
+            ELSE
+              WRITE (NDSO,733) FACTOR*X0I, FACTOR*XNI,                &
+                               FACTOR*Y0I, FACTOR*YNI
+            END IF
+!
+! ... type 5
+!
+        ELSE IF (ITYPE.EQ.5) THEN
+          CALL NEXTLN ( COMSTR , NDSI , NDSE )
+          READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR)                   &
+                DATTYP, RECLDT, NODATA
+          IF (DATTYP.LT.0 .OR. DATTYP.GT.2) THEN
+              WRITE (NDSE,1033) DATTYP
+              CALL EXTCDE ( 6 )
+            END IF
+          IF (RECLDT.LE.0) THEN
+              WRITE (NDSE,1034) RECLDT
+              CALL EXTCDE ( 7 )
+            END IF
+          WRITE (NDSO,934) IDSTR3(DATTYP+1), RECLDT, NODATA
+          WRITE (IDFLD,935) DATTYP
+          DEALLOCATE ( IX21, IX22, IY21, IY22, JX21, JX22, JY21, JY22, &
+                       MAPOVR )
+          DEALLOCATE ( RD11, RD21, RD12, RD22, XD11, XD21, XD12, XD22, &
+                       FX, FY, FA, A1, A2, A3 )
+!
+! ... types 3 and 4 ... in preprocessing loop ....
+!
+        END IF
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 4   Prepare interpolation.
+!
+      WRITE (NDSO,940)
+!
+      IF (ITYPE.NE.1 .AND. ITYPE.NE.5) THEN
+!
+! 4.a Longitude - latitude grid
+!
+          IF (ITYPE.EQ.2) THEN
+              WRITE (NDSO,941)
+!
+! ... setup coordinates
+!
+              SXI    = (XNI-X0I)/REAL(NXI-1)
+              SYI    = (YNI-Y0I)/REAL(NYI-1)
+              ICLO   = ICLOSE_NONE
+              IF ( FLAGLL ) THEN
+                  IF ( ABS(ABS(REAL(NXI)*SXI)-360.) .LT. 0.1*ABS(SXI) ) &
+                      ICLO = ICLOSE_SMPL
+                END IF
+              IF ( ASSOCIATED(ALA) ) THEN
+                  DEALLOCATE ( ALA, ALO )
+                  NULLIFY ( ALA, ALO )
+                END IF
+              ALLOCATE ( ALA(NXI,NYI), ALO(NXI,NYI) )
+              DO IY=1, NYI
+                DO IX=1, NXI
+                    ALO(IX,IY) = X0I + REAL(IX-1)*SXI
+                    ALA(IX,IY) = Y0I + REAL(IY-1)*SYI
+                  END DO
+                END DO
+!
+! ... create grid search utility
+!
+              GSI = W3GSUC( .TRUE., FLAGLL, ICLO, NXI, NYI, ALO, ALA )
+!
+! ... construct interpolation data
+!
+!/T1              WRITE (NDST,9045)
+            IF (GTYPE .NE. UNGTYPE) THEN
+              DO IY=1,NY
+                DO IX=1,NX
+                  INGRID = W3GRMP( GSI, XGRD(IY,IX), YGRD(IY,IX),      &
+                                   IS, JS, RW )
+
+                  IF ( .NOT.INGRID ) THEN
+
+! Notes: It would make sense to give this warning for only cases where
+!          the grid point is *not* masked. Obviously we don't care if
+!          a masked grid point is not given winds, etc.
+
+                     WRITE(NDSO,1042) IX, IY, XGRD(IY,IX), YGRD(IY,IX)
+
+! Notes: We need to set these variables, even if we never intend to use them. 
+!...........Especially in the case of IX?? IY??, we cannot leave them unset, 
+!...........since they will be used as array indices later.
+
+                     IX21(IX,IY) = 1
+                     IX22(IX,IY) = 1
+                     IY21(IX,IY) = 1
+                     IY22(IX,IY) = 1
+                     RD11(IX,IY) = 0.0
+                     RD21(IX,IY) = 0.0
+                     RD12(IX,IY) = 0.0
+                     RD22(IX,IY) = 0.0
+
+                     CYCLE
+                  END IF
+
+                  IX21(IX,IY) = IS(1)
+                  IX22(IX,IY) = IS(2)
+                  IY21(IX,IY) = JS(1)
+                  IY22(IX,IY) = JS(4)
+                  RD11(IX,IY) = RW(1)
+                  RD21(IX,IY) = RW(2)
+                  RD12(IX,IY) = RW(4)
+                  RD22(IX,IY) = RW(3)
+!/T1                  WRITE (NDST,9046) IX, IY,                           &
+!/T1                    IX21(IX,IY),IX22(IX,IY),IY21(IX,IY),IY22(IX,IY),  &
+!/T1                    RD11(IX,IY),RD12(IX,IY),RD21(IX,IY),RD22(IX,IY)
+                  END DO
+                END DO
+            ELSE 
+              DO IX=1, NX
+                X = XYB(IX,1)
+                Y = XYB(IX,2)
+ 
+                IX21(IX,1) =   1 + INT(MOD(360.+(X-X0I),360.)/SXI)
+!
+! Manages the simple closure of the grid
+!
+                IF (ICLO.EQ.ICLOSE_NONE) THEN 
+                  IX21(IX,1) =   MAX ( 1 , MIN(IX21(IX,1),NXI-1) )
+                  IX22(IX,1) =   IX21(IX,1) + 1
+                ELSE
+                  IX21(IX,1) =   MAX ( 1 , MIN(IX21(IX,1),NXI) )
+                  IX22(IX,1) =   MOD(IX21(IX,1),NXI)+1
+                  END IF 
+                IY21(IX,1) =   1 + INT((Y-Y0I)/SYI)
+                IY21(IX,1) =   MAX ( 1 , MIN(IY21(IX,1),NYI-1) )
+                IY22(IX,1) =   IY21(IX,1) + 1
+!
+                RW(1) =  MOD(360.+(X-X0I),360.)/SXI - REAL(IX21(IX,1)-1)
+                RW(2) =  (Y-Y0I)/SYI - REAL(IY21(IX,1)-1)
+!
+                IF (IY21(IX,1).EQ.1 .AND. RW(2).LT.ACC) THEN
+                  IF (RW(2).LT.-ACC) THEN
+                    WRITE (NDSO,1044) Y
+                  ELSE IF (RW(2).LT.0.) THEN
+                    RW(2) = 0.
+!/T                  FLMOD  = .TRUE.
+                  END IF
+                END IF
+!
+              IF (IY21(IX,1).EQ.NYI .AND. RW(2).GT.1.-ACC) THEN
+                IF (RW(2).GT.1.+ACC) THEN
+                  WRITE (NDSO,1044) Y
+                ELSE IF (RW(2).GT.1.) THEN
+                  RW(2) = 1.
+!/T                       FLMOD  = .TRUE.
+                  END IF
+                END IF
+!
+                EFAC       = SQRT ( MAX(0.,ABS(RW(1)-0.5)-0.5)**2 +  &
+                                    MAX(0.,ABS(RW(2)-0.5)-0.5)**2 )
+                EFAC        = 1. / ( 1. + 0.25*EFAC**2 )
+                
+
+                RD11(IX,1) = EFAC * (1.-RW(1)) * (1.-RW(2))
+                RD21(IX,1) = EFAC *    RW(1)   * (1.-RW(2))
+                RD12(IX,1) = EFAC * (1.-RW(1)) *    RW(2)
+                RD22(IX,1) = EFAC *    RW(1)   *    RW(2)
+                END DO 
+              END IF ! GTYPE .NE. UNGTYPE
+!
+              CALL W3GSUD( GSI )
+              DEALLOCATE ( ALA, ALO )
+              NULLIFY ( ALA, ALO )
+!
+! 4.b Grid(s) from file
+!
+            ELSE
+              WRITE (NDSO,942)
+!
+! ... prepare overlay map
+!
+              DO IY=1, NY
+                DO IX=1, NX
+                  IF ( MAPSTA(IY,IX) .EQ. 0 ) THEN
+                      MAPOVR(IX,IY) = ILAND
+                    ELSE
+                      MAPOVR(IX,IY) = 0
+                    END IF
+                  END DO
+                END DO
+!
+! ... loop over fields
+!
+              DO J=1, NFCOMP
+!
+                WRITE (NDSO,943) J
+!
+! ... file info lat-long file
+!
+                CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR)             &
+                      NXJ(J), NYJ(J), CLO(J)
+                IF (NXJ(J).LT.2 .OR. NYJ(J).LT.2) THEN
+                    WRITE (NDSE,1036) NXJ(J), NYJ(J)
+                    CALL EXTCDE ( 10 )
+                  END IF
+                IF ( ALLOCATED(MASK) ) DEALLOCATE (MASK)
+                ALLOCATE ( MASK(NXJ(J),NYJ(J)) )
+                MASK   = 1
+                WRITE (NDSO,944) NXJ(J), NYJ(J), CLO(J)
+!
+                CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR)             &
+                      FROMLL, IDLALL, IDFMLL, FORMLL
+                IF (IDLALL.LT.1 .OR. IDLALL.GT.4) IDLALL   = 1
+                IF (IDFMLL.LT.1 .OR. IDFMLL.GT.3) IDFMLL   = 1
+                WRITE (NDSO,945) IDLALL, IDFMLL
+                IF (IDFMLL.EQ.2) WRITE (NDSO,946) FORMLL
+!
+                CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) NDSLL, NAMELL
+!/NCO                NDSLL  = 20 + NFCOMP
+                WRITE (NDSO,947) NDSLL
+                IF (FROMLL.EQ.'NAME') WRITE (NDSO,948) NAMELL
+                IF (NDSLL.EQ.NDSI) THEN
+                    WRITE (NDSE,10381)
+                    CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                  ELSE
+!
+! ... open lat-long file
+!
+                    IF ( IDFMLL .EQ. 3 ) THEN
+                        IF (FROMLL.EQ.'NAME') THEN
+                            JJ     = LEN_TRIM(FNMPRE)
+                            OPEN (NDSLL,FILE=FNMPRE(:JJ)//NAMELL,     &
+                                  FORM='UNFORMATTED',STATUS='OLD',    &
+                                  ERR=845,IOSTAT=IERR)
+                          ELSE
+                            OPEN (NDSLL, FORM='UNFORMATTED',          &
+                                  STATUS='OLD',ERR=845,IOSTAT=IERR)
+                          END IF
+                      ELSE
+                        IF (FROMLL.EQ.'NAME') THEN
+                            JJ     = LEN_TRIM(FNMPRE)
+                            OPEN (NDSLL,FILE=FNMPRE(:JJ)//NAMELL,     &
+                                  STATUS='OLD',ERR=845,IOSTAT=IERR)
+                          ELSE
+                            OPEN (NDSLL,                              &
+                                  STATUS='OLD',ERR=845,IOSTAT=IERR)
+                          END IF
+                      END IF
+!
+                  END IF
+!
+! ... read lat-lon data
+!
+                IF ( ASSOCIATED(ALA) ) THEN
+                    DEALLOCATE ( ALA, ALO )
+                    NULLIFY ( ALA, ALO )
+                  END IF
+                ALLOCATE ( ALA(NXJ(J),NYJ(J)), ALO(NXJ(J),NYJ(J)) )
+                CALL INA2R (ALA, NXJ(J), NYJ(J), 1, NXJ(J), 1, NYJ(J),&
+                     NDSLL, NDST, NDSE, IDFMLL, FORMLL, IDLALL, 1., 0.)
+                CALL INA2R (ALO, NXJ(J), NYJ(J), 1, NXJ(J), 1, NYJ(J),&
+                     NDSLL, NDST, NDSE, IDFMLL, FORMLL, IDLALL, 1., 0.)
+                IF ( NDSLL .NE. NDSI ) CLOSE (NDSLL)
+!
+! ... file info mask file
+!
+                WRITE (NDSO,949)
+!
+                CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR)             &
+                      FROMLL, IDLALL, IDFMLL, FORMLL
+                IF (IDLALL.LT.1 .OR. IDLALL.GT.4) IDLALL   = 1
+                IF (IDFMLL.LT.1 .OR. IDFMLL.GT.3) IDFMLL   = 1
+                WRITE (NDSO,945) IDLALL, IDFMLL
+                IF (IDFMLL.EQ.2) WRITE (NDSO,946) FORMLL
+!
+                CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) NDSLL, NAMELL
+!/NCO                NDSLL  = 22 + NFCOMP
+                WRITE (NDSO,947) NDSLL
+                IF (FROMLL.EQ.'NAME') WRITE (NDSO,948) NAMELL
+                WRITE (NDSO,*) ' '
+                IF (NDSLL.EQ.NDSI) THEN
+                    WRITE (NDSE,10382)
+                    CALL NEXTLN ( COMSTR , NDSI , NDSE )
+                  ELSE
+!
+! ... open mask file
+!
+                    IF ( IDFMLL .EQ. 3 ) THEN
+                        IF (FROMLL.EQ.'NAME') THEN
+                            JJ     = LEN_TRIM(FNMPRE)
+                            OPEN (NDSLL,FILE=FNMPRE(:JJ)//NAMELL,     &
+                                  FORM='UNFORMATTED',STATUS='OLD',    &
+                                  ERR=846,IOSTAT=IERR)
+                          ELSE
+                            OPEN (NDSLL,FORM='UNFORMATTED',           &
+                                  STATUS='OLD',ERR=846,IOSTAT=IERR)
+                          END IF
+                      ELSE
+                        IF (FROMLL.EQ.'NAME') THEN
+                            JJ     = LEN_TRIM(FNMPRE)
+                            OPEN (NDSLL,FILE=FNMPRE(:JJ)//NAMELL,     &
+                                  STATUS='OLD',ERR=846,IOSTAT=IERR)
+                          ELSE
+                            OPEN (NDSLL,                              &
+                                  STATUS='OLD',ERR=846,IOSTAT=IERR)
+                          END IF
+                      END IF
+!
+                  END IF
+!
+! ... read mask data
+!
+                CALL INA2I (MASK, NXJ(J), NYJ(J), 1,NXJ(J), 1,NYJ(J), &
+                     NDSLL, NDST, NDSE, IDFMLL, FORMLL, IDLALL, 1, 0)
+                IF ( NDSLL .NE. NDSI ) CLOSE (NDSLL)
+!
+!/T1a                WRITE (NDST,9050)
+!/T1a                DO IY=1, NYJ(J)
+!/T1a                  DO IX=1,NXJ(J)
+!/T1a                    WRITE (NDST,9051) IX, IY, ALA(IX,IY),             &
+!/T1a                           ALO(IX,IY), MASK(IX,IY)
+!/T1a                    END DO
+!/T1a                  END DO
+!
+! ... generate interpolation data
+!
+              IF ( J .EQ. 1 ) THEN
+                  CALL W3FLDP ( NDSO, NDST, NDSE, IERR, FLAGLL,       &
+                    NX, NY, NX, NY, YGRD, XGRD, MAPOVR, ILAND,        &
+                    NXJ(J), NYJ(J), NXJ(J), NYJ(J), CLO(J), ALA, ALO, &
+                    MASK, RD11, RD21, RD12, RD22, IX21, IX22, IY21,   &
+                    IY22 )
+                ELSE
+                  CALL W3FLDP ( NDSO, NDST, NDSE, IERR, FLAGLL,       &
+                    NX, NY, NX, NY, YGRD, XGRD, MAPOVR, ILAND,        &
+                    NXJ(J), NYJ(J), NXJ(J), NYJ(J), CLO(J), ALA, ALO, &
+                    MASK, XD11, XD21, XD12, XD22, JX21, JX22, JY21,   &
+                    JY22 )
+                END IF
+!
+              END DO
+!
+! ... average two fields !
+!
+              IF ( NFCOMP .EQ. 2) THEN
+                  DO IX=1, NX
+                    DO IY=1, NY
+                      IF ( MAPOVR(IX,IY) .GE. 2) THEN
+                          FACTOR = 1. / REAL(MAPOVR(IX,IY))
+                          RD11(IX,IY) = FACTOR * RD11(IX,IY)
+                          RD12(IX,IY) = FACTOR * RD12(IX,IY)
+                          RD21(IX,IY) = FACTOR * RD21(IX,IY)
+                          RD22(IX,IY) = FACTOR * RD22(IX,IY)
+                          XD11(IX,IY) = FACTOR * XD11(IX,IY)
+                          XD12(IX,IY) = FACTOR * XD12(IX,IY)
+                          XD21(IX,IY) = FACTOR * XD21(IX,IY)
+                          XD22(IX,IY) = FACTOR * XD22(IX,IY)
+                        END IF
+                      END DO
+                    END DO
+                END IF
+!
+            END IF
+        END IF
+!
+! 4.c Input location and format
+!
+      DO J=1, NFCOMP
+!
+        IF ( ITYPE .GE. 5 ) THEN
+            WRITE (NDSO,960)
+          ELSE
+            IF (ITYPE.LE.3) THEN
+                WRITE (NDSO,961) NXJ(J), NYJ(J)
+              ELSE
+                WRITE (NDSO,962) J, NXJ(J), NYJ(J)
+              END IF
+          END IF
+!
+        CALL NEXTLN ( COMSTR , NDSI , NDSE )
+        READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR)                     &
+              FROMF, IDLAF(J), IDFMF(J), FORMT(J), FORMF(J)
+        IF (IDLAF(J).LT.1 .OR. IDLAF(J).GT.4) IDLAF(J) = 1
+        IF (IDFMF(J).LT.1 .OR. IDFMF(J).GT.3) IDFMF(J) = 1
+        IF ( ITYPE .NE. 5 ) WRITE (NDSO,963) IDLAF(J)
+        WRITE (NDSO,964) IDFMF(J)
+        IF (IDFMF(J).EQ.2) WRITE (NDSO,965) FORMT(J), FORMF(J)
+!
+        CALL NEXTLN ( COMSTR , NDSI , NDSE )
+        READ (NDSI,*,END=801,ERR=802,IOSTAT=IERR) NDSF(J), NAMEF
+!/NCO        NDSF(J)  = 24 + NFCOMP
+        WRITE (NDSO,966) NDSF(J)
+        IF (FROMF.EQ.'NAME') WRITE (NDSO,967) NAMEF
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 5   Prepare files
+! 5.a Open input file
+!
+        WRITE (NDSO,970)
+!
+        IF ( IDFMF(J) .EQ. 3 ) THEN
+            IF (NDSF(J).EQ.NDSI) THEN
+                WRITE (NDSE,1051) NDSI
+                CALL EXTCDE ( 20 )
+              ELSE
+                IF (FROMF.EQ.'NAME') THEN
+                    JJ     = LEN_TRIM(FNMPRE)
+                    OPEN (NDSF(J),FILE=FNMPRE(:JJ)//NAMEF,            &
+                          FORM='UNFORMATTED',STATUS='OLD',ERR=850,    &
+                          IOSTAT=IERR)
+                  ELSE
+                    OPEN (NDSF(J),FORM='UNFORMATTED',                 &
+                          STATUS='OLD',ERR=850,IOSTAT=IERR)
+                  END IF
+!
+! Adding a check to see if input file is a WAVEWATCH III file
+! (This check has only been added for binary wind files)
+!
+                  READ (NDSF(J),END=888,IOSTAT=IERR) TSTR,            &
+                        TSFLD, NXT, NYT
+                  IF (IERR .EQ. 0 .AND. TSTR .EQ. IDSTR) THEN
+                      IF (TSFLD .NE. IDFLD .OR. NXT .NE. NXI          &
+                          .OR. NYT .NE. NYI ) THEN
+                          WRITE (NDSE,1052) TSFLD, NXT, NYT, IDFLD,   &
+                                 NXI, NYI
+                          CALL EXTCDE ( 21 ) 
+                      END IF
+                  ELSE
+                      REWIND(NDSF(J)) 
+                  END IF
+              END IF
+          ELSE
+            IF (NDSF(J).EQ.NDSI) THEN
+                CALL NEXTLN ( COMSTR , NDSI , NDSE )
+              ELSE
+                IF (FROMF.EQ.'NAME') THEN
+                    JJ     = LEN_TRIM(FNMPRE)
+                    OPEN (NDSF(J),FILE=FNMPRE(:JJ)//NAMEF,            &
+                          STATUS='OLD',ERR=850,IOSTAT=IERR)
+                  ELSE
+                    OPEN (NDSF(J),STATUS='OLD',ERR=850,IOSTAT=IERR)
+                  END IF
+              END IF
+          END IF
+!
+        END DO
+!
+      IF ( NFCOMP .EQ. 1 ) THEN
+          NXJ  (2) = NXJ  (1)
+          NYJ  (2) = NYJ  (1)
+          NDSF (2) = NDSF (1)
+          IDLAF(2) = IDLAF(1)
+          IDFMF(2) = IDFMF(1)
+          FORMT(2) = FORMT(1)
+          FORMF(2) = FORMF(1)
+        END IF
+!
+! 5.b Open and prepare output file
+!
+      WRITE (NDSO,971)
+      J      = LEN_TRIM(FNMPRE)
+      IF ( ITYPE .LE. 4 ) THEN
+          CALL W3FLDO ( 'WRITE', IDFLD, NDSDAT, NDST, NDSE,           &
+               NX, NY, GTYPE, IERR, FPRE=FNMPRE(:J),                  &
+               FHDR=FLHDR )
+        ELSE
+          CALL W3FLDO ( 'WRITE', IDFLD, NDSDAT, NDST, NDSE,           &
+               RECLDT, 0, GTYPEDUM, IERR, FPRE=FNMPRE(:J) )
+        END IF
+!
+! 5.c Initialize fields
+!
+      IF ( ITYPE .NE. 5 ) THEN
+          FX = 0.
+          FY = 0.
+          FA = 0.
+          MXM = MAX ( NXJ(1), NXJ(2) )
+          MYM = MAX ( NYJ(1), NYJ(2) )
+          ALLOCATE ( XC(MXM,MYM), YC(MXM,MYM), AC(MXM,MYM) )
+          XC = 0.
+          YC = 0.
+          AC = 0.
+        END IF
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 6   Begin loop over input fields
+!
+!/O15      J      = LEN_TRIM(FNMPRE)
+!/O15      OPEN (NDSTIME,FILE=FNMPRE(:J)//'times.'//IDFLD,      &
+!/O15            ERR=870,IOSTAT=IERR )
+!
+      WRITE (NDSO,972)
+      DO
+!
+! 6.a Read new time and fields
+!
+        IF ( FLTIME ) THEN
+!
+            J      = 1
+            IF (IDFMF(J).EQ.1) THEN
+                READ (NDSF(J),    *   ,END=888,ERR=860,IOSTAT=IERR) TIME
+              ELSE IF (IDFMF(J).EQ.2) THEN
+                READ (NDSF(J),FORMT(J),END=888,ERR=860,IOSTAT=IERR) TIME
+              ELSE
+                READ (NDSF(J),         END=888,ERR=860,IOSTAT=IERR) TIME
+              END IF
+! <---
+      IF (NFCOMP.EQ.2) THEN
+          J      = 2
+          IF (IDFMF(J).EQ.1) THEN
+              READ (NDSF(J),    *   ,END=888,ERR=860,IOSTAT=IERR) TIME2
+            ELSE IF (IDFMF(J).EQ.2) THEN
+              READ (NDSF(J),FORMT(J),END=888,ERR=860,IOSTAT=IERR) TIME2
+            ELSE
+              READ (NDSF(J),         END=888,ERR=860,IOSTAT=IERR) TIME2
+            END IF
+          IF (TIME2(1).NE.TIME(1) .OR. TIME2(2).NE.TIME(2)) GOTO 861
+        END IF
+! <---
+          END IF
+!
+        CALL STME21 ( TIME , IDTIME )
+        WRITE (NDSO,973) IDTIME
+!/O15        WRITE (NDSTIME, 979, ERR=871,IOSTAT=IERR) TIME
+!/O3        WRITE (NDSO,974)
+!
+! ... Input
+!
+!  read in array from ww3_prep.inp
+        IF ( ITYPE .LE. 4 ) THEN
+            CALL INA2R (XC, MXM, MYM, 1, NXJ(1), 1, NYJ(1),           &
+                 NDSF(1), NDST, NDSE, IDFMF(1), FORMF(1), IDLAF(1), 1., 0.)
+!
+!/T2            WRITE (NDST,9060) 1
+!/T2            IXP0   = 1
+!/T2            IXPN   = MIN ( IXP0+IXPWDT-1 , NXJ(1) )
+!/T2            DO
+!/T2              CALL PRTBLK ( NDST, NXJ(1), NYJ(1), MXM, XC, MASK, 0, 0.,&
+!/T2                            IXP0, IXPN, 1, 1, NYJ(1), 1, 'Field 1', ' ')
+!/T2              IF (IXPN.NE.NXJ(1)) THEN
+!/T2                  IXP0    = IXP0 + IXPWDT
+!/T2                  IXPN    = MIN ( IXPN+IXPWDT , NXJ(1) )
+!/T2                ELSE
+!/T2                  EXIT
+!/T2                END IF
+!/T2              END DO
+!
+            IF (NFCOMP.EQ.2 .OR. IFLD.GE.3 .OR. FLBERG) THEN
+                CALL INA2R (YC, MXM, MYM, 1, NXJ(2), 1, NYJ(2),       &
+                            NDSF(2), NDST, NDSE, IDFMF(2), FORMF(2),  &
+                            IDLAF(2), 1., 0.)
+!
+!/T2                WRITE (NDST,9060) 2
+!/T2                IXP0   = 1
+!/T2                IXPN   = MIN ( IXP0+IXPWDT-1 , NXJ(2) )
+!/T2                DO
+!/T2                  CALL PRTBLK ( NDST, NXJ(2), NYJ(2), MXM, YC, MASK, 0, 0., &
+!/T2                                IXP0, IXPN, 1, 1, NYJ(2), 1, 'Field 2', ' ')
+!/T2                  IF (IXPN.NE.NXJ(2)) THEN
+!/T2                      IXP0    = IXP0 + IXPWDT
+!/T2                      IXPN    = MIN ( IXPN+IXPWDT , NXJ(2) )
+!/T2                    ELSE
+!/T2                      EXIT
+!/T2                    END IF
+!/T2                  END DO
+!
+                IF ( FLSTAB ) THEN
+                    CALL INA2R (AC, MXM, MYM, 1, NXJ(2), 1, NYJ(2),   &
+                       NDSF(2), NDST, NDSE, IDFMF(2), FORMF(2),       &
+                       IDLAF(2), 1., 0. )
+!
+!/T2                    WRITE (NDST,9060) 3
+!/T2                    IXP0   = 1
+!/T2                    IXPN   = MIN ( IXP0+IXPWDT-1 , NXJ(2) )
+!/T2                    DO
+!/T2                      CALL PRTBLK ( NDST, NXJ(2), NYJ(2), MXM, AC, MASK, 0,&
+!/T2                            0., IXP0, IXPN, 1,1, NYJ(2), 1, 'Field 3', ' ')
+!/T2                      IF (IXPN.NE.NXJ(2)) THEN
+!/T2                          IXP0    = IXP0 + IXPWDT
+!/T2                          IXPN    = MIN ( IXPN+IXPWDT , NXJ(2) )
+!/T2                        ELSE
+!/T2                          EXIT
+!/T2                        END IF
+!/T2                      END DO
+!
+                  END IF
+!
+              END IF
+!
+          ELSE
+!
+            IF (IDFMF(1).EQ.3) THEN
+                READ (NDSF(1),  END=862,ERR=862,IOSTAT=IERR) NDAT
+              ELSE
+                READ (NDSF(1),*,END=862,ERR=862,IOSTAT=IERR) NDAT
+              END IF
+!/O3            WRITE (NDSO,975) NDAT
+            IF ( NDAT.GT.0 ) THEN
+                ALLOCATE ( DATA(RECLDT,NDAT) )
+                DO IDAT=1, NDAT
+                  IF (IDFMF(1).EQ.1) THEN
+                      READ (NDSF(1),    *   ,END=863,ERR=863,         &
+                            IOSTAT=IERR) DATA(:,IDAT)
+                    ELSE IF (IDFMF(1).EQ.2) THEN
+                      READ (NDSF(1),FORMT(1),END=863,ERR=863,         &
+                            IOSTAT=IERR) DATA(:,IDAT)
+                    ELSE
+                      READ (NDSF(1),         END=863,ERR=863,         &
+                            IOSTAT=IERR) DATA(:,IDAT)
+                    END IF
+                  END DO
+              END IF
+!
+!/T2            WRITE (NDST,9061)
+!/T2            DO IDAT=1, NDAT
+!/T2              IX     = MIN(6,RECLDT)
+!/T2              WRITE (NDST,9062) IDAT, DATA(1:IX,IDAT)
+!/T2              IF ( IX.LT.RECLDT ) WRITE (NDST,9063) DATA(IX+1:,:)
+!/T2              END DO
+!
+          END IF
+!
+! 6.b Interpolate fields
+! ... No interpolation, type AI (should not use array syntax !!!)
+!
+        IF (ITYPE.EQ.1) THEN
+!
+            IF (( IFLD.LE.2 ).AND.( .NOT. FLBERG )) THEN
+                DO IY=1, NY
+                  DO IX=1, NX
+                    FA(IX,IY) = XC(IX,IY)
+                    END DO
+                  END DO
+              ELSE
+                DO IY=1, NY
+                  DO IX=1, NX
+                    FX(IX,IY) = XC(IX,IY)
+                    FY(IX,IY) = YC(IX,IY)
+                    FA(IX,IY) = AC(IX,IY)
+                    END DO
+                  END DO
+              END IF
+!
+          ELSE IF (ITYPE.NE.5) THEN
+!
+! ... One-component fields
+!
+!/O3            WRITE (NDSO,976) ' '
+            IF (( IFLD.LE.2 ).AND.( .NOT. FLBERG )) THEN
+!
+                DO IY=1,NY
+                  DO IX=1,NX
+                    FA(IX,IY)                                         &
+                          = RD11(IX,IY) * XC(IX21(IX,IY),IY21(IX,IY)) &
+                          + RD21(IX,IY) * XC(IX22(IX,IY),IY21(IX,IY)) &
+                          + RD12(IX,IY) * XC(IX21(IX,IY),IY22(IX,IY)) &
+                          + RD22(IX,IY) * XC(IX22(IX,IY),IY22(IX,IY))
+                    END DO
+                  END DO
+!
+                IF (NFCOMP.EQ.2) THEN
+!/O3                WRITE (NDSO,976) ' (2) '
+                    DO IY=1,NY
+                      DO IX=1,NX
+                        FA(IX,IY) = FA(IX,IY)                         &
+                          + XD11(IX,IY) * YC(JX21(IX,IY),JY21(IX,IY)) &
+                          + XD21(IX,IY) * YC(JX22(IX,IY),JY21(IX,IY)) &
+                          + XD12(IX,IY) * YC(JX21(IX,IY),JY22(IX,IY)) &
+                          + XD22(IX,IY) * YC(JX22(IX,IY),JY22(IX,IY))
+                        END DO
+                      END DO
+                  END IF
+!
+! ... Two-component fields
+!
+              ELSE
+!
+                DO IY=1,NY
+                  DO IX=1,NX
+                 IF (IY21(IX,IY).LT.1) THEN
+                    IY21(IX,IY)=1
+                    IX21(IX,IY)=1
+                    IX22(IX,IY)=1
+                  ENDIF
+                  IF (IY22(IX,IY).LT.1) IY22(IX,IY)=1
+                  IF (IY21(IX,IY).GT.MYM) IY21(IX,IY)=MYM
+                  IF (IY22(IX,IY).GT.MYM) THEN
+                     IY22(IX,IY)=MYM
+                     IX21(IX,IY)=1
+                     IX22(IX,IY)=1
+                  END IF
+                    FX(IX,IY)                                         &
+                          = RD11(IX,IY) * XC(IX21(IX,IY),IY21(IX,IY)) &
+                          + RD21(IX,IY) * XC(IX22(IX,IY),IY21(IX,IY)) &
+                          + RD12(IX,IY) * XC(IX21(IX,IY),IY22(IX,IY)) &
+                          + RD22(IX,IY) * XC(IX22(IX,IY),IY22(IX,IY))
+                    FY(IX,IY)                                         &
+                          = RD11(IX,IY) * YC(IX21(IX,IY),IY21(IX,IY)) &
+                          + RD21(IX,IY) * YC(IX22(IX,IY),IY21(IX,IY)) &
+                          + RD12(IX,IY) * YC(IX21(IX,IY),IY22(IX,IY)) &
+                          + RD22(IX,IY) * YC(IX22(IX,IY),IY22(IX,IY))
+                    FA(IX,IY)                                         &
+                          = RD11(IX,IY) * AC(IX21(IX,IY),IY21(IX,IY)) &
+                          + RD21(IX,IY) * AC(IX22(IX,IY),IY21(IX,IY)) &
+                          + RD12(IX,IY) * AC(IX21(IX,IY),IY22(IX,IY)) &
+                          + RD22(IX,IY) * AC(IX22(IX,IY),IY22(IX,IY))
+                    A1(IX,IY) = MAX ( 1.E-10 ,                        &
+                                  SQRT( FX(IX,IY)**2 + FY(IX,IY)**2 ) )
+                    A2(IX,IY)                                         &
+                 = RD11(IX,IY) * SQRT(XC(IX21(IX,IY),IY21(IX,IY))**2  &
+                                     +YC(IX21(IX,IY),IY21(IX,IY))**2) &
+                 + RD21(IX,IY) * SQRT(XC(IX22(IX,IY),IY21(IX,IY))**2  &
+                                     +YC(IX22(IX,IY),IY21(IX,IY))**2) &
+                 + RD12(IX,IY) * SQRT(XC(IX21(IX,IY),IY22(IX,IY))**2  &
+                                     +YC(IX21(IX,IY),IY22(IX,IY))**2) &
+                 + RD22(IX,IY) * SQRT(XC(IX22(IX,IY),IY22(IX,IY))**2  &
+                                     +YC(IX22(IX,IY),IY22(IX,IY))**2)
+                    A3(IX,IY) = SQRT (                                &
+                     RD11(IX,IY) * ( XC(IX21(IX,IY),IY21(IX,IY))**2   &
+                                   + YC(IX21(IX,IY),IY21(IX,IY))**2 ) &
+                   + RD21(IX,IY) * ( XC(IX22(IX,IY),IY21(IX,IY))**2   &
+                                   + YC(IX22(IX,IY),IY21(IX,IY))**2 ) &
+                   + RD12(IX,IY) * ( XC(IX21(IX,IY),IY22(IX,IY))**2   &
+                                   + YC(IX21(IX,IY),IY22(IX,IY))**2 ) &
+                   + RD22(IX,IY) * ( XC(IX22(IX,IY),IY22(IX,IY))**2   &
+                                   + YC(IX22(IX,IY),IY22(IX,IY))**2 ) )
+                    END DO
+                  END DO
+!
+! ... Winds, correct for velocity or energy conservation
+!
+!/WNT1                IF (IFLD.EQ.3) THEN
+!/WNT1                    DO IY=1,NY
+!/WNT1                      DO IX=1,NX
+!/WNT1                        FACTOR = MIN ( 1.5 , A2(IX,IY)/A1(IX,IY) )
+!/WNT1                        FX(IX,IY) = FACTOR * FX(IX,IY)
+!/WNT1                        FY(IX,IY) = FACTOR * FY(IX,IY)
+!/WNT1                        END DO
+!/WNT1                      END DO
+!/WNT1                  END IF
+!
+!/WNT2                IF (IFLD.EQ.3) THEN
+!/WNT2                    DO IY=1,NY
+!/WNT2                      DO IX=1,NX
+!/WNT2                        FACTOR = MIN ( 1.5 , A3(IX,IY)/A1(IX,IY) )
+!/WNT2                        FX(IX,IY) = FACTOR * FX(IX,IY)
+!/WNT2                        FY(IX,IY) = FACTOR * FY(IX,IY)
+!/WNT2                        END DO
+!/WNT2                      END DO
+!/WNT2                  END IF
+!
+! ... Currents, correct for velocity or energy conservation
+!
+!/CRT1                IF (IFLD.EQ.4) THEN
+!/CRT1                    DO IY=1,NY
+!/CRT1                      DO IX=1,NX
+!/CRT1                        FACTOR = MIN ( 1.5 , A2(IX,IY)/A1(IX,IY) )
+!/CRT1                        FX(IX,IY) = FACTOR * FX(IX,IY)
+!/CRT1                        FY(IX,IY) = FACTOR * FY(IX,IY)
+!/CRT1                        END DO
+!/CRT1                      END DO
+!/CRT1                  END IF
+!
+!/CRT2                IF (IFLD.EQ.4) THEN
+!/CRT2                    DO IY=1,NY
+!/CRT2                      DO IX=1,NX
+!/CRT2                        FACTOR = MIN ( 1.5 , A3(IX,IY)/A1(IX,IY) )
+!/CRT2                        FX(IX,IY) = FACTOR * FX(IX,IY)
+!/CRT2                        FY(IX,IY) = FACTOR * FY(IX,IY)
+!/CRT2                        END DO
+!/CRT2                      END DO
+!/CRT2                 END IF
+!
+              END IF
+!
+          END IF
+!
+! ... Test output
+!
+!/T3        IF ( .NOT. ALLOCATED(MAPOUT) ) ALLOCATE ( MAPOUT(NX,NY) )
+!/T3        WRITE (NDST,9065)
+!/T3        DO IX=1, NX
+!/T3          DO IY=1, NY
+!/T3            MAPOUT(IX,IY) = MAPSTA(IY,IX)
+!/T3            END DO
+!/T3          END DO
+!/T3        IX0    = 1
+!/T3        IXN    = MIN ( IX0+IXWDT-1 , NX )
+!/T3        DO
+!/T3          IF (IFLD.EQ.-7) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'ice param 1', '(-)')
+!/T3            ELSE IF (IFLD.EQ.-6) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'ice param 2', '(-)')
+!/T3            ELSE IF (IFLD.EQ.-5) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'ice param 3', '(-)')
+!/T3            ELSE IF (IFLD.EQ.-4) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'ice param 4', '(-)')
+!/T3            ELSE IF (IFLD.EQ.-3) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'ice param 5', '(-)')
+!/T3            ELSE IF (IFLD.EQ.-2) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Mud Density', 'kg/m3')
+!/T3            ELSE IF (IFLD.EQ.-1) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Mud Thkness', '(-)')
+!/T3            ELSE IF (IFLD.EQ.0) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Mud Kin.Visc', 'm2/s')
+!/T3            ELSE IF (IFLD.EQ.1) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Fraction ice', '(-)')
+!/T3              IF ( FLBERG )                                       &
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Iceberg a', '0.1/km')
+!/T3            ELSE IF (IFLD.EQ.2) THEN
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Water level', 'm')
+!/T3            ELSE
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FX, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Cart. X-comp', 'm/s')
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FY, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Cart. Y-comp', 'm/s')
+!/T3              IF ( FLSTAB )                                       &
+!/T3              CALL PRTBLK (NDSO, NX, NY, NX, FA, MAPOUT, 0, 0.,   &
+!/T3                      IX0, IXN, 1, 1, NY, 1, 'Tair-Tsea', 'degr')
+!/T3            END IF
+!/T3          IF (IXN.NE.NX) THEN
+!/T3              IX0    = IX0 + IXWDT
+!/T3              IXN    = MIN ( IXN+IXWDT , NX )
+!/T3            ELSE
+!/T3              EXIT
+!/T3            END IF
+!/T3          END DO
+!
+! 6.c Write fields
+!
+        IF ( ITYPE .LE. 4 ) THEN
+!/O3            WRITE (NDSO,977)
+            CALL W3FLDG ('WRITE', IDFLD, NDSDAT, NDST, NDSE, NX, NY,  &
+                         NX, NY, TIME, TIME, TIME, FX, FY, FA, TIME,  &
+                         FX, FY, FA, IERR)
+          ELSE IF ( ITYPE .EQ. 5 ) THEN
+            IF ( NDAT .EQ. 0 ) THEN
+!/O3                WRITE (NDSO,978)
+              ELSE
+!/O3                WRITE (NDSO,977)
+                CALL W3FLDD ('WRITE', IDFLD, NDSDAT, NDST, NDSE, TIME,&
+                             TIME, RECLDT, NDAT, IDAT, DATA, IERR )
+                DEALLOCATE ( DATA )
+              END IF
+          END IF
+        IF (IERR.NE.0) CALL EXTCDE ( 30 )
+!
+        IF ( .NOT. FLTIME ) EXIT
+        END DO
+!
+!     End loop over input fields
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!
+      GOTO 888
+!
+! Error escape locations
+!
+  800 CONTINUE
+      WRITE (NDSE,1000) IERR
+      CALL EXTCDE ( 40 )
+!
+  801 CONTINUE
+      WRITE (NDSE,1001)
+      CALL EXTCDE ( 41 )
+!
+  802 CONTINUE
+      WRITE (NDSE,1002) IERR
+      CALL EXTCDE ( 42 )
+!
+  837 CONTINUE
+      WRITE (NDSE,1037) NDSI
+      CALL EXTCDE ( 43 )
+!
+  840 CONTINUE
+      WRITE (NDSE,1040) X0I, XNI
+      CALL EXTCDE ( 45 )
+!
+  841 CONTINUE
+      WRITE (NDSE,1041) Y0I, YNI
+      CALL EXTCDE ( 46 )
+!
+  845 CONTINUE
+      WRITE (NDSE,1045) IERR
+      CALL EXTCDE ( 47 )
+!
+  846 CONTINUE
+      WRITE (NDSE,1046) IERR
+      CALL EXTCDE ( 48 )
+!
+  850 CONTINUE
+      WRITE (NDSE,1050) IERR, NDSF(J), NAMEF
+      CALL EXTCDE ( 49 )
+!
+  860 CONTINUE
+      WRITE (NDSE,1060) J, IERR
+      CALL EXTCDE ( 50 )
+!
+  861 CONTINUE
+      WRITE (NDSE,1061) TIME, TIME2
+      CALL EXTCDE ( 51 )
+!
+  862 CONTINUE
+      WRITE (NDSE,1062) IERR
+      CALL EXTCDE ( 52 )
+!
+  863 CONTINUE
+      WRITE (NDSE,1063) IDAT, IERR
+      CALL EXTCDE ( 53 )
+!
+!/O15  870 CONTINUE
+!/O15      WRITE (NDSE,1070) IDFLD, IERR
+!/O15      CALL EXTCDE ( 54 )
+!
+!/O15  871 CONTINUE
+!/O15      WRITE (NDSE,1071) IDTIME, IERR
+!/O15      CALL EXTCDE ( 54 )
+!
+  888 CONTINUE
+      WRITE (NDSO,999)
+!
+!/NCO/!     CALL W3TAGE('WAVEPREP')
+!
+! Formats
+!
+  900 FORMAT (/15X,'  *** WAVEWATCH III  Input pre-processing ***  '/ &
+               15X,'==============================================='/)
+  901 FORMAT ( '  Comment character is ''',A,''''/)
+  902 FORMAT ( '  Grid name : ',A/)
+!
+  930 FORMAT (/'  Description of inputs'/                             &
+               ' --------------------------------------------------'/ &
+               '       Input type        : ',A/                       &
+               '       Format type       : ',A)
+ 1930 FORMAT ( '          Field conserves velocity.')
+ 2930 FORMAT ( '          Field corrected for energy conservation.')
+  931 FORMAT (/'       Single field, time: ',A)
+  932 FORMAT (/'       Input grid dim.   :',I5,3X,I5)
+  933 FORMAT ( '       Longitude range   :',2F8.2,' (deg)'/           &
+               '       Latitude range    :',2F8.2,' (deg)')
+  733 FORMAT ( '       X range           :',2F8.2,' (km)'/           &
+               '       Y range           :',2F8.2,' (km)')
+  934 FORMAT (/'       Data type         : ',A/                       &
+               '       Data record length:',I5/                       &
+               '       Missing values    :',F8.2)
+  935 FORMAT ( 'DT',I1 )
+  938 FORMAT ( '          Icebergs included.')
+  939 FORMAT ( '          Air-sea temperature differences included.')
+!
+  940 FORMAT (//'  Preprocessing data'/                               &
+               ' --------------------------------------------------')
+  941 FORMAT ( '       Interpolation factors ..... '/                 &
+               '          (longitude-latitude grid)')
+  942 FORMAT ( '       Interpolation factors ..... '/                 &
+               '          (grid from file)')
+  943 FORMAT (/'           Longitude-latitude file ',I1,' :'/         &
+               '          ---------------------------------------')
+  944 FORMAT ( '           Input grid dim.   :',I5,3X,I5/             &
+               '           Closed longitudes :',L5)
+  945 FORMAT ( '           Layout indicator  :',I5/                   &
+               '           Format indicator  :',I5)
+  946 FORMAT ( '           Format            : ',A)
+  947 FORMAT ( '           Unit number       :',I5)
+  948 FORMAT ( '           File name         : ',A)
+  949 FORMAT (/'           Corresponding map file '/                  &
+               '          ---------------------------------------')
+!
+  960 FORMAT (/'           Data file :'/                              &
+               '          ---------------------------------------')
+  961 FORMAT (/'           Data file :'/                              &
+               '          ---------------------------------------'/   &
+               '           Input grid dim.   :',I5,3X,I5)
+  962 FORMAT (/'           Data file (',I1,') :'/                     &
+               '          ---------------------------------------'/   &
+               '           Input grid dim.   :',I5,3X,I5)
+  963 FORMAT ( '           Layout indicator  :',I5)
+  964 FORMAT ( '           Format indicator  :',I5)
+  965 FORMAT ( '           Format for time   : ',A/                   &
+               '           Format for data   : ',A)
+  966 FORMAT ( '           Unit number       :',I5)
+  967 FORMAT ( '           File name         : ',A)
+!
+  970 FORMAT (/'       Opening input data file .....')
+  971 FORMAT (/'       Opening output data file .....')
+  972 FORMAT (//'  Processing data'/                                  &
+               ' --------------------------------------------------')
+  973 FORMAT ( '           Time : ',A)
+!/O3  974 FORMAT ( '                  reading ....')
+!/O3  975 FORMAT ( '                     number of data records :',I6)
+!/O3  976 FORMAT ( '                  interpolating',A,'....')
+!/O3  977 FORMAT ( '                  writing ....')
+!/O3  978 FORMAT ( '                  skipping ....')
+!
+!/O15 979 FORMAT (1X,I8.8,1X,I6.6)
+!
+  999 FORMAT(//'  End of program '/                                   &
+               ' ========================================='/          &
+               '         WAVEWATCH III Input preprocessing '/)
+!
+ 1000 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN OPENING INPUT FILE'/                    &
+               '     IOSTAT =',I5/)
+!
+ 1001 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     PREMATURE END OF INPUT FILE'/)
+!
+ 1002 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN READING FROM INPUT FILE'/               &
+               '     IOSTAT =',I5/)
+!
+ 1030 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL FIELD ID -->',A,'<--'/)
+ 1031 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL FORMAT ID -->',A,'<--'/)
+ 1032 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     THIS FORMAT TYPE IS ALLOWED FOR ICE AND LEV ONLY'/)
+!
+ 1033 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL DATA RECORD LENGTH : ',I6/)
+ 1034 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL DATA TYPE : ',I2/)
+!
+ 1035 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL TIME : ',I8.8,I7.6/)
+ 1036 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL SIZE OF INPUT GRID : ',I5,1X,I5/)
+ 1037 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ATTEMPT TO USE INPUT UNIT (',I2,                 &
+               ') FOR NAMED FILE'/)
+ 10381 FORMAT (/' *** WAVEWATCH III WARNING IN W3PREP : '/             &
+               '     LAT/LON DATA READ FROM INPUT FILE')
+ 10382 FORMAT (/' *** WAVEWATCH III WARNING IN W3PREP : '/             &
+               '     MASK DATA READ FROM INPUT FILE')
+ 1039 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ARRAYS FOR INPUT FIELDS TO SMALL '/              &
+               '            GRID SIZE       :',2I5/                   &
+               '            ARRAY DIMENSION :',2I5/)
+!
+ 1040 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     LONGITUDE GRID RANGE > 360 DEGR. : ',2F6.1/)
+ 1041 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ILLEGAL LATITUDE GRID RANGE : ',2F6.1/)
+ 1042 FORMAT (/' *** WAVEWATCH-III WARNING W3PREP : '/                &
+               '     GRID POINT ',2I6,2F7.2,/                         &
+               ' NOT COVERED BY INPUT GRID.'/)
+ 1043 FORMAT (/' *** WAVEWATCH III WARNING W3PREP : '/                &
+               '     X = ',F10.1,' NOT COVERED BY INPUT GRID.'/)
+ 1044 FORMAT (/' *** WAVEWATCH III WARNING W3PREP : '/                &
+               '     Y = ',F10.1,' NOT COVERED BY INPUT GRID.'/)
+!
+
+!
+ 1045 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN OPENING LAT-LONG DATA FILE'/            &
+               '     IOSTAT =',I5/)
+!
+ 1046 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN OPENING MASK FILE'/                     &
+               '     IOSTAT =',I5/)
+!
+ 1050 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN OPENING INPUT DATA FILE'/               &
+               '     IOSTAT =',I5/                                    &
+               '     NDSF   =',I5/                                    &
+               '     NAMEF  = ',A/)
+ 1051 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     CANNOT READ UNFORMATTED FROM UNIT',I3/)
+!
+ 1052 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN READING FROM INPUT DATA FILE'/          &
+               '     IN FILE ,    VARIABLE ID     = ',A/              &
+               '                  ARRAY DIMENSION = ',2I5/            &
+               '     EXPECTING ,  VARIABLE ID     = ',A/              &
+               '                  ARRAY DIMENSION = ',2I5/)
+!
+ 1060 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN READING TIME FROM FILE (',I1,')'/       &
+               '     IOSTAT =',I5/)
+ 1061 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     INCOMPATIBLE FIELD TIMES '/                      &
+               '            FIELD #1 : ',I8.8,I7.6/                   &
+               '            FIELD #2 : ',I8.8,I7.6/)
+ 1062 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN READING NDAT FROM FILE'/                &
+               '     IOSTAT =',I5/)
+ 1063 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/               &
+               '     ERROR IN READING DATA RECORD',I6,' FROM FILE'/   &
+               '     IOSTAT =',I5/)
+!/O15 1070 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/          &
+!/O15               '     ERROR IN CREATING A TIMES FILE FOR ',A/     &
+!/O15               '     IOSTAT =',I5/)
+!/O15 1071 FORMAT (/' *** WAVEWATCH III ERROR IN W3PREP : '/          &
+!/O15               '     ERROR IN WRITING TIME OUTPUT ',A/           &
+!/O15               '     IOSTAT =',I5/)
+!
+!/T 9000 FORMAT (' TEST W3PREP : ACC : ',F6.3)
+!
+!/T 9040 FORMAT (' TEST W3PREP : INPUT GRID RANGES AND INCR. AFTER CORR.'/ &
+!/T              '               LON / X : ',3F10.2,                   &
+!/T              ' (GLOBAL=',L1,')'/                                     &
+!/T              '               LAT / Y : ',3F10.2)
+!/T 9041 FORMAT (' TEST W3PREP : INTERPOLATION DATA FOR ',A)
+!/T 9042 FORMAT ('              ',I4,F8.2,2I4,2F8.2,1X,F6.3,1X,A)
+!/T 9043 FORMAT (' TEST W3PREP : GRID SHIFTED BY ',F5.0,' DEGREES / M')
+!/T1 9045 FORMAT (' TEST W3PREP : IX, IY, IXI(2), IYI(2), RD(4)')
+!/T1 9046 FORMAT ('     ',2I4,2X,4I4,2X,4F6.2)
+!
+!/T1a 9050 FORMAT (' TEST W3PREP : LAT-LONG OF INPUT FILE ')
+!/T1a 9051 FORMAT ('             ',2I4,2F8.2,I4)
+!
+!/T2 9060 FORMAT (' TEST W3PREP : INPUT FIELD (',I1,') :'/)
+!/T2 9061 FORMAT (' TEST W3PREP : INPUT DATA RECORDS :')
+!/T2 9062 FORMAT ('      ',I6,' : ',6E11.3)
+!/T2 9063 FORMAT ('               ',6E11.3)
+!/T3 9065 FORMAT (' TEST W3PREP : OUTPUT FIELD(S) :'/)
+!/
+!/ End of W3PREP ----------------------------------------------------- /
+!/
+      END PROGRAM W3PREP

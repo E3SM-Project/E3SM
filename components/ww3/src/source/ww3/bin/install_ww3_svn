@@ -1,0 +1,1789 @@
+#!/bin/bash
+# --------------------------------------------------------------------------- #
+# install_ww3_svn_full : install WAVEWATCH III svn full (complete) in the     #
+#                     current directory. Copies entire full from svn server.  #
+#                                                                             #
+# -remarks :                                                                  #
+#                                                                             #
+#  - Also use this script to update to most recent svn version and to         #
+#    redop all links as needed.                                               #
+#  - Subversion need to be se up with account acces to the NCEP svn server    #
+#    for this script to work.                                                 #
+#                                                                             #
+#                                                      Hendrik L. Tolman      #
+#                                                      Jose-Henrique Alves    #
+#                                                                             #
+#                                                      August 2011 (origin)   #
+#                                                      Nov  2013   (latest)   #
+#                                                                             #
+#    Copyright 2011-2013 National Weather Service (NWS),                      #
+#       National Oceanic and Atmospheric Administration.  All rights          #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                   #
+#       No unauthorized use without permission.                               #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+#
+# 0. Introductory flair
+#
+  clear
+  echo -e '\n\n\n                  ==================================='
+  echo -e '              ------ Installing WAVEWATCH III  v.4 ------'
+  echo -e '                  =================================== \n'
+  echo -e '       Script for installing package from Subversion server source. '
+  echo -e '       Requires user/pass access to NCEP Subversion server. \n'
+  echo -en ' Continue? [y|n] '
+  read OK
+  if [ "$OK" != "Y" ] && [ "$OK" != "y" ]
+  then
+    echo -e '\n For installation from tar files, use instead: '
+    echo -e '   install_ww3_tar \n\n'
+    exit 1
+  fi
+
+# 1. Preparations                                                             #
+# --------------------------------------------------------------------------- #
+# 1.a Internal variables
+
+  bold=`tput smso`
+  unbold=`tput rmso`
+  svn_arc='https://svnemc.ncep.noaa.gov/projects/ww3'
+
+# 1.b ID header  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  clear
+  echo -e '\n\n\n'
+  echo -e '                  ==================================='
+  echo -e '              ------ Installing WAVEWATCH III  v.4 ------'
+  echo -e '                  ==================================='
+  echo -e '                                     from svn source \n'
+
+# 1.c Test present directory - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  main_dir=`pwd`
+  cd
+  home_dir=`pwd`
+  cd $main_dir
+
+  echo -e ' This installation requires a configuration file (wwatch3.env).'
+  echo -e ' The current version allows two types of env files: '
+  echo -e ' - A local [L] wwatch3.env (Allowing multiple independent installations).'
+  echo -e ' - A generic [G] dot-file .wwatch3.env (Old-fashioned option).'
+  echo -e ' [L] Installs new, uses existing or updates env file in current directory.'
+  echo -e ' [G] Installs new, uses existing or updates env file in home directory, '
+  echo -e "                   (home is presumably $HOME})."
+  echo -e '\n '
+  echo -en ' Type your choice now: '
+  read sww3dir
+
+  if [ "${sww3dir}" = "G" ] || [ "${sww3dir}" = "g" ] 
+  then
+
+    ww3_env="${home_dir}/.wwatch3.env"   # setup file
+ 
+    if [ -s $ww3_env ]
+    then
+      set `grep WWATCH3_DIR $ww3_env` ; shift ; main_dir="$*"
+      echo -e "\n Install directory: " 
+      echo -e "  $main_dir "
+    else
+      echo -e "\n\n Generic dot-file .wwatch3.env file not found in "
+      echo -e "    ${home_dir} \n"
+      echo -en "\n Create .wwatch3.env file from scratch? [y|n] : "
+      read wnew
+      if [ "${wnew}" = "Y" ] || [ "${wnew}" = "y" ]
+      then 
+        echo -e '\n Creating generic .wwatch3.env'
+      else
+        echo -e ' Enter correct location of env file relative to there.' 
+        echo -e ' Alternatively, quit and choose local env file [option L] \n '
+        main_dir=nodir.$$
+        until [ -d $main_dir ]
+        do
+          echo -en "   Directory (relative to $home_dir) : "
+          read OK
+          if [ -n "$OK" ]
+          then
+            main_dir="$OK"
+          fi
+        done
+        cd $main_dir
+        main_dir=`pwd`
+      fi
+    fi
+  elif [ "${sww3dir}" = "L" ] || [ "${sww3dir}" = "l" ]
+  then
+
+    main_dir=`pwd`
+
+    if [ -f ${main_dir}/wwatch3.env ]
+    then
+      echo -e '\n This is not a new installation at this location.'
+      echo -e '  Existing local wwatch3.env will be used. Option to modify below...'
+      ww3_env="${main_dir}/wwatch3.env"
+    else
+      echo -e '\n Creating new env file from scratch.'
+      ww3_env="${main_dir}/wwatch3.env"
+    fi
+  else
+      echo -e "\n\n\n Chosen install type ${sww3dir} not available, aborting. \n"
+      exit 2
+  fi
+
+  echo -e "\n\n Installing in "
+  echo -e "   $main_dir"
+
+  OK="$NULL"
+  until [ "$OK" = 'y' ] || [ "$OK" = 'Y' ] || \
+        [ "$OK" = 'n' ] || [ "$OK" = 'N' ]
+  do
+    echo -en "\n   OK ? [y/n] "
+    read OK
+  done
+  if [ "$OK" = 'n' ] || [ "$OK" = 'N' ]
+  then
+    echo -e '\n\n\n Change to correct directory. '
+    echo -e '\n\n   --- INSTALL ABORTED --- \n\n' 
+    exit 3
+  fi
+
+  cd $main_dir
+
+# 1.d Set up environment - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  clear
+  echo -e '\n\n Setting up environment variables. '
+
+  if [ -s ${ww3_env} ]
+  then
+    echo -e "   Existing config file found: "
+    echo -e "     $ww3_env \n"
+    echo -e  ' Current settings: '
+
+    set `grep WWATCH3_LPR $ww3_env` ; shift
+    prnt="$*"
+
+    set `grep WWATCH3_F77 $ww3_env` ; shift
+    fort="$*"
+
+    set `grep WWATCH3_CC  $ww3_env` ; shift
+    cc="$*"
+
+    set `grep WWATCH3_TMP $ww3_env` ; shift
+    temp_dir="$*"
+
+    set `grep WWATCH3_SOURCE $ww3_env` ; shift
+    s_source="$*"
+
+    set `grep WWATCH3_LIST $ww3_env` ; shift
+    s_list="$*"
+
+    newfile='no'
+
+  else
+    echo -e '\n\n   Previous setup file not found. Variables will be set to defaults. '
+    echo -e '\n     (User must check to see if these setting are appropriate.)      '
+    prnt=printer
+    fort=f77
+    cc=cc
+    temp_dir=${main_dir}/tmp
+    s_source=yes
+    s_list=yes
+    do_set='n'
+
+    echo -e '\n\n Creating wwatch3.env locally (also in home if G option chosen). '
+    ww3_env=${main_dir}/wwatch3.env 
+    newfile='yes'  
+  fi
+    
+    echo -e "      Printer (listings)       : $prnt "
+    echo -e "      FORTRAN comp. (aux only) : $fort "
+    echo -e "      C Compiler (aux only)    : $cc "
+    echo -e "      Scratch directory        : $temp_dir "
+    echo -e "      Save source code         : $s_source "
+    echo -e "      Save listings            : $s_list "
+
+    OK="$NULL"
+    until [ "$OK" = 'y' ] || [ "$OK" = 'Y' ] || \
+          [ "$OK" = 'n' ] || [ "$OK" = 'N' ]
+    do
+      echo -en "\n Update settings ? [y/n] "
+      read OK
+      case $OK in
+       'y'|'Y') do_set='y' ;;
+       'n'|'N') do_set='n' ;;
+      esac
+    done
+
+  if [ "$do_set" = 'y' ]
+  then
+    clear
+    echo -e '\n\n\n Modifying set-up '
+    echo -e '\n Type n new settings, or press ENTER to keep [current ones]: \n'
+    newfile='yes'
+    OK="$NULL"
+    until [ "$OK" = 'y' ] || [ "$OK" = 'Y' ]
+    do
+      echo -en "      Printer for listings [$prnt] : "
+      instr="$NULL" ; read instr
+      if [ -n "$instr" ]
+      then
+        prnt="$instr"
+      fi
+
+      echo -en "      Compiler for aux. [$fort] : "
+      instr="$NULL" ; read instr
+      if [ -n "$instr" ]
+      then
+        fort="$instr"
+      fi
+
+      echo -en "      Compiler for aux. [$cc] : "
+      instr="$NULL" ; read instr
+      if [ -n "$instr" ]
+      then
+        cc="$instr"
+      fi
+
+      OK="$NULL"
+      until [ "$OK" = 'y' ]
+      do
+        echo -en "      Scratch space [$temp_dir] : "
+        instr="$NULL" ; read instr
+        if [ -n "$instr" ]
+        then
+          temp_dir="$instr"
+        fi
+        if [ -n "$temp_dir" ]
+        then
+          if [ -d $temp_dir ]
+          then
+            OK='y'
+          else
+            if `mkdir $temp_dir` 2> /dev/null
+            then
+              OK='y'
+            fi
+            rmdir $temp_dir
+          fi
+        fi
+      done
+
+      echo -en "      Save source code files (*.f)  [$s_source] : "
+      instr="$NULL" ; read instr
+      if [ -n "$instr" ]
+      then
+        if [ "$instr" = 'yes' ] || [ "$instr" = 'YES' ]
+        then
+          s_source='yes'
+        else
+          s_source='no'
+        fi
+      fi
+
+      echo -en "      Save listing files  [$s_list] : "
+      instr="$NULL" ; read instr
+      if [ -n "$instr" ]
+      then
+        if [ "$instr" = 'yes' ] || [ "$instr" = 'YES' ]
+        then
+          s_list='yes'
+        else
+          s_list='no'
+        fi
+      fi
+
+      echo -e ' '
+      echo -e "   Modified settings:"
+      echo -e "      Printer (listings)       : $prnt "
+      echo -e "      FORTRAN comp. (aux only) : $fort "
+      echo -e "      C Compiler (aux only)    : $cc "
+      echo -e "      Scratch directory        : $temp_dir "
+      echo -e "      Save sources             : $s_source "
+      echo -e "      Save listings            : $s_list "
+      echo -en "\n   New settings OK ? [y/n]  "
+      read OK
+      ww3_env=${main_dir}/wwatch3.env 
+    done
+  else
+    echo -e '\n Keeping current configuration '
+  fi
+
+# 1.e Save environment in file - - - - - - - - - - - - - - - - - - - - - - - -
+
+ if [ "${newfile}" = "yes" ]
+ then
+
+#  cd $home_dir
+  rm -f $ww3_env
+
+  echo '#'                                                    > $ww3_env
+  echo '# Environment variables for wavewatch III'           >> $ww3_env
+  echo '# ---------------------------------------'           >> $ww3_env
+  echo '#'                                                   >> $ww3_env
+  echo ' '                                                   >> $ww3_env
+  echo "WWATCH3_LPR      $prnt"                              >> $ww3_env
+  echo "WWATCH3_F77      $fort"                              >> $ww3_env
+  echo "WWATCH3_CC       $cc"                                >> $ww3_env
+  echo "WWATCH3_DIR      $main_dir"                          >> $ww3_env
+  echo "WWATCH3_TMP      $temp_dir"                          >> $ww3_env
+  echo "WWATCH3_SOURCE   $s_source"                          >> $ww3_env
+  echo "WWATCH3_LIST     $s_list"                            >> $ww3_env
+  echo ' '                                                   >> $ww3_env
+
+  if [ "${sww3dir}" = "G" ] || [ "${sww3dir}" = "g" ]
+  then
+    cp ${ww3_env} ${home_dir}/.wwatch3.env
+  fi
+ fi
+
+  if [ ! -d $temp_dir ]
+  then
+    mkdir $temp_dir
+  fi
+  cd $temp_dir
+  rm -f * 2> /dev/null
+  cd $main_dir
+
+  OK="$NULL"
+  until [ "$OK" = 'y' ] || [ "$OK" = 'Y' ] || \
+        [ "$OK" = 'n' ] || [ "$OK" = 'N' ]
+  do
+    echo -en '\n Continue with actual implementation ? [y/n] '
+    read OK
+    clear 
+ done
+
+  if [ "$OK" = 'n' ] || [ "$OK" = 'N' ]
+  then
+    echo -e '\n\n                    =============================== '
+    echo -e '                  ------    End of program     ------ '
+    echo -e '                    =============================== \n'
+    exit 4
+  else
+    echo -e '\n Starting actual implementation ... '
+    echo -e '   Use Ctrl-C to terminate program ... '
+  fi
+
+# --------------------------------------------------------------------------- #
+# 2. Set up / update svn directories                                          #
+# --------------------------------------------------------------------------- #
+
+# Prelim: setting tmp directory to store screen redirects
+  mkdir -p ${main_dir}/tmp 
+
+# 2.a Check what is there
+
+  echo -e '\n\n'
+  echo -e '                  ==================================='
+  echo -e '              ------ Setup or update WAVEWATCH III ------'
+  echo -e '                  ==================================='
+  echo -e '                                     Using svn source '
+  echo -e "                  Directory $main_dir/svn\n"
+
+  if [ ! -d svn ]
+  then
+
+# 2.b Initial set up if requested
+
+    echo -en "\n\n This is a new installation. Create new svn directory [y/-] ? "
+    read OK
+
+    if [ "$OK" = 'y' ]
+    then
+      echo -e "\n Install from trunk [T], branches [B] or tags [A]?\n "
+      echo -en "   Enter [T] or [B] or [A] now : "
+      read torb
+      if [ "$torb" = "T" ] || [ "$torb" = "t" ]
+      then
+         address="${svn_arc}/trunk"
+# Check if this is a valid svn server location
+         svni=`svn info ${address}`
+         svntest=`echo $svni | awk '{print $1}'`
+      elif [ "$torb" = "B" ] || [ "$torb" = "b" ]
+      then
+        echo -en "\n   Enter branch name now : " 
+        read nbranch
+        address="${svn_arc}/branches/${nbranch}"
+# Check if this is a valid svn server location
+        svni=`svn info ${address}`
+        svntest=`echo $svni | awk '{print $1}'`
+      elif [ "$torb" = "A" ] || [ "$torb" = "a" ]
+      then
+        echo -en "\n   Enter tag name now : "
+        read nbranch
+        address="${svn_arc}/tags/${nbranch}"
+# Check if this is a valid svn server location
+        svni=`svn info ${address}`
+        svntest=`echo $svni | awk '{print $1}'`
+      fi 
+      if [ "${svntest}" != "Path:" ]
+      then
+        echo -e "\n Wrong svn path provided as per message above."
+        exit 5
+      fi
+      echo -e "\n Installing from: : "
+      echo -e "  ${bold}${address}${unbold} \n"
+      echo -en " Is this OK [y/-] ? "
+      read OK
+
+      if [ "$OK" = 'y' ]
+      then
+          clear
+          echo -e "\n Checking out. Screen output routed to: " 
+          echo -e "   ${main_dir}/tmp/svn_checkout.out "
+          svn checkout $address svn > ${main_dir}/tmp/svn_checkout.out &
+
+ # Loop over time to inform user about download progress
+          isvn=0
+          tco=0
+          echo -e "\n Please be patient, accessing code in svn repository! " 
+          echo -e "   Can take one to a few minutes. \n"
+          echo -e "   To check progress in a new terminal, use: "
+          echo -e "     ${bold}cat ${main_dir}/tmp/svn_checkout.out${unbold}" 
+          echo -en "\n Time elapsed: " 
+          oldtag="dogtag"
+          dirtag="$oldtag"
+          while [ ${isvn} = 0 ]
+          do
+            stco="$tco"
+            if [ $tco -lt 100 ]; then stco=" $tco"; fi
+            if [ $tco -lt 10 ];  then stco="  $tco"; fi
+            echo -en "${stco}s" 
+            sleep 1
+            tco=$[$tco+1]
+            echo -en "\b\b\b\b"
+            cotag=`grep 'Checked out revision' ${main_dir}/tmp/svn_checkout.out | awk '{print $1}'`
+            dirtag=`tail -n 1 ${main_dir}/tmp/svn_checkout.out | grep -o -P '(?<=svn\/).*' | sed 's/\// /g' | awk '{print $1}'`
+            if [ ${cotag} ]
+            then
+              isvn=1
+            fi
+            if [ "${dirtag}" != "${oldtag}" ] && [ ${isvn} = 0 ]
+            then
+              echo -e "\n\n Checking out... ${dirtag} "
+              echo -en " Time elapsed: " 
+              oldtag=$dirtag
+            fi 
+          done
+
+# Verify if checkout was successful
+          verco=`grep 'Checked out revision' ${main_dir}/tmp/svn_checkout.out | awk '{print $1}'`
+          if [ ${verco} ]
+          then
+            echo -e '\n\n Code checked out successfully from svn server. '
+            echo -e "\n Full list of checked out files may be viewed in the file: " 
+            echo -e "   ${main_dir}/tmp/svn_checkout.out "
+          else
+            echo -e '\n\n\n Checkout from svn server did not succeed. Exiting... :( '
+            exit
+          fi
+
+# 2.c Nothing there to continue with
+
+      else
+        echo -e '\n\n\n                    =============================== '
+        echo -e '                  ------    End of program     ------ '
+        echo -e '                    =============================== '
+        exit 1
+      fi
+
+    else
+      echo -e '\n\n\n                    =============================== '
+      echo -e '                  ------    End of program     ------ '
+      echo -e '                    =============================== '
+      exit 2
+    fi
+
+# 2.c Update if requested
+
+  else
+
+    cd svn
+
+    for dir in model manual guide regtests cases smc_docs
+    do
+      if [ ! -d $dir ]
+      then
+        echo -e "\n\n\n Directory svn/$dir not found, program aborted. "
+        echo -e '\n\n\n                    =============================== '
+        echo -e '                  ------    End of program     ------ '
+        echo -e '                    =============================== '
+        exit 3
+      fi
+    done
+
+    echo -en "\n Found existing svn and subdirectories. Update [y/-] : " 
+    read OK
+
+    if [ "$OK" = 'y' ]
+    then
+      echo -e "\n Updating.... "
+      svn update 2> ${main_dir}/tmp/svn_update.err | tee ${main_dir}/tmp/svn_update.out 
+
+# Check if update produced errors
+      if [ -s ${main_dir}/tmp/svn_update.err ]
+      then
+        echo -e '\n Found errors while updating: '
+        cat ${main_dir}/tmp/svn_update.err
+        echo -e '\n Install aborted. \n'
+        exit
+      fi      
+      echo -e "\n Package has been updated. "
+      echo -e "\n Double-check that all went well viewing output file: "
+      echo -e "   ${main_dir}/tmp/svn_update.out"
+    else
+      echo -e "\n\n User chose not to update. Keeping current codes... "
+    fi
+
+  fi
+  sleep 2
+
+# 2.d Check / make directories   - - - - - - - - - - - - - - - - - - - - - - -
+
+  cd $main_dir
+
+# First check svn directories and make directories other than model
+  cd ${main_dir}/svn
+  dirs_other=
+  for i in $(ls -d */ | grep -v model); do dirs_other="$dirs_other ${i}"; done
+  cd ${main_dir}
+  for dir in ${dirs_other}
+  do
+    if [ ! -d ${dir} ]
+    then
+      echo -e "\n Creating directory ${dir} "
+      mkdir ${dir}
+    fi
+  done
+
+# Create directories for compilation, work etc
+  for dir in obj mod work
+  do
+    if [ ! -d $dir ]
+    then
+      echo -e "\n\n  Creating directory ${dir} "
+      mkdir $dir
+    fi
+  done
+
+# Now make the model directories (at same level as manual and guide)
+  cd ${main_dir}/svn/model
+  dirs_model=
+  for i in $(ls -d */ ); do dirs_model="$dirs_model ${i}"; done
+  cd ${main_dir}
+  for dir in aux bin ftn obj mod exe inp work nml
+  do
+    if [ ! -d $dir ]
+    then
+      echo -e " \n\n Creating directory $dir "
+      mkdir $dir
+    fi
+  done
+
+# 2.e Set file permissions - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  echo -e " \n\n Setting file permissions."
+
+  cd $main_dir/svn/model/aux
+  chmod 644 *.gs
+  chmod 644 spec_ids*
+  chmod 644 *.f
+
+  cd $main_dir/svn/model/bin
+  chmod 644 switch*
+  chmod 744 install* comp* link*
+
+  cd $main_dir/svn/model/ftn
+  chmod 644 *.ftn
+  chmod 644 *.f90
+
+  cd $main_dir/svn/model/inp
+  chmod 644 *.inp track_i.ww3
+
+  cd $main_dir/svn/cases
+  chmod 744 mww3_case_*
+  chmod 755 mww3_data_*
+
+  cd $main_dir/svn/regtests/bin
+  chmod 744 *
+
+# cases loop
+  for dir in 00 01 02 03
+  do
+    cd $main_dir/svn/cases/mww3_data_$dir
+    if [ "$dir" = '00' ]
+    then
+      chmod 644 gfs*
+      chmod 644 ice*
+    else
+      chmod 644 *.bot
+      chmod 644 *.obs*
+      chmod 644 *.mask
+      chmod 644 *.gs
+    fi
+    chmod 644 ww3_*
+
+  done
+
+sleep 2
+
+# --------------------------------------------------------------------------- #
+# 3. Set-up / update aux directory                                            #
+# --------------------------------------------------------------------------- #
+
+  ldir="aux"
+
+  rm -f ${main_dir}/tmp/${ldir}_setup.out
+
+  cd $main_dir/svn/model/${ldir}
+
+  tmp_files=`ls`
+  all_files=
+  all_dirs=
+  for file in $tmp_files
+  do
+    if [ -d $file ]
+    then
+      all_dirs="$all_dirs $file"
+    else
+      all_files="$all_files $file"
+    fi
+  done
+
+  cd $main_dir/${ldir}
+
+  clear
+  echo -e '\n\n =============================== '
+  echo -e '--- Set up / update directories --- '
+  echo -e ' ============================================================== '
+  echo -e "    Directory `pwd` "
+
+# 3.a FORTRAN executables  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  echo -e '\n FORTRAN executables: '
+  echo -e ' -------------------- '
+
+  for code in w3adc w3prnt w3list w3split
+  do
+
+    echo -e "\n   Program $code ... " | tee ${main_dir}/tmp/${ldir}_setup.out
+    if [ -f "$main_dir/svn/model/${ldir}/$code.f" ]
+    then
+      ln -sf ../svn/model/${ldir}/$code.f .
+      echo -e "      New $code.f was copied to $main_dir/${ldir} " | tee ${main_dir}/tmp/${ldir}_setup.out
+    else
+      echo -e "\n      No source for ${code}.f found, aborting! " | tee ${main_dir}/tmp/${ldir}_setup.out
+      exit 30
+    fi
+
+    echo -e "      Generating $code in $main_dir/bin " | tee ${main_dir}/tmp/${ldir}_setup.out
+    echo -e "         Compiling ... " | tee ${main_dir}/tmp/${ldir}_setup.out
+    if `$fort $code.f > fort.out 2> fort.err`
+    then
+      rm -f $main_dir/bin/$code
+      if [ -f a.out ]
+      then
+        echo -e "         Storing ... " | tee ${main_dir}/tmp/${ldir}_setup.out
+        mv a.out $main_dir/bin/$code
+      else
+        echo -e "\n\n\n      --- ERROR: FILE a.out NOT FOUND --- " | tee ${main_dir}/tmp/${ldir}_setup.out
+        echo -e ' Compilation error messages: '
+        cat fort.out 
+        echo -e ''
+        cat fort.err 
+        echo -e ''
+        exit
+       fi
+    else
+      echo -e "\n\n\n      --- ERROR IN COMPILING $code.f --- " | tee ${main_dir}/tmp/${ldir}_setup.out
+      echo -e ' Compilation error messages: '
+      cat fort.out 
+      echo -e '' 
+      cat fort.err 
+      echo -e '\n '
+      exit
+    fi
+    rm -f fort.*
+    tmp_files=$all_files
+    all_files=`echo -e $tmp_files | sed -e "s/$code.f//g"`
+
+  done
+  echo -e '\n All essential FORTRAN codes compiled correctly ' | tee ${main_dir}/tmp/${ldir}_setup.out
+  echo -e ' ---------------------------------------------- ' | tee ${main_dir}/tmp/${ldir}_setup.out
+  sleep 2
+
+# Move on with other files in aux
+  tnr_lnk=0
+  tnr_new=0
+  tnr_old=0
+# 3.b GrADS aux scripts  - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  for list in 1 2
+  do
+
+    case $list in 
+     1) echo -e '\n GrADS aux scripts' | tee ${main_dir}/tmp/${ldir}_setup.out
+        echo -e ' -----------------'
+        cd $main_dir/svn/model/${ldir}
+        files=`ls *.gs`
+        files="$files spec_ids.gen" ;;
+     2) echo -e '\n Other :'
+        echo -e ' -------' 
+        files=$all_files  ;;
+    esac
+
+    cd $main_dir/${ldir}
+
+    nr_lnk=0
+
+    if [ -z "$files" ]
+    then
+      echo -e '  No files found' | tee ${main_dir}/tmp/${ldir}_setup.out
+    else
+      for file in $files
+      do
+        nr_lnk=`expr $nr_lnk + 1`
+        echo -e "   (re)linking $file ..." >> ${main_dir}/tmp/${ldir}_setup.out 
+        ln -sf ../svn/model/${ldir}/$file .
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+    fi
+    echo -e "  This section: $nr_lnk links created"
+    tnr_lnk=`expr $tnr_lnk + $nr_lnk`
+
+  done
+
+# 3.c spec_ids file  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  echo -e ' '
+  echo -e '\n spec_ids file :'
+  echo -e ' ---------------'
+
+  cd $main_dir/${ldir}
+
+  nr_new=0
+  nr_old=0
+  for file in spec_ids
+  do
+    if [ -f $file ]
+    then
+      echo -e "   File $file exists (will not be modified)." >> ${main_dir}/tmp/${ldir}_setup.outout
+      nr_old=`expr $nr_old + 1`
+    else
+      nr_new=`expr $nr_new + 1`
+      echo -e "   File $file does not exists." >> ${main_dir}/tmp/${ldir}_setup.out
+      echo -e "      Copied from $file.gen (may be modified by user)" >> ${main_dir}/tmp/${ldir}_setup.out
+      cp -f $file.gen $file
+    fi
+  done
+  echo -e "  This section: $nr_old existing links or files found."
+  echo -e "  This section: $nr_new links or files created."
+  tnr_lnk=`expr $tnr_lnk + $nr_new`
+  tnr_old=`expr $tnr_old + $nr_old`
+
+# 4.b Directories
+
+  echo -e '\n\n Other ${ldir} sub-directories :\n'
+
+  for dir in $all_dirs
+  do
+
+    nr_new=0
+    nr_old=0
+
+    if [ ! -d $main_dir/${ldir}/$dir ]
+    then
+      mkdir $main_dir/${ldir}/$dir
+      echo -e "\n Making directory $dir ..."
+    else
+      echo -e "\n Checking directory $dir ..."
+    fi
+
+    cd $main_dir/svn/model/${ldir}/$dir
+    files=`ls`
+    cd $main_dir/${ldir}/$dir
+    nr_old=0
+
+    if [ -z "$files" ]
+    then
+      echo -e '  No files found'
+    else
+      for file in $files
+      do
+        if [ -f $file ]
+        then
+          nr_old=`expr $nr_old + 1`
+          echo -e "      Old link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+        else
+          nr_new=`expr $nr_new + 1`
+          echo -e "      New link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+        fi
+        ln -sf ../../svn/model/${ldir}/$dir/$file
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+      if [ "$nr_old" != '0' ]
+      then
+        echo -e "  This section: $nr_old existing links found."
+      fi
+      if [ "$nr_new" != '0' ]
+      then
+        echo -e "  This section: $nr_new new links created."
+      fi
+    fi
+
+    tnr_old=`expr $tnr_old + $nr_old`
+    tnr_new=`expr $tnr_new + $nr_new`
+
+  done
+
+
+  echo -e "\n\n End of ${ldir} directory section " | tee ${main_dir}/tmp/${ldir}_setup.out
+  echo -e ' ---------------------------- '
+
+  if [ "$tnr_old" != '0' ]
+  then
+    echo -e "\n  Total of $tnr_old existing links or files found."
+  fi
+  if [ "$tnr_new" != '0' ]
+  then
+    echo -e "\n  Total of $tnr_new new links or files created."
+  fi
+  echo -e "\n  List of existing (old) and new links or files routed to: "
+  echo -e "     ${main_dir}/tmp/${ldir}_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 4. Set-up / update bin directory                                            #
+# --------------------------------------------------------------------------- #
+
+  ldir="bin"
+  rm -f ${main_dir}/tmp/${ldir}_setup.out
+
+  tnr_lnk=0
+  tnr_new=0
+
+  cd $main_dir/${ldir}
+  all_files=`ls $main_dir/svn/model/${ldir}`
+
+  echo -e '\n\n ==============================='
+  echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/${ldir}_setup.out
+  echo -e ' =============================================================='
+  echo -e "    Directory `pwd`" | tee ${main_dir}/tmp/${ldir}_setup.out
+
+# 4.a basic aux scripts  - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  nr_lnk=0
+  for list in 1 2
+  do
+    case $list in 
+      1) echo -e '\n Scripts for compiling and linking :'
+         echo -e '-----------------------------------'
+         files='ad3_test ad3 w3_make w3_new make_makefile.sh'
+         cd $main_dir/svn/model/${ldir}
+         files="$files switch.gen `ls comp.*` `ls link.*`"
+         cd $main_dir/${ldir} ;;
+      2) echo -e '\n Other :\n '
+         echo -e ' -------' 
+         files=$all_files  ;;
+    esac
+
+    cd $main_dir/${ldir}
+
+    if [ -z "$files" ]
+    then
+      echo -e '  No files found' | tee ${main_dir}/tmp/${ldir}_setup.out
+    else
+      for file in $files
+      do
+        nr_lnk=`expr $nr_lnk + 1`
+        echo -e "   (re)linking $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+        ln -sf ../svn/model/${ldir}/$file .
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+    fi
+
+  done
+  echo -e "  This section: $nr_lnk links created"
+  tnr_lnk=`expr $tnr_lnk + $nr_lnk`
+
+# 4.b comp and link shell scripts  - - - - - - - - - - - - - - - - - - - - - -
+    nr_lnk=0
+    nr_old=0
+
+    echo -e ' Compile and link shell scripts :'
+    echo -e ' --------------------------------'
+
+    for file in switch comp link
+    do
+      if [ -f $file ]
+      then
+        echo -e "   File $file exists (will not be modified)." >> ${main_dir}/tmp/${ldir}_setup.out
+        nr_old=`expr $nr_old + 1`
+      else
+        nr_lnk=`expr $nr_lnk + 1`
+        echo -e "   File $file does not exists." >> ${main_dir}/tmp/${ldir}_setup.out
+        echo -e "      Copied from $file.gen (has to be modified by user)" >> ${main_dir}/tmp/${ldir}_setup.out
+        cp $file.gen $file
+      fi
+    done
+    echo -e "  This section: $nr_old existing (old) links or files found"
+    echo -e "  This section: $nr_lnk new links or files created"
+    tnr_lnk=`expr $tnr_lnk + $nr_lnk`
+    tnr_old=`expr $tnr_old + $nr_old`
+
+    chmod 700 comp link
+    chmod 600 switch
+
+# Local install: delete ww3_env, create new variable pointing to local wwatch3.env
+  if [ "${sww3dir}" = "L" ] || [ "${sww3dir}" = "l" ]
+  then
+
+    loc_dir=$(echo $main_dir | sed 's/\//\\\//g')
+    echo -e "\n This install uses a local wwatch3.env.\n"
+    echo -e " Pointing ww3_env variable in bin scripts to:\n"
+    echo -e " ${loc_dir}/wwatch3.env \n"
+
+    cd $main_dir/${ldir}
+
+    linkfiles=`ls link*`
+    locfiles="${linkfiles} ad3 ad3_test all_switches find_switch list ln3 \
+              make_makefile.sh make_MPI make_OMP sort_all_switches sort_switch \
+              w3_clean w3_make w3_new w3_source w3_setup ww3_gspl.sh"
+    for lfile in ${locfiles}
+    do
+# Remove file to avoid unwanted changed in svn area
+      rm -f ${lfile}
+# Copy files from svn area
+      cp -f ${main_dir}/svn/model/bin/${lfile} . 
+      echo -e "\n Changing ww3_env in script ${lfile}"
+# Delete generic ww3_env
+      sed '/ww3_env="${HOME}\/\.wwatch3.env"/d' ${lfile} > dumfile
+# Add new local ww3_env
+      sed -e "s/# WW3ENV/  export ww3_env=$loc_dir\/wwatch3.env/g" dumfile > ${lfile}
+      chmod 744 ${lfile}
+    done
+# Warning about links removed!
+    echo -e "\n !!!!!!!!!!!!! WARNING !!!!!!!!!!!!!"
+    echo -e " For local install, bin scripts invoking ww3_env have been changed!"
+    echo -e " If you intend to further edit these files for updating the svn"
+    echo -e " code version, do so directly in the svn/model/bin directory."
+    echo -e "\n The following files have had links severed in the work area:"
+    ls -1 ${locfiles}
+    echo -e "\n Do not restablish links for these files, this can compromise"
+    echo -e " the svn repository!\n"
+  fi
+  sleep 5
+
+  echo -e "\n\n End of ${ldir} directory section " | tee ${main_dir}/tmp/${ldir}_setup.out
+  echo -e ' ---------------------------- '
+
+  if [ "$tnr_old" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_old existing links or files found."
+  fi
+  if [ "$tnr_new" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_new new links or files created."
+  fi
+  echo -e "\n   List of existing (old) and new links or files routed to:"
+  echo -e "     ${main_dir}/tmp/${ldir}_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 5. Set-up / update ftn directory                                            #
+# --------------------------------------------------------------------------- #
+
+  ldir="ftn"
+  rm -f ${main_dir}/tmp/${ldir}_setup.out
+
+  cd $main_dir/svn/model/${ldir}
+  all_files=`ls`
+  ftn_files=`ls *.ftn`
+  cd $main_dir/${ldir}
+
+  echo -e '\n\n  ==============================='
+  echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/${ldir}_setup.out
+  echo -e ' =============================================================='
+  echo -e "    Directory `pwd`" | tee ${main_dir}/tmp/${ldir}_setup.out
+
+  tnr_new=0
+  tnr_old=0
+
+  for list in 1 2 3 4
+  do
+    cd $main_dir/svn/model/${ldir}
+    case $list in 
+      1) echo -e '\n Main programs :'
+         echo -e ' --------------' ; files=`ls ww3_*.ftn gx_*.ftn` ;;
+      2) echo -e '\n Subroutines (.ftn) :'
+         echo -e ' --------------------' ; files=$ftn_files  ;;
+      3) echo -e '\n Subroutines (.f90) :'
+         echo -e ' --------------------' ; files=`ls *.f90`  ;;
+      4) echo -e '\n Other :'
+         echo -e ' -------' ; files=`echo -e $all_files | sed -e "s/SCRIP//g"` ;;
+    esac
+    cd $main_dir/ftn
+
+    nr_new=0
+    nr_old=0
+
+    if [ -z "$files" ]
+    then
+      echo -e '  No files found'
+    else
+      for file in $files
+      do
+        if [ -f $file ]
+        then
+          nr_old=`expr $nr_old + 1`
+          echo -e "   Old link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out 
+        else
+          nr_new=`expr $nr_new + 1`
+          echo -e "   New link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out 
+        fi
+        ln -sf ../svn/model/${ldir}/$file
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+        tmp_files=$ftn_files
+        ftn_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+    fi
+
+    tnr_new=`expr $tnr_new + $nr_new`
+    tnr_old=`expr $tnr_old + $nr_old`
+
+    if [ "$nr_old" != '0' ]
+    then
+      echo -e "  This section: $nr_old existing links found."
+    fi
+    if [ "$nr_new" != '0' ]
+    then
+      echo -e "  This section: $nr_new new links found."
+    fi
+
+  done
+
+# Deal with subdirectory SCRIP
+  cd $main_dir/svn/model/ftn/SCRIP
+  files=`ls`
+  nr_old=0
+  nr_new=0
+  if [ ! -d $main_dir/ftn/SCRIP ]
+  then
+    mkdir -p $main_dir/ftn/SCRIP
+  fi
+  cd $main_dir/ftn/SCRIP
+ 
+  for file in $files
+  do
+    if [ -f $file ]
+    then
+      nr_old=`expr $nr_old + 1`
+      echo -e "   Old link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+    else
+      nr_new=`expr $nr_new + 1`
+      echo -e "   New link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+    fi
+    ln -sf ../../svn/model/ftn/SCRIP/$file
+  done
+
+  tnr_new=`expr $tnr_new + $nr_new`
+  tnr_old=`expr $tnr_old + $nr_old`
+
+  echo -e "\n\n End of ${ldir} directory section " | tee ${main_dir}/tmp/${ldir}_setup.out
+  echo -e ' ---------------------------- '
+
+  if [ "$tnr_old" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_old existing links found."
+  fi
+  if [ "$tnr_new" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_new new links found."
+  fi
+  echo -e "\n   List of existing (old) or new links routed to:"
+  echo -e "      ${main_dir}/tmp/${ldir}_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 6. Set-up / update inp directory                                            #
+# --------------------------------------------------------------------------- #
+
+  rm -f ${main_dir}/tmp/inp_setup.out
+
+  cd $main_dir/svn/model/inp
+  files=`ls ww3_*.inp track_i.ww3`
+  files="$files `ls gx_*.inp`"
+  cd $main_dir/inp
+
+  echo -e '\n\n ==============================='
+  echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/inp_setup.out
+  echo -e ' =============================================================='    
+  echo -e "    Directory `pwd` \n" | tee ${main_dir}/tmp/inp_setup.out
+
+  nr_old=0
+  nr_new=0
+
+  echo -e ' Input files (.inp) :'
+  echo -e ' ------------------'
+
+  for file in $files
+  do
+    if [ -f $file ]
+    then
+      nr_old=`expr $nr_old + 1`
+      echo -e "   Old link $file ..." >> ${main_dir}/tmp/inp_setup.out
+    else
+      nr_new=`expr $nr_new + 1`
+      echo -e "   New link $file ..." >> ${main_dir}/tmp/inp_setup.out
+    fi
+    ln -sf ../svn/model/inp/$file
+  done
+
+  if [ "$nr_old" != '0' ]
+  then
+    echo -e "  This section: $nr_old existing links found."
+  fi
+  if [ "$nr_new" != '0' ]
+  then
+    echo -e "  This section: $nr_new new links found."
+  fi
+
+  echo -e '\n\n End of inp directory section '
+  echo -e ' ---------------------------- '
+
+  if [ "$nr_old" != '0' ]
+  then
+    echo -e "\n   Total of $nr_old existing links found."
+  fi
+  if [ "$nr_new" != '0' ]
+  then
+    echo -e "\n   Total of $nr_new new links found."
+  fi
+  echo -e "\n   List of existing (old) or new links routed to :"
+  echo -e "     ${main_dir}/tmp/inp_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 6. Set-up / update nml directory                                            #
+# --------------------------------------------------------------------------- #
+
+  rm -f ${main_dir}/tmp/nml_setup.out
+
+  cd $main_dir/svn/model/nml
+  files=`ls ww3_*.nml`
+  cd $main_dir/nml
+
+  echo -e '\n\n ==============================='
+  echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/nml_setup.out
+  echo -e ' =============================================================='    
+  echo -e "    Directory `pwd` \n" | tee ${main_dir}/tmp/nml_setup.out
+
+  nr_old=0
+  nr_new=0
+
+  echo -e ' NML files (.nml) :'
+  echo -e ' ------------------'
+
+  for file in $files
+  do
+    if [ -f $file ]
+    then
+      nr_old=`expr $nr_old + 1`
+      echo -e "   Old link $file ..." >> ${main_dir}/tmp/nml_setup.out
+    else
+      nr_new=`expr $nr_new + 1`
+      echo -e "   New link $file ..." >> ${main_dir}/tmp/nml_setup.out
+    fi
+    ln -sf ../svn/model/nml/$file
+  done
+
+  if [ "$nr_old" != '0' ]
+  then
+    echo -e "  This section: $nr_old existing links found."
+  fi
+  if [ "$nr_new" != '0' ]
+  then
+    echo -e "  This section: $nr_new new links found."
+  fi
+
+  echo -e '\n\n End of nml directory section '
+  echo -e ' ---------------------------- '
+
+  if [ "$nr_old" != '0' ]
+  then
+    echo -e "\n   Total of $nr_old existing links found."
+  fi
+  if [ "$nr_new" != '0' ]
+  then
+    echo -e "\n   Total of $nr_new new links found."
+  fi
+  echo -e "\n   List of existing (old) or new links routed to :"
+  echo -e "     ${main_dir}/tmp/nml_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 8. Set-up / update cases directory                                           #
+# --------------------------------------------------------------------------- #
+
+  rm -f ${main_dir}/tmp/cases_setup.out
+  tnr_old=0
+  tnr_new=0
+
+  cd $main_dir/svn/cases
+
+  echo -e '\n\n ================================'
+  echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/cases_setup.out
+  echo -e ' =============================================================='    
+  echo -e "    Directory `pwd`" | tee ${main_dir}/tmp/cases_setup.out
+
+  tmp_files=`ls`
+  all_files=
+  all_dirs=
+  for file in $tmp_files
+  do
+    if [ -d $file ]
+    then
+      all_dirs="$all_dirs $file"
+    else
+      all_files="$all_files $file"
+    fi
+  done
+  cd $main_dir/cases
+
+# 7.a Sets of test cases
+
+  for list in 1 2
+  do
+    cd ../svn/cases
+    case $list in 
+      1) echo -e '\n Multi-scale tests :' ; \
+         echo -e ' -------------------' ; \
+               files=`ls mww3_case_*` ;;
+      2) echo -e '\n Other tests :' ; \
+         echo -e ' -------------' ; files=$all_files ;;
+    esac
+    cd $main_dir/cases
+   
+    nr_old=0
+    nr_new=0
+
+    if [ -z "$files" ]
+    then 
+      echo -e '  No files found'
+    else
+      for file in $files
+      do
+        if [ -f $file ]
+        then
+          nr_old=`expr $nr_old + 1`
+          echo -e "   Old link $file ..." >> ${main_dir}/tmp/cases_setup.out
+        else
+          nr_new=`expr $nr_new + 1`
+          echo -e "   New link $file ..." >> ${main_dir}/tmp/cases_setup.out
+        fi
+        ln -sf ../svn/cases/$file
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+      if [ "$nr_old" != '0' ]
+      then
+        echo -e "  This section: $nr_old existing links found."
+      fi
+     if [ "$nr_new" != '0' ]
+      then
+        echo -e "  This section: $nr_new new links created."
+      fi
+    fi
+  done
+  tnr_old=`expr $tnr_old + $nr_old`
+  tnr_new=`expr $tnr_new + $nr_new`
+
+# 8.b Directories
+
+  echo -e '\n Data directories :'
+  echo -e ' ------------------'
+
+  for dir in $all_dirs
+  do
+
+    nr_new=0
+    nr_old=0
+
+    if [ ! -d $main_dir/cases/$dir ]
+    then
+      mkdir $main_dir/cases/$dir
+      echo -e "\n Making directory $dir ..."
+    else
+      echo -e "\n Checking directory $dir ..."
+    fi
+
+    cd $main_dir/svn/cases/$dir
+    files=`ls`
+    cd $main_dir/cases/$dir
+    nr_old=0
+
+    if [ -z "$files" ]
+    then 
+      echo -e '  No files found'
+    else
+      for file in $files
+      do
+        if [ -f $file ]
+        then
+          nr_old=`expr $nr_old + 1`
+          echo -e "      Old link $file ..." >> ${main_dir}/tmp/cases_setup.out
+        else
+          nr_new=`expr $nr_new + 1`
+          echo -e "      New link $file ..." >> ${main_dir}/tmp/cases_setup.out
+        fi
+        ln -sf ../../svn/cases/$dir/$file
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+      if [ "$nr_old" != '0' ]
+      then
+        echo -e "  This section: $nr_old existing links found."
+      fi
+      if [ "$nr_new" != '0' ]
+      then
+        echo -e "  This section: $nr_new new links created."
+      fi
+    fi
+
+    tnr_old=`expr $tnr_old + $nr_old`
+    tnr_new=`expr $tnr_new + $nr_new`
+
+  done
+
+
+  cd $main_dir/cases
+  ln -sf ../bin/switch .
+
+  echo -e '\n\n End of cases directory section '
+  echo -e ' ------------------------------ '
+
+  if [ "$tnr_old" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_old existing links found."
+  fi
+  if [ "$tnr_new" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_new new links found."
+  fi
+  echo -e "\n   List of existing (old) or new links routed to :"
+  echo -e "     ${main_dir}/tmp/cases_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 8.1 Set-up / update regtests directory                                           #
+# --------------------------------------------------------------------------- #
+
+  rm -f ${main_dir}/tmp/reg_setup.out
+  tnr_old=0
+  tnr_new=0
+
+  cd $main_dir/svn/regtests
+
+  echo -e '\n\n ================================'
+  echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/reg_setup.out
+  echo -e ' =============================================================='    
+  echo -e "    Directory `pwd`" | tee ${main_dir}/tmp/reg_setup.out
+
+  tmp_dirs=`ls`
+
+  for dir in $tmp_dirs
+  do
+
+    nr_old=0
+    nr_new=0
+
+    if [ ! -d $main_dir/regtests/$dir ]
+    then
+      mkdir $main_dir/regtests/$dir
+      echo -e "\n Making directory $dir ..."
+    else
+      echo -e "\n Checking directory $dir ..."
+    fi
+
+    cd $main_dir/svn/regtests/$dir
+    files=`ls -p | grep -v '/$'`
+    ndirs=`ls -p | grep '/$'`
+    cd $main_dir/regtests/$dir
+
+    if [ -z "$files" ]
+    then
+      echo -e '  No files found'
+    else
+      for file in $files
+      do
+        if [ -f $file ]
+        then
+          nr_old=`expr $nr_old + 1`
+          echo -e "      Old link $file ..." >> ${main_dir}/tmp/reg_setup.out
+        else
+          nr_new=`expr $nr_new + 1`
+          echo -e "      New link $file ..." >> ${main_dir}/tmp/reg_setup.out
+        fi
+        ln -sf ../../svn/regtests/$dir/$file
+        tmp_files=$all_files
+        all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+      done
+      if [ "$nr_old" != '0' ]
+      then
+        echo -e "  This section: $nr_old existing links found."
+      fi
+      if [ "$nr_new" != '0' ]
+      then
+        echo -e "  This section: $nr_new new links created."
+      fi
+ 
+    fi
+
+    tnr_old=`expr $tnr_old + $nr_old`
+    tnr_new=`expr $tnr_new + $nr_new`
+ 
+
+    for ndir in $ndirs
+    do
+      lngth=`echo $ndir | wc -c`
+      lngth=`expr $lngth - 2`
+      ndir=`echo $ndir | cut -c1-$lngth`
+      nr_old=0
+      nr_new=0
+
+      if [ ! -d $main_dir/regtests/$dir/$ndir ]
+      then
+        mkdir $main_dir/regtests/$dir/$ndir
+        echo -e "\n Making directory $dir/$ndir ..."
+      else
+        echo -e "\n Checking directory $dir/$ndir ..."
+      fi
+
+      cd $main_dir/svn/regtests/$dir/$ndir
+      files=`ls -p | grep -v '/$'`
+      sdirs=`ls -p | grep '/$'`
+      cd $main_dir/regtests/$dir/$ndir
+
+      if [ -z "$files" ]
+      then
+        echo -e '  No files found'
+      else
+        for file in $files
+        do
+          if [ -f $file ]
+          then
+            nr_old=`expr $nr_old + 1`
+            echo -e "      Old link $file ..." >> ${main_dir}/tmp/reg_setup.out
+          else
+            nr_new=`expr $nr_new + 1`
+            echo -e "      New link $file ..." >> ${main_dir}/tmp/reg_setup.out
+          fi
+          ln -sf ../../../svn/regtests/$dir/$ndir/$file
+          tmp_files=$all_files
+          all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+        done
+        if [ "$nr_old" != '0' ]
+        then
+          echo -e "  This section: $nr_old existing links found."
+        fi
+        if [ "$nr_new" != '0' ]
+        then
+          echo -e "  This section: $nr_new new links created."
+        fi
+      fi
+
+      tnr_old=`expr $tnr_old + $nr_old`
+      tnr_new=`expr $tnr_new + $nr_new`
+
+      if [ ! -z "$sdirs" ] 
+      then
+        for sdir in $sdirs
+        do
+          lngth=`echo $sdir | wc -c`
+          lngth=`expr $lngth - 2`
+          sdir=`echo $sdir | cut -c1-$lngth`
+          nr_old=0
+          nr_new=0
+
+          if [ ! -d $main_dir/regtests/$dir/$ndir/$sdir ]
+          then
+            mkdir $main_dir/regtests/$dir/$ndir/$sdir
+            echo -e "\n Making directory $dir/$ndir/$sdir..."
+          else
+            echo -e "\n Checking directory $dir/$ndir/$sdir ..."
+          fi
+
+          cd $main_dir/svn/regtests/$dir/$ndir/$sdir
+          files=`ls -p | grep -v '/$'`
+          cd $main_dir/regtests/$dir/$ndir/$sdir
+
+          if [ -z "$files" ]
+          then
+            echo -e '  No files found'
+          else
+            for file in $files
+            do
+              if [ -f $file ]
+              then
+                nr_old=`expr $nr_old + 1`
+                echo -e "      Old link $file ..." >> ${main_dir}/tmp/reg_setup.out
+              else
+                nr_new=`expr $nr_new + 1`
+                echo -e "      New link $file ..." >> ${main_dir}/tmp/reg_setup.out
+              fi
+              ln -sf ../../../../svn/regtests/$dir/$ndir/$sdir/$file
+              tmp_files=$all_files
+              all_files=`echo -e $tmp_files | sed -e "s/$file//"`
+            done
+            if [ "$nr_old" != '0' ]
+            then
+              echo -e "  This section: $nr_old existing links found."
+            fi
+            if [ "$nr_new" != '0' ]
+            then
+              echo -e "  This section: $nr_new new links created."
+            fi
+          fi
+
+          tnr_old=`expr $tnr_old + $nr_old`
+          tnr_new=`expr $tnr_new + $nr_new`
+
+        done
+
+      fi
+
+    done
+
+  done
+
+  cd $main_dir/regtests
+
+  chmod 744 bin/*
+
+  echo -e '\n\n End of regtests directory section '
+  echo -e ' ---------------------------------- '
+
+  if [ "$tnr_old" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_old existing links found."
+  fi
+  if [ "$tnr_new" != '0' ]
+  then
+    echo -e "\n   Total of $tnr_new new links found."
+  fi
+  echo -e "\n   List of existing (old) or new links routed to :"
+  echo -e "     ${main_dir}/tmp/reg_setup.out "
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 9. Set-up / update manual /guide directories                                #
+# --------------------------------------------------------------------------- #
+
+  for ldir in manual guide smc_docs
+  do
+
+    rm -f ${main_dir}/tmp/${ldir}_setup.out
+
+    cd $main_dir/svn/${ldir}
+
+    ndirs=`ls -p | grep '/$'`
+    files=`ls -p | grep -v '/$'`
+
+    cd $main_dir/${ldir}
+
+    echo -e '\n\n ==============================='
+    echo -e '--- Set up / update directories ---' | tee ${main_dir}/tmp/${ldir}_setup.out
+    echo -e ' =============================================================='    
+    echo -e "    Directory `pwd` \n" | tee ${main_dir}/tmp/${ldir}_setup.out
+
+    nr_old=0
+    nr_new=0
+
+    echo -e "\n Checking directory $main_dir/${ldir} ..."
+
+    for file in $files
+    do
+      if [ -f $file ]
+      then
+        nr_old=`expr $nr_old + 1`
+        echo -e "   Old link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out 
+      else
+        nr_new=`expr $nr_new + 1`
+        echo -e "   New link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+      fi
+      ln -sf ../svn/${ldir}/$file
+    done
+    if [ "$nr_old" != '0' ]
+    then
+      echo -e "   $nr_old existing links found."
+    fi
+    if [ "$nr_new" != '0' ]
+    then
+      echo -e "   $nr_new links made."
+    fi
+
+    for sdir in $ndirs 
+    do
+
+    cd $main_dir/svn/${ldir}/${sdir}
+
+    files=`ls -p | grep -v '/$'`
+
+    mkdir -p $main_dir/${ldir}/${sdir}
+    cd $main_dir/${ldir}/${sdir}
+
+    echo -e "\n Checking directory $main_dir/${ldir}/${sdir} ..."
+
+    for file in $files
+    do
+      if [ -f $file ]
+      then
+        nr_old=`expr $nr_old + 1`
+        echo -e "   Old link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+      else
+        nr_new=`expr $nr_new + 1`
+        echo -e "   New link $file ..." >> ${main_dir}/tmp/${ldir}_setup.out
+      fi
+      ln -sf ../../svn/${ldir}/${sdir}/$file
+    done
+    if [ "$nr_old" != '0' ]
+    then
+      echo -e "   $nr_old existing links found."
+    fi
+    if [ "$nr_new" != '0' ]
+    then
+      echo -e "   $nr_new links made."
+    fi
+
+    done
+
+  echo -e "\n   List of existing (old) or new links routed to :"
+  echo -e "     ${main_dir}/tmp/${ldir}_setup.out "
+  sleep 2 
+
+  done
+
+# --------------------------------------------------------------------------- #
+# 10. Set-up / update work directory                                           #
+# --------------------------------------------------------------------------- #
+
+  cd $main_dir/work
+
+  echo -e '\n\n ==============================='
+  echo -e '--- Set up / update directories ---'
+  echo -e ' =============================================================='    
+  echo -e "    Directory `pwd` \n"
+
+# 10.a comp link and switch
+
+  echo -e '\n Setting up links to comp link and switch ...'
+  ln -sf ../bin/switch
+  ln -sf ../bin/comp
+  ln -sf ../bin/link
+
+# 10.b selected GrADS scripts
+
+  echo -e '\n Setting up links to selected GrADS scripts ...'
+  for file in cbarn.gs colorset.gs spec.gs source.gs 1source.gs spec_ids
+  do
+    if [ ! -f $file ]
+    then
+      ln -sf ../aux/$file .
+    fi
+  done
+
+# 10.c input files
+
+  echo -e '\n Setting up links to input files ...'
+  cd $main_dir/inp
+  files=`ls`
+  cd $main_dir/work
+
+  for file in $files
+  do
+    if [ ! -f $file ]
+    then
+      ln -sf ../inp/$file .
+    fi
+  done
+
+# 10.d hook in present script
+
+  cd $main_dir
+  if [ ! -f install_ww3_svn ]
+  then
+    echo -e "\n Install script not in main directory, create link."
+    ln -sf ./bin/install_ww3_svn .
+  else
+    lch=`ls -l install_ww3_svn | cut -c1-1`
+    if [ "$lch" != 'l' ]
+    then
+      echo -e "\n Install script not a link ..."
+      difft=`diff install_ww3_svn ./svn/model/bin/.`
+      if [ -z "$difft" ]
+      then
+        echo -e "\n Install script identical to svn version, replace by link."
+        ln -sf ./svn/model/bin/install_ww3_svn .
+      else
+        echo -e "\n Previous install script found, different from svn version:"
+        echo -e "  moved to extension .old. Creating link to svn version."
+        cp -f install_ww3_svn install_ww3_svn.old
+        ln -sf ./svn/model/bin/install_ww3_svn .
+      fi
+    else
+      echo -e "\n Install script link checked: all OK."
+    fi 
+  fi
+  sleep 2
+
+# --------------------------------------------------------------------------- #
+# 11. Remove broken links
+# --------------------------------------------------------------------------- #
+
+  cd ${main_dir}
+  echo -e "\n\n Searching for broken links. \n"
+  bkl=`find . -name "svn" -prune -o -type l ! -exec test -e {} \; -print`
+  tbkl=`echo $bkl | awk '{print $1}'`
+  if [ ${tbkl} ]
+  then
+    echo -e "\n\n  Broken links found: "
+    echo $bkl
+    echo -en "\n  Remove? [y|n] : "
+    read rbkl
+    if [ "${rbkl}" = "Y" ] || [ "${rbkl}" = "y" ]
+    then
+      rm -f $bkl
+    fi
+    echo -e "\n Broken links may indicate a healthy update of svn files and folders."
+    echo -e "   They may also indicate that changes to package are not reflected properly  "
+    echo -e "  in the install script. Please check and inform code admin if the case."
+  else
+    echo -e "  No broken links found." 
+  fi
+
+# --------------------------------------------------------------------------- #
+# 12. The end                                                                  #
+# --------------------------------------------------------------------------- #
+
+  echo -e '\n\n =============================== '
+  echo -e ' --- Final remarks ---'
+  echo -e ' ============================================================== \n'    
+  echo -e ' To run the WAVEWATCH III executables and the scripts to generate '
+  echo -e ' and update these executables from arbitrary directories, add the'
+  echo -e ' following directories to the path of your interactive shell : \n'
+  echo -e "      $main_dir/bin"
+  echo -e "      $main_dir/exe"
+  echo -e "\n Note that 'comp' and 'link' and 'switch' are user/machine specific."
+  echo -e "\n   Several comp and link files for known compilers are found in:"
+  echo -e "   ${main_dir}/bin"
+  echo -e "\n   If you cannot find one that suits your machine/preferences, "
+  echo -e "   create custom scripts based on the existing ones and add to bin."
+
+  echo -e '\n\n                    ==============================='
+  echo -e '                  ---       End of program        --- '
+  echo -e '                    =============================== \n '
+
+# end of script ------------------------------------------------------------- #

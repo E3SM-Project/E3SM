@@ -1,0 +1,2560 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3TIDEMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III                     |
+!/                  !            M. Foreman, IOS        !
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         04-Mar-2013 |
+!/                  +-----------------------------------+
+!/
+!/    01-Sep-2012 : Origination.                        ( version 4.07 )
+!/    04-Mar-2013 : Correction of FAST and new VFAST    ( version 4.08 )
+!/
+!  1. Purpose :
+!
+!     Tidal analysis of time series for storage of tidal constituents 
+!     only. This module is built around the versatile tidal analysis 
+!     package : http://www.pac.dfo-mpo.gc.ca/science/oceans/tidal-marees/index-eng.htm
+!     by Mike Foreman et al.  (see publication in J. Ocean Atmos. Tech.: vol. 
+!                http://journals.ametsoc.org/doi/pdf/10.1175/2008JTECHO615.1 )     
+!     Adaptation to WAVEWATCH III was performed by F. Ardhuin
+!
+!     STILL TO BE DONE: 
+!     - adding a namelist in ww3_grid to allow adjustment of TIDE_DT
+!     - check on constituents (M2, S2, N2 ...) when running ww3_shel, 
+!        in order to allow use of different sets of constituents
+!     - add residual currents (or geostrophic ...) ... 
+!     - make this work with multigrids 
+!
+!  2. Variables and types :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  3. Subroutines and functions :
+!
+!      Name                  Type  Scope    Description
+!     ----------------------------------------------------------------
+!      TIDE_WRITE_RESULTS    Subr. Public   Writes tidal results 
+!                                          (with M. Forman's format)
+!      TIDE_PREDICT          Subr. Public  Predicts tide from amp. & phases
+!      TIDE_SETTINGS_FULL    Subr. Public  Choice of constituents 
+!      TIDE_SETTINGS_FAST    Subr. Public  Choice of constituents 
+!      TIDE_SETTINGS_VFAST   Subr. Public  Choice of constituents 
+!      TIDE_SET_INDICES      Subr. Public 
+!      SETVUF_FAST           Subr. Public Calculates the V,u,f values 
+!      TIDE_READ_SETTINGS    Subr. Public Reads data from file (IOS format)
+!      TIDE_READ_ANAPAR      Subr. Public Reads data from file (IOS format)
+!      TIDE_READ_TIMESERIES  Subr. Public Reads data from file (IOS format)
+!      ASTR                  Subr. Public Calculates the ephermides
+!      JULDAYT               Func. Public Julian day
+!      CALDATT               Subr. Public 
+!      dsvbksb               Subr. Public 
+!      dsvdcmp               Subr. Public 
+!      svd                   Subr. Public Matrix singular value decomposition
+!      VUF_SET_PARAMETERS    Subr. Public 
+!      VUF                   Subr. Public 
+!      OPNVUF                Subr. Public 
+!      SETVUF                Subr. Public 
+!      flex_tidana_webpage   Subr. Public 
+!      TIDE_PREDICT          Subr. Public Tide prediction and error estimate 
+!      TIDE_PREDICT_ONLY     Subr. Public Tide prediction only
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  5. Remarks :
+!
+!  6. Switches :
+!
+!  7. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!      PUBLIC 
+!/
+!/ Private variables
+!/
+      DOUBLE PRECISION, PARAMETER  :: TWPI=3.1415926535898*2.
+      DOUBLE PRECISION, PARAMETER  :: FAC=TWPI/360.
+
+!
+!  Array sizes
+!
+      INTEGER, PARAMETER          :: MC=70,NR=106000,NMAXP1=MC*2,NMAXPM=NR*2+NMAXP1
+      INTEGER, PARAMETER          :: MC2=MC*2
+      CHARACTER*5, PARAMETER       :: KBLANK='     '
+!
+      INTEGER                     :: NTIDAL_CON, NTOTAL_CON, NKONCO
+      CHARACTER*5,    ALLOCATABLE :: TIDECON_ALLNAMES(:)       ! array of names of tidal constituents
+      CHARACTER*5,    ALLOCATABLE   :: KONCO_CON(:)         
+      INTEGER, ALLOCATABLE, PRIVATE :: II(:),JJ(:),KK(:),LL(:),MM(:),NN(:),NJ(:)
+      REAL, ALLOCATABLE             :: SEMI(:),COEF_CON(:)
+      REAL , ALLOCATABLE            :: V_ARG(:,:),F_ARG(:,:),U_ARG(:,:)
+      REAL                          :: EE(180),PH(180)
+      INTEGER                       :: LDEL(180),MDEL(180),NDEL(180),IR(180)
+! these two index table are used in VUF ... 
+      INTEGER , ALLOCATABLE         :: TIDE_INDEXJ(:),TIDE_INDEXJK(:)
+!
+! Parameters for tidal analysis
+!
+      INTEGER                      :: TIDE_MF, TIDE_NX, TIDE_NY
+      REAL, ALLOCATABLE            :: TIDE_FREQC(:)                 ! array of freq. of tidal constituents
+      CHARACTER(LEN=5), ALLOCATABLE:: TIDECON_NAMEI(:)              ! array of names of tidal constituents
+      CHARACTER(LEN=5), ALLOCATABLE:: TIDECON_NAME(:)               ! array of names of tidal constituents
+      CHARACTER(LEN=5)             :: TIDE_KONAN(10), TIDE_KONIN(10,10)
+      REAL                         :: TIDE_R(10,10), TIDE_ZETA(10,10)
+      REAL                         :: TIDE_SIGAN(10),TIDE_SIGIN(10,10)   ! these two are only read from files and written out
+      INTEGER                      :: TIDE_NIN,TIDE_NINF(10)
+      REAL, ALLOCATABLE            :: TIDAL_CONST(:,:,:,:,:)                 ! array of freq. of tidal constituents
+!
+! Data to be analyzed
+!
+      INTEGER(KIND=4)              :: TIDE_NTI
+      REAL, ALLOCATABLE            :: TIDE_DATA(:,:)
+      INTEGER(KIND=4), ALLOCATABLE :: TIDE_DAYS(:), TIDE_SECS(:)
+      REAL(KIND=8),    ALLOCATABLE :: TIDE_HOURS(:)
+      REAL,            PARAMETER   :: TIDE_DT = 1800.   ! time step used for forcing
+!
+! Analysis result
+!
+      REAL                         :: TIDE_AMPC(MC,2), TIDE_PHG(MC,2),   &
+                                      TIDE_SIG1(MC,2), TIDE_SIG2(MC,2),  &
+                                      TIDE_SIG3(MC,2), TIDE_TTEST(MC,2)
+      REAL                         :: TIDE_ampci(10,10,2), TIDE_phgi(10,10,2)
+      INTEGER                      :: TIDE_INDEX(MC),TIDE_INDEX2(MC)
+      
+
+      INTEGER                      :: NDSET, TIDE_VERBOSE = 0
+
+      !PUBLIC  :: TIDE_MF, TIDECON_NAME
+
+!/
+      CONTAINS
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_WRITE_RESULTS(LP,filename,ndef,KD1, KD2, ITZ, xlat,xlon,        &
+                                    RES, SSQ, RMSR0, SDEV0,SDEV,RMSR, RESMAX, IMAX, RMSRP)
+
+      IMPLICIT NONE
+!
+      CHARACTER*256, INTENT(IN)     :: filename
+      INTEGER,       INTENT(IN)     :: LP, NDEF, IMAX(NDEF)
+      INTEGER(KIND=4),INTENT(IN)    :: KD1,KD2
+      CHARACTER*4  , INTENT(IN)     :: ITZ
+      REAL(KIND=8),  INTENT(IN)     :: RMSR0(NDEF), &
+                                       SDEV0(NDEF), SDEV(NDEF), RMSR(NDEF), RESMAX(NDEF), RMSRP(NDEF)
+      REAL         , INTENT(IN)     :: RES(NDEF), SSQ(NDEF), XLAT,XLON
+! 
+      INTEGER                       :: IDEF, I, K, K2, L, I1, INFTOT
+      INTEGER                       :: ID1,IM1,IY1,ID2,IM2,IY2
+
+     open(unit=lp,file=filename,status='unknown',form='formatted')
+
+      CALL CALDATT(KD1,id1,im1,iy1)
+      CALL CALDATT(KD2,id2,im2,iy2)
+
+      WRITE(LP,15) ID1,IM1,IY1,ID2,IM2,IY2,ITZ
+   15 FORMAT(/'THE ANALYSIS PERIOD IS FROM',I3,'/',I2,'/',I4,     &
+      ' TO ',I2,'/',I2,'/',I4,'  IN THE TIME ZONE ',A4)
+      WRITE(LP,*)'USING SVD TO SOLVE THE OVERDETERMINED SYSTEM'
+!      write(lp,150)ID1,IM1,IC1,IY1,ID2,IM2,IC2,IY2
+150      format(2i3,2i2,5x,2i3,2i2)
+
+     WRITE(LP,255)TIDE_NTI
+  255 FORMAT('NUMBER OF POINTS IN THE ANALYSIS =',I6)
+      write(lp,*) ' nin=',TIDE_NIN
+
+      DO IDEF=1,NDEF
+
+        WRITE(LP,52) RES(IDEF),SSQ(IDEF)
+   52   FORMAT('LARGEST RESIDUAL MAGNITUDE & RESIDUAL SUM OF SQUARES:'     &
+              ,2E12.5)
+        WRITE(LP,66) SDEV0(IDEF),RMSR0(IDEF)
+   66   FORMAT(     &
+      'ST. DEV. OF RIGHT HAND SIDES OF ORIGINAL OVERDETERMINED SYSTEM:' &
+                  ,E12.5/ &
+                  '                       AND THE ROOT MEAN SQUARE RESIDUAL ERROR:' &
+                  ,E12.5)
+
+
+      write(lp,*) ' rms residual: brute force =',rmsr(IDEF)
+      write(lp,*) ' max residual: ',resmax(IDEF),imax(IDEF)
+
+      WRITE(LP,41)
+  41  FORMAT('HARMONIC ANALYSIS RESULTS: AMPLITUDES, PHASE LAGS, C, S,      &
+      & amp SD estimates, t-test value')
+!      write out results for constant term & linear trend
+
+        DO I=1,TIDE_MF
+          WRITE(LP,43) TIDECON_NAME(I),TIDE_FREQC(I),TIDE_AMPC(I,idef),TIDE_PHG(I,idef),     &
+                   TIDE_sig1(I,idef),TIDE_sig2(I,idef),TIDE_sig3(I,idef),TIDE_ttest(I,idef)
+          END DO
+ 
+   43 FORMAT(5X,A5,4X,F12.9,2X,F10.5,2X,F10.3,5x,4f8.3)
+
+!
+!*  INFERENCE results are given now
+!
+      IF (TIDE_NIN.GE.0) THEN 
+        write(lp,*) ' INFERENCE RESULTS'
+        l=0
+        do k=1,TIDE_NIN
+          do i=2,TIDE_MF
+            IF (TIDECON_NAME(i).eq.TIDE_KONAN(k)) EXIT
+            END DO
+          i1=i
+          do k2=1,TIDE_NINF(k)
+            l=l+1
+            write(lp,79) TIDE_KONIN(k,k2),TIDE_SIGIN(k,k2),TIDE_ampci(k,k2,idef), &
+                    TIDE_phgi(k,k2,idef)
+79      format(5x,a5,4x,f12.9,15x,f10.4,5x,f10.4)
+            END DO
+          END DO
+        inftot=l
+        END IF
+
+
+        WRITE(LP,70)TIDE_NTI,TIDE_MF*2,'    ',xlat,xlon,sngl(SDEV0),sngl(SDEV)
+   70   format('N,m,LAT,LON,SDEV0,SDEV:  ',2i10,a4,f9.4,f10.4,2f10.2)
+!
+        IF (TIDE_NIN.GT.0) THEN
+        WRITE(LP,71) RMSRP(IDEF)
+   71   FORMAT('ROOT MEAN SQUARE RESIDUAL ERROR AFTER INFERENCE IS',     &
+                E15.6, //)
+        ELSE
+        WRITE(LP,72) RMSRP(IDEF)
+   72   FORMAT('RECALCULATED ROOT MEAN SQUARE RESIDUAL ERROR IS   ',     &
+                E15.6, //)
+        ENDIF
+       END DO
+
+      END SUBROUTINE TIDE_WRITE_RESULTS
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_FIND_INDICES_PREDICTION(LIST,INDS,TIDE_PRMF)
+!/                  +-----------------------------------+
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         28-Feb-2013 |
+!/                  +-----------------------------------+
+!/
+!/    29-Jun-2013 : Creation                            ( version 4.11 )
+!/
+!  1. Purpose :
+!
+!     Finds indices of tidal constituents to be used for prediction
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       LIST         Char  I  Array of tidal constituents names to be used
+!       INDS         I.A.  O  Array of indices
+!       TIDE_PRMF    I.A.  O  number of constituents to be used
+!     ----------------------------------------------------------------
+!
+!
+!  4. Subroutines used :
+!
+!     None
+!
+!  5. Called by :
+!
+!     ww3_prtide
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!       !/S  Enable subroutine tracing.
+!       !/T  Enable test output.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE   
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      CHARACTER(LEN=100), INTENT(IN) :: LIST(70)
+      INTEGER, INTENT(OUT)    :: INDS(70), TIDE_PRMF
+ 
+      INTEGER J, FOUND
+!/S      INTEGER, SAVE           :: IENT   =   0
+!
+!/S      CALL STRACE (IENT, 'TIDE_FIND_INDICES_PREDICTION')
+!
+      TIDE_PRMF=0
+      IF (TRIM(LIST(1)).EQ.'ALL') THEN 
+        DO J=1,TIDE_MF
+          INDS(J)=J
+          END DO
+        TIDE_PRMF = TIDE_MF
+        RETURN
+        END IF
+!
+      DO WHILE (len_trim(LIST(TIDE_PRMF+1)).NE.0)
+        TIDE_PRMF=TIDE_PRMF+1
+        FOUND = 0
+        DO J=1,TIDE_MF
+          IF (TRIM(TIDECON_NAME(J)).EQ.TRIM(LIST(TIDE_PRMF))) THEN 
+            INDS(TIDE_PRMF)=J
+            FOUND=1
+            WRITE(6,*) 'Tidal constituent to be used in pre:',TRIM(LIST(TIDE_PRMF)),TIDE_FREQC(J)
+            END IF
+          END DO
+        IF (FOUND.EQ.0) WRITE(6,*) 'Tidal constituent ',TRIM(LIST(TIDE_PRMF)),' not available.'
+        END DO
+!
+      END SUBROUTINE TIDE_FIND_INDICES_PREDICTION
+
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_FIND_INDICES_ANALYSIS(LIST)
+!/                  +-----------------------------------+
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         28-Feb-2013 |
+!/                  +-----------------------------------+
+!/
+!/    29-Jun-2013 : Creation                            ( version 4.11 )
+!/
+!  1. Purpose :
+!
+!     Finds indices of tidal constituents to be used for analysis
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       LIST         Char  I  Array of tidal constituents names to be used
+!     ----------------------------------------------------------------
+!
+!
+!  4. Subroutines used :
+!
+!     None
+!
+!  5. Called by :
+!
+!     ww3_prtide
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!       !/S  Enable subroutine tracing.
+!       !/T  Enable test output.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE   
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      CHARACTER(LEN=100), INTENT(IN) :: LIST(70)
+!
+      INTEGER TIDE_MF_ALL
+      CHARACTER(LEN=5)             :: TIDECON_NAME_ALL(60)      ! array of names of tidal constituents
+      REAL                         :: TIDE_FREQC_ALL(60)        ! array of freq. of tidal constituents
+      INTEGER                      :: INDS(60), J, FOUND, NTIDES
+!/S      INTEGER, SAVE           :: IENT   =   0
+!
+!/S      CALL STRACE (IENT, 'TIDE_FIND_INDICES_PREDICTION')
+!
+      TIDECON_NAME_ALL(:)=(/ &
+       'Z0   ', 'SSA  ', 'MSM  ', 'MM   ', 'MSF  ', 'MF   ', 'ALP1 ', '2Q1  ', 'SIG1 ', 'Q1   ',  &
+       'RHO1 ', 'O1   ', 'TAU1 ', 'BET1 ', 'NO1  ', 'CHI1 ', 'P1   ', 'K1   ', 'PHI1 ', 'THE1 ',  &
+       'J1   ', 'SO1  ', 'OO1  ', 'UPS1 ', 'OQ2  ', 'EPS2 ', '2N2  ', 'MU2  ', 'N2   ', 'NU2  ',  &
+       'M2   ', 'MKS2 ', 'LDA2 ', 'L2   ', 'S2   ', 'K2   ', 'MSN2 ', 'ETA2 ', 'MO3  ', 'M3   ',  &
+       'SO3  ', 'MK3  ', 'SK3  ', 'MN4  ', 'M4   ', 'SN4  ', 'MS4  ', 'MK4  ', 'S4   ', 'SK4  ',  &
+       '2MK5 ', '2SK5 ', '2MN6 ', 'M6   ', '2MS6 ', '2MK6 ', '2SM6 ', 'MSK6 ', '3MK7 ', 'M8   ' /) 
+!
+       TIDE_FREQC_ALL(:)=(/0.0000000000, 0.0002281591, 0.0013097807, 0.0015121520, 0.0028219327, 0.0030500918, &
+                  0.0343965698, 0.0357063505, 0.0359087218, 0.0372185025, 0.0374208738, &
+                  0.0387306544, 0.0389588136, 0.0400404351, 0.0402685943, 0.0404709655, &
+                  0.0415525871, 0.0417807462, 0.0420089053, 0.0430905269, 0.0432928982, &
+                  0.0446026789, 0.0448308380, 0.0463429900, 0.0759749448, 0.0761773160, &
+                  0.0774870967, 0.0776894680, 0.0789992487, 0.0792016200, 0.0805114007, &
+                  0.0807395598, 0.0818211814, 0.0820235526, 0.0833333333, 0.0835614924, &
+                  0.0848454853, 0.0850736444, 0.1192420551, 0.1207671010, 0.1220639878, &
+                  0.1222921469, 0.1251140796, 0.1595106494, 0.1610228013, 0.1623325820, &
+                  0.1638447340, 0.1640728931, 0.1666666667, 0.1668948258, 0.2028035476, &
+                  0.2084474129, 0.2400220500, 0.2415342020, 0.2443561347, 0.2445842938, &
+                  0.2471780673, 0.2474062264, 0.2833149482, 0.3220456027 /)
+
+      INDS(:) = 0
+      IF (TRIM(LIST(1)).EQ.'ALL') THEN 
+        TIDE_MF = TIDE_MF_ALL
+        IF (ALLOCATED(TIDE_FREQC)) DEALLOCATE(TIDE_FREQC)
+        ALLOCATE(TIDE_FREQC(TIDE_MF),TIDECON_NAME(TIDE_MF))
+        TIDECON_NAME = TIDECON_NAME_ALL
+        TIDE_FREQC = TIDE_FREQC_ALL
+        RETURN
+        END IF
+!
+      IF (TRIM(LIST(1)).EQ.'FAST') THEN 
+        TIDE_MF = 44
+        INDS(1:44)= (/ 1, 2, 3, 4, 5, 6, 12, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,  &
+                      37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,&
+                      55, 56, 57, 58, 59, 60 /) 
+!
+      ELSE IF (TRIM(LIST(1)).EQ.'VFAST') THEN 
+        TIDE_MF = 20
+        INDS(1:20)= (/ 1, 2, 3, 5, 6, 27, 28, 29, 30, 31, 35, 36, 37, 44, 45, 47, 49, 54, 55, 60 /) 
+!
+      ELSE
+        TIDE_MF=0
+        NTIDES=0
+!
+        DO WHILE (len_trim(LIST(TIDE_MF+1)).NE.0)
+!
+          TIDE_MF=TIDE_MF+1
+          FOUND = 0
+          DO J=1,60
+            IF (TRIM(TIDECON_NAME_ALL(J)).EQ.TRIM(LIST(TIDE_MF))) THEN 
+              NTIDES=NTIDES+1
+              INDS(NTIDES)=J
+              FOUND = 1
+              WRITE(6,*) 'Tidal constituent in analysis:',J,TRIM(TIDECON_NAME_ALL(J)),TIDE_FREQC_ALL(J)
+              END IF
+            END DO
+          IF (FOUND.EQ.0) WRITE(6,*) 'Tidal constituent ',TIDE_MF,TRIM(LIST(TIDE_MF)),' not available.'
+! 
+          END DO
+!
+        TIDE_MF=NTIDES
+        END IF
+!
+! Defines names and frequencies
+!
+        IF (ALLOCATED(TIDE_FREQC)) DEALLOCATE(TIDE_FREQC)
+        ALLOCATE(TIDE_FREQC(TIDE_MF),TIDECON_NAME(TIDE_MF))
+
+        DO J=1,TIDE_MF 
+          TIDECON_NAME(J) = TIDECON_NAME_ALL(INDS(J))
+          TIDE_FREQC(J) = TIDE_FREQC_ALL(INDS(J))
+          END DO
+      CALL TIDE_SET_INDICES
+
+!
+      END SUBROUTINE TIDE_FIND_INDICES_ANALYSIS
+!/ ------------------------------------------------------------------- /
+
+
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_SET_INDICES
+!
+      IMPLICIT NONE   
+!
+      INTEGER J, K, K1, L, J1, JL, L2, KM1, JBASE 
+!
+      DO L=1,TIDE_MF 
+        DO K=1,NTOTAL_CON
+          IF (TIDECON_ALLNAMES(k).EQ.TIDECON_NAME(L)) TIDE_INDEX2(L)=K
+          END DO 
+        END DO 
+!     
+      TIDE_INDEXJ(:)=0    
+      TIDE_INDEXJK(:)=0    
+      JBASE=0
+      K1=NTIDAL_CON+1
+!
+      DO K=K1,NTOTAL_CON
+        J1=JBASE+1
+        TIDE_INDEXJ(K)=J1
+        JL=JBASE+NJ(K)
+        DO J=J1,JL
+          KM1=K-1
+          L2=0
+          DO L2=1,KM1
+            IF (TIDECON_ALLNAMES(L2).EQ.KONCO_CON(J)) THEN 
+              TIDE_INDEXJK(J)=L2
+              END IF
+            END DO ! L2
+          END DO   ! J
+        JBASE=JL
+        END DO     ! K
+!
+      END SUBROUTINE TIDE_SET_INDICES
+
+
+!/ ------------------------------------------------------------------- /
+     SUBROUTINE SETVUF_FAST(h,pp,s,p,enp,dh,dpp,ds,dp,dnp,tau,XLAT,F,U,V)
+!      setvuf calculates the V,u,f values at time hr for all constituents
+      IMPLICIT NONE 
+      REAL,         INTENT(IN)  :: XLAT
+      REAL(KIND=8), INTENT(IN)  :: h,pp,s,p,enp,dh,dpp,ds,dp,dnp,tau
+      INTEGER, PARAMETER        :: NTIL=44
+      REAL        , INTENT(OUT) :: F(NTIL),U(NTIL),V(NTIL)
+      REAL                      :: FA(170),UA(170),VA(170)
+!
+!   Local variables
+!
+      INTEGER                   :: K, L, L2, JBASE, J1, J, JL, K1
+      REAL(KIND=4), PARAMETER   :: PI=3.1415926536
+      REAL(KIND=4), PARAMETER   :: TWOPI=2.*3.1415926536
+
+      REAL                      :: SLAT, VDBL, RR, SUMC, SUMS, UUDBL, UU
+      INTEGER                   :: IUU, IV
+ 
+      SLAT=SIN(PI*XLAT/180.)
+
+      JBASE=0
+! All 
+! 1'Z0  *','SA   ','SSA *','MSM *','MM   *,'MSF *','MF  *','ALP1*','2Q1  ','SIG1 ', &
+!11'Q1   ','RHO1 ','O1  *','TAU1 ','BET1 ','NO1  ','CHI1 ','PI1  ','P1  *','S1   ', &
+!21'K1  *','PSI1 ','PHI1 ','THE1 ','J1   ','OO1  ','UPS1 ','OQ2  ','EPS2*','2N2 *', &
+!31'MU2 *','N2  *','NU2 *','GAM2 ','H1   ','M2  *','H2   ','LDA2*','L2  *','T2   ', &
+!41'S2  *','R2   ','K2  *','ETA2 ','M3   ','2PO1 ','SO1  ','ST36 ','2NS2 ','ST37 ', &
+!51'ST1  ','ST2  ','ST3  ','O2   ','ST4  ','SNK2 ','OP2  ','MKS2*','ST5  ','ST6  ', &
+!61'2SK2 ','MSN2 ','ST7  ','2SM2 ','ST38 ','SKM2 ','2SN2 ','NO3  ','MO3  ','NK3  ', &
+!71'SO3  ','MK3  ','SP3  ','SK3  ','ST8  ','N4   ','3MS4 ','ST39 ','MN4  ','ST40 ', &
+!81'ST9  ','M4   ','ST10 ','SN4  ','KN4  ','MS4  ','MK4  ','SL4  ','S4   ','SK4  ', &
+!91'MNO5 ','2MO5 ','3MP5 ','MNK5 ','2MP5 ','2MK5 ','MSK5 ','3KM5 ','2SK5 ','ST11 ', &
+!01'2NM6 ','ST12 ','ST41 ','2MN6 ','ST13 ','M6   ','MSN6 ','MKN6 ','2MS6 ','2MK6 ', &
+!11'NSK6 ','2SM6 ','MSK6 ','ST42 ','S6   ','ST14 ','ST15 ','M7   ','ST16 ','3MK7 ', &
+!21'ST17 ','ST18 ','3MN8 ','ST19 ','M8   ','ST20 ','ST21 ','3MS8 ','3MK8 ','ST22 ', &
+!31'ST23 ','ST24 ','ST25 ','ST26 ','4MK9 ','ST27 ','ST28 ','M10  ','ST29 ','ST30 ', &
+!41'ST31 ','ST32 ','ST33 ','M12  ','ST34 ','ST35 '/)
+
+!   Possible
+!       'Z0   ', 'SSA  ', 'MSM  ', 'MM   ', 'MSF  ', 'MF   ', 'ALP1 ', '2Q1  ', 'SIG1 ', 'Q1   ',  &
+!       'RHO1 ', 'O1   ', 'TAU1 ', 'BET1 ', 'NO1  ', 'CHI1 ', 'P1   ', 'K1   ', 'PHI1 ', 'THE1 ',  &
+!       'J1   ', 'SO1  ', 'OO1  ', 'UPS1 ', 'OQ2  ', 'EPS2 ', '2N2  ', 'MU2  ', 'N2   ', 'NU2  ',  &
+!       'M2   ', 'MKS2 ', 'LDA2 ', 'L2   ', 'S2   ', 'K2   ', 'MSN2 ', 'ETA2 ', 'MO3  ', 'M3   ',  &
+!       'SO3  ', 'MK3  ', 'SK3  ', 'MN4  ', 'M4   ', 'SN4  ', 'MS4  ', 'MK4  ', 'S4   ', 'SK4  ',  &
+!       '2MK5 ', '2SK5 ', '2MN6 ', 'M6   ', '2MS6 ', '2MK6 ', '2SM6 ', 'MSK6 ', '3MK7 ', 'M8   ' /) 
+
+! Subset
+!       'Z0   ', 'SSA  ', 'MSM  ', 'MM   ', 'MSF  ', 'MF   ',  &
+!                'O1   ',                                     'P1   ', 'K1   '                  ,  &
+!                                                    'EPS2 ', '2N2  ', 'MU2  ', 'N2   ', 'NU2  ',  &
+!       'M2   ', 'MKS2 ', 'LDA2 ', 'L2   ', 'S2   ', 'K2   ', 'MSN2 ', 'ETA2 ', 'MO3  ', 'M3   ',  &
+!       'SO3  ', 'MK3  ', 'SK3  ', 'MN4  ', 'M4   ', 'SN4  ', 'MS4  ', 'MK4  ', 'S4   ', 'SK4  ',  &
+!       '2MK5 ', '2SK5 ', '2MN6 ', 'M6   ', '2MS6 ', '2MK6 ', '2SM6 ', 'MSK6 ', '3MK7 ', 'M8   ' /) 
+
+
+!
+      JBASE=0
+
+      DO K=1,NTIDAL_CON
+        J1=JBASE+1
+        JL=JBASE+NJ(K)
+        DO L=1,TIDE_MF 
+          IF (TIDE_INDEX2(L).EQ.K) THEN 
+            VDBL=II(K)*TAU+JJ(K)*S+KK(K)*H+LL(K)*P+MM(K)*ENP+NN(K)*PP+SEMI(K)
+            IV=VDBL
+            IV=(IV/2)*2
+            SUMC=1.
+            SUMS=0.
+            DO J=J1,JL
+! ITIME ??? 
+!***********************************************************************
+!*  HERE THE SATELLITE AMPLITUDE RATIO ADJUSTMENT FOR LATITUDE IS MADE
+!
+              RR=EE(J)
+              L2=IR(J)+1
+              GO TO (901,902,903),L2
+  902         RR=EE(J)*0.36309*(1.-5.*SLAT*SLAT)/SLAT
+              GO TO 901
+  903         RR=EE(J)*2.59808*SLAT
+  901         CONTINUE
+              UUDBL=LDEL(J)*P+MDEL(J)*ENP+NDEL(J)*PP+PH(J)
+              IUU=UUDBL
+              UU=UUDBL-IUU
+              SUMC=SUMC+RR*COS(UU*TWOPI)
+              SUMS=SUMS+RR*SIN(UU*TWOPI)
+              END DO
+!
+            FA(K)=SQRT(SUMC*SUMC+SUMS*SUMS)
+            VA(K)=VDBL-IV
+            UA(K)=ATAN2(SUMS,SUMC)/TWOPI
+            END IF
+          JBASE=JL ! (indx(L).EQ.K)
+          END DO   ! L 
+        END DO     ! K
+!
+!  HERE F AND V+U OF THE SHALLOW WATER CONSTITUENTS ARE COMPUTED FROM
+!  THE VALUES OF THE MAIN CONSTITUENT FROM WHICH THEY ARE DERIVED.
+!
+      K1=NTIDAL_CON+1
+      IF (K1.GT.NTOTAL_CON) RETURN
+!
+      DO K=K1,NTOTAL_CON
+        FA(K)=1.0
+        VA(K)=0.0
+        UA(K)=0.
+        DO J=TIDE_INDEXJ(K),TIDE_INDEXJ(K)+NJ(K)-1
+          L2=TIDE_INDEXJK(J)
+          FA(K)=FA(K)*FA(L2)**ABS(COEF_CON(J))
+          vA(k)=vA(K)+COEF_CON(J)*vA(L2)
+          UA(K)=UA(k)+COEF_CON(J)*UA(L2)
+          END DO   ! J
+        END DO     ! K
+!
+        DO L=1,TIDE_MF 
+          F(L)=FA(TIDE_INDEX2(L))
+          U(L)=UA(TIDE_INDEX2(L))
+          V(L)=VA(TIDE_INDEX2(L))
+          END DO   ! L
+
+      RETURN
+!
+      END SUBROUTINE SETVUF_FAST
+
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_READ_SETTINGS(filename,fnam6,fnam7,fnam8,fnam9,fnam11)
+      IMPLICIT NONE
+      CHARACTER*256, INTENT(IN)     :: filename
+      CHARACTER*256, INTENT(OUT)    :: fnam6,fnam7,fnam8,fnam9,fnam11
+
+      INTEGER KIN
+      
+! Parameters for reading KR1
+!      FILE I/O
+!      KIN is the master input file. 
+!      fnam6 is the file to which the output is sent. It is assigned the number
+!            lp.
+!      fnam7 is file containing the constituents to be included in the analysis,
+!            the analysis period, inference parameters, the flag controlling
+!            height or current analyses, and site information. It is assigned the
+!            number kr1.
+!      fnam8 is the file containing all the astronomical argument information 
+!            (it should not have to be changed)
+!      fnam11 is a file to which information on the SVD matrix fit is output when
+!
+!      Original, fitted, and residual time series are output to file 25 while
+!      the same are also output to file 26 in a format that could be input to
+!      Excel for plotting.
+!
+      KIN=40   ! Input file assigned to unit 4 
+
+!      OPEN(UNIT=KIN,FILE='tuk75_tidana.inp',STATUS='OLD')
+!      OPEN(UNIT=KIN,FILE='victoria_2008_test.inp',STATUS='OLD')
+      OPEN(UNIT=KIN,FILE=filename,STATUS='OLD')
+!      OPEN(UNIT=KIN,FILE='kiw05_mar2008.inp',STATUS='OLD')
+!      OPEN(UNIT=KIN,FILE='tcs05_sep07-mar08.inp',STATUS='OLD')
+      read(KIN,'(a)') fnam6
+      read(KIN,'(a)') fnam7
+      read(KIN,'(a)') fnam8
+      read(KIN,'(a)') fnam9
+      read(KIN,'(a)') fnam11
+!      open(unit=11,file=fnam11,status='unknown',form='formatted')
+!      unit 25 stores the residual time series
+      !read(KIN,'(a)') fname
+      !open(unit=25,file=fname,status='unknown',form='formatted')
+      !read(KIN,'(a)') fname
+      !open(unit=26,file=fname,status='unknown',form='formatted')
+      END SUBROUTINE TIDE_READ_SETTINGS
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_READ_ANAPAR(KR1,LP,filename,KD1,KD2,XLON,XLAT,NDEF,ITREND,ITZ)
+! Parameters for reading KR1
+      IMPLICIT NONE
+
+      INTEGER,       INTENT(IN)     :: KR1, LP
+      CHARACTER*256, INTENT(IN)     :: filename
+      INTEGER(KIND=4), INTENT(OUT)  :: KD1, KD2
+      INTEGER        , INTENT(OUT)  :: NDEF,ITREND
+      REAL,            INTENT(OUT)  :: XLON, XLAT
+      CHARACTER*4 ,    INTENT(OUT)  :: ITZ
+!
+      INTEGER                   :: I, IY
+      INTEGER       ID1,IM1,IY1,ID2,IM2,IY2,IC1,IC2
+      INTEGER       JSTN, LATD,LATM,LOND,LONM, K, K2
+      CHARACTER*4   NSTN(5)
+
+      open(unit=kr1,file=filename,status='old',form='formatted')
+
+!
+!*
+!***********************************************************************
+!*  READ FROM DEVICE KR1 THE ANALYSIS TYPE AND TIDAL STATION DETAILS.
+!*
+!*  1)ONE RECORD FOR THE VARIABLES TIDE_MF 
+!*  TIDE_MF   = THE NUMBER OF CONSTITUENTS, INCLUDING THE CONSTANT TERM Z0,
+!*         TO BE IN THE LEAST SQUARES FIT.
+!*
+!*  2)ONE RECORD FOR EACH OF THE TIDE_MF CONSTITUENTS TO BE INCLUDED IN THE
+!*  FIT.  EACH RECORD CONTAINS THE VARIABLES NAME AND TIDE_FREQC IN THE
+!*  FORMAT (A5,2X,F13.10).  NAME IS THE CONSTITUENT NAME, WHICH SHOULD
+!*  BE LEFT JUSTIFIED IN THE ALPHANUMERIC FIELD, WHILE TIDE_FREQC IS ITS
+!*  FREQUENCY MEASURED IN CYCLES PER HOUR.
+!*
+!*  3) ONE RECORD IN THE FORMAT (8I5) CONTAINING THE FOLLOWING
+!*  INFORMATION ON THE TIME PERIOD OF THE ANALYSIS.
+!*  ID1,IM1,IY1 - DAY,MONTH,YEAR OF THE BEGINNING OF THE ANALYSIS
+!*                PERIOD,
+!*  ID2,IM2,IY2 - DAY,MONTH,YEAR OF THE END OF THE ANALYSIS PERIOD.
+!*  IC1,IC2     - CENTURY OFR THE BEGINNING AND END OF THE ANALYSIS
+!*                PERIOD (ZERO VALUES ARE RESET TO 19)
+!*
+!*
+!*  4)ONE RECORD IN THE FORMAT (I5,5A4,1X,A4,4I5) CONTAINING THE
+!*  FOLLOWING TIDAL STATION  INFORMATION.
+!*  JSTN      = TIDAL STATION NUMBER,
+!*  (NSTN(I),I=1,5) = TIDAL STATION NAME,
+!              *  ITZ       = TIME ZONE IN WHICH THE OBSERVATIONS WERE RECORDED,
+!              *  LATD,LATM = STATION LATITUDE IN DEGREES AND MINUTES,
+!              *  LOND,LONM = STATION LONGITUDE IN DEGREES AND MINUTES.
+!              *
+!              *  5)ONE SET RECORDS FOR EACH POSSIBLE INFERENCE. THE FIRST RECORD HAS THE 
+!              *      CONSITUENT NAME, ITS FREQUENCY, AND THE NUMBER OF CONSTITUENTS TO BE
+!              *      INFERRED (4X,A5,E16.10,i5), WHILE THERE IS ONE RECORD FOR EACH OF THE 
+!              *      CONSTITUENTS TO BE INFERRED WITH THE NAME, FREQUENCY, AMPLITUDE RATIO 
+!              *      (INFERRED TO REFERENCE) AND PHASE DIFFERENCE (GREENWICH PHASE LAG OF 
+!              *      THE INFERRED CONSTITUENT SUBTRACTED FROM THE GREENWICH PHASE LAG OF THE
+!              *    (ANALYSED CONSTITUENT IN THE FORMAT(4X,A5,E16.10,2F10.3)
+!              *
+!              *  FOR KR1 INPUT, ALL CONSTITUENT NAMES SHOULD BE LEFT JUSTIFIED IN
+!              *  THE ALPHANUMERIC FIELD, FREQUENCIES ARE MEASURED IN CYCLES/HOUR, AND
+!              *  ALL CONSTITUENTS MUST BE INCLUDED IN THE LIST IN READ FROM FNAM8.
+!              
+!                    write(6,*) ' reading from unit kr1'
+      READ(KR1,*) TIDE_MF,ndef,itrend
+      ALLOCATE(TIDE_FREQC(TIDE_MF),TIDECON_NAME(TIDE_MF))
+!      ndef=1 if only 1D field to be analysed (eg., elevations)
+!      ndef=2 if 2D field: velocity components, EW followed by NS   : this is now de-activated
+!/T      WRITE(6,*)  ' number of constituents & degrees of freedom=',TIDE_MF,ndef
+      IF (itrend.eq.1) then
+!/T      WRITE(6,*) ' a linear trend is included in the analysis'
+      else
+!/T      WRITE(6,*) ' no linear trend is included'
+      END IF
+!      TIDE_MF= number of consituents, excluding linear trend. The constant
+!      term, Z0 should be first in the list.
+!      itrend= 1 if include linear trend
+!      itrend= otherwise, no trend
+!      number of unknowns, M, depends on whether we have a linear trend
+
+   10 FORMAT(2I5,F5.2)
+      READ(KR1,11) (TIDECON_NAME(I),TIDE_FREQC(I),I=1,TIDE_MF)
+!/T      WRITE(6,*)    (TIDECON_NAME(I),TIDE_FREQC(I),I=1,TIDE_MF)
+   11 FORMAT(4x,A5,F16.10)
+      READ(KR1,7) ID1,IM1,IY1,ID2,IM2,IY2,IC1,IC2
+!/T      WRITE(6,*)   ID1,IM1,IY1,ID2,IM2,IY2,IC1,IC2
+      IF (IC1.EQ.0) IC1=19
+      IF (IC2.EQ.0) IC2=19
+    7 FORMAT(16I5)
+      READ(KR1,9) JSTN,NSTN(1:5),ITZ,LATD,LATM,LOND,LONM
+    9 FORMAT(I5,5A4,1X,A4,4I5)
+
+      iy=ic1*100+iy1
+      kd1=JULDAYT(id1,im1,iy)
+
+      iy=ic2*100+iy2
+      kd2=JULDAYT(id2,im2,iy)
+!      
+!      read in inference information now as it will be used in the lsq matrix
+!
+      DO K=1,10
+        READ(KR1,'(4X,A5,E16.10,i5)')TIDE_KONAN(K),TIDE_SIGAN(K),TIDE_NINF(k)
+!      write(6,1010)TIDE_KONAN(K),TIDE_SIGAN(K),TIDE_NINF(k)
+        IF (TIDE_KONAN(K).EQ.KBLANK) EXIT
+        do k2=1,TIDE_NINF(k)
+          read(kr1,'(4X,A5,E16.10,2F10.3)') TIDE_KONIN(K,k2),TIDE_SIGIN(K,k2),TIDE_R(K,k2),TIDE_ZETA(K,k2)
+          END DO
+        END DO
+      TIDE_NIN=K-1
+      CLOSE(kr1)
+
+      xlat=latd+latm/60.
+      xlon=lond+lonm/60.
+
+      RETURN
+      END SUBROUTINE TIDE_READ_ANAPAR
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_READ_TIMESERIES(KR2,filename,KD1,KD2,TIDE_NTI,NDEF)
+!
+      IMPLICIT NONE
+!
+      INTEGER,       INTENT(IN)     :: KR2, NDEF
+      CHARACTER*256, INTENT(IN)     :: filename
+      INTEGER(KIND=4), INTENT(IN)   :: KD1,KD2
+      INTEGER(KIND=4), INTENT(OUT)  :: TIDE_NTI
+!
+      INTEGER                       :: I, idd,imm,icc,iyy,ihh,imin,isec,iy
+      REAL, ALLOCATABLE             :: TIDE_DATATMP(:,:)
+      INTEGER(KIND=4), ALLOCATABLE  :: TIDE_DAYSTMP(:), TIDE_SECSTMP(:)
+      INTEGER(KIND=4)               :: KDD
+      INTEGER                       :: ICODE
+      REAL                          :: htt(NDEF)
+!
+! Initialize Variables
+!      
+      ALLOCATE( TIDE_DATATMP(NR,NDEF), TIDE_DAYSTMP(NR), TIDE_SECSTMP(NR) )  
+
+! Reads in data between dates kd1 and kd2 in file kr2 
+!  
+      OPEN(unit=kr2,file=filename,status='old',form='formatted')
+      
+      ICODE = 0
+      KDD = KD1
+      I=0
+      DO WHILE(ICODE.EQ.0.AND.KDD.LE.KD2) 
+!
+! reads with the original Foreman's format
+!
+        READ(kr2,145,IOSTAT=ICODE) idd,imm,icc,iyy,ihh,imin,htt(1:NDEF)  
+145     format(6i2,4f10.4)
+        isec=0
+        iy=icc*100+iyy
+      
+        kdd=JULDAYT(idd,imm,iy)
+
+        IF (kdD.lt.kd1) then
+          WRITE(*,*) icc,iyy,imm,idd,ihh,imin
+          WRITE(*,*)'kd, kd1, kd2 =',kdd,kd1,kd2
+          write(*,*) ' observation before analysis period'
+        ELSE 
+!
+!  Fills in data array
+!
+          IF (ICODE.EQ.0.AND.KDD.LE.KD2) THEN 
+            i=i+1
+            TIDE_DATATMP(I,:)=htt(:)
+            TIDE_DAYSTMP(I)=kdd
+            TIDE_SECSTMP(I)=ihh*3600+imin*60+isec
+            END IF
+          END IF
+        END DO
+     
+      TIDE_NTI=i
+      ALLOCATE( TIDE_DATA(TIDE_NTI,NDEF) )  
+      ALLOCATE( TIDE_DAYS(TIDE_NTI), TIDE_SECS(TIDE_NTI), TIDE_HOURS(TIDE_NTI) )  
+      TIDE_DATA(1:TIDE_NTI,1:NDEF)=TIDE_DATATMP(1:TIDE_NTI,1:NDEF)
+      TIDE_DAYS(1:TIDE_NTI)=TIDE_DAYSTMP(1:TIDE_NTI)
+      TIDE_SECS(1:TIDE_NTI)=TIDE_SECSTMP(1:TIDE_NTI)
+      TIDE_HOURS(:)=24.d0*dfloat(TIDE_DAYS(:))+dfloat(TIDE_SECS(:))/3600.d0
+      CLOSE(KR2)
+      RETURN
+      END SUBROUTINE TIDE_READ_TIMESERIES
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE ASTR(d1,h,pp,s,p,np,dh,dpp,ds,dp,dnp)
+!      this subroutine calculates the following five ephermides
+!      of the sun and moon
+!      h = mean longitude of the sum
+!      pp = mean longitude of the solar perigee
+!      s = mean longitude of the moon
+!      p = mean longitude of the lunar perigee
+!      np = negative of the longitude of the mean ascending node
+!      and their rates of change.
+!      Units for the ephermides are cycles and for their derivatives
+!      are cycles/365 days
+!      The formulae for calculating this ephermides were taken from
+!      pages 98 and 107 of the Explanatory Supplement to the
+!      Astronomical Ephermeris and the American Ephermis and
+!      Nautical Almanac (1961)
+!
+      implicit none
+       REAL(KIND=8), INTENT(IN ):: d1
+       REAL(KIND=8), INTENT(OUT):: h,pp,s,p,np,dh,dpp,ds,dp,dnp
+!
+!   Local variables
+!
+      REAL(KIND=8)              :: d2,f,f2
+
+      d2=d1*1.d-4
+      f=360.d0
+      f2=f/365.d0
+      h=279.696678d0+.9856473354d0*d1+.00002267d0*d2*d2
+      pp=281.220833d0+.0000470684d0*d1+.0000339d0*d2*d2+&
+        .00000007d0*d2**3
+      s=270.434164d0+13.1763965268d0*d1-.000085d0*d2*d2+&
+        .000000039d0*d2**3
+      p=334.329556d0+.1114040803d0*d1-.0007739d0*d2*d2-&
+        .00000026d0*d2**3
+      np=-259.183275d0+.0529539222d0*d1-.0001557d0*d2*d2-&
+        .00000005d0*d2**3
+      h=h/f
+      pp=pp/f
+      s=s/f
+      p=p/f
+      np=np/f
+      h=h-dint(h)
+      pp=pp-dint(pp)
+      s=s-dint(s)
+      p=p-dint(p)
+      np=np-dint(np)
+      dh=.9856473354d0+2.d-8*.00002267d0*d1
+      dpp=.0000470684d0+2.d-8*.0000339d0*d1&
+        +3.d-12*.00000007d0*d1**2
+      ds=13.1763965268d0-2.d-8*.000085d0*d1+&
+        3.d-12*.000000039d0*d1**2
+      dp=.1114040803d0-2.d-8*.0007739d0*d1-&
+        3.d-12*.00000026d0*d1**2
+      dnp=+.0529539222d0-2.d-8*.0001557d0*d1-&
+        3.d-12*.00000005d0*d1**2
+      dh=dh/f2
+      dpp=dpp/f2
+      ds=ds/f2
+      dp=dp/f2
+      dnp=dnp/f2
+      return
+      end SUBROUTINE ASTR
+
+
+!/ ------------------------------------------------------------------- /
+! Note by FA: should try to replace with standard distance  d= sqrt(a^2+b^2)
+      FUNCTION dpythag(a,b)
+      DOUBLE PRECISION a,b,dpythag
+      DOUBLE PRECISION absa,absb
+      absa=abs(a)
+      absb=abs(b)
+      IF (absa.gt.absb)then
+        dpythag=absa*sqrt(1.0d0+(absb/absa)**2)
+      else
+        IF (absb.eq.0.0d0)then
+          dpythag=0.0d0
+        else
+          dpythag=absb*sqrt(1.0d0+(absa/absb)**2)
+        endif
+      endif
+      return
+      END FUNCTION dpythag
+
+!/ ------------------------------------------------------------------- /
+!  (C) Copr. 1986-92 Numerical Recipes Software '%1&&Yw^2.
+      SUBROUTINE dsvbksb(u,w,v,m,n,mp,np,b,x)
+      INTEGER m,mp,n,np,NMAX
+      DOUBLE PRECISION b(mp),u(mp,np),v(np,np),w(np),x(np)
+      PARAMETER (NMAX=500)
+      INTEGER i,j,jj
+      DOUBLE PRECISION s,tmp(NMAX)
+      do 12 j=1,n
+        s=0.0d0
+        IF (w(j).ne.0.0d0)then
+          do 11 i=1,m
+            s=s+u(i,j)*b(i)
+11        continue
+          s=s/w(j)
+        endif
+        tmp(j)=s
+12    continue
+      do 14 j=1,n
+        s=0.0d0
+        do 13 jj=1,n
+          s=s+v(j,jj)*tmp(jj)
+13      continue
+        x(j)=s
+14    continue
+      return
+      END SUBROUTINE dsvbksb
+
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE dsvdcmp(a,m,n,mp,np,w,v)
+      INTEGER m,mp,n,np,NMAX
+      DOUBLE PRECISION a(mp,np),v(np,np),w(np)
+      PARAMETER (NMAX=500)
+
+      INTEGER i,its,j,jj,k,l,nm
+      DOUBLE PRECISION anorm,c,f,g,h,s,scale,x,y,z,rv1(NMAX)
+      
+      g=0.0d0
+      scale=0.0d0
+      anorm=0.0d0
+      do 25 i=1,n
+        l=i+1
+        rv1(i)=scale*g
+        g=0.0d0
+        s=0.0d0
+        scale=0.0d0
+        IF (i.le.m)then
+          DO k=i,m
+            scale=scale+abs(a(k,i))
+            END DO
+          IF (scale.ne.0.0d0) THEN 
+            DO  k=i,m
+              a(k,i)=a(k,i)/scale
+              s=s+a(k,i)*a(k,i)
+              END DO
+            f=a(i,i)
+            g=-sign(sqrt(s),f)
+            h=f*g-s
+            a(i,i)=f-g
+            DO j=l,n
+              s=0.0d0
+              DO k=i,m
+                s=s+a(k,i)*a(k,j)
+                END DO
+              f=s/h
+              DO k=i,m
+                a(k,j)=a(k,j)+f*a(k,i)
+                END DO
+              END DO
+            DO k=i,m
+              a(k,i)=scale*a(k,i)
+              END DO
+!
+            END IF
+!
+          END IF
+!
+        w(i)=scale *g
+        g=0.0d0
+        s=0.0d0
+        scale=0.0d0
+        IF ((i.le.m).and.(i.ne.n))then
+          do 17 k=l,n
+            scale=scale+abs(a(i,k))
+17        continue
+          IF (scale.ne.0.0d0)then
+            do 18 k=l,n
+              a(i,k)=a(i,k)/scale
+              s=s+a(i,k)*a(i,k)
+18          continue
+            f=a(i,l)
+            g=-sign(sqrt(s),f)
+            h=f*g-s
+            a(i,l)=f-g
+            do 19 k=l,n
+              rv1(k)=a(i,k)/h
+19          continue
+            do 23 j=l,m
+              s=0.0d0
+              do 21 k=l,n
+                s=s+a(j,k)*a(i,k)
+21            continue
+              do 22 k=l,n
+                a(j,k)=a(j,k)+s*rv1(k)
+22            continue
+23          continue
+            do 24 k=l,n
+              a(i,k)=scale*a(i,k)
+24          continue
+          endif
+        endif
+        anorm=max(anorm,(abs(w(i))+abs(rv1(i))))
+25    continue
+      do 32 i=n,1,-1
+        IF (i.lt.n)then
+          IF (g.ne.0.0d0)then
+            do 26 j=l,n
+              v(j,i)=(a(i,j)/a(i,l))/g
+26          continue
+            do 29 j=l,n
+              s=0.0d0
+              do 27 k=l,n
+                s=s+a(i,k)*v(k,j)
+27            continue
+              do 28 k=l,n
+                v(k,j)=v(k,j)+s*v(k,i)
+28            continue
+29          continue
+          endif
+          do 31 j=l,n
+            v(i,j)=0.0d0
+            v(j,i)=0.0d0
+31        continue
+        endif
+        v(i,i)=1.0d0
+        g=rv1(i)
+        l=i
+32    continue
+      do 39 i=min(m,n),1,-1
+        l=i+1
+        g=w(i)
+        do 33 j=l,n
+          a(i,j)=0.0d0
+33      continue
+        IF (g.ne.0.0d0)then
+          g=1.0d0/g
+          do 36 j=l,n
+            s=0.0d0
+            do 34 k=l,m
+              s=s+a(k,i)*a(k,j)
+34          continue
+            f=(s/a(i,i))*g
+            do 35 k=i,m
+              a(k,j)=a(k,j)+f*a(k,i)
+35          continue
+36        continue
+          do 37 j=i,m
+            a(j,i)=a(j,i)*g
+37        continue
+        else
+          do 38 j= i,m
+            a(j,i)=0.0d0
+38        continue
+        endif
+        a(i,i)=a(i,i)+1.0d0
+39    continue
+      do 49 k=n,1,-1
+        do 48 its=1,30
+          do 41 l=k,1,-1
+            nm=l-1
+            IF ((abs(rv1(l))+anorm).eq.anorm)  goto 2
+            IF ((abs(w(nm))+anorm).eq.anorm)  goto 1
+41        continue
+1         c=0.0d0
+          s=1.0d0
+          do 43 i=l,k
+            f=s*rv1(i)
+            rv1(i)=c*rv1(i)
+            IF ((abs(f)+anorm).eq.anorm) goto 2
+            g=w(i)
+            h=dpythag(f,g)
+            w(i)=h
+            h=1.0d0/h
+            c= (g*h)
+            s=-(f*h)
+            do 42 j=1,m
+              y=a(j,nm)
+              z=a(j,i)
+              a(j,nm)=(y*c)+(z*s)
+              a(j,i)=-(y*s)+(z*c)
+42          continue
+43        continue
+2         z=w(k)
+          IF (l.eq.k)then
+            IF (z.lt.0.0d0)then
+              w(k)=-z
+              do 44 j=1,n
+                v(j,k)=-v(j,k)
+44            continue
+            endif
+            goto 3
+          endif
+          IF (ITS.eq.30) THEN 
+            WRITE(6,*) 'no convergence in svdcmp'
+            STOP
+            END IF
+          x=w(l)
+          nm=k-1
+          y=w(nm)
+          g=rv1(nm)
+          h=rv1(k)
+          f=((y-z)*(y+z)+(g-h)*(g+h))/(2.0d0*h*y)
+          g=dpythag(f,1.0d0)
+          f=((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
+          c=1.0d0
+          s=1.0d0
+          do 47 j=l,nm
+            i=j+1
+            g=rv1(i)
+            y=w(i)
+            h=s*g
+            g=c*g
+            z=dpythag(f,h)
+            rv1(j)=z
+            c=f/z
+            s=h/z
+            f= (x*c)+(g*s)
+            g=-(x*s)+(g*c)
+            h=y*s
+            y=y*c
+            do 45 jj=1,n
+              x=v(jj,j)
+              z=v(jj,i)
+              v(jj,j)= (x*c)+(z*s)
+              v(jj,i)=-(x*s)+(z*c)
+45          continue
+            z=dpythag(f,h)
+            w(j)=z
+            IF (z.ne.0.0d0)then
+              z=1.0d0/z
+              c=f*z
+              s=h*z
+            endif
+            f= (c*g)+(s*y)
+            x=-(s*g)+(c*y)
+            do 46 jj=1,m
+              y=a(jj,j)
+              z=a(jj,i)
+              a(jj,j)= (y*c)+(z*s)
+              a(jj,i)=-(y*s)+(z*c)
+46          continue
+47        continue
+          rv1(l)=0.0d0
+          rv1(k)=f
+          w(k)=x
+48      continue
+3       continue
+49    continue
+      return
+      END SUBROUTINE dsvdcmp
+
+!/ ------------------------------------------------------------------- /
+      FUNCTION JULDAYT(id,mm,iyyy)
+! See numerical recipes 2nd ed. The order of month and day have been swapped!
+!*********************************************************************
+      IMPLICIT NONE
+           INTEGER id,mm,iyyy
+      INTEGER IGREG 
+      INTEGER*4 ja,jm,jy
+      INTEGER*4 JULDAYT
+      IGREG=15+31*(10+12*1582)
+      jy=iyyy
+      IF (jy.EQ.0) WRITE(6,*) 'There is no zero year !!'
+      IF (jy.LT.0) jy=jy+1
+      IF (mm.GT.2) THEN
+         jm=mm+1
+      ELSE
+         jy=jy-1
+         jm=mm+13
+      ENDIF
+      JULDAYT=INT(365.25*jy)+int(30.6001*jm)+id+1720995
+      IF (id+31*(mm+12*iyyy).GE.IGREG) THEN
+         ja=INT(0.01*jy)
+         JULDAYT=JULDAYT+2-ja+INT(0.25*ja)
+      ENDIF
+      RETURN
+      END FUNCTION JULDAYT
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE CALDATT(julian,id,mm,iyyy)
+! See numerical recipes 2nd ed. The order of month and day have been swapped!
+! Should be removed : same is now in W3TIMEMD
+!*********************************************************************
+   IMPLICIT NONE
+        INTEGER(KIND=4),    INTENT(in)  :: julian
+   INTEGER(KIND=4),    INTENT(out) :: id,mm,iyyy
+   INTEGER(KIND=4), PARAMETER :: IGREG=2299161
+   INTEGER(KIND=4) ja,jalpha,jb,jc,jd,je
+   if (julian.GE.IGREG) THEN
+      jalpha=INT(((julian-1867216)-0.25)/36524.25)
+      ja=julian+1+jalpha-INT(0.25*jalpha)
+   ELSE
+      ja=julian
+   ENDIF
+   jb=ja+1524
+   jc=INT(6680.+((jb-2439870)-122.1)/365.25)
+   jd=365*jc+INT(0.25*jc)
+   je=INT((jb-jd)/30.6001)
+   id=jb-jd-INT(30.6001*je)
+   mm=je-1
+   IF (mm.GT.12) mm=mm-12
+   iyyy=jc-4715
+   IF (mm.GT.2) iyyy=iyyy-1
+   IF (iyyy.LE.0) iyyy=iyyy-1
+   RETURN
+   END SUBROUTINE CALDATT
+
+!/ ------------------------------------------------------------------- /
+      subroutine svd(q,u,v,cov,w,p,b,sig,ic,m,n,mm,N2,toler,jc     &
+                    ,ssq,res)
+!-----------------------------------------------------------------------
+! svd uses singular-value-decomposition to calculate the least-squares
+! solution p to an overdetermined system of linear equations with 
+! coefficient matrix q, which includes right hand side vector b.
+!
+! there are two ways to use svd:
+! 1 given an overdetermined system, svd will orthogonalize
+!   a and b and produce the least-squares solution.
+! 2 given an orthogonalized a (i.e. output from 1),
+!   svd will orthogonalize b with respect to a and produce
+!   the least-squares solution. this allows the use of
+!   multiple r.h.s. without reorthogonalizing a.
+!-----------------------------------------------------------------------
+! description of parameters:
+! ic     an input code which must be set to 1 or 2
+! m      the number of equations (rows of q) to solve.
+! n      the total number of columns of q to be used (<N2)
+! N2   the number of columns of q, at least n+1.
+! mm   the number of rows of q, at least N2+m.
+! q      an mm-by-N2 array which on entry must contain the 
+!        matrix a in its first m rows and n columns, and the vector 
+!        b in its first m rows of column mm. on exit the residual 
+!        of equation i is stored in q(i,N2), i=1 to m.
+! sig    measurement error (standard deviation) for the rhs
+!        from the calling program (can be set to 1.)
+! u      an mm-by-N2 matrix used in svd, replaced by "left" matrix u
+! v      an N2-by-N2 matrix of n "right" eigenvectors of q (=u)
+! w      an N2-diagonal vector(matrix) of n eigenvalues of q (u)
+! cov    an output covariance matrix between eigenvectors of q (u)
+! toler  an input tolerance, for acceptable matrix condition number
+! p      an output array of dimension at least N2 containing
+!        the least-squares solution in positions 1 to n.
+! jc     an output code which is set to the index of the
+!        1st dependent column, if such a column is detected.
+! ssq    sum of squares of the residuals
+! res    the largest residual in magnitude
+!-----------------------------------------------------------------------
+! history:
+!       written by j. cherniawsky, august 1997
+!        last modified              august 1998
+!-----------------------------------------------------------------------
+      IMPLICIT NONE
+
+! PARAMETERS
+      integer, parameter        :: nwt=302      ! make nwt > expected value of N2
+
+! I/O VARIABLES
+      integer, intent(IN)               :: ic, m, n, N2, mm
+      real, intent(IN)                  :: toler
+      real, intent(INOUT)               :: q(mm,N2), ssq, res
+      integer, intent(INOUT)            :: jc
+      double precision, intent(OUT)     :: u(mm,N2),v(N2,N2),cov(N2,N2),      &
+                                           w(N2),b(mm),p(N2),sig(mm)
+
+! LOCAL VARIABLES
+      double precision          :: wti(nwt)
+      integer                   :: i, j, k
+      real                      :: wmax, thresh
+      double precision          :: eps, sum, resi
+      
+      jc=0
+      sig(:)=1.
+      do i=1,mm
+        b(i)=q(i,N2)
+      enddo
+! no need to solve if only rhs has changed
+      IF (ic.eq.2) go to 10
+! define a "design matrix" u(=a) and set-up working arrays
+      do j=1,N2
+        do i=1,mm
+          u(i,j)=q(i,j)
+        enddo
+      enddo
+! compute svd decomposition of u(=a), with a being replaced by its upper
+! matrix u, viz a=u*w*transpose(v), and vector w is output of a diagonal 
+! matrix of singular values w(i), i=1,n.
+      call dsvdcmp(u,m,n,mm,N2,w,v)
+! check for small singular values
+      wmax=0.
+      do j=1,n
+        IF (w(j).gt.wmax) wmax=w(j)
+      enddo
+      thresh=toler*wmax
+      do j=1,n
+        IF (w(j).lt.thresh) then
+          w(j)=0.d0
+          IF (jc.lt.1) jc=j
+        endif
+      enddo
+   10 eps=1.d-10
+! compute summation weights (wti, used below)
+      do j=1,n
+        wti(j)=0.d0
+        IF (w(j).gt.eps) then
+!         wti(j)=sig(j)*sig(j)/(w(j)*w(j))
+          wti(j)=1.d0/(w(j)*w(j))
+        endif
+      enddo
+! use back-substitution to compute the solution p(i), i=1,n
+      call dsvbksb(u,w,v,m,n,mm,N2,b,p)
+! compute chisq (=ssq) and the largest residual (res)
+      ssq=0.
+      res=0.
+      do i=1,m
+        sum=0.d0
+        do j=1,n
+          sum=sum+p(j)*q(i,j)
+        enddo
+        resi=abs(b(i)-sum)
+!      TIDE_MF addition
+        q(i,N2)=b(i)-sum
+        res=max(res,resi)
+        ssq=ssq+resi**2
+      enddo
+! compute variances, covariances, these may need to be given dimension
+! of b(i), e.g., using sig(i), but this is better done after return to main
+      do i=1,n
+        do j=1,i
+          sum=0.d0
+          do k=1,n
+            sum=sum+v(i,k)*v(j,k)*wti(k)
+          enddo
+          cov(i,j)=sum
+          cov(j,i)=sum
+        enddo
+      enddo
+      return
+      end subroutine svd
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE VUF_SET_PARAMETERS
+!
+!***********************************************************************
+!*  HERE THE MAIN CONSTITUENTS AND THEIR DOODSON NUMBERS ARE SET
+!*  FORMAT (6X,A5,1X,6I3,F5.2,I4). THE VALUES ARE RESPECTIVELY
+!*     TIDECON_ALLNAMES   = CONSTITUENT NAME
+!*  II,JJ,KK,LL,MM,NN = THE SIX DOODSON NUMBERS
+!*     SEMI   = PHASE CORRECTION
+!*     NJ     = THE NUMBER OF SATELLITES FOR THIS CONSTITUENT.
+!*  THE END OF ALL MAIN CONSTITUENTS IS DENOTED BY A BLANK CARD.
+!
+
+      IMPLICIT NONE
+
+      integer          :: JLM
+
+      NTIDAL_CON = 45
+      NTOTAL_CON = 45+101
+      NKONCO = 251
+      JLM = 170
+
+      ALLOCATE(TIDE_INDEXJ(NTOTAL_CON),TIDE_INDEXJK(NKONCO))
+!
+      ALLOCATE(TIDECON_ALLNAMES(NTOTAL_CON))
+      ALLOCATE(II(NTIDAL_CON),JJ(NTIDAL_CON),KK(NTIDAL_CON),LL(NTIDAL_CON),MM(NTIDAL_CON), &
+               NN(NTIDAL_CON),SEMI(NTIDAL_CON), NJ(NTOTAL_CON))
+      
+      ALLOCATE(KONCO_CON(NKONCO),COEF_CON(NKONCO))
+
+      TIDECON_ALLNAMES(:)=(/ &
+ 'Z0   ','SA   ','SSA  ','MSM  ','MM   ','MSF  ','MF   ','ALP1 ','2Q1  ','SIG1 ', &
+'Q1   ','RHO1 ','O1   ','TAU1 ','BET1 ','NO1  ','CHI1 ','PI1  ','P1   ','S1   ', &
+'K1   ','PSI1 ','PHI1 ','THE1 ','J1   ','OO1  ','UPS1 ','OQ2  ','EPS2 ','2N2  ', &
+'MU2  ','N2   ','NU2  ','GAM2 ','H1   ','M2   ','H2   ','LDA2 ','L2   ','T2   ', &
+'S2   ','R2   ','K2   ','ETA2 ','M3   ','2PO1 ','SO1  ','ST36 ','2NS2 ','ST37 ', &
+'ST1  ','ST2  ','ST3  ','O2   ','ST4  ','SNK2 ','OP2  ','MKS2 ','ST5  ','ST6  ', &
+'2SK2 ','MSN2 ','ST7  ','2SM2 ','ST38 ','SKM2 ','2SN2 ','NO3  ','MO3  ','NK3  ', &
+'SO3  ','MK3  ','SP3  ','SK3  ','ST8  ','N4   ','3MS4 ','ST39 ','MN4  ','ST40 ', &
+'ST9  ','M4   ','ST10 ','SN4  ','KN4  ','MS4  ','MK4  ','SL4  ','S4   ','SK4  ', &
+'MNO5 ','2MO5 ','3MP5 ','MNK5 ','2MP5 ','2MK5 ','MSK5 ','3KM5 ','2SK5 ','ST11 ', &
+'2NM6 ','ST12 ','ST41 ','2MN6 ','ST13 ','M6   ','MSN6 ','MKN6 ','2MS6 ','2MK6 ', &
+'NSK6 ','2SM6 ','MSK6 ','ST42 ','S6   ','ST14 ','ST15 ','M7   ','ST16 ','3MK7 ', &
+'ST17 ','ST18 ','3MN8 ','ST19 ','M8   ','ST20 ','ST21 ','3MS8 ','3MK8 ','ST22 ', &
+'ST23 ','ST24 ','ST25 ','ST26 ','4MK9 ','ST27 ','ST28 ','M10  ','ST29 ','ST30 ', &
+'ST31 ','ST32 ','ST33 ','M12  ','ST34 ','ST35 '/)
+
+      II(:)=(/ 0,  0,  0,  0,  0,  0,  0,  1,  1,  1, &
+               1,  1,  1,  1,  1,  1,  1,  1,  1,  1, &
+               1,  1,  1,  1,  1,  1,  1,  2,  2,  2, &
+               2,  2,  2,  2,  2,  2,  2,  2,  2,  2, &
+               2,  2,  2,  2,  3 /)
+      JJ(:)=(/ 0,  0,  0,  1,  1,  2,  2, -4, -3, -3, &
+              -2, -2, -1, -1,  0,  0,  0,  1,  1,  1, &
+               1,  1,  1,  2,  2,  3,  4, -3, -3, -2, &
+              -2, -1, -1,  0,  0,  0,  0,  1,  1,  2, &
+               2,  2,  2,  3,  0 /)
+      KK(:)=(/ 0,  1,  2, -2,  0, -2,  0,  2,  0,  2, &
+               0,  2,  0,  2, -2,  0,  2, -3, -2, -1, &
+               0,  1,  2, -2,  0,  0,  0,  0,  2,  0, &
+               2,  0,  2, -2, -1,  0,  1, -2,  0, -3, &
+              -2, -1,  0,  0,  0 /)
+      LL(:)=(/ 0,  0,  0,  1, -1,  0,  0,  1,  2,  0, &
+               1, -1,  0,  0,  1,  1, -1,  0,  0,  0, &
+               0,  0,  0,  1, -1,  0, -1,  3,  1,  2, &
+               0,  1, -1,  2,  0,  0,  0,  1, -1,  0, &
+               0,  0,  0, -1,  0 /)
+      MM(:)=(/ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+               0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+               0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+               0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+               0,  0,  0,  0,  0 /)
+      NN(:)=(/ 0, -1,  0,  0,  0,  0,  0,  0,  0,  0, &
+               0,  0,  0,  0,  0,  0,  0,  1,  0,  1, &
+               0, -1,  0,  0,  0,  0,  0,  0,  0,  0, &
+               0,  0,  0,  0,  1,  0, -1,  0,  0,  1, &
+               0, -1,  0,  0,  0 /)
+      SEMI(:)=(/ 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,-0.25,-0.25,-0.25, &
+                -0.25,-0.25,-0.25,-0.75,-0.75,-0.75,-0.75,-0.25,-0.25,-0.75, &
+                -0.75,-0.75,-0.75,-0.75,-0.75,-0.75,-0.75, 0.00, 0.00, 0.00, &
+                 0.00, 0.00, 0.00,-0.50,-0.50, 0.00, 0.00,-0.50,-0.50, 0.00, &
+                 0.00,-0.50, 0.00, 0.00,-0.50 /)
+      NJ(:)=(/    1,   1,   1,   1,   1,   1,   1,   2,   5,   4, &
+                 10,   5,   8,   5,   1,   9,   2,   1,   6,   2, &
+                 10,   1,   5,   4,  10,   8,   5,   2,   3,   4, &
+                  3,   4,   4,   3,   2,   9,   1,   1,   5,   1, &
+   3,   2,   5,   7,   1,   2,   2,   3,   2,   2, &
+   3,   4,   3,   1,   3,   3,   2,   3,   3,   4, &
+   2,   3,   4,   2,   3,   3,   2,   2,   2,   2, &
+   2,   2,   2,   2,   3,   1,   2,   4,   2,   3, &
+   4,   1,   3,   2,   2,   2,   2,   2,   1,   2, &
+   3,   2,   2,   3,   2,   2,   3,   3,   2,   3, &
+   2,   4,   3,   2,   4,   1,   3,   3,   2,   2, &
+   3,   2,   3,   3,   1,   3,   3,   1,   3,   2, &
+   4,   2,   2,   4,   1,   3,   3,   2,   2,   4, &
+   2,   3,   3,   3,   2,   3,   2,   1,   3,   2, &
+   4,   2,   3,   1,   2,   4/)
+
+      LDEL(1:JLM)=(/  0,  0,  0,  0,  0,  0,  0, -1,  0, -2, &
+ -1, -1,  0,  0, -1,  0,  0,  2, -2, -2, &
+ -1, -1, -1,  0, -1,  0,  1,  2,  0,  0, &
+  1,  2,  2, -1,  0,  0,  1,  1,  1,  2, &
+  2, -2, -1,  0,  0,  0,  0, -2, -2, -2, &
+ -1, -1, -1,  0,  0,  0,  0,  0,  0,  0, &
+  0,  0,  1,  2,  2,  0,  0, -2, -1, -1, &
+ -1,  0,  0,  0,  0,  1,  1,  0, -2, -2, &
+  0,  0,  0, -2, -1,  0,  0,  0,  0,  0, &
+  1,  1,  1,  1,  2,  2,  2, -2, -2, -2, &
+ -1, -1,  0,  0,  0, -2,  0,  0,  1,  1, &
+ -1,  0, -1, -1,  0, -2, -1, -1,  0, -1, &
+ -1,  0, -2, -1,  0,  0,  0,  1,  2,  2, &
+ -2, -1,  0,  0,  1, -1, -1,  0,  0,  1, &
+  1,  1,  2,  2,  0,  0,  0,  2,  2,  2, &
+  2,  0,  0,  1,  2,  0,  0, -1, -1,  0, &
+  0,  0,  0,  0,  0,  1,  1,  1,  2,  0/) 
+      MDEL(1:JLM)=(/  0,  0,  0,  0,  0,  0,  0,  0, -1, -2, &
+                     -1,  0, -2, -1,  0, -2, -1,  0, -3, -2, &
+                     -2, -1,  0, -2,  0, -1,  0,  0, -2, -1, &
+                       0,  0,  1,  0, -2, -1, -1,  0,  1,  0, &
+                       1,  0,  0, -1,  1,  2, -1, -2, -1,  0, &
+                      -1,  0,  1, -1,  1,  2, -1,  1, -1, -2, &
+                      -1,  0,  0,  0,  1,  0,  1, -1, -1,  0, &
+                       1, -2, -1,  1,  2,  0,  1,  1,  0,  1, &
+                       0,  1,  2, -1,  0, -1,  1, -1,  1,  2, &
+                      -1,  0,  1,  2,  0,  1,  2, -1,  0,  1, &
+                       0,  1,  1,  2,  3,  0,  1,  2,  0,  1, &
+                       0, -1, -1,  0, -1, -2, -1,  0, -1, -1, &
+                       0, -1, -2,  0, -2, -1, -1,  0,  0,  1, &
+                      -2,  0, -1, -1,  0, -1,  0, -2, -1, -1, &
+                       0,  1,  0,  1, -1, -1, -1, -1,  0,  1, &
+                       2,  0, -1,  0,  0,  0,  1,  0,  1, -1, &
+                       1,  2, -1,  1,  2,  0,  1,  2,  0, -1 /) 
+     NDEL(1:JLM)=(/ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  1,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  2,  0,  0,  0, -2,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                   -2,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  1,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0, -1,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  2,  2,  0,  0,  0, &
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0 /) 
+     PH(1:JLM)=(/ 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.75, 0.00, 0.50, &
+                  0.75, 0.75, 0.50, 0.00, 0.75, 0.50, 0.00, 0.50, 0.50, 0.50, &
+                  0.75, 0.75, 0.75, 0.50, 0.00, 0.00, 0.75, 0.50, 0.50, 0.00, &
+                  0.75, 0.50, 0.00, 0.25, 0.50, 0.00, 0.25, 0.75, 0.25, 0.50, &
+                  0.50, 0.00, 0.25, 0.50, 0.50, 0.50, 0.00, 0.50, 0.00, 0.00, &
+                  0.75, 0.25, 0.75, 0.50, 0.00, 0.50, 0.50, 0.00, 0.50, 0.00, &
+                  0.50, 0.50, 0.75, 0.50, 0.50, 0.00, 0.50, 0.00, 0.75, 0.25, &
+                  0.75, 0.00, 0.50, 0.00, 0.50, 0.25, 0.25, 0.00, 0.00, 0.00, &
+                  0.00, 0.50, 0.50, 0.00, 0.25, 0.50, 0.00, 0.50, 0.00, 0.50, &
+                  0.75, 0.25, 0.25, 0.25, 0.50, 0.50, 0.50, 0.50, 0.00, 0.00, &
+                  0.25, 0.25, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.25, 0.25, &
+                  0.25, 0.50, 0.25, 0.25, 0.50, 0.50, 0.25, 0.25, 0.50, 0.25, &
+                  0.25, 0.50, 0.50, 0.00, 0.00, 0.50, 0.50, 0.75, 0.00, 0.50, &
+                  0.00, 0.25, 0.50, 0.50, 0.50, 0.75, 0.75, 0.00, 0.50, 0.25, &
+                  0.75, 0.75, 0.00, 0.00, 0.50, 0.50, 0.50, 0.00, 0.50, 0.50, &
+                  0.50, 0.00, 0.00, 0.75, 0.00, 0.50, 0.00, 0.75, 0.75, 0.50, &
+                  0.00, 0.00, 0.50, 0.00, 0.00, 0.75, 0.75, 0.75, 0.50, 0.50 /) 
+
+     EE(1:JLM)=(/ 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0360, 0.1906, 0.0063, &
+                  0.0241, 0.0607, 0.0063, 0.1885, 0.0095, 0.0061, 0.1884, 0.0087, 0.0007, 0.0039, &
+                  0.0010, 0.0115, 0.0292, 0.0057, 0.0008, 0.1884, 0.0018, 0.0028, 0.0058, 0.1882, &
+                  0.0131, 0.0576, 0.0175, 0.0003, 0.0058, 0.1885, 0.0004, 0.0029, 0.0004, 0.0064, &
+                  0.0010, 0.0446, 0.0426, 0.0284, 0.2170, 0.0142, 0.2266, 0.0057, 0.0665, 0.3596, &
+                  0.0331, 0.2227, 0.0290, 0.0290, 0.2004, 0.0054, 0.0282, 0.2187, 0.0078, 0.0008, &
+                  0.0112, 0.0004, 0.0004, 0.0015, 0.0003, 0.3534, 0.0264, 0.0002, 0.0001, 0.0007, &
+                  0.0001, 0.0001, 0.0198, 0.1356, 0.0029, 0.0002, 0.0001, 0.0190, 0.0344, 0.0106, &
+                  0.0132, 0.0384, 0.0185, 0.0300, 0.0141, 0.0317, 0.1993, 0.0294, 0.1980, 0.0047, &
+                  0.0027, 0.0816, 0.0331, 0.0027, 0.0152, 0.0098, 0.0057, 0.0037, 0.1496, 0.0296, &
+                  0.0240, 0.0099, 0.6398, 0.1342, 0.0086, 0.0611, 0.6399, 0.1318, 0.0289, 0.0257, &
+                  0.1042, 0.0386, 0.0075, 0.0402, 0.0373, 0.0061, 0.0117, 0.0678, 0.0374, 0.0018, &
+                  0.0104, 0.0375, 0.0039, 0.0008, 0.0005, 0.0373, 0.0373, 0.0042, 0.0042, 0.0036, &
+                  0.1429, 0.0293, 0.0330, 0.0224, 0.0447, 0.0001, 0.0004, 0.0005, 0.0373, 0.0001, &
+                  0.0009, 0.0002, 0.0006, 0.0002, 0.0217, 0.0448, 0.0366, 0.0047, 0.2505, 0.1102, &
+                  0.0156, 0.0000, 0.0022, 0.0001, 0.0001, 0.2535, 0.0141, 0.0024, 0.0004, 0.0128, &
+                  0.2980, 0.0324, 0.0187, 0.4355, 0.0467, 0.0747, 0.0482, 0.0093, 0.0078, 0.0564 /) 
+
+     IR(1:JLM)=(/ 0,  0,  0,  0,  0,  0,  0,  1,  0,  0, &
+                   1,  1,  0,  0,  1,  0,  0,  0,  0,  0, &
+                   1,  1,  1,  0,  0,  0,  1,  0,  0,  0, &
+                   1,  0,  0,  1,  0,  0,  1,  1,  1,  0, &
+                   0,  0,  1,  0,  0,  0,  0,  0,  0,  0, &
+                   1,  1,  1,  0,  0,  0,  0,  0,  0,  0, &
+                   0,  0,  1,  0,  0,  0,  0,  0,  1,  1, &
+                   1,  0,  0,  0,  0,  1,  1,  0,  0,  0, &
+                   0,  0,  0,  0,  1,  0,  0,  0,  0,  0, &
+                   1,  1,  1,  1,  0,  0,  0,  0,  0,  0, &
+                   1,  1,  0,  0,  0,  0,  0,  0,  1,  1, &
+                   2,  0,  2,  2,  0,  0,  2,  2,  0,  2, &
+                   2,  0,  0,  0,  0,  0,  0,  2,  0,  0, &
+                   0,  2,  0,  0,  0,  2,  2,  0,  0,  2, &
+                   2,  2,  0,  0,  0,  0,  0,  0,  0,  0, &
+                   0,  0,  0,  2,  0,  0,  0,  2,  2,  0, &
+                   0,  0,  0,  0,  0,  2,  2,  2,  0,  0 /) 
+
+      COEF_CON(:)=(/ 2.00,-1.00, 1.00,-1.00, 2.00, 1.00,-2.00, 2.00,-1.00, 3.00, &
+                    -2.00, 2.00, 1.00,-2.00, 1.00, 1.00, 1.00,-2.00, 2.00, 1.00, &
+                    -2.00, 2.00, 2.00, 1.00,-2.00, 1.00, 1.00,-1.00, 1.00, 1.00, &
+                     1.00, 1.00,-1.00, 1.00, 2.00,-2.00, 2.00, 1.00,-1.00,-1.00, &
+                     2.00,-1.00, 1.00, 1.00,-1.00, 2.00, 1.00,-1.00,-1.00, 2.00, &
+                    -1.00, 2.00, 1.00,-2.00, 1.00, 1.00,-1.00, 2.00,-1.00, 1.00, &
+                     1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, &
+                     1.00, 1.00, 1.00, 2.00, 1.00,-1.00, 2.00, 3.00,-1.00, 1.00, &
+                     1.00, 1.00,-1.00, 1.00, 1.00, 2.00, 1.00,-1.00, 1.00, 1.00, &
+                     1.00,-1.00, 2.00, 2.00, 1.00,-1.00, 1.00, 1.00, 1.00, 1.00, &
+                     1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 2.00, 1.00, 1.00, 1.00, &
+                     1.00, 1.00, 2.00, 1.00, 3.00,-1.00, 1.00, 1.00, 1.00, 2.00, &
+                     1.00, 2.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 2.00, &
+                     1.00, 3.00, 1.00,-1.00, 2.00, 1.00, 2.00, 1.00, 1.00,-1.00, &
+                     3.00, 1.00,-1.00, 2.00, 1.00, 2.00, 1.00, 1.00,-1.00, 3.00, &
+                     1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 2.00, 1.00, 2.00, 1.00, &
+                     1.00, 1.00, 1.00, 2.00, 1.00, 1.00, 1.00, 1.00, 2.00, 2.00, &
+                    -1.00, 3.00, 2.00, 1.00, 1.00, 2.00, 1.00, 1.00, 3.50, 2.00, &
+                     1.00, 1.00, 3.00, 1.00, 1.00, 1.00, 1.00, 1.00, 2.00, 2.00, &
+                     3.00, 1.00, 3.00, 1.00, 1.00,-1.00, 4.00, 2.00, 1.00, 1.00, &
+                     2.00, 1.00, 1.00, 3.00, 1.00, 3.00, 1.00, 1.00, 1.00, 1.00, &
+                     1.00, 2.00, 2.00, 2.00, 1.00, 1.00, 2.00, 2.00, 1.00, 3.00, &
+                     1.00, 1.00, 4.00, 1.00, 3.00, 1.00, 1.00, 4.00, 1.00, 5.00, &
+                     3.00, 1.00, 1.00, 4.00, 1.00, 2.00, 1.00, 1.00, 1.00, 3.00, &
+                     2.00, 4.00, 1.00, 1.00, 6.00, 5.00, 1.00, 3.00, 1.00, 1.00, &
+                     1.00 /)
+      KONCO_CON(:)=(/  &
+         'P1   ','O1   ','S2   ','O1   ','M2   ','N2   ','S2   ','N2   ','S2   ','M2   ', &
+         'S2   ','N2   ','K2   ','S2   ','M2   ','N2   ','K2   ','S2   ','M2   ','S2   ', &
+         'K2   ','O1   ','K2   ','N2   ','S2   ','S2   ','N2   ','K2   ','O1   ','P1   ', &
+         'M2   ','K2   ','S2   ','M2   ','K2   ','S2   ','S2   ','N2   ','M2   ','K2   ', &
+         'S2   ','K2   ','M2   ','S2   ','N2   ','K2   ','M2   ','S2   ','N2   ','S2   ', &
+         'M2   ','M2   ','S2   ','N2   ','S2   ','K2   ','M2   ','S2   ','N2   ','N2   ', &
+         'O1   ','M2   ','O1   ','N2   ','K1   ','S2   ','O1   ','M2   ','K1   ','S2   ', &
+         'P1   ','S2   ','K1   ','M2   ','N2   ','S2   ','N2   ','M2   ','S2   ','M2   ', &
+         'S2   ','N2   ','K2   ','M2   ','N2   ','M2   ','S2   ','K2   ','M2   ','N2   ', &
+         'K2   ','S2   ','M2   ','M2   ','K2   ','S2   ','S2   ','N2   ','K2   ','N2   ', &
+         'M2   ','S2   ','M2   ','K2   ','S2   ','L2   ','S2   ','S2   ','K2   ','M2   ', &
+         'N2   ','O1   ','M2   ','O1   ','M2   ','P1   ','M2   ','N2   ','K1   ','M2   ', &
+         'P1   ','M2   ','K1   ','M2   ','S2   ','K1   ','K2   ','K1   ','M2   ','S2   ', &
+         'K1   ','N2   ','K2   ','S2   ','N2   ','M2   ','N2   ','M2   ','K2   ','S2   ', &
+         'M2   ','S2   ','K2   ','M2   ','N2   ','M2   ','N2   ','K2   ','S2   ','M2   ', &
+         'M2   ','S2   ','N2   ','M2   ','K2   ','N2   ','M2   ','S2   ','M2   ','K2   ', &
+         'N2   ','S2   ','K2   ','S2   ','M2   ','M2   ','S2   ','K2   ','M2   ','S2   ', &
+         'K2   ','S2   ','M2   ','N2   ','O1   ','N2   ','M2   ','K1   ','M2   ','M2   ', &
+         'S2   ','O1   ','M2   ','K1   ','M2   ','S2   ','K2   ','O1   ','M2   ','N2   ', &
+         'M2   ','N2   ','M2   ','N2   ','K2   ','S2   ','M2   ','M2   ','S2   ','N2   ', &
+         'M2   ','N2   ','K2   ','M2   ','S2   ','M2   ','K2   ','M2   ','S2   ','N2   ', &
+         'K2   ','M2   ','S2   ','M2   ','S2   ','K2   ','M2   ','N2   ','K1   ','M2   ', &
+         'N2   ','K1   ','M2   ','K1   ','M2   ','S2   ','K1   ','M2   ','N2   ','M2   ', &
+         'M2   ','N2   ','S2   ','M2   ','S2   ','M2   ','N2   ','S2   ','K2   ','M2   ', &
+         'S2   ','M2   ','S2   ','K1   ','M2   ','M2   ','S2   ','M2   ','N2   ','K2   ', &
+         'S2   '/)
+
+
+      END SUBROUTINE VUF_SET_PARAMETERS
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE VUF (KONX,Vx,ux,FX,ITIME)
+!
+!
+!* GIVEN CONSTITUENT KONX , THE NODAL CORRECTIONS V+U AND F ARE RETURNED
+! That subroutine can now be replaced by look-up table to get K from J 
+!
+!
+      IMPLICIT NONE
+!
+      character*5, INTENT(IN)      :: KONX
+      REAL(KIND=8), INTENT(OUT)    :: Vx,ux,FX
+      INTEGER,      INTENT(IN)     :: ITIME
+
+      INTEGER          :: K
+
+      DO  K=1,NTOTAL_CON
+        IF (TIDECON_ALLNAMES(K).eq.KONX) go to 40
+        END DO
+      WRITE(NDSET,30) KONX
+30    FORMAT('ERROR IN VUF: STOP.',A5)
+      STOP
+40    VX=V_ARG(K,ITIME)
+      UX=U_ARG(k,ITIME)
+      FX=F_ARG(K,ITIME)
+      RETURN
+!
+!***********************************************************************
+!*  THE ASTRONOMICAL ARGUMENTS AND THEIR RATES OF CHANGE,
+!*  S0,H0,P0,ENP0,PP0,DS,DH,DP,DNP,DPP,  ARE READ FROM TWO RECORDS IN
+!*  THE FORMAT(5F13.10):
+!*     S0  = MEAN LONGITUDE OF THE MOON (CYCLES) AT 000 ET 1/1/1976.
+!*     H0  = MEAN LONGITUDE OF THE SUN.
+!*     P0  = MEAN LONGITUDE OF THE LUNAR PERIGEE.
+!*     ENP0= NEGATIVE OF THE MEAN LONGITUDE OF THE ASCENDING NODE.
+!*     PP0 = MEAN LONGITUDE OF THE SOLAR PERIGEE (PERIHELION).
+!*     DS,DH,DP,DNP,DPP ARE THEIR RESPECTIVE RATES OF CHANGE OVER A 365
+!*     DAY PERIOD AS OF 000 ET 1/1/1976.
+!
+
+      END SUBROUTINE VUF
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE OPNVUF(filename)
+
+      IMPLICIT NONE
+
+      CHARACTER*256, INTENT(IN)     :: filename
+
+      INTEGER                  :: J, J1, JBASE, J4, K, K1, JL, JLM, KR
+
+      DOUBLE PRECISION, PARAMETER   :: TWOPI=3.1415926535898*2.
+      DOUBLE PRECISION, PARAMETER   :: FAC=TWPI/360.
+      
+      KR=8
+!
+!***********************************************************************
+!*  HERE THE MAIN CONSTITUENTS AND THEIR DOODSON NUMBERS ARE READ IN
+!*  FORMAT (6X,A5,1X,6I3,F5.2,I4). THE VALUES ARE RESPECTIVELY
+!*     TIDECON_ALLNAMES    = CONSTITUENT NAME
+!*  II,JJ,KK,LL,MM,NN = THE SIX DOODSON NUMBERS
+!*     SEMI   = PHASE CORRECTION
+!*     NJ     = THE NUMBER OF SATELLITES FOR THIS CONSTITUENT.
+!*  THE END OF ALL MAIN CONSTITUENTS IS DENOTED BY A BLANK CARD.
+!
+      ALLOCATE(TIDECON_ALLNAMES(170))
+      ALLOCATE(II(MC2),JJ(MC2),KK(MC2),LL(MC2),MM(MC2),NN(MC2), &
+               SEMI(MC2), NJ(170))
+      ALLOCATE(KONCO_CON(320),COEF_CON(320))
+
+      KR=8
+      open(unit=KR,file=filename,status='old',form='formatted')
+
+      JBASE=0
+      DO 90 K=1,1000
+        READ(KR,60)TIDECON_ALLNAMES(K),II(K),JJ(K),KK(K),LL(K),MM(K),NN(K),SEMI(K), &
+                   NJ(K)
+60      FORMAT(6X,A5,1X,6I3,F5.2,I4)
+        !WRITE(995,'(I4,A5,1X,6I3,F5.2,I4)') K,TIDECON_ALLNAMES(K),II(K),JJ(K),KK(K),LL(K),MM(K),NN(K),SEMI(K), &
+        !           NJ(K)
+        IF (TIDECON_ALLNAMES(K).eq.KBLANK) go to 100
+70      J1=JBASE+1
+        IF (NJ(K).LT.1) THEN 
+          NJ(K)=1
+          JL=J1
+          PH(J1)=0.
+          EE(J1)=0.
+          LDEL(J1)=0
+          MDEL(J1)=0
+          NDEL(J1)=0
+          IR(J1)=0
+        ELSE 
+          JL=JBASE+NJ(K)
+!
+!***********************************************************************
+!*  IF NJ>0, INFORMATION ON THE SATELLITE CONSTITUENTS IS READ , THREE
+!*  SATELLITES PER CARD, IN THE FORMAT (11X,3(3I3,F4.2,F7.4,1X,I1,1X)).
+!*  FOR EACH SATELLITE THE VALUES READ ARE
+!*     LDEL,MDEL,NDEL = THE CHANGES IN THE LAST THREE DOODSON NUMBERS
+!*                  FROM THOSE OF THE MAIN CONSTITUENT.
+!*     PH     = THE PHASE CORRECTION
+!*     EE     = THE AMPLITUDE RATIO OF THE SATELLITE TIDAL POTENTIAL TO
+!*            THAT OF THE MAIN CONSTITUENT.
+!*     IR     = 1 IF THE AMPLITUDE RATIO HAS TO BE MULTIPLIED BY THE
+!*            LATITUDE CORRECTION FACTOR FOR DIURNAL CONSTITUENTS
+!*            2 IF THE AMPLITUDE RATIO HAS TO BE MULTIPLIED BY THE
+!*            LATITUDE CORRECTION FACTOR FOR SEMI-DIURNAL CONSTI-
+!*            TUENTS.
+!*            OTHERWISE IF NO CORRECTION IS REQUIRED TO THE AMPLITUDE
+!*            RATIO.
+!
+          READ(KR,80)(LDEL(J),MDEL(J),NDEL(J),PH(J),EE(J),IR(J),J=J1,JL)
+80        FORMAT((11X,3(3I3,F4.2,F7.4,1X,I1,1X)))
+          END IF
+90      JBASE=JL
+
+100   NTIDAL_CON=K-1
+      JLM=JL
+
+!
+!***********************************************************************
+!*  THE SHALLOW WATER CONSTITUENTS AND THE MAIN CONSTITUENTS FROM WHICH
+!*  THEY ARE DERIVED ARE READ IN HERE WITH THE FORMAT
+!*  (6X,A5,I1,2X,4(F5.2,A5,5X)). THE VALUES ARE RESPECTIVELY
+!*     TIDECON_ALLNAMES    = NAME  OF THE SHALLOW WATER CONSTITUENT
+!*     NJ     = NUMBER OF MAIN CONSTITUENTS FROM WHICH IT IS DERIVED.
+!*     COEF_CON,KONCO_CON = COMBINATION NUMBER AND NAME OF THESE MAIN
+!*              CONSTITUENTS.
+!*  THE END OF THESE CONSTITUENTS IS DENOTED BY A BLANK CARD.
+!
+      JBASE=0
+      K1=NTIDAL_CON+1
+      DO 160 K=K1,1000
+        J1=JBASE+1
+        J4=J1+3
+        READ(KR,130)TIDECON_ALLNAMES(K),NJ(K),(COEF_CON(J),KONCO_CON(J),J=J1,J4)
+130     FORMAT(6X,A5,I1,2X,4(F5.2,A5,5X))
+        !WRITE(995,130)TIDECON_ALLNAMES(K),NJ(K),(COEF_CON(J),KONCO_CON(J),J=J1,J4)
+        IF (TIDECON_ALLNAMES(K).eq.KBLANK) go to 170
+160     JBASE=JBASE+NJ(K)
+
+170   NTOTAL_CON=K-1
+
+!  Write out  for cut and paste ... 
+!    WRITE(6,*) 'Numbers:',NTIDAL_CON, NTOTAL_CON, JLM, J1, J4
+!    WRITE(996,*) NTIDAL, NTOTAL_CON, JLM, J1, J4
+!999      FORMAT(10("'",A5,"',"),' &')
+!        WRITE(996,999) TIDECON_ALLNAMES(1:NTOTAL_CON)
+!998      FORMAT(10(I3,","),' &')
+!997      FORMAT(10(I4,","),' &')
+!991      FORMAT(10(F5.2,","),' &')
+!990      FORMAT(10(F7.4,","),' &')
+!        WRITE(996,998) II(1:NTIDAL_CON)
+!        WRITE(996,998) JJ(1:NTIDAL_CON)
+!        WRITE(996,998) KK(1:NTIDAL_CON)
+!        WRITE(996,998) LL(1:NTIDAL_CON)
+!        WRITE(996,998) MM(1:NTIDAL_CON)
+!        WRITE(996,998) NN(1:NTIDAL_CON)
+!        WRITE(996,991) SEMI(1:NTIDAL_CON)
+!        WRITE(996,997) NJ(1:NTOTAL_CON)
+
+!        WRITE(996,998) LDEL(1:JLM)
+!        WRITE(996,998) MDEL(1:JLM)
+!        WRITE(996,998) NDEL(1:JLM)
+!        WRITE(996,991) PH(1:JLM)
+!        WRITE(996,990) EE(1:JLM)
+!        WRITE(996,998) IR(1:JLM)
+
+!        WRITE(996,991) COEF_CON(1:J4)
+!        WRITE(996,999) KONCO_CON(1:J4)
+      RETURN
+!
+!***********************************************************************
+!*  NTIDAL_CON IS THE NUMBER OF MAIN CONSTITUENTS
+!*  NTOTAL_CON IS THE NUMBER OF CONSTITUENTS (MAIN + SHALLOW WATER)
+!*  FOR  THE GIVEN TIME hr, THE TABLE OF F AND V+U VALUES IS
+!*  CALCULATED FOR ALL THE CONSTITUENTS.
+!*     F IS THE NODAL MODULATION ADJUSTMENT FACTOR FOR AMPLITUDE
+!*     U IS THE NODAL MODULATION ADJUSTMENT FACTOR FOR PHASE
+!*     V IS THE ASTRONOMICAL ARGUMENT ADJUSTMENT FOR PHASE.
+!
+!      setvuf calculates the V,u,f values at time hr for all constituents
+!
+      END SUBROUTINE OPNVUF 
+
+!/ ------------------------------------------------------------------- /
+     SUBROUTINE SETVUF(hr,XLAT,ITIME)
+!      setvuf calculates the V,u,f values at time hr for all constituents
+      REAL,         INTENT(IN)  :: XLAT
+      REAL(KIND=8), INTENT(IN)  :: hr
+!
+!   Local variables
+!
+      INTEGER                   :: ITIME, KD0, INT24, INTDYS, &
+                                   JBASE, J, K, L, J1, K1, JL, LK, iflag
+      REAL(KIND=4), PARAMETER   :: PI=3.1415926536
+      REAL(KIND=4), PARAMETER   :: TWOPI=2.*3.1415926536
+
+      REAL                      :: SLAT, VDBL, IV, VV, SUMC, SUMS, RR, &
+                                   UUDBL, IUU, UU
+      REAL(KIND=8)              :: d1,h,pp,s,p,enp,dh,dpp,ds,dp,dnp,hh,tau
+
+      INTEGER                   :: indx(170)
+
+      SLAT=SIN(PI*XLAT/180.)
+!
+!***********************************************************************
+!*  THE ASTRONOMICAL ARGUMENTS ARE CALCULATED BY LINEAR APPROXIMATION
+!*  AT THE MID POINT OF THE ANALYSIS PERIOD.
+!
+!      day number measured from January 0.5 1900 (i.e.,
+!      1200 UT December 31, 1899
+      d1=hr/24.d0
+      ! This was with "gregorian days from KDAY"
+      !call gday(31,12,99,18,kd0)   !  CALL GDAY(IDd,IMm,IYy,ICc,KDd)
+      ! Now uses "julian days from JULDAYT" 
+      ! KD0= 693961
+      !KD0=JULDAYT(31,12,1899)   ! JULDAYT(id,mm,iyyy)
+      KD0= 2415020
+      d1=d1-dfloat(KD0)-0.5d0
+      call astr(d1,h,pp,s,p,enp,dh,dpp,ds,dp,dnp)
+      INT24=24
+      INTDYS=int((hr+0.00001)/INT24)
+      HH=hr-dfloat(INTDYS*INT24)
+      TAU=HH/24.D0+H-S
+!
+!***********************************************************************
+!*  ONLY THE FRACTIONAL PART OF A SOLAR DAY NEED BE RETAINED FOR COMPU-
+!*  TING THE LUNAR TIME TAU.
+!
+      JBASE=0
+      DO 210 K=1,NTIDAL_CON
+      do 209 l=1,TIDE_MF
+      IF (TIDECON_ALLNAMES(k).eq.TIDECON_NAME(l)) then
+      indx(k)=l
+      END IF
+209   continue
+      VDBL=II(K)*TAU+JJ(K)*S+KK(K)*H+LL(K)*P+MM(K)*ENP+NN(K)*PP+SEMI(K)
+      IV=VDBL
+      IV=(IV/2)*2
+      Vv=VDBL-IV
+      J1=JBASE+1
+      JL=JBASE+NJ(K)
+      SUMC=1.
+      SUMS=0.
+      DO 200 J=J1,JL
+!
+!***********************************************************************
+!*  HERE THE SATELLITE AMPLITUDE RATIO ADJUSTMENT FOR LATITUDE IS MADE
+!
+      RR=EE(J)
+      L=IR(J)+1
+      GO TO (901,902,903),L
+  902 RR=EE(J)*0.36309*(1.-5.*SLAT*SLAT)/SLAT
+      GO TO 901
+  903 RR=EE(J)*2.59808*SLAT
+  901 CONTINUE
+      UUDBL=LDEL(J)*P+MDEL(J)*ENP+NDEL(J)*PP+PH(J)
+      IUU=UUDBL
+      UU=UUDBL-IUU
+      SUMC=SUMC+RR*COS(UU*TWOPI)
+      SUMS=SUMS+RR*SIN(UU*TWOPI)
+  200 CONTINUE
+      F_ARG(K,ITIME)=SQRT(SUMC*SUMC+SUMS*SUMS)
+      v_ARG(k,ITIME)=vv
+      U_ARG(K,ITIME)=ATAN2(SUMS,SUMC)/TWOPI
+210   JBASE=JL
+!
+!***********************************************************************
+!*  HERE F AND V+U OF THE SHALLOW WATER CONSTITUENTS ARE COMPUTED FROM
+!*  THE VALUES OF THE MAIN CONSTITUENT FROM WHICH THEY ARE DERIVED.
+!
+      JBASE=0
+      K1=NTIDAL_CON+1
+      IF (K1.GT.NTOTAL_CON) RETURN
+!
+      DO K=K1,NTOTAL_CON
+        F_ARG(K,ITIME)=1.0
+        V_ARG(K,ITIME)=0.0
+        u_ARG(k,ITIME)=0.
+        iflag=0
+        DO lk=1,TIDE_MF
+          IF (TIDECON_ALLNAMES(K).eq.TIDECON_NAME(lk)) then
+           iflag=1
+            EXIT 
+            END IF
+          END DO   ! lk
+
+        DO J=TIDE_INDEXJ(K),TIDE_INDEXJ(K)+NJ(K)-1
+          L=TIDE_INDEXJK(J)
+          F_ARG(K,ITIME)=F_ARG(K,ITIME)*F_ARG(L,ITIME)**ABS(COEF_CON(J))
+          V_ARG(K,ITIME)=V_ARG(K,ITIME)+COEF_CON(J)*V_ARG(L,ITIME)
+          U_ARG(K,ITIME)=U_ARG(K,ITIME)+COEF_CON(J)*U_ARG(L,ITIME)
+          END DO   ! J
+        END DO     ! K
+
+!  Test output for verification purposes 
+        IF (ITIME.EQ.-1) THEN 
+          WRITE(992,'(A,F20.2,13F8.3)') 'TEST ISEA 0:',    &
+                         d1,H,S,TAU,pp,s,p,enp,dh,dpp,ds,dp,dnp,XLAT
+          do l=1,TIDE_MF
+            do k=1,NTOTAL_CON
+              IF (TIDECON_ALLNAMES(k).eq.TIDECON_NAME(l)) then
+                TIDE_INDEX(L)=K
+                WRITE(992,'(A,4I9,F12.0,3F8.3,I4,X,A)') 'TEST ISEA 1:',1,L,20071201,0,hR,    &
+                           F_ARG(K,ITIME),U_ARG(K,ITIME),V_ARG(K,ITIME),TIDE_INDEX(L),TIDECON_NAME(l)
+               END IF
+             END DO
+           ENDDO
+         ENDIF 
+
+      RETURN
+!
+      END SUBROUTINE SETVUF
+
+
+!/ ------------------------------------------------------------------- /
+      subroutine flex_tidana_webpage(IX,IY,XLON,XLAT,KD1,KD2,ndef, itrend, RES, SSQ, RMSR0, SDEV0, &
+                                      RMSR, RESMAX, IMAX, ITEST)
+!
+!***********************************************************************
+!*
+!*  THIS PROGRAM DOES A TIDAL HEIGHTS 'HARMONIC' ANALYSIS OF IRREGULARLY
+!*  SAMPLED OBSERVATIONS.  THE ANALYSIS METHOD IS A LEAST SQUARES FIT
+!*  USING SVD COUPLED WITH NODAL MODULATION AND INFERENCE(IF SO REQUESTED).  
+!*      
+!*      The code is based on TOPEX analysis code originally developed by Josef 
+!*      Cherniawsky (JAOT, 2001, 18(4): 649-664) and modified by Rob Bell and 
+!*      Mike Foreman. Enhancements to that version include
+!*
+!*      1. Provision for multi-constituent inferences computed directly within
+!*        the least squares matrix rather than as post fit corrections. This
+!*        means that the inferred constituents will affect all constituents, not
+!*        just the reference constituent.
+!*
+!*      2. An extension to permit the analysis of current observations.
+!*
+!*      3. Removal of a central time as the basis for the calculation of the
+!*        astronomical arguments V. Now the V value for each observation, as well 
+!*        as those for the nodal corrections f and u (done for the JAOT analysis), 
+!*        are incorporated directly into the overdetermined matrix. These changes
+!*        mean that analyses no longer need be restricted to periods of a year or
+!*        less. (Though as the period approaches 18.6 years, using another "long 
+!*        period" analysis program that solves for the "nodal satellites" directly
+!*        is advisable.)
+!* 
+!***********************************************************************
+!*
+!*  FILE REFERENCE NUMBERS OF DEVICES REQUIRED BY THIS PROGRAM.
+!*      KR  - INPUT FILE  - CONTAINS THE TIDAL CONSTITUENT INFORMATION.
+!*      KR1 - INPUT FILE  - GIVES ANALYSIS TYPE AND TIDAL STATION
+!*                          DETAILS.
+!*      KR2 - INPUT FILE  - CONTAINS THE OBSERVED TIMES AND HEIGHTS.
+!*  PRESENTLY KR,KR1,KR2, AND LP ARE ASSIGNED THE RESPECTIVE VALUES
+!*  8,5,9, AND 6.  SEE THE MANUAL OR COMMENT STATEMENTS WITHIN THIS
+!*  PROGRAM FOR FURTHER DETAILS ON THEIR USE.
+!*
+!***********************************************************************
+!*
+!*  ARRAY DEFINITIONS AND DIMENSION GUIDELINES.
+!*
+!*  LET    MC      BE THE TOTAL NUMBER OF CONSTITUENTS, INCLUDING Z0
+!*                 AND ANY INFERRED CONSTITUENTS, TO BE INCLUDED IN THE
+!*                 ANALYSIS; (For T/P, MC=30 > NUMBER OF CONSTITUENTS)
+!*         TIDE_NTI    BE THE NUMBER OF TIDAL HEIGHT OBSERVATIONS;
+!*         NR      BE THE NUMBER OF INPUT RECORDS OF OBSERVED TIDAL
+!*                 HEIGHTS (For T/P data, same as TIDE_NTI, set to 200)
+!*         MPAR    BE 2*MC-1;
+!*         NEQ     BE TIDE_NTI*2 IF ALL THE OBSERVATIONS ARE EXTREMES AND
+!*                 THE DERIVATIVE CONDITION IS TO BE INCLUDED FOR EACH,
+!*                 AND TIDE_NTI OTHERWISE (= NR for T/P data).
+!*  THEN PARAMETERS NMAXP1, AND NMAXPM SHOULD BE AT LEAST MPAR+1, AND 
+!*  NEQ+MPAR RESPECTIVELY.  THEY ARE CURRENTLY SET TO 40 AND 240.
+!*
+!*  TIDECON_NAME(I) IS THE ARRAY CONTAINING ALL THE CONSTITUENT NAMES,
+!*                 INCLUDING Z0 AND ANY INFERRED CONSTITUENTS, TO BE IN
+!*                 THE ANALYSIS.  IT SHOULD BE DIMENSIONED AT LEAST MC.
+!*  TIDE_FREQC(I),      ARE THE ARRAYS OF FREQUENCIES IN CYCLES/HR AND
+!*  FREQ(I)        RADIANS/HR RESPECTIVELY CORRESPONDING TO THE
+!*                 CONSTITUENT NAME(I).  THEY SHOULD BE DIMENSIONED AT
+!*                 LEAST MC.
+!*  AMP(I),PH(I)   ARE ARRAYS CONTAINING THE RAW AMPLITUDE AND PHASE FOR
+!*                 CONSTITUENT NAME(I) AS FOUND VIA THE LEAST SQUARES
+!*                 ANALYSIS.  THEY SHOULD BE DIMENSIONED AT LEAST MC.
+!*  AMPC(I),PHG(I) ARE ARRAYS CONTAINING THE AMPLITUDE AND PHASE FOR
+!*                 CONSTITUENT NAME(I) AFTER CORRECTIONS FOR NODAL
+!*                 MODULATION, ASTRONOMICAL ARGUMENT AND INFERRED
+!*                 CONSTITUENTS.  THEIR MINIMUM DIMENSION SHOULD BE MC.
+!*  TIDE_DATA(I)   AND HEIGHTS, OF THE OBSERVED DATA AS IT IS INPUT BY
+!*                 RECORD.  THEY SHOULD BE DIMENSIONED ACCORDINGLY( AT
+!*                 PRESENT ONLY 6 OBSERVATIONS ARE EXPECTED PER RECORD).
+!*  X(I)           ARRAY  CONTAINING ALL THE TIMES(IN HOURS AS
+!*                 MEASURED FROM THE CENTRE OF THE ANALYSIS PERIOD) ITS MINIMUM
+!*                 DIMENSION SHOULD BE TIDE_NTI.
+!*  NSTN(I)        IS THE ARRAY CONTAINING THE TIDAL STATION TIDECON_NAME.  IT
+!*                 SHOULD HAVE MINIMUM DIMENSION 5.
+!*  Q(I)           IS THE OVERDETERMINED ARRAY OF EQUATIONS THAT IS
+!*                 SOLVED IN THE LEAST SQUARES SENSE BY THE MODIFIED
+!*                 GRAM-SCHMIDT ALGORITHM.  IT SHOULD HAVE THE EXACT
+!*                 DIMENSION OF NMAXPM BY NMAXP1.
+!*  P(I)           IS THE ARRAY CONTAINING THE TIDAL CONSTITUENT SINE
+!*                 AND COSINE COEFICIENTS AS FOUND WITH THE LEAST
+!*                 SQUARES FIT.  IT SHOULD HAVE MINIMUM DIMENSION MPAR.
+!
+!***********************************************************************
+!
+      IMPLICIT NONE
+  
+      INTEGER, INTENT(IN)         :: NDEF, ITREND, ITEST
+      INTEGER(KIND=4), INTENT(IN) :: KD1, KD2, IX, IY
+      REAL           , INTENT(IN) :: XLON, XLAT
+      REAL(KIND=8)   , INTENT(OUT):: SDEV0(NDEF), RMSR0(NDEF), RMSR(NDEF), RESMAX(NDEF)
+      REAL           , INTENT(OUT):: SSQ(NDEF), RES(NDEF)
+      INTEGER        , INTENT(OUT):: IMAX(NDEF)
+!
+      INTEGER                     :: I, I1, I2, I21, II1, IDEF, ICODE,  INFLAG,  & 
+                                     J, INFTOT, IREP, J2, JCODE, JJ1, K, K2, KH1,     &
+                                     KH2, KHM, KINF, L, M, MEQ, N, NCOL, NEW, NMAX
+      REAL(KIND=8)                :: AAMP, ARG, ARG1, ARG2, ARG3, C, C2, C3,     &
+                                     FX, FXI,  S, S2, S3, UX, VX, UXI, VXI,  &
+                                     WMIN, WMAX, XMID
+      REAL                        :: TOLER
+      REAL(KIND=8)                :: AV, SDEV, SUM2, hrm
+      DOUBLE PRECISION            :: X(NR),Y(NR), TIME(NR)
+      REAL                        :: Q(NMAXPM,NMAXP1),FREQ(MC),AMP(MC),PH(MC) 
+      DOUBLE PRECISION            :: P(NMAXP1),CENHR,CUMHR  
+      DOUBLE PRECISION            :: yy
+!
+!     Additional arrays, for use in the SVD routine (J.Ch., Aug. 1997)
+      DOUBLE PRECISION     :: U(NMAXPM,NMAXP1),V(NMAXP1,NMAXP1),      &
+                              COV(NMAXP1,NMAXP1),B(NMAXPM),W(NMAXP1),SIG(NMAXPM)
+!
+!***********************************************************************
+!
+
+      KH1=24*kd1
+      KH2=24*(kd2+1)
+      KHM=(KH1+KH2)/2
+      hrm=khm
+      CENHR=DFLOAT((KH2-KH1)/2)
+
+      IF (itrend.eq.1) then
+      M=2*TIDE_MF
+      else
+      M=2*TIDE_MF-1
+      END IF
+
+
+      I=0
+      DO I=1,TIDE_MF
+        FREQ(I)=TIDE_FREQC(I)*TWPI
+        END DO
+!
+!***********************************************************************
+!*  DETERMINE THE CENTRAL HOUR OF THE ANALYSIS PERIOD AND SET UP THE
+!*  DEPENDENT AND INDEPENDENT VARIABLES, Y AND X.
+! actually, CUMHR=24.d0*(KD-KHM) (check), but keep same notation as before
+!
+      k=1
+      DO i=1,TIDE_NTI
+        CUMHR=-CENHR+24.D0*(TIDE_DAYS(i)-kd1)
+        time(i)=CUMHR+DFLOAT(TIDE_SECS(i))/3600.d0
+        X(K)=time(i)-time(1)
+        N=K
+        K=K+1
+        END DO
+
+!
+!***********************************************************************
+!*  SETTING UP THE OVERDETERMINED MATRIX AND SOLVING WITH MODIFIED SVD
+!
+      IREP=0
+
+      DO idef=1,ndef   ! loop thru once or twice
+
+! Modifies the time reference xmid and puts it at 0 : modification by FA, 2012/09/26
+! the impact of that change has not been verified ... 
+        xmid=0. !0.5*(TIDE_HOURS(1)+TIDE_HOURS(TIDE_NTI))
+        Q(1:NMAXPM,1:NMAXP1)=0.0
+        DO I=1,N
+!      if itrend=1, then
+!      first 2 parameters are constant and linear trend (per 365 days)
+!      fitted as const+trend(t-tmid) where tmid (=xmid) is the middle time
+!      of the analysis period (This makes the constant consistent with z0
+!      in the old analysis program)
+!      If itrend=0 then the second parameter is is associated with the next 
+!      constituent
+          Q(I,1)=1.
+          IF (itrend.eq.1) then
+!            Q(I,2)=(x(i)-xmid)/(24.*365.)
+            Q(I,2)=x(i)/(24.*365.)
+            END IF
+          Q(I,NMAXP1)=TIDE_DATA(I,IDEF)
+          icode=1
+!      should only have to assemble lhs of matrix when idef=1
+!      but something is not right if don't do it 2nd time too
+         ! CALL SETVUF(TIDE_HOURS(I),xlat,I)
+          DO J=2,TIDE_MF
+            CALL VUF(TIDECON_NAME(j),VX,ux,FX,I) 
+!      check to see if this constituent is to be used for inference
+              inflag=0
+              kinf=0
+              IF (TIDE_NIN.GE.0) THEN 
+                do k=1,TIDE_NIN
+                  IF (TIDECON_NAME(j).eq.TIDE_KONAN(k)) then
+                    inflag=1
+                    kinf=k
+                    EXIT
+                    END IF
+                  END DO
+                END IF
+!
+              IF (inflag.eq.0) then
+                ARG=(vx+ux)*twpi
+                IF (itrend.eq.1) then
+                  J2=2*(J-1)+1
+                else
+                  J2=2*(J-1)
+                  END IF
+                JJ1=J2+1
+                Q(I,J2)=COS(ARG)*fx
+                Q(I,JJ1)=SIN(ARG)*fx
+              else
+                IF (itrend.eq.1) then
+                  J2=2*(J-1)+1
+                else
+                  J2=2*(J-1)
+                  END IF
+                JJ1=J2+1
+                ARG1=(vx+ux)*twpi
+                Q(I,J2)=COS(ARG1)*fx
+                Q(I,JJ1)=SIN(ARG1)*fx
+                do k2=1,TIDE_NINF(kinf)
+                  CALL VUF(TIDE_KONIN(kinf,k2),VXi,uxi,FXi,I) 
+!      freq is radians/hr but sigin is cycles/hr 
+                  ARG2=(vxi+uxi)*twpi
+                  c2=cos(arg2)
+                  s2=sin(arg2)
+                  arg3=TIDE_ZETA(kinf,k2)*fac
+                  c3=cos(arg3)
+                  s3=sin(arg3)
+                  Q(I,J2)=q(i,J2)+fxi*TIDE_R(kinf,k2)*(c2*c3-s2*s3)
+                  Q(I,JJ1)=q(i,jj1)+fxi*TIDE_R(kinf,k2)*(c2*s3+s2*c3)
+                  END DO
+              END IF
+            END DO ! j
+          END DO  !i
+      
+!/T      WRITE(6,*) 'assembled overdetermined matrix and/or rhs'
+        NMAX=M
+        MEQ=N
+        SSQ(IDEF)=1.0
+        RES(IDEF)=1.0
+        NCOL=NMAX
+        NEW=NMAX
+!
+!***********************************************************************
+!*  CALCULATION OF THE STANDARD DEVIATION OF THE RIGHT HAND SIDES OF
+!*  THE OVERDETERMINED SYSTEM
+!
+        AV=0.D0
+        DO I=1,MEQ
+          AV=AV+Q(I,NMAXP1)
+          END DO
+        AV=AV/MEQ
+        SDEV=0.D0
+        DO I=1,MEQ
+          SDEV=SDEV+(Q(I,NMAXP1)-AV)**2
+          END DO
+        SDEV=SDEV/(MEQ-1)
+        SDEV=SQRT(SDEV)
+        SDEV0(IDEF)=SDEV
+ 109  CONTINUE
+!
+!   USE SINGULAR-VALUE-DECOMPOSITION TO SOLVE THE OVERDETERMINED SYSTEM
+!
+        TOLER=1.E-5
+          DO I=1,NMAXPM
+            SIG(I)=1.D0
+            END DO
+!
+!      no solution if meq lt m. ie underdetermined system
+!      go to next time series
+        IF (meq.le.m) then
+          write(NDSET,*) ' underdetermined system: no svd solution',IX,IY,meq,m
+          stop
+          END IF
+!/T      WRITE(6,*) ' applying svd'
+        CALL SVD(Q,U,V,COV,W,P,B,SIG,ICODE,MEQ,NMAX,NMAXPM,NMAXP1,TOLER     &
+              ,JCODE,SSQ(IDEF),RES(IDEF))
+!        IF (JCODE.GT.0) WRITE(LP,55)JCODE
+!   55 FORMAT('COLUMN',I5,' IS THE 1ST DEPENDENT COLUMNS IN SVD')
+!      write out eigenvalues
+        wmax=-1000.
+        wmin=1000.
+        do i=1,nmax
+          IF (w(i).gt.wmax) wmax=w(i)
+          IF (w(i).lt.wmin) wmin=w(i)
+          end do
+!        write(6,*) ' max, min eigenvalues =',wmax,wmin
+!      write(6,*) ' all eigenvalues'
+!      write(6,56) (w(i),i=1,nmax)
+56      format(10e12.5)
+!***********************************************************************
+        IF (ssq(IDEF).gt.1.e-10) then
+          RMSR0(IDEF)=SQRT(SSQ(IDEF)/(MEQ-M))
+        else
+          rmsr0(IDEF)=0.
+          END IF
+
+
+      rmsr(IDEF)=0.d0
+      resmax(IDEF)=0.
+            do 100 i=1,n
+            yy=q(i,nmaxp1)
+            rmsr(IDEF)=rmsr(IDEF)+yy*yy
+      IF (abs(yy).gt.resmax(IDEF)) then
+      resmax(IDEF)=abs(yy)
+      imax(IDEF)=i
+      END IF
+100            continue
+160      format(' ',7i2,f15.5,f10.5,i6)
+      IF (rmsr(IDEF).gt.1.e-10) then
+      rmsr(IDEF)=dsqrt(rmsr(IDEF)/(n-m))
+      else
+      rmsr(IDEF)=0.
+      END IF
+!      close(unit=25)
+!
+!***********************************************************************
+!*  CALCULATE AMPLITUDES AND PHASES
+!
+!      if itrend=1 then the linear trend is shown as the phase of the constant 
+!      Z0 term (& the true phase of Z0 is zero)
+!      otherwise, the phase of Z0 is shown as zero
+      AMP(1)=P(1)
+        IF (itrend.eq.1) then
+          PH(1)=P(2)
+        else
+          PH(1)=0.
+          END IF
+        DO I=2,TIDE_MF
+!
+          IF (itrend.eq.1) then
+            I2=2*(I-1)+1
+          else
+            I2=2*(I-1)
+            END IF
+          I21=I2+1
+          C=P(I2)
+          S=P(I21)
+          AAMP=SQRT(C*C+S*S)
+          IF (AAMP.LT.1.E-5) THEN 
+            PH(I)=0.
+          ELSE 
+            PH(I)=ATAN2(S,C)/FAC
+            IF (PH(I).LT.0.) PH(I)=PH(I)+360.
+            END IF
+          AMP(I)=AAMP
+          END DO  ! end of loop on TIDE_MF 
+!***********************************************************************
+!      Note that with f & u included in the lsq fit, we only need V from routine VUF
+!      but we don't want to correct with V for a central hour. Better to include
+!      the right V in the lsq fit. This has been done.
+
+        TIDE_AMPC(1,idef)=AMP(1)
+        TIDE_PHG(1,idef)=PH(1)
+        DO I=2,TIDE_MF
+          TIDE_AMPC(I,idef)=AMP(I)
+          TIDE_phg(i,idef)=ph(i)
+          END DO
+!
+      TIDE_sig3(:,idef)=0.
+      TIDE_ttest(:,idef)=0.
+!
+      IF (ITEST.GE.1) THEN 
+!---------------------------------------------------
+!
+      i=1
+      IF (cov(1,1).gt.1.e-8) then
+        TIDE_sig1(I,idef)=sqrt(cov(1,1))*rmsr0(IDEF)
+      else
+        TIDE_sig1(I,idef)=0.
+        END IF
+      IF (itrend.eq.1.and.cov(2,2).gt.1.e-8) then
+        TIDE_sig2(I,idef)=sqrt(cov(2,2))*rmsr0(IDEF)
+      else
+        TIDE_sig2(I,idef)=0.
+        END IF
+      TIDE_sig3(I,idef)=0.
+      TIDE_ttest(I,idef)=0.
+!
+!    results for the other constituents
+!
+      DO I=2,TIDE_MF
+        IF (itrend.eq.1) then
+          I2=2*(I-1)+1
+        else
+          I2=2*(I-1)
+          END IF
+        II1=I2+1
+!
+!      multiply cov values with residual standard deviation, as described in equation
+!      (6) of Cherniasky et al. (2001)
+!
+        IF (cov(I2,I2).gt.1.e-8) then
+          TIDE_sig1(I,idef)=sqrt(cov(I2,I2))*rmsr0(IDEF)
+        else
+          TIDE_sig1(I,idef)=0.
+          END IF
+        IF (cov(ii1,ii1).gt.1.e-8) then
+          TIDE_sig2(I,idef)=sqrt(cov(ii1,ii1))*rmsr0(IDEF)
+        else
+          TIDE_sig2(I,idef)=0.
+          END IF
+!      from equation 11 in Pawlowicz et al (2002)
+        c=TIDE_ampc(i,idef)*cos(TIDE_phg(i,idef)*fac)
+        s=TIDE_ampc(i,idef)*sin(TIDE_phg(i,idef)*fac)
+        TIDE_sig3(I,idef)=sqrt(((c*TIDE_sig1(I,idef))**2+(s*TIDE_sig2(I,idef))**2)/(c**2+s**2))
+        TIDE_ttest(I,idef)=TIDE_ampc(i,idef)/TIDE_sig3(I,idef)
+        END DO
+!---------------------------------------------------
+      END IF ! (ITEST.GE.1)
+!
+!  now inferred constituents
+!
+      IF (TIDE_NIN.GE.0) THEN 
+        l=0
+        do k=1,TIDE_NIN
+          do i=2,TIDE_MF
+            IF (TIDECON_NAME(i).eq.TIDE_KONAN(k)) EXIT
+            END DO
+          i1=i
+          do k2=1,TIDE_NINF(k)
+            l=l+1
+            TIDE_ampci(k,k2,idef)=TIDE_ampc(i1,idef)*TIDE_R(k,k2)
+            TIDE_phgi(k,k2,idef)=TIDE_phg(i1,idef)-TIDE_ZETA(k,k2)
+            END DO
+          END DO
+        inftot=l
+        END IF
+
+
+!
+!***********************************************************************
+!      compute (Cherniawsky et al (2001), page 653) and rank correlation coefficients
+!      largest niter value are computed and shown
+!      if itrend=1, then the second part of Z0 is the linear trend coefficient
+!
+!      do i=1,m
+!        do j=1,i
+!          cor(i,j)=cov(i,j)/sqrt(cov(i,i)*cov(j,j))
+!          END DO
+!        END DO
+!
+!      niter=20
+!      do 81 iter=1,niter
+!        cormax=0.
+!        do i=2,m
+!          im1=i-1
+!          do j=1,im1
+!            ac=abs(cor(i,j))
+!            if (ac.gt.cormax) then
+!              cormax=ac
+!              imax=i
+!              jmax=j
+!             END IF
+!            END DO
+!          END DO 
+!        if (itrend.eq.1) then
+!          iconst=(imax+1)/2
+!          jconst=(jmax+1)/2
+!        else
+!          iconst=(imax+2)/2
+!          jconst=(jmax+2)/2
+!          END IF
+!        write(lp,83) iter,cormax,imax,jmax,TIDECON_NAME(iconst),TIDECON_NAME(jconst)
+!83      format(i5,' largest correlation coefficient is ',f8.3,' at (i,j)='     &
+!           ,2i5,' for constituents ',a5,' and ',a5) 
+!        cor(imax,jmax)=0.
+!        END DO
+!
+        END DO  ! end of loop on IDEF
+      RETURN
+
+      END SUBROUTINE flex_tidana_webpage
+
+
+
+
+
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_PREDICT(itrend,ndef,N,HOURS, DATAIN, PREDICTED, RESID, XLAT,SDEV,RMSR)
+!
+      IMPLICIT NONE
+!
+      INTEGER,       INTENT(IN)      :: itrend, NDEF, N
+      REAL(KIND=8)  , INTENT(IN)     :: HOURS(N)
+      REAL,          INTENT(IN)      :: XLAT, DATAIN(N,NDEF)
+      REAL(KIND=8),  INTENT(OUT)     :: SDEV(NDEF),RMSR(NDEF)
+      REAL,          INTENT(OUT)     :: PREDICTED(N,NDEF), RESID(N,NDEF)
+ !
+      INTEGER                        :: IDEF, I, K, K2
+      INTEGER                        :: J, M
+      REAL                           :: ARG, ADD, SUM1, SSQ
+      REAL(KIND=8)                   :: VX, UX, FX
+
+      M = 2*TIDE_MF 
+
+      DO IDEF=1,NDEF
+        SDEV=0.D0
+        DO I=1,N
+          IF (itrend.eq.1) THEN 
+            SUM1=TIDE_AMPC(1,idef)+TIDE_PHG(1,idef)*HOURS(i)/(365.*24.)
+          ELSE 
+            SUM1=TIDE_AMPC(1,idef)
+            END IF
+!
+        DO J=2,TIDE_MF
+          CALL VUF(TIDECON_NAME(j),VX,ux,FX,I)
+          ARG=(vx+ux)*twpi-TIDE_phg(j,idef)*fac
+          ADD=fx*TIDE_AMPc(J,idef)*COS(ARG)
+          SUM1=SUM1+ADD
+          END DO
+!
+        IF (TIDE_NIN.NE.0) THEN 
+          DO k=1,TIDE_NIN
+            DO k2=1,TIDE_NINF(k)
+              CALL VUF(TIDE_KONIN(k,k2),VX,ux,FX,I)
+              ARG=(vx+ux)*twpi-TIDE_phgi(k,k2,idef)*fac
+              ADD=fx*TIDE_AMPci(k,k2,idef)*COS(ARG)
+              SUM1=SUM1+ADD
+              END DO 
+            END DO 
+          END IF
+!
+        PREDICTED(I,IDEF)=SUM1
+!
+        RESID(I,IDEF)=DATAIN(I,IDEF)-SUM1
+        SDEV(IDEF)=SDEV(IDEF)+RESID(I,IDEF)**2
+        END DO
+!
+      SSQ=SDEV(IDEF)
+      RMSR(IDEF)=SQRT(SSQ/(N-M))
+      SDEV(IDEF)=sqrt(ssq/N)
+      ENDDO 
+!
+      END SUBROUTINE TIDE_PREDICT
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE TIDE_PREDICT_ONLY(itrend,ndef,N,TIDE_HOURS, PREDICTED, XLAT)
+!
+      IMPLICIT NONE
+!
+      INTEGER,       INTENT(IN)      :: itrend, NDEF, N
+      REAL(KIND=8)  , INTENT(IN)     :: TIDE_HOURS(N)
+      REAL,          INTENT(IN)      :: XLAT
+      REAL,          INTENT(OUT)     :: PREDICTED(N,NDEF)
+ !
+      INTEGER                        :: IDEF, I, K, K2
+      INTEGER                        :: J
+      REAL                           :: ARG, ADD, SUM1
+      REAL(KIND=8)                   :: VX, UX, FX
+
+      DO IDEF=1,NDEF
+        DO I=1,N
+          IF (itrend.eq.1) THEN 
+            SUM1=TIDE_AMPC(1,idef)+TIDE_PHG(1,idef)*TIDE_HOURS(i)/(365.*24.)
+          ELSE 
+            SUM1=TIDE_AMPC(1,idef)
+            END IF
+!
+        DO J=2,TIDE_MF
+          CALL VUF(TIDECON_NAME(j),VX,UX,FX,I)
+          ARG=(VX+UX)*twpi-TIDE_phg(J,IDEF)*fac
+          ADD=FX*TIDE_AMPc(J,IDEF)*COS(ARG)
+          SUM1=SUM1+ADD
+          END DO
+!
+        IF (TIDE_NIN.NE.0) THEN 
+          DO k=1,TIDE_NIN
+            DO k2=1,TIDE_NINF(k)
+              CALL VUF(TIDE_KONIN(k,k2),VX,ux,FX,I)
+              ARG=(vx+ux)*twpi-TIDE_phgi(k,k2,idef)*fac
+              ADD=fx*TIDE_AMPci(k,k2,idef)*COS(ARG)
+              SUM1=SUM1+ADD
+              END DO 
+            END DO 
+          END IF
+!
+        PREDICTED(I,IDEF)=SUM1
+!
+        END DO
+!
+      ENDDO 
+!
+      END SUBROUTINE TIDE_PREDICT_ONLY
+
+!/
+!/ End of module WMTIDEMD -------------------------------------------- /
+!/
+      END MODULE W3TIDEMD

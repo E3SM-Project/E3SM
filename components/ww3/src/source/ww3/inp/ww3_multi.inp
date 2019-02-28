@@ -1,0 +1,192 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III multi-grid model driver input file                     $
+$ -------------------------------------------------------------------- $
+$
+$ *******************************************************************
+$ *** NOTE : This is an example file from the mww3_test_05 script ***
+$ ***        Unlike other input example files this one CANNOT     ***
+$ ***        be run as an independent interactive run             ***
+$ *******************************************************************
+$
+$ The first input line sets up the general multi-grid model definition
+$ by defining the following six parameters :
+$
+$   1) Number of wave model grids.                          ( NRGRD )
+$   2) Number of grids defining input fields.               ( NRINP )
+$   3) Flag for using unified point output file.           ( UNIPTS )
+$   4) Output server type as in ww3_shel.inp
+$   5) Flag for dedicated process for unified point output.
+$   6) Flag for grids sharing dedicated output processes.
+$
+  3 1 T 1 T T
+$
+$ -------------------------------------------------------------------- $
+$ If there are input data grids defined ( NRINP > 0 ), then these
+$ grids are defined first. These grids are defined as if they are wave
+$ model grids using the file mod_def.MODID. Each grid is defined on
+$ a separate input line with MODID, and eight input flags identifying
+$ the presence of 1) water levels 2) currents 3) winds 4) ice and
+$ 5-7) assimilation data as in the file ww3_shel.inp.
+$
+  'input' F F T F F F F
+$
+$ In this example, we need the file mod_def.input to define the grid
+$ and the file wind.input to provide the corresponding wind data.
+$
+$ -------------------------------------------------------------------- $
+$ If all point output is gathered in a unified point output file
+$ ( UNIPTS = .TRUE. ), then the output spectral grid needs to be 
+$ defined. Ths information is taken from a wave model grid, and only
+$ the spectral definitions from this grid are relevant. Define the
+$ name of this grid here
+$
+  'points'
+$
+$ In this example, we need the file mod_def.points to define the
+$ spectral output grid, and the point output will be written to the
+$ file out_pnt.points
+$
+$ -------------------------------------------------------------------- $
+$ Now each actual wave model grid is defined using 13 parameters to be
+$ read from a single line in the file. Each line contains the following
+$ parameters
+$     1)   Define the grid with the extension of the mod_def file.
+$    2-8)  Define the inputs used by the grids with 8 keywords 
+$          corresponding to the 8 flags defining the input in the
+$          input files. Valid keywords are:
+$            'no'      : This input is not used.
+$            'native'  : This grid has its own input files, e.g. grid
+$                        grdX (mod_def.grdX) uses ice.grdX.
+$            'MODID'   : Take input from the grid identified by 
+$                        MODID. In the example below, all grids get
+$                        their wind from wind.input (mod_def.input).
+$     9)   Rank number of grid (internally sorted and reassigned).
+$    10)   Group number (internally reassigned so that different
+$          ranks result in different group numbers.
+$   11-12) Define fraction of communicator (processes) used for this
+$          grid.
+$    13)   Flag identifying dumping of boundary data used by this
+$          grid. If true, the file nest.MODID is generated.
+$
+  'grd1'  'no' 'no' 'input' 'no' 'no' 'no' 'no'   1  1  0.00 1.00  F
+  'grd2'  'no' 'no' 'input' 'no' 'no' 'no' 'no'   2  1  0.00 1.00  F
+  'grd3'  'no' 'no' 'input' 'no' 'no' 'no' 'no'   3  1  0.00 1.00  F
+$ 'grd1'  'no' 'no' 'input' 'no' 'no' 'no' 'no'   1  1  0.00 0.50  F
+$ 'grd2'  'no' 'no' 'input' 'no' 'no' 'no' 'no'   2  1  0.25 0.75  F
+$ 'grd3'  'no' 'no' 'input' 'no' 'no' 'no' 'no'   3  1  0.50 1.00  F
+$
+$ In this example three grids are used requiring the files
+$ mod_def.grdN. All files get their winds from the grid 'input'
+$ defined by mod_def.input, and no other inputs are used. In the lines
+$ that are commented out, each grid runs on a part of the pool of
+$ processes assigned to the computation.
+$
+$ -------------------------------------------------------------------- $
+$ Starting and ending times for the entire model run
+$
+   19680606 000000   19680607 000000
+$
+$ -------------------------------------------------------------------- $
+$ Specific multi-scale model settings (single line).
+$    Flag for masking computation in two-way nesting (except at 
+$                                                     output times).
+$    Flag for masking at printout time.
+$
+  F F
+$
+$ -------------------------------------------------------------------- $
+$ Conventional output requests as in ww3_shel.inp.  Will be applied
+$ to all grids.
+$
+   19680606 000000   3600  19680607 000000
+$----------------------------------------------------------------
+$
+$ Output request flags identifying fields as in ww3_shel.inp. See that
+$ file for a full documentation of field output options. Namelist type
+$ selection is used here (for alternative F/T flags, see ww3_shel.inp).
+$
+  N
+  DPT CUR WND HS T0M1 FP DP PHS PTP PDIR
+$
+$----------------------------------------------------------------
+$
+$ NOTE: If UNIPTS = .TRUE. then the point output needs to be defined
+$       here and cannot be redefined  below.
+$
+   19680606 000000   3600  19680608 000000
+       0.E3     0.E3  'eye       '
+       0.E3    50.E3  'mN        '
+     -35.E3    35.E3  'mNW       '
+     -50.E3     0.E3  'mW        '
+     -35.E3   -35.E3  'mSW       '
+       0.E3   -50.E3  'mS        '
+      35.E3   -35.E3  'mSE       '
+      50.E3     0.E3  'mE        '
+      35.E3    35.E3  'mNE       '
+       0.E3   100.E3  'aN        '
+     -70.E3    70.E3  'aNW       '
+    -100.E3     0.E3  'aW        '
+     -70.E3   -70.E3  'aSW       '
+       0.E3  -100.E3  'aS        '
+      70.E3   -70.E3  'aSE       '
+     100.E3     0.E3  'aE        '
+      70.E3    70.E3  'aNE       '
+       0.E3   210.E3  'bN        '
+    -150.E3   150.E3  'bNW       '
+    -210.E3     0.E3  'bW        '
+    -150.E3  -150.E3  'bSW       '
+       0.E3  -210.E3  'bS        '
+     150.E3  -150.E3  'bSE       '
+     210.E3     0.E3  'bE        '
+     150.E3   150.E3  'bNE       '
+       0.E3   800.E3  'cN        '
+    -550.E3   550.E3  'cNW       '
+    -800.E3     0.E3  'cW        '
+    -550.E3  -550.E3  'cSW       '
+       0.E3  -800.E3  'cS        '
+     550.E3  -550.E3  'cSE       '
+     800.E3     0.E3  'cE        '
+     550.E3   550.E3  'cNE       '
+       0.E3     0.E3  'STOPSTRING'
+$
+$  Four additional output types: see ww3_shel.inp for documentation.
+$ 
+$  track output
+   19680606 000000      0  19680608 000000
+$
+$  restart files
+   19680606 000000      0  19680608 000000
+$
+$  boundary output
+   19680606 000000      0  19680608 000000
+$
+$  separated wave field data
+   19680606 000000      0  19680608 000000
+$
+$ -------------------------------------------------------------------- $
+$ Output requests per grid and type to overwrite general setup
+$ as defined above. First record per set is the grid name MODID
+$ and the output type number. Then follows the standard time string,
+$ and conventional data as per output type. In mww3_test_05 this is
+$ not used. Below, one example generating partitioning output for 
+$ the inner grid is included but commented out.
+$
+$ 'grd3'  6
+$  19680606 000000    900  19680608 000000
+$     0 999 1 0 999 1 T 
+$
+$ -------------------------------------------------------------------- $
+$ Mandatory end of output requests per grid, identified by output 
+$ type set to 0.
+$
+  'the_end'  0
+$
+$ -------------------------------------------------------------------- $
+$ Moving grid data as in ww3_shel.inp. All grids will use same data.
+$
+  'MOV' 19680606 000000   5.  90.
+  'STP'
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

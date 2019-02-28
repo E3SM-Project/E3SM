@@ -1,0 +1,12 @@
+
+In the Met Office the operational models are still based on v 3.14. WAVEWATCH III v 4.18 is primarily being used for R&D with the primary goal of testing the SMC grid in the Met Office. 
+
+  switch file : switch_UKMO
+  Namelist settings : 
+  &PSMC DTIME = 39600.0, LATMIN=85.0, RFMAXD = 36.0  /
+  &SIN3 BETAMAX = 1.65, ZALP = 0.008, ALPHA0 = 0.006, SWELLF = 0.2 /
+  &SDS3 SDSC1 = -2.7, SDSDELTA1 = 0.5, SDSDELTA2 = 0.5 /
+  &SBT1 GAMMA = -0.038 /
+  &SDB1 BJALFA = 0.005 /
+  &MISC CICE0 = 0.1, CICEN = 0.5, FLAGTR = 2 /
+  &FLX3 CDMAX = 3.5E-3 , CTYPE = 0 /

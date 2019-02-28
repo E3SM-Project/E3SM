@@ -1,0 +1,92 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Field preprocessor input file                          $
+$ -------------------------------------------------------------------- $
+$ Major types of field and time flag
+$   Field types  :  IC1   Ice thickness.
+$                   IC5   Ice floe mean diameter.
+$                   ICE   Ice concentrations.
+$                   ISI   Icebergs and sea ice.
+$                   LEV   Water levels.
+$                   WND   Winds.
+$                   WNS   Winds (including air-sea temp. dif.)
+$                   CUR   Currents.
+$                   DAT   Data for assimilation.
+$
+$   Format types :  AI    Transfer field 'as is'.
+$                   LL    Field defined on rectilinear grid (in same
+$                         coordinate system as model grid)
+$                   F1    Field defined on curvilinear grid (in same
+$                         coordinate system as model grid), coordinates
+$                         of each grid point given in separate file.
+$                   F2    Like F1, composite of 2 fields.
+$
+$        - Format type not used for field type 'DAT'.
+$
+$   Time flag    : If true, time is included in file.
+$   Header flag  : If true, header is added to file.
+$                  (necessary for reading, FALSE is used only for
+$                   incremental generation of a data file.)
+$
+   'ICE' 'LL' F T
+$
+$ Additional time input ---------------------------------------------- $
+$ If time flag is .FALSE., give time of field in yyyymmdd hhmmss format.
+$
+   19680606 053000
+$
+$ Additional input format type 'LL' ---------------------------------- $
+$ Grid range (degr. or m) and number of points for axes, respectively.
+$ Example for longitude-latitude grid.
+$
+    -0.25 2.5  15  -0.25  2.5  4
+$
+$ Additional input format type 'F1' or 'F2' -------------------------- $
+$ Three or four additional input lines, to define the file(s) with
+$ the grid information :
+$ 1) Discrete size of input grid (NXI,NYI) and T/F flag identifying
+$    closure in longitudes ("CLO"). Tripole input is not supported.
+$ 2) Define type of file using the parameters FROM, IDLA, IDFM (see
+$    input for grid preprocessor), and a format
+$ 3) Unit number and (dummy) name of first file.
+$ 4) Unit number and (dummy) name of second file (F2 only).
+$
+$ 15  3                                              
+$ 'UNIT' 3 1 '(.L.L.)'
+$ 10 'll_file.1'
+$ 10 'll_file.2'      
+$
+$ Additional input for data ------------------------------------------ $
+$ Dimension of data (0,1,2 for mean pars, 1D or 2D spectra), "record
+$ length" for data, data value for missing data
+$
+$  0  4  -999.
+$
+$ Define data files -------------------------------------------------- $
+$ The first input line identifies the file format with FROM, IDLA and
+$ IDFM, the second (third) lines give the file unit number and name.
+$
+  'UNIT' 3 1 '(..T..)' '(..F..)' 
+  10 'data_file.1'
+$ 10 'data_file.2'
+$
+$ If the above unit numbers are 10, data is read from this file
+$ (no intermediate comment lines allowed),
+$ This example is an ice concentration field.
+$
+   1. 1. 1. 1. 1. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0.
+   1. 1. .5 .5 .5 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
+   0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
+   0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
+$
+$ This example is mean parameter assimilation data
+$ First record gives number of data records, data are read as as
+$ individual records of reals with record length as given above
+$
+$  3
+$ 1.5  1.6 0.70 10.3
+$ 1.7  1.5 0.75  9.8
+$ 1.9  1.4 0.77 11.1
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

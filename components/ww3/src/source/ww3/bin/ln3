@@ -1,0 +1,94 @@
+#!/bin/sh
+# --------------------------------------------------------------------------- #
+# ln3 :    Make a link from a source code file of WAVEWATCH III to the work   #
+#          directory. Now also looks in bin directory.                        #
+#                                                                             #
+#                                                      Hendrik L. Tolman      #
+#                                                      February 2012          #
+#                                                                             #
+#    Copyright 2009-2012 National Weather Service (NWS),                      #
+#       National Oceanic and Atmospheric Administration.  All rights          #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                   #
+#       No unauthorized use without permission.                               #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# 1. Preparations                                                             #
+# --------------------------------------------------------------------------- #
+# 1.a Check input
+
+  if test "$#" -lt '1'
+  then
+    echo "usage: ln3 filename(s)" 1>&2 ; exit 1
+  fi
+  files="$*"
+
+# 1.b Internal variables - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# The following line must not be removed: it is a switch for local install
+# so that all bin scripts point to the local wwatch3.env
+  export ww3_env=/users/sbrus/climate/ww3/wwatch3.env
+# For manual install (without install_ww3_tar or install_ww3_svn) make sure to
+# either use the generic ww3_env or to add your own ww3_env="${my_directory}"
+
+  if [ ${WWATCH3_ENV} ]; then ww3_env="${WWATCH3_ENV}"; fi # alternate setup file
+
+# 1.c Get info from setup file - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  if test -f $ww3_env
+  then
+    set `grep WWATCH3_DIR $ww3_env` ; shift
+    main_dir="$*"
+  else
+    echo "*** Set-up file $ww3_env not found ***"
+    exit
+  fi
+
+# --------------------------------------------------------------------------- #
+# 2. Make link(s)                                                             #
+# --------------------------------------------------------------------------- #
+
+  set $files
+  found='0'
+
+  cd $main_dir/work
+
+  while [ "$#" -ge '1' ]
+  do
+    name="$1"
+
+    for file in $name $name.ftn $name.f90 $name.doc \
+                w3$name.ftn w3$name.doc w3${name}md.ftn w3${name}md.doc
+    do
+      if test -f ../ftn/$file
+      then
+        rm -f $file
+        echo "make link to $file in ftn dir."
+        ln -s ../ftn/$file .
+        found=`expr $found + 1`
+      fi
+      if test -f ../bin/$file
+      then
+        rm -f $file
+        echo "make link to $file in bin dir."
+        ln -s ../bin/$file .
+        found=`expr $found + 1`
+      fi
+      if test -f ../test/$file
+      then
+        rm -f $file
+        echo "make link to $file in test dir."
+        ln -s ../test/$file .
+        found=`expr $found + 1`
+      fi
+    done
+
+    shift
+
+  done
+
+  if test "$found" = '0'
+  then
+    echo "No files found."
+  fi
+ 
+# End of list --------------------------------------------------------------- #

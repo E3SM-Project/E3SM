@@ -1,0 +1,488 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3SIC4MD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           C. Collins              |
+!/                  |           E. Rogers               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         21-Jan-2015 |
+!/                  +-----------------------------------+
+!/
+!/    For updates see W3SIC4 documentation.
+!/
+!  1. Purpose :
+!
+!     Calculate ice source term S_{ice} according to simple methods.
+!          Attenuation is a function of frequency and specified directly 
+!          by the user. Example: a function is based on an exponential fit to
+!          the empirical data of Wadhams et al. (1988). 
+!
+!  2. Variables and types :
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      W3SIC4    Subr. Public   ice source term.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!     See subroutine documentation.
+!
+!  5. Remarks :
+!
+!     References:
+!         Wadhams et al. 1988
+!         Meylan et al. 2014
+!         Kohout & Meylan 2008 in Horvat & Tziperman 2015
+!         Kohout et al. 2014 
+!
+!  6. Switches :
+!
+!     See subroutine documentation.
+!
+!  7. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      PUBLIC :: W3SIC4
+!/
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SIC4 (A, DEPTH, CG, IX, IY, S, D)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           C. Collins              |
+!/                  |           E. Rogers               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         21-Jan-2015 |
+!/                  +-----------------------------------+
+!/
+!/    03-Dec-2015 : Origination.                        ( version 5.09 )
+!/                                                        (C. Collins)
+!/    03-Dec-2015 : W3SIC4 created based on W3SIC1        (C. Collins)
+!/
+!/        FIXME   : Move field input to W3SRCE and provide
+!/     (S.Zieger)   input parameter to W3SIC1 to make the subroutine
+!/                : versatile for point output processors ww3_outp
+!/                  and ww3_ounp.
+!/
+!/    Copyright 2009 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     S_{ice} source term using 5 parameters read from input files.
+!     These parameters are allowed to vary in space and time.
+!     The parameters control the exponential decay rate k_i
+!     Since there are 5 parameters, this permits description of
+!     dependence of k_i on frequency or wavenumber.
+!
+!/ ------------------------------------------------------------------- /
+!
+!  2. Method :
+!
+!     Apply parametric/empirical functions, e.g. from the literature.
+!     1) Exponential fit to Wadhams et al. 1988
+!     2) Polynomial fit, Eq. 3 from Meylan et al. 2014
+!     3) Quadratic fit to Kohout & Meylan'08 in Horvat & Tziperman'15
+!     4) Eq. 1 from Kohout et al. 2014 
+!
+!     5) Simple step function for ki as a function of frequency
+!          with up to 4 "steps". Controlling parameters KIx and FCx are
+!          read in as input fields, so they may be nonstationary and 
+!          non-uniform in the same manner that ice concentration and
+!          water levels may be nonstationary and non-uniform.
+!                                          444444444444
+!                               33333333333
+!                   222222222222
+!      1111111111111
+!                  ^            ^          ^
+!                  |            |          |
+!                  5            6          7
+!      Here, 1 indicates ki=KI1=ICECOEF1 (ICEP1)
+!            2 indicates ki=KI2=ICECOEF2 (ICEP2)
+!            3 indicates ki=KI3=ICECOEF3 (ICEP3)
+!            4 indicates ki=KI4=ICECOEF4 (ICEP4)
+!            5 indicates freq cutoff #1 =FC5=ICECOEF5 (ICEP5)
+!            6 indicates freq cutoff #2 =FC6=ICECOEF6 (MUDD)
+!            7 indicates freq cutoff #3 =FC7=ICECOEF7 (MUDT)
+!     freq cutoff is given in Hz, freq=1/T (not sigma)
+!     Examples using hindcast, inversion with uniform ki:
+!        1) Beaufort Sea, AWAC mooring, 2012, Aug 17 to 20
+!             0.0418 Hz to 0.15 Hz : ki=10e-6
+!             0.15 Hz to 0.175 Hz : ki=11e-6
+!             0.175 Hz to 0.25 Hz : ki=15e-6
+!             0.25 Hz to 0.5 Hz : ki=25e-6
+!        2) Beaufort Sea, AWAC mooring, 2012, Oct 27 to 30
+!             0.0418 Hz to 0.1 Hz : ki=5e-6
+!             0.1 Hz to 0.12 Hz : ki=7e-6
+!             0.12 Hz to 0.16 Hz : ki=15e-6
+!             0.16 Hz to 0.5 Hz : ki=100e-6
+!             ICEP1=KI1=5.0e-6
+!             ICEP2=KI2=7.0e-6
+!             ICEP3=KI3=15.0e-6
+!             ICEP4=KI4=100.0e-6
+!             ICEP5=FC5=0.10
+!             MUDD=FC6=0.12
+!             MUDT=FC7=0.16
+!             In terms of the 3-character IDs for "Homogeneous field 
+!             data" in ww3_shel.inp, these are, respectively, IC1, IC2,
+!             IC3, IC4, IC5, MDN, MTH, and so this might look like:
+!                'IC1' 19680606 000000   5.0e-6
+!                'IC2' 19680606 000000   7.0e-6
+!                'IC3' 19680606 000000   15.0e-6
+!                'IC4' 19680606 000000   100.0e-6
+!                'IC5' 19680606 000000   0.10
+!                'MDN' 19680606 000000   0.12
+!                'MTH' 19680606 000000   0.16
+!
+!     6) Simple step function for ki as a function of frequency
+!          with up to 10 "steps". Controlling parameters KIx and FCx are
+!          read in as namelist parameters, so they are stationary and
+!          uniform.
+!          The last non-zero FCx value should be a large number, e.g. 99 Hz
+!
+!                                          4444444444  <--- ki=ic4_ki(4)
+!                               3333333333             <--- ki=ic4_ki(3)
+!                   2222222222                         <--- ki=ic4_ki(2)
+!      11111111111                                     <--- ki=ic4_ki(1)
+!                 ^           ^           ^         ^
+!                 |           |           |         |
+!          ic4_fc(1)   ic4_fc(2)   ic4_fc(3) ic4_fc(4)=large number
+!       Example: Beaufort Sea, AWAC mooring, 2012, Oct 27 to 30
+!           &SIC4  IC4METHOD = 6,
+!                  IC4KI =    0.50E-05,   0.70E-05,   0.15E-04,  
+!                             0.10E+00,   0.00E+00,   0.00E+00,   
+!                             0.00E+00,   0.00E+00,   0.00E+00,
+!                             0.00E+00,
+!                  IC4FC =    0.100,      0.120,      0.160, 
+!                             99.00,      0.000,      0.000,
+!                             0.000,      0.000,      0.000,
+!                             0.000
+!                             /
+!
+!     More verbose description of implementation of Sice in WW3:
+!      See documentation for IC1
+!
+!     Notes regarding numerics:
+!      See documentation for IC1
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       A       R.A.  I   Action density spectrum (1-D)
+!       DEPTH   Real  I   Local water depth
+!       CG      R.A.  I   Group velocities.
+!       IX,IY   I.S.  I   Grid indices.
+!       S       R.A.  O   Source term (1-D version).
+!       D       R.A.  O   Diagonal term of derivative (1-D version).
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing (!/S switch).
+!      PRT2DS    Subr. W3ARRYMD Print plot output (!/T1 switch).
+!      OUTMAT    Subr. W3ARRYMD Matrix output (!/T2 switch).
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. W3SRCEMD Source term integration.
+!      W3EXPO    Subr.   N/A    ASCII Point output post-processor.
+!      W3EXNC    Subr.   N/A    NetCDF Point output post-processor.
+!      GXEXPO    Subr.   N/A    GrADS point output post-processor.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!     None.
+!
+!  7. Remarks :
+!
+!     If ice parameter 1 is zero, no calculations are made.
+!     For questions, comments and/or corrections, please refer to:
+!        Method 1 : C. Collins
+!        Method 2 : C. Collins
+!        Method 3 : C. Collins
+!        Method 4 : C. Collins
+!        Method 5 : E. Rogers
+!        Method 6 : E. Rogers
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!     !/T   Enable general test output.
+!     !/T0  2-D print plot of source term.
+!     !/T1  Print arrays.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: TPI
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+      USE W3GDATMD, ONLY: NK, NTH, NSPEC, SIG, MAPWN, IC4PARS, DDEN, &
+                          IC4_KI, IC4_FC, NIC4
+      USE W3IDATMD, ONLY: ICEP1, ICEP2, ICEP3, ICEP4, ICEP5, &
+                          MUDT, MUDV, MUDD, INFLAGS2
+
+!/T      USE W3ODATMD, ONLY: NDST
+!/S      USE W3SERVMD, ONLY: STRACE
+!/T0      USE W3ARRYMD, ONLY: PRT2DS
+!/T1      USE W3ARRYMD, ONLY: OUTMAT
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+      REAL, INTENT(IN)        :: CG(NK),   A(NSPEC), DEPTH
+      REAL, INTENT(OUT)       :: S(NSPEC), D(NSPEC)
+      INTEGER, INTENT(IN)     :: IX, IY
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+!/T0      INTEGER                 :: ITH
+!/T0      REAL                    :: DOUT(NK,NTH)
+      INTEGER                 :: IKTH, IK, ITH, IC4METHOD, IFC
+      REAL                    :: D1D(NK), EB(NK)
+      REAL                    :: ICECOEF1, ICECOEF2, ICECOEF3, &
+                                 ICECOEF4, ICECOEF5, ICECOEF6, &
+                                 ICECOEF7, ICECOEF8
+      REAL                    :: KI1,KI2,KI3,KI4,FC5,FC6,FC7,FREQ
+      REAL                    :: HS, EMEAN  
+      REAL, ALLOCATABLE       :: WN_I(:)  ! exponential decay rate for amplitude
+      REAL, ALLOCATABLE       :: MARG1(:), MARG2(:) ! Arguements for M2
+      REAL, ALLOCATABLE       :: KARG1(:), KARG2(:), KARG3(:) !Arguements for M3
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3SIC4')
+!
+! 0.  Initializations ------------------------------------------------ *
+!
+      D        = 0.0
+!
+      ALLOCATE(WN_I(NSPEC))
+      ALLOCATE(MARG1(NSPEC))
+      ALLOCATE(MARG2(NSPEC))
+      ALLOCATE(KARG1(NSPEC))
+      ALLOCATE(KARG2(NSPEC))
+      ALLOCATE(KARG3(NSPEC))
+      MARG1    = 0.0
+      MARG2    = 0.0
+      KARG1    = 0.0
+      KARG2    = 0.0
+      KARG3    = 0.0
+      WN_I     = 0.0
+      ICECOEF1 = 0.0
+      ICECOEF2 = 0.0
+      ICECOEF3 = 0.0
+      ICECOEF4 = 0.0
+      ICECOEF5 = 0.0
+      ICECOEF6 = 0.0
+      ICECOEF7 = 0.0
+      ICECOEF8 = 0.0
+      HS       = 0.0
+      EMEAN    = 0.0      
+!
+!     IF (.NOT.INFLAGS2(-7))THEN
+!        WRITE (NDSE,1001) 'ICE PARAMETER 1'
+!        CALL EXTCDE(201)
+!     ENDIF
+
+!
+!   We cannot remove the other use of INFLAGS below, 
+!   because we would get 'array not allocated' error for the methods
+!   that don't use MUDV, etc. and don't have MUDV allocated.
+
+      IF (INFLAGS2(-7)) ICECOEF1 = ICEP1(IX,IY) ! a.k.a. IC1
+      IF (INFLAGS2(-6)) ICECOEF2 = ICEP2(IX,IY) ! etc.
+      IF (INFLAGS2(-5)) ICECOEF3 = ICEP3(IX,IY)
+      IF (INFLAGS2(-4)) ICECOEF4 = ICEP4(IX,IY)
+      IF (INFLAGS2(-3)) ICECOEF5 = ICEP5(IX,IY)
+
+! Borrow from Smud (error if BT8 or BT9)
+!/BT8    WRITE (NDSE,*) 'DUPLICATE USE OF MUD PARAMETERS'
+!/BT8    CALL EXTCDE(202)
+!/BT9    WRITE (NDSE,*) 'DUPLICATE USE OF MUD PARAMETERS'
+!/BT9    CALL EXTCDE(202)
+      IF (INFLAGS2(-2)) ICECOEF6 = MUDD(IX,IY) ! a.k.a. MDN
+      IF (INFLAGS2(-1)) ICECOEF7 = MUDT(IX,IY) ! a.k.a. MTH
+      IF (INFLAGS2(0 )) ICECOEF8 = MUDV(IX,IY) ! a.k.a. MVS
+
+      IC4METHOD = IC4PARS(1)
+!
+! x.  No ice --------------------------------------------------------- /
+!
+!      IF ( ICECOEF1==0. ) THEN
+!         D = 0.
+!         WRITE(*,*) '!!!No Ice!!!'
+!
+! x.  Ice ------------------------------------------------------------ /
+!      ELSE
+!
+! x.x Set constant(s) and write test output -------------------------- /
+!
+!         (none)
+!
+!/T38        WRITE (NDST,9000) DEPTH,ICECOEF1,ICECOEF2,ICECOEF3,ICECOEF4
+!
+! 1.  Make calculations ---------------------------------------------- /
+!                
+! 1.a Calculate WN_I
+
+      SELECT CASE (IC4METHOD)
+    
+        CASE (1) !Exponential fit to Wadhams et al. 1988
+          WN_I = EXP(-ICECOEF1 * TPI / SIG - ICECOEF2)
+        
+        CASE (2) !Polynomial fit, Eq. 3 from Meylan et al. 2014
+          MARG1 = ICECOEF1 + ICECOEF2*(SIG/TPI) + ICECOEF3*(SIG/TPI)**2
+          MARG2 = ICECOEF4*(SIG/TPI)**3 + ICECOEF5*(SIG/TPI)**4
+          WN_I = MARG1 + MARG2 
+        
+        CASE (3) !Quadratic fit to Kohout & Meylan'08 in Horvat & Tziperman'15
+          KARG1 = -0.3203 + 2.058*ICECOEF1 - 0.9375*(TPI/SIG)
+          KARG2 = -0.4269*ICECOEF1**2 + 0.1566*ICECOEF1*(TPI/SIG) 
+          KARG3 =  0.0006 * (TPI/SIG)**2 
+          WN_I  = EXP(KARG1 + KARG2 + KARG3)
+        
+        CASE (4) !Eq. 1 from Kohout et al. 2014 
+          !Calculate HS
+          DO IK=1, NK
+            EB(IK) = 0.
+            DO ITH=1, NTH
+              EB(IK) = EB(IK) + A(ITH+(IK-1)*NTH)
+            END DO
+          END DO
+          DO IK=1, NK
+            EB(IK) = EB(IK) * DDEN(IK) / CG(IK)
+            EMEAN  = EMEAN + EB(IK)
+          END DO
+          HS = 4.*SQRT( MAX(0.,EMEAN) )
+          ! If Hs < 3 m then do Hs dependent calc, otherwise WN_I is a constant
+          IF (HS <= 3) THEN
+            WN_I = ICECOEF1*HS
+          ELSE IF (HS > 3) THEN
+            WN_I = ICECOEF2
+          END IF
+
+        CASE (5) ! Simple step function
+           ! rename variables for clarity
+           KI1=ICECOEF1
+           KI2=ICECOEF2
+           KI3=ICECOEF3
+           KI4=ICECOEF4
+           FC5=ICECOEF5
+           FC6=ICECOEF6
+           FC7=ICECOEF7
+           IF((KI1.EQ.0.0).OR.(KI2.EQ.0.0).OR.(KI3.EQ.0.0).OR. &
+              (KI4.EQ.0.0).OR.(FC5.EQ.0.0).OR.(FC6.EQ.0.0).OR. &
+              (FC7.EQ.0.0))THEN
+              WRITE (NDSE,1001)'ICE PARAMETERS'
+              CALL EXTCDE(201)
+           END IF
+           DO IK=1, NK
+              FREQ=SIG(IK)/TPI
+              ! select ki
+              IF(FREQ.LT.FC5)THEN
+                 WN_I(IK)=KI1
+              ELSEIF(FREQ.LT.FC6)THEN
+                 WN_I(IK)=KI2
+              ELSEIF(FREQ.LT.FC7)THEN
+                 WN_I(IK)=KI3
+              ELSE
+                 WN_I(IK)=KI4
+              ENDIF
+           END DO
+
+        CASE (6) ! Simple step function (from namelist)
+
+           ! error checking: require at least 3 steps
+           IF((IC4_KI(1).EQ.0.0).OR.(IC4_KI(2).EQ.0.0).OR. &
+              (IC4_KI(3).EQ.0.0).OR.(IC4_FC(1).EQ.0.0).OR. &
+              (IC4_FC(2).EQ.0.0) )THEN
+              WRITE (NDSE,1001)'ICE PARAMETERS'
+              CALL EXTCDE(201)
+           END IF
+
+           DO IK=1, NK
+              FREQ=SIG(IK)/TPI
+              ! select ki
+              DO IFC=1,NIC4
+                 IF(FREQ.LT.IC4_FC(IFC))THEN
+                    WN_I(IK)=IC4_KI(IFC)
+                    EXIT
+                 END IF
+              END DO
+           END DO
+
+        CASE DEFAULT
+          WN_I = ICECOEF1 !Default to IC1: Uniform in k
+      
+      END SELECT
+
+!
+! 1.b Calculate DID
+!        
+         DO IK=1, NK
+!   SBT1 has: D1D(IK) = FACTOR *  MAX(0., (CG(IK)*WN(IK)/SIG(IK)-0.5) )
+!             recall that D=S/E=-2*Cg*k_i
+            D1D(IK) = -2. * CG(IK) * WN_I(IK)
+         END DO
+!
+! 1.c Fill diagional matrix
+!
+         DO IKTH=1, NSPEC
+            D(IKTH) = D1D(MAPWN(IKTH))
+         END DO
+!
+!      END IF
+!
+      S = D * A
+!
+! ... Test output of arrays
+!
+!/T0      DO IK=1, NK
+!/T0        DO ITH=1, NTH
+!/T0          DOUT(IK,ITH) = D(ITH+(IK-1)*NTH)
+!/T0          END DO
+!/T0        END DO
+!
+!/T0      CALL PRT2DS (NDST, NK, NK, NTH, DOUT, SIG(1:), '  ', 1.,    &
+!/T0                         0.0, 0.001, 'Diag Sice', ' ', 'NONAME')
+!
+!/T1      CALL OUTMAT (NDST, D, NTH, NTH, NK, 'diag Sice')
+!
+! Formats
+!
+ 1001 FORMAT (/' *** WAVEWATCH III ERROR IN W3SIC4 : '/               &
+               '     ',A,' REQUIRED BUT NOT SELECTED'/)
+!
+!/T 9000 FORMAT (' TEST W3SIC4 : DEPTH,ICECOEF1  : ',2E10.3)
+!/
+!/ End of W3SIC4 --------------------------------------------------- /
+!/
+      END SUBROUTINE W3SIC4
+!/
+!/ End of module W3SIC4MD ------------------------------------------ /
+!/
+      END MODULE W3SIC4MD

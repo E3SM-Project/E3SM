@@ -1,0 +1,157 @@
+#!/bin/sh
+# --------------------------------------------------------------------------- #
+# ad3_test : test version of ad3 generating maximum test output for w3adc     #
+#            and skipping compile.                                            #
+#                                                                             #
+#                                                      Hendrik L. Tolman      #
+#                                                      May 2009               #
+#                                                      January  2014          #
+#                                                                             #
+#    Copyright 2009-2014 National Weather Service (NWS),                      #
+#       National Oceanic and Atmospheric Administration.  All rights          #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                   #
+#       No unauthorized use without permission.                               #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# 1. Preparations                                                             #
+# --------------------------------------------------------------------------- #
+# 1.a Check and process input
+
+  if [ "$#" -gt '3' ] || [ "$#" -lt 1 ]
+  then
+    echo "usage: ad3_test basename [itest [icomp]]" 1>&2 ; exit 1
+  fi
+
+  name=$1
+  if test "$#" -ge '2' 
+  then
+    itst=$2
+  else
+    itst='0'
+  fi
+
+# 1.b Internal variables - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+# The following line must not be removed: it is a switch for local install
+# so that all bin scripts point to the local wwatch3.env
+  export ww3_env=/users/sbrus/E3SM/components/ww3/src/source/ww3/wwatch3.env
+# For manual install (without install_ww3_tar or install_ww3_svn) make sure to
+# either use the generic ww3_env or to add your own ww3_env="${my_directory}"
+
+  if [ ${WWATCH3_ENV} ]; then ww3_env="${WWATCH3_ENV}"; fi # alternate setup file
+  switch="switch"          # file containing switches
+  compress=0               # source code compression par in w3adc
+                           # if not 0, documentaion removed from .f90 file
+
+# 1.c Read data from the environment file  - - - - - - - - - - - - - - - - - -
+
+  if [ ${WWATCH3_DIR} ] && [ ${WWATCH3_TMP} ]
+  then
+    main_dir=${WWATCH3_DIR}
+    temp_dir=${WWATCH3_TMP}
+  elif [ -f $ww3_env ]
+  then
+    set `grep WWATCH3_DIR $ww3_env` ; shift
+    main_dir="$*"
+    set `grep WWATCH3_TMP $ww3_env` ; shift
+    temp_dir="$*"
+    set `grep WWATCH3_SOURCE $ww3_env` ; shift
+    source="$*"
+    set `grep WWATCH3_LIST $ww3_env` ; shift
+    list="$*"
+  else
+    echo "*** Set-up file $ww3_env not found ***"
+    exit 2
+  fi
+
+# 1.d Set up paths etc.  - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  path_b="$main_dir/bin"
+  path_w="$temp_dir"
+  path_i="$main_dir/ftn"
+  path_o="$main_dir/obj"
+  path_m="$main_dir/mod"
+  path_e="$main_dir/exe"
+  if [ -n "`echo $name | grep scrip_ 2>/dev/null`" ]
+  then
+    path_i="$path_i/SCRIP"
+  fi
+
+  sw_str=`cat $path_b/$switch`
+
+  if [ ! -d $path_w ]
+  then
+    if ! `mkdir $path_w`
+    then
+      echo '      *** w3adc error ***'
+      echo "          Cannot create $path_w"
+      exit 3
+    fi
+  fi
+
+# 1.e Test necessity of running w3adc - - - - - - - - - - - - - - - - - - - -
+
+  if [ -f $path_i/$name.ftn ]
+  then
+    w3adc='yes'
+    idstr=
+  else
+    w3adc='no'
+    idstr='[no w3adc]'
+  fi
+
+# 1.f Output - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  echo "ad3 : processing $name $idstr"
+
+  if [ "$itst" != '0' ]
+  then
+    echo ' ' ; echo 'Test output ad3 ' ; echo '----------------'
+    echo "  bin directory    : $path_b "
+    echo "  work directory   : $path_w "
+    echo "  input directory  : $path_i "
+    echo "  object directory : $path_o "
+    echo "  module directory : $path_m "
+    echo "  executable dir.  : $path_e "
+    echo "  switches file    : $switch " ; echo ' '
+    echo "  switches         : $sw_str"
+    echo ' '
+  fi
+
+# 1.g Final preparations - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  cd $path_w
+
+# --------------------------------------------------------------------------- #
+# 2. Run w3adc                                                                #
+# --------------------------------------------------------------------------- #
+# 2.a Make input file
+
+  if [ "$w3adc" = 'yes' ]
+  then
+
+    echo "1 $compress"                             > w3adc.inp
+    echo "'$path_i/$name.ftn' '$name.f90'"        >> w3adc.inp
+    echo "'$sw_str'"                              >> w3adc.inp
+
+# 2.b Add NCEP/NCO docmentation  - - - - - - - - - - - - - - - - - - - - - - - 
+
+# Obsolete feature, removed
+
+# 2.c Run w3adc  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+    if [ "$itst" != '0' ]
+    then
+      echo '-- input file w3adc.inp -------------------------------------------'
+      cat w3adc.inp
+      echo '-- end of file ----------------------------------------------------'
+    fi
+
+    $path_b/w3adc < w3adc.inp
+
+  fi
+
+  rm -f w3adc.inp
+  rm -f $name.f90
+ 
+# End of ad3 ---------------------------------------------------------------- #

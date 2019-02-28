@@ -1,0 +1,1813 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3SERVMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         18-Aug-2016 |
+!/                  +-----------------------------------+
+!/
+!/    For update log see individual subroutines.
+!/    12-Jun-2012 : Add /RTD option or rotated grid option. 
+!/                  (Jian-Guo Li)                       ( version 4.06 )
+!/    11-Nov-2013 : SMC and rotated grid incorporated in the main 
+!/                  trunk                               ( version 4.13 )
+!/    18-Aug-2016 : Add dist_sphere: angular distance   ( version 5.11 )
+!/
+!/    Copyright 2009-2012 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     In this module all WAVEWATCH specific service routines have
+!     been gathered.
+!
+!  2. Variables and types :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      NDSTRC    Int.  Private  Data set number for output of STRACE
+!                               (set in ITRACE).
+!      NTRACE    Int.  Private  Maximum number of trace prints in
+!                               strace (set in ITRACE).
+!     ----------------------------------------------------------------
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      ITRACE    Subr. Public   (Re-) Initialization for STRACE.
+!      STRACE    Subr. Public   Enable subroutine tracing, usually
+!                               activated with the !/S switch.   
+!      NEXTLN    Subr. Public   Get to next line in input command file.
+!      W3S2XY    Subr. Public   Grid conversion routine.
+!      EJ5P      R.F.  Public   Five parameter JONSWAP spectrum.
+!      WWDATE    Subr. Public   Get system date.
+!      WWTIME    Subr. Public   Get system time.
+!      EXTCDE    Subr. Public   Abort program with exit code.
+!     Four subs for rotated grid are appended to this module.  As they 
+!     are shared with SMC grid, they are not quoted by option /RTD but 
+!     are available for general use.     JGLi12Jun2012
+!     W3SPECTN       turns wave spectrum anti-clockwise by AnglD 
+!     W3ACTURN       turns wave action(k,nth) anti-clockwise by AnglD.
+!     W3LLTOEQ       convert standard into rotated lat/lon, plus AnglD
+!     W3EQTOLL       revers of the LLTOEQ, but AnglD unchanged.
+!
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!     None.
+!
+!  5. Remarks :
+!
+!  6. Switches
+!
+!       !/S    Enable subroutine tracing using STRACE in this module.
+!
+!       !/F90  FORTRAN 90 specific switches.
+!
+!  7. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      PUBLIC
+!
+      INTEGER, PRIVATE        :: NDSTRC = 6, NTRACE = 0
+!
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE ITRACE (NDS, NMAX)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         23-Nov-1999 |
+!/                  +-----------------------------------+
+!/
+!/    23-Nov-1999 : First version of routine.           ( version 2.00 )
+!/
+!  1. Purpose :
+!
+!     (Re-) initialization for module version of STRACE.
+!
+!  3. Parameter list
+!     ----------------------------------------------------------------
+!       NDS     Int.   I   Data set number ofr trace file.
+!       NMAX    Int.   I   Maximum number of traces per routine.
+!     ----------------------------------------------------------------
+!
+!     Private to module :
+!     ----------------------------------------------------------------
+!       NDSTRC  Int.  Output unit number for trace.     ( from NDS  )
+!       NTRACE  Int.  Maximum number of trace prints.   ( from NMAX )
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     None.
+!
+!  5. Called by :
+!
+!     Any program, multiple calls allowed.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: NDS, NMAX
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      NTRACE = MAX ( 0 , NMAX )
+      NDSTRC = NDS
+!
+      RETURN
+!/
+!/ End of ITRACE ----------------------------------------------------- /
+!/
+      END SUBROUTINE ITRACE
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE STRACE (IENT, SNAME)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         25-Jan-2000 |
+!/                  +-----------------------------------+
+!/                                   Original version by N. Booij, DUT
+!/
+!/    30-Mar-1993 : Final FORTRAN 77                    ( version 1.18 )
+!/    23-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    25-Jan-2000 : Force flushing of uniit.            ( version 2.00 )
+!/                  This was taken out around version 3.01.
+!/
+!  1. Purpose :
+!
+!     Keep track of entered subroutines.
+!
+!  3. Parameter list
+!     ----------------------------------------------------------------
+!       IENT    Int.  I/O  Number of times that STRACE has been
+!                          called by the routine.
+!       SNAME   Char.  I   Name of the subroutine (max. 6 characters)
+!     ----------------------------------------------------------------
+!
+!     Private to module :
+!     ----------------------------------------------------------------
+!       NDSTRC  Int.  Output unit number for trace.
+!       NTRACE  Int.  Maximum number of trace prints.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     None.
+!
+!  5. Called by :
+!
+!     Any program, after private variables have been set by NTRACE.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(INOUT)  :: IENT
+      CHARACTER, INTENT(IN)   :: SNAME*(*)
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      IF (NTRACE.EQ.0 .OR. IENT.GE.NTRACE) RETURN
+!
+      IENT = IENT + 1
+      IF (IENT.EQ.1) THEN
+          WRITE (NDSTRC,10) SNAME
+        ELSE
+          WRITE (NDSTRC,11) SNAME, IENT
+        END IF
+!
+      RETURN
+!
+! Formats
+!
+  10  FORMAT (' ---> TRACE SUBR : ',A6)
+  11  FORMAT (' ---> TRACE SUBR : ',A6,'  ENTRY: ',I6)
+!/
+!/ End of STRACE ----------------------------------------------------- /
+!/
+      END SUBROUTINE STRACE
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE NEXTLN ( CHCKC , NDSI , NDSE )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         10-Dec-2014 |
+!/                  +-----------------------------------+
+!/
+!/    15-Jan-1999 : Final FORTRAN 77                    ( version 1.18 )
+!/    18-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    10-Dec-2014 : Skip blank lines and leading blanks ( version 5.04 )
+!/
+!  1. Purpose :
+!
+!     Sets file pointer to next active line of input file, by skipping
+!     blank lines and lines starting with the character CHCKC. Leading
+!     white space is allowed before the character CHCKC.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       CHCKC   C*1   I  Check character for defining comment line.
+!       NDSI    Int.  I  Input dataset number.
+!       NDSE    Int.  I  Error output dataset number.
+!                        (No output if NDSE < 0).
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!       STRACE ( !/S switch )
+!
+!  5. Called by :
+!
+!       Any routine.
+!
+!  6. Error messages :
+!
+!     - On EOF or error in input file.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: NDSI, NDSE
+      CHARACTER, INTENT(IN)   :: CHCKC*1
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+      INTEGER                 :: IERR
+      CHARACTER(128)          :: MSG
+      CHARACTER(256)          :: LINE, TEST
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'NEXTLN')
+!
+  100 CONTINUE
+      ! read line
+      READ ( NDSI, 900, END=800, ERR=801, IOSTAT=IERR, IOMSG=MSG ) LINE
+      ! leading blanks removed and placed on the right
+      TEST = ADJUSTL ( LINE )
+      IF ( TEST(1:1).EQ.CHCKC .OR. LEN_TRIM(TEST).EQ.0 ) THEN
+        ! if comment or blank line, then skip
+          GOTO 100
+        ELSE
+        ! otherwise, backup to beginning of line
+          BACKSPACE ( NDSI, ERR=802, IOSTAT=IERR, IOMSG=MSG )
+        ENDIF
+      RETURN
+!
+  800 CONTINUE
+      IF ( NDSE .GE. 0 ) WRITE (NDSE,910)
+      CALL EXTCDE ( 1 )
+!
+  801 CONTINUE
+      IF ( NDSE .GE. 0 ) WRITE (NDSE,911) IERR, TRIM(MSG)
+      CALL EXTCDE ( 2 )
+!
+  802 CONTINUE
+      IF ( NDSE .GE. 0 ) WRITE (NDSE,912) IERR, TRIM(MSG)
+      CALL EXTCDE ( 3 )
+!
+! Formats
+!
+  900 FORMAT (A)
+  910 FORMAT (/' *** WAVEWATCH III ERROR IN NEXTLN : '/         &
+               '     PREMATURE END OF INPUT FILE'/)
+  911 FORMAT (/' *** WAVEWATCH III ERROR IN NEXTLN : '/         &
+               '     ERROR IN READING FROM FILE'/               &
+               '     IOSTAT =',I5,/                             &
+               '     IOMSG = ',A/)
+  912 FORMAT (/' *** WAVEWATCH III ERROR IN NEXTLN : '/         &
+               '     ERROR ON BACKSPACE'/                       &
+               '     IOSTAT =',I5,/                             &
+               '     IOMSG = ',A/)
+!/
+!/ End of NEXTLN ----------------------------------------------------- /
+!/
+      END SUBROUTINE NEXTLN
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3S2XY ( NSEA, MSEA, MX, MY, S, MAPSF, XY )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III            NOAA/NMC |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         23-Nov-1999 |
+!/                  +-----------------------------------+
+!/
+!/    11-Dec-1996 : Final FORTRAN 77                    ( version 1.18 )
+!/    23-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/
+!  1. Purpose :
+!
+!     Convert a data array on the storage grid to a data array on the
+!     full spatial grid. Land and ice points in the full grid are
+!     not touched. Output array of conventional type XY(IX,IY).
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       NSEA    Int.   I    Number of sea points.
+!       MSEA, MX, MY
+!               Int.   I    Array dimensions.
+!       S       R.A.   I    Data on storage grid.
+!       MAPSF   I.A.   I    Storage map for IX and IY, resp.
+!       XY      R.A.   O    Data on XY grid.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     None.
+!
+!  5. Called by :
+!
+!     Any WAVEWATCH III routine.
+!
+!  9. Switches :
+!
+!     None.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: MSEA, NSEA, MX, MY, MAPSF(MSEA,2)
+      REAL, INTENT(IN)        :: S(MSEA)
+      REAL, INTENT(OUT)       :: XY(MX,MY)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: ISEA, IX, IY
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      DO 100, ISEA=1, NSEA
+        IX     = MAPSF(ISEA,1)
+        IY     = MAPSF(ISEA,2)
+        XY(IX,IY) = S(ISEA)
+  100   CONTINUE
+!/
+!/ End of W3S2XY ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3S2XY
+!/ ------------------------------------------------------------------- /
+      REAL FUNCTION EJ5P ( F, ALFA, FP, YLN, SIGA, SIGB )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         23-Nov-1999 |
+!/                  +-----------------------------------+
+!/
+!/    23-AMy-1985 : Original by G. Ph. van Vledder.
+!/    23-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/
+!  1. Purpose :
+!
+!     Computation of spectral density using a 5-parameter
+!     JONSWAP-spectrum
+!
+!  2. Method
+!
+!     EJ5P(F) = A.EXP(B + LN(Y).EXP(C))
+!
+!     where: A = ALFA * 0.06175 * F**(-5)
+!            B = -1.25*(FP/F)**4
+!            C = -0.5 * ((F - FP)/(SIG * FP))**2
+!     and
+!            GRAV**2/(2.PI)**4 = 0.06175
+!
+!  3. Parameters :
+!
+!     Parameter list
+!
+!     ----------------------------------------------------------------
+!       F       Real   I    Frequency in Hz
+!       ALFA    Real   I    Energy scaling factor
+!       FP      Real   I    Peak frequency in Hz
+!       YLN     Real   I    Peak overshoot factor, given by LN-value
+!       SIGA    Real   I    Spectral width, for F < FP
+!       SIGB    Real   I    Spectral width, FOR F > FP
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     None.
+!
+!  5. Called by :
+!
+!     Any.
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!     EXPMIN is a machine dependant constant such that
+!     EXP(EXPMIN) can be successfully evaluated without
+!     underflow by the compiler supllied EXP routine.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     None.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      REAL, INTENT(IN)        :: F, ALFA, FP, YLN, SIGA, SIGB
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      REAL                    :: SIG, A, B, C
+      REAL, SAVE              :: EPS=1.E-4, EXPMIN=-180.
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      IF(F.LT.EPS) THEN
+        EJ5P = 0.0
+        RETURN
+      END IF
+!
+      A = ALFA * 0.06175 / F**5
+      B = -1.25 * (FP/F)**4
+      B = MAX(B,EXPMIN)
+!
+      IF (YLN.LT.EPS) THEN
+        EJ5P = A * EXP(B)
+      ELSE
+        IF( F.LE.FP) THEN
+          SIG = SIGA
+        ELSE
+          SIG = SIGB
+        END IF
+        C = -0.5 * ((F - FP)/(SIG * FP))**2
+        C = MAX(C,EXPMIN)
+        EJ5P = A * EXP(B + EXP(C) * YLN)
+      END IF
+!
+      RETURN
+!/
+!/ End of NEXTLN ----------------------------------------------------- /
+!/
+      END FUNCTION
+!/ ------------------------------------------------------------------- /
+      REAL FUNCTION DIST_SPHERE ( lo1,la1,lo2,la2 )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         18-Aug-2016 |
+!/                  +-----------------------------------+
+!/
+!/    18-Aug-2016 :  Creation                           ( version 5.11 )
+!/
+!  1. Purpose :
+!
+!     Computes distance between two points on a sphere
+!
+!  2. Method
+!
+!
+!  3. Parameters :
+!
+!     Parameter list
+!
+!     ----------------------------------------------------------------
+!       LO1     Real   I    Longitude of 1st point
+!       LA1     Real   I    Latitude of 1st point
+!       LO2     Real   I    Longitude of 2nd point
+!       LA2     Real   I    Latitude of 2nd point
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     None.
+!
+!  5. Called by :
+!
+!     WW3_BOUNC
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!     None.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     None.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      REAL, INTENT(IN)        :: LO1, LA1, LO2, LA2 
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!  None
+!/
+!/ ------------------------------------------------------------------- /
+!/
+     DIST_SPHERE=acos(sin(la2*DERA)*sin(la1*DERA)+ &   
+                      cos(la2*DERA)*cos(la1*DERA)*cos((lo2-lo1)*DERA))*RADE
+!
+      RETURN
+!/
+!/ End of NEXTLN ----------------------------------------------------- /
+!/
+      END FUNCTION
+!/ ------------------------------------------------------------------- /
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE WWDATE (STRNG)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         26-Dec-2012 |
+!/                  +-----------------------------------+
+!/
+!/    23-Dec-1998 : Final FORTRAN 77                    ( version 1.18 )
+!/    23-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    18-Sep-2000 : PGI switch added                    ( version 2.04 )
+!/    13-Mar-2001 : LF95 switch added                   ( version 2.09 )
+!/    08-May-2002 : Replace obsolete switches with F90  ( version 2.21 )
+!/    26-Dec-2012 : Modified obsolete declarations.     ( version 4.11 )
+!/
+!  1. Purpose :
+!
+!     Get date from machine dependent routine.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       STRNG   C*10   O   String with date in format YYYY/MM/DD
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     Machine dependent.
+!
+!  5. Called by :
+!
+!     Any routine.
+!
+!  9. Switches :
+!
+!     !/DUM  Dummy.
+!     !/F90  FORTRAN 90 standard.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      CHARACTER, INTENT(OUT)  :: STRNG*10
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/F90      CHARACTER(LEN=8)        :: DATE
+!/F90      CHARACTER(LEN=10)       :: TIME
+!/F90      CHARACTER(LEN=5)        :: ZONE
+!/F90      INTEGER                 :: VALUES(8)
+!/
+!/ ------------------------------------------------------------------- /
+!/
+! This is supposed to be standard F90
+!
+!/F90      STRNG = '----/--/--'
+!/F90      CALL DATE_AND_TIME ( DATE, TIME, ZONE, VALUES )
+!/F90      STRNG(1:4) = DATE(1:4)
+!/F90      STRNG(6:7) = DATE(5:6)
+!/F90      STRNG(9:10) = DATE(7:8)
+!
+! Dummy alternative
+!
+!/DUM      STRNG = '----/--/--'
+!
+      RETURN
+!/
+!/ End of WWDATE ----------------------------------------------------- /
+!/
+      END SUBROUTINE WWDATE
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE WWTIME (STRNG)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         26-Dec-2012 |
+!/                  +-----------------------------------+
+!/
+!/    23-Dec-1998 : Final FORTRAN 77                    ( version 1.18 )
+!/    23-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    18-Sep-2000 : PGI switch added                    ( version 2.04 )
+!/    13-Mar-2001 : LF95 switch added                   ( version 2.09 )
+!/    08-May-2002 : Replace obsolete switches with F90  ( version 2.21 )
+!/    26-Dec-2012 : Modified obsolete declarations.     ( version 4.11 )
+!/
+!  1. Purpose :
+!
+!     Get time from machine dependent routine.
+!
+!  2. Method :
+!
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       STRNG   C*8    O   String with time in format hh:mm:ss
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     Machine dependent.
+!
+!  5. Called by :
+!
+!     Any routine.
+!
+!  9. Switches :
+!
+!     !/DUM  Dummy.
+!     !/F90  FORTRAN 90 standard.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      CHARACTER, INTENT(OUT)  :: STRNG*8
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/F90      CHARACTER(LEN=8)        :: DATE
+!/F90      CHARACTER(LEN=10)       :: TIME
+!/F90      CHARACTER(LEN=5)        :: ZONE
+!/F90      INTEGER                 :: VALUES(8)
+!/
+!/ ------------------------------------------------------------------- /
+!/
+! This is supposed to be standard F90
+!
+!/F90      STRNG = '--:--:--'
+!/F90      CALL DATE_AND_TIME ( DATE, TIME, ZONE, VALUES )
+!/F90      STRNG(1:2) = TIME(1:2)
+!/F90      STRNG(4:5) = TIME(3:4)
+!/F90      STRNG(7:8) = TIME(5:6)
+!
+! Dummy alternative
+!
+!/DUM      STRNG = '--:--:--'
+!
+      RETURN
+!/
+!/ End of WWTIME ----------------------------------------------------- /
+!/
+      END SUBROUTINE WWTIME
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE EXTCDE ( IEXIT, UNIT, MSG, FILE, LINE )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         10-Dec-2014 |
+!/                  +-----------------------------------+
+!/
+!/    06-Jan-1998 : Final FORTRAN 77                    ( version 1.18 )
+!/    23-Nov-1999 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    10-Dec-2014 : Add checks for allocate status      ( version 5.04 )
+!/    11-Mar-2015 : Allow non-error exit (iexit=0)      ( version 5.04 )
+!/
+!  1. Purpose :
+!
+!     Perform a program stop with an exit code.
+!
+!     If exit code IEXIT=0, then it is not an error, but 
+!     a stop has been requested by the calling routine:
+!     wait for other processes to catch up.
+!     
+!     If exit code IEXIT.ne.0, then abort program w/out
+!     waiting for other processes to catch up (important for example
+!     when not all processes are used by WW3).
+!
+!  2. Method :
+!
+!     Machine dependent.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       IEXIT   Int.   I   Exit code to be used.
+!       UNIT    Int.   I   (optional) file unit to write error message
+!       MSG     Str.   I   (optional) error message
+!       FILE    Str.   I   (optional) name of source code file
+!       LINE    Int.   I   (optional) line number in source code file
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!     Any.
+!
+!  9. Switches :
+!
+!     !/MPI  MPI finalize interface if active
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+!
+!/MPI      INCLUDE "mpif.h"
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN) :: IEXIT
+      INTEGER,      INTENT(IN), OPTIONAL :: UNIT
+      CHARACTER(*), INTENT(IN), OPTIONAL :: MSG
+      CHARACTER(*), INTENT(IN), OPTIONAL :: FILE
+      INTEGER,      INTENT(IN), OPTIONAL :: LINE
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/MPI      INTEGER                 :: IERR_MPI
+!/MPI      LOGICAL                 :: RUN
+      INTEGER                 :: IUN
+      CHARACTER(256)          :: LMSG = ""
+      CHARACTER(6)            :: LSTR
+      CHARACTER(10)           :: PREFIX = "WW3 ERROR:"
+!/
+!/ Set file unit for error output
+!/
+      IUN = 0
+      IF (PRESENT(UNIT)) IUN = UNIT
+!/
+!/ Report error message
+!/
+      IF (PRESENT(MSG)) THEN
+          WRITE (IUN,"(A)") PREFIX//" "//TRIM(MSG)
+        END IF
+!/
+!/ Report context
+!/
+      IF ( PRESENT(FILE) ) THEN
+          LMSG = TRIM(LMSG)//" FILE="//TRIM(FILE)
+        END IF
+      IF ( PRESENT(LINE) ) THEN
+          WRITE (LSTR,'(I0)') LINE
+          LMSG = TRIM(LMSG)//" LINE="//TRIM(LSTR)
+        END IF
+      IF ( LEN_TRIM(LMSG).GT.0 ) THEN
+          WRITE (IUN,"(A)") PREFIX//TRIM(LMSG)
+        END IF
+!/
+!/ Test if MPI needs to be closed
+!/
+!/MPI      CALL MPI_INITIALIZED ( RUN, IERR_MPI )
+!/MPI      IF ( RUN ) THEN
+!/MPI        IF (IEXIT.EQ.0)THEN ! non-error state
+!/MPI          CALL MPI_BARRIER ( MPI_COMM_WORLD, IERR_MPI )
+!/MPI          CALL MPI_FINALIZE (IERR_MPI )
+!/MPI        ELSE ! error state
+!/MPI          CALL MPI_ABORT ( MPI_COMM_WORLD, IEXIT, IERR_MPI )
+!/MPI        END IF
+!/MPI      END IF
+!
+!/F90      CALL EXIT ( IEXIT )
+!/DUM      STOP
+!/
+!/ End of EXTCDE ----------------------------------------------------- /
+!/
+      END SUBROUTINE EXTCDE
+!/ ------------------------------------------------------------------- /
+!  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!  This subroutine turn the wave spectrum by an fixed angle anti-clockwise
+!  so that it may be used in the rotated or stanadard system.
+!  First created:   26 Aug 2005   Jian-Guo Li
+!  Last modified:   21 Feb 2008   Jian-Guo Li
+!
+! Subroutine Interface:
+
+       Subroutine w3spectn( NFreq, NDirc, Alpha, Spectr )
+ 
+! Description:
+!   Rotates wave spectrum anticlockwise by angle alpha in degree
+!
+! Subroutine arguments
+        IMPLICIT NONE
+        INTEGER, INTENT(IN) :: NFreq, NDirc         ! No. frequ and direc bins
+        REAL,    INTENT(IN) :: Alpha                ! Turning angle in degree
+        REAL, INTENT(INOUT) :: Spectr(NFreq,NDirc)  ! Wave spectrum in and out
+
+! Local variables
+        INTEGER :: ii, jj, kk, nsft
+        REAL    :: Ddirc, frac, CNST
+        REAL, Dimension(NFreq)      ::  Wrkfrq, Tmpfrq
+        REAL, Dimension(NFreq,NDirc)::  Wrkspc
+
+! Check input bin numbers
+        IF( (NFreq .LT. 0) .OR. (NDirc .LT. 0) )  THEN
+           PRINT*, " Invalid bin number NF or ND", NFreq, NDirc
+           RETURN
+        ELSE
+           Ddirc=360.0/FLOAT(NDirc)
+        ENDIF
+
+! Work out shift bin number and fraction
+
+           CNST=Alpha/Ddirc
+           nsft=INT( CNST )
+           frac= CNST - FLOAT( nsft )
+!     PRINT*, ' nsft and frac =', nsft, frac
+
+! Shift nsft bins if >=1
+         IF( ABS(nsft) .GE. 1 )  THEN
+           DO ii=1, NDirc
+
+! Wave spectral direction bin number is assumed to increase Anti-clockwise from EAST
+! So shift nsft bins anticlockwise results in local bin number Decreases by nsft
+              jj=ii - nsft
+ 
+! As nsft may be either positive or negative depends on alpha, wrapping may
+! happen in either ends of the bin number train
+              IF( jj > NDirc )  jj=jj - NDirc
+              IF( jj < 1     )  jj=jj + NDirc
+
+! Copy the selected bin to the loop bin number
+              Wrkspc(:,ii)=Spectr(:,jj)
+ 
+           Enddo
+
+! If nsft=0, no need to shift, simply copy
+         ELSE
+             Wrkspc = Spectr
+         ENDIF
+
+! Pass fraction of wave energy in frac direction
+! Wave spectral direction bin number is assumed to increase Anti-clockwise from EAST
+! So Positive frac or anticlock case, smaller bin upstream
+         IF( frac > 0.0 ) THEN
+           Tmpfrq=Wrkspc(:,NDirc)*frac
+           DO kk=1, NDirc
+              Wrkfrq=Wrkspc(:,kk)*frac
+              Spectr(:,kk)=Wrkspc(:,kk) - Wrkfrq + Tmpfrq
+              Tmpfrq=Wrkfrq
+           ENDDO
+         ELSE
+! Negative or clockwise case, larger bin upstream
+           Tmpfrq=Wrkspc(:,1)*frac
+           DO kk=NDirc, 1, -1
+              Wrkfrq=Wrkspc(:,kk)*frac 
+              Spectr(:,kk)=Wrkspc(:,kk) + Wrkfrq - Tmpfrq 
+              Tmpfrq=Wrkfrq
+           ENDDO
+         ENDIF
+
+! Speasturn completed
+
+        Return 
+        End Subroutine w3spectn
+!
+!  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!  This subroutine turn the wave action by an angle (deg) anti-clockwise
+!  so that it may be used in the rotated or stanadard system.
+!  First created:   26 Aug 2005   Jian-Guo Li
+!  Last modified:    9 Oct 2008   Jian-Guo Li
+!
+! Subroutine Interface:
+
+       Subroutine w3acturn( NDirc, NFreq, Alpha, Spectr )
+ 
+! Description:
+!   Rotates wave spectrum anticlockwise by angle alpha
+!
+! Subroutine arguments
+        IMPLICIT NONE
+        INTEGER, INTENT(IN) :: NFreq, NDirc         ! No. frequ and direc bins
+        REAL,    INTENT(IN) :: Alpha                ! Turning angle in degree
+        REAL, INTENT(INOUT) :: Spectr(NDirc, NFreq)  ! Wave action in and out
+
+! Local variables
+        INTEGER :: ii, jj, kk, nsft
+        REAL    :: Ddirc, frac, CNST
+        REAL, Dimension(NFreq)      ::  Wrkfrq, Tmpfrq
+        REAL, Dimension(NDirc,NFreq)::  Wrkspc
+
+! Check input bin numbers
+        IF( (NFreq .LT. 0) .OR. (NDirc .LT. 0) )  THEN
+           PRINT*, " Invalid bin number NF or ND", NFreq, NDirc
+           RETURN
+        ELSE
+           Ddirc=360.0/FLOAT(NDirc)
+        ENDIF
+
+! Work out shift bin number and fraction
+
+        CNST=Alpha/Ddirc
+        nsft=INT( CNST )
+        frac= CNST - FLOAT( nsft )
+!     PRINT*, ' nsft and frac =', nsft, frac
+
+! Shift nsft bins if >=1
+        IF( ABS(nsft) .GE. 1 )  THEN
+          DO ii=1, NDirc
+
+! Wave spectral direction bin number is assumed to increase Anti-clockwise from EAST
+! So shift nsft bins anticlockwise results in local bin number Decreases by nsft
+             jj=ii - nsft
+ 
+! As nsft may be either positive or negative depends on alpha, wrapping may
+! happen in either ends of the bin number train
+             IF( jj > NDirc )  jj=jj - NDirc
+             IF( jj < 1     )  jj=jj + NDirc
+
+! Copy the selected bin to the loop bin number
+             Wrkspc(ii,:)=Spectr(jj,:)
+ 
+          Enddo
+
+! If nsft=0, no need to shift, simply copy
+        ELSE
+            Wrkspc = Spectr
+        ENDIF
+
+! Pass fraction of wave energy in frac direction
+! Wave spectral direction bin number is assumed to increase Anti-clockwise from EAST
+! So Positive frac or anticlock case, smaller bin upstream
+        IF( frac > 0.0 ) THEN
+          Tmpfrq=Wrkspc(NDirc,:)*frac
+          DO kk=1, NDirc
+             Wrkfrq=Wrkspc(kk,:)*frac
+             Spectr(kk,:)=Wrkspc(kk,:) - Wrkfrq + Tmpfrq
+             Tmpfrq=Wrkfrq
+          ENDDO
+        ELSE
+! Negative or clockwise case, larger bin upstream
+          Tmpfrq=Wrkspc(1,:)*frac
+          DO kk=NDirc, 1, -1
+             Wrkfrq=Wrkspc(kk,:)*frac 
+             Spectr(kk,:)=Wrkspc(kk,:) + Wrkfrq - Tmpfrq 
+             Tmpfrq=Wrkfrq
+          ENDDO
+        ENDIF
+
+! Spectral turning completed
+
+       Return 
+       End Subroutine w3acturn
+!
+!Li  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!Li
+!Li  Merged UM source code for rotated grid, consisting the following
+!Li  original subroutines in UM 6.1
+!Li    LLTOEQ1A  WCOEFF1A  and  LBCROTWINDS1
+!Li  The last subroutine is modified to process only one level winds
+!Li  cpp directives are removed and required header C_Pi.h inserted.
+!Li         Jian-Guo Li     26 May 2005
+!Li
+!Li  The WCOEFF1A subroutine is merged into LLTOEQ to reduce repetition
+!Li  of the same calculations. Subroutine interface changed to 
+!Li  LLTOEQANGLE
+!Li         Jian-GUo Li     23 Aug 2005
+!Li
+!Li  Subroutine W3LLTOEQ   --------------------------------------------    
+!Li                                                                        
+!Li  Purpose:  Calculates latitude and longitude on equatorial             
+!Li            latitude-longitude (eq) grid used in regional               
+!Li            models from input arrays of latitude and                    
+!Li            longitude on standard grid. Both input and output           
+!Li            latitudes and longitudes are in degrees.                    
+!Li            Also calculate rotation angle in degree to tranform
+!Li            standard wind velocity into equatorial wind.
+!Li            Valid for 0<PHI_POLE<90 or new pole in N. hemisphere.
+!Li                                                                        
+!* Arguments:--------------------------------------------------------    
+      SUBROUTINE W3LLTOEQ ( PHI, LAMBDA, PHI_EQ, LAMBDA_EQ,     &              
+     &                 ANGLED, PHI_POLE, LAMBDA_POLE, POINTS )             
+                                                                           
+      IMPLICIT NONE                                                        
+                                                                           
+      INTEGER:: POINTS    !IN  Number of points to be processed             
+
+      REAL :: PHI_POLE,  & !IN  Latitude of equatorial lat-lon pole
+     &        LAMBDA_POLE  !INOUT  Longitude of equatorial lat-lon pole
+                                                                           
+      REAL, DIMENSION(POINTS) ::         &
+     &        PHI,       & !IN  Latitude
+     &        LAMBDA,    & !IN  Longitude
+     &        ANGLED,    & !OUT turning angle in deg for standard wind
+     &        LAMBDA_EQ, & !OUT Longitude in equatorial lat-lon coords
+     &        PHI_EQ       !OUT Latitude in equatorial lat-lon coords
+
+! Define local varables:-----------------------------------------------
+      REAL :: A_LAMBDA, A_PHI, E_LAMBDA, E_PHI, SIN_PHI_POLE, COS_PHI_POLE,  &
+     &        TERM1, TERM2, ARG, LAMBDA_ZERO, LAMBDA_POLE_KEEP
+      INTEGER   :: I                                                            
+      REAL, PARAMETER :: SMALL=1.0E-6
+
+! Constants from comdecks:---------------------------------------------
+
+      Real, Parameter :: Pi = 3.14159265358979323846  , &
+     &                   Pi_Over_180 = Pi/180.0       , &
+     &                   Recip_Pi_Over_180 = 180.0/Pi                     
+
+!*----------------------------------------------------------------------   
+
+! 1. Initialise local constants
+! Scale lambda pole to range -180 to 180 degs
+      LAMBDA_POLE_KEEP=LAMBDA_POLE
+      IF (LAMBDA_POLE.LE.-180.0) LAMBDA_POLE=LAMBDA_POLE+360.0
+      IF (LAMBDA_POLE.GT. 180.0) LAMBDA_POLE=LAMBDA_POLE-360.0
+
+! Latitude of zeroth meridian
+      LAMBDA_ZERO=LAMBDA_POLE+180.0
+! Sine and cosine of latitude of eq pole
+      IF (PHI_POLE >= 0.0) THEN
+        SIN_PHI_POLE =  SIN(PI_OVER_180*PHI_POLE)
+        COS_PHI_POLE =  COS(PI_OVER_180*PHI_POLE)
+      ELSE
+        SIN_PHI_POLE = -SIN(PI_OVER_180*PHI_POLE)
+        COS_PHI_POLE = -COS(PI_OVER_180*PHI_POLE)
+      ENDIF
+
+! 2. Transform from standard to equatorial latitude-longitude
+
+      DO 200 I= 1, POINTS
+
+! Scale longitude to range -180 to +180 degs
+
+      A_LAMBDA=LAMBDA(I)-LAMBDA_ZERO
+      IF(A_LAMBDA.GT. 180.0) A_LAMBDA=A_LAMBDA-360.
+      IF(A_LAMBDA.LE.-180.0) A_LAMBDA=A_LAMBDA+360.
+
+! Convert latitude & longitude to radians
+
+      A_LAMBDA=PI_OVER_180*A_LAMBDA
+      A_PHI=PI_OVER_180*PHI(I)
+
+! Compute eq latitude using equation (4.4)
+
+      ARG=-COS_PHI_POLE*COS(A_PHI)*COS(A_LAMBDA)   &
+     &    +SIN_PHI_POLE*SIN(A_PHI)
+      ARG=MIN(ARG, 1.0)
+      ARG=MAX(ARG,-1.0)
+      E_PHI=ASIN(ARG)
+      PHI_EQ(I)=RECIP_PI_OVER_180*E_PHI
+
+! Compute eq longitude using equation (4.6)
+
+      TERM1 = SIN_PHI_POLE*COS(A_PHI)*COS(A_LAMBDA)   &
+     &       +COS_PHI_POLE*SIN(A_PHI)
+      TERM2 = COS(E_PHI)
+      IF(TERM2 .LT. SMALL) THEN
+        E_LAMBDA=0.0
+      ELSE
+        ARG=TERM1/TERM2
+        ARG=MIN(ARG, 1.0)
+        ARG=MAX(ARG,-1.0)
+        E_LAMBDA=RECIP_PI_OVER_180*ACOS(ARG)
+        E_LAMBDA=SIGN(E_LAMBDA,A_LAMBDA)
+      ENDIF
+
+! Scale longitude to range 0 to 360 degs
+
+      IF(E_LAMBDA.GE.360.0) E_LAMBDA=E_LAMBDA-360.0
+      IF(E_LAMBDA.LT.  0.0) E_LAMBDA=E_LAMBDA+360.0
+      LAMBDA_EQ(I)=E_LAMBDA
+
+!Li  Calculate turning angle for standard wind velocity
+
+      E_LAMBDA=PI_OVER_180*LAMBDA_EQ(I)
+
+! Formulae used are from eqs (4.19) and (4.21)
+
+      TERM2=SIN(E_LAMBDA)
+      ARG= SIN(A_LAMBDA)*TERM2*SIN_PHI_POLE      &
+     &    +COS(A_LAMBDA)*COS(E_LAMBDA)
+      ARG=MIN(ARG, 1.0)
+      ARG=MAX(ARG,-1.0)
+      TERM1=RECIP_PI_OVER_180*ACOS(ARG)
+      ANGLED(I)=SIGN(TERM1,TERM2)
+!Li
+
+ 200  CONTINUE
+
+! Reset Lambda pole to the setting on entry to subroutine
+      LAMBDA_POLE=LAMBDA_POLE_KEEP
+
+      RETURN
+      END SUBROUTINE W3LLTOEQ 
+! 
+!Li  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!Li
+!Li  Merged UM source code for rotated grid, consiting the following
+!Li  original subroutines in UM 6.1
+!Li    EQTOLL1A  WCOEFF1A  and  LBCROTWINDS1
+!Li  The last subroutine is modified to process only one level winds
+!Li  cpp directives are removed and required header C_Pi.h inserted.
+!Li         Jian-Guo Li     26 May 2005
+!Li
+!Li  The WCOEFF1A subroutine is merged into EQTOLL to reduce repetition
+!Li  of the same calculations. Subroutine interface changed to 
+!Li  EQTOLLANGLE
+!Li  First created:   Jian-GUo Li     23 Aug 2005
+!Li  Last modified:   Jian-GUo Li     25 Feb 2008
+!Li
+!Li  Subroutine W3EQTOLL  --------------------------------------------
+!Li
+!Li  Purpose:  Calculates latitude and longitude on standard grid
+!Li            from input arrays of latitude and longitude on
+!Li            equatorial latitude-longitude (eq) grid used
+!Li            in regional models. Both input and output latitudes
+!Li            and longitudes are in degrees.
+!Li            Also calculate rotation angle in degree to tranform
+!Li            standard wind velocity into equatorial wind.
+!Li            Valid for 0<PHI_POLE<90 or new pole in N. hemisphere.
+!Li
+!Li  Arguments:--------------------------------------------------------
+
+      SUBROUTINE W3EQTOLL( PHI_EQ, LAMBDA_EQ, PHI, LAMBDA,   &
+     &                 ANGLED, PHI_POLE, LAMBDA_POLE, POINTS )
+
+      IMPLICIT NONE
+
+      INTEGER:: POINTS      !IN  Number of points to be processed
+
+      REAL :: PHI_POLE,   & !IN  Latitude of equatorial lat-lon pole
+     &        LAMBDA_POLE   !IN  Longitude of equatorial lat-lon pole
+
+      REAL, DIMENSION(POINTS) ::         &
+     &        PHI,       & !OUT Latitude
+     &        LAMBDA,    & !OUT Longitude (0 =< LON < 360)
+     &        ANGLED,    & !OUT turning angle in deg for standard wind
+     &        LAMBDA_EQ, & !IN  Longitude in equatorial lat-lon coords
+     &        PHI_EQ       !IN  Latitude in equatorial lat-lon coords
+
+! Local varables:------------------------------------------------------
+      REAL :: E_LAMBDA, E_PHI, A_LAMBDA, A_PHI,   &
+     &        SIN_PHI_POLE, COS_PHI_POLE,         &
+     &        TERM1, TERM2, ARG, LAMBDA_ZERO
+      INTEGER :: I
+
+      REAL, PARAMETER :: SMALL=1.0E-6
+
+! Constants from comdecks:---------------------------------------------
+
+      REAL, Parameter :: Pi = 3.14159265358979323846  , &
+     &                   Pi_Over_180 = Pi/180.0       , &
+     &                   Recip_Pi_Over_180 = 180.0/Pi
+
+! ----------------------------------------------------------------------
+
+! 1. Initialise local constants
+
+! Latitude of zeroth meridian
+      LAMBDA_ZERO=LAMBDA_POLE+180.0
+! Sine and cosine of latitude of eq pole
+      IF (PHI_POLE >= 0.0) THEN
+        SIN_PHI_POLE =  SIN(PI_OVER_180*PHI_POLE)
+        COS_PHI_POLE =  COS(PI_OVER_180*PHI_POLE)
+      ELSE
+        SIN_PHI_POLE = -SIN(PI_OVER_180*PHI_POLE)
+        COS_PHI_POLE = -COS(PI_OVER_180*PHI_POLE)
+      ENDIF
+
+! 2. Transform from equatorial to standard latitude-longitude
+
+      DO 200 I= 1, POINTS
+
+! Scale eq longitude to range -180 to +180 degs
+
+      E_LAMBDA=LAMBDA_EQ(I)
+      IF(E_LAMBDA.GT. 180.0) E_LAMBDA=E_LAMBDA-360.0
+      IF(E_LAMBDA.LT.-180.0) E_LAMBDA=E_LAMBDA+360.0
+
+! Convert eq latitude & longitude to radians
+
+      E_LAMBDA=PI_OVER_180*E_LAMBDA
+      E_PHI=PI_OVER_180*PHI_EQ(I)
+
+! Compute latitude using equation (4.7)
+
+      ARG=COS_PHI_POLE*COS(E_PHI)*COS(E_LAMBDA)    &
+     &   +SIN_PHI_POLE*SIN(E_PHI)
+      ARG=MIN(ARG, 1.0)
+      ARG=MAX(ARG,-1.0)
+      A_PHI=ASIN(ARG)
+      PHI(I)=RECIP_PI_OVER_180*A_PHI
+
+! Compute longitude using equation (4.8)
+
+      TERM1 = COS(E_PHI)*SIN_PHI_POLE*COS(E_LAMBDA)   &
+     &       -SIN(E_PHI)*COS_PHI_POLE
+      TERM2 = COS(A_PHI)
+      IF(TERM2.LT.SMALL) THEN
+        A_LAMBDA=0.0
+      ELSE
+        ARG=TERM1/TERM2
+        ARG=MIN(ARG, 1.0)
+        ARG=MAX(ARG,-1.0)
+        A_LAMBDA=RECIP_PI_OVER_180*ACOS(ARG)
+        A_LAMBDA=SIGN(A_LAMBDA,E_LAMBDA)
+        A_LAMBDA=A_LAMBDA+LAMBDA_ZERO
+      END IF
+
+! Scale longitude to range 0 to 360 degs
+
+      IF(A_LAMBDA.GE.360.0) A_LAMBDA=A_LAMBDA-360.0
+      IF(A_LAMBDA.LT.  0.0) A_LAMBDA=A_LAMBDA+360.0
+      LAMBDA(I)=A_LAMBDA
+
+!Li  Calculate turning angle for standard wind velocity
+
+      A_LAMBDA=PI_OVER_180*(LAMBDA(I)-LAMBDA_ZERO)
+
+! Formulae used are from eqs (4.19) and (4.21)
+
+      TERM2=SIN(E_LAMBDA)
+      ARG=SIN(A_LAMBDA)*TERM2*SIN_PHI_POLE     &
+     &           +COS(A_LAMBDA)*COS(E_LAMBDA)
+      ARG=MIN(ARG, 1.0)
+      ARG=MAX(ARG,-1.0)
+      TERM1=RECIP_PI_OVER_180*ACOS(ARG)
+      ANGLED(I)=SIGN(TERM1,TERM2)
+!Li
+
+ 200  CONTINUE
+
+      RETURN
+      END SUBROUTINE W3EQTOLL  
+
+!Li
+!/
+      SUBROUTINE STRSPLIT(STRING,TAB)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |          M. Accensi               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         29-Apr-2013 !
+!/                  +-----------------------------------+
+!/
+!/    29-Mar-2013 : Origination.                        ( version 4.10 )
+!/
+!  1. Purpose :
+!
+!     Splits string into words
+!
+!  2. Method :
+!
+!     finds spaces and loops
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       STRING   Str   O   String to be splitted
+!       TAB      Str   O   Array of strings
+!     ----------------------------------------------------------------
+!
+
+      IMPLICIT NONE
+
+
+
+      CHARACTER(LEN=1024), intent(IN)      :: STRING
+      CHARACTER(LEN=100), intent(INOUT)    :: TAB(*)
+      INTEGER                              :: cnt, I
+      CHARACTER(LEN=1024)                  :: tmp_str, ori_str
+
+! initializes arrays
+      ori_str=ADJUSTL(TRIM(STRING))
+      tmp_str=ori_str
+      cnt=0
+
+! counts the number of substrings
+      DO WHILE ((INDEX(tmp_str,' ').NE.0) .AND. (len_trim(tmp_str).NE.0))
+        tmp_str=ADJUSTL(tmp_str(INDEX(tmp_str,' ')+1:))
+        cnt=cnt+1
+        ENDDO
+!
+! reinitializes arrays
+!
+      tmp_str=ori_str
+! loops on each substring
+      DO I=1,cnt
+        TAB(I)=tmp_str(:INDEX(tmp_str,' '))
+        tmp_str=ADJUSTL(tmp_str(INDEX(tmp_str,' ')+1:))
+        END DO
+
+      RETURN
+!/
+!/ End of STRSPLIT ----------------------------------------------------- /
+!/
+      END SUBROUTINE STRSPLIT
+!/
+
+!/ ------------------------------------------------------------------- /
+   SUBROUTINE STR_TO_UPPER(STR)
+     character(*), intent(inout) :: str
+     integer :: i
+ 
+     DO i = 1, len(str)
+       select case(str(i:i))
+         case("a":"z")
+           str(i:i) = achar(iachar(str(i:i))-32)
+       end select
+       END DO 
+!/ End of STR_TO_UPPER
+!/ ------------------------------------------------------------------- /
+END SUBROUTINE STR_TO_UPPER
+
+!**********************************************************************
+!*                                                                    *
+!**********************************************************************
+      SUBROUTINE SSORT1 (X, Y, N, KFLAG)
+!***BEGIN PROLOGUE  SSORT
+!***PURPOSE  Sort an array and optionally make the same interchanges in
+!            an auxiliary array.  The array may be sorted in increasing
+!            or decreasing order.  A slightly modified QUICKSORT
+!            algorithm is used.
+!***LIBRARY   SLATEC
+!***CATEGORY  N6A2B
+!***TYPE      SINGLE PRECISION (SSORT-S, DSORT-D, ISORT-I)
+!***KEYWORDS  SINGLETON QUICKSORT, SORT, SORTING
+!***AUTHOR  Jones, R. E., (SNLA)
+!           Wisniewski, J. A., (SNLA)
+!***DESCRIPTION
+!
+!   SSORT sorts array X and optionally makes the same interchanges in
+!   array Y.  The array X may be sorted in increasing order or
+!   decreasing order.  A slightly modified quicksort algorithm is used.
+!
+!   Description of Parameters
+!      X - array of values to be sorted   (usually abscissas)
+!      Y - array to be (optionally) carried along
+!      N - number of values in array X to be sorted
+!      KFLAG - control parameter
+!            =  2  means sort X in increasing order and carry Y along.
+!            =  1  means sort X in increasing order (ignoring Y)
+!            = -1  means sort X in decreasing order (ignoring Y)
+!            = -2  means sort X in decreasing order and carry Y along.
+!
+!***REFERENCES  R. C. Singleton, Algorithm 347, An efficient algorithm
+!                 for sorting with minimal storage, Communications of
+!                 the ACM, 12, 3 (1969), pp. 185-187.
+!***REVISION HISTORY  (YYMMDD)
+!   761101  DATE WRITTEN
+!   761118  Modified to use the Singleton quicksort algorithm.  (JAW)
+!   890531  Changed all specific intrinsics to generic.  (WRB)
+!   890831  Modified array declarations.  (WRB)
+!   891009  Removed unreferenced statement labels.  (WRB)
+!   891024  Changed category.  (WRB)
+!   891024  REVISION DATE from Version 3.2
+!   891214  Prologue converted to Version 4.0 format.  (BAB)
+!   900315  CALLs to XERROR changed to CALLs to XERMSG.  (THJ)
+!   901012  Declared all variables; changed X,Y to SX,SY. (M. McClain)
+!   920501  Reformatted the REFERENCES section.  (DWL, WRB)
+!   920519  Clarified error messages.  (DWL)
+!   920801  Declarations section rebuilt and code restructured to use
+!           IF-THEN-ELSE-ENDIF.  (RWC, WRB)
+!***END PROLOGUE  SSORT
+!     .. Scalar Arguments ..
+      INTEGER KFLAG, N
+!     .. Array Arguments ..
+      REAL*4 X(*), Y(*)
+!     .. Local Scalars ..
+      REAL*4 R, T, TT, TTY, TY
+      INTEGER I, IJ, J, K, KK, L, M, NN
+!     .. Local Arrays ..
+      INTEGER IL(21), IU(21)
+!     .. External Subroutines ..
+!     None
+!     .. Intrinsic Functions ..
+      INTRINSIC ABS, INT
+!***FIRST EXECUTABLE STATEMENT  SSORT
+      NN = N
+      IF (NN .LT. 1) THEN
+        WRITE (*,*) 'The number of values to be sorted is not positive.'
+         RETURN
+      ENDIF
+!
+      KK = ABS(KFLAG)
+      IF (KK.NE.1 .AND. KK.NE.2) THEN
+         WRITE (*,*) 'The sort control parameter, K, is not 2, 1, -1, or -2.'
+         RETURN
+      ENDIF
+!
+!     Alter array X to get decreasing order if needed
+!
+      IF (KFLAG .LE. -1) THEN
+         DO 10 I=1,NN
+            X(I) = -X(I)
+   10    CONTINUE
+      ENDIF
+!
+      IF (KK .EQ. 2) GO TO 100
+!
+!     Sort X only
+!
+      M = 1
+      I = 1
+      J = NN
+      R = 0.375E0
+!
+   20 IF (I .EQ. J) GO TO 60
+      IF (R .LE. 0.5898437E0) THEN
+         R = R+3.90625E-2
+      ELSE
+         R = R-0.21875E0
+      ENDIF
+!
+   30 K = I
+!
+!     Select a central element of the array and save it in location T
+!
+      IJ = I + INT((J-I)*R)
+      T = X(IJ)
+!
+!     If first element of array is greater than T, interchange with T
+!
+      IF (X(I) .GT. T) THEN
+         X(IJ) = X(I)
+         X(I) = T
+         T = X(IJ)
+      ENDIF
+      L = J
+!
+!     If last element of array is less than than T, interchange with T
+!
+      IF (X(J) .LT. T) THEN
+         X(IJ) = X(J)
+         X(J) = T
+         T = X(IJ)
+!
+!        If first element of array is greater than T, interchange with T
+!
+         IF (X(I) .GT. T) THEN
+            X(IJ) = X(I)
+            X(I) = T
+            T = X(IJ)
+         ENDIF
+      ENDIF
+!
+!     Find an element in the second half of the array which is smaller
+!     than T
+!
+   40 L = L-1
+      IF (X(L) .GT. T) GO TO 40
+!
+!     Find an element in the first half of the array which is greater
+!     than T
+!
+   50 K = K+1
+      IF (X(K) .LT. T) GO TO 50
+!
+!     Interchange these elements
+!
+      IF (K .LE. L) THEN
+         TT = X(L)
+         X(L) = X(K)
+         X(K) = TT
+         GO TO 40
+      ENDIF
+!
+!     Save upper and lower subscripts of the array yet to be sorted
+!
+      IF (L-I .GT. J-K) THEN
+         IL(M) = I
+         IU(M) = L
+         I = K
+         M = M+1
+      ELSE
+         IL(M) = K
+         IU(M) = J
+         J = L
+         M = M+1
+      ENDIF
+      GO TO 70
+!
+!     Begin again on another portion of the unsorted array
+!
+   60 M = M-1
+      IF (M .EQ. 0) GO TO 190
+      I = IL(M)
+      J = IU(M)
+!
+   70 IF (J-I .GE. 1) GO TO 30
+      IF (I .EQ. 1) GO TO 20
+      I = I-1
+!
+   80 I = I+1
+      IF (I .EQ. J) GO TO 60
+      T = X(I+1)
+      IF (X(I) .LE. T) GO TO 80
+      K = I
+!
+   90 X(K+1) = X(K)
+      K = K-1
+      IF (T .LT. X(K)) GO TO 90
+      X(K+1) = T
+      GO TO 80
+!
+!     Sort X and carry Y along
+!
+  100 M = 1
+      I = 1
+      J = NN
+      R = 0.375E0
+!
+  110 IF (I .EQ. J) GO TO 150
+      IF (R .LE. 0.5898437E0) THEN
+         R = R+3.90625E-2
+      ELSE
+         R = R-0.21875E0
+      ENDIF
+!
+  120 K = I
+!
+!     Select a central element of the array and save it in location T
+!
+      IJ = I + INT((J-I)*R)
+      T = X(IJ)
+      TY = Y(IJ)
+!
+!     If first element of array is greater than T, interchange with T
+!
+      IF (X(I) .GT. T) THEN
+         X(IJ) = X(I)
+         X(I) = T
+         T = X(IJ)
+         Y(IJ) = Y(I)
+         Y(I) = TY
+         TY = Y(IJ)
+      ENDIF
+      L = J
+!
+!     If last element of array is less than T, interchange with T
+!
+      IF (X(J) .LT. T) THEN
+         X(IJ) = X(J)
+         X(J) = T
+         T = X(IJ)
+         Y(IJ) = Y(J)
+         Y(J) = TY
+         TY = Y(IJ)
+!
+!        If first element of array is greater than T, interchange with T
+!
+         IF (X(I) .GT. T) THEN
+            X(IJ) = X(I)
+            X(I) = T
+            T = X(IJ)
+            Y(IJ) = Y(I)
+            Y(I) = TY
+            TY = Y(IJ)
+         ENDIF
+      ENDIF
+!
+!     Find an element in the second half of the array which is smaller
+!     than T
+!
+  130 L = L-1
+      IF (X(L) .GT. T) GO TO 130
+!
+!     Find an element in the first half of the array which is greater
+!     than T
+!
+  140 K = K+1
+      IF (X(K) .LT. T) GO TO 140
+!
+!     Interchange these elements
+!
+      IF (K .LE. L) THEN
+         TT = X(L)
+         X(L) = X(K)
+         X(K) = TT
+         TTY = Y(L)
+         Y(L) = Y(K)
+         Y(K) = TTY
+         GO TO 130
+      ENDIF
+!
+!     Save upper and lower subscripts of the array yet to be sorted
+!
+      IF (L-I .GT. J-K) THEN
+         IL(M) = I
+         IU(M) = L
+         I = K
+         M = M+1
+      ELSE
+         IL(M) = K
+         IU(M) = J
+         J = L
+         M = M+1
+      ENDIF
+      GO TO 160
+!
+!     Begin again on another portion of the unsorted array
+!
+  150 M = M-1
+      IF (M .EQ. 0) GO TO 190
+      I = IL(M)
+      J = IU(M)
+!
+  160 IF (J-I .GE. 1) GO TO 120
+      IF (I .EQ. 1) GO TO 110
+      I = I-1
+!
+  170 I = I+1
+      IF (I .EQ. J) GO TO 150
+      T = X(I+1)
+      TY = Y(I+1)
+      IF (X(I) .LE. T) GO TO 170
+      K = I
+!
+  180 X(K+1) = X(K)
+      Y(K+1) = Y(K)
+      K = K-1
+      IF (T .LT. X(K)) GO TO 180
+      X(K+1) = T
+      Y(K+1) = TY
+      GO TO 170
+!
+!     Clean up
+!
+  190 IF (KFLAG .LE. -1) THEN
+         DO 200 I=1,NN
+            X(I) = -X(I)
+  200    CONTINUE
+      ENDIF
+      RETURN
+      END SUBROUTINE SSORT1
+
+
+!*********************************************************************
+   SUBROUTINE DIAGONALIZE(a,d,v,nrot)
+!*********************************************************************
+   IMPLICIT NONE
+   INTEGER,                          INTENT(out)   :: nrot
+   DOUBLE PRECISION, DIMENSION(:)  , INTENT(OUT)   ::d
+   DOUBLE PRECISION, DIMENSION(:,:), INTENT(INOUT) ::a
+   DOUBLE PRECISION, DIMENSION(:,:), INTENT(OUT)   ::v
+
+   INTEGER    i,j,ip,iq,n
+   DOUBLE PRECISION       c,g,h,s,sm,t,tau,theta,tresh
+   DOUBLE PRECISION    , DIMENSION(size(d)) ::b,z
+   LOGICAL, DIMENSION(size(d),size(d)) :: upper_triangle
+   
+   n=size(d)
+   v(:,:)=0.
+   upper_triangle(:,:)=.FALSE.
+   DO I=1,n
+      v(I,I)=1.
+      b(I)=a(I,I)
+      DO J=I+1,n
+         upper_triangle(I,J)=.TRUE.
+      ENDDO
+   ENDDO
+   d(:)=b(:)
+   z(:)=0.0
+   nrot=0
+      DO I=1,50
+      sm=SUM(ABS(a),mask=upper_triangle)
+      IF (sm.EQ.0.0) RETURN
+      tresh=merge(0.2*sm/n**2,0.0D0,i<4)
+      DO ip=1,n-1
+         do iq=ip+1,n
+            g=100.0*abs(a(ip,iq))
+            IF((i > 4).AND.(ABS(d(ip))+g.EQ.abs(d(ip))) &
+               .AND.(ABS(d(iq))+g.EQ.abs(d(iq)))) THEN
+               a(ip,iq)=0.0
+            ELSE IF (abs(a(ip,iq)) > tresh) THEN
+               h=d(iq)-d(ip)
+               if (abs(h)+g == abs(h)) THEN
+                  t=a(ip,iq)/h
+               ELSE
+                  theta=0.5*h/a(ip,iq)
+                  t=1.0/(abs(theta)+sqrt(1.0+theta**2))
+                  IF ( theta < 0.0) t=-t
+               ENDIF
+               c=1.0/sqrt(1+t**2)
+               s=t*c
+               tau=s/(1.0+c)
+               h=t*a(ip,iq)
+               z(ip)=z(ip)-h
+               z(iq)=z(iq)+h
+               d(ip)=d(ip)-h
+               d(iq)=d(iq)+h
+               a(ip,iq)=0.0
+               IF (ip.GE.1) CALL ROTATE(a(1:ip-1,ip),a(1:ip-1,iq))
+!The IF test was added by F.A. (2005/04/04) because of the following error:
+!Subscript out of range. Location: line 593 column 36 of 'cb_botsc.f90'
+!Subscript number 1 has value 0 in array 'A'
+               CALL ROTATE(a(ip,ip+1:iq-1),a(ip+1:iq-1,iq))
+               CALL ROTATE(a(ip,iq+1:n),a(iq,iq+1:n))
+               CALL ROTATE(v(:,ip),v(:,iq))
+               nrot=nrot+1
+            ENDIF
+         ENDDO
+      ENDDO
+      b(:)=b(:)+z(:)
+      d(:)=b(:)
+      z(:)=0.0
+   ENDDO
+   WRITE(6,*) 'Too many iterations in DIAGONALIZE'
+   CONTAINS
+   SUBROUTINE ROTATE(X1,X2)
+   DOUBLE PRECISION, DIMENSION(:), INTENT(INOUT) :: X1,X2
+   DOUBLE PRECISION, DIMENSION(size(X1)) :: MEM
+   MEM(:)=X1(:)
+   X1(:)=X1(:)-s*(X2(:)+X1(:)*tau)
+   X2(:)=X2(:)+s*(MEM(:)-X2(:)*tau)
+   END SUBROUTINE ROTATE
+   END SUBROUTINE DIAGONALIZE
+
+!/
+!/ End of module W3SERVMD -------------------------------------------- /
+!/
+      END MODULE W3SERVMD

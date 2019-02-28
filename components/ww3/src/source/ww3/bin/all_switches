@@ -1,0 +1,84 @@
+#!/bin/sh
+# --------------------------------------------------------------------------- #
+# all_switches : Make a list of all switches hat are found in the program     #
+#                (.ftn) files of WAVEWATCH III.                               #
+#                                                                             #
+# use         : all_switches                                                  #
+#                                                                             #
+#                                                      Hendrik L. Tolman      #
+#                                                      May 2009               #
+#                                                                             #
+#    Copyright 2009 National Weather Service (NWS),                           #
+#       National Oceanic and Atmospheric Administration.  All rights          #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                   #
+#       No unauthorized use without permission.                               #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# 1. Preparations                                                             #
+# --------------------------------------------------------------------------- #
+# 1.a Internal variables
+
+# The following line must not be removed: it is a switch for local install
+# so that all bin scripts point to the local wwatch3.env
+  export ww3_env=/users/sbrus/climate/ww3/wwatch3.env
+# For manual install (without install_ww3_tar or install_ww3_svn) make sure to
+# either use the generic ww3_env or to add your own ww3_env="${my_directory}"
+
+  if [ ${WWATCH3_ENV} ]; then ww3_env="${WWATCH3_ENV}"; fi # alternate setup file
+
+# 1.b ID header  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  echo ' '
+  echo 'Find all switches in WAVEWATCH III'
+  echo '----------------------------------'
+
+# 1.c Get env. data  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  if test -f $ww3_env
+  then
+    set `grep WWATCH3_DIR $ww3_env` ; shift
+    main_dir="$*"
+  else
+    echo "*** Set-up file $ww3_env not found ***"
+    exit
+  fi
+
+  cd $main_dir/ftn
+
+# --------------------------------------------------------------------------- #
+# 2. Strip all switches from sources                                          #
+# --------------------------------------------------------------------------- #
+
+  all=`sed -n '/^!\/[[:alpha:]]/'p *.ftn | awk '{print $1}' | \
+       sed 's/^!\///' | sed 's/[\/!].*$//' | sort -u`
+
+  set $all
+
+# --------------------------------------------------------------------------- #
+# 3. Display in organized manner                                              #
+# --------------------------------------------------------------------------- #
+
+  last=
+  line='   '
+
+  while [ "$#" -gt '0' ]
+  do
+    next=$1 ; shift
+    if [ -z "$last" ] ; then
+      line="$line $next"
+    else
+      if [ "`echo $last | cut -c1-1`" != "`echo $next | cut -c1-1`" ] ; then
+        echo "$line"
+        line='   '
+      fi
+      line="$line $next"
+    fi
+    last=$next
+  done
+
+  echo "$line"
+
+  echo ' '
+  echo 'end of all_switches'
+
+# End of all_switches ------------------------------------------------------- #

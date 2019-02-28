@@ -1,0 +1,2958 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3SIC3MD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         04-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!/    Updates:
+!/    29-May-2014 : Generalization with turbulent BL
+!/           (F.A. method imported from IC2 by E.R.)    ( version 5.01 )
+!/    04-Jan-2016 : Importing code provided by S. Cheng
+!/           (improved solution methods for Wang and Shen model)
+!/
+!  1. Purpose :
+!
+!     Calculate ice source term S_{ice} according to a viscoelastic sea
+!     ice model (Wang and Shen 2010).
+!
+!     Reference: Wang, R., and H. H. Shen (2010), Gravity waves 
+!     propagating into an ice‐covered ocean: A viscoelastic model, J. 
+!     Geophys. Res., 115, C06024, doi:10.1029/2009JC005591 .
+!
+!  2. Variables and types :
+!      Name              Type  Scope    Description
+!     ------------------------------------------------------------------
+!      IC3TABLE_CHENG    Int.  Public   Table of wave number k_r, 
+!                                       attenuation k_i and group
+!                                       velocity cg
+!      IC3_DITK          R.A.  Private  Ice thickness increment
+!      IC3_MAXITK        R.A.  Private  Maximum ice thickness, the code
+!                                       may fail for situation with ice
+!                                       thickness larger than this value
+!
+!  3. Subroutines and functions :
+!
+!      Name              Type  Scope    Description
+!     ------------------------------------------------------------------
+!      W3SIC3            Subr. Public   Ice source term.
+!      BSDET             Func. Private  Calculate the determinant for
+!                                       the dispersion relation.
+!      WN_CMPLX_V1       Func. Private  Calculate complex wavenumber in 
+!                                       ice
+!      WN_PRECALC_CHENG    Subr. Private  Calculate complex wavenumber in 
+!                                       ice
+!      WN_CMPLX_HF       Func. Private  Like above, but for h-f waves
+!      CMPLX_ROOT_MULLER Func. Private  Find root for complex numbers
+!      FUN_ZHAO          Func. Private  Wrapper function for FUNC0/FUNC1
+!      FUNC0_ZHAO        Func. Private
+!      FUNC1_ZHAO        Func. Private
+!      W3IC3WNCG         Subr. Public   Calculate kr,ki and cg for all
+!                                       frequency at each grid point
+!      IC3PRECALC_CHENG  Subr. Private  Calculate kr,ki and cg table for
+!                                       all frequencies and ice
+!                                       thickness from 0~IC3_MAXITK
+!      CGinIC3_CHENG           func. Private  Calculate group velocity
+!                                       related to IC3 model
+!      F_ZHAO            Func. Private  Wrapper function for double/
+!                                       quadruple precision
+!     ------------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!     See subroutine documentation.
+!
+!  5. Remarks :
+!
+!  6. Switches :
+!
+!     See subroutine documentation.
+!
+!  7. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      PUBLIC  ::  W3SIC3, W3IC3WNCG_V1, W3IC3WNCG_CHENG
+      PRIVATE ::  WN_CMPLX_V1, WN_CMPLX_HF
+      PRIVATE ::  CMPLX_ROOT_MULLER_V1, CMPLX_ROOT_MULLER_CHENG
+      PRIVATE ::  F_ZHAO_V1, F_ZHAO_CHENG
+      PRIVATE ::  FUNC1_ZHAO, FUNC0_ZHAO, BSDET
+      INTEGER,SAVE ::  CALLEDIC3TABLE = 0
+      REAL,PRIVATE,PARAMETER    ::  IC3_DITK  = 0.01, IC3_MAXITK = 3.
+      PUBLIC  ::  IC3TABLE_CHENG
+      PRIVATE ::  IC3PRECALC_CHENG, CGINIC3_CHENG
+
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+!/
+      SUBROUTINE W3SIC3 (A, DEPTH, CG, WN, IX, IY, S, D)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         11-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (copied from SICE1)     ( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/
+!/        FIXME   : Move field input to W3SRCE and provide
+!/     (S.Zieger)   input parameter to W3SIC1 to make the subroutine
+!/                : versatile for point output processors ww3_outp
+!/                  and ww3_ounp.
+!/
+!/    Copyright 2009 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Calculate ice source term S_{ice} according to a viscoelastic sea
+!     ice model (Wang and Shen 2010).
+!
+!     Reference: Wang, R., and H. H. Shen (2010), Gravity waves 
+!     propagating into an ice‐covered ocean: A viscoelastic model, J. 
+!     Geophys. Res., 115, C06024, doi:10.1029/2009JC005591 .
+!
+!/ ------------------------------------------------------------------- /
+!
+!  2. Method :
+!
+!     Regarding i/o (general to all Sice modules): S_{ice} source term
+!     is calculated using up to 5 parameters read from input files.
+!     These parameters are allowed to vary in space and time.
+!     The parameters control the exponential decay rate k_i
+!     Since there are 5 parameters, this permits description of
+!     dependence of k_i on frequency or wavenumber.
+!
+!     Sea ice affects the wavenumber k of wind-generated ocean waves.
+!     The ice-modified wavenumber can be expressed as a complex number
+!     k = k_r + i*k_i, with the real part k_r representing impact of
+!     the sea ice on the physical wavelength and propagation speeds, 
+!     producing something analogous to shoaling and refraction by 
+!     bathymetry, whereas the imaginary part of the complex 
+!     wavenumber, k_i, is an exponential decay coefficient 
+!     k_i(x,y,t,sigma) (depending on location, time and frequency, 
+!     respectively), representing wave attenuation, and can be 
+!     introduced in a wave model such as WW3 as S_ice/E=-2*Cg*k_i, 
+!     where S_ice is one of several dissipation mechanisms, along 
+!     with whitecapping, for example, S_ds=S_wc+S_ice+⋯. The k_r - 
+!     modified by ice would enter the model via the C calculations 
+!     on the left-hand side of the governing equation.The fundamentals
+!     are straightforward, e.g. Rogers and Holland (2009 and 
+!     subsequent unpublished work) modified a similar model, SWAN 
+!     (Booij et al. 1999) to include the effects of a viscous mud 
+!     layer using the same approach (k = k_r + i*k_i) previously.
+!
+!     General approach is analogous to Rogers and Holland (2009) 
+!         approach for mud.
+!     See text near their eq. 1 :
+!       k        = k_r  +  i * k_i
+!       eta(x,t) = Real( a * exp( i * ( k * x - sigma * t ) ) )
+!       a        = a0 * exp( -k_i * x )
+!       S / E    = -2 * Cg * k_i (see also Komen et al. (1994, pg. 170)
+!
+!     Following W3SBT1 as a guide, equation 1 of W3SBT1 says:
+!         S = D * E
+!     However, the code of W3SBT1 has
+!         S = D * A
+!     This leads me to believe that the calling routine is 
+!         expecting "S/sigma" not "S"
+!     Thus we will use D = S/E = -2 * Cg * k_i
+!
+!     The calling routine is expecting "S/sigma" not "S"
+!        Thus we will use D = S/E = -2 * Cg * k_i
+!        (see also documentation of W3SIC1)
+!
+!     Notes regarding numerics:
+!
+!     Experiments with constant k_i values suggest that results may be
+!        dependent on resolution if insufficient resolution is used.
+!        For detailed information, see documentation of W3SIC1.
+!
+!     Note regarding applicability/validity:
+!
+!     The Wang and Shen model is intended as a generalized model for 
+!     various types of ice cover. It is a "continuum" model for  
+!     which the same model is used from the ice edge to the ice 
+!     interior. Though the ice types are expected to be very different 
+!     from the edge to the interior, this is accomodated by the relative
+!     importance of the "effective viscosity" and the "modulus of 
+!     elasticity". At the ice edge, where one finds frazil ice, pancake
+!     ice, or ice floes much smaller than the wave length, the "viscous"
+!     component of the model is believed to be most appropriate. At the 
+!     interior, where one finds a continuous ice sheet, the "elastic 
+!     model" component of the generalized visco-elastic model is 
+!     expected to be appropriate. In addition to the case of continuous
+!     ice, Wang and Shen argue that the elastic model is also applicable
+!     to ice floes when the floe sizes are large relative to the 
+!     wavelength. So to summarize,
+!     * frazil ice, pancake ice, and floes smaller than wavelength :
+!          viscosity dominates
+!     * continuous ice, and floes larger than wavelength :
+!          elasticity dominates
+!     * intermediate conditions: neither dominates
+!     All this is accomodated in WW3 by using non-uniform specification
+!     of viscosity and elasticity. 
+!
+!     In the case where a user wishes to utilize only the "viscous 
+!     model" aspect of Wang and Shen, and use an alternative scheme for
+!     continous ice and large ice floes, we allow this through the use 
+!     of a user-defined namelist parameter "IC3MAXTHK". Floe size is 
+!     not (at time of writing) an output available from ice model CICE,
+!     so we use the ice thickness as a way to anticipate the floe size.
+!     When ice thickness exceeds IC3MAXTHK, WW3 will use another model 
+!     in place of the Wang and Shen formulation :
+!
+!     S_ice by F.A., an estimation of dissipation by turbulence 
+!     at the ice-water interface. It uses only namelists for input, and
+!     no space/time varying input (though of course ice concentration is
+!     space/time varying). Unlike Liu et al. (IC2), it does not use 
+!     ice thickness and does not yield a new C|Cg|k (i.e. it is non-
+!     dispersive), but it has the very nice feature of not requiring  
+!     an eddy viscosity, which is a major drawback of the Liu et al.  
+!     model. That is why we use it here, vs. Liu et al.
+!     (S_ice by Liu et al. and S_ice by F.A. are the two options 
+!     available in IC2, i.e. w3sic2md.ftn)
+!
+!     At time of writing (March 23 2015), there may be some problems 
+!     with the root-selection of IC3. For example with these settings:
+!     hice=1   ; rho_ice=917.0 ; emod=4.9e+12 ; visc=5e+7 ; 
+!     h_water=deep (without using the IC3MAXTHK feature) the solution 
+!     is rather irregular:
+!     T=11.11    k_i = 215.0e-5    
+!     T=10       k_i = 266.0e-5   
+!     T=9        k_i =   1.4e-5   
+!     T=8.1      k_i =   1.7e-5    
+!     With hice=0.1, ki is monotonically increasing in that range:
+!     T=11.11    k_i = 0.97e-5 
+!     T=10       k_i = 2.64e-5 
+!     T=9        k_i = 3.90e-5 
+!     T=8.1      k_i = 4.47e-5 
+!     Of course, when using IC3MAXTHK=0.1, the first example (hice=1)
+!     would switch to the "S_ice by F.A." model, and so this problem
+!     is circumvented.
+!     
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       A       R.A.  I   Action density spectrum (1-D).
+!       DEPTH   Real  I   Local water depth.
+!       CG      R.A.  I   Group velocities.
+!       WN      R.A.  I   Wavenumbers.
+!       IX,IY   I.S.  I   Grid indices.
+!       S       R.A.  O   Source term (1-D version).
+!       D       R.A.  O   Diagonal term of derivative (1-D version).
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing (!/S switch).
+!      PRT2DS    Subr. W3ARRYMD Print plot output (!/T1 switch).
+!      OUTMAT    Subr. W3ARRYMD Matrix output (!/T2 switch).
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. W3SRCEMD Source term integration.
+!      W3EXPO    Subr.   N/A    ASCII Point output post-processor.
+!      W3EXNC    Subr.   N/A    NetCDF Point output post-processor.
+!      GXEXPO    Subr.   N/A    GrADS point output post-processor.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!     None.
+!
+!  7. Remarks :
+!
+!     If ice parameter 1 is zero, no calculations are made.
+!
+!     Code by S. Cheng sets NOICE=.TRUE. if ISNAN(ICECOEF1).
+!     Comments are "maps may not be compatible"
+!     This feature is not understood by me (ER) and so omitted.
+!
+!/ ------------------------------------------------------------------- /
+!     On array size, S. Cheng says: 
+!     Upon checking the origin of CG, I would say CG = CG_IC3, this is 
+!     the topic ‘call W3IC3WNCG twice’. Recently I find they are not 
+!     exactly the same due to calculation and smoothing of cg using 
+!     several neighbor points. For different input array size, results 
+!     are slightly different. In subr. w3wave, the size of input arrays 
+!     is 0:NK+1, while in w3sic3, the size of all input arrays is 1:NK. 
+!     This array size  difference is reflected in the resulting cg. The 
+!     small difference in cg between calling IC3 twice or just calling 
+!     once produces small difference in SWH. To eliminate this small 
+!     difference, I suggest to keep CG instead of CG_IC3, as well as WN, 
+!     WN_I, because other source terms use CG. I confirmed this change 
+!     would make results of ICE the same whether calling twice or once 
+!     by defining dimension WN_R, WN_I, CG_IC3 as 0:NK+1 instead of 
+!     1:NK. Then CG_IC3 = CG.
+!/ ------------------------------------------------------------------- /
+!     On optimization, S. Cheng says:
+!     For Wang and Shen’s model, D does not change in the loop 
+!     corresponding to NSTEPS in subr. W3SRCE. I find the most efficient
+!     and easy way to speed up is that Add D and NSTEPS as inputs of
+!     W3SIC3
+!     If NSTEPS==1
+!          Current Wang and Shen’s model code above.
+!     ELSE
+!          S = D*A
+!     Endif 
+!/ ------------------------------------------------------------------- /
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!     !/T   Enable general test output.
+!     !/T0  2-D print plot of source term.
+!     !/T1  Print arrays.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: TPI, DWAT, ABMIN, DELAB, SIZEFWTABLE,      &
+                           FWTABLE, GRAV
+      USE W3ODATMD, ONLY: NDSE, IAPROC, NAPROC, NAPERR
+!     USE WMMDATMD, ONLY: IMPROC, NMPERR ! WMMDATMD unavailable to outp
+      USE W3SERVMD, ONLY: EXTCDE
+      USE W3GDATMD, ONLY: NK, NTH, NSPEC, SIG, MAPWN, IC3PARS, DDEN,  & 
+                          FLAGLL, YGRD, GTYPE, RLGTYPE
+      USE W3IDATMD, ONLY: ICEP1, ICEP2, ICEP3, ICEP4, ICEP5, ICEI,    &
+                          INFLAGS2
+!/T      USE W3ODATMD, ONLY: NDST
+!/S      USE W3SERVMD, ONLY: STRACE
+!/T0      USE W3ARRYMD, ONLY: PRT2DS
+!/T1      USE W3ARRYMD, ONLY: OUTMAT
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      REAL, INTENT(IN)        :: CG(NK),  WN(NK), A(NSPEC), DEPTH
+      REAL, INTENT(OUT)       :: S(NSPEC), D(NSPEC)
+      INTEGER, INTENT(IN)     :: IX, IY
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+      INTEGER                    :: ITH
+!/T0      REAL                   :: DOUT(NK,NTH)
+      INTEGER                    :: IKTH, IK
+      REAL                       :: ICECOEF1, ICECOEF2, ICECOEF3, &
+                                    ICECOEF4, ICECOEF5, ICECONC
+      REAL, DIMENSION(NK)        :: D1D, WN_I, WN_R, CG_IC3, CG_TMP
+      LOGICAL                    :: NOICE
+      REAL                       :: VISCM=1.83E-6
+      REAL                       :: FREQ
+!  ............VISCM=1.83E-6 :  molecular viscosity of water at freezing
+      REAL                    :: PTURB, PVISC, DTURB, DVISC,   & 
+                                 SMOOTH, RE, UORB, AORB, EB,   &
+                                 DELI1, DELI2, FW, XI, FTURB,  &
+                                 MAXTHK, MAXCNC, USE_CHENG,    &
+                                 USE_CGICE, FIXEDHICE,   &
+                                 FIXEDVISC,FIXEDDENS,FIXEDELAS
+      INTEGER                 :: IND, IS, NUMIN
+!
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3SIC3')
+!
+! 0.  Initializations ------------------------------------------------ /
+!
+!
+      D        = 0.0
+      D1D      = 0.0
+!
+      WN_R     = WN
+      WN_I     = 0.0
+      CG_IC3   = 0.0
+      CG_TMP   = 0.0
+!
+      ICECOEF1 = 0.0
+      ICECOEF2 = 0.0
+      ICECOEF3 = 0.0
+      ICECOEF4 = 0.0
+      ICECOEF5 = 0.0
+      ICECONC  = 0.0
+!
+!     Rename variables to make code easier to read.
+      MAXTHK=IC3PARS(1)
+      MAXCNC=IC3PARS(8)
+      USE_CHENG=IC3PARS(9)
+      USE_CGICE=IC3PARS(12)
+      FIXEDHICE=IC3PARS(13)
+      FIXEDVISC=IC3PARS(14)
+      FIXEDDENS=IC3PARS(15)
+      FIXEDELAS=IC3PARS(16)
+            
+!     --- Error checking for input ----------------------------------- /
+!     --- Allow one and only one input option for each variable ------ /
+      NUMIN=0
+      IF (INFLAGS2(-7)) NUMIN=NUMIN+1
+      IF (FIXEDHICE.GE.0.0) NUMIN=NUMIN+1
+      IF (NUMIN.NE.1) THEN
+         IF ( IAPROC .EQ. NAPERR )                       &
+         WRITE (NDSE,1001) 'ICE PARAMETER 1 (HICE)',NUMIN
+         CALL EXTCDE(2)
+      ENDIF
+
+      NUMIN=0
+      IF (INFLAGS2(-6)) NUMIN=NUMIN+1
+      IF (FIXEDVISC.GE.0.0) NUMIN=NUMIN+1
+      IF (NUMIN.NE.1) THEN
+         IF ( IAPROC .EQ. NAPERR )                       &
+         WRITE (NDSE,1001) 'ICE PARAMETER 2 (VISC)',NUMIN
+         CALL EXTCDE(2)
+      ENDIF
+
+      NUMIN=0
+      IF (INFLAGS2(-5)) NUMIN=NUMIN+1
+      IF (FIXEDDENS.GE.0.0) NUMIN=NUMIN+1
+      IF (NUMIN.NE.1) THEN
+         IF ( IAPROC .EQ. NAPERR )                       &
+         WRITE (NDSE,1001) 'ICE PARAMETER 3 (DENS)',NUMIN
+         CALL EXTCDE(2)
+      ENDIF
+
+      NUMIN=0
+      IF (INFLAGS2(-4)) NUMIN=NUMIN+1
+      IF (FIXEDELAS.GE.0.0) NUMIN=NUMIN+1
+      IF (NUMIN.NE.1) THEN
+         IF ( IAPROC .EQ. NAPERR )                       &
+         WRITE (NDSE,1001) 'ICE PARAMETER 4 (ELAS)',NUMIN
+         CALL EXTCDE(2)
+      ENDIF
+
+!     --- Set local value to be used subsequently (ICEPx variables 
+!         are not used beyond this point). --------------------------- /
+      IF (INFLAGS2(-7)) THEN
+         ICECOEF1 = ICEP1(IX,IY) ! ice thickness
+      ELSE
+         ICECOEF1 = FIXEDHICE
+      ENDIF
+
+      IF (INFLAGS2(-6)) THEN
+         ICECOEF2 = ICEP2(IX,IY) ! effective viscosity of ice cover
+      ELSE
+         ICECOEF2 = FIXEDVISC
+      ENDIF
+
+      IF (INFLAGS2(-5)) THEN
+         ICECOEF3 = ICEP3(IX,IY) ! density of ice
+      ELSE
+         ICECOEF3 = FIXEDDENS
+      ENDIF
+
+      IF (INFLAGS2(-4)) THEN
+         ICECOEF4 = ICEP4(IX,IY) ! effective shear modulus of ice
+      ELSE
+         ICECOEF4 = FIXEDELAS
+      ENDIF
+
+!     ICECOEF5 = ICEP5(IX,IY) ! ICEP5 is inactive in W3SIC3
+
+      IF (INFLAGS2(4))  ICECONC = ICEI(IX,IY)
+
+!
+! 1.  No ice --------------------------------------------------------- /
+!
+      NOICE=.FALSE.
+      IF (ICECOEF1==0.0) NOICE=.TRUE.
+      IF (INFLAGS2(4).AND.(ICECONC==0.0)) NOICE=.TRUE.
+
+      IF ( NOICE ) THEN
+
+         D1D=0.0
+!
+! 2.  Ice ------------------------------------------------------------ /
+      ELSEIF ( USE_CHENG==1.0 .AND.  &
+             ((ICECOEF1.LE.MAXTHK).OR.(ICECONC.LE.MAXCNC)) ) THEN
+
+! 2.a Write test output ---------------------------------------------- /
+!/T38        WRITE (NDST,9000) DEPTH,ICECOEF1,ICECOEF2,ICECOEF3,ICECOEF4
+
+! 2.b Make calculations using Cheng routines ------------------------- /
+
+!     --- Input to routine (part 1): 6 ice parameters from single
+!         precision variables. ---------------------------------------
+
+         CALL W3IC3WNCG_CHENG(WN_R, WN_I, CG_IC3, ICECOEF1, ICECOEF2, &
+                                  ICECOEF3, ICECOEF4, DEPTH)
+!
+!    --- calculate source term --------------------------------------- /
+!    --- see Remarks section re: array size -------------------------- /
+         IF ( USE_CGICE==1.0 ) THEN
+            CG_TMP=CG_IC3
+         ELSE
+            CG_TMP=CG
+         ENDIF
+         DO IK=1, NK
+            !            recall that D=S/E=-2*Cg*k_i
+            D1D(IK)= -2.0 * CG_TMP(IK) * WN_I(IK)
+         END DO
+         !
+
+      ELSEIF ( (ICECOEF1 .LE. MAXTHK) .OR. (ICECONC .LE. MAXCNC) ) THEN
+!.......... e.g. if ice thickness is .le. 10 cm
+!...............or concentration is .le. 1.0
+!
+! 2.a Write test output ---------------------------------------------- /
+!/T38        WRITE (NDST,9000) DEPTH,ICECOEF1,ICECOEF2,ICECOEF3,ICECOEF4
+!
+! 2.b Make calculations using original routines ---------------------- /
+!     --- Input to routine (part 1): 6 ice parameters from single
+!         precision variables. ---------------------------------------
+
+         CALL W3IC3WNCG_V1(WN_R, WN_I, CG_IC3, ICECOEF1, ICECOEF2, &
+              ICECOEF3, ICECOEF4, DEPTH     )
+!
+!    --- calculate source term --------------------------------------- /
+         IF ( USE_CGICE==1.0 ) THEN
+            CG_TMP=CG_IC3
+         ELSE
+            CG_TMP=CG
+         ENDIF
+         DO IK=1, NK
+            !            recall that D=S/E=-2*Cg*k_i
+            D1D(IK)= -2.0 * CG_TMP(IK) * WN_I(IK)
+         END DO
+         !
+      ELSE ! .. e.g. if ice thickness is .gt. 10 cm
+         ! Alternative by F.A., see Remarks section.
+         IF (IC3PARS(2).GT.0.) THEN 
+            UORB=0.
+            AORB=0.
+            FTURB = IC3PARS(2)
+            IF (IC3PARS(7).GT.0) THEN 
+               IF (YGRD(IY,IX).LT.0.AND.GTYPE.EQ.RLGTYPE.AND.FLAGLL) &
+                    FTURB = IC3PARS(7)
+            END IF
+            DO IK=1, NK
+               EB  = 0.
+               DO ITH=1, NTH
+                  IS=ITH+(IK-1)*NTH
+                  EB  = EB  + A(IS)
+               END DO
+               !
+               !  UORB and AORB are the variances of the orbital
+               !  velocity and surface elevation
+               !
+               UORB = UORB + EB *SIG(IK)**2 * DDEN(IK) / CG(IK)
+               AORB = AORB + EB             * DDEN(IK) / CG(IK)
+               !deep water only
+            END DO
+            !
+            AORB = 2*SQRT(AORB)  ! significant amplitude
+            UORB = 2*SQRT(UORB)  ! significant amplitude
+
+            RE = UORB*AORB / VISCM
+            SMOOTH = 0.5*TANH((RE-IC3PARS(4))/IC3PARS(5))
+            PTURB=(0.5+SMOOTH)
+            PVISC=(0.5-SMOOTH)
+
+            XI=(ALOG10(MAX(AORB/IC3PARS(3),3.))-ABMIN)/DELAB
+            IND  = MIN (SIZEFWTABLE-1, INT(XI))
+            DELI1= MIN (1. ,XI-FLOAT(IND))
+            DELI2= 1. - DELI1
+            FW =FWTABLE(IND)*DELI2+FWTABLE(IND+1)*DELI1
+            DTURB=-1.* FTURB*FW*UORB/GRAV
+         ELSE ! so case of IC3PARS(2).LE.0.
+            DTURB = 0.
+         END IF ! IF (IC3PARS(2).GT.0.)  
+
+         DO IK=1, NK
+            DVISC = -1. *IC3PARS(6) * WN(IK) * SQRT(VISCM* SIG(IK) / 2.)
+            D1D(IK) = PTURB*DTURB*SIG(IK)**2 +  PVISC*DVISC
+         END DO
+
+      END IF !   IF ( NOICE ) THEN
+
+! 2.c Fill diagional matrix ------------------------------------------ /
+!
+      DO IKTH=1, NSPEC
+         D(IKTH) = D1D(MAPWN(IKTH))
+      END DO
+
+!
+! sign convention (example): 
+!        S is from -10e-3 to 0
+!        A is from 0 to 10
+! See Remarks section re: optimization
+      S = D * A
+!
+! ... Test output of arrays
+!
+!/T0      DO IK=1, NK
+!/T0        DO ITH=1, NTH
+!/T0          DOUT(IK,ITH) = D(ITH+(IK-1)*NTH)
+!/T0          END DO
+!/T0        END DO
+!
+!/T0      CALL PRT2DS (NDST, NK, NK, NTH, DOUT, SIG(1:), '  ', 1.,    &
+!/T0                         0.0, 0.001, 'Diag Sice', ' ', 'NONAME')
+!
+!/T1      CALL OUTMAT (NDST, D, NTH, NTH, NK, 'diag Sice')
+!
+! Formats
+!
+ 1001 FORMAT (/' *** WAVEWATCH III ERROR IN W3SIC3 : '/               &
+               '     ',A,' REQUIRED ONCE, BUT WAS PROVIDED BY USER '/ &
+               '     ',I4,' TIMES.'/)
+!
+!/T 9000 FORMAT (' TEST W3SIC3 : depth and 4 ice coef. : ',5E10.3)
+!/
+!/ End of W3SIC3 ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SIC3
+!/ ------------------------------------------------------------------- /
+!/
+      SUBROUTINE W3IC3WNCG_V1(WN_R,WN_I,CG,ICE1,ICE2,ICE3,ICE4,DPT)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         25-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Calculation of complex wavenumber for waves in ice. Outsourced
+!     from W3SIC3 to allow update on wavenumbers and  group 
+!     velocities at each time step an ice parameter is updated.
+!
+!  2. Method :
+!
+!     <text here>
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       WN_R   R. A.  I/O  Wave number (real part)
+!       WN_I   R. A.  I/O  Wave number (imag. part=wave attenuation)
+!       CG     R. A.  I/O  Group velocity
+!       ICE1   REAL    I   Thickness of ice                 [in m]
+!       ICE2   REAL    I   Effective viscosity of ice       [in m2/s]
+!       ICE3   REAL    I   Density of ice                  [in kg/m3]
+!       ICE4   REAL    I   Effective shear modulus of ice   [in Pa]
+!       DPT    REAL    I   Water depth                      [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name    Type  Module    Description
+!     ----------------------------------------------------------------
+!     WAVNU1   Subr. W3DISPMD   Wavenumber for waves in open water.
+!     WN_CMPLX Func. W3SIC3MD   Complex wavenumber for waves in ice.
+!     WN_CMPLX_HF Func. W3SIC3MD   Like WN_CMPLX, but for h-f
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name    Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SIC3  Subr. W3SIC3MD Ice source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!     See FORMAT 900.
+!
+!  7. Remarks :
+!
+!     Optional: Cap WN_I at 2.0E-4, since in simple tests with "normal
+!     resolution" (not finer than 1 km), WW3 has trouble resolving the
+!     dissipation if k_i>2e-4. Also, very large values of dissipation
+!     (e.g. k_i=100e-4) with IC3 occurs more in the higher frequencies
+!     which makes WW3 slow down quite a bit. This is done via ICEKILIM
+!     in the namelists.
+!
+!     This function does not get used in update by S. Cheng. 
+!     It should be removed if/when "V1" routines are removed.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      USE W3GDATMD, ONLY: NK, SIG, IC3PARS
+      USE W3DISPMD, ONLY: WAVNU1
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+      USE CONSTANTS, ONLY: TPI
+!/
+      IMPLICIT NONE
+!/
+      REAL, INTENT(INOUT):: WN_R(:),WN_I(:),CG(:)
+      REAL, INTENT(IN)   :: ICE1, ICE2, ICE3, ICE4, DPT
+
+      INTEGER            :: IK, KL,KU
+      REAL, ALLOCATABLE  :: SIGMA(:),CG_IC3(:)
+      REAL               :: K_OCEAN, CG_OCEAN
+      DOUBLE PRECISION   :: KH, K_NOICE, HWAT, HICE, NU, DICE, ES_MOD
+      DOUBLE PRECISION,PARAMETER :: KHMAX = 18.0D0 ! 18=OK, 19=fails
+      DOUBLE COMPLEX     :: WNCOMPLEX,WNCOMPLEX_OLD
+      REAL               :: STENSEC
+      REAL               :: IC3HILIM,IC3KILIM
+!
+      ALLOCATE( CG_IC3( SIZE(CG) ) )
+      ALLOCATE(  SIGMA( SIZE(CG) ) )
+      CG_IC3  = 0.
+      SIGMA   = 0.
+      STENSEC=TPI/10.0 ! sigma for T=10 sec
+
+      IC3HILIM=IC3PARS(10)
+      IC3KILIM=IC3PARS(11)
+!
+!     --- Input to routine (part 1): set 6 double precision variables 
+!        using single precision variables. -------------------------- /
+      HWAT    = DBLE(DPT)     ! water depth
+      HICE    = DBLE(ICE1)    ! ice thickness
+      NU      = DBLE(ICE2)    ! "effective viscosity" parameter
+      DICE    = DBLE(ICE3)    ! density of ice
+      ES_MOD  = DBLE(ICE4)    ! effective shear modulus of ice
+
+! Optional: limit ice thickness
+      HICE=MIN(DBLE(IC3HILIM),HICE)
+
+      IF (SIZE(WN_R,1).EQ.NK) THEN
+         KL    = 1
+         KU    = NK
+         SIGMA = SIG(1:NK)
+      ELSE IF (SIZE(WN_R,1).EQ.NK+2) THEN
+         KL    = 1
+         KU    = NK+2
+         SIGMA = SIG(0:NK+1)
+      ELSE
+         WRITE(NDSE,900)
+         CALL EXTCDE(3)
+      END IF
+!
+      WNCOMPLEX_OLD=CMPLX(0.0D0,0.0D0)
+
+      DO IK = KL,KU
+!     --- Input to routine (part 2): set 2 double precision variables 
+!         using single precision variable. --------------------------- /
+         CALL WAVNU1(SIGMA(IK),DPT,K_OCEAN,CG_OCEAN)
+         K_NOICE = DBLE(K_OCEAN)
+!
+!     --- Muller Method fails for deep water: workaround follows ----- /
+         KH        = K_NOICE * HWAT ! kh w/out ice
+         IF (KH.GT.KHMAX) THEN
+            HWAT   = KHMAX / K_NOICE
+         ENDIF
+!     --- Calculate complex wavenumber ------------------------------- /
+
+         IF((IK.GT.KL).AND.(SIGMA(IK).GT.STENSEC))THEN
+
+            WNCOMPLEX = WN_CMPLX_HF(DBLE(SIGMA(IK)),K_NOICE,ES_MOD,NU, &
+            DICE,HICE,HWAT,DBLE(SIGMA(IK-1)),WNCOMPLEX_OLD)
+            WNCOMPLEX_OLD=WNCOMPLEX
+
+         ELSE
+
+            WNCOMPLEX = WN_CMPLX_V1(DBLE(SIGMA(IK)),K_NOICE,ES_MOD,NU, &
+            DICE,HICE,HWAT)
+            WNCOMPLEX_OLD=WNCOMPLEX
+
+         ENDIF
+
+!     --- Output from function is type of DOUBLE COMPLEX. Set 
+!         precision of imaginary to single precision array element --- /
+         WN_I(IK)  = REAL(AIMAG(WNCOMPLEX))
+
+! Optional : limit ki
+         WN_I(IK)  = MIN(WN_I(IK),IC3KILIM) ! see Remarks above
+         WN_R(IK)  = REAL(WNCOMPLEX)
+
+      END DO
+!     --- Update group velocitiy ----
+      CG_IC3 = DELTA(SIGMA) / DELTA(WN_R)
+      CG     = CG_IC3
+
+      DEALLOCATE(CG_IC3)
+!
+  900 FORMAT (/' *** WAVEWATCH III ERROR IN W3SIC3_W3IC3WNCG : '/&
+               '     CANNOT DETERMINE BOUNDS OF WAVENUMBER ARRAY.')
+!
+!/
+    END SUBROUTINE W3IC3WNCG_V1
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION WN_CMPLX_V1(SIGMA,WN_O,ES,NU,DICE,HICE,DEPTH)    RESULT(WN)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         30-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Calculate complex wavenumber for waves in ice.
+!
+!  2. Method :
+!
+!     Wang and Shen (JGR 2010)
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       WN     CMPLX DBL O  Wave number (imag. part=wave attenuation)
+!       SIGMA  REAL DBL  I  Wave angular frequency           [in rad]
+!       WN_O   REAL DBL  I  Wave number (open water)
+!       ES     REAL DBL  I  Effective shear modulus of ice   [in Pa]
+!       NU     REAL DBL  I  Effective viscosity of ice       [in m2/s]
+!       DICE   REAL DBL  I  Density of ice                  [in kg/m3]
+!       HICE   REAL DBL  I  Thickness of ice                 [in m]
+!       DEPTH  REAL DBL  I  Water depth                      [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!     W3IC3WNCG_V1    Subr. W3SIC3MD Ice source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!   Hayley Shen says, 
+!     We have determined that it may not be necessary to use curve
+!     fitting or lookup tables to get the group velocity and the 
+!     attenuation coefficient. Attached is a short report with some
+!     sample numerical solutions. To implement the viscoelastic model,
+!     there are 4 fortran programs. According to Xin Zhao, the graduate
+!     student, it is very fast to find roots. I suggest that perhaps you
+!     try the pure viscous case by setting G=0 to start with. nu can be
+!     set at 0.05*ice concentration (m^2/s) to begin with, because for
+!     grease ice Newyear's data showed nu to be about 0.02-0.03 m^2/s.
+!     By setting G=0 in you get exactly the Keller model for pure 
+!     viscous layer. 
+!
+!   This routine provides the initial guess according to the parameters 
+!   of the present case. T>10s use open water, T<10s cases, calculate
+!   T=10s first using open water as the initial guess.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: TPI
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      DOUBLE PRECISION, INTENT(IN) :: SIGMA,WN_O,ES,NU,DICE,HICE,DEPTH
+      DOUBLE COMPLEX               :: WN                      ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER            :: I, NSUB
+      DOUBLE PRECISION   :: TT, TS, T
+      DOUBLE COMPLEX     :: X0, X1, X2, WN0
+!/
+!/ ------------------------------------------------------------------- /
+      T    = DBLE(TPI) / SIGMA
+      TS   = 10.
+      NSUB = INT((TS-T) * 10.)
+!/
+      IF (HICE<0.001) THEN
+         WN  = CMPLX(WN_O,0.)
+      ELSE IF (T.LT.TS) THEN
+         X0  = 0.01
+         X1  = 0.1
+         X2  = 1.0
+         WN0 = CMPLX_ROOT_MULLER_V1(X0,X1,X2,0,DBLE(TPI)/TS, &
+                                 ES,NU,DICE,HICE,DEPTH    )
+         X0  = 0.90 * WN0
+         X1  = WN0
+         X2  = 1.1*WN0
+         WN  = CMPLX_ROOT_MULLER_V1(X0,X1,X2,1,DBLE(TPI)/TS, &
+                                 ES,NU,DICE,HICE,DEPTH    )
+         DO I=1,NSUB
+            X0 = 0.90 * WN
+            X1 = WN
+            X2 = 1.1 * WN
+            TT = TS - (TS-T) / REAL(NSUB) * REAL(I)
+            WN = CMPLX_ROOT_MULLER_V1(X0,X1,X2,1,DBLE(TPI)/TT, &
+                                   ES,NU,DICE,HICE,DEPTH    )
+         ENDDO
+      ELSE
+         X0  = 0.01
+         X1  = 0.1
+         X2  = 1.0
+         WN0 = CMPLX_ROOT_MULLER_V1(X0,X1,X2,0,SIGMA,        &
+                                 ES,NU,DICE,HICE,DEPTH    )
+         X0  = 0.8 * WN0
+         X1  = WN0
+         X2  = 1.2 * WN0
+         WN  = CMPLX_ROOT_MULLER_V1(X0,X1,X2,1,SIGMA,        &
+                                 ES,NU,DICE,HICE,DEPTH    )
+      ENDIF
+!/
+    END FUNCTION WN_CMPLX_V1
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION WN_CMPLX_HF(SIGMA,WN_O,ES,NU,DICE,HICE,DEPTH,SIGMA_LAST, &
+             WN_LAST)     RESULT(WN)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. Shen                 |
+!/                  |           E. Rogers               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         17-Apr-2014 |
+!/                  +-----------------------------------+
+!/
+!/    15-Jan-2014 : Origination (from WN_CMPLXA.f90)      (H. Shen)
+!/    17-Apr-2014 : Import to WW3                         (E. Rogers)
+!/
+!  1. Purpose :
+!
+!     Calculate complex wavenumber for waves in ice.
+!
+!  2. Method :
+!
+!     Wang and Shen (JGR 2010)
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       WN     CMPLX DBL O  Wave number (imag. part=wave attenuation)
+!       SIGMA  REAL DBL  I  Wave angular frequency           [in rad]
+!       WN_O   REAL DBL  I  Wave number (open water)
+!       ES     REAL DBL  I  Effective shear modulus of ice   [in Pa]
+!       NU     REAL DBL  I  Effective viscosity of ice       [in m2/s]
+!       DICE   REAL DBL  I  Density of ice                  [in kg/m3]
+!       HICE   REAL DBL  I  Thickness of ice                 [in m]
+!       DEPTH  REAL DBL  I  Water depth                      [in m]
+!       SIGMA_LAST REAL DBL I : Like SIGMA, but of last IK
+!       WN_LAST    REAL DBL I : WN_O of last IK
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3IC3WNCG_V1  Subr. W3SIC3MD Ice source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!     See notes in FUNCTION WN_CMPLX, not repeated here.
+!     New in this function, Hayley Shen says (Jan 15 2014) : 
+!     "To speed up the computation, we need to add a new function 
+!     WN_CMPLXA (attached) into the earlier version of the MODULE 
+!     W3SIC3MD. When wave period T>=10s, we call old function WN_CMPLX 
+!     directly. When T<10s, call the new function WN_CMPLXA with last 
+!     calculation step's information: last complex wave number, last 
+!     angular wave frequency. The calculation should be from large T 
+!     to small T."
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+      USE CONSTANTS, ONLY: TPI
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      DOUBLE PRECISION, INTENT(IN) :: SIGMA,WN_O,ES,NU,DICE,HICE,DEPTH
+      DOUBLE PRECISION, INTENT(IN) :: SIGMA_LAST
+      DOUBLE COMPLEX,   INTENT(IN) :: WN_LAST
+      DOUBLE COMPLEX               :: WN                      ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER            :: I, NSUB
+      DOUBLE PRECISION   :: TT, TS, T
+      DOUBLE COMPLEX     :: X0, X1, X2, WN0
+!/
+!/ ------------------------------------------------------------------- /
+      T    = DBLE(TPI) / SIGMA
+      TS   = DBLE(TPI) / SIGMA_LAST
+      NSUB = INT((TS-T) * 10.)
+!/
+      IF (HICE<0.001) THEN
+         WN  = CMPLX(WN_O,0.)
+      ELSE 
+         X0  = 0.90 * WN_LAST
+         X1  = WN_LAST
+         X2  = 1.1 * WN_LAST
+         WN  = CMPLX_ROOT_MULLER_V1(X0,X1,X2,1,DBLE(TPI)/TS, &
+                                 ES,NU,DICE,HICE,DEPTH    )
+         DO I=1,NSUB
+            X0 = 0.90 * WN
+            X1 = WN
+            X2 = 1.1 * WN
+            TT = TS - (TS-T) / REAL(NSUB) * REAL(I)
+            WN = CMPLX_ROOT_MULLER_V1(X0,X1,X2,1,DBLE(TPI)/TT, &
+                                   ES,NU,DICE,HICE,DEPTH    )
+         ENDDO
+      ENDIF
+!/
+    END FUNCTION WN_CMPLX_HF
+!/ ------------------------------------------------------------------- /
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION CMPLX_ROOT_MULLER_V1(X0, X1, X2, JUDGE, SIGMA, ES, NU, &
+                               DICE, HICE, DEPTH)           RESULT(P3)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         30-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Find root.
+!
+!  2. Method :
+!
+!     Muller method for complex equations is a recursive approximation 
+!     with initial guess X0, X1, and X2. To the initial guesses a 
+!     quadratic parabola is fitted.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       P3    CMPLX DBL O  Approximation for the root problem
+!       X0    CMPLX DBL I  Initial guess variable
+!       X1    CMPLX DBL I  Initial guess variable
+!       X2    CMPLX DBL I  Initial guess variable
+!       JUDGE INTEGER   I  "switch variable" for F_ZHAO
+!       SIGMA DOUBLE    I  Wave angular frequency
+!       ES    DOUBLE    I  Effective shear modulus of ice
+!       NU    DOUBLE    I  Effective viscosity of ice       [in m2/s]
+!       DICE  DOUBLE    I  Density of ice                   [in kg/m3]
+!       HICE  DOUBLE    I  Thickness of ice                 [in m]
+!       DEPTH DOUBLE    I  Water depth                      [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      F_ZHAO    Func. W3SIC3MD Wrapper function for root finding.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      WN_CMPLX_V1             Find root for complex wave-
+!      WN_CMPLX_HF             numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      DOUBLE COMPLEX                :: P3                     ! RESULT
+      DOUBLE COMPLEX, INTENT(IN)    :: X0,X1,X2
+      DOUBLE PRECISION, INTENT(IN)  :: SIGMA,ES,NU,DICE,HICE,DEPTH
+      INTEGER, INTENT(IN)           :: JUDGE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                   :: I
+      INTEGER, PARAMETER        :: IMAX = 1000
+      DOUBLE PRECISION          :: DLTA,EPSI
+      DOUBLE COMPLEX            :: P0,P1,P2
+      DOUBLE COMPLEX            :: Y0,Y1,Y2,Y3
+      DOUBLE COMPLEX            :: A,B,C,Q,DISC,DEN1,DEN2
+!/
+!/ ------------------------------------------------------------------- /
+      P0      = X0
+      P1      = X1
+      P2      = X2
+      P3      = 0.0
+!
+      I       = 0
+      EPSI    = 1.E-5
+      DLTA    = 1.E-5
+      Y0      = F_ZHAO_V1(P0,JUDGE,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      Y1      = F_ZHAO_V1(P1,JUDGE,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      Y2      = F_ZHAO_V1(P2,JUDGE,SIGMA,ES,NU,DICE,HICE,DEPTH)
+!
+      DO I = 1,IMAX
+         Q = (P2 - P1) / (P1 - P0)
+         A = Q * Y2 - Q * (1.+Q) * Y1 + Q**2. * Y0
+         B = (2. * Q + 1.) * Y2 - (1 + Q)**2. * Y1 + Q**2. * Y0
+         C = (1. + Q) * Y2
+!
+         IF ( ABS(A).NE.0. ) THEN
+
+            DISC = B**2. - 4 * A * C;
+!
+            DEN1 = ( B + SQRT ( DISC ) )
+            DEN2 = ( B - SQRT ( DISC ) )
+!
+            IF ( ABS ( DEN1 ) .LT. ABS ( DEN2 ) )THEN
+               P3 = P2 - (P2 - P1) * (2 * C / DEN2)
+            ELSE
+               P3 = P2 - (P2 - P1) * (2 * C / DEN1)
+            ENDIF
+!
+         ELSE
+!
+            IF ( ABS(B) .NE. 0. )THEN
+               P3 = P2 - (P2 - P1) * (C / B)
+            ELSE
+               WRITE(NDSE,800)
+               WRITE(NDSE,801)X0,X1,X2
+               WRITE(NDSE,802)SIGMA,ES,NU,DICE,HICE,DEPTH
+               WRITE(NDSE,803)JUDGE
+               CALL EXTCDE(2)
+            ENDIF
+         ENDIF
+
+         Y3 = F_ZHAO_V1(P3,JUDGE,SIGMA,ES,NU,DICE,HICE,DEPTH);
+
+         IF ( ABS(P3-P2).LT.DLTA .OR. ABS(Y3).LT.EPSI ) THEN
+            RETURN
+         ENDIF
+
+         P0 = P1
+         P1 = P2
+         P2 = P3
+
+         Y0 = Y1
+         Y1 = Y2
+         Y2 = Y3
+
+      ENDDO
+!
+      WRITE(NDSE,800)
+      WRITE(NDSE,801)X0,X1,X2
+      WRITE(NDSE,802)SIGMA,ES,NU,DICE,HICE,DEPTH
+      WRITE(NDSE,803)JUDGE
+      CALL EXTCDE(2)
+!
+  800 FORMAT (/' *** WAVEWATCH III ERROR IN W3SIC3_CMPLX_ROOT_MULLER'/&
+               ' :      MULLER METHOD FAILED TO FIND ROOT.'            )
+  801 FORMAT (/'X0,X1,X2 = ',3(1X,'(',F10.5,',',F10.5,')'))
+  802 FORMAT (/'SIGMA,ES,NU,DICE,HICE,DEPTH = ',6(1X,F10.5))
+  803 FORMAT (/'JUDGE = ',I5)
+!/
+    END FUNCTION CMPLX_ROOT_MULLER_V1
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION F_ZHAO_V1(X,JUDGE,SIGMA,ES,NU,DICE,HICE,DEPTH) &
+             RESULT(FZHAO)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         30-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Decide whether to call sub-function.
+!
+!  2. Method :
+!
+!     Decide based on value of integer "JUDGE"
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      FZHAO COMPL8  O    Result (double complex)
+!      X     CMPLX8  I    Approximate result (double complex)
+!      JUDGE INTEGR  I    Switch variable
+!      SIGMA DOUBLE  I    Wave angular frequency
+!      ES    DOUBLE  I    Effective shear modulus
+!      NU    DOUBLE  I    Effective viscosity parameter
+!      DICE  DOUBLE  I    Density of ice
+!      HICE  DOUBLE  I    Thickness of ice
+!      DEPTH DOUBLE  I    Water depth
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name        Type  Module   Description
+!     ----------------------------------------------------------------
+!      FUNC0_ZHAO  Func. W3SIC3MD Function to find root.
+!      FUNC1_ZHAO  Func. W3SIC3MD Function to find root.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER_V1  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)          :: JUDGE
+      DOUBLE PRECISION, INTENT(IN) :: SIGMA,ES,NU,DICE,HICE,DEPTH
+      DOUBLE COMPLEX, INTENT(IN)   :: X
+      DOUBLE COMPLEX               :: FZHAO  ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+      IF (JUDGE.EQ.0) THEN
+         FZHAO = FUNC0_ZHAO(X,SIGMA,DEPTH)
+      ELSE
+         FZHAO = FUNC1_ZHAO(X,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      ENDIF
+!
+    END FUNCTION F_ZHAO_V1
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION FUNC0_ZHAO(WN, SIGMA, DEPTH)                RESULT(FUNC0)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         30-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Calculate the difference between the left and right side 
+!     of the dispersion relation. It is called by the Muller method.
+!
+!  2. Method :
+!
+!     <text here>
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      FUNC0  COMPL DBL  O    Result (double complex)
+!      WN     CMPLX DBL  I    Complex wavenumber
+!      SIGMA  DOUBLE     I    Wave angular frequency
+!      DEPTH  DOUBLE     I    Water depth [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!      Name    Type  Module   Description
+!     ----------------------------------------------------------------
+!      F_ZHAO_V1  Func. W3SIC3MD Function for computation of complex
+!                             wavenumbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!   This function does not get used in update by S. Cheng. 
+!     It should be removed if/when "V1" routines are removed.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: GRAV
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      DOUBLE COMPLEX, INTENT(IN)    :: WN
+      DOUBLE PRECISION, INTENT(IN)  :: SIGMA, DEPTH
+      DOUBLE COMPLEX                :: FUNC0                 ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      DOUBLE COMPLEX   :: TH
+!/
+!/ ------------------------------------------------------------------- /
+      IF (REAL(WN*DEPTH).LE.4.) THEN
+         TH = (EXP(WN*DEPTH)-EXP(-WN*DEPTH)) &
+            / (EXP(WN*DEPTH)+EXP(-WN*DEPTH))
+         FUNC0 = SIGMA**2. - TH * WN * DBLE(GRAV)
+      ELSE
+         FUNC0 = SIGMA**2. -      WN * DBLE(GRAV)
+      END IF
+!/
+    END FUNCTION FUNC0_ZHAO
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION FUNC1_ZHAO(WN,SIGMA,ES,NU,DICE,HICE,DEPTH)  RESULT(FUNC1)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         11-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     <text here>
+!
+!  2. Method :
+!
+!     <text here>
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      FUNC1 CMPLX DBL O  Result (double complex)
+!      WN    CMPLX DBL I  Wavenumber (double complex)
+!      W     REAL  DBL I  Wave angular frequency
+!      ES    REAL  DBL I  Effective shear modulus on ice 
+!      NU    REAL  DBL I  Effective viscosity
+!      DICE  REAL  DBL I  Density of ice
+!      HICE  REAL  DBL I  Thickness of ice
+!      DEPTH REAL  DBL I  Water depth
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name    Type  Module    Description
+!     ----------------------------------------------------------------
+!      BSDET   Func. W3SIC3MD  Calculates the determinant for the
+!                              dispersion relation.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name    Type  Module   Description
+!     ----------------------------------------------------------------
+!      F_ZHAO_V1  Func. W3SIC3MD Function for computation of complex
+!                             wavenumbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!   This function does not get used in update by S. Cheng. 
+!     It should be removed if/when "V1" routines are removed.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: GRAV, DWAT
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      DOUBLE COMPLEX, INTENT(IN)   :: WN
+      DOUBLE PRECISION, INTENT(IN) :: SIGMA, ES, NU, DICE, HICE, DEPTH
+      DOUBLE COMPLEX               :: FUNC1                   ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      DOUBLE COMPLEX   :: VE,ALPHA,N,M,L,SK,CK,SA,CA,TH,THH
+      DOUBLE COMPLEX   :: AA(4,4)
+!/
+!/ ------------------------------------------------------------------- /
+      VE    = CMPLX( NU, ES/DICE/SIGMA )
+      ALPHA = SQRT ( WN**2. - SIGMA/VE * CMPLX(0.,1.) )
+      N     = SIGMA + 2. * VE * WN**2. * CMPLX(0.,1.)
+      L     = 2 * WN * ALPHA * SIGMA * VE
+      SK    = (EXP(WN*HICE)-EXP(-WN*HICE))/2.
+      CK    = (EXP(WN*HICE)+EXP(-WN*HICE))/2.
+      SA    = (EXP(ALPHA*HICE)-EXP(-ALPHA*HICE))/2.
+      CA    = (EXP(ALPHA*HICE)+EXP(-ALPHA*HICE))/2.
+!
+      IF (REAL(WN*DEPTH).LE.4.) THEN
+        TH  = (EXP(WN*DEPTH)-EXP(-WN*DEPTH))                        &
+            / (EXP(WN*DEPTH)+EXP(-WN*DEPTH))
+        THH = ( EXP(WN*(DEPTH-HICE)) - EXP(-WN*(DEPTH-HICE)) )      &
+            / ( EXP(WN*(DEPTH-HICE)) + EXP(-WN*(DEPTH-HICE)) )
+      ELSE
+        TH  = 1.0
+        THH = 1.0
+      END IF
+!
+      M     = (DBLE(DWAT)/DICE - 1) * DBLE(GRAV) * WN               &
+            - DBLE(DWAT) / DICE * SIGMA**2 / TH
+!
+      IF (ES.GT.1.E7) THEN
+         AA(1,1) = 0.
+         AA(1,2) = 2 * CMPLX(0.,1.) * WN**2.
+         AA(1,3) = ALPHA**2. + WN**2.
+         AA(1,4) = 0.
+!
+         AA(2,1) = N * SIGMA
+         AA(2,2) = -WN * DBLE(GRAV)
+         AA(2,3) = CMPLX(0.,1.) * WN * DBLE(GRAV)
+         AA(2,4) = L
+!
+         AA(3,1) = -2. * CMPLX(0.,1.) * WN**2. * SK
+         AA(3,2) =  2. * CMPLX(0.,1.) * WN**2. * CK
+         AA(3,3) =  (ALPHA**2. + WN**2.) * CA
+         AA(3,4) = -(ALPHA**2. + WN**2.) * SA
+!
+         AA(4,1) =   N * SIGMA * CK - M * SK
+         AA(4,2) = - N * SIGMA * SK + M * CK
+         AA(4,3) = -CMPLX(0.,1.) * M * CA - L * SA
+         AA(4,4) =  CMPLX(0.,1.) * M * SA + L * CA
+!
+         FUNC1   = BSDET(AA,4)
+      ELSE
+         FUNC1 = SIGMA**2. - TH*WN*DBLE(GRAV) - TH*DICE/DBLE(DWAT)* &
+                 (WN**2.*DBLE(GRAV)**2.*SK*SA - (N**4. + 16.* &
+                 VE**4.*WN**6.*ALPHA**2.)*SK*SA - 8. &
+                 *WN**3.*ALPHA*VE**2.*N**2.*(CK*CA-1.))/(4.*WN**3. &
+                 *ALPHA*VE**2.*SK*CA+N**2.*SA*CK-DBLE(GRAV)*WN*SK*SA)
+      ENDIF
+!/
+    END FUNCTION FUNC1_ZHAO
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION BSDET(AA, N)                                  RESULT(DET)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         11-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     This subroutine calculates the determinant for the
+!     dispersion relation.
+!
+!  2. Method :
+!
+!  3. Parameters :
+!
+!      Parameter list
+!     ----------------------------------------------------------------
+!      AA    R.A.       I/O  Square array type of REAL
+!      N     INT        I    Size of array (number of rows/cols)
+!      DET   CMPLX DBLE I/O  Determinant (double complex)
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!      Name        Type  Module    Description
+!     ----------------------------------------------------------------
+!      FUNC1_ZHAO  Func. W3SIC3MD  Function for computation of complex
+!                                  wavenumbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!   This function does not get used in update by S. Cheng. 
+!     It should be removed if/when "V1" routines are removed.
+!
+!  8. Source code :
+!
+!/ ------------------------------------------------------------------- /
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)        :: N
+      DOUBLE COMPLEX, INTENT(IN) :: AA(N,N)
+      DOUBLE COMPLEX             :: DET                       ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                    :: K, I, J, IS, JS
+      DOUBLE COMPLEX             :: F, D, MAT(N,N)
+      DOUBLE PRECISION           :: Q
+!/
+!/ ------------------------------------------------------------------- /
+      MAT = AA
+      F = 1.0
+      DET = 1.0
+      LOOP100: DO K = 1,N-1
+         Q = 0.0
+         LOOP10A: DO I = K,N
+            LOOP10B: DO J = K,N
+               IF (ABS(MAT(I,J)).GT.Q) THEN
+                  Q = ABS(MAT(I,J))
+                  IS = I
+                  JS = J
+               END IF
+            END DO LOOP10B
+         END DO LOOP10A
+         IF (Q+1.0.EQ.1.0) THEN
+            DET = 0.0
+            RETURN
+         END IF
+         IF (IS.NE.K) THEN
+            F = -F
+            LOOP20: DO J = K,N
+               D         = MAT(K,J)
+               MAT(K,J)  = MAT(IS,J)
+               MAT(IS,J) = D
+            END DO LOOP20
+         END IF
+         IF (JS.NE.K) THEN
+            F = -F
+            LOOP30: DO I = K,N
+               D         = MAT(I,JS)
+               MAT(I,JS) = MAT(I,K)
+               MAT(I,K)  = D
+            END DO LOOP30
+         END IF
+         DET = DET * MAT(K,K)
+         LOOP50: DO I = K+1,N
+            D = MAT(I,K) / MAT(K,K)
+            LOOP40: DO J = K+1,N
+               MAT(I,J) = MAT(I,J) - D * MAT(K,J)
+            END DO LOOP40
+         END DO LOOP50
+      END DO LOOP100
+!/
+      DET =  F * DET * MAT(N,N)
+!/
+!/ End of BSDET ------------------------------------------------------ /
+!/
+    END FUNCTION BSDET
+!/ ------------------------------------------------------------------- /
+    FUNCTION DELTA(X) RESULT(DX)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         22-Oct-2013 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.12 )
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     This function calculates bin withs for any discretized function.
+!     May be used for numerical integration and differentiation.
+!
+!  2. Method :
+!
+!  3. Parameters :
+!
+!      Parameter list
+!     ----------------------------------------------------------------
+!      X     R.A.      I  Array type of REAL
+!      DX    R.A       O  Bin widths if X
+!     ----------------------------------------------------------------
+!
+!  4. Remarks :
+!
+!     This function does not get used in update by S. Cheng. 
+!     It should be removed if/when "V1" routines are removed.
+!
+!  5. Called by :
+!     W3IC3WNCG_V1
+!
+!  6. Source code :
+!/
+      IMPLICIT NONE
+!/
+      REAL, INTENT(IN)  :: X(:)
+      REAL, ALLOCATABLE :: DX(:)
+      INTEGER           :: IX, NX
+!/
+      NX = SIZE(X,1)
+      ALLOCATE(DX(NX))
+      DX = 0.
+!/
+      DO IX = 1,NX
+        IF (IX==1) THEN
+           DX(IX) = (X(IX+1)-X(IX  ))
+        ELSE IF (IX==NX) THEN
+           DX(IX) = (X(IX  )-X(IX-1))
+        ELSE
+           DX(IX) = (X(IX+1)-X(IX-1)) / 2.
+        END IF
+      END DO
+!/
+    END FUNCTION DELTA
+
+!/ ------------------------------------------------------------------- /
+!/ ------------------------------------------------------------------- /
+!/ ------------------------------------------------------------------- /
+! Start of new codes (or new variants) provided by S. Cheng
+!/ ------------------------------------------------------------------- /
+!/ ------------------------------------------------------------------- /
+!/ ------------------------------------------------------------------- /
+
+    SUBROUTINE W3IC3WNCG_CHENG(WN_R,WN_I,CG,ICE1,ICE2,ICE3,ICE4,DPT)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!  1. Purpose :
+!
+!     Calculation of complex wavenumber for waves in ice. Outsourced
+!     from W3SIC3 to allow update on wavenumbers and  group
+!     velocities at each time step an ice parameter is updated.
+!
+!  2. Method :
+!
+!     <text here>
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       WN_R   R. A.  I/O  Wave number (real part)
+!       WN_I   R. A.  I/O  Wave number (imag. part=wave attenuation)
+!       CG     R. A.  I/O  Group velocity
+!       ICE1   REAL    I   Thickness of ice                 [in m]
+!       ICE2   REAL    I   Effective viscosity of ice       [in m2/s]
+!       ICE3   REAL    I   Density of ice                  [in kg/m3]
+!       ICE4   REAL    I   Effective shear modulus of ice   [in Pa]
+!       DPT    REAL    I   Water depth                      [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name    Type  Module    Description
+!     ----------------------------------------------------------------
+!     WAVNU1   Subr. W3DISPMD   Wavenumber for waves in open water.
+!     WN_CMPLX Func. W3SIC3MD   Complex wavenumber for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name    Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SIC3  Subr. W3SIC3MD Ice source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     On pre-calculation table, S. Cheng says:
+!     Instead of interpolation, WN_R of arbitrary HICE is approximated
+!     by IC3WN_R in the look up table. IC3WN_R is related to an ice
+!     thickness in the table, which is closest to HICE and less than
+!     HICE
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      USE W3GDATMD, ONLY: NK,SIG, IC3PARS
+      USE W3ADATMD, ONLY: IC3WN_R, IC3WN_I, IC3CG
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+      USE W3DISPMD, ONLY: WAVNU1
+      !/
+      IMPLICIT NONE
+      !/
+      REAL, INTENT(IN)   :: ICE1, ICE2, ICE3, ICE4, DPT
+      REAL, INTENT(INOUT):: WN_R(:),WN_I(:),CG(:)
+      REAL, ALLOCATABLE  :: SIGMA(:)
+      !
+      INTEGER     :: I, I1, I2, IK, KL,KU, ITKNUM
+      COMPLEX     :: WNCOMPLEX, X0,X1,X2, WNR, WNL
+      REAL        :: DEPTH, HICE, NU, DICE, ES_MOD, RR, K_OCEAN, &
+           CG_OCEAN
+      REAL        :: IC3HILIM,IC3KILIM
+
+      IC3HILIM=IC3PARS(10)
+      IC3KILIM=IC3PARS(11)
+
+      ALLOCATE(  SIGMA( SIZE(CG) ) )
+      SIGMA = 0.
+      IF (SIZE(WN_R,1).EQ.NK) THEN
+         KL    = 1
+         KU    = NK
+         I1    = 1
+         I2    = NK
+         SIGMA = SIG(1:NK)
+      ELSE IF (SIZE(WN_R,1).EQ.NK+2) THEN
+         KL    = 1
+         KU    = NK+2
+         I1    = 0
+         I2    = NK+1
+         SIGMA = SIG(0:NK+1)
+      ELSE
+         WRITE(NDSE,900)
+         CALL EXTCDE(3)
+      END IF
+      DEPTH   =   DPT     ! water depth
+      HICE    =   ICE1    ! ice thickness
+
+! Optional: limit ice thickness
+      HICE=MIN(IC3HILIM,HICE)
+      NU      =   ICE2    ! "effective viscosity" parameter
+      DICE    =   ICE3    ! density of ice
+      ES_MOD  =   ICE4    ! effective shear modulus of ice
+      !
+      ITKNUM  = CEILING(IC3_MAXITK/IC3_DITK)
+      I       = MIN(INT(HICE/IC3_DITK)+1,ITKNUM)
+
+! Find values in pre-calculated look-up table
+! See Remarks section.
+      WN_R    =   IC3WN_R(I1:I2, I)
+      WN_I    =   IC3WN_I(I1:I2, I)
+      CG      =   IC3CG(I1:I2, I)
+      RR      =   0.01
+!/ --- CHECK If it's shallow water situation, then it needs recalculate
+!              kr,ki,cg
+      DO IK   =   KL,KU
+         IF (WN_R(IK)*DEPTH>4.0)THEN ! exit do-loop
+            EXIT  ! assume kr is proportional to frequency
+         ELSE
+            X1  = CMPLX(WN_R(IK),WN_I(IK))
+            x0  = X1*(1-RR)
+            x2  = X1*(1+RR)
+            WNCOMPLEX = CMPLX_ROOT_MULLER_CHENG(X0,X1,X2,1, &
+                 SIGMA(IK),ES_MOD,NU,DICE,HICE,DEPTH)
+            WN_I(IK)  = REAL(AIMAG(WNCOMPLEX))  !  ki
+            WN_R(IK)  = REAL(WNCOMPLEX)         !  kr
+         ENDIF
+      ENDDO
+
+! Optional : limit ki
+      DO IK   =   KL,KU
+         WN_I(IK)  = MIN(WN_I(IK),IC3KILIM)
+      ENDDO
+
+!!!     --- Update group velocitiy ----
+      CALL CGinIC3_CHENG(CG,SIGMA,WN_R,KU-KL+1)
+      DEALLOCATE(SIGMA)
+
+900   FORMAT (/' *** WAVEWATCH III ERROR IN W3SIC3_W3IC3WNCG : '/&
+           '     CANNOT DETERMINE BOUNDS OF WAVENUMBER ARRAY.')
+    END SUBROUTINE W3IC3WNCG_CHENG
+!
+!/ ------------------------------------------------------------------- /
+     SUBROUTINE IC3TABLE_CHENG(ICE2,ICE3,ICE4)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!  1. Purpose :
+!
+!     It's a Preprocess part to create a table of wave nubmer,
+!        attenuation and group velocity
+!     for all ice thickness in deep water situation for main 
+!        computation.
+!
+!  2. Method :
+!
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name              Type   Module   Description
+!     ----------------------------------------------------------------
+!      W3WAVE             Subr. W3WAVEMD
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Cheng and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on Aug 25 2015
+!
+!   **UNRESOLVED BUG** This routine should be called again if ice
+!     rheology (visc., elast.) changes (either time or space). 
+!     It doesn't. We need to set CALLEDIC3TABLE=0 if either parameter is
+!     changed.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD, ONLY: NK,SIG
+      USE W3ADATMD, ONLY: IC3WN_R, IC3WN_I, IC3CG
+      USE W3IDATMD, ONLY: INFLAGS2
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+      USE CONSTANTS, ONLY: GRAV
+!
+      IMPLICIT NONE
+      REAL       :: ICE1, ICE2, ICE3, ICE4, DPT
+      INTEGER ::  I1, I2, JITK, ITKNUM, IK
+
+      DPT    = 999.
+
+      ITKNUM = CEILING(IC3_MAXITK/IC3_DITK)
+      IC3WN_R(:,0) = SIG**2/GRAV
+      IC3WN_I(:,0) = 0
+      DO JITK = 1,ITKNUM
+         ICE1 = JITK*IC3_DITK  !HICE
+         CALL IC3PRECALC_CHENG(IC3WN_R(:,JITK), IC3WN_I(:,JITK), &
+             IC3CG(:,JITK), ICE1, ICE2, ICE3, ICE4, DPT)
+      ENDDO
+
+RETURN
+END SUBROUTINE IC3TABLE_CHENG
+
+!/ ------------------------------------------------------------------- /
+    SUBROUTINE IC3PRECALC_CHENG(WN_R,WN_I,CG,ICE1,ICE2,ICE3,ICE4,DPT)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!  1. Purpose :
+!
+!     Preprocess part to create a table of wave nubmer, attenuation and
+!     group velocity for all ice thickness in deep water situation for 
+!     main computation.
+!
+!  2. Method :
+!
+!     Calculate them use Muller's method
+!
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name              Type  Module   Description
+!     ----------------------------------------------------------------
+!      IC3TABLE_CHENG      Subr. W3SIC3MD  Create a table of kr,ki,cg
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Cheng and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on Aug 25 2015
+!
+!   Sukun Cheng in reference to MIN(WN_I(IK),--):
+!   "This artificial limitation reduces IC3 model’s effect,
+!       though it saves some time.
+!   ki > 2.e-4  is a common truth for angular frequency larger
+!   than the value around 2 or 3 depending on other parameters."
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD, ONLY: NK, SIG
+      USE W3DISPMD, ONLY: WAVNU1
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+!/
+      IMPLICIT NONE
+!/
+      REAL, INTENT(INOUT):: WN_R(0:NK+1),WN_I(0:NK+1), CG(0:NK+1)
+      REAL, INTENT(IN)   :: ICE1, ICE2, ICE3, ICE4, DPT
+
+      INTEGER            :: IK, KL,KU,IX,NUM
+      REAL               :: K_OCEAN,CG_OCEAN,CG1,CG2,CG3
+      REAL               :: KH, K_NOICE, DEPTH, HICE, NU, DICE, &
+                            ES_MOD,SIGMAM1,DKR
+      COMPLEX            :: WNCOMPLEX, X0,X1,X2,WNM1,WNM2,WN_O
+!
+!     --- Input to routine
+      DEPTH   =   DPT     ! water depth
+      HICE    =   ICE1    ! ice thickness
+      NU      =   ICE2    ! "effective viscosity" parameter
+      DICE    =   ICE3    ! density of ice
+      ES_MOD  =   ICE4    ! effective shear modulus of ice
+
+      KL    = 0
+      KU    = NK+1
+
+      DO IK = KL,KU
+        CALL WAVNU1(SIG(IK),DPT,K_OCEAN,CG_OCEAN)
+        K_NOICE = K_OCEAN
+
+!     --- Calculate complex wavenumber ------------------------------- /
+        IF(IK<KL+2)THEN
+            WNM1     = CMPLX(0.,0.)
+            WNM2     = CMPLX(0.,0.)
+            SIGMAM1  = 0.0
+        ELSE
+            WNM1     = cmplx(WN_R(IK-1),WN_I(IK-1))
+            WNM2     = cmplx(WN_R(IK-2),WN_I(IK-2))
+            SIGMAM1  = SIG(IK-1)
+        ENDIF
+
+        WN_O = CMPLX(K_NOICE,0.0)
+        CALL WN_PRECALC_CHENG(WNCOMPLEX,SIG(IK),SIGMAM1,WN_O, &
+                            WNM1,WNM2,ES_MOD,NU,DICE,HICE,DEPTH)
+ !     --- Output to routine
+        WN_R(IK)  = REAL(WNCOMPLEX)         !  kr
+        WN_I(IK)  = IMAG(WNCOMPLEX)         !  ki
+      ENDDO
+
+      CALL CGinIC3_CHENG(CG,SIG,WN_R,KU-KL+1)
+!/
+    END SUBROUTINE IC3PRECALC_CHENG
+
+!/ -------------------------------------------------------------------/
+
+    SUBROUTINE WN_PRECALC_CHENG(WN,SIGMA,SIGMAM1,WN_O,WNM1,WNM2,ES_MOD, &
+                              NU,DICE,HICE,DEPTH)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!  1. Purpose :
+!
+!     Calculate complex wavenumber for waves in ice.
+!
+!  2. Method :
+!
+!     Wang and Shen (JGR 2010)
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       WN     CMPLX  O  Wave number (imag. part=wave attenuation)
+!       SIGMA  REAL   I  Wave angular frequency           [in rad]
+!       WN_O   REAL   I  Wave number (open water)
+!       ES     REAL   I  Effective shear modulus of ice   [in Pa]
+!       NU     REAL   I  Effective viscosity of ice       [in m2/s]
+!       DICE   REAL   I  Density of ice                  [in kg/m3]
+!       HICE   REAL   I  Thickness of ice                 [in m]
+!       DEPTH  REAL   I  Water depth                      [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      IC3PRECALC_CHENG    xxx  xxx  xxxx
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Updated authors: Cheng and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on Aug 25 2015
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!   Hayley Shen says,
+!     We have determined that it may not be necessary to use curve
+!     fitting or lookup tables to get the group velocity and the
+!     attenuation coefficient. Attached is a short report with some
+!     sample numerical solutions. To implement the viscoelastic model,
+!     there are 4 fortran programs. According to Xin Zhao, the graduate
+!     student, it is very fast to find roots. I suggest that perhaps you
+!     try the pure viscous case by setting G=0 to start with. nu can be
+!     set at 0.05*ice concentration (m^2/s) to begin with, because for
+!     grease ice Newyear’s data showed nu to be about 0.02-0.03 m^2/s.
+!     By setting G=0 in you get exactly the Keller model for pure
+!     viscous layer.
+!
+!   This routine provides the initial guess according to the parameters
+!   of the present case. T>10s use open water, T<10s cases, calculate
+!   T=10s first using open water as the initial guess.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: TPI
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      REAL(4)       :: SIGMA,SIGMAM1,ES_MOD,NU,DICE,HICE,DEPTH
+      COMPLEX(4)    :: WN_O, WNM1, WNM2, WN0
+      COMPLEX(4),INTENT(OUT) :: WN ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER       :: I,IX,NUM,READY
+      REAL(4)       :: RR, R2, EPS, SIGMA0, KAPPA, DIS, EPSD,EPSK, &
+                       EPS1,EPS2
+      COMPLEX(4)    :: X0, X1, X2
+      COMPLEX(8)    :: F1, F0
+
+!/
+!/ ------------------------------------------------------------------- /
+!
+! --- RR,R2 are empirical coefficients
+
+    RR  = 0.2
+    R2  = 4
+    EPS = 1.E-6   ! assuming variable =0, if it is less than this value
+!
+    X1  = WN_O    ! initial guess
+    x0  = X1*(1-RR)
+    x2  = X1*(1+RR)
+
+    !initial guesses from wave number of open water
+    WN0 = CMPLX_ROOT_MULLER_CHENG(X0,X1,X2,1,(SIGMA), & 
+                               ES_MOD,NU,DICE,HICE,DEPTH)
+
+    IF(SIGMAM1==0.)THEN
+        WN = WN0
+    ELSE
+! Calculate the other wave number based on last frequency in the
+!    frequency array
+        R2    = ABS(WNM1-WNM2)/ABS(WNM2)
+        READY = 0
+        DO I  = 1,9,2
+            IF(READY==1)THEN
+                EXIT
+            ENDIF
+            NUM = 2**(I-1)
+            RR  = MIN(MAX(R2/NUM,0.001),0.5)
+            X1  = WNM1
+            DO IX  = 1,NUM
+                X0 = X1*(1-RR)
+                X2 = X1*(1+RR)
+                SIGMA0 = SIGMAM1 + (1.0*IX)/NUM*(SIGMA-SIGMAM1)
+                WN = CMPLX_ROOT_MULLER_CHENG(X0,X1,X2,0,SIGMA0, &
+                                       ES_MOD,NU,DICE,HICE,DEPTH)
+                IF(real(WN)<0)then   ! try another searching direction
+                    WN = CMPLX_ROOT_MULLER_CHENG(X2,X1,X0,0,SIGMA0, &
+                                            ES_MOD,NU,DICE,HICE,DEPTH)
+                ENDIF
+
+                IF(  ABS(WN-WN0)>EPS .AND. &
+                    (ABS(WNM1-WN)/ABS(WNM1) > 3*R2 .OR. &
+                     IMAG(WN)/(IMAG(X1)+EPS)>10 .OR. real(WN)<0))THEN
+                    EXIT  ! redo with smaller intervals
+                ENDIF
+                X1 = WN
+            ENDDO
+            !  0.1,0.2,0.05,0.8 are empirical values.
+            IF(IX==NUM+1)THEN
+                IF( REAL(WN0)>0 .AND.  ABS(WN - WN0)>EPS .and. &
+                    real(wnm1)<real(wn0))THEN
+                    ! IF WN=WN0, RETURN directly
+                    DIS   = ABS(REAL(WN)-REAL(WN_O))/ABS(REAL(WN0) &
+                            -REAL(WN_O))
+                    KAPPA = IMAG(WN)/(IMAG(WN0) + EPS)
+                    ! wn0 has smaller attenuation and closer to k0
+                    IF (DIS >= 1 .AND. KAPPA>=1 .AND. &
+                        IMAG(WN0)>0.1*IMAG(WNM1) ) THEN
+                        WN = WN0
+                    ! wn0 has larger attenuation and closer to k0
+                    ELSEIF( DIS>=1 .AND. KAPPA<1 .AND. KAPPA> 0.2 &
+                        .AND. IMAG(WN0)/REAL(WN0)<0.05 )THEN
+                        WN = WN0
+                    ! wn0 has smaller attenuation and farther to k0, OR
+                    ELSEIF( KAPPA>=1 .AND. DIS<1 .AND. DIS>  0.8 )THEN
+                        WN = WN0
+                    ! wn0 has lager attenuation and farther to k0
+                    ELSEIF(DIS<1 .AND. KAPPA<1) THEN
+                        !Keep wn without change
+                    ENDIF
+                ENDIF
+                READY = 1
+            ENDIF
+        ENDDO
+
+!       IF WN is wrong, THEN set later ik as the same value -/
+! / --- Anormal exit: give an approximate wn
+        IF(READY==0) THEN
+            !print*,wn,x1,wn0,wn_O,WNM1
+            WN = X1
+        ENDIF
+    ENDIF
+    RETURN
+    END SUBROUTINE WN_PRECALC_CHENG
+!/ -----------------------------------------------------------------
+!/
+      SUBROUTINE CGINIC3_CHENG(CG,SIGMA,WN_R,N)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!  1. Purpose :
+!
+!     Calculate group velocity in ic3 model
+!
+!  2. Method :
+!
+!     finite differece
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       CG      R. A.  I/O  Group velocity
+!       SIMGA   R. A.  angular frequency
+!       WN_R    R. A.  wave number
+!       N       Int.   array size
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      None.
+!
+!  5. Called by :
+!
+!      Name             Type  Module   Description
+!     ----------------------------------------------------------------
+!      IC3PRECALC_CHENG    Subr. W3SIC3MD Create table of kr,ki,cg for
+!                 deep water
+!      W3IC3WNCG_CHENG     Subr. W3SIC3MD Calculate kr,ki,cg
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!      Smooth function is used due to jump problem when wave modes 
+!             switch
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      REAL, INTENT(IN)  :: SIGMA(1:N),WN_R(1:N)
+      REAL, INTENT(OUT) :: CG(1:N)
+      INTEGER           :: N
+!/ LOCAL variables
+      INTEGER           :: IK, M
+      REAL              :: CG1,CG2,CG3,CG0(1:N)
+!/
+
+      DO IK = 1,N
+            IF (IK==1) THEN
+                CG(IK) = (SIGMA(IK+1) - SIGMA(IK))  /(WN_R(IK+1) - &
+                         WN_R(IK))
+            ELSEIF (IK==N) THEN
+                CG(IK) = CG(IK-1)
+
+            ELSE
+                IF(WN_R(IK) < WN_R(IK-1)) THEN
+                    CG(IK) = (SIGMA(IK+1) - SIGMA(IK))  /(WN_R(IK+1)- &
+                             WN_R(IK))
+
+                ELSEIF(WN_R(IK+1) < WN_R(IK)) THEN
+                    CG(IK) = (SIGMA(IK)   - SIGMA(IK-1))/(WN_R(IK) - &
+                             WN_R(IK-1))
+                ELSE
+                    CG1 = (SIGMA(IK)   - SIGMA(IK-1))/(WN_R(IK)    - &
+                          WN_R(IK-1))
+                    CG2 = (SIGMA(IK+1) - SIGMA(IK))  /(WN_R(IK+1) - &
+                          WN_R(IK))
+                    CG3 = (SIGMA(IK+1) - SIGMA(IK-1))/(WN_R(IK+1) - &
+                          WN_R(IK-1))
+                    CG(IK) = Min(CG1,CG2,CG3)
+                ENDIF
+                CG(IK) = MIN(CG(IK),1.5*CG(IK-1))
+                IF (CG(IK)<=0)THEN
+                    CG(IK) = CG(IK-1)
+                ENDIF
+            ENDIF
+      END DO
+!/ smooth funciton
+      M   = 1
+      CG0 = CG
+      DO IK = 1+M,N-M
+          CG(IK) = 1./(2*M+1)*SUM(CG0(IK-M:IK+M))
+      ENDDO
+
+      RETURN
+      END SUBROUTINE CGINIC3_CHENG
+
+!/ ------------------------------------------------------------------- /
+
+    FUNCTION CMPLX_ROOT_MULLER_CHENG(X0, X1, X2, JUDGE, SIGMA0,  &
+                ES0, NU0, DICE0, HICE0, DPT )           RESULT(P3)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Find root.
+!
+!  2. Method :
+!
+!     Muller method for complex equations is a recursive approximation
+!     with initial guess X0, X1, and X2. To the initial guesses a
+!     quadratic parabola is fitted.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       P3    CMPLX DBL O  Approximation for the root problem
+!       X0    CMPLX DBL I  Initial guess variable
+!       X1    CMPLX DBL I  Initial guess variable
+!       X2    CMPLX DBL I  Initial guess variable
+!       SIGMA DOUBLE    I  Wave angular frequency
+!       ES    DOUBLE    I  Effective shear modulus of ice
+!       NU    DOUBLE    I  Effective viscosity of ice       [in m2/s]
+!       DICE  DOUBLE    I  Density of ice                   [in kg/m3]
+!       HICE  DOUBLE    I  Thickness of ice                 [in m]
+!       DEPTH DOUBLE    I  Water depth                      [in m]
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      F_ZHAO_CHENG       xxxxx xxxx     xxxx
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!     WN_PRECALC_CHENG xxxxx    xxxx
+!     W3IC3WNCG_CHENG  xxxxx    xxxx
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      COMPLEX(8)            :: P3                     ! RESULT
+      COMPLEX(4), INTENT(IN):: X0,X1,X2
+      REAL(4), INTENT(IN)   :: SIGMA0,ES0,NU0,DICE0,HICE0,DPT
+      INTEGER, INTENT(IN)   :: JUDGE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+
+      INTEGER               :: I
+      INTEGER, PARAMETER    :: IMAX = 200
+      REAL(8)               :: DLTA,EPSI,SIGMA,ES,NU,DICE,HICE,DEPTH
+      COMPLEX(8)            :: P0,P1,P2
+      COMPLEX(8)            :: Y0,Y1,Y2,Y3
+      COMPLEX(8)            :: A,B,C,Q,DISC,DEN1,DEN2
+!/
+!/ ------------------------------------------------------------------- /
+        DEPTH   =   DBLE(DPT)     ! WATER DEPTH
+        HICE    =   DBLE(HICE0)    ! ICE THICKNESS
+        NU      =   DBLE(NU0)    ! "EFFECTIVE VISCOSITY" PARAMETER
+        DICE    =   DBLE(DICE0)    ! DENSITY OF ICE
+        ES      =   DBLE(ES0)    ! EFFECTIVE SHEAR MODULUS OF ICE
+        SIGMA   =   DBLE(SIGMA0)
+
+        P0      =   DBLE(X0)
+        P1      =   DBLE(X1)
+        P2      =   DBLE(X2)
+        P3      = 0.D0
+!
+      EPSI    = 1.D-10
+      DLTA    = 1.D-8
+      Y0      = F_ZHAO_CHENG(JUDGE,P0,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      Y1      = F_ZHAO_CHENG(JUDGE,P1,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      Y2      = F_ZHAO_CHENG(JUDGE,P2,SIGMA,ES,NU,DICE,HICE,DEPTH)
+!
+      DO I = 1,IMAX
+         Q = (P2 - P1) / (P1 - P0)
+         A = Q * Y2 - Q * (1.D0+Q) * Y1 + Q**2.D0 * Y0
+         B = (2.D0 * Q + 1.D0) * Y2 - (1.D0 + Q)**2.D0 * Y1 &
+             + Q**2.D0 * Y0
+         C = (1.D0 + Q) * Y2
+!
+         IF ( ABS(A).NE.0.D0 ) THEN
+
+            DISC = B**2.D0 - 4.D0 * A * C;
+!
+            DEN1 = ( B + SQRT ( DISC ) )
+            DEN2 = ( B - SQRT ( DISC ) )
+!
+            IF ( ABS ( DEN1 ) .LT. ABS ( DEN2 ) )THEN
+               P3 = P2 - (P2 - P1) * (2.D0 * C / DEN2)
+            ELSE
+               P3 = P2 - (P2 - P1) * (2.D0 * C / DEN1)
+            ENDIF
+!
+         ELSE
+!
+            IF ( ABS(B) .NE. 0.D0 )THEN
+                P3 = P2 - (P2 - P1) * (C / B)
+            ELSE
+                P3 = P2
+                RETURN
+            ENDIF
+         ENDIF
+ !
+        IF (IMAG(P3).LT.0)THEN
+            P3 = REAL(P3) - CMPLX(0.,1.)*IMAG(P3)
+        ENDIF
+         IF (REAL(P3).LT.0)THEN
+            P3 = -REAL(P3) + CMPLX(0.,1.)*IMAG(P3)
+         ENDIF
+  !
+         IF(NU==0)THEN
+             P3 = CMPLX(REAL(P3),0)
+         ENDIF
+         Y3 = F_ZHAO_CHENG(JUDGE,P3,SIGMA,ES,NU,DICE,HICE,DEPTH);
+         IF ( ABS(P3-P2).LT.DLTA .OR. ABS(Y3).LT.EPSI ) THEN
+            RETURN
+         ENDIF
+
+         P0 = P1
+         P1 = P2
+         P2 = P3
+
+         Y0 = Y1
+         Y1 = Y2
+         Y2 = Y3
+      ENDDO
+!
+      P3 = CMPLX(-100.,0)
+      RETURN
+!/
+    END FUNCTION CMPLX_ROOT_MULLER_CHENG
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION F_ZHAO_CHENG(JUDGE,X,SIGMA,ES,NU,DICE,HICE,DEPTH) &
+             RESULT(FZHAO)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Decide whether to call sub-function.
+!
+!  2. Method :
+!
+!     Decide based on value of integer "JUDGE"
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      FZHAO COMPL8  O    Result (double complex)
+!      X     CMPLX8  I    Approximate result (double complex)
+!      JUDGE INTEGR  I    Switch variable
+!      SIGMA DOUBLE  I    Wave angular frequency
+!      ES    DOUBLE  I    Effective shear modulus
+!      NU    DOUBLE  I    Effective viscosity parameter
+!      DICE  DOUBLE  I    Density of ice
+!      HICE  DOUBLE  I    Thickness of ice
+!      DEPTH DOUBLE  I    Water depth
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name        Type  Module   Description
+!     ----------------------------------------------------------------
+!      DRFUN_dble  Func. W3SIC3MD Function to find root with double 
+!      precision.
+!      DRFUN_quad  Func. W3SIC3MD Function to find root with quadruple
+!      precision.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name               Type  Module   Description
+!     ----------------------------------------------------------------
+!      CMPLX_ROOT_MULLER  Func. W3SIC3MD Find root for complex wave-
+!                                        numbers for waves in ice.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Updated authors: Cheng and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on Aug 25 2015
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER,INTENT(IN)           :: JUDGE
+      DOUBLE PRECISION, INTENT(IN) :: SIGMA,ES,NU,DICE,HICE,DEPTH
+      DOUBLE COMPLEX, INTENT(IN)   :: X
+      DOUBLE COMPLEX               :: FZHAO  ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+      IF (JUDGE ==1) THEN
+         FZHAO = DRFUN_dble_CHENG(X,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      ELSE
+         FZHAO = DRFUN_quad_CHENG(X,SIGMA,ES,NU,DICE,HICE,DEPTH)
+      ENDIF
+!
+    END FUNCTION F_ZHAO_CHENG
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION DRFUN_DBLE_CHENG(WN,SIGMA,ES,NU,DICE,HICE,DEPTH) &
+             RESULT(FUNC1)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Return dispersion relation function value for root finding
+!
+!  2. Method :
+!
+!     function based on dispersion relation derived by Wang and Shen 
+!     2010
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      FUNC1 CMPLX DBL O  Result (COMPLEX(8))
+!      WN    CMPLX DBL I  Wavenumber (COMPLEX(8))
+!      W     REAL  DBL I  Wave angular frequency
+!      ES    REAL  DBL I  Effective shear modulus on ice
+!      NU    REAL  DBL I  Effective viscosity
+!      DICE  REAL  DBL I  Density of ice
+!      HICE  REAL  DBL I  Thickness of ice
+!      DEPTH REAL  DBL I  Water depth
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name    Type  Module    Description
+!     ----------------------------------------------------------------
+!       None.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name    Type  Module   Description
+!     ----------------------------------------------------------------
+!      F_ZHAO_CHENG   xxx    xxxx      xxxxx
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Updated authors: Cheng and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on Aug 25 2015
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: GRAV, DWAT
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      COMPLEX(8), INTENT(IN)   :: WN
+      REAL(8), INTENT(IN)      :: SIGMA, ES, NU, DICE, HICE, DEPTH
+      COMPLEX(8)               :: FUNC1                   ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      COMPLEX(8)   :: VE,ALPHA,N,M,L,SK,CK,SA,CA,TH,THH,TEMP,J1,J2
+!/
+!/ ------------------------------------------------------------------- /
+      VE    = CMPLX( NU, ES/DICE/SIGMA )
+      ALPHA = SQRT ( WN**2. - SIGMA/VE * CMPLX(0.,1.D0) )
+      N     = SIGMA + 2. * VE * WN**2. * CMPLX(0.,1.D0)
+
+      TEMP  = EXP(WN*HICE)
+      SK    = (TEMP - 1.D0/TEMP)/2.D0
+      CK    = (TEMP + 1.D0/TEMP)/2.D0
+
+      TEMP  = EXP(ALPHA*HICE)
+      SA    = (TEMP - 1.D0/TEMP)/2.D0
+      CA    = (TEMP + 1.D0/TEMP)/2.D0
+!
+      TEMP  = (WN*DEPTH)
+      IF ( REAL(TEMP).LT.18.D0 ) THEN
+          TEMP = EXP(TEMP)
+          TH = (TEMP - 1./TEMP)/(TEMP + 1./TEMP)
+      ELSE
+          TH = 1.D0
+      ENDIF
+!
+      J1    = DICE/DBLE(DWAT)*(WN**2.*DBLE(GRAV)**2.*SK*SA - (N**4. &
+              + 16.* VE**4.*WN**6.*ALPHA**2.)*SK*SA - 8. &
+              *WN**3.*ALPHA*VE**2.*N**2.*(CK*CA-1.))
+      J2    = (4.*WN**3.*ALPHA*VE**2.*SK*CA+N**2.*SA*CK &
+              -DBLE(GRAV)*WN*SK*SA)
+      FUNC1 = (SIGMA**2. - TH*WN*DBLE(GRAV))*J2 - TH*J1
+!/
+    END FUNCTION DRFUN_DBLE_CHENG
+!/ ------------------------------------------------------------------- /
+
+!/ ------------------------------------------------------------------- /
+!/
+    FUNCTION DRFUN_QUAD_CHENG(WN,SIGMA,ES,NU,DICE,HICE,DEPTH) &
+             RESULT(FUNC1)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           E. Rogers               |
+!/                  |           S. Zieger               |
+!/                  |           X. Zhao                 |
+!/                  |           S. Cheng                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Jan-2016 |
+!/                  +-----------------------------------+
+!/
+!/    06-May-2013 : Origination (port from Clarkson.f90)( version 4.10 )
+!/                                                        (E. Rogers)
+!/    09-Oct-2013 : Update to meet WW3 coding standard    (S. Zieger)
+!/    30-Oct-2013 : Clarkson.f90 update added             (S. Zieger)
+!/
+!  1. Purpose :
+!
+!     Return dispersion relation function value for root finding
+!
+!  2. Method :
+!
+!     Use quadruple precision for computation
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!      FUNC1 CMPLX DBL O  Result (COMPLEX(8))
+!      WN    CMPLX DBL I  Wavenumber (COMPLEX(8))
+!      W     REAL  DBL I  Wave angular frequency
+!      ES    REAL  DBL I  Effective shear modulus on ice
+!      NU    REAL  DBL I  Effective viscosity
+!      DICE  REAL  DBL I  Density of ice
+!      HICE  REAL  DBL I  Thickness of ice
+!      DEPTH REAL  DBL I  Water depth
+!
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name    Type  Module    Description
+!     ----------------------------------------------------------------
+!      None.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name    Type  Module   Description
+!     ----------------------------------------------------------------
+!      F_ZHAO_CHENG   xxx    xxxx      xxxxx
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!   Updated authors: Cheng and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on Aug 25 2015
+!   Original authors: Zhao and Shen.
+!   This code is based on Fortran code provided by Hayley Shen (Clarkson
+!     University) to Erick Rogers (NRL) on April 19 2013.
+!   ER: S. Cheng had "COMPLEX(16)" for the local parameters. This is not 
+!     supported by my compiler (gfortran on linux machine), so I changed
+!     it to "COMPLEX(8)"
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+! 10. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS, ONLY: GRAV, DWAT
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      COMPLEX(8), INTENT(IN)   :: WN
+      REAL(8), INTENT(IN)      :: SIGMA, ES, NU, DICE, HICE, DEPTH
+      COMPLEX(8)               :: FUNC1                   ! RESULT
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      COMPLEX(8)   :: VE,ALPHA,N,M,L,SK,CK,SA,CA,TH,THH,TEMP,J1,J2
+!/
+!/ ------------------------------------------------------------------- /
+      VE    = CMPLX( NU, ES/DICE/SIGMA )
+      ALPHA = SQRT ( WN**2. - SIGMA/VE * CMPLX(0.,1.D0) )
+      N     = SIGMA + 2. * VE * WN**2. * CMPLX(0.,1.D0)
+
+      TEMP  = EXP(WN*HICE)
+      SK    = (TEMP - 1.D0/TEMP)/2.D0
+      CK    = (TEMP + 1.D0/TEMP)/2.D0
+
+      TEMP  = EXP(ALPHA*HICE)
+      SA    = (TEMP - 1.D0/TEMP)/2.D0
+      CA    = (TEMP + 1.D0/TEMP)/2.D0
+!
+      TEMP  = (WN*DEPTH)
+      IF ( REAL(TEMP).LT.18.D0 ) THEN
+          TEMP = EXP(TEMP)
+          TH = (TEMP - 1./TEMP)/(TEMP + 1./TEMP)
+      ELSE
+          TH = 1.D0
+      ENDIF
+!
+      J1    = DICE/DBLE(DWAT)*(WN**2.*DBLE(GRAV)**2.*SK*SA - (N**4. &
+              + 16.* VE**4.*WN**6.*ALPHA**2.)*SK*SA - 8. &
+              *WN**3.*ALPHA*VE**2.*N**2.*(CK*CA-1.))
+      J2    = (4.*WN**3.*ALPHA*VE**2.*SK*CA+N**2.*SA*CK &
+              -DBLE(GRAV)*WN*SK*SA)
+      FUNC1 = (SIGMA**2. - TH*WN*DBLE(GRAV))*J2 - TH*J1
+!/
+    END FUNCTION DRFUN_quad_CHENG
+!/ ------------------------------------------------------------------- /
+! End of new codes (or new variants) provided by S. Cheng
+!/ ------------------------------------------------------------------- /
+!/
+!/ End of module W3SIC3MD -------------------------------------------- /
+!/
+      END MODULE W3SIC3MD

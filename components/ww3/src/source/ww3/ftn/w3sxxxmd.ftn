@@ -1,0 +1,297 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3SXXXMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         29-May-2009 |
+!/                  +-----------------------------------+
+!/
+!/    15-Jul-2005 : Origination.                        ( version 3.07 )
+!/    23-Jun-2006 : Formatted for submitting code for   ( version 3.09 )
+!/                  inclusion in WAVEWATCH III.
+!/    29-May-2009 : Preparing distribution version.     ( version 3.14 )
+!/
+!/    Copyright 2009 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Dummy slot for arbitrary additional source term.
+!        This module can be used to include user-defined source term(s),
+!     or to submit a source term to be included into the WAVEWATCH III
+!     distribution. See section 5 for requirements for submissions.
+!        Codes may be included in WAVEWATCH III as a standard option
+!     with it's own dedicated compile switch, or as a version of this
+!     module that can be plugged in by a user.
+!
+!  2. Variables and types :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      W3SXXX    Subr. Public   User supplied source term.
+!      INSXXX    Subr. Public   Corresponding initialization routine.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Remarks :
+!
+!     WAVEWATCH III is designed as a highly plug-compatible code.
+!     Source term modules can be included as self-contained modules,
+!     with limited changes needed to the interface of routine calls
+!     in W3SRCE, and in the point postprocessing programs only.
+!     Codes submitted for inclusion in WAVEWATCH III should be
+!     self-contained in the way described below, and might be
+!     provided with distributions fully integrated in the data
+!     structure, or as an optional version of this module to be
+!     included by the user.
+!
+!     Rules for preparing a module to be included in or distributed
+!     with WAVEWATCH III :
+!
+!      - Fully document the code following the outline given in this
+!        file, and according to all other WAVEWATCH III routines.
+!      - Provide a file with necessary modifications to W3SRCE and
+!        all other routines that require modification.
+!      - Provide a test case with expected results.
+!      - It is strongly recommended that the programming style used
+!        in WAVEWATCH III is followed, in particular 
+!          a) for readability, write as if in fixed FORTRAN format 
+!             regarding column use, even though all files are F90
+!             free format.
+!          b) I prefer upper case programming for permanent code,
+!             as I use lower case in debugging and temporary code.
+!
+!     This module needs to be self-contained in the following way.
+!
+!      a) All saved variables connected with this source term need
+!         to be declared in the module header. Upon acceptance as
+!         permanent code, they will be converted to the WAVEWATCH III
+!         dynamic data structure.  
+!      b) Provide a separate computation and initialization routine.
+!         In the submission, the initialization should be called
+!         from the computation routine upon the first call to the
+!         routine. Upon acceptance as permanent code, the
+!         initialization routine will be moved to a more appropriate
+!         location in the code (i.e., being absorbed in ww3_grid or
+!         being moved to W3IOGR). 
+!
+!     See notes in the file below where to add these elements.
+!
+!  6. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+!  7. Source code :
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!     *****************************************
+!     ***    Declare saved variables here   ***
+!     ***  public or private as appropriate ***
+!     *****************************************
+!
+      PUBLIC
+!/
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SXXX
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         23-Jun-2006 |
+!/                  +-----------------------------------+
+!/
+!/    15-Jul-2005 : Origination.                        ( version 3.07 )
+!/    23-Jun-2006 : Formatted for submitting code for   ( version 3.09 )
+!/                  inclusion in WAVEWATCH III.
+!/
+!  1. Purpose :
+!
+!     Slot for user-supplied source term.
+!
+!  2. Method :
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. W3SRCEMD Source term integration.
+!      W3EXPO    Subr.   N/A    Point output post-processor.
+!      GXEXPO    Subr.   N/A    GrADS point output post-processor.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+      LOGICAL, SAVE           :: FIRST = .TRUE.
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3SXXX')
+!
+! 0.  Initializations ------------------------------------------------ *
+!
+!     **********************************************************
+!     ***    The initialization routine should include all   ***
+!     *** initialization, including reading data from files. ***
+!     **********************************************************
+!
+      IF ( FIRST ) THEN
+          CALL INSXXX
+          FIRST  = .FALSE.
+        END IF
+!
+! 1.  .... ----------------------------------------------------------- *
+!
+      WRITE (NDSE,*)
+      WRITE (NDSE,*) ' *** ROUTINE W3SXXX NOT YET AVAILABLE *** '
+      WRITE (NDSE,*)
+      CALL EXTCDE ( 99 )
+!/
+!/ End of W3SXXX ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SXXX
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE INSXXX
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         23-Jun-2006 |
+!/                  +-----------------------------------+
+!/
+!/    23-Jun-2006 : Origination.                        ( version 3.09 )
+!/
+!  1. Purpose :
+!
+!     Initialization for source term routine.
+!
+!  2. Method :
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SXXX    Subr. W3SXXXMD Corresponding source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3ODATMD, ONLY: NDSE
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+!/S      INTEGER, SAVE           :: IENT = 0
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'INSXXX')
+!
+! 1.  .... ----------------------------------------------------------- *
+!
+!/
+!/ End of INSXXX ----------------------------------------------------- /
+!/
+      END SUBROUTINE INSXXX
+!/
+!/ End of module INSXXXMD -------------------------------------------- /
+!/
+      END MODULE W3SXXXMD

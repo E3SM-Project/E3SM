@@ -1,0 +1,11 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Track output post-processing                           $
+$--------------------------------------------------------------------- $
+$ The number of wavenumbers and directions need to be read in as they
+$ determine the record length of the data file ...
+$
+  25  24
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

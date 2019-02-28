@@ -1,0 +1,1383 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3SRCEMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |            F. Ardhuin             |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Dec-2015 |
+!/                  +-----------------------------------+
+!/
+!/    For updates see subroutine.
+!/
+!  1. Purpose :
+!
+!     Source term integration routine.
+!
+!  2. Variables and types :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      OFFSET    R.P.  Private  Offset in time integration scheme.
+!                               0.5 in original WAM, now 1.0
+!     ----------------------------------------------------------------
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      W3SRCE    Subr. Public   Calculate and integrate source terms.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!     See corresponding documentation of W3SRCE.
+!
+!  5. Remarks :
+!
+!  6. Switches :
+!
+!       See section 9 of W3SRCE.
+!
+!  7. Source code :
+!
+!/ ------------------------------------------------------------------- /
+!/
+      REAL, PARAMETER, PRIVATE:: OFFSET = 1.
+!/
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3SRCE ( IT, IX, IY, IMOD, SPEC, ALPHA, WN1, CG1,    &
+                          D_INP, U10ABS, U10DIR, AS, USTAR, USTDIR,   &
+                          CX, CY,  ICE, ICEH, ICEF, ICEDMAX,          &
+                          REFLEC, REFLED, DELX, DELY, DELA, TRNX,     &
+                          TRNY, BERG, FPI, DTDYN, FCUT, DTG, TAUWX,   &
+                          TAUWY, TAUOX, TAUOY, TAUWIX, TAUWIY, TAUWNX,&
+                          TAUWNY, PHIAW, CHARN, PHIOC, WHITECAP, D50, &
+                          PSIC, BEDFORM , PHIBBL, TAUBBL, TAUICE,     &
+                          PHICE, COEF) 
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |            F. Ardhuin             |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         13-Dec-2015 |
+!/                  +-----------------------------------+
+!/
+!/    06-Dec-1996 : Final FORTRAN 77                    ( version 1.18 )
+!/    04-Feb-2000 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/    14-Feb-2000 : Exact-NL added                      ( version 2.01 )
+!/    04-May-2000 : Non-central integration             ( version 2.03 )
+!/    02-Feb-2001 : Xnl version 3.0                     ( version 2.07 )
+!/    09-May-2002 : Switch clean up.                    ( version 2.21 )
+!/    13-Nov-2002 : Add stress vector.                  ( version 3.00 )
+!/    27-Nov-2002 : First version of VDIA and MDIA.     ( version 3.01 )
+!/    07-Oct-2003 : Output options for NN training.     ( version 3.05 )
+!/    24-Dec-2004 : Multiple model version.             ( version 3.06 )
+!/    23-Jun-2006 : Linear input added.                 ( version 3.09 )
+!/    27-Jun-2006 : Adding file name preamble.          ( version 3.09 )
+!/    04-Jul-2006 : Separation of stress computation.   ( version 3.09 )
+!/    16-Apr-2007 : Miche style limiter added.          ( version 3.11 )
+!/                  (J. H. Alves)
+!/    25-Apr-2007 : Battjes-Janssen Sdb added.          ( version 3.11 )
+!/                  (J. H. Alves)
+!/    09-Oct-2007 : Adding WAM 4+ and SB1 options.      ( version 3.13 )
+!/                  (F. Ardhuin)
+!/    29-May-2009 : Preparing distribution version.     ( version 3.14 )
+!/    19-Aug-2010 : Making treatment of 0 water depth   ( version 3.14.6 )
+!/                  consistent with the rest of the model.
+!/    31-Mar-2010 : Adding ice conc. and reflections    ( version 3.14.4 )
+!/    15-May-2010 : Adding transparencies               ( version 3.14.4 ) 
+!/    01-Jun-2011 : Movable bed bottom friction in BT4  ( version 4.01 ) 
+!/    01-Jul-2011 : Energy and momentum flux, friction  ( version 4.01 ) 
+!/    24-Aug-2011 : Uses true depth for depth-induced   ( version 4.04 )
+!/    16-Sep-2011 : Initialization of TAUWAX, TAUWAY    ( version 4.04 )
+!/     1-Dec-2011 : Adding BYDRZ source term package    ( version 4.04 )
+!/                  ST6 and optional Hwang (2011)
+!/                  stresses FLX4. 
+!/    14-Mar-2012 : Update of BT4, passing PSIC         ( version 4.04 )
+!/    13-Jul-2012 : Move GMD (SNL3) and nonlinear filter (SNLS)
+!/                  from 3.15 (HLT).                    ( version 4.08 )
+!/    28-Aug-2013 : Corrected MLIM application          ( version 4.11 )
+!/    10-Sep-2013 : Special treatment for IG band       ( version 4.15 )
+!/    14-Nov-2013 : Make orphaned pars in par lst local ( version 4.13 )
+!/    17-Nov-2013 : Coupling fraction of ice-free       ( version 4.13 )
+!/                  surface to SIN and SDS. (S. Zieger)
+!/    01-Avr-2014 : Adding ice thickness and floe size  ( version 4.18 )
+!/    23-May-2014 : Adding ice fluxes to W3SRCE         ( version 5.01 )
+!/    27-Aug-2015 : Adding inputs to function W3SIS2    ( version 5.10 )
+!/    13-Dec-2015 : Exact integration of ice terms      ( version 5.10 )
+!/
+!/    Copyright 2009-2013 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Calculate and integrate source terms for a single grid point.
+!
+!  2. Method :
+!
+!     Physics  : see manual and corresponding subroutines.
+!
+!     Numerics :
+!
+!     Dynamic-implicit integration of the source terms based on
+!     WW-II (Tolman 1992). The dynamic time step is calculated
+!     given a maximum allowed change of spectral densities for
+!     frequencies / wavenumbers below the usual cut-off.
+!     The maximum change is given by the minimum of a parametric
+!     and a relative change. The parametric change relates to a
+!     PM type equilibrium range
+!
+!                                -1  (2pi)**4       1
+!       dN(k)     =  Xp alpha  pi   ---------- ------------
+!            max                       g**2     k**3 sigma
+!
+!                              1                                     .
+!                 =  FACP ------------                              (1)
+!                          k**3 sigma                                .
+!
+!     where
+!           alpha = 0.62e-4                       (set in W3GRID)
+!           Xp      fraction of PM shape          (read in W3GRID)
+!           FACP    combined factor               (set in W3GRID)
+!
+!     The maximum relative change is given as
+!
+!                           /            +-                  -+ \    .
+!       dN(k)     =  Xr max | N(k) , max | Nx , Xfilt N(k)    | |   (2)
+!            max            \            +-               max-+ /    .
+!
+!     where
+!           Xr      fraction of relative change   (read in W3GRID)
+!           Xfilt   filter level                  (read in W3GRID)
+!           Nx      Maximum parametric change (1)
+!                   for largest wavenumber.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       IX,IY   Int.   I   Discrete grid point counters.
+!       IMOD    Int.   I   Model number.
+!       SPEC    R.A.  I/O  Spectrum (action) in 1-D form.
+!       ALPHA   R.A.  I/O  Nondimenional 1-D spectrum corresponding
+!                          to above full spectra (Phillip's const.).
+!                          Calculated separately for numerical
+!                          economy on vector machine (W3SPR2).
+!       WN1     R.A.   I   Discrete wavenumbers.
+!       CG1     R.A.   I   Id. group velocities.
+!       D_INP   Real.  I   Depth. Compared to DMIN to get DEPTH.
+!       U10ABS  Real.  I   Wind speed at reference height.
+!       U10DIR  Real.  I   Id. wind direction.
+!       AS      Real.  I   Air-sea temp. difference.      ( !/ST3 )
+!       USTAR   Real. !/O  Friction velocity.
+!       USTDIR  Real  !/O  Idem, direction.
+!       CX-Y    Real.  I   Current velocity components.   ( !/BS1 )
+!       ICE     Real   I   Sea ice concentration          
+!       ICEH    Real   I   Sea ice thickness 
+!       ICEF    Real  I/O  Sea ice maximum floe diameter  (updated)        
+!       ICEDMAX Real  I/O  Sea ice maximum floe diameter          
+!       BERG    Real   I   Iceberg damping coefficient    ( !/BS1 )
+!       REFLEC  R.A.   I   reflection coefficients        ( !/BS1 )
+!       REFLED  I.A.   I   reflection direction           ( !/BS1 )
+!       TRNX-Y  Real   I   Grid transparency in X and Y   ( !/BS1 )
+!       DELX    Real.  I   grid cell size in X direction  ( !/BS1 )
+!       DELY    Real.  I   grid cell size in Y direction  ( !/BS1 )
+!       DELA    Real.  I   grid cell area                 ( !/BS1 )
+!       FPI     Real  I/O  Peak-input frequency.          ( !/ST2 )
+!      WHITECAP R.A.   O   Whitecap statisics             ( !/ST4 )
+!       DTDYN   Real   O   Average dynamic time step.
+!       FCUT    Real   O   Cut-off frequency for tail.
+!       DTG     Real   I   Global time step.
+!       D50     Real   I   Sand grain size                ( !/BT4 )
+!       BEDFORM R.A.  I/O  Bedform parameters             ( !/BT4 )
+!       PSIC    Real   I   Critical Shields               ( !/BT4 )
+!       PHIBBL  Real   O   Energy flux to BBL             ( !/BTx )
+!       TAUBBL  R.A.   O   Momentum flux to BBL           ( !/BTx ) 
+!       TAUICE  R.A.   O   Momentum flux to sea ice       ( !/ICx )
+!       PHICE   Real   O   Energy flux to sea ice         ( !/ICx ) 
+!     ----------------------------------------------------------------
+!       Note: several pars are set to I/O to avoid compiler warnings.
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SPRn    Subr. W3SRCnMD Mean wave parameters for use in
+!                               source terms.
+!      W3FLXn    Subr. W3FLXnMD Flux/stress computation.
+!      W3SLNn    Subr. W3SLNnMD Linear input.
+!      W3SINn    Subr. W3SRCnMD Input source term.
+!      W3SNLn    Subr. W3SNLnMD Nonlinear interactions.
+!      W3SNLS    Subr. W3SNLSMD Nonlinear smoother.
+!      W3SDSn    Subr. W3SRCnMD Whitecapping source term
+!      W3SBTn    Subr. W3SBTnMD Bottom friction source term.
+!      W3SDBn    Subr. W3SBTnMD Depth induced breaking source term.
+!      W3STRn    Subr. W3STRnMD Triad interaction source term.
+!      W3SBSn    Subr. W3SBSnMD Bottom scattering source term.
+!      W3REFn    Subr. W3REFnMD Reflexions (shore, icebergs ...).
+!      W3SXXn    Subr. W3SXXnMD Unclassified source term.
+!      STRACE    Subr. W3SERVMD Subroutine tracing (!/S)
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3WAVE    Subr. W3WAVEMD Actual wave model routine.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!     - No testing is performed on the status of the grid point.
+!
+!  8. Structure :
+!
+!     -----------------------------------------------------------------
+!       1.   Preparations
+!         a  Set maximum change and wavenumber arrays.
+!         b  Prepare dynamic time stepping.
+!         c  Compute mean parameters.                       ( W3SPRn )
+!         d  Compute stresses (if posible).
+!         e  Prepare cut-off
+!         f  Test output for !/NNT option.
+!     --start-dynamic-integration-loop---------------------------------
+!       2.  Calculate source terms
+!         a Input.                                  ( W3SLNx, W3SINn )
+!         b Nonlinear interactions.                         ( W3SNLn )
+!         c Dissipation                                     ( W3SDSn )
+!           1 as included in source terms                   ( W3SDSn )
+!           2 optional dissipation due to different physics ( W3SWLn )
+!         d Bottom friction.                                ( W3SBTn )
+!       3.  Calculate cut-off frequencie(s)
+!       4.  Summation of source terms and diagonal term and time step.
+!       5.  Increment spectrum.
+!       6.  Add tail
+!         a Mean wave parameters and cut-off                ( W3SPRn )
+!         b 'Seeding' of spectrum.                          ( !/SEED )
+!         c Add tail
+!       7.  Check if integration complete.
+!     --end-dynamic-integration-loop-----------------------------------
+!       8.  Save integration data.
+!     -----------------------------------------------------------------
+!
+!  9. Switches :
+!
+!     !/FLX1  Wu (1980) stress computation.              ( Choose one )
+!     !/FLX2  T&C (1996) stress computation.
+!     !/FLX3  T&C (1996) stress computation with cap.
+!     !/FLX4  Hwang (2011) stress computation (2nd order).
+!
+!     !/LN0   No linear input.                           ( Choose one )
+!     !/LNX   User-defined bottom friction.
+!
+!     !/ST0   No input and dissipation.                  ( Choose one )
+!     !/ST1   WAM-3 input and dissipation.
+!     !/ST2   Tolman and Chalikov (1996)  input and dissipation.
+!     !/ST3   WAM 4+ input and dissipation.
+!     !/ST4   Ardhuin et al. (2009, 2010)
+!     !/ST6   BYDB source terms after Babanin, Young, Donelan and Banner.
+!     !/STX   User-defined input and dissipation.
+!
+!     !/NL0   No nonlinear interactions.                 ( Choose one )
+!     !/NL1   Discrete interaction approximation.
+!     !/NL2   Exact nonlinear interactions.
+!     !/NL3   Generalized Multiple DIA.
+!     !/NL4   Two Scale Approximation
+!     !/NLX   User-defined nonlinear interactions.
+!     !/NLS   Nonlinear HF smoother.
+!
+!     !/BT0   No bottom friction.                        ( Choose one )
+!     !/BT1   JONSWAP bottom friction.
+!     !/BT4   Bottom friction using movable bed roughness 
+!                  (Tolman 1994, Ardhuin & al. 2003)
+!     !/BT8   Muddy bed (Dalrymple & Liu).
+!     !/BT9   Muddy bed (Ng).
+!     !/BTX   User-defined bottom friction.
+!
+!     !/IC1   Dissipation via interaction with ice according to simple
+!             methods: 1) uniform in frequency or 
+!     !/IC2            2) Liu et al. model
+!     !/IC3   Dissipation via interaction with ice according to a
+!             viscoelastic sea ice model (Wang and Shen 2010).
+!     !/IC4   Dissipation via interaction with ice as a function of freq.
+!             (empirical/parametric methods)
+!     !/DB0   No depth-limited breaking.                 ( Choose one )
+!     !/DB1   Battjes-Janssen depth-limited breaking.
+!     !/DBX   User-defined bottom friction.
+!
+!     !/TR0   No triad interactions.                     ( Choose one )
+!     !/TR1   Lumped Triad Approximation (LTA).
+!     !/TRX   User-defined triad interactions.
+!
+!     !/BS0   No bottom scattering.                      ( Choose one )
+!     !/BS1   Scattering term by Ardhuin and Magne (2007).
+!     !/BSX   User-defined bottom scattering
+!
+!     !/XX0   No arbitrary additional source term.       ( Choose one )
+!     !/XXX   User-defined bottom friction.
+!
+!     !/MLIM  Miche style limiter for shallow water and steepness.
+!
+!     !/SEED  'Seeding' of lowest frequency for suffuciently strong
+!             winds.
+!
+!     !/NNT   Write output to file test_data_NNN.ww3 for NN training.
+!
+!     !/S     Enable subroutine tracing.
+!     !/T     Enable general test output.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS
+      USE W3GDATMD, ONLY: NK, NTH, NSPEC, SIG, TH, DMIN, DTMAX,       &
+                          DTMIN, FACTI1, FACTI2, FACSD, FACHFA, FACP, &
+                          XFC, XFLT, XREL, XFT, FXFM, FXPM, DDEN,     &
+                          FTE, FTF, FHMAX, ECOS, ESIN, IICEDISP,      &
+                          ICE100WIND
+!/REF1 USE W3GDATMD, ONLY: IOBP, IOBPD, GTYPE, UNGTYPE
+      USE W3WDATMD, ONLY: TIME
+      USE W3ODATMD, ONLY: NDSE, NDST, IAPROC
+      USE W3IDATMD, ONLY: INFLAGS1, INFLAGS2, ICEP2
+      USE W3DISPMD      
+!/NNT      USE W3ODATMD, ONLY: IAPROC, SCREEN, FNMPRE
+!/FLD1      USE W3FLD1MD, ONLY: W3FLD1
+!/FLD2      USE W3FLD2MD, ONLY: W3FLD2
+!/FLX1      USE W3FLX1MD
+!/FLX2      USE W3FLX2MD
+!/FLX3      USE W3FLX3MD
+!/FLX4      USE W3FLX4MD
+!/LN1      USE W3SLN1MD
+!/LNX      USE W3SLNXMD
+!/ST0      USE W3SRC0MD
+!/ST1      USE W3SRC1MD
+!/ST2      USE W3SRC2MD
+!/ST2      USE W3GDATMD, ONLY : ZWIND
+!/ST3      USE W3SRC3MD
+!/ST3      USE W3GDATMD, ONLY : ZZWND, FFXFM, FFXPM
+!/ST4      USE W3SRC4MD, ONLY : W3SPR4, W3SIN4, W3SDS4
+!/ST4      USE W3GDATMD, ONLY : ZZWND, FFXFM, FFXPM, FFXFA, FFXFI, FFXFD
+!/ST6      USE W3SRC6MD
+!/ST6      USE W3SWLDMD, ONLY : W3SWL6
+!/ST6      USE W3GDATMD, ONLY : SWL6S6
+!/STX      USE W3SRCXMD
+!/NL1      USE W3SNL1MD
+!/NL2      USE W3SNL2MD
+!/NL3      USE W3SNL3MD
+!/NL4      USE W3SNL4MD
+!/NLX      USE W3SNLXMD
+!/NLS      USE W3SNLSMD
+!/BT1      USE W3SBT1MD
+!/BT4      USE W3SBT4MD
+!/BT8      USE W3SBT8MD
+!/BT9      USE W3SBT9MD
+!/BTX      USE W3SBTXMD
+!/IC1      USE W3SIC1MD
+!/IC2      USE W3SIC2MD
+!/IC3      USE W3SIC3MD
+!/IC4      USE W3SIC4MD
+!/IS1      USE W3SIS1MD
+!/IS2      USE W3SIS2MD
+!/IS2      USE W3GDATMD, ONLY : IS2PARS
+!/DB1      USE W3SDB1MD
+!/DBX      USE W3SDBXMD
+!/TR1      USE W3STR1MD
+!/TRX      USE W3STRXMD
+!/BS1      USE W3SBS1MD
+!/REF1     USE W3REF1MD
+!/BSX      USE W3SBSXMD
+!/IG1      USE W3GDATMD, ONLY : IGPARS
+!/XXX      USE W3SXXXMD
+!/S      USE W3SERVMD, ONLY: STRACE
+!/NNT      USE W3SERVMD, ONLY: EXTCDE
+!/
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: IT, IX, IY, IMOD
+      REAL, INTENT(IN)        :: D_INP, U10ABS,     &
+                                 U10DIR, AS, CX, CY, DTG, D50,PSIC,   &
+                                 ICE, ICEH
+      INTEGER, INTENT(IN)     :: REFLED(6)
+      REAL, INTENT(IN)        :: REFLEC(4), DELX, DELY, DELA,         &
+                                 TRNX, TRNY, BERG, ICEDMAX
+      REAL, INTENT(INOUT)     :: WN1(NK), CG1(NK), &
+                                 SPEC(NSPEC), ALPHA(NK), USTAR,       &
+                                 USTDIR, FPI, TAUOX, TAUOY,           &
+                                 TAUWX, TAUWY, PHIAW, PHIOC, PHICE,   &
+                                 CHARN, BEDFORM(3), PHIBBL,           &
+                                 TAUBBL(2), TAUICE(2), WHITECAP(4),   &
+                                 TAUWIX, TAUWIY, TAUWNX, TAUWNY,      &
+                                 ICEF
+      REAL, INTENT(OUT)       :: DTDYN, FCUT
+      REAL, INTENT(IN)        :: COEF
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: IK, ITH, IS, IS0, NSTEPS,  NKH, NKH1,&
+                                 IKS1, IS1, NSPECH, IDT, IERR, NKI, NKD
+!/S      INTEGER, SAVE           :: IENT = 0
+!/NNT      INTEGER, SAVE           :: NDSD = 89, NDSD2 = 88, J
+      REAL                    :: DTTOT, FHIGH, DT, AFILT, DAMAX, AFAC,&
+                                 HDT, ZWND, FP, DEPTH, TAUSCX, TAUSCY, FHIGI 
+      REAL                    :: EMEAN, FMEAN, WNMEAN, AMAX, CD, Z0, SCAT
+      REAL                    :: WN_R(NK), CG_ICE(NK),ALPHA_LIU(NK), ICECOEF2
+      DOUBLE PRECISION        :: ATT
+!/ST1      REAL                    :: FH1, FH2
+!/ST2      REAL                    :: FHTRAN, DFH, FACDIA, FACPAR
+!/ST3      REAL                    :: FMEANS, FH1, FH2
+!/ST4      REAL                    :: FMEANS, FH1, FH2, FAGE
+      REAL                    :: QCERR  = 0.     !/XNL2 and !/NNT
+!/SEED      REAL                    :: UC, SLEV
+!/MLIM      REAL                    :: HM, EM
+!/NNT      REAL                    :: FACNN
+!/T      REAL                    :: DTRAW
+      REAL                    :: EBAND, DIFF, EFINISH, HSTOT, PHINL,       &
+                                 FMEAN1, FMEANWS, MWXINIT, MWYINIT,        &
+                                 FACTOR, FACTOR2, DRAT, TAUWAX, TAUWAY,    &
+                                 MWXFINISH, MWYFINISH, A1BAND, B1BAND,     &
+                                 COSI(2)
+      REAL                    :: SPECINIT(NSPEC), SPEC2(NSPEC)
+      REAL                    :: DAM (NSPEC), WN2 (NSPEC),            &
+                                 VSLN(NSPEC),                         &
+                                 VSIN(NSPEC), VDIN(NSPEC),            &
+                                 VSNL(NSPEC), VDNL(NSPEC),            &
+                                 VSDS(NSPEC), VDDS(NSPEC),            &
+!/ST6                                 VSWL(NSPEC), VDWL(NSPEC),            &
+                                 VSBT(NSPEC), VDBT(NSPEC),            &
+!/IC1                                 VSIC(NSPEC), VDIC(NSPEC),            &
+!/IC2                                 VSIC(NSPEC), VDIC(NSPEC),            &
+!/IC3                                 VSIC(NSPEC), VDIC(NSPEC),            &
+!/IC4                                 VSIC(NSPEC), VDIC(NSPEC),            &
+!/DB1                                 VSDB(NSPEC), VDDB(NSPEC),            &
+!/DBX                                 VSDB(NSPEC), VDDB(NSPEC),            &
+!/TR1                                 VSTR(NSPEC), VDTR(NSPEC),            &
+!/TRX                                 VSTR(NSPEC), VDTR(NSPEC),            &
+!/BS1                                 VSBS(NSPEC), VDBS(NSPEC),            &
+!/BSX                                 VSBS(NSPEC), VDBS(NSPEC),            &
+!/REF1                                VREF(NSPEC),                         &
+!/IS1                                 VSIR(NSPEC), VDIR(NSPEC),            &
+!/IS2                                 VSIR(NSPEC), VDIR(NSPEC),VDIR2(NSPEC), &
+!/XXX                                 VSXX(NSPEC), VDXX(NSPEC),            &
+                                 VS  (NSPEC), VD  (NSPEC), EB(NK)
+!/ST6      REAL                    :: SWL(NSPEC), DWL(NSPEC)
+!/ST3      LOGICAL                 :: LLWS(NSPEC) 
+!/ST4      LOGICAL                 :: LLWS(NSPEC)
+!/ST4      REAL                    :: BRLAMBDA(NSPEC)
+!/IS2      DOUBLE PRECISION        :: SCATSPEC(NTH) 
+      REAL                    :: FOUT(NK,NTH), SOUT(NK,NTH), DOUT(NK,NTH)
+!/FLD1     REAL, SAVE              :: TAUNUX, TAUNUY
+!/FLD2     REAL, SAVE              :: TAUNUX, TAUNUY
+      LOGICAL, SAVE           :: FLTEST = .FALSE., FLAGNN = .TRUE.
+      LOGICAL                 :: SHAVE
+      LOGICAL, SAVE           :: FIRST = .TRUE.
+
+!/NNT      CHARACTER(LEN=17), SAVE :: FNAME = 'test_data_nnn.ww3'
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3SRCE')
+!
+!/T      FLTEST = .TRUE.
+!
+      DEPTH  = MAX ( DMIN , D_INP )
+      IKS1 = 1
+!/IG1! 
+!/IG1! Does not integrate source terms for IG band if IGPARS(12) = 0. 
+!/IG1! 
+!/IG1      IF (NINT(IGPARS(12)).EQ.0) IKS1 = NINT(IGPARS(5)) 
+      IS1=(IKS1-1)*NTH+1
+!
+!/LN0      VSLN = 0.
+!/SEED      VSLN = 0.
+!/ST0      VSIN = 0.
+!/ST0      VDIN = 0.
+!/NL0      VSNL = 0.
+!/NL0      VDNL = 0.
+!/ST0      VSDS = 0.
+!/ST0      VDDS = 0.
+      VSBT = 0.
+      VDBT = 0.
+!/IC1      VSIC = 0.
+!/IC1      VDIC = 0.
+!/IC2      VSIC = 0.
+!/IC2      VDIC = 0.
+!/IC3      VSIC = 0.
+!/IC3      VDIC = 0.
+!/IC4      VSIC = 0.
+!/IC4      VDIC = 0.
+!
+!/IS1      VSIR = 0.
+!/IS1      VDIR = 0.
+!/IS2      VSIR = 0.
+!/IS2      VDIR = 0.
+!/IS2      VDIR2= 0.
+!
+!/ST6      VSWL = 0.
+!/ST6      VDWL = 0.
+!/ST6      SWL  = 0.
+!/ST6      DWL  = 0.
+!
+!/ST0      ZWND   = 10.
+!/ST1      ZWND   = 10.
+!/ST2      ZWND   = ZWIND
+!/ST4      ZWND   = ZZWND
+!/ST6      ZWND   = 10.
+!
+       DRAT  = DAIR / DWAT
+!/T      WRITE (NDST,9000)
+!/T      WRITE (NDST,9001) DEPTH, U10ABS, U10DIR*RADE
+!
+! 1.  Preparations --------------------------------------------------- *
+!
+! 1.a Set maximum change and wavenumber arrays.
+!
+      DO IK=1, NK
+        DAM(1+(IK-1)*NTH) = FACP / ( SIG(IK) * WN1(IK)**3 )
+        WN2(1+(IK-1)*NTH) = WN1(IK)
+        END DO
+!
+      DO IK=1, NK
+        IS0    = (IK-1)*NTH
+        DO ITH=2, NTH
+          DAM(ITH+IS0) = DAM(1+IS0)
+          WN2(ITH+IS0) = WN2(1+IS0)
+          END DO
+        END DO
+!
+! 1.b Prepare dynamic time stepping
+!
+      DTDYN  = 0.
+      DTTOT  = 0.
+      NSTEPS = 0
+      PHIAW  = 0.
+      CHARN  = 0.
+      PHINL  = 0.
+      PHIBBL = 0.
+      TAUWIX = 0.
+      TAUWIY = 0.
+      TAUWNX = 0.
+      TAUWNY = 0.
+      TAUWAX = 0.
+      TAUWAY = 0.
+      TAUSCX = 0.
+      TAUSCY = 0.
+      TAUBBL(:)= 0.
+      TAUICE(:)= 0.
+      PHICE  = 0.
+!/ST4      BRLAMBDA(:)=0.
+!
+! 1.c Set mean parameters
+!
+!/ST0      CALL W3SPR0 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
+!/ST0      FP     = 0.85 * FMEAN
+!/ST1      CALL W3SPR1 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
+!/ST1      FP     = 0.85 * FMEAN
+!/ST2      CALL W3SPR2 (SPEC, CG1, WN1, DEPTH, FPI, U10ABS, USTAR,    &
+!/ST2                   EMEAN, FMEAN, WNMEAN, AMAX, ALPHA, FP )
+!/ST3      TAUWX=0.
+!/ST3      TAUWY=0.
+!/ST3      IF ( FIRST ) THEN
+!/ST3          LLWS(:) = .TRUE.
+!/ST3          USTAR=0.
+!/ST3          USTDIR=0.
+!/ST3        CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS, WNMEAN, &
+!/ST3                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
+!/ST3                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST3      ELSE
+!/ST3        CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS, WNMEAN, &
+!/ST3                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
+!/ST3                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST3        CALL W3SIN3 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,   &
+!/ST3                 U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,   &
+!/ST3                 ICE, VSIN, VDIN, LLWS, IX, IY )
+!/ST3        END IF
+!/ST3      CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS, WNMEAN, &
+!/ST3                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
+!/ST3                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST4      TAUWX=0.
+!/ST4      TAUWY=0.
+!/ST4      IF ( FIRST ) THEN
+!/ST4          LLWS(:) = .TRUE.
+!/ST4          USTAR=0.
+!/ST4          USTDIR=0.
+!/ST4      ELSE
+!/ST4        CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN, &
+!/ST4                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,            &
+!/ST4                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST4        CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
+!/ST4                 U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,       &
+!/ST4                 VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
+!/ST4        END IF
+!/ST4      CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN, &
+!/ST4                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
+!/ST4                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST6      CALL W3SPR6 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX, FP)  
+!
+! 1.c2 Stores the initial data
+!
+      SPECINIT = SPEC
+!
+! 1.d Stresses
+!
+!/FLX1      CALL W3FLX1 ( ZWND, U10ABS, U10DIR, USTAR, USTDIR, Z0, CD )
+!/FLX2      CALL W3FLX2 ( ZWND, DEPTH, FP, U10ABS, U10DIR,            &
+!/FLX2                                          USTAR, USTDIR, Z0, CD )
+!/FLX3      CALL W3FLX3 ( ZWND, DEPTH, FP, U10ABS, U10DIR,            &
+!/FLX3                                          USTAR, USTDIR, Z0, CD )
+!/FLX4      CALL W3FLX4 ( ZWND, U10ABS, U10DIR, USTAR, USTDIR, Z0, CD )
+!
+! 1.e Prepare cut-off 
+!
+!/ST0      FHIGH  = SIG(NK)
+!/ST1      FH1    = FXFM * FMEAN
+!/ST1      FH2    = FXPM / USTAR
+!/ST1      FHIGH  = MAX ( FH1 , FH2 )
+!/ST1      IF (FLTEST) WRITE (NDST,9004) FH1*TPIINV, FH2*TPIINV, FHIGH*TPIINV
+!/ST2      FHIGH  = XFC * FPI
+!/ST3      FHIGH  = MAX(FFXFM * MAX(FMEAN,FMEANWS),FFXPM / USTAR)
+!/ST4! Introduces a Long & Resio (JGR2007) type dependance on wave age  
+! !/ST4      FAGE   = FFXFA*TANH(0.3*U10ABS*FMEANWS*TPI/GRAV)
+!/ST4      FAGE   = 0.
+!/ST4      FHIGH  = MAX( (FFXFM + FAGE ) * MAX(FMEAN1,FMEANWS),FFXPM / USTAR)
+!/ST4      FHIGI  = FFXFA * FMEAN1
+!/ST6      FHIGH  = MAX (FXFM * FMEAN, FXPM / USTAR)
+!
+! 1.f Prepare output file for !/NNT option
+!
+!/NNT      IF ( FIRST ) THEN
+!/NNT          J      = LEN_TRIM(FNMPRE)
+!/NNT          WRITE (FNAME(11:13),'(I3.3)') IAPROC
+!/NNT          OPEN (NDSD,FILE=FNMPRE(:J)//FNAME,FORM='UNFORMATTED',   &
+!/NNT                ERR=800,IOSTAT=IERR)
+!/NNT          WRITE (NDSD,ERR=801,IOSTAT=IERR) NK, NTH
+!/NNT          WRITE (NDSD,ERR=801,IOSTAT=IERR) SIG(1:NK) * TPIINV
+!/NNT          OPEN (NDSD2,FILE=FNMPRE(:J)//'time.ww3',                &
+!/NNT                FORM='FORMATTED',ERR=800,IOSTAT=IERR)
+!/NNT        END IF
+!
+! ... Branch point dynamic integration - - - - - - - - - - - - - - - -
+!
+      DO
+!
+        NSTEPS = NSTEPS + 1
+!
+!/T        WRITE (NDST,9020) NSTEPS, DTTOT
+!
+! 2.  Calculate source terms ----------------------------------------- *
+!
+! 2.a Input.
+!
+!/LN1        CALL W3SLN1 (       WN1, FHIGH, USTAR, U10DIR , VSLN       )
+!/LNX        CALL W3SLNX
+!
+!/ST1        CALL W3SIN1 ( SPEC, WN2, USTAR, U10DIR ,        VSIN, VDIN )
+!/ST2        CALL W3SIN2 ( SPEC, CG1, WN2, U10ABS, U10DIR, CD, Z0,        &
+!/ST2                                                   FPI, VSIN, VDIN )
+!/ST3        CALL W3SIN3 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
+!/ST3                 U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,       &
+!/ST3                 ICE, VSIN, VDIN, LLWS, IX, IY )
+!/ST4        CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
+!/ST4                 U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,       &
+!/ST4                 VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
+!/ST6        CALL W3SIN6 ( SPEC, CG1, WN2, USTAR, USTDIR, CD,             &
+!/ST6                      TAUWX, TAUWY, TAUWAX, TAUWAY, VSIN, VDIN )
+!/STX        CALL W3SINX
+!
+! 2.b Nonlinear interactions.
+!
+!/NL1        CALL W3SNL1 ( SPEC, CG1, WNMEAN*DEPTH,        VSNL, VDNL )
+!/NL2        CALL W3SNL2 ( SPEC, CG1, DEPTH,               VSNL, VDNL )
+!/NL3        CALL W3SNL3 ( SPEC, CG1, WN1, DEPTH,          VSNL, VDNL )
+!/NL4        CALL W3SNL4 ( SPEC, CG1, WN1, DEPTH,          VSNL, VDNL )
+!/NLX        CALL W3SNLX 
+!
+!/TR1        CALL W3STR1 ( SPEC, CG1, WN1, DEPTH, IX,        VSTR, VDTR )
+!/TRX        CALL W3STRX
+!
+! 2.c Dissipation... except for ST4
+! 2.c1   as in source term package
+!
+!/ST1        CALL W3SDS1 ( SPEC, WN2, EMEAN, FMEAN, WNMEAN,  VSDS, VDDS )
+!/ST2        CALL W3SDS2 ( SPEC, CG1, WN1, FPI, USTAR, ALPHA,VSDS, VDDS )
+!/ST3        CALL W3SDS3 ( SPEC, WN1, CG1, EMEAN, FMEANS, WNMEAN,              &
+!/ST3                                  USTAR, USTDIR, DEPTH, VSDS, VDDS, IX, IY )
+!/ST4        CALL W3SDS4 ( SPEC, WN1, CG1, USTAR, USTDIR, DEPTH, VSDS,    &
+!/ST4                      VDDS, IX, IY, BRLAMBDA, WHITECAP )
+!/ST6        CALL W3SDS6 ( SPEC, CG1, WN1,                   VSDS, VDDS )
+!/STX        CALL W3SDSX
+!
+!/DB1        CALL W3SDB1 ( SPEC, WN2, DEPTH, EMEAN, FMEAN, WNMEAN,        &
+!/DB1                                                        VSDB, VDDB )
+!/DBX        CALL W3SDBX
+!
+! 2.c2   optional dissipation parameterisations
+!
+!/ST6        IF (SWL6S6) THEN
+!/ST6           CALL W3SWL6 ( SPEC, CG1, WN1,       SWL,  DWL )
+!/ST6           VSWL = VSWL + SWL
+!/ST6           VDWL = VDWL + DWL
+!/ST6        END IF
+!
+! 2.d Bottom interactions.
+!
+!/BT1        CALL W3SBT1 ( SPEC, CG1, WN1, DEPTH,            VSBT, VDBT )
+!/BT4        CALL W3SBT4 ( SPEC, CG1, WN1, DEPTH, D50, PSIC, TAUBBL,    &
+!/BT4                      BEDFORM, VSBT, VDBT, IX, IY )
+!/BT8        CALL W3SBT8 ( SPEC, DEPTH, VSBT, VDBT, IX, IY )
+!/BT9        CALL W3SBT9 ( SPEC, DEPTH, VSBT, VDBT, IX, IY )
+!/BTX        CALL W3SBTX
+!
+!/BS1        CALL W3SBS1 ( SPEC, CG1, WN1, DEPTH, CX, CY,                &
+!/BS1                           TAUSCX, TAUSCY, VSBS, VDBS )
+!/BSX        CALL W3SBSX
+!
+! 2.e Additional sources.
+!
+!/XXX        CALL W3SXXX
+
+!
+! 2.f Dump training data if necessary
+!
+!/NNT        WRITE (SCREEN,8888) TIME, DTTOT, FLAGNN, QCERR
+!/NNT        WRITE (NDSD2,8888) TIME, DTTOT, FLAGNN, QCERR
+!/NNT 8888   FORMAT (1X,I8.8,1X,I6.6,F8.1,L2,F8.2)
+!/NNT        WRITE (NDSD,ERR=801,IOSTAT=IERR) IX, IY, TIME, NSTEPS,        &
+!/NNT                              DTTOT, FLAGNN, DEPTH, U10ABS, U10DIR
+!
+!/NNT        IF ( FLAGNN ) THEN
+!/NNT            DO IK=1, NK
+!/NNT              FACNN  = TPI * SIG(IK) / CG1(IK)
+!/NNT              DO ITH=1, NTH
+!/NNT                IS     = ITH + (IK-1)*NTH
+!/NNT                FOUT(IK,ITH) = SPEC(IS) * FACNN
+!/NNT                SOUT(IK,ITH) = VSNL(IS) * FACNN
+!/NNT                DOUT(IK,ITH) = VDNL(IS)
+!/NNT                END DO
+!/NNT              END DO
+!/NNT            WRITE (NDSD,ERR=801,IOSTAT=IERR) FOUT
+!/NNT            WRITE (NDSD,ERR=801,IOSTAT=IERR) SOUT
+!/NNT            WRITE (NDSD,ERR=801,IOSTAT=IERR) DOUT
+!/NNT          END IF
+!
+! 3.  Set frequency cut-off ------------------------------------------ *
+!
+!/ST2        FHIGH  = XFC * FPI
+!/ST2        IF ( FLTEST ) WRITE (NDST,9005) FHIGH*TPIINV
+        NKH    = MIN ( NK , INT(FACTI2+FACTI1*LOG(MAX(1.E-7,FHIGH))) )
+        NKH1   = MIN ( NK , NKH+1 )
+        NSPECH = NKH1*NTH
+!/T        WRITE (NDST,9021) NKH, NKH1, NSPECH
+!
+! 4.  Summation of source terms and diagonal term and time step ------ *
+!
+        DT     = MIN ( DTG-DTTOT , DTMAX )
+        AFILT  = MAX ( DAM(NSPEC) , XFLT*AMAX )
+!
+!     For input and dissipation calculate the fraction of the ice-free 
+!     surface. In the presence of ice, the effective water surface
+!     is reduce to a fraction of the cell size free from ice, and so is
+!     input and dissipation:
+!             SIN = (1-ICE)*SIN and SDS=(1-ICE)*SDS ------------------ *
+!     INFLAGS2(4) is true if ice concentration was ever read during  
+!             this simulation
+        IF ( INFLAGS2(4) ) THEN
+          VSLN(1:NSPECH) = (MAX(0.,MIN(1.,1.-ICE)))**2 * VSLN(1:NSPECH)
+          VSIN(1:NSPECH) = MAX(0.,MIN(1.,1.-ICE*ICE100WIND)) & 
+                           * VSIN(1:NSPECH)
+          VDIN(1:NSPECH) = MAX(0.,MIN(1.,1.-ICE*ICE100WIND)) & 
+                           * VDIN(1:NSPECH)
+          VSDS(1:NSPECH) = MAX(0.,MIN(1.,1.-ICE)) * VSDS(1:NSPECH)
+          VDDS(1:NSPECH) = MAX(0.,MIN(1.,1.-ICE)) * VDDS(1:NSPECH)
+          END IF
+!
+!/ST4        NKI    = MAX ( 2 , MIN ( NKH1 ,                           &
+!/ST4                 INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FFXFI* FMEAN1)) ) ) )
+        DO IS=IS1, NSPECH
+          VS(IS) = VSLN(IS) + VSIN(IS) + VSNL(IS)  &
+                 + VSDS(IS) + VSBT(IS) 
+!/ST6          VS(IS) = VS(IS) + VSWL(IS)
+!/DB1          VS(IS) = VS(IS) + VSDB(IS)
+!/DBX          VS(IS) = VS(IS) + VSDB(IS)
+!/TR1          VS(IS) = VS(IS) + VSTR(IS)
+!/TRX          VS(IS) = VS(IS) + VSTR(IS)
+!/BS1          VS(IS) = VS(IS) + VSBS(IS)
+!/BSX          VS(IS) = VS(IS) + VSBS(IS)
+!/XXX          VS(IS) = VS(IS) + VSXX(IS)
+          VD(IS) =            VDIN(IS) + VDNL(IS)  &
+                 + VDDS(IS) + VDBT(IS) 
+!/ST6          VD(IS) = VD(IS) + VDWL(IS)
+!/DB1          VD(IS) = VD(IS) + VDDB(IS)
+!/DBX          VD(IS) = VD(IS) + VDDB(IS)
+!/TR1          VD(IS) = VD(IS) + VDTR(IS)
+!/TRX          VD(IS) = VD(IS) + VDTR(IS)
+!/BS1          VD(IS) = VD(IS) + VDBS(IS)
+!/BSX          VD(IS) = VD(IS) + VDBS(IS)
+!/XXX          VD(IS) = VD(IS) + VDXX(IS)
+          DAMAX  = MIN ( DAM(IS) , MAX ( XREL*SPEC(IS) , AFILT ) )
+          AFAC   = 1. / MAX( 1.E-10 , ABS(VS(IS)/DAMAX) )
+          DT     = MIN ( DT , AFAC / ( MAX ( 1.E-10,                  &
+                         1. + OFFSET*AFAC*MIN(0.,VD(IS)) ) ) )
+          END DO  ! end of loop on IS 
+!
+        DT     = MAX ( 0.5 , DT )
+!
+        DTDYN  = DTDYN + DT
+!/T        DTRAW  = DT
+        IDT    = 1 + INT ( 0.99*(DTG-DTTOT)/DT )
+        DT     = (DTG-DTTOT)/REAL(IDT)
+        SHAVE  = DT.LT.DTMIN .AND. DT.LT.DTG-DTTOT
+        DT     = MAX ( DT , MIN (DTMIN,DTG-DTTOT) )
+        HDT    = OFFSET * DT
+        DTTOT  = DTTOT + DT
+
+!
+!/T        WRITE (NDST,9040) DTRAW, DT, SHAVE
+!
+! 5.  Increment spectrum --------------------------------------------- *
+!
+        IF ( SHAVE ) THEN
+!
+            DO IS=IS1, NSPECH
+              VS(IS) = VS(IS) * DT / MAX ( 1. , (1.-HDT*VD(IS)))
+              VS(IS) = SIGN ( MIN (DAM(IS),ABS(VS(IS))) , VS(IS) )
+              SPEC(IS) = MAX ( 0. , SPEC(IS)+VS(IS) )
+              END DO
+!
+          ELSE
+!
+            DO IS=IS1, NSPECH
+              VS(IS) = VS(IS) * DT / MAX ( 1. , (1.-HDT*VD(IS)))
+              SPEC(IS) = MAX ( 0. , SPEC(IS)+VS(IS) )
+              END DO
+!
+          END IF
+!
+! 5.b  Computes 
+!              atmos->wave flux PHIAW-------------------------------- *
+!              wave ->BBL  flux PHIBBL------------------------------- *
+!              wave ->ice  flux PHICE ------------------------------- *
+! 
+       WHITECAP(3)=0.
+       HSTOT=0.
+       DO IK=IKS1, NK
+         FACTOR = DDEN(IK)/CG1(IK)                    !Jacobian to get energy in band
+         FACTOR2= FACTOR*GRAV*WN1(IK)/SIG(IK)         ! coefficient to get momentum
+
+         ! Wave direction is "direction to"
+         ! therefore there is a PLUS sign for the stress
+         DO ITH=1, NTH
+           IS   = (IK-1)*NTH + ITH
+           COSI(1)=ECOS(IS)
+           COSI(2)=ESIN(IS)
+           PHIAW = PHIAW + (VSIN(IS))* DT * FACTOR                    &
+             / MAX ( 1. , (1.-HDT*VDIN(IS))) ! semi-implict integration scheme
+           
+           PHIBBL= PHIBBL- (VSBT(IS))* DT * FACTOR                    &
+             / MAX ( 1. , (1.-HDT*VDBT(IS))) ! semi-implict integration scheme
+           PHINL = PHINL + VSNL(IS)* DT * FACTOR                      &
+             / MAX ( 1. , (1.-HDT*VDNL(IS))) ! semi-implict integration scheme
+           IF (VSIN(IS).GT.0.) THEN 
+             WHITECAP(3) = WHITECAP(3) + SPEC(IS)  * FACTOR
+           ELSE
+           ! computes the upward energy flux (counted > 0 upward)
+             CHARN = CHARN - (VSIN(IS))* DT * FACTOR                    &
+              / MAX ( 1. , (1.-HDT*VDIN(IS))) ! semi-implict integration scheme
+             END IF
+           HSTOT = HSTOT + SPEC(IS) * FACTOR
+           END DO
+         END DO
+       WHITECAP(3)=4.*SQRT(WHITECAP(3))
+       HSTOT=4.*SQRT(HSTOT)
+       TAUWIX= TAUWIX+ TAUWX * DRAT *DT
+       TAUWIY= TAUWIY+ TAUWY * DRAT *DT
+       TAUWNX= TAUWNX+ TAUWAX * DRAT *DT
+       TAUWNY= TAUWNY+ TAUWAY * DRAT *DT
+       ! MISSING: TAIL TO BE ADDED ?      
+!
+!/NLS      CALL W3SNLS ( SPEC, CG1, WN1, DEPTH, U10ABS, DT, AA=SPEC )
+!
+! 6.  Add tail ------------------------------------------------------- *
+!   a Mean parameters
+!
+!
+!/ST0        CALL W3SPR0 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
+!/ST1        CALL W3SPR1 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
+!/ST2        CALL W3SPR2 (SPEC, CG1, WN1, DEPTH, FPI, U10ABS, USTAR,   &
+!/ST2                     EMEAN, FMEAN, WNMEAN, AMAX, ALPHA, FP )
+!/ST3        CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS,        &
+!/ST3                     WNMEAN, AMAX, U10ABS, U10DIR, USTAR, USTDIR, &
+!/ST3                     TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST4        CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN,&
+!/ST4                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,           &
+!/ST4                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+!/ST6        CALL W3SPR6 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX, FP)
+!
+!/FLX2        CALL W3FLX2 ( ZWND, DEPTH, FP, U10ABS, U10DIR,           &
+!/FLX2                                          USTAR, USTDIR, Z0, CD )
+!/FLX3        CALL W3FLX3 ( ZWND, DEPTH, FP, U10ABS, U10DIR,           &
+!/FLX3                                          USTAR, USTDIR, Z0, CD )
+!
+!/ST1        FH1    = FXFM * FMEAN
+!/ST1        FHIGH  = MIN ( SIG(NK) , MAX ( FH1 , FH2 ) )
+!/ST1        NKH    = MAX ( 2 , MIN ( NKH1 ,                           &
+!/ST1                 INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FHIGH)) ) ) )
+!
+!/ST1        IF ( FLTEST ) WRITE (NDST,9060)                           &
+!/ST1                      FH1*TPIINV, FH2*TPIINV, FHIGH*TPIINV, NKH
+!
+!/ST2        FHTRAN = XFT*FPI
+!/ST2        FHIGH  = XFC*FPI
+!/ST2        DFH    = FHIGH - FHTRAN
+!/ST2        NKH    = MAX ( 1 ,                                        &
+!/ST2            INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FHTRAN)) ) )
+!
+!/ST2        IF ( FLTEST ) WRITE (NDST,9061) FHTRAN, FHIGH, NKH
+!
+!/ST3        FH1    = FFXFM * FMEAN
+!/ST3        FH2    = FFXPM / USTAR
+!/ST3        FHIGH  = MIN ( SIG(NK) , MAX ( FH1 , FH2 ) )
+!/ST3        NKH    = MAX ( 2 , MIN ( NKH1 ,                           &
+!/ST3                 INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FHIGH)) ) ) )
+!
+!/ST3        IF ( FLTEST ) WRITE (NDST,9062)                           &
+!/ST3                      FH1*TPIINV, FH2*TPIINV, FHIGH*TPIINV, NKH
+!
+!/ST4! Introduces a Long & Resio (JGR2007) type dependance on wave age  
+!/ST4        FAGE   = FFXFA*TANH(0.3*U10ABS*FMEANWS*TPI/GRAV)
+!/ST4        FH1    = (FFXFM+FAGE) * FMEAN1
+
+!/ST4        FH2    = FFXPM / USTAR
+!/ST4        FHIGH  = MIN ( SIG(NK) , MAX ( FH1 , FH2 ) )
+!/ST4        NKH    = MAX ( 2 , MIN ( NKH1 ,                           &
+!/ST4                 INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FHIGH)) ) ) )
+!
+!/ST6        FHIGH  = SIG(NK)
+!/ST6        NKH    = MAX ( 2 , MIN ( NKH1 ,                           &
+!/ST6                 INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FHIGH)) ) ) )
+!
+!/ST6        IF ( FLTEST ) WRITE (NDST,9063) FHIGH*TPIINV, NKH
+!
+! 6.b Limiter for shallow water or Miche style criterion
+!     Last time step only !
+!     uses true depth (D_INP) instead of limited depth 
+!
+!/MLIM        IF ( DTTOT .GE. 0.9999*DTG ) THEN
+!/MLIM            HM     = FHMAX *TANH(WNMEAN*MAX(0.,D_INP)) / MAX(1.E-4,WNMEAN )
+!/MLIM            EM     = HM * HM / 16.
+!/MLIM            IF ( EMEAN.GT.EM .AND. EMEAN.GT.1.E-30 ) THEN
+!/MLIM                SPEC   = SPEC / EMEAN * EM
+!/MLIM                EMEAN  = EM
+!/MLIM              END IF
+!/MLIM          END IF
+!
+! 6.c Seeding of spectrum
+!     alpha = 0.005 , 0.5 in eq., 0.25 for directional distribution
+!
+!/SEED        DO IK=MIN(NK,NKH), NK
+!/SEED          UC     = FACSD * GRAV / SIG(IK)
+!/SEED          SLEV   = MIN ( 1. , MAX ( 0. , U10ABS/UC-1. ) ) *      &
+!/SEED                       6.25E-4 / WN1(IK)**3 / SIG(IK)
+!/SEED          IF (INFLAGS2(4)) SLEV=SLEV*(1-ICE)
+!/SEED          DO ITH=1, NTH
+!/SEED            SPEC(ITH+(IK-1)*NTH) = MAX ( SPEC(ITH+(IK-1)*NTH) ,  &
+!/SEED                  SLEV * MAX ( 0. , COS(U10DIR-TH(ITH)) )**2 )
+!/SEED            END DO
+!/SEED          END DO
+!
+! 6.d Add tail
+!
+        DO IK=NKH+1, NK
+!/ST2          FACDIA = MAX ( 0. , MIN ( 1., (SIG(IK)-FHTRAN)/DFH) )
+!/ST2          FACPAR = MAX ( 0. , 1.-FACDIA )
+          DO ITH=1, NTH
+            SPEC(ITH+(IK-1)*NTH) = SPEC(ITH+(IK-2)*NTH) * FACHFA         &
+!/ST2                * FACDIA + FACPAR * SPEC(ITH+(IK-1)*NTH)            &
+                       + 0.
+            END DO
+          END DO
+!
+! 6.e  Update wave-supported stress----------------------------------- *
+!
+!/ST3        CALL W3SIN3 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,      &
+!/ST3                      U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY, &
+!/ST3                      ICE, VSIN, VDIN, LLWS, IX, IY )
+!/ST4        CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,      &
+!/ST4                      U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY, &
+!/ST4                      VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
+
+!
+! 7.  Check if integration complete ---------------------------------- *
+!
+        IF ( DTTOT .GE. 0.9999*DTG ) EXIT
+        END DO
+!
+! ... End point dynamic integration - - - - - - - - - - - - - - - - - -
+!
+! 8.  Save integration data ------------------------------------------ *
+!
+      DTDYN  = DTDYN / REAL(MAX(1,NSTEPS))
+      FCUT   = FHIGH * TPIINV
+!
+      GOTO 888
+!
+! Error escape locations
+!
+!/NNT  800 CONTINUE
+!/NNT      WRITE (NDSE,8000) FNAME, IERR
+!/NNT      CALL EXTCDE (1)
+!
+!/NNT  801 CONTINUE
+!/NNT      WRITE (NDSE,8001) IERR
+!/NNT      CALL EXTCDE (2)
+!
+  888 CONTINUE
+!
+! 9.a  Computes PHIOC------------------------------------------ *
+!     The wave to ocean flux is the difference between initial energy 
+!     and final energy, plus wind input plus the SNL flux to high freq., 
+!     minus the energy lost to the bottom boundary layer (BBL) 
+!
+      EFINISH  = 0.
+      MWXFINISH  = 0.
+      MWYFINISH  = 0.
+      DO IK=1, NK
+        EBAND = 0.
+        A1BAND = 0.
+        B1BAND = 0.
+        DO ITH=1, NTH
+          DIFF = SPECINIT(ITH+(IK-1)*NTH)-SPEC(ITH+(IK-1)*NTH)
+          EBAND = EBAND + DIFF
+          A1BAND = A1BAND + DIFF*ECOS(ITH)
+          B1BAND = B1BAND + DIFF*ESIN(ITH)
+          END DO
+        EFINISH  = EFINISH  + EBAND * DDEN(IK) / CG1(IK)
+        MWXFINISH  = MWXFINISH  + A1BAND * DDEN(IK) / CG1(IK)        &
+                  * WN1(IK)/SIG(IK) 
+        MWYFINISH  = MWYFINISH  + B1BAND * DDEN(IK) / CG1(IK)        &
+                  * WN1(IK)/SIG(IK)
+        END DO
+!
+! Transformation in momentum flux in m^2 / s^2 
+!
+      TAUOX=(GRAV*MWXFINISH+TAUWIX-TAUBBL(1))/DTG
+      TAUOY=(GRAV*MWYFINISH+TAUWIY-TAUBBL(2))/DTG
+      TAUWIX=TAUWIX/DTG
+      TAUWIY=TAUWIY/DTG
+      TAUWNX=TAUWNX/DTG
+      TAUWNY=TAUWNY/DTG
+      TAUBBL(:)=TAUBBL(:)/DTG
+!
+! Transformation in wave energy flux in W/m^2=kg / s^3 
+!
+      PHIOC =DWAT*GRAV*(EFINISH+PHIAW-PHIBBL)/DTG 
+      PHIAW =DWAT*GRAV*PHIAW /DTG        
+      PHINL =DWAT*GRAV*PHINL /DTG  
+      PHIBBL=DWAT*GRAV*PHIBBL/DTG        
+! 
+! 9.b  Adds ice scattering and dissipation ---------------------------- *
+!     INFLAGS2(4) is true if ice concentration was ever read during  
+!             this simulation
+!
+
+      IF ( INFLAGS2(4).AND.ICE.GT.0 ) THEN 
+
+        IF ( INFLAGS2(-6)) THEN 
+          ICECOEF2 = ICEP2(IX,IY)
+        ELSE 
+          ICECOEF2 = 0.
+          END IF
+!
+        IF (IICEDISP) THEN
+          CALL LIU_FORWARD_DISPERSION (ICEH,ICECOEF2,DEPTH, &
+                                       SIG,WN_R,CG_ICE,ALPHA_LIU)
+         ELSE
+            WN_R=WN1
+            CG_ICE=CG1
+            END IF
+!
+!/IC1      CALL W3SIC1 ( SPEC,DEPTH, CG1,       IX, IY, VSIC, VDIC )
+!/IC2      CALL W3SIC2 ( SPEC,DEPTH, ICEH, CG1,  WN1, IX, IY, VSIC, VDIC ,WN_R, CG_ICE,ALPHA_LIU)
+!/IC3      CALL W3SIC3 ( SPEC,DEPTH, CG1,  WN1, IX, IY, VSIC, VDIC )
+!/IC4      CALL W3SIC4 ( SPEC,DEPTH, CG1,       IX, IY, VSIC, VDIC )
+!
+!/IS1      CALL W3SIS1 ( SPEC, ICE, VSIR )
+!/IS2      CALL W3SIS2 ( SPEC, DEPTH, ICE, ICEH, ICEF, ICEDMAX, IX, IY, & 
+!/IS2                              VSIR, VDIR, VDIR2, WN1, CG1,WN_R, CG_ICE )
+      SPEC2 = SPEC
+!
+           TAUICE(:) = 0.
+           PHICE = 0.
+           DO IK=1,NK
+             IS = 1+(IK-1)*NTH 
+!
+! First part of ice term integration: dissipation part ATT. 
+!
+             ATT=1.
+!/IC1             ATT=EXP(ICE*VDIC(IS)*DTG)
+!/IC2             ATT=EXP(ICE*VDIC(IS)*DTG)
+!/IC3             ATT=EXP(ICE*VDIC(IS)*DTG)
+!/IC4             ATT=EXP(ICE*VDIC(IS)*DTG)
+!/IS1             ATT=ATT*EXP(VDIR(IS)*DTG)
+!/IS2             IF (IS2PARS(2).EQ.0) THEN 
+!/IS2               ATT=ATT*EXP((VDIR2(IS)+VDIR(IS))*DTG)    ! Reminder : IS2PARS(2) = IS2BACKSCAT
+             SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH) = ATT*SPEC2(1+(IK-1)*NTH:NTH+(IK-1)*NTH)
+!/IS2             ELSE 
+!
+! Second part of ice term integration: scattering (only if there is back-scattering, i.e. IS2PARS(2).NE.0 ) 
+!
+!/IS2               SCAT = EXP(VDIR(IS)*IS2PARS(2)*DTG)
+!/IS2               SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH) = ATT*EXP(VDIR2(IS)*DTG)*SPEC2(1+(IK-1)*NTH:NTH+(IK-1)*NTH)
+!/IS2               ATT = SUM(SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH))/NTH
+!/IS2! Warning, the following line is only correct for isotropic diffusion               
+!/IS2! in that case the spectrum relaxes exponentially to an isotropic spectrum              
+!/IS2               SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH) = ATT &
+!/IS2                      +(SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH)-ATT)*SCAT
+!/IS2!              !the commented lines give the general solution with matrix exponentials    
+!/IS2!              ! ... to be tested ..    
+!/IS2               !SCATSPEC(1:NTH)=DBLE(SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH))
+!/IS2               !SPEC(1+(IK-1)*NTH:NTH+(IK-1)*NTH) =  &
+!/IS2               !   REAL(MATMUL(IS2EIGVEC(:,:), EXP(IS2EIGVAL(:)*VDIR(IS)*DTG*IS2PARS(2)) &
+!/IS2               !                        *MATMUL(TRANSPOSE(IS2EIGVEC(:,:)),SCATSPEC)))
+!/IS2               END IF
+ 
+             FACTOR = DDEN(IK)/CG1(IK)                    !Jacobian to get energy in band
+             FACTOR2= FACTOR*GRAV*WN1(IK)/SIG(IK)         ! coefficient to get momentum
+             DO ITH = 1,NTH
+               IS = ITH+(IK-1)*NTH 
+               PHICE = PHICE + (SPEC(IS)-SPEC2(IS)) * FACTOR      
+               COSI(1)=ECOS(IS)
+               COSI(2)=ESIN(IS)
+               TAUICE(:) = TAUICE(:) - (SPEC(IS)-SPEC2(IS))*FACTOR2*COSI(:)
+               END DO
+             END DO
+           PHICE =-1.*DWAT*GRAV*PHICE /DTG        
+           TAUICE(:)=TAUICE(:)/DTG
+           ELSE 
+!/IS2             IF (IS2PARS(10).LT.0.5) THEN 
+!/IS2               ICEF = 0. 
+!/IS2             ENDIF 
+           END IF
+!
+! 
+! - - - - - - - - - - - - - - - - - - - - - -
+! 9.c Sea state dependent stress routine calls
+! - - - - - - - - - - - - - - - - - - - - - -
+!Note the Sea-state dependent stress calculations are primarily for high-wind
+!conditions (>10 m/s).  It is not recommended to use these at lower wind
+!in their current state.
+!
+! FLD1/2 requires the calculation of FPI: 
+!/FLD1      CALL CALC_FPI(SPEC, CG1, FPI, VSIN )
+!/FLD2      CALL CALC_FPI(SPEC, CG1, FPI, VSIN )
+!
+!/FLD1      IF (U10ABS.GT.10. .and. HSTOT.gt.0.5) then
+!/FLD1          CALL W3FLD1 ( SPEC,min(FPI/TPI,2.0),COEF*U10ABS*COS(U10DIR),        &
+!/FLD1                    COEF*U10ABS*Sin(U10DIR), ZWND, DEPTH, 0.0, &
+!/FLD1                    USTAR, USTDIR, Z0,TAUNUX,TAUNUY,CHARN)
+!/FLD1      ENDIF
+!/FLD2      IF (U10ABS.GT.10. .and. HSTOT.gt.0.5) then
+!/FLD2          CALL W3FLD2 ( SPEC,min(FPI/TPI,2.0),COEF*U10ABS*COS(U10DIR),        &
+!/FLD2                    COEF*U10ABS*Sin(U10DIR), ZWND, DEPTH, 0.0, &
+!/FLD2                    USTAR, USTDIR, Z0,TAUNUX,TAUNUY,CHARN)
+!/FLD2      ENDIF
+!
+! 10 includes shoreline reflection --------------------------------------------- *
+!
+!/REF1        IF (REFLEC(1).GT.0.OR.REFLEC(2).GT.0.OR.(REFLEC(4).GT.0.AND.BERG.GT.0)) THEN 
+!/REF1          CALL W3SREF ( SPEC, CG1, WN1, EMEAN, FMEAN, DEPTH, CX, CY,   &
+!/REF1                        REFLEC, REFLED, DELX, DELY, DELA, TRNX, TRNY,  &
+!/REF1                        BERG, DTG, IX, IY,  VREF )
+!/REF1          SPEC(:) = SPEC(:)+DTG*VREF(:) 
+!/REF1        ELSE
+!/REF1! Treatment specific to unstructured grids: Dirichlet boundary condition
+!/REF1! the energies in directions from shore are set to zero. 
+!/REF1          IF (GTYPE.EQ.UNGTYPE) THEN 
+!/REF1          IF (IOBP(IX).EQ.0) THEN 
+!/REF1            DO IK=1, NK 
+!/REF1              DO ITH=1, NTH
+!/REF1                IF (IOBPD(ITH,IX).EQ.0) SPEC(ITH+(IK-1)*NTH)=0.
+!/REF1                END DO
+!/REF1              END DO 
+!/REF1            END IF
+!/REF1            END IF
+!/REF1          END IF
+!
+      FIRST  = .FALSE.
+      IF (IT.EQ.0) SPEC = SPECINIT
+!
+      RETURN
+!
+! Formats
+!
+!/NNT 8000 FORMAT (/' *** ERROR W3SRCE : ERROR IN OPENING FILE ',A,' ***'/ &
+!/NNT               '                    IOSTAT = ',I10/)
+!/NNT 8001 FORMAT (/' *** ERROR W3SRCE : ERROR IN WRITING TO FILE ***'/    &
+!/NNT               '                    IOSTAT = ',I10/)
+!
+!/T 9000 FORMAT (' TEST W3SRCE : COUNTERS   : NO LONGER AVAILABLE')
+!/T 9001 FORMAT (' TEST W3SRCE : DEPTH      :',F8.1/                     &
+!/T              '               WIND SPEED :',F8.1/                     &
+!/T              '               WIND DIR   :',F8.1)
+!/ST1 9004 FORMAT (' TEST W3SRCE : FHIGH (3X) : ',3F8.4/                   &
+!/ST1              ' ------------- NEW DYNAMIC INTEGRATION LOOP',          &
+!/ST1              ' ------------- ')
+!/ST2 9005 FORMAT (' TEST W3SRCE : FHIGH      : ',F8.4/                    &
+!/ST2              ' ------------- NEW DYNAMIC INTEGRATION LOOP',          &
+!/ST2              ' ------------- ')
+!/ST3 9006 FORMAT (' TEST W3SRCE : FHIGH (3X) : ',3F8.4/                   &
+!/ST3              ' ------------- NEW DYNAMIC INTEGRATION LOOP',          &
+!/ST3              ' ------------- ')
+!/ST4 9006 FORMAT (' TEST W3SRCE : FHIGH (3X) : ',3F8.4/                   &
+!/ST4              ' ------------- NEW DYNAMIC INTEGRATION LOOP',          &
+!/ST4              ' ------------- ')
+!
+!/T 9020 FORMAT (' TEST W3SRCE : NSTEP : ',I4,'    DTTOT :',F6.1)
+!/T 9021 FORMAT (' TEST W3SRCE : NKH (3X)   : ',2I3,I6)
+!
+!/T 9040 FORMAT (' TEST W3SRCE : DTRAW, DT, SHAVE :',2F6.1,2X,L1)
+!
+!/ST1 9060 FORMAT (' TEST W3SRCE : FHIGH (3X) : ',3F8.4/                   &
+!/ST1              '               NKH        : ',I3)
+!/ST2 9061 FORMAT (' TEST W3SRCE : FHIGH (2X) : ',2F8.4/                   &
+!/ST2              '               NKH        : ',I3)
+!/ST3 9062 FORMAT (' TEST W3SRCE : FHIGH (3X) : ',3F8.4/                   &
+!/ST3              '               NKH        : ',I3)
+!/ST4 9062 FORMAT (' TEST W3SRCE : FHIGH (3X) : ',3F8.4/                   &
+!/ST4              '               NKH        : ',I3)
+!/ST6 9063 FORMAT (' TEST W3SRCE : FHIGH      : ',F8.4/                    &
+!/ST6              '               NKH        : ',I3)
+!/
+!/ End of W3SRCE ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3SRCE
+!/
+      SUBROUTINE CALC_FPI( A, CG, FPI, S )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |          Jessica Meixner          |
+!/                  |                                   |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         6-July-2016 |
+!/                  +-----------------------------------+
+!/
+!/    06-Jul-2016 : Origination                         ( version 5.12 )
+!/
+!  1. Purpose :
+!
+!     Calculate equivalent peak frequency
+!
+!  2. Method :
+!
+!     Tolman and Chalikov (1996), equivalent peak frequency from source
+
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       A       R.A.  I   Action density spectrum (1-D).
+!       CG      R.A.  I   Group velocities for k-axis of spectrum.
+!       FPI     R.A.  O   Input 'peak' frequency.
+!       S       R.A.  I   Source term (1-D version).
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SRCE Subr.            
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!       !/S      Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS
+      USE W3GDATMD, ONLY: NK, NTH, NSPEC, XFR, DDEN, SIG,FTE, FTTR
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      REAL, INTENT(IN)        :: A(NSPEC), CG(NK), S(NSPEC)
+      REAL, INTENT(OUT)       :: FPI
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: IS, IK
+!/S      INTEGER, SAVE           :: IENT = 0
+      REAL                    ::  M0, M1, SIN1A(NK)
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'CALC_FPI')
+!
+!     Calculate FPI: equivalent peak frequncy from wind source term
+!     input
+!
+      DO IK=1, NK
+        SIN1A(IK) = 0.
+        DO IS=(IK-1)*NTH+1, IK*NTH
+          SIN1A(IK) = SIN1A(IK) + MAX ( 0. , S(IS) )
+        END DO
+      END DO
+!
+      M0     = 0.
+      M1     = 0.
+      DO IK=1, NK
+        SIN1A(IK) = SIN1A(IK) * DDEN(IK) / ( CG(IK) * SIG(IK)**3 )
+        M0        = M0 + SIN1A(IK)
+        M1        = M1 + SIN1A(IK)/SIG(IK)
+      END DO
+!
+      SIN1A(NK) = SIN1A(NK) / DDEN(NK)
+      M0        = M0 + SIN1A(NK) * FTE
+      M1        = M1 + SIN1A(NK) * FTTR
+      IF ( M1 .LT. 1E-20 ) THEN
+          FPI    = XFR * SIG(NK)
+      ELSE
+          FPI    = M0 / M1
+      END IF
+
+      END SUBROUTINE CALC_FPI
+!
+!
+!/ End of module W3SRCEMD -------------------------------------------- /
+!/
+      END MODULE W3SRCEMD

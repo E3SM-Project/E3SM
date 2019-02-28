@@ -1,0 +1,607 @@
+#!/bin/sh
+# --------------------------------------------------------------------------- #
+# w3_make : Compile and link WAVEWATCH III programs using standard make and   #
+#           makefile methods.                                                 #
+#                                                                             #
+# use     : w3_make [program [...]]                                           #
+#              program: program name of WAVEWATCH III (sub)program.           #
+#                                                                             #
+# error codes : Program ends if error occurs in make_makefile.sh.             #
+#                                                                             #
+# programs used :                                                             #
+#       make_makefile.sh :  Makes the makefile.                               #
+#                                                                             #
+# programs called from the makefile :                                         #
+#       ad3   : script to execute preprocessor and to compile.                #
+#       link  : linker script.                                                #
+#                                                                             #
+#                                                      Hendrik L. Tolman      #
+#                                                      May 2009               #
+#                                                      March 2014             #
+#                                                                             #
+#    Copyright 2009-2013 National Weather Service (NWS),                      #
+#       National Oceanic and Atmospheric Administration.  All rights          #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                   #
+#       No unauthorized use without permission.                               #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# 1. Preparations                                                             #
+# --------------------------------------------------------------------------- #
+# 1.a Internal variables
+
+# 1.a.0 Set default mode and capture script arguments
+
+  if test "$#" = '0'
+  then
+    default_mode=1
+    script_args=
+  else
+    default_mode=0
+    script_args="$*"
+  fi
+
+# 1.a.1 Setup file
+
+# The following line must not be removed: it is a switch for local install 
+# so that all bin scripts point to the local wwatch3.env 
+  export ww3_env=/users/sbrus/E3SM/components/ww3/src/source/ww3/wwatch3.env 
+# For manual install (without install_ww3_tar or install_ww3_svn) make sure to 
+# either use the generic ww3_env or to add your own ww3_env="${my_directory}" 
+
+  if [ ${WWATCH3_ENV} ]; then ww3_env="${WWATCH3_ENV}"; fi # alternate setup file
+
+# 1.a.2 Get data from setup file - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  if test -f $ww3_env
+  then
+    set `grep WWATCH3_DIR $ww3_env` ; shift
+    main_dir="$*"
+    set `grep WWATCH3_TMP $ww3_env` ; shift
+    temp_dir="$*"
+    set `grep WWATCH3_SOURCE $ww3_env` ; shift
+    source="$*"
+    set `grep WWATCH3_LIST $ww3_env` ; shift
+    list="$*"
+  else
+    echo "*** Set-up file $ww3_env not found ***"; echo ' '
+    exit 1
+  fi
+
+  echo "Scratch directory : $temp_dir"
+  echo "Save source codes : $source"
+  echo "Save listings     : $list"
+  echo ' '
+
+# 1.a.3 Check for switch file and makefile - - - - - - - - - - - - - - - - - - - 
+
+  switch_file=$main_dir/bin/switch
+  makefile=$main_dir/ftn/makefile
+  rm -f $makefile
+
+  if test ! -f $switch_file
+  then
+    echo "*** switch file $switch_file not found ***" ; echo ' '
+    exit 1
+  fi
+  cp  $switch_file $main_dir/exe/
+
+  flag_SHRD=`grep SHRD $switch_file | wc -l | awk '{ print $1}'`
+  flag_OMPX=`grep OMPX $switch_file | wc -l | awk '{ print $1}'`
+  flag_OMPH=`grep OMPH $switch_file | wc -l | awk '{ print $1}'`
+
+  switch_file_old=$main_dir/bin/switch.old
+  exec_type_file=$main_dir/exe/exec_type
+
+  here=`pwd`
+
+  if [ ! -d $main_dir/obj_SHRD ] ; then
+     mkdir  $main_dir/obj_SHRD ; fi
+  if [ ! -d $main_dir/obj_DIST ] ; then
+     mkdir  $main_dir/obj_DIST ; fi
+  if [ ! -d $main_dir/obj_OMP ] ; then
+     mkdir  $main_dir/obj_OMP ; fi
+  if [ ! -d $main_dir/obj_HYB ] ; then
+     mkdir  $main_dir/obj_HYB ; fi
+  rm -rf $main_dir/obj
+  if [ ! -d $main_dir/mod_SHRD ] ; then
+     mkdir  $main_dir/mod_SHRD ; fi
+  if [ ! -d $main_dir/mod_DIST ] ; then
+     mkdir  $main_dir/mod_DIST ; fi
+  if [ ! -d $main_dir/mod_OMP ] ; then
+     mkdir  $main_dir/mod_OMP ; fi
+  if [ ! -d $main_dir/mod_HYB ] ; then
+     mkdir  $main_dir/mod_HYB ; fi
+  rm -rf $main_dir/mod
+
+  if [ "$flag_SHRD" -gt '0' ]
+  then
+    if [ "$flag_OMPX" -gt '0' ]
+    then
+      pres_type='OMP'
+      if [ -f ${switch_file_old}_OMP ] ; then
+           cp ${switch_file_old}_OMP $switch_file_old ; fi
+      if [ -f ${makefile}_OMP ] ; then
+           cp ${makefile}_OMP $makefile ; fi
+      cd $main_dir ; ln -sf obj_OMP obj
+                     ln -sf mod_OMP mod ; cd $here
+    else
+      pres_type='SHRD'
+      if [ -f ${switch_file_old}_SHRD ] ; then
+           cp ${switch_file_old}_SHRD $switch_file_old ; fi
+      if [ -f ${makefile}_SHRD ] ; then
+           cp ${makefile}_SHRD $makefile ; fi
+      cd $main_dir ; ln -sf obj_SHRD obj
+                     ln -sf mod_SHRD mod ; cd $here
+    fi
+  else
+    if [ "$flag_OMPH" -gt '0' ]
+    then
+      pres_type='HYB'
+      if [ -f ${switch_file_old}_HYB ] ; then
+           cp ${switch_file_old}_HYB $switch_file_old ; fi
+      if [ -f ${makefile}_HYB ] ; then
+           cp ${makefile}_HYB $makefile ; fi
+      cd $main_dir ; ln -sf obj_HYB obj
+                     ln -sf mod_HYB mod ; cd $here
+    else
+      pres_type='DIST'
+      if [ -f ${switch_file_old}_DIST ] ; then
+           cp ${switch_file_old}_DIST $switch_file_old ; fi
+      if [ -f ${makefile}_DIST ] ; then
+           cp ${makefile}_DIST $makefile ; fi
+      cd $main_dir ; ln -sf obj_DIST obj
+                     ln -sf mod_DIST mod ; cd $here
+    fi
+  fi
+
+# 1.a.4 Setup program lists  - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+# reg_programs = non-NetCDF programs
+  reg_programs="ww3_grid"
+  reg_programs="$reg_programs ww3_strt"
+  reg_programs="$reg_programs ww3_bound"
+  reg_programs="$reg_programs ww3_outf"
+  reg_programs="$reg_programs ww3_outp"
+  reg_programs="$reg_programs ww3_trck"
+  reg_programs="$reg_programs ww3_grib"
+  reg_programs="$reg_programs ww3_gint"
+  reg_programs="$reg_programs gx_outf"
+  reg_programs="$reg_programs gx_outp"
+
+
+# cdf_programs = NetCDF programs
+  cdf_programs="ww3_prnc"
+  cdf_programs="$cdf_programs ww3_ounf"
+  cdf_programs="$cdf_programs ww3_ounp"
+  cdf_programs="$cdf_programs ww3_bounc"
+  cdf_programs="$cdf_programs ww3_trnc"
+
+  if [ -n "`grep TIDE $switch_file`" ]
+  then
+    cdf_programs="$cdf_programs ww3_prtide"
+  fi
+
+  if [ -n "`grep SCRIPNC $switch_file`" ] || [ -n "`grep OASIS $switch_file`" ]
+  then
+    cdf_programs="$cdf_programs ww3_multi"
+    cdf_programs="$cdf_programs ww3_sbs1"
+  else
+    reg_programs="$reg_programs ww3_multi"
+    reg_programs="$reg_programs ww3_sbs1"
+  fi
+
+  if [ -n "`grep TRKNC $switch_file`" ]
+  then
+    cdf_programs="$cdf_programs ww3_systrk"
+    systrck_nc4notrknc=0
+  else
+    if [ -n "`grep NC4 $switch_file`" ]
+    then 
+      systrck_nc4notrknc=1 
+    else 
+      systrck_nc4notrknc=0
+      reg_programs="$reg_programs ww3_systrk"
+    fi
+  fi
+
+  if [ -n "`grep OASIS $switch_file`" ]
+  then
+    cdf_programs="$cdf_programs ww3_shel"
+    cdf_programs="$cdf_programs ww3_prep"
+    cdf_programs="$cdf_programs ww3_gspl"
+  else
+    reg_programs="$reg_programs ww3_shel"
+    reg_programs="$reg_programs ww3_prep"
+    reg_programs="$reg_programs ww3_gspl"
+  fi
+
+# all_programs = all possible programs
+  all_programs="$reg_programs $cdf_programs"
+
+# progs = programs requested to compile
+  if [ $default_mode -eq 1 ]
+  then
+    progs="$all_programs"
+  else
+    progs="$script_args"
+  fi
+
+# 1.b ID header  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  echo ' '
+  echo '                    *****************************'
+  echo '                  ***  compiling WAVEWATCH III  ***'
+  echo '                    *****************************'
+  echo ' '
+
+# 1.c Setup for NetCDF compile - - - - - - - - - - - - - - - - - - - - - - - - 
+
+# 1.c.1 NetCDF compile message function
+
+  netcdf_compile_message () {
+
+  cat 2>&1 << 'EOF'
+
+*****************************************************************
+***         WAVEWATCH III NetCDF Compile Instructions         ***
+*****************************************************************
+
+Compile of WAVEWATCH III NetCDF enabled programs requires the
+environment variable WWATCH3_NETCDF be set to either NC3 (compile
+with NetCDF version 3.x) or NC4 (compile with NetCDF version 4.x).
+
+If WWATCH3_NETCDF = NC3, then the following environment variables
+are required.
+
+    NETCDF_LIBDIR = <path to NetCDF-3 libraries>
+    NETCDF_INCDIR = <path to NetCDF-3 include>
+
+If WWATCH3_NETCDF = NC4, then the following environment variables
+are required.
+
+    NETCDF_CONFIG = <path to NetCDF-4 nc-config utility>
+
+The nc-config utility (part of the NetCDF-4 install) is used to
+determine the appropriate compile and link flags for the
+WWATCH3_NETCDF=NC4 compile.
+
+The NetCDF-4 compile requires NetCDF version 4.1.1 or higher.
+Use "nc-config --version" to check the version of the installed
+NetCDF.
+
+Compiling with the NC4 switch requires WWATCH3_NETCDF=NC4 and the
+NetCDF-4 installation compiled with the NetCDF-4 API enabled.
+Use "nc-config --has-nc4" to check if the installed NetCDF has
+the NetCDF-4 API enabled.
+
+*****************************************************************
+
+EOF
+
+  }
+
+# 1.c.2 NetCDF check compile environment function
+
+  netcdf_check_compile () {
+
+  mode=$1 #must be ERROR or WARNING
+
+  if [ -z "$WWATCH3_NETCDF" ]
+  then
+    netcdf_compile_message
+    echo "$mode: WWATCH3_NETCDF not defined"; echo ' '
+    return 1
+  else
+    case $WWATCH3_NETCDF in
+      NC3)
+        if [ -z "$NETCDF_LIBDIR" ]
+        then
+          netcdf_compile_message
+          echo "$mode: NETCDF_LIBDIR not defined"; echo ' '
+          return 1
+        fi
+        if [ -z "$NETCDF_INCDIR" ]
+        then
+          netcdf_compile_message
+          echo "$mode: NETCDF_INCDIR not defined"; echo ' '
+          return 1
+        fi
+      ;;
+      NC4)
+        if [ ! -n "`grep NC4 $switch_file`" ]
+        then
+          echo "WARNING: NC4 is set in WWATCH3_NETCDF but not in the switch file"; echo ' '
+#          return 1
+        fi
+        if [ -z "$NETCDF_CONFIG" ]
+        then
+          netcdf_compile_message
+          echo "$mode: NETCDF_CONFIG not defined"; echo ' '
+          return 1
+        fi
+        if [ ! -x "$NETCDF_CONFIG" ]
+        then
+          netcdf_compile_message
+          echo "$mode: $NETCDF_CONFIG does not exist or is not executable"; echo ' '
+          return 1
+        fi
+        netcdf_version=`$NETCDF_CONFIG --version | awk '{print $2}'`
+        if [ -z "`echo $netcdf_version | cut -d. -f3`" ]
+        then
+          netcdf_version="$netcdf_version.0"
+        fi
+        if [ `echo $netcdf_version | tr -d .` -lt 411 ]
+        then
+          netcdf_compile_message
+          echo "$mode: NetCDF version $netcdf_version < 4.1.1"; echo ' '
+          return 1
+        fi
+      ;;
+      *)
+        netcdf_compile_message
+        echo "$mode: WWATCH3_NETCDF=$WWATCH3_NETCDF not supported"; echo ' '
+        return 1
+      ;;
+    esac
+  fi
+
+  return 0
+  }
+
+# 1.c.3 NetCDF check api function
+
+  netcdf_check_api () {
+
+  mode=$1 #must be ERROR or WARNING
+
+  if [ -n "`grep NC4 $switch_file`" ]
+  then
+    case $WWATCH3_NETCDF in
+      NC3)
+        netcdf_compile_message
+        echo "$mode: WWATCH3_NETCDF=NC3 incompatible with NC4 switch"; echo ' '
+        return 1
+      ;;
+      NC4)
+        if [ "`$NETCDF_CONFIG --has-nc4`" = 'no' ]
+        then
+          netcdf_compile_message
+          echo "$mode: NetCDF-4 API not enabled (required by NC4 switch)"; echo ' '
+          return 1
+        fi
+      ;;
+    esac
+  fi
+
+  return 0
+  }
+
+# 1.c.4 Check for NetCDF compile
+
+  if [ $default_mode -eq 1 ]
+  then
+    if ! netcdf_check_compile WARNING
+    then
+      echo "NetCDF enabled programs ($cdf_programs)"
+      echo "will not be compiled unless NetCDF compile environment is properly set."; echo ' '
+      if [ $systrck_nc4notrknc -eq 1 ] 
+      then 
+         echo "WARNING: ww3_systrk will not be compiled due to invalid switch option."; echo ' '
+         echo "TRKNC switch is also required with NC4."; echo ' '
+      fi 
+      echo "Continuing with compile of non-NetCDF programs ..."; echo ' '
+      progs="$reg_programs"
+    fi
+  else
+    nc_compile=0
+    for prog in $cdf_programs
+    do
+      if [ -n "`echo $progs | grep $prog`" ]
+      then
+        nc_compile=1
+      fi
+    done
+    if [ $nc_compile -eq 1 ]
+    then
+      if ! netcdf_check_compile ERROR
+      then
+        echo "NetCDF enabled programs ($cdf_programs)"
+        echo "will not be compiled unless NetCDF compile environment is properly set."; echo ' '
+        echo "Now exiting ..."; echo ' '
+        exit 1
+      fi
+    fi
+    systrkprog="ww3_systrk"
+    for prog in $systrkprog
+    do
+      if [ -n "`echo $progs | grep $prog`" ]
+      then   
+        if [ $systrck_nc4notrknc -eq 1 ]
+        then
+          echo "ERROR: ww3_systrk will not be compiled due to invalid switch option."; echo ' '
+          echo "TRKNC switch is also required with NC4."; echo ' '
+          echo "Now exiting ..."; echo ' '
+          exit 1
+        fi
+      fi
+    done
+  fi
+
+# 1.d Prepare scratch directory  - - - - - - - - - - - - - - - - - - - - - - - 
+
+  if test ! -d $temp_dir
+  then
+    if ! `mkdir -p $temp_dir`
+    then
+      echo ' ' ; echo "   *** Cannot create $temp_dir ***" ; echo ' '
+      exit 1
+    fi
+  fi
+
+  cd $temp_dir
+  rm -f *.f *.F *.f90 *.F90
+  rm -f *.l
+  cd $main_dir/ftn
+
+# 1.e Prepare makefile - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  make_make='y'
+  if test -f $switch_file_old
+  then
+    if test -f $main_dir/ftn/makefile && \
+       test -z "`diff $switch_file $switch_file_old`"
+    then
+      make_make='n'
+    fi
+  fi
+
+  if test "$make_make" = 'y'
+  then
+    echo 'Making makefile ...'
+    if $main_dir/bin/make_makefile.sh
+    then
+      if [ "$flag_SHRD" -gt '0' ]
+      then
+        if [ "$flag_OMPX" -gt '0' ]
+        then
+          cp $switch_file ${switch_file_old}_OMP
+          cp $makefile ${makefile}_OMP
+        else
+          cp $switch_file ${switch_file_old}_SHRD
+          cp $makefile ${makefile}_SHRD
+        fi
+      else
+        if [ "$flag_OMPH" -gt '0' ]
+        then
+          cp $switch_file ${switch_file_old}_HYB
+          cp $makefile ${makefile}_HYB
+        else
+          cp $switch_file ${switch_file_old}_DIST
+          cp $makefile ${makefile}_DIST
+        fi
+      fi
+    else
+      exit 1
+    fi
+  fi
+  echo ' '
+
+# 1.f Export paths - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  aPb="$main_dir/bin"     # path containing shell scripts
+  aPo="$main_dir/obj"     # path containing .o files
+  aPm="$main_dir/mod"     # path containing .mod files
+  aPe="$main_dir/exe"     # path containing executables
+
+  export aPb aPo aPm aPe
+
+# --------------------------------------------------------------------------- #
+# 2. Run make for all requests                                                #
+# --------------------------------------------------------------------------- #
+# 2.a Loop over all requests
+
+  for prog in $progs
+  do
+    echo "Processing $prog"
+    echo "---------------------"
+
+# 2.b Check input  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+    OK='n'
+    for check in $all_programs
+    do
+      if test "$prog" = "$check"
+      then
+        OK='y'
+      fi
+    done
+    if test "$OK" = 'n'
+    then
+      echo "   *** Program name not recognized ***"
+      echo ' '
+      exit 1
+
+# 2.c Run make - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+    else
+
+      netcdf_compile=no
+      if [ -n "`echo $cdf_programs | grep $prog`" ]
+      then
+        netcdf_compile=yes
+      fi
+      export netcdf_compile
+
+      mpi_mod=no
+      if [ -n "`grep MPI $switch_file`" ]
+      then
+        mpi_mod=yes
+      fi
+      export mpi_mod
+
+      omp_mod=no
+      if [ -n "`grep OMP $switch_file`" ]
+      then
+        omp_mod=yes
+      fi
+      export omp_mod
+
+      palm_mod=no
+      if [ -n "`grep PALM $switch_file`" ] 
+      then
+        export palm_mod='yes'
+      fi
+      export palm_mod
+
+      oasis_mod=no
+      if [ -n "`grep OASIS $switch_file`" ] 
+      then
+        export oasis_mod='yes'
+      fi
+      export oasis_mod
+
+      if [ ! -f $exec_type_file ] ; then
+          touch $exec_type_file ; fi
+
+      if [ `grep $prog $exec_type_file | wc -l | awk '{ print $1}'` != '0' ]
+      then
+        exec_type=`grep $prog $exec_type_file | tail -1 | awk '{ print $2}'`
+      fi
+      if [ "$exec_type" != "$pres_type" ] ; then
+          rm -f $main_dir/exe/$prog  ; fi
+
+      cp $exec_type_file tempfile
+      sed -n "/$prog/!p" tempfile > $exec_type_file
+      rm -f tempfile
+
+      path_m=$main_dir/mod
+      export path_m
+      if make -f makefile $aPe/$prog
+      then
+        echo ' '
+      else
+        exit 1
+      fi
+
+      echo "$prog $pres_type" >> $exec_type_file
+
+    fi
+
+  done
+
+# 2.d copy comp and link 
+
+  cp  $main_dir/bin/comp $main_dir/exe/
+  cp  $main_dir/bin/link $main_dir/exe/
+
+# --------------------------------------------------------------------------- #
+# 3. End of program ID.                                                       #
+# --------------------------------------------------------------------------- #
+
+  echo ' '
+  echo '                       **********************'
+  echo '                     *** end of compilation ***'
+  echo '                       **********************'
+  echo ' '
+
+# End of w3_make ------------------------------------------------------------ #

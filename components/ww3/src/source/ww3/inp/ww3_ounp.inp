@@ -1,0 +1,118 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III NETCDF Point output post-processing                    $
+$--------------------------------------------------------------------- $
+$ First output time (yyyymmdd hhmmss), increment of output (s), 
+$ and number of output times.
+$
+  19850101 000000  3600.  1000
+$
+$ Points requested --------------------------------------------------- $
+$
+$ Define points index for which output is to be generated. 
+$ If no one defined, all points are selected
+$ One index number per line, negative number identifies end of list.
+$ 1
+$ 2
+$ mandatory end of list
+ -1
+$
+$--------------------------------------------------------------------- $
+$ file prefix
+$ number of characters in date [4(yearly),6(monthly),8(daily),10(hourly)]
+$ netCDF version [3,4]
+$ points in same file [T] or not [F] 
+$                    and max number of points to be processed in one pass
+$ output type ITYPE [0,1,2,3]
+$ flag for global attributes WW3 [0] or variable version [1-2-3-4]
+$ flag for dimensions order time,station [T] or station,time [F]
+$
+ ww3.
+ 6
+ 4
+ T 150 
+ 1
+ 0
+ T
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 0, inventory of file.
+$            No additional input, the above time range is ignored.
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 1, netCDF Spectra.
+$          - Sub-type OTYPE :  1 : Print plots.
+$                              2 : Table of 1-D spectra
+$                              3 : Transfer file.
+$                              4 : Spectral partitioning.
+$          - Scaling factors for 1-D and 2-D spectra Negative factor
+$            disables, output, factor = 0. gives normalized spectrum.
+$
+  3  1  0
+$
+$ The transfer file contains records with the following contents.
+$
+$ - File ID in quotes, number of frequencies, directions and points.
+$   grid name in quotes (for unformatted file C*21,3I,C*30).
+$ - Bin frequencies in Hz for all bins.
+$ - Bin directions in radians for all bins (Oceanographic conv.).
+$                                                         -+
+$ - Time in yyyymmdd hhmmss format                         | loop
+$                                             -+           |
+$ - Point name (C*10), lat, lon, d, U10 and    |  loop     | over
+$   direction, current speed and direction     |   over    |
+$ - E(f,theta)                                 |  points   | times
+$                                             -+          -+
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 2, netCDF Tables of (mean) parameter
+$          - Sub-type OTYPE :  1 : Depth, current, wind
+$                              2 : Mean wave pars.
+$                              3 : Nondimensional pars. (U*)
+$                              4 : Nondimensional pars. (U10)
+$                              5 : 'Validation table'
+$                              6 : WMO standard output 
+$  4
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 3, netCDF Source terms
+$          - Sub-type OTYPE :  1 : Print plots.
+$                              2 : Table of 1-D S(f).
+$                              3 : Table of 1-D inverse time scales
+$                                  (1/T = S/F).
+$                              4 : Transfer file
+$          - Scaling factors for 1-D and 2-D source terms. Negative
+$            factor disables print plots, factor = 0. gives normalized
+$            print plots.
+$          - Flags for spectrum, input, interactions, dissipation,
+$            bottom, ice and total source term.
+$          - scale ISCALE for OTYPE=2,3
+$                              0 : Dimensional.
+$                              1 : Nondimensional in terms of U10
+$                              2 : Nondimensional in terms of U*
+$                             3-5: like 0-2 with f normalized with fp.
+$
+$  4  0  0  T T T T T T T  0
+$
+$ The transfer file contains records with the following contents.
+$
+$ - File ID in quotes, number of frequencies, directions and points,
+$   flags for spectrum and source terms (C*21, 3I, 6L)
+$ - Bin frequencies in Hz for all bins.
+$ - Bin directions in radians for all bins (Oceanographic conv.).
+$                                                         -+
+$ - Time in yyyymmdd hhmmss format                         | loop
+$                                             -+           |
+$ - Point name (C*10), depth, wind speed and   |  loop     | over
+$   direction, current speed and direction     |   over    |
+$ - E(f,theta) if requested                    |  points   | times
+$ - Sin(f,theta) if requested                  |           |
+$ - Snl(f,theta) if requested                  |           |
+$ - Sds(f,theta) if requested                  |           |
+$ - Sbt(f,theta) if requested                  |           |
+$ - Sice(f,theta) if requested                 |           |
+$ - Stot(f,theta) if requested                 |           |
+$                                             -+          -+
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

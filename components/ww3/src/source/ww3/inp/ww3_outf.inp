@@ -1,0 +1,57 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Grid output post-processing                            $
+$--------------------------------------------------------------------- $
+$ Time, time increment and number of outputs
+$
+  19680606 060000 10800. 1
+$
+$ Output request flags identifying fields as in ww3_shel.inp. See this
+$ file for a full documentation of the field output options.
+$
+  N
+  DPT HS FP T01 WL02 ALPXT ALPYT ALPXY
+$
+$ Output type ITYPE [0,1,2,3], and IPART [ 0,...,NOSWLL ]
+$
+  1  0
+$ -------------------------------------------------------------------- $
+$ ITYPE = 0, inventory of file.
+$            No additional input, the above time range is ignored.
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 1, print plots.
+$            IX,IY range and stride, flag for automatic scaling to
+$            maximum value (otherwise fixed scaling),
+$            vector component flag (dummy for scalar quantities),
+$
+   1 12 1 1 12 1 F T
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 2, field statistics.
+$            IX,IY range.
+$
+$ 1 12 1 12
+$
+$ -------------------------------------------------------------------- $
+$ ITYPE = 3, transfer files.
+$            IX, IY range, IDLA and IDFM as in ww3_grid.inp.
+$            The additional option IDLA=5 gives longitude, latitude 
+$            and parameter value(s) per record (defined points only),
+$
+$ 2 11 2 11 1 2
+$
+$ For each field and time a new file is generated with the file name
+$ ww3.yymmddhh.xxx, where yymmddhh is a conventional time indicator,
+$ and xxx is a field identifier. The first record of the file contains
+$ a file ID (C*13), the time in yyyymmdd hhmmss format, the lowest,
+$ highest and number of longitudes (2R,I), id.  latitudes, the file
+$ extension name (C*$), a scale factor (R), a unit identifier (C*10),
+$ IDLA, IDFM, a format (C*11) and a number identifying undefined or
+$ missing values (land, ice, etc.).  The field follows as defined by
+$ IDFM and IDLA, defined as in the grid preprocessor. IDLA=5 is added
+$ and gives a set of records containing the longitude, latitude and
+$ parameter value. Note that the actual data is written as an integers.
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $

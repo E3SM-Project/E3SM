@@ -1,0 +1,1348 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE W3IOGRMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  !            F. Ardhuin             !
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         20-Aug-2016 |
+!/                  +-----------------------------------+
+!/
+!/    For updates see W3IOGR documentation.
+!/    12-Dec-2012 : Adding SMC grid.  JG_Li             ( version 4.08 )
+!/    16-Sep-2013 : Add Arctic part in SMC grid.        ( version 4.11 )
+!/    11-Nov-2013 : SMC and rotated grid incorporated in the main 
+!/                  trunk                               ( version 4.13 )
+!/    20-Aug-2016 : Add IOBPA                           ( version 5.12 )
+!/
+!  1. Purpose :
+!
+!     Reading/writing of model definition file .
+!
+!  2. Variables and types :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      VERGRD    C*10  Private  Model definition file version number.
+!      IDSTR     C*35  Private  Model definition file ID string.
+!     ----------------------------------------------------------------
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      W3IOGR    Subr. Public   Read/write model definition file.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SETG    Subr. W3GDATMD Point to data structure for spatial gr.
+!      W3DIMX    Subr.    Id.   Set up arrays for spatial grid.
+!      W3DIMS    Subr.    Id.   Set array dimensions for a spec. grid.
+!      W3SETO    Subr. W3ODATMD Point to data structure for spatial gr.
+!      W3DMO5    Subr.    Id.   Set array dimensions.
+!      INPTAB    Subr. W3SRC2MD Fill interpolation tables for
+!                               dispersion relation.
+!      DISTAB    Subr. W3DISPMD Input coefficient lookup table.
+!      INSNL1    Subr. W3SNL1MD Initialization of the DIA.
+!      INSNL2    Subr. W3SNL2MD Initialization of WRT.
+!      INSNL3    Subr. W3SNL3MD Initialization of GMD.
+!      INSNLX    Subr. W3SNLXMD Initialization of exp. DIA.
+!      INSNLS    Subr. W3SNLSMD Initialization of nonlinear `smoother'.
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!      EXTCDE    Subr. W3SERVMD Abort program with exit code.
+!     ----------------------------------------------------------------
+!
+!  5. Remarks :
+!
+!     - Arrays allocated here on read or ing ww3_grid on write.
+!
+!  6. Switches :
+!
+!     See subroutine.
+!
+!  7. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      PUBLIC
+!/
+!/ Private parameter statements (ID strings)
+!/
+      CHARACTER(LEN=10), PARAMETER, PRIVATE :: VERGRD = 'III  4.03 '
+      CHARACTER(LEN=35), PARAMETER, PRIVATE ::                        &
+                         IDSTR = 'WAVEWATCH III MODEL DEFINITION FILE'
+!/
+!/ Public variables
+!/
+!/
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3IOGR ( INXOUT, NDSM, IMOD, FEXT )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  !            F. Ardhuin             !
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         29-May-2014 |
+!/                  +-----------------------------------+
+!/
+!/    14-Jan-1999 : Distributed FORTRAN 77 version.     ( version 1.18 )
+!/    04-Feb-2000 : Upgrade to FORTRAN 90               ( version 2.00 )
+!/                  Major changes to logistics.
+!/    14-Feb-2000 : Exact-NL added.                     ( version 2.01 )
+!/    09-Jan-2001 : Flat grid option.                   ( version 2.06 )
+!/    02-Feb-2001 : Exact-NL version 3.0                ( version 2.07 )
+!/    27-Feb-2001 : Third propagation scheme added.     ( version 2.08 )
+!/    16-Mar-2001 : Fourth propagation scheme added.    ( version 2.09 )
+!/    29-Mar-2001 : Sub-grid islands added.             ( version 2.10 )
+!/    11-Jan-2002 : Sub-grid ice added.                 ( version 2.15 )
+!/    09-May-2002 : Switch clean up.                    ( version 2.21 )
+!/    27-Aug-2002 : Exact-NL version 4.0                ( version 2.22 )
+!/    26-Nov-2002 : Adding first VDIA and MDIA.         ( version 3.01 )
+!/    01-Aug-2003 : Adding moving grid GSE correction.  ( version 3.03 )
+!/    08-Mar-2004 : Multiple grid version.              ( version 3.06 )
+!/    04-May-2005 : Change to MPI_COMM_WAVE.            ( version 3.07 )
+!/    24-Jun-2005 : Add MAPST2 processing.              ( version 3.07 )
+!/    09-Nov-2005 : Remove soft boundary options.       ( version 3.08 )
+!/    23-Jun-2006 : Add W3SLN1 parameters.              ( version 3.09 )
+!/    27-Jun-2006 : Adding file name preamble.          ( version 3.09 )
+!/    25-Jul-2006 : Reorder for 'GRID' option to read   ( version 3.10 )
+!/                  spectral data also.
+!/    28-Oct-2006 : Add partitioning pars.              ( version 3.10 )
+!/    26-Mar-2007 : Add partitioning pars.              ( version 3.11 )
+!/    16-Apr-2006 : Add Miche limiter pars.             ( version 3.11 )
+!/    25-Apr-2007 : Adding Battjes-Janssen Sdb.         ( version 3.11 )
+!/    09-Oct-2007 : Adding WAM cycle 4+ Sin and Sds.    ( version 3.13 )
+!/    29-May-2009 : Preparing distribution version.     ( version 3.14 )
+!/    30-Oct-2009 : Fix ndst arg in call to w3dmo5.     ( version 3.14 )
+!/                  (T. J. Campbell, NRL)
+!/    30-Oct-2009 : Implement curvilinear grid type.    ( version 3.14 )
+!/                  (W. E. Rogers & T. J. Campbell, NRL)
+!/    23-Dec-2009 : Addition of COU namelists           ( version 3.14 )
+!/    31-Oct-2010 : Implement unstructured grids        ( version 3.14 )
+!/                  (A. Roland and F. Ardhuin) 
+!/    06-Dec-2010 : Change from GLOBAL (logical) to ICLOSE (integer) to
+!/                  specify index closure for a grid.   ( version 3.14 )
+!/                  (T. J. Campbell, NRL)
+!/    12-Jun-2012 : Add /RTD option or rotated grid option. 
+!/                  (Jian-Guo Li)                       ( version 4.06 )
+!/    13-Jul-2012 : Move GMD (SNL3) and nonlinear filter (SNLS)
+!/                  from 3.15 (HLT).                    ( version 4.08 )
+!/    19-Dec-2012 : Add NOSWLL to file.                 ( version 4.11 )
+!/    01-Jul-2013 : Document UQ / UNO switches in file  ( version 4.12 )
+!/    10-Sep-2013 : Add IG1 parameters                  ( version 4.12 )
+!/    06-Mar-2014 : Writes out a help message on error  ( version 4.18 )
+!/    10-Mar-2014 : Add IC2 parameters                  ( version 5.01 )
+!/    29-May-2014 : Add IC3 parameters                  ( version 5.01 )
+!/
+!/    Copyright 2009-2013 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Reading and writing of the model definition file.
+!
+!  2. Method :
+!
+!     The file is opened within the routine, the name is pre-defined
+!     and the unit number is given in the parameter list. The model
+!     definition file is written using UNFORMATTED write statements.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       INXOUT  C*(*)  I   Test string for read/write, valid are:
+!                         'READ',  'WRITE' and 'GRID'.
+!       NDSM    Int.   I   File unit number.
+!       IMOD    Int.   I   Model number for W3GDAT etc.
+!       FEXT    C*(*)  I   File extension to be used.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     See above.
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3INIT    Subr. W3INITMD Wave model initialization routine.
+!      ......    Prog.   N/A    All WAVEWATCH III aux programs and
+!                               drivers.                
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       Tests on INXOUT, file status and on array dimensions.
+!
+!  7. Remarks :
+!
+!     - The model definition file has the pre-defined name
+!       'mod_def.FILEXT'.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/MPI  MPI calls
+!
+!     !/LNn  Select source terms
+!     !/STn
+!     !/NLn
+!     !/BTn
+!     !/DBn
+!     !/TRn
+!     !/BSn
+!     !/XXn
+!
+!     !/S    Enable subroutine tracing.
+!     !/T    Enable test output
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE CONSTANTS
+      USE W3GDATMD
+!/MPI      USE W3ADATMD, ONLY: MPI_COMM_WAVE
+      USE W3ODATMD
+!/ST2      USE W3SRC2MD, ONLY: INPTAB
+!/ST3      USE W3SRC3MD, ONLY: INSIN3
+!/ST4      USE W3SRC4MD, ONLY: INSIN4, TAUT, TAUHFT, TAUHFT2, &
+!/ST4                          DELU, DELTAUW, DELUST, &
+!/ST4                          DELALP, DELTAIL, &
+!/ST4                          DIKCUMUL 
+!/NL1      USE W3SNL1MD, ONLY: INSNL1
+!/NL2      USE W3SNL2MD, ONLY: INSNL2
+!/NL3      USE W3SNL3MD, ONLY: INSNL3
+!/NLX      USE W3SNLXMD, ONLY: INSNLX
+!/NLS      USE W3SNLSMD, ONLY: INSNLS
+!/IS2      USE W3SIS2MD, ONLY: INSIS2
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+      USE W3DISPMD
+!
+      IMPLICIT NONE
+!
+!/MPI      INCLUDE "mpif.h"
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)             :: NDSM
+      INTEGER, INTENT(IN), OPTIONAL   :: IMOD
+      CHARACTER, INTENT(IN)           :: INXOUT*(*)
+      CHARACTER, INTENT(IN), OPTIONAL :: FEXT*(*)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: IGRD, IERR, I, J, MTH, MK, ISEA, IX, IY
+!/ST4 INTEGER                 :: IK, ITH, IK2, ITH2
+      INTEGER, ALLOCATABLE    :: MAPTMP(:,:)
+!/MPI      INTEGER                 :: IERR_MPI, IP
+!/S      INTEGER, SAVE           :: IENT = 0
+!/T      INTEGER                 :: K
+      LOGICAL                 :: WRITE, FLTEST = .FALSE., TESTLL,     &
+                                 FLSNL2 = .FALSE.
+      LOGICAL, SAVE           :: FLINP = .FALSE. , FLDISP = .FALSE.,  &
+                                 FLIS  = .FALSE. 
+      CHARACTER(LEN=10)       :: VERTST
+      CHARACTER(LEN=13)       :: TEMPXT
+      CHARACTER(LEN=30)       :: TNAME0, TNAME1, TNAME2, TNAME3,      &
+                                 TNAME4, TNAME5, TNAME6, TNAME7,      &
+                                 TNAMEP, TNAMEG, TNAMEF, TNAMEI
+      CHARACTER(LEN=30)       :: FNAME0, FNAME1, FNAME2, FNAME3,      &
+                                 FNAME4, FNAME5, FNAME6, FNAME7,      &
+                                 FNAMEP, FNAMEG, FNAMEF, FNAMEI
+      CHARACTER(LEN=35)       :: IDTST
+      CHARACTER(LEN=60)      :: MESSAGE(5)
+      LOGICAL                 :: GLOBAL
+!/
+!/ ------------------------------------------------------------------- /
+!/
+!/S      CALL STRACE (IENT, 'W3IOGR')
+!
+      MESSAGE =(/ '     MOD DEF FILE WAS GENERATED WITH A DIFFERENT    ', &
+                  '     WW3 VERSION OR USING A DIFFERENT SWITCH FILE.  ', &
+                  '     MAKE SURE WW3_GRID IS COMPILED WITH SAME SWITCH', &
+                  '     AS WW3_SHEL OR WW3_MULTI, RUN WW3_GRID AGAIN   ', &
+                  '     AND THEN TRY AGAIN THE PROGRAM YOU JUST USED.  '/)
+!
+      TNAMEF = '------------------------------'
+      TNAME0 = '------------------------------'
+      TNAME1 = '------------------------------'
+      TNAME2 = '------------------------------'
+      TNAME3 = '------------------------------'
+      TNAME4 = '------------------------------'
+      TNAME5 = '------------------------------'
+      TNAME6 = '------------------------------'
+      TNAME7 = '------------------------------'
+      TNAMEP = '------------------------------'
+      TNAMEG = '------------------------------'
+      TNAMEI = '------------------------------'
+!
+!/FLX1      TNAMEF = 'Wu (1980)                     '
+!/FLX2      TNAMEF = 'Tolman and Chalikov (1996)    '
+!/FLX3      TNAMEF = 'T and C(1996) with cap on Cd  '
+!/FLX4      TNAMEF = 'Hwang (2011) with cap on Cd   '
+!/FLXX      TNAMEF = 'Experimental                  '
+!/LN0      TNAME0 = 'Not defined                   '
+!/LN1      TNAME0 = 'Cavaleri and M.-R. (1982)     '
+!/LNX      TNAME0 = 'Experimental                  '
+!/ST0      TNAME1 = 'Not defined                   '
+!/ST1      TNAME1 = 'WAM cycles 1 through 3        '
+!/ST2      TNAME1 = 'Tolman and Chalikov (1996)    '
+!/ST3      TNAME1 = 'WAM cycle 4+                  '
+!/ST4      TNAME1 = 'Ardhuin et al. (2009+)        '
+!/ST6      TNAME1 = 'BYDB input and dissipation    '
+!/STX      TNAME1 = 'Experimental                  '
+!/NL0      TNAME2 = 'Not defined                   '
+!/NL1      TNAME2 = 'Discrete Interaction Approx.  '
+!/NL2      TNAME2 = 'Exact nonlinear interactions  '
+!/NL3      TNAME2 = 'Generalized Multiple DIA      '
+!/NL4      TNAME2 = 'Two Scaled Approximation      '
+!/NLX      TNAME2 = 'Experimental                  '
+!/BT0      TNAME3 = 'Not defined                   '
+!/BT1      TNAME3 = 'JONSWAP                       '
+!/BT4      TNAME3 = 'SHOWEX                        '
+!/BT8      TNAME3 = 'Muddy Bed (D & L)             '
+!/BTX      TNAME3 = 'Experimental                  '
+!/IC1      TNAMEI = 'Ice sink term (uniform k_i)   '
+!/IC2      TNAMEI = 'Ice sink term (Lui et al)     '
+!/IC3      TNAMEI = 'Ice sink term (Wang and Shen) '
+!/IC4      TNAMEI = 'Ice sink term (empirical)     '
+!/DB0      TNAME4 = 'Not defined                   '
+!/DB1      TNAME4 = 'Battjes and Janssen (1978)    '
+!/DBX      TNAME4 = 'Experimental                  '
+!/TR0      TNAME5 = 'Not defined                   '
+!/TRX      TNAME5 = 'Experimental                  '
+!/BS0      TNAME6 = 'Not defined                   '
+!/BSX      TNAME6 = 'Experimental                  '
+!/XX0      TNAME7 = 'Not defined                   '
+!/XXX      TNAME7 = 'Experimental                  '
+!/PR0      TNAMEP = 'No propagation                '
+!/PR1      TNAMEP = 'First order upstream          '
+!/UQ      TNAMEP = '3rd order UQ scheme           '
+!/UNO      TNAMEP = '2nd order UNO scheme          '
+!/SMC      TNAMEP = 'UNO2 on SMC grid propagation  '
+!/PRX      TNAMEP = 'Experimental                  '
+!/PR0      TNAMEG = 'No GSE aleviation             '
+!/PR1      TNAMEG = 'No GSE aleviation (1up prop)  '
+!/PR2      TNAMEG = 'Diffusion operator            '
+!/PR3      TNAMEG = 'Averaging operator            '
+!/PRX      TNAMEG = 'Experimental                  '
+!
+      FNAMEF = TNAMEF
+      FNAME0 = TNAME0
+      FNAME1 = TNAME1
+      FNAME2 = TNAME2
+      FNAME3 = TNAME3
+      FNAME4 = TNAME4
+      FNAME5 = TNAME5
+      FNAME6 = TNAME6
+      FNAME7 = TNAME7
+      FNAMEP = TNAMEP
+      FNAMEG = TNAMEG
+      FNAMEI = TNAMEI
+!
+!/T      FLTEST = .TRUE.
+!/NL2      FLSNL2 = .TRUE.
+!
+! test input parameters ---------------------------------------------- *
+!
+      IF ( PRESENT(IMOD) ) THEN
+          IGRD   = IMOD
+        ELSE
+          IGRD   = 1
+        END IF
+!
+      IF ( PRESENT(FEXT) ) THEN
+          TEMPXT = FEXT
+        ELSE
+          TEMPXT = 'ww3'
+        END IF
+!
+      IF (INXOUT.NE.'READ' .AND. INXOUT.NE.'WRITE'                    &
+                           .AND. INXOUT.NE.'GRID') THEN
+          IF ( IAPROC .EQ. NAPERR ) WRITE (NDSE,900) INXOUT
+          CALL EXTCDE ( 1 )
+        END IF
+!
+      WRITE  = INXOUT .EQ. 'WRITE'
+!
+!/T      WRITE (NDST,9000) INXOUT, WRITE, NDSM, IGRD, TEMPXT
+!
+      CALL W3SETO ( IGRD, NDSE, NDST )
+      CALL W3SETG ( IGRD, NDSE, NDST )
+      FILEXT = TEMPXT
+!
+! open file ---------------------------------------------------------- *
+!
+      I      = LEN_TRIM(FILEXT)
+      J      = LEN_TRIM(FNMPRE)
+!
+      IF ( WRITE ) THEN
+          OPEN (NDSM,FILE=FNMPRE(:J)//'mod_def.'//FILEXT(:I),         &
+                FORM='UNFORMATTED',ERR=800,IOSTAT=IERR)
+        ELSE
+          OPEN (NDSM,FILE=FNMPRE(:J)//'mod_def.'//FILEXT(:I),         &
+                FORM='UNFORMATTED',STATUS='OLD',ERR=800,IOSTAT=IERR)
+        ENDIF
+!
+      REWIND ( NDSM )
+!
+! Dimensions and test information --------------------------------------
+!
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+                IDSTR, VERGRD, NX, NY, NSEA, NTH, NK,                 &
+                NBI, NFBPO, GNAME, FNAME0, FNAME1, FNAME2, FNAME3,    &
+                FNAME4, FNAME5, FNAME6, FNAME7, FNAMEP, FNAMEG,       &
+                FNAMEF, FNAMEI
+!
+!/SMC          WRITE (NDSM) NCel, NUFc, NVFc, NRLv, MRFct
+!/ARC          WRITE (NDSM) NGLO, NARC, NBGL, NBAC
+!
+          WRITE (NDSM)                                                &
+                (NBO(I),I=0,NFBPO), (NBO2(I),I=0,NFBPO)
+!/T          WRITE (NDST,9001) IDSTR, VERGRD, NX, NY, NSEA, NTH, NK,  &
+!/T            NBI, NFBPO, 9, GNAME, FNAME0, FNAME1, FNAME2, FNAME3,  &
+!/T            FNAME4, FNAME5, FNAME6, FNAME7, FNAMEP, FNAMEG,        &
+!/T            FNAMEF, FNAMEI
+!/T          WRITE (NDST,9002) (NBO(I),I=0,NFBPO)
+!/T          WRITE (NDST,9003) (NBO2(I),I=0,NFBPO)
+        ELSE
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+                IDTST, VERTST, NX, NY, NSEA, MTH, MK,                 &
+                NBI, NFBPO, GNAME, FNAME0, FNAME1, FNAME2, FNAME3,    &
+                FNAME4, FNAME5, FNAME6, FNAME7, FNAMEP, FNAMEG,       &
+                FNAMEF, FNAMEI
+!
+!/SMC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/SMC                     NCel, NUFc, NVFc, NRLv, MRFct
+!/ARC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ARC                     NGLO, NARC, NBGL, NBAC 
+!
+          NK     = MK
+          NTH    = MTH
+          NK2    = NK + 2
+          NSPEC  = NK * NTH
+!/T          WRITE (NDST,9001) IDSTR, VERGRD, NX, NY, NSEA, NTH, NK,  &
+!/T            NBI, NFBPO, 9, GNAME, FNAME0, FNAME1, FNAME2, FNAME3,  &
+!/T            FNAME4, FNAME5, FNAME6, FNAME7, FNAMEP, FNAMEG,        &
+!/T            FNAMEF, FNAMEI
+!
+          IF ( IDTST .NE. IDSTR ) THEN
+              IF ( IAPROC .EQ. NAPERR )                               &
+                  WRITE (NDSE,901) IDTST, IDSTR
+              CALL EXTCDE ( 10 )
+            END IF
+          IF ( VERTST .NE. VERGRD ) THEN
+              IF ( IAPROC .EQ. NAPERR )                               &
+                  WRITE (NDSE,902) VERTST, VERGRD
+              CALL EXTCDE ( 11 )
+            END IF
+          IF ( NFBPO .GT. 9 ) THEN
+              IF ( IAPROC .EQ. NAPERR )                               &
+                  WRITE (NDSE,904) NFBPO, 9
+              CALL EXTCDE ( 13 )
+            END IF
+          IF ( FNAME0 .NE. TNAME0 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 0, FILEXT(:I), FNAME0, TNAME0,     &
+                                   MESSAGE
+               CALL EXTCDE ( 14 )
+            END IF
+          IF ( FNAME1 .NE. TNAME1 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 1, FILEXT(:I), FNAME1, TNAME1,     &
+                                   MESSAGE
+               CALL EXTCDE ( 15 )
+            END IF
+          IF ( FNAME2 .NE. TNAME2 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 2, FILEXT(:I), FNAME2, TNAME2,     &
+                                   MESSAGE
+               CALL EXTCDE ( 16 )
+            END IF
+          IF ( FNAME3 .NE. TNAME3 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 3, FILEXT(:I), FNAME3, TNAME3,     &
+                                   MESSAGE
+               CALL EXTCDE ( 17 )
+            END IF
+          IF ( FNAMEI .NE. TNAMEI ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 3, FILEXT(:I), FNAMEI, TNAMEI,     &
+                                   MESSAGE
+               CALL EXTCDE ( 17 )
+            END IF
+          IF ( FNAME4 .NE. TNAME4 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 4, FILEXT(:I), FNAME4, TNAME4,     &
+                                   MESSAGE
+               CALL EXTCDE ( 18 )
+            END IF
+          IF ( FNAME5 .NE. TNAME5 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 5, FILEXT(:I), FNAME5, TNAME5,     &
+                                   MESSAGE
+               CALL EXTCDE ( 19 )
+            END IF
+          IF ( FNAME6 .NE. TNAME6 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 6, FILEXT(:I), FNAME6, TNAME6,     &
+                                   MESSAGE
+               CALL EXTCDE ( 20 )
+            END IF
+          IF ( FNAME7 .NE. TNAME7 ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,905) 7, FILEXT(:I), FNAME7, TNAME7,     &
+                                   MESSAGE
+               CALL EXTCDE ( 21 )
+            END IF
+          IF ( FNAMEP .NE. TNAMEP ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,906) FNAMEP, TNAMEP
+               CALL EXTCDE ( 22 )
+            END IF
+          IF ( FNAMEG .NE. TNAMEG ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,907) FNAMEG, TNAMEG, MESSAGE
+               CALL EXTCDE ( 22 )
+            END IF
+          IF ( FNAMEF .NE. TNAMEF ) THEN
+               IF ( IAPROC .EQ. NAPERR )                              &
+                  WRITE (NDSE,908) FILEXT(:I), FNAMEF, TNAMEF, MESSAGE
+               CALL EXTCDE ( 24 )
+            END IF
+!
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+                (NBO(I),I=0,NFBPO), (NBO2(I),I=0,NFBPO)
+!/T          WRITE (NDST,9002) (NBO(I),I=0,NFBPO)
+!/T          WRITE (NDST,9003) (NBO2(I),I=0,NFBPO)
+!
+        ENDIF
+!
+! Parameters in modules  --------------------------------------------- *
+!                                                   Module W3GDAT GRID
+!
+      ALLOCATE ( MAPTMP(NY,NX) )
+!
+      IF ( WRITE ) THEN
+          MAPTMP = MAPSTA + 8*MAPST2
+          WRITE (NDSM)                                                &
+               GTYPE, FLAGLL, ICLOSE
+!
+! Writes different kind of information depending on grid type
+!
+          SELECT CASE ( GTYPE )
+            CASE ( RLGTYPE )
+              WRITE (NDSM)                                            &
+                   SX, SY, X0, Y0
+            CASE ( CLGTYPE )
+              WRITE (NDSM)                                            &
+                   XGRD, YGRD
+            CASE (UNGTYPE) 
+              WRITE (NDSM)                                            &
+                FSN, FSPSI,FSFCT,FSNIMP,NTRI,COUNTOT, COUNTRI, NNZ
+              WRITE (NDSM)                                            &
+                X0, Y0, SX, SY, DXYMAX, XYB, TRIGP, TRIA,             &
+                CROSSDIFF, LEN, IEN, ANGLE0, ANGLE, SI, MAXX, MAXY,   &
+                DXYMAX, INDEX_CELL, CCON, VNEIGH, COUNTCON, IE_CELL,  &
+                POS_CELL, IOBP, IOBPA, IOBPD, IAA, JAA, POSI
+            END SELECT !GTYPE
+!
+          WRITE (NDSM)                                                &
+               ZB, MAPTMP, MAPFS, MAPSF, TRFLAG
+!
+!/SMC         WRITE (NDSM)  NLvCel, NLvUFc, NLvVFc
+!/SMC         WRITE (NDSM)  IJKCel, IJKUFc, IJKVFc
+!/ARC         WRITE (NDSM)  ICLBAC 
+!/ARC         WRITE (NDSM)  ANGARC 
+!/SMC         WRITE (NDSM)  CTRNX,  CTRNY,  CLATF
+!/SMC         IF ( FLTEST ) THEN
+!/SMC            WRITE (NDSE,"('  NLvCel, NLvUFc, NLvVFc Write for',2I9)") NRLv, MRFct
+!/SMC            WRITE (NDSE,"('  IJKCel, IJKUFc, IJKVFc Write for',3I9)") NCel, NUFc, NVFc 
+!/SMC            WRITE (NDSE,"('  CTRNXY transparency write for 2x', I9)") NCel
+!/SMC         ENDIF
+! 
+          IF ( TRFLAG .NE. 0 ) WRITE (NDSM) TRNX, TRNY
+          WRITE (NDSM)                     &
+               DTCFL, DTCFLI, DTMAX, DTMIN, DMIN, CTMAX,              &
+               FICE0, FICEN, FICEL, PFMOVE, FLDRY, FLCX, FLCY, FLCTH, &
+               FLCK, FLSOU, FLBPI, FLBPO, CLATS, CLATIS, CTHG0S,      &
+               STEXU, STEYU, STEDU, IICEHMIN, IICEHINIT, IICEDISP,    &
+               ICE100WIND
+          WRITE(NDSM)GRIDSHIFT
+!/SEC1              WRITE (NDSM) NITERSEC1
+!/RTD !!  Add rotated Polat/lon and AnglD to mod_def   JGLi12Jun2012
+!/RTD         WRITE (NDSM) Polat, Polon, AnglD
+!/RTD
+!!        WRITE(NDSM)                                                 &
+!!             COUG_2D, COUG_RAD3D, COUG_US3D
+        ELSE
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+               GTYPE, FLAGLL, ICLOSE
+!!Li      IF (.NOT.GINIT) CALL W3DIMX ( IGRD, NX, NY, NSEA, NDSE, NDST )
+          IF (.NOT.GINIT) CALL W3DIMX ( IGRD, NX, NY, NSEA, NDSE, NDST &
+!/SMC                                 , NCel, NUFc, NVFc, NRLv         &
+!/ARC                                 , NARC, NBAC, NSPEC              &
+                                      )
+!
+! Reads different kind of information depending on grid type
+!
+          SELECT CASE ( GTYPE )
+            CASE ( RLGTYPE )
+              READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                 &
+                   SX, SY, X0, Y0
+              DO IX=1,NX
+                XGRD(:,IX) = X0 + REAL(IX-1)*SX
+                END DO
+              DO IY=1,NY
+                YGRD(IY,:) = Y0 + REAL(IY-1)*SY
+                END DO
+            CASE ( CLGTYPE )
+              READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                 &
+                   XGRD, YGRD
+              !Set SX, SY, X0, Y0 to large values if curvilinear grid
+              X0 = HUGE(X0); Y0 = HUGE(Y0)
+              SX = HUGE(SX); SY = HUGE(SY)
+            CASE (UNGTYPE) 
+              READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                 & 
+                FSN,FSPSI,FSFCT,FSNIMP,NTRI,COUNTOT, COUNTRI, NNZ
+              IF (.NOT. GUGINIT) THEN
+                CALL W3DIMUG ( IGRD, NTRI, NX, COUNTOT, NNZ, NDSE, NDST )
+                END IF
+              READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                 &
+                X0, Y0, SX, SY, DXYMAX, XYB, TRIGP, TRIA,             &
+                CROSSDIFF, LEN, IEN, ANGLE0, ANGLE, SI, MAXX, MAXY,   &
+                DXYMAX, INDEX_CELL, CCON, VNEIGH, COUNTCON, IE_CELL,  &
+                POS_CELL, IOBP, IOBPA, IOBPD, IAA, JAA, POSI
+                XGRD(1,:)=XYB(:,1)
+                YGRD(1,:)=XYB(:,2)
+            END SELECT !GTYPE
+!
+          IF (GTYPE.NE.UNGTYPE) CALL W3GNTX ( IGRD, NDSE, NDST ) 
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+               ZB, MAPTMP, MAPFS, MAPSF, TRFLAG
+!
+!/SMC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/SMC                     NLvCel, NLvUFc, NLvVFc
+!/SMC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/SMC                     IJKCel, IJKUFc, IJKVFc
+!/ARC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ARC                     ICLBAC 
+!/ARC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ARC                     ANGARC 
+!/SMC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/SMC                     CTRNX,  CTRNY,  CLATF
+!
+          MAPSTA = MOD(MAPTMP+2,8) - 2
+          MAPST2 = (MAPTMP-MAPSTA) / 8
+          MAPSF(:,3) = MAPSF(:,2) + (MAPSF(:,1)-1)*NY
+          IF ( TRFLAG .NE. 0 ) THEN
+              READ (NDSM,END=801,ERR=802,IOSTAT=IERR) TRNX, TRNY
+            END IF
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+               DTCFL, DTCFLI, DTMAX, DTMIN, DMIN, CTMAX,              &
+               FICE0, FICEN, FICEL, PFMOVE, FLDRY, FLCX, FLCY,        &
+               FLCTH, FLCK, FLSOU, FLBPI, FLBPO, CLATS, CLATIS,       &
+               CTHG0S, STEXU, STEYU, STEDU, IICEHMIN, IICEHINIT,      &
+               IICEDISP, ICE100WIND
+
+              READ(NDSM,END=801,ERR=802,IOSTAT=IERR)GRIDSHIFT
+!/SEC1         READ (NDSM) NITERSEC1
+!
+!/RTD !!  Read rotated Polat/lon and AnglD from mod_def   JGLi12Jun2012
+!/RTD          READ (NDSM) Polat, Polon, AnglD
+!/RTD
+!
+        END IF
+!
+!/T      WRITE (NDST,9010) GTYPE, FLAGLL, ICLOSE, SX, SY, X0, Y0, TRFLAG
+!/T      WRITE (NDST,9011) 'MAPSTA'
+!/T      DO IY=MIN(NY,20), 1, -1
+!/T        WRITE (NDST,9012) (MAPSTA(IY,IX),IX=1,MIN(NX,30))
+!/T        END DO
+!/T      WRITE (NDST,9011) 'MAPST2'
+!/T      DO IY=MIN(NY,20), 1, -1
+!/T        WRITE (NDST,9012) (MAPST2(IY,IX),IX=1,MIN(NX,30))
+!/T        END DO
+!/T      WRITE (NDST,9011) 'MAPFS'
+!/T      DO IY=MIN(NY,20), 1, -1
+!/T        WRITE (NDST,9013) (MAPFS(IY,IX),IX=1,MIN(NX,12))
+!/T        END DO
+!/T      IF ( TRFLAG .NE. 0 ) THEN
+!/T          WRITE (NDST,9011) 'TRNX'
+!/T          DO IY=MIN(NY,20), 1, -1
+!/T            WRITE (NDST,9014) (TRNX(IY,IX),IX=1,MIN(NX,12))
+!/T            END DO
+!/T          WRITE (NDST,9011) 'TRNY'
+!/T          DO IY=MIN(NY,20), 1, -1
+!/T            WRITE (NDST,9014) (TRNY(IY,IX),IX=1,MIN(NX,12))
+!/T            END DO
+!/T        END IF
+!
+      DEALLOCATE ( MAPTMP )
+!
+!/T      WRITE (NDST,9015) DTCFL, DTCFLI, DTMAX, DTMIN,               &
+!/T                        DMIN, CTMAX, FICE0, FICEN, FICEL, PFMOVE,  &
+!/T                        STEXU, STEYU, STEDU
+!/T      WRITE (NDST,9016) FLDRY, FLCX, FLCY, FLCTH, FLCK,            &
+!/T                        FLSOU, FLBPI, FLBPO
+!/T      WRITE (NDST,9017) (CLATS(ISEA),ISEA=1,1),                    &
+!/T                        (CLATIS(ISEA),ISEA=1,1), (CTHG0S(IY),ISEA=1,1)
+!
+! Spectral parameters ------------------------------------------------ *
+!                                                 Module W3GDATMD SGRD
+!
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+               MAPWN, MAPTH, DTH, TH, ESIN, ECOS, ES2, ESC, EC2,      &
+               XFR, FR1, SIG, SIG2, DSIP, DSII, DDEN, DDEN2, FTE,     &
+               FTF, FTWN, FTTR, FTWL, FACTI1, FACTI2, FACHFA, FACHFE
+        ELSE
+          IF (.NOT.SINIT) CALL W3DIMS ( IGRD, NK, NTH, NDSE, NDST )
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+               MAPWN, MAPTH, DTH, TH, ESIN, ECOS, ES2, ESC, EC2,      &
+               XFR, FR1, SIG, SIG2, DSIP, DSII, DDEN, DDEN2, FTE,     &
+               FTF, FTWN, FTTR, FTWL, FACTI1, FACTI2, FACHFA, FACHFE
+        END IF
+!
+!/T      WRITE (NDST,9030) (MAPWN(I),I=1,8), (MAPTH(I),I=1,8), DTH*RADE, &
+!/T             (TH(I)*RADE,I=1,4), (ESIN(I),I=1,4), (ECOS(I),I=1,4),    &
+!/T             XFR, SIG(1)*TPIINV, SIG(NK)*TPIINV, FTE, FTF, FTWN, FTTR, &
+!/T             FTWL, FACTI1, FACTI2, FACHFA, FACHFE
+!
+!
+! Output flags for 3D parameters ------------------------------------- *
+!                                                 Module W3GDATMD 
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+                E3DF, P2MSF, US3DF
+        ELSE
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+                E3DF, P2MSF, US3DF
+        END IF
+
+      IF ( INXOUT .EQ. 'GRID' ) THEN
+          CLOSE (NDSM)
+          RETURN
+        END IF
+!
+! Parameters for output boundary points ------------------------------ *
+!                                                 Module W3ODATMD OUT5
+!
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+               XBPO, YBPO, RDBPO, IPBPO, ISBPO
+        ELSE
+          CALL W3DMO5 ( IGRD, NDSE, NDST, 2 )
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+               XBPO, YBPO, RDBPO, IPBPO, ISBPO
+        END IF
+!
+!/T      WRITE (NDST,9020)
+!/T      DO I=1, NFBPO
+!/T        WRITE (NDST,9021) I
+!/T        DO J=NBO(I-1)+1,NBO(I)
+!/T          WRITE (NDST,9022) J-NBO(I-1), (IPBPO(J,K),K=1,4),        &
+!/T                                        (RDBPO(J,K),K=1,4)
+!/T          END DO
+!/T        WRITE (NDST,9023) (ISBPO(J),J=NBO2(I-1)+1,NBO2(I))
+!/T        END DO
+!
+! Parameters for spectral partitioning  ------------------------------ *
+!                                                 Module W3ODATMD OUT6
+!
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+                IHMAX, HSPMIN, WSMULT, WSCUT, FLCOMB, NOSWLL
+        ELSE
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+                IHMAX, HSPMIN, WSMULT, WSCUT, FLCOMB, NOSWLL
+        END IF
+!
+!/T      WRITE (NDST,9025) IHMAX, HSPMIN, WSMULT, WSCUT, FLCOMB, NOSWLL
+!
+! Numerical parameters ----------------------------------------------- *
+!                                                 Module W3GDATMD NPAR
+!
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+                FACP, XREL, XFLT, FXFM, FXPM, XFT, XFC, FACSD, FHMAX, &
+                FFACBERG, DELAB, FWTABLE
+!/RWND          WRITE (NDSM)                                                &
+!/RWND                RWINDC
+!/WCOR          WRITE (NDSM)                                                &
+!/WCOR                WWCOR
+!/REF1          WRITE (NDSM)                                                &
+!/REF1                RREF, REFPARS, REFLC, REFLD
+!/IG1          WRITE   (NDSM)                                              &
+!/IG1                IGPARS(1:12)
+!/IC2          WRITE   (NDSM)                                              &
+!/IC2                IC2PARS(1:7)
+!/IC3          WRITE   (NDSM)                                              &
+!/IC3                IC3PARS
+!/IC4          WRITE   (NDSM)                                              &
+!/IC4                IC4PARS,IC4_KI,IC4_FC
+        ELSE
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+                FACP, XREL, XFLT, FXFM, FXPM, XFT, XFC, FACSD, FHMAX, &
+                FFACBERG, DELAB, FWTABLE
+!/RWND          READ  (NDSM)                                                &
+!/RWND                RWINDC
+!/WCOR          READ  (NDSM)                                                &
+!/WCOR                WWCOR
+!/REF1          READ  (NDSM)                                                &
+!/REF1                RREF, REFPARS, REFLC, REFLD
+!/IG1         READ   (NDSM)                                                &
+!/IG1                IGPARS(1:12)
+!/IC2         READ   (NDSM)                                                &
+!/IC2                IC2PARS(1:7)
+!/IC3         READ   (NDSM)                                                &
+!/IC3                IC3PARS
+!/IC4         READ   (NDSM)                                                &
+!/IC4                IC4PARS,IC4_KI,IC4_FC
+        END IF
+!
+!/T      WRITE (NDST,9040) FACP, XREL, XFLT, FXFM, FXPM, XFT, XFC,    &
+!/T                        FACSD, FHMAX
+!
+! Source term parameters --------------------------------------------- *
+!                                                 Module W3GDATMD SFLP
+!                                                 Module W3GDATMD SLNP
+!                                                 Module W3GDATMD SRCP
+!                                                 Module W3GDATMD SNLP
+!                                                 Module W3GDATMD SBTP
+!
+!/FLX2      IF ( WRITE ) THEN
+!/FLX2          WRITE (NDSM)                            NITTIN, CINXSI
+!/FLX2        ELSE
+!/FLX2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) NITTIN, CINXSI
+!/FLX2        END IF
+!
+!/FLX2      IF ( FLTEST ) WRITE (NDST,9048) NITTIN, CINXSI
+!
+!/FLX3      IF ( WRITE ) THEN
+!/FLX3          WRITE (NDSM)                                          &
+!/FLX3                 NITTIN, CINXSI, CD_MAX, CAP_ID
+!/FLX3        ELSE
+!/FLX3          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)               &
+!/FLX3                 NITTIN, CINXSI, CD_MAX, CAP_ID
+!/FLX3        END IF
+!
+!/FLX3      IF ( FLTEST ) WRITE (NDST,9048) NITTIN, CAP_ID, CINXSI, CD_MAX
+!
+!/FLX4      IF ( WRITE ) THEN
+!/FLX4          WRITE (NDSM)                            FLX4A0
+!/FLX4        ELSE
+!/FLX4          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) FLX4A0
+!/FLX4        END IF
+!
+! 
+!/LN1      IF ( WRITE ) THEN
+!/LN1          WRITE (NDSM)                            SLNC1, FSPM, FSHF
+!/LN1        ELSE
+!/LN1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) SLNC1, FSPM, FSHF
+!/LN1        END IF
+!
+!/LN1      IF ( FLTEST ) WRITE (NDST,9049) SLNC1, FSPM, FSHF
+!
+!/ST1      IF ( WRITE ) THEN
+!/ST1          WRITE (NDSM)                            SINC1, SDSC1
+!/ST1        ELSE
+!/ST1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) SINC1, SDSC1
+!/ST1        END IF
+!
+!/ST1      IF ( FLTEST ) WRITE (NDST,9050) SINC1, SDSC1
+!
+!/ST2      IF ( WRITE ) THEN
+!/ST2          WRITE (NDSM)                                           &
+!/ST2                ZWIND, FSWELL,                                   &
+!/ST2                SHSTAB, OFSTAB, CCNG, CCPS, FFNG, FFPS,          &
+!/ST2                CDSA0, CDSA1, CDSA2, SDSALN,                     &
+!/ST2                CDSB0, CDSB1, CDSB2, CDSB3, FPIMIN, XFH, XF1, XF2
+!/ST2        ELSE
+!/ST2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ST2                ZWIND, FSWELL,                                   &
+!/ST2                SHSTAB, OFSTAB, CCNG, CCPS, FFNG, FFPS,          &
+!/ST2                CDSA0, CDSA1, CDSA2, SDSALN,                     &
+!/ST2                CDSB0, CDSB1, CDSB2, CDSB3, FPIMIN, XFH, XF1, XF2
+!/ST2          IF ( .NOT. FLINP ) CALL INPTAB
+!/ST2          FLINP  = .TRUE.
+!/ST2        END IF
+!
+!/ST2      IF ( FLTEST ) WRITE (NDST,9050)                            &
+!/ST2           ZWIND, FSWELL, CDSA0, CDSA1, CDSA2,                   &
+!/ST2           SDSALN, CDSB0, CDSB1, CDSB2, CDSB3, FPIMIN, XFH, XF1, &
+!/ST2           XF2, SHSTAB, OFSTAB, CCNG, CCPS, FFNG, FFPS
+!
+!/ST3      IF ( WRITE ) THEN
+!/ST3          WRITE (NDSM)                                           &
+!/ST3                ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
+!/ST3                SSWELLF, SSDSC1, WWNMEANP, WWNMEANPTAIL, SSTXFTF,&
+!/ST3                SSTXFTFTAIL, SSTXFTWN,                           &
+!/ST3                DDELTA1, DDELTA2, SSTXFTF, SSTXFTWN,             &
+!/ST3                FFXPM, FFXFM
+!/ST3        ELSE
+!/ST3          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ST3                ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
+!/ST3                SSWELLF, SSDSC1, WWNMEANP, WWNMEANPTAIL, SSTXFTF,&
+!/ST3                SSTXFTFTAIL, SSTXFTWN,                           &
+!/ST3                DDELTA1, DDELTA2, SSTXFTF, SSTXFTWN,             &
+!/ST3                FFXPM, FFXFM
+!/ST3          IF ( .NOT. FLINP ) THEN
+!/ST3              CALL INSIN3
+!/ST3              FLINP  = .TRUE.
+!/ST3            END IF
+!/ST3        END IF
+!
+!/ST4      IF ( WRITE ) THEN
+!/ST4          CALL INSIN4(.TRUE.)
+!/ST4          WRITE (NDSM)                                           &
+!/ST4                ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
+!/ST4                TTAUWSHELTER, SSWELLFPAR, SSWELLF, SSINBR,       &
+!/ST4                ZZ0RAT, SSDSC,                                   &
+!/ST4                SSDSISO, SSDSBR, SSDSBR2, SSDSBM, SSDSP,         &
+!/ST4                SSDSCOS, SSDSDTH, WWNMEANP, WWNMEANPTAIL,SSTXFTF,&
+!/ST4                SSTXFTFTAIL, SSTXFTWN, SSTXFTF, SSTXFTWN,        &
+!/ST4                SSDSBRF1, SSDSBRF2, SSDSBRFDF,SSDSBCK, SSDSABK,  &
+!/ST4                SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA, FFXFI,   &
+!/ST4                FFXFD, SSDSHCK, DELUST, DELTAIL, DELTAUW,        &
+!/ST4                DELU, DELALP, TAUT, TAUHFT, TAUHFT2,             &
+!/ST4                IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,        &
+!/ST4                DIKCUMUL, CUMULW
+!/ST4        ELSE
+!/ST4          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ST4                ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
+!/ST4                TTAUWSHELTER, SSWELLFPAR, SSWELLF, SSINBR,       &
+!/ST4                ZZ0RAT, SSDSC,                                   &
+!/ST4                SSDSISO, SSDSBR, SSDSBR2, SSDSBM, SSDSP,         &
+!/ST4                SSDSCOS, SSDSDTH, WWNMEANP, WWNMEANPTAIL,SSTXFTF,&
+!/ST4                SSTXFTFTAIL, SSTXFTWN, SSTXFTF, SSTXFTWN,        &
+!/ST4                SSDSBRF1, SSDSBRF2, SSDSBRFDF,SSDSBCK, SSDSABK,  &
+!/ST4                SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA, FFXFI,   &
+!/ST4                FFXFD, SSDSHCK, DELUST, DELTAIL, DELTAUW,        &
+!/ST4                DELU, DELALP, TAUT, TAUHFT, TAUHFT2,             &
+!/ST4                IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,        &
+!/ST4                DIKCUMUL, CUMULW
+!/ST4        END IF
+!
+!/ST6      IF ( WRITE ) THEN
+!/ST6          WRITE (NDSM) SIN6A0, SDS6ET, SDS6A1, SDS6A2,           &
+!/ST6                       SDS6P1, SDS6P2, SWL6S6, SWL6B1, SWL6CSTB1
+!/ST6        ELSE
+!/ST6          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/ST6                       SIN6A0, SDS6ET, SDS6A1, SDS6A2,           &
+!/ST6                       SDS6P1, SDS6P2, SWL6S6, SWL6B1, SWL6CSTB1
+!/ST6        END IF
+!
+! ... Nonlinear interactions
+!
+!/NL1      IF ( WRITE ) THEN
+!/NL1          WRITE (NDSM)                                           &
+!/NL1                SNLC1, LAM, KDCON, KDMN, SNLS1, SNLS2, SNLS3
+!/NL1        ELSE
+!/NL1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/NL1                SNLC1, LAM, KDCON, KDMN, SNLS1, SNLS2, SNLS3
+!/NL1        END IF
+!
+!/NL1      IF ( FLTEST ) WRITE (NDST,9051) SNLC1, LAM,                &
+!/NL1                           KDCON, KDMN, SNLS1, SNLS2, SNLS3
+!
+!/NL2      IF ( WRITE ) THEN
+!/NL2          WRITE (NDSM) IQTPE, NLTAIL, NDPTHS
+!/NL2          WRITE (NDSM) DPTHNL
+!/NL2        ELSE
+!/NL2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/NL2                       IQTPE, NLTAIL, NDPTHS
+!/NL2          ALLOCATE ( MPARS(IGRD)%SNLPS%DPTHNL(NDPTHS) )
+!/NL2          DPTHNL => MPARS(IGRD)%SNLPS%DPTHNL
+!/NL2          PINIT  = .TRUE.
+!/NL2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) DPTHNL
+!/NL2        END IF
+!
+!/NL2      IF ( FLTEST ) WRITE (NDST,9051) IQTPE, NLTAIL, NDPTHS
+!/NL2      IF ( FLTEST ) WRITE (NDST,9151) DPTHNL
+!
+!/NL3      IF ( WRITE ) THEN
+!/NL3          WRITE (NDSM) SNLNQ, SNLMSC, SNLNSC, SNLSFD, SNLSFS
+!/NL3          WRITE (NDSM) SNLL(1:SNLNQ), SNLM(1:SNLNQ),             &
+!/NL3                       SNLT(1:SNLNQ), SNLCD(1:SNLNQ),            &
+!/NL3                       SNLCS(1:SNLNQ)
+!/NL3        ELSE
+!/NL3          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/NL3                       SNLNQ, SNLMSC, SNLNSC, SNLSFD, SNLSFS
+!/NL3          ALLOCATE ( MPARS(IGRD)%SNLPS%SNLL(SNLNQ),              &
+!/NL3                     MPARS(IGRD)%SNLPS%SNLM(SNLNQ),              &
+!/NL3                     MPARS(IGRD)%SNLPS%SNLT(SNLNQ),              &
+!/NL3                     MPARS(IGRD)%SNLPS%SNLCD(SNLNQ),             &
+!/NL3                     MPARS(IGRD)%SNLPS%SNLCS(SNLNQ) )
+!/NL3          SNLL   => MPARS(IGRD)%SNLPS%SNLL
+!/NL3          SNLM   => MPARS(IGRD)%SNLPS%SNLM
+!/NL3          SNLT   => MPARS(IGRD)%SNLPS%SNLT
+!/NL3          SNLCD  => MPARS(IGRD)%SNLPS%SNLCD
+!/NL3          SNLCS  => MPARS(IGRD)%SNLPS%SNLCS
+!/NL3          PINIT  = .TRUE.
+!/NL3          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/NL3                       SNLL, SNLM, SNLT, SNLCD, SNLCS
+!/NL3        END IF
+!
+!/NL3      IF ( FLTEST ) WRITE (NDST,9051) SNLNQ, SNLMSC, SNLNSC,     &
+!/NL3                                      SNLSFD, SNLSFS
+!/NL3      IF ( FLTEST ) THEN
+!/NL3          DO I=1, SNLNQ
+!/NL3              WRITE (NDST,9151) SNLL(I), SNLM(I), SNLT(I),       &
+!/NL3                                SNLCD(I), SNLCS(I)
+!/NL3             END DO
+!/NL3        END IF
+!
+!/NL4      IF ( WRITE ) THEN
+!/NL4          WRITE (NDSM) ITSA, IALT
+!/NL4        ELSE
+!/NL4          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/NL4                       ITSA, IALT
+!/NL4        END IF
+!
+!/NL4      IF ( FLTEST ) WRITE (NDST,9051) ITSA, IALT
+!
+!/NLS      IF ( WRITE ) THEN
+!/NLS          WRITE (NDSM)                                           &
+!/NLS                CNLSA, CNLSC, CNLSFM, CNLSC1, CNLSC2, CNLSC3
+!/NLS        ELSE
+!/NLS          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/NLS                CNLSA, CNLSC, CNLSFM, CNLSC1, CNLSC2, CNLSC3
+!/NLS        END IF
+!
+!/NLS      IF ( FLTEST ) WRITE (NDST,9251)                            &
+!/NLS                CNLSA, CNLSC, CNLSFM, CNLSC1, CNLSC2, CNLSC3
+!
+!/NL1      IF ( .NOT. WRITE ) CALL INSNL1 ( IGRD )
+!/NL3      IF ( .NOT. WRITE ) CALL INSNL3
+!/NLX      IF ( .NOT. WRITE ) CALL INSNLX
+!/NLS      IF ( .NOT. WRITE ) CALL INSNLS
+!
+! Layered barriers needed for file management in xnl_init
+!
+!/MPI      IF ( FLSNL2 .AND. .NOT.WRITE ) THEN
+!/MPI          DO IP=1, IAPROC-1
+!/MPI            CALL MPI_BARRIER (  MPI_COMM_WAVE, IERR_MPI )
+!/MPI            END DO
+!/MPI        END IF
+!/NL2      IF ( .NOT. WRITE ) CALL INSNL2
+!/MPI      IF ( FLSNL2 .AND. .NOT.WRITE ) THEN
+!/MPI          DO IP=IAPROC, NAPROC-1
+!/MPI            CALL MPI_BARRIER (  MPI_COMM_WAVE, IERR_MPI )
+!/MPI            END DO
+!/MPI        END IF
+!
+! ... Bottom friction ...
+!
+!/BT1      IF ( WRITE ) THEN
+!/BT1          WRITE (NDSM)                            SBTC1
+!/BT1        ELSE
+!/BT1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) SBTC1
+!/BT1        END IF
+!
+!/BT1      IF ( FLTEST ) WRITE (NDST,9052) SBTC1
+!
+!
+!/BT4      IF ( WRITE ) THEN
+!/BT4          WRITE (NDSM)                                          &
+!/BT4                SBTCX, SED_D50, SED_PSIC
+!/BT4        ELSE
+!/BT4          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)               &
+!/BT4                SBTCX, SED_D50, SED_PSIC
+!/BT4        END IF
+!
+! ... Depth induced breaking ...
+!
+!/DB1      IF ( WRITE ) THEN
+!/DB1          WRITE (NDSM)                                           &
+!/DB1                 SDBC1, SDBC2, FDONLY
+!/DB1        ELSE
+!/DB1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/DB1                 SDBC1, SDBC2, FDONLY
+!/DB1        END IF
+!
+!/DB1      IF ( FLTEST ) WRITE (NDST,9053) SDBC1, SDBC2, FDONLY
+!
+!/IS1      IF ( WRITE ) THEN
+!/IS1          WRITE (NDSM)                            IS1C1, IS1C2
+!/IS1        ELSE
+!/IS1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) IS1C1, IS1C2
+!/IS1        END IF
+!
+!/IS2      IF ( WRITE ) THEN
+!/IS2          WRITE (NDSM)                            IS2PARS
+!/IS2        ELSE
+!/IS2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) IS2PARS
+!/IS2          IF ( .NOT. FLIS ) THEN
+!/IS2            CALL INSIS2
+!/IS2            FLIS  = .TRUE.
+!/IS2          END IF
+!/IS2        END IF
+!
+! Propagation scheme ------------------------------------------------- *
+!                                                 Module W3GDATMD PROP
+!
+!/PR2      IF ( WRITE ) THEN
+!/PR2          WRITE (NDSM) DTME, CLATMN
+!/PR2        ELSE
+!/PR2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/PR2                       DTME, CLATMN
+!/PR2        END IF
+!
+!/PR2      IF ( FLTEST ) WRITE (NDST,9060) DTME, CLATMN
+!
+!/PR3      IF ( WRITE ) THEN
+!/PR3          WRITE (NDSM) WDCG, WDTH
+!/PR3        ELSE
+!/PR3          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/PR3                       WDCG, WDTH
+!/PR3        END IF
+!
+!/PR3      IF ( FLTEST ) WRITE (NDST,9060) WDCG, WDTH
+!
+!/SMC      IF ( WRITE ) THEN
+!/SMC          WRITE (NDSM) DTME, CLATMN, Refran, FUNO3, FVERG
+!/SMC        ELSE
+!/SMC          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
+!/SMC                       DTME, CLATMN, Refran, FUNO3, FVERG
+!/SMC        END IF
+!
+!/SMC      IF ( FLTEST ) WRITE (NDST,9060) DTME, CLATMN, Refran
+!
+!/FLD1      IF ( WRITE ) THEN
+!/FLD1          WRITE (NDSM)  TAIL_ID, TAIL_LEV, TAIL_TRAN1, TAIL_TRAN2
+!/FLD1        ELSE
+!/FLD1          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) &
+!/FLD1                         TAIL_ID, TAIL_LEV, TAIL_TRAN1, TAIL_TRAN2
+!/FLD1        END IF
+!/FLD2      IF ( WRITE ) THEN
+!/FLD2          WRITE (NDSM) TAIL_ID, TAIL_LEV, TAIL_TRAN1, TAIL_TRAN2
+!/FLD2        ELSE
+!/FLD2          READ (NDSM,END=801,ERR=802,IOSTAT=IERR) &
+!/FLD2                         TAIL_ID, TAIL_LEV, TAIL_TRAN1, TAIL_TRAN2
+!/FLD2        END IF
+!
+! Interpolation tables ( fill locally ) ----------------------------- *
+!                                                      Module W3DISPMD
+!
+      IF ( .NOT.WRITE .AND. .NOT.FLDISP ) THEN
+!/T          WRITE (NDST,9070)
+          CALL DISTAB
+          FLDISP = .TRUE.
+        END IF
+!
+      CLOSE ( NDSM )
+!
+      RETURN
+!
+! Escape locations read errors --------------------------------------- *
+!
+  800 CONTINUE
+      IF ( IAPROC .EQ. NAPERR ) WRITE (NDSE,1000) FILEXT(:I), IERR
+      CALL EXTCDE ( 50 )
+!
+  801 CONTINUE
+      IF ( IAPROC .EQ. NAPERR ) WRITE (NDSE,1001) FILEXT(:I)
+      CALL EXTCDE ( 51 )
+!
+  802 CONTINUE
+      IF ( IAPROC .EQ. NAPERR ) WRITE (NDSE,1002) FILEXT(:I), IERR,   &
+                                                  MESSAGE
+      CALL EXTCDE ( 52 )
+!
+! Formats
+!
+  900 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     ILEGAL INXOUT VALUE: ',A/)
+  901 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     ILEGAL IDSTR, READ : ',A/                        &
+               '                  CHECK : ',A/)
+  902 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     ILEGAL VERGRD, READ : ',A/                       &
+               '                   CHECK : ',A/)
+  904 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     ILEGAL NFBPO READ : ',I8/                        &
+               '                 CHECK : ',I8/)
+  905 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     UNEXPECTED SOURCE TERM IDENTIFIER',I2/           &
+               '          IN mod_def.',A,' FILE : ',A/                &
+               '    EXPECTED FROM switch FILE : ',A,/                 &
+               5(A,/) /)
+!               '     CHECK CONSISTENCY OF SWITCHES IN PROGRAMS'/)
+  906 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     UNEXPECTED PROPAGATION SCHEME IDENTIFIER'/       &
+               '                IN FILE :',A/                         &
+               '               EXPECTED :',A/                         &
+               '     CHECK CONSISTENCY OF SWITCHES IN PROGRAMS'/)
+  907 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     UNEXPECTED GSE ALEVIATION IDENTIFIER'/           &
+               '                IN FILE :',A/                         &
+               '               EXPECTED :',A/                         &
+               , 5(A,/) /)
+!               '     CHECK CONSISTENCY OF SWITCHES IN PROGRAMS'/)
+  908 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR :'/                &
+               '     UNEXPECTED FLUX PARAMETERIZATION IDENTIFIER'/    &
+               '         IN mod_def.',A,' :',A/                       &
+               '               EXPECTED :',A/                         &
+               , 5(A,/) /)
+!               '     CHECK CONSISTENCY OF SWITCHES IN PROGRAMS'/)
+!
+ 1000 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR : '/               &
+               '     ERROR IN OPENING mod_def.',A,' FILE'/            &
+               '     IOSTAT =',I5/)
+ 1001 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR : '/               &
+               '     PREMATURE END OF mod_def.',A,' FILE'/)
+ 1002 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOGR : '/,              &
+               '     ERROR IN READING FROM mod_def.',A,' FILE'/       &
+               '     IOSTAT =',I5,                                    &
+               5(A,/) /)
+!
+!/T 9000 FORMAT (' TEST W3IOGR : INXOUT = ',A,', WRITE = ',L1,        &
+!/T              ', UNIT =',I3,', IGRD =',I3,', FEXT = ',A)
+!/T 9001 FORMAT (' TEST W3IOGR : TEST PARAMETERS :'/                  &
+!/T              '       IDSTR : ',A/                                 &
+!/T              '      VERGRD : ',A/                                 &
+!/T              '    NX/Y/SEA : ',3I10/                              &
+!/T              '      NTH,NK : ',2I10/                              &
+!/T              '         NBI : ',I10/                               &
+!/T              '       NFBPO : ',2I10/                              &
+!/T              '      GNAME  : ',A/                                 &
+!/T              '      FNAME0 : ',A/                                 &
+!/T              '      FNAME1 : ',A/                                 &
+!/T              '      FNAME2 : ',A/                                 &
+!/T              '      FNAME3 : ',A/                                 &
+!/T              '      FNAME4 : ',A/                                 &
+!/T              '      FNAME5 : ',A/                                 &
+!/T              '      FNAME6 : ',A/                                 &
+!/T              '      FNAME7 : ',A/                                 &
+!/T              '      FNAMEP : ',A/                                 &
+!/T              '      FNAMEG : ',A/                                 &
+!/T              '      FNAMEF : ',A/                                 &
+!/T              '      FNAMEI : ',A)
+!/T 9002 FORMAT ('      NBO    : ',10I5)
+!/T 9003 FORMAT ('      NBO2   : ',10I5)
+!
+!/T 9010 FORMAT (' TEST W3IOGR : MODULE W3GDATMD GRID'/               &
+!/T              '      GTYPE  : ',I9/                                &
+!/T              '      FLAGLL : ',L9/                                &
+!/T              '      ICLOSE : ',I9/                                &
+!/T              '      SX, SY : ',2F12.2/                            &
+!/T              '      X0, Y0 : ',2F12.2/                            &
+!/T              '      TRFLAG : ',I9)
+!/T 9011 FORMAT ('      LOWER LEFT PART OF ',A)
+!/T 9012 FORMAT ('     ',4X,30I2)
+!/T 9013 FORMAT ('     ',12I6)
+!/T 9014 FORMAT ('     ',12F6.2)
+!/T 9015 FORMAT ('      STEPS  : ',4F8.1/                             &
+!/T              '      DEPTH  : ',F8.1,F10.3/                        &
+!/T              '      FICE0/N: ',F9.2,F8.2/                         &
+!/T              '      FICEL  : ',F9.1 /                             &
+!/T              '      PFMOVE : ',F9.2 /                             &
+!/T              '      STEXU  : ',F9.2 /                             &
+!/T              '      STEYU  : ',F9.2 /                             &
+!/T              '      STEDU  : ',F9.2)
+!
+!/T 9016 FORMAT ('      FLAGS  : ',8L2)
+!/T 9017 FORMAT ('      CLATS   : ',3F8.3,' ...'/                      &
+!/T              '      CLATIS  : ',3F8.3,' ...'/                      &
+!/T              '      CTHG0S  : ',3E11.3,' ...')
+!
+!/T 9020 FORMAT (' TEST W3IOGR : MODULE W3ODATMD OUT5')
+!/T 9021 FORMAT ('      INTERPOLATION DATA : FILE ',I1)
+!/T 9022 FORMAT ('          ',I5,2X,4I4,2X,4F5.2)
+!/T 9023 FORMAT ('          ',10I7)
+!/T 9025 FORMAT (' TEST W3IOGR : MODULE W3ODATMD OUT6'/               &
+!/T              '      PARTITIONING DATA :',I5,3E10.3,L4,2X,I4)
+!
+!/T 9030 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SGRD'/               &
+!/T              '      MAPWN  : ',8I4,' ...'/                        &
+!/T              '      MAPTH  : ',8I4,' ...'/                        &
+!/T              '      DTH    : ',F6.1/                              &
+!/T              '      TH     : ',4F6.1,' ...'/                      &
+!/T              '      ESIN   : ',4F6.3,' ...'/                      &
+!/T              '      ECOS   : ',4F6.3,' ...'/                      &
+!/T              '      XFR    : ',F6.3/                              &
+!/T              '      FR     : ',F6.3,' ...',F6.3/                  &
+!/T              '      FACs   : ',6E10.3/                            &
+!/T              '               ',3E10.3)
+!
+!/T 9040 FORMAT (' TEST W3IOGR : MODULE W3GDATMD NPAR'/               &
+!/T              '      FACs   : ',5E10.3/                            &
+!/T              '               ',4E10.3)
+!
+!/FLX2 9048 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SFLP'/            &
+!/FLX2              '      FLUXES : ',I5,3X,E10.3)
+!/FLX3 9048 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SFLP'/            &
+!/FLX3              '      FLUXES : ',2I5,3X,2E10.3)
+!
+!/LN1 9049 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SLNP'/             &
+!/LN1              '      INPUT  : ',3E10.3)
+!
+!/ST1 9050 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SRCP'/             &
+!/ST1              '      INPUT  : ',E10.3/                           &
+!/ST1              '      DISSIP : ',E10.3)
+!/ST2 9050 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SRCP'/             &
+!/ST2              '      INPUT  : ',2E10.3/                          &
+!/ST2              '      DISSIP : ',4E10.3/                          &
+!/ST2              '               ',5E10.3/                          &
+!/ST2              '               ',3E10.3/                          &
+!/ST2              '      STAB2  : ',6E10.3)
+!
+!/NL1 9051 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SNLP'/             &
+!/NL1              '      DATA   : ',2E10.3/                          &
+!/NL1              '               ',5E10.3)
+!
+!/NL2 9051 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SNLP'/             &
+!/NL2              '      DATA   : ',I4,F5.1,I4)
+!/NL2 9151 FORMAT ('               ',5F7.1)
+!
+!/NL3 9051 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SNLP'/             &
+!/NL3              '      DATA   : ',I4,4F8.3)
+!/NL3 9151 FORMAT ('               ',2F8.3,F6.1,2E12.4)
+!
+!/NL4 9051 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SNLP'/             &
+!/NL4              '      DATA   : ',I4,I4)
+!
+!/NLS 9251 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SNLP (NLS)'/       &
+!/NLS              '      DATA   : ',F8.3,E12.4,4F8.3)
+!
+!/BT1 9052 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SBTP'/             &
+!/BT1              '      DATA   : ',E10.3)
+!
+!/DB1 9053 FORMAT (' TEST W3IOGR : MODULE W3GDATMD SDBP'/             &
+!/DB1              '      DATA   : ',2E10.3,L4)
+!
+!/PR2 9060 FORMAT (' TEST W3IOGR : MODULE W3GDATMD PROP'/             &
+!/PR2              '      DATA   : ',2E10.3)
+!
+!/PR3 9060 FORMAT (' TEST W3IOGR : MODULE W3GDATMD PROP'/             &
+!/PR3              '      DATA   : ',2F6.2)
+!
+!/SMC 9060 FORMAT (' TEST W3IOGR : MODULE W3GDATMD PROP'/             &
+!/SMC              '      DATA   : ',3E10.3)
+!
+!/T 9070 FORMAT (' TEST W3IOGR : DISPERSION INTEPOLATION TABLES')
+!/
+!/ End of W3IOGR ----------------------------------------------------- /
+!/
+      END SUBROUTINE W3IOGR
+!/
+!/ End of module W3IOGRMD -------------------------------------------- /
+!/
+      END MODULE W3IOGRMD

@@ -1,0 +1,927 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+      MODULE WMIOPOMD
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         06-Jun-2012 |
+!/                  +-----------------------------------+
+!/
+!/    09-Aug-2006 : Origination.                        ( version 3.10 )
+!/    01-May-2007 : Addd diagnostic output O7a/b.       ( version 3.11 )
+!/    21-Jun-2007 : Dedicated output processes.         ( version 3.11 )
+!/    29-May-2009 : Preparing distribution version.     ( version 3.14 )
+!/    30-Oct-2009 : Implement run-time grid selection.  ( version 3.14 )
+!/                  (W. E. Rogers & T. J. Campbell, NRL)
+!/    06-Dec-2010 : Change from GLOBAL (logical) to ICLOSE (integer) to
+!/                  specify index closure for a grid.   ( version 3.14 )
+!/                  (T. J. Campbell, NRL)
+!/    06-Mar-2012 : Using MPI_COMM_NULL in checks.      ( version 4.07 )
+!/    06-Jun-2012 : Porting bugfixes from 3.14 to 4.07  ( version 4.07 )
+!/
+!/    Copyright 2009-2012 National Weather Service (NWS),
+!/       National Oceanic and Atmospheric Administration.  All rights
+!/       reserved.  WAVEWATCH III is a trademark of the NWS. 
+!/       No unauthorized use without permission.
+!/
+!  1. Purpose :
+!
+!     Module for generating a single point output file for a multi-
+!     grid model implementation.
+!
+!  2. Variables and types :
+!
+!  3. Subroutines and functions :
+!
+!      Name      Type  Scope    Description
+!     ----------------------------------------------------------------
+!      WMIOPP    Subr  Public   Initialization routine.
+!      WMIOPO    Subr  Public   Gather and write routine.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines and functions used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SETG    Subr  W3GDATMD Point to model grid.
+!      W3SETW    Subr  W3WDATMD Point to model grid.
+!      W3SETA    Subr  W3ADATMD Point to model grid.
+!      W3SETO    Subr  W3ODATMD Point to model grid.
+!      W3DMO2    Subr     Id.   Dimention model grids output 2.
+!      WMSETM    Subr  WMMDATMD Point to model grid.
+!      W3MPIP    Subr  W3INITMD Model intiailization.
+!      W3IOPP    Sunr  W3IOPOMD Prepare point output for single model.
+!      W3IOPO    Sunr     Id.   Point output for single model.
+!      W3CSPC    Subr. W3CSPCMD Spectral grid conversion.
+!      STRACE    Subr  W3SERVMD Subroutine tracing.
+!      EXTCDE    Subr     Id.   Program abort.
+!      MPI_SEND, MPI_RECV
+!                Subr.  mpif.h  Standard MPI library routines.
+!     ----------------------------------------------------------------
+!
+!  5. Remarks :
+!
+!  6. Switches :
+!
+!       !/SHRD Distributed memory model.
+!       !/MPI
+!
+!       !O7a   Disgnostic output to NMPSCR.
+!       !O7b
+!
+!       !/S    Enable subroutine tracing.
+!       !/T    Enable test output
+!       !/MPIT 
+!
+!  7. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      PUBLIC
+!/
+      CONTAINS
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE WMIOPP ( NPT, XPT, YPT, PNAMES )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         01-Sep-2012 !
+!/                  +-----------------------------------+
+!/
+!/    09-Aug-2006 : Origination.                        ( version 3.10 )
+!/    01-May-2007 : Addd diagnostic output O7a,b        ( version 3.11 )
+!/    30-Oct-2009 : Implement run-time grid selection.  ( version 3.14 )
+!/                  (W. E. Rogers & T. J. Campbell, NRL)
+!/    06-Dec-2010 : Change from GLOBAL (logical) to ICLOSE (integer) to
+!/                  specify index closure for a grid.   ( version 3.14 )
+!/                  (T. J. Campbell, NRL)
+!/    16-Mar-2012 : Using MPI_COMM_NULL in checks.      ( version 4.07 )
+!/    06-Jun-2012 : Porting bugfixes from 3.14 to 4.07  ( version 4.07 )
+!/    01-Sep-2012 : Added tests for unstructured grid   ( version 4.07 )
+!/                  (M. Dutour Sikiric, IRB & Aron Roland, Z&P)
+!/
+!  1. Purpose :
+!
+!     Initialization for unified point output.
+!
+!  2. Method :
+!
+!     Find highest resolution grid for each point.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       NPT     Int.   I   Number of output points in input.
+!       XPT     R.A.   I   X (longitude) coordinates of output points.
+!       YPT     R.A.   I   Id. Y.
+!       PNAMES  C*10   I   Names of output points.
+!     ----------------------------------------------------------------
+!       Note: all are optional, and should be given on the first call
+!             only, will be taken from storage after that.
+!             NPT needs to be ginve always, but can be dummy after
+!             first call.
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SETG    Subr  W3GDATMD Point to model grid.
+!      W3SETW    Subr  W3WDATMD Point to model grid.
+!      W3SETA    Subr  W3ADATMD Point to model grid.
+!      W3SETO    Subr  W3ODATMD Point to model grid.
+!      W3DMO2    Subr     Id.   Dimension model grids output 2.
+!      WMSETM    Subr  WMMDATMD Point to model grid.
+!      W3MPIP    Subr  W3INITMD Model intiailization.
+!      W3IOPP    Sunr  W3IOPOMD Point output for single model.
+!      STRACE    Subr  W3SERVMD Subroutine tracing.
+!      EXTCDE    Subr     Id.   Program abort.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      WMINIT    Subr. WMINITMD Wave model initialization routine.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!     - The algorithm used to decide if the pont is in the grid needs
+!       to be strictly consistent with W3IOPP.
+!     - MPI communication is set up separately from W3MPIO to assure
+!       that data are gathered in a single processor even if this
+!       procesor is not part of the communicator of the individual
+!       model.
+!     - In section 2.b the soring of the grids by rand is utilized.
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!       !/SHRD Distributed memory model.
+!       !/MPI
+!
+!       !O7a   Disgnostic output to NMPSCR.
+!       !O7b
+!
+!       !/S    Enable subroutine tracing.
+!       !/T    Enable test output
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+!
+      USE W3GSRUMD
+      USE W3GDATMD, ONLY: W3SETG
+      USE W3ADATMD, ONLY: W3SETA
+      USE W3WDATMD, ONLY: W3SETW
+      USE W3ODATMD, ONLY: W3SETO, W3DMO2
+      USE WMMDATMD, ONLY: WMSETM
+!/MPI      USE W3INITMD, ONLY: W3MPIP
+      USE W3IOPOMD, ONLY: W3IOPP
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      USE W3GDATMD, ONLY: NX, NY, X0, Y0, SX, MAPSTA, GRIDS,            &
+                          FLAGLL, ICLOSE, ICLOSE_NONE, GTYPE, UNGTYPE,  &
+                          CLGTYPE, GSU
+      USE W3GDATMD, ONLY: XYB, TRIGP, MAXX, MAXY, DXYMAX  ! unstructured grids
+      USE W3ODATMD, ONLY: O2INIT, NOPTS, PTLOC, PTNME, GRDID, OUTPTS
+!/MPI      USE W3ODATMD, ONLY: O2IRQI
+      USE WMMDATMD, ONLY: MDSE, MDST, NRGRD, MDATAS, IMPROC, NMPSCR,  &
+                          NMPERR, MDSS
+      USE W3TRIAMD
+!/MPI      USE WMMDATMD, ONLY: MPI_COMM_GRD, MPI_COMM_MWAVE
+!
+      IMPLICIT NONE
+!
+!/MPI      INCLUDE "mpif.h"
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)                    :: NPT
+      REAL, INTENT(IN), OPTIONAL             :: XPT(NPT), YPT(NPT)
+      CHARACTER(LEN=10),INTENT(IN), OPTIONAL :: PNAMES(NPT)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: IPT, J, II
+      INTEGER                 :: IX(4), IY(4)         ! created by w3grmp
+      REAL                    :: RD(4)                ! created by w3grmp
+      INTEGER                 :: itout, I1, I2, I3    ! unstructured grids
+!/S      INTEGER, SAVE           :: IENT = 0
+      INTEGER                 :: IERR_MPI
+      REAL                    :: RX, RY, RDX, RDY
+      REAL, PARAMETER         :: ACC = 0.05
+      REAL, ALLOCATABLE       :: XP(:), YP(:)
+      REAL                    :: FACTOR
+      LOGICAL, ALLOCATABLE    :: INGRID(:,:)
+      LOGICAL, SAVE           :: SETUP = .FALSE., FLGO7a = .FALSE.
+      CHARACTER(LEN=10), ALLOCATABLE :: PN(:)
+!/
+!/S      CALL STRACE (IENT, 'WMIOPP')
+!
+! -------------------------------------------------------------------- /
+! 0.  Initializations
+!
+      CALL W3SETO ( 0, MDSE, MDST )
+!
+!/T      WRITE (MDST,9000) O2INIT, NPT, PRESENT(XPT),                 &
+!/T                        PRESENT(YPT), PRESENT(PNAMES)
+!/O7a      FLGO7a = .TRUE.
+!
+! -------------------------------------------------------------------- /
+! 1.  Initialize if necessary and possible
+!
+      IF ( .NOT. O2INIT ) THEN
+!
+!/T          WRITE (MDST,9010)
+!
+          IF ( .NOT.PRESENT(XPT) .OR. .NOT.PRESENT(YPT) .OR.          &
+               .NOT.PRESENT(PNAMES) ) THEN
+              WRITE (MDSE,1000)
+              CALL EXTCDE (1)
+            END IF
+!
+          CALL W3DMO2 ( 0, MDSE, MDST, NPT )
+!
+          NOPTS      = NPT
+          PTLOC(1,:) = XPT
+          PTLOC(2,:) = YPT
+          PTNME      = PNAMES
+          GRDID      = 'none'
+!
+        END IF
+!
+! -------------------------------------------------------------------- /
+! 2.  Locate points in grids
+! 2.a Check all points for all grids
+!
+!/T      WRITE (MDST,9020)
+!
+      IF ( FLAGLL ) THEN
+          FACTOR = 1.
+        ELSE
+          FACTOR = 1.E-3
+        END IF
+!
+      ALLOCATE ( INGRID(NRGRD,NOPTS), XP(NOPTS), YP(NOPTS) )
+!
+      INGRID = .FALSE.
+      XP     = PTLOC(1,:)
+      YP     = PTLOC(2,:)
+!
+      DO J=1, NRGRD
+!
+        CALL W3SETG ( J, MDSE, MDST )
+!
+        IF ( GTYPE .EQ. CLGTYPE ) THEN
+          IF ( IMPROC .EQ. NMPERR ) WRITE (MDSE,'(/4A)')               &
+                ' *** WARNING WMIOPP: ',                               &
+                'CURVILINEAR GRID SUPPORT IN THIS ROUTINE ',           & 
+                'HAS BEEN IMPLEMENTED BUT NOT YET VERIFIED ',          & 
+                '(curvilinear + unified point output) ***'
+          END IF
+!
+! Loop over output points
+!
+! notes.....Here, we have pulled coding for UNGTYPE and CLGTYPE from w3iopomd.ftn
+! ..........in w3iopomd.ftn, it is "DO IPT=1, NPT" but otherwise very similar
+        DO IPT=1, NOPTS
+!
+!     Check if point within grid 
+!
+          IF (GTYPE .NE. UNGTYPE) THEN 
+            INGRID(J,IPT) = W3GRMP( GSU, XPT(IPT), YPT(IPT), IX, IY, RD )
+            IF ( .NOT.INGRID(J,IPT) ) THEN
+              CYCLE
+              END IF
+          ELSE
+            CALL IS_IN_UNGRID(J, XPT(IPT), YPT(IPT), itout, IX, IY, RD )
+            IF (itout.eq.0) THEN
+              INGRID(J,IPT)=.FALSE.
+              END IF
+            END IF
+!
+!     Check if point not on land
+!
+            IF ( MAPSTA(IY(1),IX(1)) .EQ. 0 .AND. &
+              MAPSTA(IY(2),IX(2)) .EQ. 0 .AND. &
+              MAPSTA(IY(3),IX(3)) .EQ. 0 .AND. &
+              MAPSTA(IY(4),IX(4)) .EQ. 0 ) THEN
+              INGRID(J,IPT) = .FALSE.
+              CYCLE
+              END IF
+
+!.........If we've gotten to this point, then we are satisfied that 
+!................the point is in this grid. 
+
+        END DO !        DO IPT=1, NOPTS
+!
+      END DO !      DO J=1, NRGRD
+!
+      DEALLOCATE ( XP, YP )
+!
+! 2.b Select a grid for each point
+!     start from last, which is supposedly higher resolution
+!
+      MDATAS(:)%NRUPTS = 0
+!
+      DO IPT=1, NOPTS
+        GRDID(IPT) = '...none...'
+        DO J= NRGRD, 1, -1
+          IF ( INGRID(J,IPT) ) THEN
+            GRDID(IPT) = GRIDS(J)%FILEXT
+            MDATAS(J)%NRUPTS = MDATAS(J)%NRUPTS + 1
+            EXIT
+            END IF
+          END DO
+        END DO
+!
+! 2.c Diagnostic output
+!
+!/O7b      IF ( IMPROC .EQ. NMPSCR ) THEN
+!/O7b          WRITE (MDSS,920) 
+!/O7b          DO IPT=1, NOPTS
+!/O7b            DO J=1, NRGRD
+!/O7b              IF ( GRIDS(J)%FILEXT .EQ. GRDID(IPT) ) EXIT
+!/O7b              END DO
+!/O7b            IF ( J .GT. NRGRD ) THEN
+!/O7b                WRITE (MDSS,921) PTNME(IPT), PTLOC(:,IPT)*FACTOR
+!/O7b              ELSE
+!/O7b                WRITE (MDSS,922) PTNME(IPT), PTLOC(:,IPT)*FACTOR, &
+!/O7b                                 GRIDS(J)%FILEXT
+!/O7b              END IF
+!/O7b            END DO
+!/O7b          WRITE (MDSS,929) 
+!/O7b        END IF
+!
+! 2.d Test output
+!
+!/T      DO IPT=1, NOPTS
+!/T        WRITE (MDST,9021) IPT, PTNME(IPT), GRDID(IPT)
+!/T        END DO
+!
+!/T      IPT      = NOPTS
+!/T      WRITE (MDST,9022)
+!/T      DO J=1, NRGRD
+!/T        WRITE (MDST,9023) J, MDATAS(J)%NRUPTS, GRIDS(J)%FILEXT
+!/T        IPT      = IPT - MDATAS(J)%NRUPTS
+!/T        END DO
+!/T      WRITE (MDST,9024) IPT
+!
+      DEALLOCATE ( INGRID )
+!
+! -------------------------------------------------------------------- /
+! 3.  Initialize individual grids
+! 3.a Loop over grids
+!
+      DO J=1, NRGRD
+!
+!/T        WRITE (MDST,9030) J
+!
+! 3.b (De)allocate map arrays
+!
+        IPT      = MAX ( 1 , MDATAS(J)%NRUPTS )
+        IF ( SETUP ) DEALLOCATE ( MDATAS(J)%UPTMAP )
+        ALLOCATE ( MDATAS(J)%UPTMAP(IPT) )
+!
+        IF ( MDATAS(J)%NRUPTS .EQ. 0 ) CYCLE
+!
+        ALLOCATE ( XP(IPT), YP(IPT), PN(IPT) )
+!
+! 3.c Set up mapping and point arrays
+!
+        IPT      = 0
+        DO II=1, NOPTS
+          IF ( GRDID(II) .NE. GRIDS(J)%FILEXT ) CYCLE
+          IPT      = IPT + 1
+          MDATAS(J)%UPTMAP(IPT) = II
+          XP(IPT)  = PTLOC(1,II)
+          YP(IPT)  = PTLOC(2,II)
+          PN(IPT)  = PTNME(II) 
+          END DO
+!
+!/T        DO IPT=1, MDATAS(J)%NRUPTS
+!/T          WRITE (MDST,9031) IPT, MDATAS(J)%UPTMAP(IPT),XP(IPT),YP(IPT),PN(IPT)
+!/T          END DO
+!
+!/MPI        IF ( FLGO7a ) CALL MPI_BARRIER ( MPI_COMM_MWAVE, IERR_MPI )
+!/O7a        IF ( IMPROC.EQ.NMPSCR ) WRITE (MDSS,930)               &
+!/O7a                                         J, GRIDS(J)%FILEXT, IPT
+!
+! 3.d Preprocessing for output
+!
+!/T        WRITE (MDST,9032)
+!
+! 3.d.1 Shared memory version
+!
+!/SHRD        CALL W3SETO ( J, MDSE, MDST )
+!/SHRD        CALL W3SETG ( J, MDSE, MDST )
+!
+!/SHRD        IF ( O2INIT ) THEN
+!/SHRD            DEALLOCATE ( OUTPTS(J)%OUT2%IPTINT,               &
+!/SHRD                OUTPTS(J)%OUT2%IL   , OUTPTS(J)%OUT2%IW    ,  &
+!/SHRD                OUTPTS(J)%OUT2%II   , OUTPTS(J)%OUT2%PTIFAC,  &
+!/SHRD                OUTPTS(J)%OUT2%PTNME, OUTPTS(J)%OUT2%GRDID ,  &
+!/SHRD                OUTPTS(J)%OUT2%DPO  , OUTPTS(J)%OUT2%WAO   ,  &
+!/SHRD                OUTPTS(J)%OUT2%WDO  , OUTPTS(J)%OUT2%ASO   ,  &
+!/SHRD                OUTPTS(J)%OUT2%CAO  , OUTPTS(J)%OUT2%CDO   ,  &
+!/SHRD                OUTPTS(J)%OUT2%SPCO , OUTPTS(J)%OUT2%PTLOC )
+!/SHRD            O2INIT = .FALSE.
+!/SHRD          END IF
+!
+!/SHRD        CALL W3IOPP ( MDATAS(J)%NRUPTS, XP, YP, PN, J )
+!
+! 3.d.2 Distributed memory version
+!
+!/MPI        CALL WMSETM ( J, MDSE, MDST )
+!
+!/MPI        IF ( MPI_COMM_GRD .NE. MPI_COMM_NULL ) THEN
+!
+!/MPI            CALL W3SETO ( J, MDSE, MDST )
+!/MPI            CALL W3SETG ( J, MDSE, MDST )
+!/MPI            CALL W3SETA ( J, MDSE, MDST )
+!/MPI            CALL W3SETW ( J, MDSE, MDST )
+!
+!/MPI            IF ( O2INIT ) THEN
+!/MPI                DEALLOCATE ( OUTPTS(J)%OUT2%IPTINT,               &
+!/MPI                    OUTPTS(J)%OUT2%IL   , OUTPTS(J)%OUT2%IW    ,  &
+!/MPI                    OUTPTS(J)%OUT2%II   , OUTPTS(J)%OUT2%PTIFAC,  &
+!/MPI                    OUTPTS(J)%OUT2%PTNME, OUTPTS(J)%OUT2%GRDID ,  &
+!/MPI                    OUTPTS(J)%OUT2%DPO  , OUTPTS(J)%OUT2%WAO   ,  &
+!/MPI                    OUTPTS(J)%OUT2%WDO  , OUTPTS(J)%OUT2%ASO   ,  &
+!/MPI                    OUTPTS(J)%OUT2%CAO  , OUTPTS(J)%OUT2%CDO   ,  &
+!/MPI                    OUTPTS(J)%OUT2%SPCO , OUTPTS(J)%OUT2%PTLOC )
+!/MPI                O2INIT = .FALSE.
+!/MPI              END IF
+!
+!/MPI            CALL W3IOPP ( MDATAS(J)%NRUPTS, XP, YP, PN, J )
+!
+!/MPI            IF ( O2IRQI ) THEN
+!/MPI                DEALLOCATE (OUTPTS(J)%OUT2%IRQPO1,                &
+!/MPI                            OUTPTS(J)%OUT2%IRQPO2 )
+!/MPI                O2IRQI = .FALSE.
+!/MPI              END IF
+!
+!/MPI            CALL W3MPIP ( J )
+!
+!/MPI          END IF
+!
+! This barrier is needed to straighten out output.
+!
+!/O7a        IF ( IMPROC.EQ.NMPSCR ) WRITE (MDSS,939)
+!
+! 3.e Reset pointers and clean up
+!
+        CALL W3SETO ( 0, MDSE, MDST )
+        DEALLOCATE ( XP, YP, PN )
+!
+        END DO
+!
+!/MPI      IF ( FLGO7a ) CALL MPI_BARRIER ( MPI_COMM_MWAVE, IERR_MPI )
+!
+! -------------------------------------------------------------------- /
+! 4.  Finalize
+!
+      SETUP  = .TRUE.
+!
+      RETURN
+!
+! Formats
+!
+!/O7b  920 FORMAT (/'       Diagnostic test output for output points :'/ &
+!/O7b      '       -------------------------------------------------')
+!/O7b  921 FORMAT ( '          ',A,' (',2F8.2,') NO GRID FOUND')
+!/O7b  922 FORMAT ( '          ',A,' (',2F8.2,') grid ',A)
+!/O7b  929 FORMAT ( ' ')
+!
+!/O7a  930 FORMAT (/'       Grid ',I3,' [',A,']',I4,' points :'/    &
+!/O7a      '       -------------------------------------------------')
+!/O7a  939 FORMAT ( ' ')
+!
+ 1000 FORMAT (/' *** ERROR WMIOPP : INITALIZATION DATA NOT',          &
+               ' AVAILABLE *** '/)
+!
+!/T 9000 FORMAT ( ' TEST WMIOPP : O2INIT   :',L2/                     &
+!/T               '               PAR LIST :',I4,3L2)
+!
+!/T 9010 FORMAT ( ' TEST WMIOPP : INITIALIZING DATA GRID 0')
+!
+!/T 9020 FORMAT ( ' TEST WMIOPP : FINDING POINTS IN GRID')
+!/T 9021 FORMAT ( '               ',I4,2X,A,2X,A)
+!/T 9022 FORMAT ( ' TEST WMIOPP : OUTPUT POINTS PER GRID')
+!/T 9023 FORMAT ( '                  GRID',I3,' HAS',I4,' OUTPUT ',   &
+!/T                               'POINTS, NAME = ',A)
+!/T 9024 FORMAT ( '                  UNALLOCATED POINTS :',I4)
+!
+!/T 9030 FORMAT ( ' TEST WMIOPP : PREPPING GRID',I3)
+!/T 9031 FORMAT ( '             ',2I5,2E12.3,2X,A)
+!/T 9032 FORMAT ( ' TEST WMIOPP : RUNNING W3IOPP / W3MPIP')
+!/
+!/ End of WMIOPP ----------------------------------------------------- /
+!/
+      END SUBROUTINE WMIOPP
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE WMIOPO ( TOUT )
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           H. L. Tolman            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         16-Mar-2012 !
+!/                  +-----------------------------------+
+!/
+!/    09-Aug-2006 : Origination.                        ( version 3.10 )
+!/    21-Jun-2007 : Dedicated output processes.         ( version 3.11 )
+!/    16-Mar-2012 : Using MPI_COMM_NULL in checks.      ( version 3.14 )
+!/
+!  1. Purpose :
+!
+!     Gather and write unified point output.
+!
+!  2. Method :
+!
+!     Per-grid point output is already gathered. All data are gathered
+!     in the porper storage, and writen using the standard W3IOPO
+!     routint from grid number 0.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       TOUT    I.A.   I   Time for output file.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3SETG    Subr. W3GDATMD Point to model grid.
+!      W3SETW    Subr. W3WDATMD Point to model grid.
+!      W3SETO    Subr. W3ODATMD Point to model grid.
+!      WMSETM    Subr. WMMDATMD Point to model grid.
+!      W3CSPC    Subr. W3CSPCMD Spectral grid conversion.
+!      W3IOPO    Subr. W3IOPOMD Point output for single model.
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!      MPI_SEND, MPI_RECV
+!                Subr.  mpif.h  Standard MPI library routines.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      WMWAVE    Prog. WMWAVEMD Multi-grid wave model routine.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!       !/MPI  Distributed memory model.
+!
+!       !/S    Enable subroutine tracing.
+!       !/T    Enable test output
+!       !/MPIT 
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+!     USE CONSTANTS
+!
+      USE W3GDATMD, ONLY: W3SETG
+      USE W3WDATMD, ONLY: W3SETW
+      USE W3ODATMD, ONLY: W3SETO
+      USE WMMDATMD, ONLY: WMSETM
+      USE W3CSPCMD, ONLY: W3CSPC
+      USE W3IOPOMD, ONLY: W3IOPO
+!
+      USE W3GDATMD, ONLY: NK, NTH, NSPEC, XFR, FR1, TH, SGRDS
+      USE W3WDATMD, ONLY: TIME
+      USE W3ODATMD, ONLY: IAPROC, NAPROC, NAPPNT, NOPTS, SPCO, DPO,   &
+                          WAO, WDO, ASO, CAO, CDO, OUTPTS
+      USE WMMDATMD, ONLY: MDST, MDSE, IMPROC, NMPROC, NMPUPT, NRGRD,  &
+                          RESPEC, UPTMAP, MDSUP
+!/MPI      USE WMMDATMD, ONLY: MPI_COMM_MWAVE, MPI_COMM_GRD, ALLPRC,  &
+!/MPI                          MTAG0
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      IMPLICIT NONE
+!
+!/MPI      INCLUDE "mpif.h"
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)     :: TOUT(2)
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: J, I, II, IT0, IT, ITARG, IFROM
+!/SHRD      INTEGER                 :: MPI_COMM_GRD = 1, CROOT = 1
+!/SHRD      INTEGER, PARAMETER      :: MPI_COMM_NULL = -1
+!/MPI      INTEGER                 :: IERR_MPI, NMPPNT
+!/MPI      INTEGER, ALLOCATABLE    :: STATUS(:,:)
+!/S      INTEGER, SAVE           :: IENT = 0
+      REAL, POINTER           :: SPEC(:,:)
+!/MPI      REAL, POINTER           :: SPCR(:,:), DPR(:), WAR(:),      &
+!/MPI                                 WDR(:), ASR(:), CAR(:), CDR(:)
+!/
+!/S      CALL STRACE (IENT, 'WMIOPO')
+!
+! -------------------------------------------------------------------- /
+! 0.  Initializations
+!
+!/T      WRITE (MDST,9000) NMPUPT, IMPROC
+!
+      IF ( IMPROC .EQ. NMPUPT ) THEN
+          OUTPTS(0)%OUT2%SPCO  = 0.
+          OUTPTS(0)%OUT2%DPO   = 1.
+          OUTPTS(0)%OUT2%WAO   = 0.
+          OUTPTS(0)%OUT2%WDO   = 0.
+          OUTPTS(0)%OUT2%ASO   = 0.
+          OUTPTS(0)%OUT2%CAO   = 0.
+          OUTPTS(0)%OUT2%CDO   = 0.
+        END IF
+!
+! -------------------------------------------------------------------- /
+! 1.  Loop over grids for processing local data
+!
+      DO J=1, NRGRD
+!
+! 1.a Set up loop
+!
+        CALL W3SETO ( J, MDSE, MDST )
+        CALL W3SETG ( J, MDSE, MDST )
+        CALL WMSETM ( J, MDSE, MDST )
+!
+!/T        WRITE (MDST,9010) J, NOPTS, IAPROC, NAPPNT
+!
+! 1.b Determine if action
+!
+        IF ( MPI_COMM_GRD .EQ. MPI_COMM_NULL ) THEN
+!/T            WRITE (MDST,9011)
+            CYCLE
+          END IF
+!
+        IF ( NOPTS .EQ. 0 ) THEN
+!/T            WRITE (MDST,9012)
+            CYCLE
+          END IF
+!
+        IF ( IAPROC .NE. NAPPNT ) THEN
+!/T            WRITE (MDST,9014)
+            CYCLE
+          END IF
+!
+! 1.c Data here, and to remain on present processor.
+!
+        IF ( IMPROC .EQ. NMPUPT ) THEN
+!/T            WRITE (MDST,9015)
+!
+! 1.c.1 Spectral conversion if needed
+!
+            IF ( RESPEC(0,J) ) THEN
+!/T                WRITE (MDST,9016) 'YES'
+                ALLOCATE ( SPEC(SGRDS(0)%NSPEC,NOPTS) )
+                CALL W3CSPC ( SPCO, NK, NTH, XFR, FR1, TH(1), SPEC,   &
+                     SGRDS(0)%NK, SGRDS(0)%NTH, SGRDS(0)%XFR,         &
+                     SGRDS(0)%FR1, SGRDS(0)%TH(1), NOPTS, MDST, MDSE, &
+                     SGRDS(0)%FACHFE )
+!
+! 1.c.2 Spectral conversion not needed
+!
+              ELSE
+!/T                WRITE (MDST,9016) 'NO'
+                SPEC   => SPCO
+              END IF
+!
+! 1.d Store data at grid 0
+!
+!/T            WRITE (MDST,9017) J
+!
+            DO I=1, NOPTS
+              II     = UPTMAP(I)
+              OUTPTS(0)%OUT2%SPCO(:,II)  = SPEC(:,I)
+              OUTPTS(0)%OUT2%DPO(II)     = DPO(I)
+              OUTPTS(0)%OUT2%WAO(II)     = WAO(I)
+              OUTPTS(0)%OUT2%WDO(II)     = WDO(I)
+              OUTPTS(0)%OUT2%ASO(II)     = ASO(I)
+              OUTPTS(0)%OUT2%CAO(II)     = CAO(I)
+              OUTPTS(0)%OUT2%CDO(II)     = CDO(I)
+              END DO
+!
+            IF ( RESPEC(0,J) ) DEALLOCATE ( SPEC )
+!
+! 1.e Data here, and to be sent to other processor.
+!
+!/MPI          ELSE
+!
+!/MPIT            WRITE (MDST,9018) J, IMPROC, NMPUPT
+!
+!/MPI            IT0    = MTAG0 - 7*NRGRD - 1
+!/MPI            IT     = IT0 + (J-1)*7
+!/MPI            ITARG  = NMPUPT - 1
+!
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( SPCO(1,1), NSPEC*NOPTS, MPI_REAL,    &
+!/MPI                            ITARG, IT, MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'SPECTRA'
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( DPO(1), NOPTS, MPI_REAL, ITARG, IT,  &
+!/MPI                            MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'WATER DEPTHS'
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( WAO(1), NOPTS, MPI_REAL, ITARG, IT,  &
+!/MPI                            MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'WIND SPEED'
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( WDO(1), NOPTS, MPI_REAL, ITARG, IT,  &
+!/MPI                            MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'WIND DIRECTION'
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( ASO(1), NOPTS, MPI_REAL, ITARG, IT,  &
+!/MPI                            MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'AIR_SEA TEMP DIFF'
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( CAO(1), NOPTS, MPI_REAL, ITARG, IT,  &
+!/MPI                            MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'CURRENT VELOCITY'
+!/MPI            IT     = IT + 1
+!/MPI            CALL MPI_SEND ( CDO(1), NOPTS, MPI_REAL, ITARG, IT,  &
+!/MPI                            MPI_COMM_MWAVE, IERR_MPI )
+!/MPIT            WRITE (MDST,9019) IT-IT0, 'CURRENT DIRECTION'
+!
+          END IF
+!
+        END DO
+!
+! -------------------------------------------------------------------- /
+! 2.  Check if this is output processor, otherwise exit
+!
+      IF ( IMPROC .NE. NMPUPT ) THEN
+!/T          WRITE (MDST,9020)
+          RETURN
+       END IF
+!
+! -------------------------------------------------------------------- /
+! 3.  Loop over grids for processing remote data
+!
+!/MPIT      WRITE (MDST,9030)
+!
+! 3.a Loop setup
+!
+!/MPI      DO J=1, NRGRD
+!
+!/MPI        CALL W3SETO ( J, MDSE, MDST )
+!/MPI        CALL W3SETG ( J, MDSE, MDST )
+!/MPI        CALL WMSETM ( J, MDSE, MDST )
+!
+!/MPI        DO NMPPNT= NMPROC, 1, -1
+!/MPI          IF ( ALLPRC(NMPPNT,J) .EQ. NAPPNT ) EXIT
+!/MPI          END DO
+!
+!/MPIT        WRITE (MDST,9031) J, NOPTS, NMPPNT
+!/MPI        IF ( NMPPNT.EQ.NMPUPT .OR. NOPTS.EQ.0 ) THEN
+!/MPIT            WRITE (MDST,9032)
+!/MPI            CYCLE
+!/MPI          END IF
+!
+! 3.b Receive data
+!
+!/MPI        IT0    = MTAG0 - 7*NRGRD - 1
+!/MPI        IT     = IT0 + (J-1)*7
+!/MPI        IFROM  = NMPPNT - 1
+!/MPI        ALLOCATE ( SPCR(NSPEC,NOPTS), STATUS(MPI_STATUS_SIZE,1),  &
+!/MPI                   DPR(NOPTS), WAR(NOPTS), WDR(NOPTS), ASR(NOPTS),&
+!/MPI                   CAR(NOPTS), CDR(NOPTS) )
+!
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( SPCR(1,1), NSPEC*NOPTS, MPI_REAL, IFROM,  &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'SPECTRA'
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( DPR(1), NSPEC*NOPTS, MPI_REAL, IFROM,     &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'WATER DEPTHS'
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( WAR(1), NSPEC*NOPTS, MPI_REAL, IFROM,     &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'WIND SPEED'
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( WDR(1), NSPEC*NOPTS, MPI_REAL, IFROM,     &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'WIND DIRECTION'
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( ASR(1), NSPEC*NOPTS, MPI_REAL, IFROM,     &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'AIR_SEA TEMP DIFF'
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( CAR(1), NSPEC*NOPTS, MPI_REAL, IFROM,     &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'CURRENT VELOCITY'
+!/MPI        IT     = IT + 1
+!/MPI        CALL MPI_RECV ( CDR(1), NSPEC*NOPTS, MPI_REAL, IFROM,     &
+!/MPI                        IT, MPI_COMM_MWAVE, STATUS, IERR_MPI )
+!/MPIT        WRITE (MDST,9019) IT-IT0, 'CURRENT DIRECTION'
+!
+! 3.c Convert if necessary
+!
+!/MPI        IF ( RESPEC(0,J) ) THEN
+!/MPIT            WRITE (MDST,9016) 'YES'
+!/MPI            ALLOCATE ( SPEC(SGRDS(0)%NSPEC,NOPTS) )
+!/MPI            CALL W3CSPC ( SPCR, NK, NTH, XFR, FR1, TH(1), SPEC,   &
+!/MPI                 SGRDS(0)%NK, SGRDS(0)%NTH, SGRDS(0)%XFR,         &
+!/MPI                 SGRDS(0)%FR1, SGRDS(0)%TH(1), NOPTS, MDST, MDSE, &
+!/MPI                 SGRDS(0)%FACHFE )
+!/MPI          ELSE
+!/MPIT            WRITE (MDST,9016) 'NO'
+!/MPI            SPEC   => SPCR
+!/MPI          END IF
+!
+! 3.d Store data at grid 0
+!
+!/MPIT        WRITE (MDST,9117) J
+!
+!/MPI        DO I=1, NOPTS
+!/MPI          II     = UPTMAP(I)
+!/MPI          OUTPTS(0)%OUT2%SPCO(:,II)  = SPEC(:,I)
+!/MPI          OUTPTS(0)%OUT2%DPO(II)     = DPR(I)
+!/MPI          OUTPTS(0)%OUT2%WAO(II)     = WAR(I)
+!/MPI          OUTPTS(0)%OUT2%WDO(II)     = WDR(I)
+!/MPI          OUTPTS(0)%OUT2%ASO(II)     = ASR(I)
+!/MPI          OUTPTS(0)%OUT2%CAO(II)     = CAR(I)
+!/MPI          OUTPTS(0)%OUT2%CDO(II)     = CDR(I)
+!/MPI          END DO
+!
+!/MPI        IF ( RESPEC(0,J) ) DEALLOCATE ( SPEC )
+!/MPI        DEALLOCATE ( SPCR, DPR, WAR, WDR, ASR, CAR, CDR, STATUS )
+!
+!/MPI        END DO
+!
+! -------------------------------------------------------------------- /
+! 4.  Output data
+!
+!/T      WRITE (MDST,9040)
+!
+      CALL W3SETO ( 0, MDSE, MDST )
+      CALL W3SETG ( 0, MDSE, MDST )
+      CALL W3SETW ( 0, MDSE, MDST )
+!
+      TIME   = TOUT
+!
+      CALL W3IOPO ( 'WRITE', MDSUP, II, 0 )
+!
+      RETURN
+!
+! Formats
+!
+!/T 9000 FORMAT ( ' TEST WMIOPO : OUTPUT/ACTUAL PROCESS    : ',2I6)
+!/T 9010 FORMAT ( ' TEST WMIOPO : PROCESSING GRID          : ',I6/    &
+!/T               '               OUTPUT POINTS            : ',I6/    &
+!/T               '               ACTUAL/OUTPUT PROCESS    : ',2I6)
+!/T 9011 FORMAT ( '       CYCLE : GRID NOT ON PROCESS')
+!/T 9012 FORMAT ( '       CYCLE : GRID WITHOUT OUTPUT POINTS')
+!/T 9014 FORMAT ( '       CYCLE : DATA NOT ON PRESENT PROCESS')
+!/T 9015 FORMAT ( ' TEST WMIOPO : PROCESSING DATA LOCALLY')
+!/T 9016 FORMAT ( ' TEST WMIOPO : NEED FOR SPECTRAL CONVERSION : ',A)
+!/T 9017 FORMAT ( ' TEST WMIOPO : STORING DATA FROM GRID',I4,         &
+!/T               ' IN GRID 0')
+!/MPIT 9117 FORMAT ( ' TEST WMIOPO : STORING DATA FROM GRID',I4,      &
+!/MPIT               ' IN GRID 0')
+!/MPIT 9018 FORMAT ( ' TEST WMIOPO : GRID',I4,' SEND FROM',I4,' TO',I4)
+!/MPIT 9019 FORMAT ( '                 IT = ',I4,'  PAR = ',A)
+!
+!/T 9020 FORMAT ( ' TEST WMIOPO : DONE AT THIS PROCESSOR')
+!
+!/MPIT 9030 FORMAT ( ' TEST WMIOPO : LOOP OVER GRIDS FOR REMOTE DATA')
+!/MPIT 9031 FORMAT ( ' TEST WMIOPO : GRID',I4,',',I4,' POINTS FROM',I4)
+!/MPIT 9032 FORMAT ( '               NOTHING TO RECEIVE')
+!
+ 9040 FORMAT ( ' TEST WMIOPO : PERFORM OUTPUT')
+!/
+!/ End of WMIOPO ----------------------------------------------------- /
+!/
+      END SUBROUTINE WMIOPO
+!/
+!/ End of module WMIOPOMD -------------------------------------------- /
+!/
+      END MODULE WMIOPOMD

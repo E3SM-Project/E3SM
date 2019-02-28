@@ -1,0 +1,2038 @@
+#include "w3macros.h"
+!/ ------------------------------------------------------------------- /
+MODULE W3TRIAMD
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |       F. Ardhuin and A. Roland    |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          26-Jan-2014|
+!/                  +-----------------------------------+
+!/
+!/    15-Mar-2007 : Origination.                        ( version 3.13 )
+!/    25-Aug-2011 : Modification of boundary treatment  ( version 4.04 )
+!/    30-Aug-2012 : Automatic detection of open BC      ( version 4.08 )
+!/    02-Sep-2012 : Clean up of open BC for UG grids    ( version 4.08 )
+!/    14-Oct-2013 : Correction  of latitude factor      ( version 4.12 )
+!/    26-Jan-2014 : Correction  interpolation weights   ( version 4.18 )
+!/    21-Apr-2016 : New algorithm to detect boundary    ( version 5.12 ) 
+!/
+!
+!  1. Purpose :
+!
+!      Reads triangle and unstructured grid information
+!
+!  2. Method :
+!
+!     Look for namelist with name NAME in unit NDS and read if found.
+!
+!  3. Parameters :
+!
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ------------------------------------------------------------------------------------
+!      READTRI            Subr. Internal Read unstructured grid data from .grd .tri formatted files.
+!      READMSH            Subr.   Id.    Read unstructured grid data from MSH format
+!      COUNT              Subr. Internal Count connection.
+!      SPATIAL_GRID       Subr.   Id.    Calculate surfaces.
+!      NVECTRI            Subr.   Id.    Define cell normals and angles and edge length
+!      COORDMAX           Subr.   Id.    Calculate  useful grid elements
+!      AREA_SI            Subr.   Id.    Define Connections
+!     ------------------------------------------------------------------------------------
+!
+!
+!  5. Called by :
+!
+!     Program in which it is contained.
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     The only point index which is needed is IX and NX stands for the total number of grid point.
+!     IY and NY are not needed anymore, they are set to 1 in the unstructured case
+!     Some noticeable arrays are:
+!                     XYB    : give the 2D coordinates of all grid points
+!                     TRIGP  : give the vertices of each triangle
+!  8. Structure :
+!
+!  9. Switches :
+!       !/PR3   : Enables unstructured meshes (temporary, will be replace by Unstructured switch)
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+ PUBLIC
+!      USE CONSTANTS
+!      USE W3GDATMD, ONLY: W3NMOD, W3SETG
+!      USE W3ODATMD, ONLY: W3NO<UT, W3SETO, W3DMO5
+!      USE W3IOGRMD, ONLY: W3IOGR
+!     USE W3SERVMD, ONLY: ITRACE, NEXTLN, EXTCDE
+!!/S      USE W3SERVMD, ONLY: STRACE
+!      USE W3ARRYMD, ONLY: INA2R, INA2I
+!!/T      USE W3ARRYMD, ONLY: PRTBLK
+!      USE W3DISPMD, ONLY: DISTAB
+!      USE W3GDATMD
+!      USE W3ODATMD, ONLY: NDSE, NDST, NDSO
+!      USE W3ODATMD, ONLY: NBI, NBI2, NFBPO, NBO, NBO2, FLBPI, FLBPO,  &
+!                         IPBPO, ISBPO, XBPO, YBPO, RDBPO, FNMPRE
+!--------------------------------------------------------------------- 
+! 
+!C
+        integer :: node_num
+        integer :: dim_num
+        integer :: triangle_order
+        integer :: triangle_num
+        integer :: bound_edge_num
+        integer :: bound_num
+!C        
+        logical,save, allocatable :: edge_boundary(:)
+        logical,save, allocatable :: node_boundary(:)
+        integer,save, allocatable :: edge_nums(:)
+        integer,save, allocatable :: boundary_node_index(:)
+!C        
+        integer,save, allocatable :: triangle_node(:,:)
+        integer,save, allocatable :: edge(:,:)
+        integer,save, allocatable :: edge_index(:,:)
+
+        INTEGER, SAVE                      :: N_OUTSIDE_BOUNDARY
+        INTEGER, SAVE, ALLOCATABLE         :: OUTSIDE_BOUNDARY(:)
+        real (kind = 8), save, allocatable :: node_xy(:,:)
+        real (kind = 8), save, allocatable :: edge_angle(:,:)
+  
+CONTAINS
+!/ -------------------------------------------------------------------/
+      SUBROUTINE READMSH(NDS,FNAME) 
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          05-Dec-2011|
+!/                  +-----------------------------------+
+!/
+!/    15-Feb-2008 : Origination.                        ( version 3.13 )
+!/    25-Aug-2011 : Change of method for IOBPD          ( version 4.04 )
+!/
+!
+!  1. Purpose :
+!
+!      Reads triangle and unstructured grid information from GMSH files
+!      Calls the subroutines needed to compute grid connectivity
+!
+!  2. Method :
+!
+!     Look for namelist with name NAME in unit NDS and read if found.
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       NDS     Int.   I   Data set number used for search.
+!       NAME    C*4    I   Name of namelist.
+!       STATUS  C*20   O   Status at end of routine,
+!                            '(default values)  ' if no namelist found.
+!                            '(user def. values)' if namelist read.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name               Type  Module   Description
+!     ------------------------------------------------------------------------------------
+!      NEXTLN             Subr.
+!      COUNT              Subr. Internal Count connection.
+!      SPATIAL_GRID       Subr.   Id.    Calculate surfaces.
+!      NVECTRI            Subr.   Id.    Define cell normals and angles and edge length
+!      COORDMAX           Subr.   Id.    Calculate  useful grid elements
+!      AREA_SI            Subr.   Id.    Define Connections
+!     ----------------------------------------------------------------
+!
+!
+!
+!  5. Called by :
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3GRID    Prog.          Model configuration program
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     The only point index which is needed is IX and NX stands for the total number of grid point.
+!     IY and NY are not needed anymore, they are set to 1 in the unstructured case
+!     Some noticeable arrays are:
+!                     XYB    : give the 2D coordinates of all grid points
+!                     TRIGP  : give the vertices of each triangle
+!     GMSH file gives too much information that is not necessarily required so data processing is needed (data sort and nesting).
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3ODATMD, ONLY: NDSE, NDST, NDSO
+      USE W3GDATMD
+      USE W3SERVMD, ONLY: ITRACE, NEXTLN, EXTCDE
+!
+      IMPLICIT NONE
+!/
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)                :: NDS
+      CHARACTER(60), INTENT(IN)          :: FNAME
+!/
+!/ local parameters 
+!/      
+      INTEGER                            :: i,j,k, NODES, NELTS, ID, KID
+      INTEGER                            :: ID1, ID2, KID1
+      INTEGER                            :: I1, I2, I3
+      INTEGER(KIND=4)                    :: Ind,eltype,ntag, INode
+      CHARACTER                          :: COMSTR*1, SPACE*1 = ' ', CELS*64
+      REAL, ALLOCATABLE                  :: TAGS(:)
+      CHARACTER(LEN=64), ALLOCATABLE     :: ELS(:)
+      CHARACTER(LEN=120)                 :: LINE
+      CHARACTER(LEN=50)                  :: CHTMP
+      CHARACTER(LEN=10)                  :: A, B, C
+      INTEGER,ALLOCATABLE                :: NELS(:), TRIGPTMP1(:,:), TRIGPTMP2(:,:)
+      INTEGER(KIND=4),ALLOCATABLE        :: IFOUND(:), VERTEX(:), BOUNDTMP(:)
+      DOUBLE PRECISION, ALLOCATABLE      :: XYBTMP1(:,:),XYBTMP2(:,:)
+      REAL                               :: z
+
+      OPEN(NDS,FILE = FNAME,STATUS='old')
+      READ (NDS,'(A)') COMSTR
+      IF (COMSTR.EQ.' ') COMSTR = '$'
+      CALL NEXTLN(COMSTR, NDS, NDSE)
+      READ(NDS,*) i,j,k
+      CALL NEXTLN(COMSTR, NDS, NDSE)
+
+!
+! read number of nodes and nodes from Gmsh files
+!
+      READ(NDS,*) NODES
+      ALLOCATE(XYBTMP1(NODES,3))
+      DO I= 1, NODES
+        READ(NDS,*) j, XYBTMP1(I,1), XYBTMP1(I,2), XYBTMP1(I,3)
+        END DO
+!
+! read number of elements and elements from Gmsh files
+!
+      ALLOCATE(BOUNDTMP(NODES))
+      N_OUTSIDE_BOUNDARY = 0
+      CALL NEXTLN(COMSTR, NDS, NDSE)
+      READ(NDS,*) NELTS
+      ALLOCATE(TRIGPTMP1(NELTS, 3))
+      J = 0 
+      DO I= 1, NELTS
+        READ(NDS,'(A100)') LINE
+        READ(LINE,*) Ind,eltype,ntag
+        ALLOCATE(TAGS(ntag))
+        SELECT CASE (eltype) 
+!
+! eltype = 15 : boundary points  (this is used to make the difference 
+!                                between the outside polygon and islands)
+!
+        CASE(15)
+          READ(LINE,*) Ind,eltype,ntag,TAGS,INODE
+          N_OUTSIDE_BOUNDARY = N_OUTSIDE_BOUNDARY +1
+          BOUNDTMP(N_OUTSIDE_BOUNDARY)=INODE
+!
+! eltype = 2 : triangles
+!
+        CASE (2)
+          J = J+ 1
+          READ(LINE,*)  Ind,eltype,ntag,tags,TRIGPTMP1(J,1:3) 
+          END SELECT
+
+        DEALLOCATE(TAGS)
+        END DO
+!
+! organizes the grid data structure
+!
+      ALLOCATE(OUTSIDE_BOUNDARY(N_OUTSIDE_BOUNDARY))
+      OUTSIDE_BOUNDARY(:)=BOUNDTMP(1:N_OUTSIDE_BOUNDARY)
+      NTRI = J 
+  
+      ALLOCATE(IFOUND(NODES))
+ 
+      IFOUND = 0
+!
+! Verifies that the nodes are used in at least one triangle
+! 
+      DO K = 1, NTRI
+        I1 = TRIGPTMP1(K,1)
+        I2 = TRIGPTMP1(K,2)
+        I3 = TRIGPTMP1(K,3)
+    
+        IFOUND(I1)= IFOUND(I1) + 1
+        IFOUND(I2)= IFOUND(I2) + 1
+        IFOUND(I3)= IFOUND(I3) + 1
+        END DO
+ 
+      J = 0
+ 
+      ALLOCATE(TRIGPTMP2(NTRI,3),VERTEX(NODES),XYBTMP2(NODES,3)) 
+      VERTEX(:)=0
+      XYBTMP2 = 0
+
+      DO I = 1, NODES
+        IF( IFOUND(I) .GT. 0) THEN
+          J = J+1
+          XYBTMP2(J,:) = XYBTMP1(I,:) 
+          VERTEX(I) = J
+          END IF
+        END DO
+!
+! Number of nodes after clean up 
+! 
+      NX = J  
+!
+      DO I = 1, NTRI
+        I1 = TRIGPTMP1(I,1)
+        I2 = TRIGPTMP1(I,2)
+        I3 = TRIGPTMP1(I,3)
+        TRIGPTMP2(I,1)= VERTEX(I1)
+        TRIGPTMP2(I,2)= VERTEX(I2)
+        TRIGPTMP2(I,3)= VERTEX(I3)
+        END DO   
+!
+      DEALLOCATE( XYBTMP1, IFOUND,TRIGPTMP1)
+      DEALLOCATE(VERTEX)
+!
+!count points connections to allocate array in W3DIMUG 
+!
+      CALL COUNT(TRIGPTMP2)
+      CALL W3DIMUG ( 1, NTRI, NX, COUNTOT, NNZ, NDSE, NDST ) 
+!
+! fills arrays
+!
+      DO I = 1, NX
+        XYB(I,1) = XYBTMP2(I,1) 
+        XYB(I,2) = XYBTMP2(I,2) 
+        XYB(I,3)= XYBTMP2(I,3)
+        END DO
+! XGRD AND YGRD ... these are allocated by W3DIMX  
+      DO I=1, NTRI
+        TRIGP(I,:) = TRIGPTMP2(I,:)
+        END DO   
+!   
+      DEALLOCATE(TRIGPTMP2,XYBTMP2)   
+!
+! call the various routines which define the point spotting strategy
+!
+      CALL SPATIAL_GRID    
+      CALL NVECTRI
+      CALL COORDMAX
+! READMSH is only called by ww3_grid, thus the grid index is always 1. 
+      CALL AREA_SI(1)
+      CLOSE(NDS)
+      END SUBROUTINE READMSH
+!/--------------------------------------------------------------------/
+!/ ------------------------------------------------------------------- / 
+      SUBROUTINE UG_GETOPENBOUNDARY(TMPSTA,ZBIN,ZLIM)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          30-Aug-2012|
+!/                  +-----------------------------------+
+!/
+!/    30-Aug-2012 : Adpatation from SHOM-Ifremer program( version 4.07 )
+!/      
+!
+!  1. purpose: defines open boundary points based on depth
+!  2. Method : a boundary node has more node around it than triangles
+!      
+!    
+!
+!  3. Parameters :
+!     TMPSTA: status map to be updated (for OBC, TMPSTA = 2)
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      w3GRID    Prog.          Model configuration program
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :     
+      USE W3GDATMD, ONLY: NX, NY, CCON , COUNTCON
+
+!/S      USE W3SERVMD, ONLY: STRACE
+      
+      IMPLICIT NONE
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(INOUT)  :: TMPSTA(NY,NX)
+!/S      INTEGER, SAVE           :: IENT = 0
+      REAL   , INTENT(IN)     :: ZBIN(NY,NX)
+      REAL   , INTENT(IN)     :: ZLIM
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: IBC,IX
+
+!/S      CALL STRACE (IENT, 'UG_GETOPENBOUNDARY')      
+        DO IBC = 1, N_OUTSIDE_BOUNDARY
+           IX = OUTSIDE_BOUNDARY(IBC)
+           IF (IX.NE.0) THEN  ! There was a bug in the mesh conversion, OUTSIDE_BOUNDARY(IBC) should not be zero 
+             IF ((TMPSTA(1,IX).EQ.1).AND.(CCON(IX) .LT. COUNTCON(IX))  &
+               .AND.(ZBIN(1,IX).LT.ZLIM))  TMPSTA(1,IX)=2  
+            END IF       
+          END DO     
+!
+    END SUBROUTINE UG_GETOPENBOUNDARY
+!/ ------------------------------------------------------------------- /    
+
+
+!/----------------------------------------------------------------------
+      SUBROUTINE SPATIAL_GRID
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |      A. Roland  and F. Ardhuin    |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          31-Aug-2011|
+!/                  +-----------------------------------+
+!/
+!/    15-May-2007 : Origination: adjustment from the WWM code       ( version 3.13 )
+!/    31-Aug-2011 : Simplfies the cross products                    ( version 4.05 )
+!/
+!
+!  1. Purpose :
+!
+!      Calculates triangle areas and reorders the triangles to have them 
+!      oriented counterclockwise 
+!
+!  2. Method :
+!
+!     The triangle surface calculation is based on cross product.
+!
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      READTRI    Subr. Internal  Unstructured mesh definition.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+!     This part of code is adapted from the WWM wave model develop at the Darmstadt University
+!     (Aaron Roland)
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /   
+         USE W3GDATMD  
+!/S      USE W3SERVMD, ONLY: STRACE
+         IMPLICIT NONE
+!        
+!local parameters        
+! 
+         REAL              :: TL1, TL2, TL3, TMPTRIGP
+         INTEGER           :: I1, I2, I3
+         INTEGER           :: K
+!/S        INTEGER                      ::  IENT = 0          
+!/ ------------------------------------------------------------------- /   
+!/S      CALL STRACE (IENT, 'SPATIAL_GRID')   
+
+                DO K = 1, NTRI
+               
+                   I1 = TRIGP(K,1)
+                   I2 = TRIGP(K,2)
+                   I3 = TRIGP(K,3)
+!
+! cross product of edge-vector  (orientated anticlockwise)
+!                                   
+                   TRIA(K) = 0.5d0*( (XYB(I2,2)-XYB(I1,2))      &     !  (Y2-Y1)
+                                    *(XYB(I1,1)-XYB(I3,1))      &     ! *(X1-X3)
+                                    +(XYB(I3,2)-XYB(I1,2))      &     !  (Y3-Y1)*(X2-X1)
+                                    *(XYB(I2,1)-XYB(I1,1))      )
+!
+! test on negative triangle area, which means that the orientiation is not as assumed to be anticw. 
+! therefore we swap the nodes !!! 
+!      
+                  IF (TRIA(K) < 0.d0) THEN
+         TMPTRIGP = TRIGP(K,2)
+         TRIGP(K,2) = TRIGP(K,3)
+         TRIGP(K,3) = TMPTRIGP
+         I2 = TRIGP(K,2)
+         I3 = TRIGP(K,3)
+         TRIA(K) = -1.d0*TRIA(K)
+         END IF    
+       END DO
+     END SUBROUTINE
+!/--------------------------------------------------------------------/
+!
+!/--------------------------------------------------------------------/
+     SUBROUTINE DIFFERENCE
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           A. Roland               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          15-May-2007|
+!/                  +-----------------------------------+
+!/
+!/    15-Nov-2007 : Origination.                        ( version 3.13 )
+!/
+!
+!  1. Purpose :
+!
+!      Calculate interpolation coefficient used gradient computation.
+!
+!  2. Method :
+!
+!     The interpolation coefficient are inspired by cross product.
+!     The estimation uses Gauss' formula: the area integral of the gradient
+!       is equal to the flux through the boundary. This formula is applied 
+!       on individual triangles. 
+!     The gradient at each grid node is then the angle-weighted sum of the 
+!       gradients in each triangle. 
+!       
+!
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      READTRI    Subr. Internal Unstructured mesh definition.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+!     This part of code is adapted from the WWM wave model develop at the Darmstadt University
+!     (Aaron Roland)
+!     The gradients to be calculated are for depth and currents.
+!     The three arrays  DW, CX and CY are allocated from 0 to NSEA and assuming that 
+!     DW(0)=0.,CX(0)=0.,CY(0)=0. (MAPFS(1,IX) = 0 for the contour and land points) to abide by the 
+!     structure of the array which are used through the code. So gradients could be irregular near 
+!     the border. The interpolation coefficient reckoned in this subroutine consider this artificial 
+!     discontinuity of value (between point on the border and point close to the border) and then
+!     restore true gradients. 
+!
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /       
+       USE W3GDATMD 
+!/S      USE W3SERVMD, ONLY: STRACE
+       IMPLICIT NONE
+
+!
+!local parameter 
+!
+         INTEGER           :: I1, I2, I3
+         REAL              :: X1(3), X2(3), X3(3)
+         INTEGER           :: K
+         REAL              :: FACT
+!/S        INTEGER                      ::  IENT = 0 
+!/ ------------------------------------------------------------------- /       
+
+!/S      CALL STRACE (IENT, 'DIFFERENCE')
+
+   DO K = 1, NTRI 
+     I1 = TRIGP(K,1)
+     I2 = TRIGP(K,2)
+     I3 = TRIGP(K,3)
+!
+! counters which stands for occurence of a vertex in the whole triangle list, i.e the number of its
+! connected triangle
+!                  
+     X1(:) = XYB(I1,:)
+     X2(:) = XYB(I2,:)
+     X3(:) = XYB(I3,:)
+!
+! test to see if vertices are on the contour. if it is so, its coordinates are nullyfied
+! this is perform to get better gradients at grid points near the contour.
+!                 
+     IF ((MAPSTA(1,I1).EQ.0).OR.(MAPSTA(1,I2).EQ.0)) THEN
+       X1(:) = 0. 
+       X2(:) = 0.
+       END IF    
+      IF ((MAPSTA(1,I1).EQ.0).OR.(MAPSTA(1,I3).EQ.0)) THEN
+        X1(:) = 0. 
+        X3(:) = 0.
+        END IF
+      IF ((MAPSTA(1,I3).EQ.0).OR.(MAPSTA(1,I2).EQ.0)) THEN
+        X2(:) = 0. 
+        X3(:) = 0.
+        END IF
+
+      FACT = 1./(2*REAL(TRIA(K)))
+!
+! interpolation coefficient: these are the components of the normals to the 
+! triangle sides, multiplied by the side length and divided by 2 times the 
+! triangle area
+!                                  
+      CROSSDIFF(1,K) = REAL(X2(2) - X3(2)) * FACT
+      CROSSDIFF(2,K) = REAL(X3(2) - X1(2)) * FACT
+      CROSSDIFF(3,K) = REAL(X1(2) - X2(2)) * FACT
+      CROSSDIFF(4,K) = REAL(X3(1) - X2(1)) * FACT
+      CROSSDIFF(5,K) = REAL(X1(1) - X3(1)) * FACT
+      CROSSDIFF(6,K) = REAL(X2(1) - X1(1)) * FACT
+
+      END DO
+END SUBROUTINE
+
+!/--------------------------------------------------------------------
+
+    SUBROUTINE NVECTRI
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           A. Roland              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          15-May-2008|
+!/                  +-----------------------------------+
+!/
+!/    15-May-2007 : Origination: adjustment from the WWM code       ( version 3.13 )
+!/
+!
+!  1. Purpose :
+!
+!      Calculate cell tools: inward normal, angles and length of edges.
+!
+!  2. Method :
+!      To get inward pointing normals, triangle are glanced through anti-clockwisely
+!     
+!
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      READTRI    Subr. Internal  Unstructured mesh definition.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /       
+    USE W3GDATMD
+!/S      USE W3SERVMD, ONLY: STRACE
+    USE CONSTANTS
+
+         IMPLICIT NONE
+         
+!
+!local parameter 
+!        
+         
+         INTEGER :: IP, IE
+         INTEGER :: I1, I2, I3, I11, I22, I33
+         REAL*8    :: P1(2), P2(2), P3(2)
+         REAL*8    :: R1(2), R2(2), R3(2)
+         REAL*8    :: N1(2), N2(2), N3(2)
+         REAL*8    :: TMP(3)
+         REAL*8    :: TMPINV(3)
+!/S        INTEGER                      ::  IENT = 0     
+!/ ------------------------------------------------------------------- /   
+!/S      CALL STRACE (IENT, 'NVECTRI')   
+
+    
+         DO IE = 1, NTRI
+!
+! vertices
+!
+            I1 = TRIGP(IE,1)
+            I2 = TRIGP(IE,2)
+            I3 = TRIGP(IE,3)
+                           
+            P1(1) = XYB(I1,1)
+            P1(2) = XYB(I1,2)
+            P2(1) = XYB(I2,1)
+            P2(2) = XYB(I2,2)
+            P3(1) = XYB(I3,1)
+            P3(2) = XYB(I3,2)
+!
+! I1 -> I2, I2 -> I3, I3 -> I1 (anticlockwise orientation is preserved)
+!                    
+            R1 = P3-P2
+            R2 = P1-P3
+            R3 = P2-P1
+        
+            N1(1) = (-R1(2))
+            N1(2) = ( R1(1))
+            N2(1) = (-R2(2))
+            N2(2) = ( R2(1))
+            N3(1) = (-R3(2))
+            N3(2) = ( R3(1))  
+!
+! edges length
+!            
+            LEN(IE,1) = DSQRT(R1(1)**2+R1(2)**2)
+            LEN(IE,2) = DSQRT(R2(1)**2+R2(2)**2)
+            LEN(IE,3) = DSQRT(R3(1)**2+R3(2)**2)   
+!
+! inward normal used for propagation (not normalized)
+!            
+            IEN(IE,1) = N1(1)
+            IEN(IE,2) = N1(2)
+            IEN(IE,3) = N2(1)
+            IEN(IE,4) = N2(2)
+            IEN(IE,5) = N3(1)
+            IEN(IE,6) = N3(2)
+    
+            TMP(1)  = DOT_PRODUCT(R3,-R2)
+            TMP(2)  = DOT_PRODUCT(R1,-R3)
+            TMP(3)  = DOT_PRODUCT(R2,-R1)
+
+            TMPINV(1) = 1./ (LEN(IE,2) * LEN(IE,3))
+            TMPINV(2) = 1./ (LEN(IE,1) * LEN(IE,3))
+            TMPINV(3) = 1./ (LEN(IE,2) * LEN(IE,1))
+
+            TMP(1)  = DOT_PRODUCT(R3,-R2) * TMPINV(1)
+            TMP(2)  = DOT_PRODUCT(R1,-R3) * TMPINV(2)
+            TMP(3)  = DOT_PRODUCT(R2,-R1) * TMPINV(3)
+!
+!  angles used in gradients computation 
+!     
+            ANGLE0(IE,1) = ACOS(TMP(1))
+            ANGLE0(IE,2) = ACOS(TMP(2))
+            ANGLE0(IE,3) = ACOS(TMP(3))
+            !WRITE(997,*) 'IE, ANGLE:',IE,ANGLE0(IE,1:3)*RADE
+            !TRIA03(IE)=TRIA(IE)*1./3.
+         END DO
+ 
+     END SUBROUTINE
+!/---------------------------------------------------------------------------
+
+!/------------------------------------------------------------------------
+
+      SUBROUTINE COUNT(TRIGPTEMP)      
+     
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          15-May-2008|
+!/                  +-----------------------------------+
+!/
+!/    15-May-2007 : Origination.                        ( version 3.13 )
+!/
+!      
+!  1. Purpose :
+!
+!      Calculate global and maximum number of connection for array allocations .
+!
+!  2. Method :
+!     
+!  3. Parameters :
+!     Parameter list
+!     ----------------------------------------------------------------
+!       NTRI         Int.   I   Total number of triangle.
+!       TRIGPTEMP    Int    I   Temporary array of triangle vertices
+!       COUNTRI      Int    O   Maximum number of connected triangle 
+!                               for a given points
+!       COUNTOT      Int    O   Global number of triangle connection 
+!                               for the whole grid.     
+!     ----------------------------------------------------------------
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      READTRI    Subr. Internal  Unstructured mesh definition.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /  
+        USE W3GDATMD
+!/S      USE W3SERVMD, ONLY: STRACE
+        IMPLICIT NONE
+
+     
+!/ parameter list
+
+   INTEGER,INTENT(IN) :: TRIGPTEMP(:,:)
+!/ ------------------------------------------------------------------- /   
+!/ local parameter
+
+   INTEGER               :: CONN(NX)
+   INTEGER               :: COUNTER, IP, IE, I, J, N(3)
+!/S        INTEGER                      ::  IENT = 0    
+!/------------------------------------------------------------------------
+
+!/S      CALL STRACE (IENT, 'COUNT')
+
+COUNTRI=0
+COUNTOT=0
+CONN(:)= 0
+
+!
+!calculate the number of connected triangles for a given point.
+!
+
+DO IE = 1,NTRI
+   N(:) = 0.
+   N(1) = TRIGPTEMP(IE,1)
+   N(2) = TRIGPTEMP(IE,2)
+   N(3) = TRIGPTEMP(IE,3)
+   CONN(N(1)) = CONN(N(1)) + 1
+   CONN(N(2)) = CONN(N(2)) + 1
+   CONN(N(3)) = CONN(N(3)) + 1
+ENDDO
+ 
+ COUNTRI = MAXVAL(CONN)
+! 
+! calculate the global number of connections available through the mesh
+!
+J=0
+ DO  IP=1,NX
+   DO I=1,CONN(IP)
+      J=J+1
+   ENDDO
+ ENDDO
+ COUNTOT=J  
+
+END SUBROUTINE
+
+!/----------------------------------------------------------------------------  
+      SUBROUTINE COORDMAX
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          15-May-2008|
+!/                  +-----------------------------------+
+!/
+!/    15-May-2007 : Origination.                        ( version 3.13 )
+!/
+!  1. Purpose :
+!
+!      Calculate first point and last point coordinates, and minimum and maximum edge length.
+!
+!  2. Method :
+!     
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      READTRI    Subr. Internal  Unstructured mesh definition.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- / 
+          USE W3GDATMD
+!/S      USE W3SERVMD, ONLY: STRACE
+          IMPLICIT NONE
+!/S        INTEGER                      ::  IENT = 0  
+            
+  
+!/S      CALL STRACE (IENT, 'COORDMAX') 
+!     
+! maximum of coordinates s
+!
+    MAXX = MAXVAL(XYB(:,1))
+    MAXY = MAXVAL(XYB(:,2))
+! 
+! minimum of coordinates 
+!
+    X0 = MINVAL(XYB(:,1))
+    Y0 = MINVAL(XYB(:,2))
+! 
+!maximum and minimum length of edges
+!
+    DXYMAX = MAXVAL(LEN(:,:))
+    SX = MINVAL(LEN(:,:))
+    SY = SX
+! 
+ END SUBROUTINE
+!-------------------------------------------------------------------------
+
+  SUBROUTINE AREA_SI(IMOD)
+!/ ------------------------------------------------------------------- 
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           A. Roland               |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          23-Aug-2011|
+!/                  +-----------------------------------+
+!/
+!/    15-May-2007 : Origination: adjustment from the WWM code       ( version 3.13 )
+!/    23-Aug-2011 : Removes double entries in VNEIGH                ( version 4.04 )
+!/  
+!
+!  1. Purpose :
+!
+!      Define optimized connection arrays (points and triangles) for spatial propagation schemes.
+!
+!  2. Method :
+!     
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      READTRI    Subr. Internal  Unstructured mesh definition.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!      
+!     The storage is optimize especially considering the iterative solver used.
+!     The schemes used are vertex-centered, a point has to be considered within its
+!     median dual cell. For a given point, the surface of the dual cell is one third
+!     of the sum of the surface of connected triangles. 
+!     This routine is from WWM developped in Darmstadt(Aaron Roland) 
+!     
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /      
+
+        USE W3GDATMD
+!/S      USE W3SERVMD, ONLY: STRACE
+         IMPLICIT NONE
+!/ input 
+
+         INTEGER, INTENT(IN) :: IMOD 
+
+!/ local parameters   
+
+         INTEGER :: COUNTER,ifound,alreadyfound
+         INTEGER :: I, J, K
+         INTEGER :: IP, IE, POS, POS_I, POS_J, POS_K, IP_I, IP_J, IP_K
+         INTEGER :: I1, I2, I3, IP2
+         INTEGER :: TMP(NX), CELLVERTEX(NX,COUNTRI,2)
+         INTEGER :: COUNT_MAX
+         DOUBLE PRECISION   :: TRIA03
+         INTEGER, ALLOCATABLE :: PTABLE(:,:)
+         !DOUBLE PRECISION ,  PARAMETER            :: ONE      = 1.0d
+         !DOUBLE PRECISION ,  PARAMETER            :: THREE    = 3.0d
+         DOUBLE PRECISION, PARAMETER :: ONETHIRD = 0.33333333333333333333333333333333333333333333333 !ONETHIRD = ONE/THREE
+!/S        INTEGER                      ::  IENT = 0    
+!/ ------------------------------------------------------------------- /      
+
+!/S      CALL STRACE (IENT, 'AREA_SI')
+         
+         SI(:) = 0.D0
+!
+! calculate the number of triangle connected to a point and reckon the surface of a dual cell
+! Ask Aron: Should be uptated with water levels ???         
+!
+         DO IP = 1, NX
+           COUNTER = 0
+           DO IE = 1, NTRI  
+             IF (IP == TRIGP(IE,1) .OR. IP == TRIGP(IE,2) .OR. IP== TRIGP(IE,3)) THEN
+               COUNTER = COUNTER + 1
+               CCON(IP) = COUNTER
+               TRIA03 = ONETHIRD * TRIA(IE)
+               SI(IP) = SI(IP) +  ONETHIRD * TRIA(IE) 
+               END IF
+             END DO
+           END DO 
+              
+         CELLVERTEX(:,:,:) = 0
+         VNEIGH(:,:) = 0
+!
+          DO IP = 1, NX
+            COUNTER = 0
+            ifound = 0
+ !
+ ! first step of the storage, for a given vertex, the triangle it belongs to and the vertex position
+ ! are stored  
+ !
+            DO IE = 1, NTRI
+              IF (IP == TRIGP(IE,1)) THEN
+                COUNTER = COUNTER + 1
+                CELLVERTEX(IP,COUNTER,1) = IE
+                CELLVERTEX(IP,COUNTER,2) = 1
+                DO IP2=2,3
+                  alreadyfound = 0
+                  DO I=1,ifound
+                    IF (VNEIGH(IP,I).EQ.TRIGP(IE,IP2)) alreadyfound=alreadyfound+1
+                    END DO
+                  IF (alreadyfound.EQ.0) THEN 
+                    ifound=ifound+1
+                    VNEIGH(IP,ifound)=TRIGP(IE,IP2)
+                    END IF
+                  END DO
+               END IF
+              
+             IF (IP == TRIGP(IE,2)) THEN
+               COUNTER = COUNTER + 1
+               CELLVERTEX(IP,COUNTER,1) = IE
+               CELLVERTEX(IP,COUNTER,2) = 2
+                DO IP2=3,4
+                  alreadyfound = 0
+                  DO I=1,ifound
+                    IF (VNEIGH(IP,I).EQ.TRIGP(IE,MOD(IP2-1,3)+1)) alreadyfound=alreadyfound+1
+                    END DO
+                  IF (alreadyfound.EQ.0) THEN 
+                    ifound=ifound+1
+                    VNEIGH(IP,ifound)=TRIGP(IE,MOD(IP2-1,3)+1)
+                    END IF
+                  END DO
+                END IF
+              
+             IF (IP == TRIGP(IE,3)) THEN
+               COUNTER = COUNTER + 1
+               CELLVERTEX(IP,COUNTER,1) = IE
+               CELLVERTEX(IP,COUNTER,2) = 3
+                DO IP2=1,2
+                  alreadyfound = 0
+                  DO I=1,ifound
+                    IF (VNEIGH(IP,I).EQ.TRIGP(IE,IP2)) alreadyfound=alreadyfound+1
+                    END DO
+                  IF (alreadyfound.EQ.0) THEN 
+                    ifound=ifound+1
+                    VNEIGH(IP,ifound)=TRIGP(IE,IP2)
+                    END IF
+                  END DO
+                END IF
+             END DO
+!
+! COUNTCON is a counter on connected points. In comparison with the number of connected triangle
+! CCON, it will enable to spot whether a point belong to the contour
+!         
+           COUNTCON(IP)=ifound
+          
+           do I=2,ifound
+              do J=1,i-1
+              if (VNEIGH(IP,J).EQ. VNEIGH(IP,I)) THEN 
+                 COUNTCON(IP)=COUNTCON(IP)-1
+                 ! WRITE(993,*) 'ERROR:',IP,I,J,VNEIGH(IP,J),VNEIGH(IP,I)
+                 END IF
+              enddo
+           enddo
+          
+         END DO
+          
+         J = 0
+!
+! Second step in storage, the initial 3D array CELLVERTEX, is transformed in a 1D array
+! the global index is J . From now, all the computation step based on these arrays must
+! abide by the conservation of the 2 loop algorithm (points + connected triangles)
+! AR: I will change this now to pointers in order to omit fix loop structure for the LTS stuff ...
+!          
+         INDEX_CELL(1)=1
+         DO IP = 1, NX
+           DO I = 1, CCON(IP)
+             J = J + 1
+             IE_CELL(J)  = CELLVERTEX(IP,I,1)
+             POS_CELL(J) = CELLVERTEX(IP,I,2) 
+           END DO
+           INDEX_CELL(IP+1)=J+1
+         END DO
+
+         J = 0
+         DO IP = 1, NX 
+           DO I = 1, CCON(IP)
+             J = J + 1
+           END DO
+         END DO
+
+         COUNT_MAX = J
+
+           ALLOCATE(PTABLE(COUNT_MAX,7))
+
+           J = 0
+           PTABLE(:,:) = 0.
+           DO IP = 1, NX 
+             DO I = 1, CCON(IP)
+               J = J + 1
+               IE    = IE_CELL(J)
+               POS   = POS_CELL(J)
+               I1 = TRIGP(IE,1)
+               I2 = TRIGP(IE,2)
+               I3 = TRIGP(IE,3)
+               IF (POS == 1) THEN
+                 POS_J = 2
+                 POS_K = 3
+               ELSE IF (POS == 2) THEN
+                 POS_J = 3
+                 POS_K = 1
+               ELSE
+                 POS_J = 1
+                 POS_K = 2
+               END IF
+               IP_I = IP
+               IP_J = TRIGP(IE,POS_J)
+               IP_K = TRIGP(IE,POS_K)
+               PTABLE(J,1) = IP_I
+               PTABLE(J,2) = IP_J
+               PTABLE(J,3) = IP_K
+               PTABLE(J,4) = POS
+               PTABLE(J,5) = POS_J
+               PTABLE(J,6) = POS_K
+               PTABLE(J,7) = IE
+             END DO
+           END DO
+
+!           WRITE(*,'("+TRACE......",A)') 'SET UP SPARSE MATRIX POINTER ... COUNT NONZERO ENTRY'
+
+           J = 0
+           K = 0
+           DO IP = 1, NX 
+             TMP(:) = 0
+             DO I = 1, CCON(IP)
+               J = J + 1
+               IP_J  = PTABLE(J,2)
+               IP_K  = PTABLE(J,3)
+               POS   = PTABLE(J,4)
+               TMP(IP)   = 1
+               TMP(IP_J) = 1
+               TMP(IP_K) = 1
+            END DO
+            K = K + SUM(TMP)
+          END DO
+
+          NNZ => GRIDS(IMOD)%NNZ
+
+          NNZ = K
+
+!          WRITE(*,'("+TRACE......",A)') 'SET UP SPARSE MATRIX POINTER ... SETUP POINTER'
+
+          ALLOCATE (GRIDS(IMOD)%JAA(NNZ))
+          ALLOCATE (GRIDS(IMOD)%IAA(NX+1))
+          ALLOCATE (GRIDS(IMOD)%POSI(3,COUNT_MAX))
+          JAA   => GRIDS(IMOD)%JAA
+          IAA   => GRIDS(IMOD)%IAA
+          POSI  => GRIDS(IMOD)%POSI
+
+           J = 0
+           K = 0
+           IAA(1) = 1
+           JAA    = 0
+           DO IP = 1, NX ! Run through all rows 
+             TMP(:)=0
+             DO I = 1, CCON(IP)         ! Check how many entries there are ...
+               J = J + 1                ! this is the same J index as in IE_CELL
+               IP_J  = PTABLE(J,2)
+               IP_K  = PTABLE(J,3)
+               TMP(IP)   = 1
+               TMP(IP_J) = 1
+               TMP(IP_K) = 1
+             END DO
+             DO I = 1, NX               ! Run through all columns 
+               IF (TMP(I) .GT. 0) THEN  ! this is true only for the connected points
+                 K = K + 1              
+                 JAA(K) = I
+               END IF
+             END DO
+             IAA(IP + 1) = K + 1    
+           END DO
+
+           POSI = 0
+           J = 0
+           DO IP = 1, NX  
+             DO I = 1, CCON(IP)
+               J = J + 1
+               IP_J  = PTABLE(J,2)
+               IP_K  = PTABLE(J,3)
+               DO K = IAA(IP), IAA(IP+1) - 1
+                 IF (IP   == JAA(K)) POSI(1,J)  = K
+                 IF (IP_J == JAA(K)) POSI(2,J)  = K
+                 IF (IP_K == JAA(K)) POSI(3,J)  = K
+                 IF (K == 0) THEN
+                  WRITE(*,*) 'ERROR IN AREA_SI K .EQ. 0'
+                  STOP
+                 END IF
+               END DO
+            END DO
+          END DO
+
+          DEALLOCATE(PTABLE)
+
+       END SUBROUTINE
+       
+     SUBROUTINE IS_IN_UNGRID(IMOD, XTIN, YTIN, ITOUT, IS, JS, RW)
+!/ -------------------------------------------------------------------
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |      Mathieu Dutour Sikiric, IRB  |
+!/                  |                 Aron Roland, Z&P  |
+!/                  |             Fabrice Ardhuin       |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          26-Jan-2014|
+!/                  +-----------------------------------+
+!/
+!/ Adapted from other subroutine 
+!/    15-Oct-2007 : Origination.                        ( version 3.13 )
+!/    21-Sep-2012 : Uses same interpolation as regular  ( version 4.08 )
+!/    26-Jan-2014 : Correcting bug in RW                ( version 4.18 )
+!/
+!  1. Purpose :
+!
+!      Determine whether a point is inside or outside an unstructured grid, 
+!      and returns index of triangle and interpolation weights 
+!      This is the analogue for triangles of the FUNCTION W3GRMP
+!
+!  2. Method :
+!
+!     Using barycentric coordinates defined as the ratio of triangle algebric areas 
+!     which are positive or negative. 
+!     Computes the 3 interpolation weights for each triangle until they are all positive
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!       IMOD    Int.   I   Model number to point to.
+!       XTIN    Real   I   X-coordinate of target point.
+!       YTIN    Real   I   Y-coordinate of target point.
+!       ITOUT    Int.   I   Model number to point to.
+!       IS,JS   I.A.   O   (I,J) indices of vertices of enclosing grid cell.
+!       RW      R.A.   O   Array of interpolation weights.
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!     None
+!
+!  5. Called by :
+!
+!     WMGLOW, W3IOPP, WMIOPP, WW3_GINT
+!
+!  6. Error messages :
+!
+!     - Error checks on previous setting of variable.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+!     !/S    Enable subroutine tracing.
+!     !/T    Enable test output
+!
+! 10. Source code :
+!
+
+
+!  2. Method :
+!
+!     Using barycentric coordinates. Each coefficient depends on the mass of its related point in the interpolation.
+!
+!  3. Parameters :
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3IOPP    Subr. Internal  Preprocessing of point output.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!
+!      This subroutine is adjusted from CREST code (Fabrice Ardhuin)
+!      For a given output point, the algorithm enable to glance through all the triangles 
+!      to find the one the point belong to, and then make interpolation.
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+!       !/LLG   Spherical grid.
+!       !/XYG   Carthesian grid.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+      USE W3GDATMD
+      USE W3SERVMD, ONLY: EXTCDE
+!/S      USE W3SERVMD, ONLY: STRACE
+      USE W3ODATMD, ONLY: NDSE
+      IMPLICIT NONE
+
+!/ ------------------------------------------------------------------- /
+! Parameter list
+
+     INTEGER, INTENT(IN)            :: IMOD
+     REAL   , INTENT(IN)            :: XTIN, YTIN
+     INTEGER, INTENT(OUT)           :: itout
+     INTEGER, INTENT(OUT)           :: IS(4), JS(4)
+     REAL, INTENT(OUT)              :: RW(4)
+!/ ------------------------------------------------------------------- /
+!local parameters
+
+     DOUBLE PRECISION             :: x1, x2, x3
+     DOUBLE PRECISION             :: y1, y2, y3
+     DOUBLE PRECISION             :: s1, s2, s3, sg1, sg2, sg3
+     INTEGER                      :: ITRI
+     INTEGER                      :: I1, I2, I3
+     INTEGER                      :: nbFound
+!/S     INTEGER                      ::  IENT = 0
+!/S     CALL STRACE (IENT, 'IS_IN_UNGRID')
+
+!
+     itout = 0
+     nbFound=0
+     ITRI = 0 
+     DO WHILE (nbFound.EQ.0.AND.ITRI.LT.GRIDS(IMOD)%NTRI)
+       ITRI = ITRI +1 
+       I1=GRIDS(IMOD)%TRIGP(ITRI,1)
+       I2=GRIDS(IMOD)%TRIGP(ITRI,2)
+       I3=GRIDS(IMOD)%TRIGP(ITRI,3)
+! coordinates of the first vertex A
+       x1=GRIDS(IMOD)%XYB(I1,1)
+       y1=GRIDS(IMOD)%XYB(I1,2)
+! coordinates of the 2nd vertex B
+       x2=GRIDS(IMOD)%XYB(I2,1)
+       y2=GRIDS(IMOD)%XYB(I2,2)
+!coordinates of the 3rd vertex C
+       x3=GRIDS(IMOD)%XYB(I3,1)
+       y3=GRIDS(IMOD)%XYB(I3,2)
+!with M = (XTIN,YTIN) the target point ... 
+!vector product of AB and AC
+       sg3=(y3-y1)*(x2-x1)-(x3-x1)*(y2-y1)
+!vector product of AB and AM
+       s3=(YTIN-y1)*(x2-x1)-(XTIN-x1)*(y2-y1)
+!vector product of BC and BA
+       sg1=(y1-y2)*(x3-x2)-(x1-x2)*(y3-y2)
+!vector product of BC and BM
+       s1=(YTIN-y2)*(x3-x2)-(XTIN-x2)*(y3-y2)
+!vector product of CA and CB
+       sg2=(y2-y3)*(x1-x3)-(x2-x3)*(y1-y3)
+!vector product of CA and CM
+       s2=(YTIN-y3)*(x1-x3)-(XTIN-x3)*(y1-y3)
+       IF ((s1*sg1.GE.0).AND.(s2*sg2.GE.0).AND.(s3*sg3.GE.0)) THEN
+         itout=ITRI
+         nbFound=nbFound+1
+         IS(1)=I1
+         IS(2)=I2
+         IS(3)=I3
+         IS(4)=1
+         JS(:)=1
+         RW(1)=s1/sg1
+         RW(2)=s2/sg2
+         RW(3)=1.-RW(1)-RW(2)  !s3/sg3
+         RW(4)=0.
+       END IF
+     ENDDO
+     END SUBROUTINE IS_IN_UNGRID
+
+!/ ------------------------------------------------------------------- / 
+      SUBROUTINE UG_GRADIENTS (PARAM, DIFFX, DIFFY)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           F. Ardhuin              |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :          14-Oct-2013|
+!/                  +-----------------------------------+
+!/
+!/    15-Nov-2007 : Origination.                        ( version 3.13 )
+!/    31-Oct-2010 : Merging of 4.03 with 3.14-Ifremer   ( version 4.04 )
+!/    08-Nov-2011 : Correction for zero grad. on contour( version 4.04 )
+!/    14-Oct-2013 : Correction  of latitude factor      ( version 4.12 )
+!/      
+!
+!  1. purpose: calculate gradients at a point via its connection.
+!  2. Method : using 3D plan definition and angular redistribution
+!      
+!    
+!
+!  3. Parameters :
+!     PARAM : depth or current field (indices 0 to NSEA) 
+!     DIFFX :  x gradient            (indices 1 to NX)
+!     DIFFY :  y gradient            (indices 1 to NX)
+!
+!  4. Subroutines used :
+!
+!  5. Called by :
+!
+!       Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3WAVE    Subr.          Actual wind wave routine
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!  7. Remarks :
+!     
+!      This subroutine is adjusted from WWM code (Aaron Roland)
+
+!
+!  8. Structure :
+!
+!  9. Switches :
+!
+! 10. Source code :     
+      USE CONSTANTS
+      USE W3GDATMD, ONLY : CROSSDIFF, TRIGP, NTRI, NX, NSEA, MAPFS, CLATIS, &
+                           MAPSTA, ANGLE, FLAGLL,  IOBP
+      IMPLICIT NONE     
+      
+      
+      REAL, INTENT(IN)     :: PARAM(0:NSEA)
+      REAL, INTENT(OUT)    :: DIFFX(:,:), DIFFY(:,:)
+ 
+! local parameters      
+      
+      INTEGER              :: VERTICES(3)
+      INTEGER              :: COUNTER(NX)
+      REAL                 :: TMP1(3), TMP2(3)
+      INTEGER              :: I, IX
+      REAL                 :: VAR(3), FACT, LATMEAN
+      REAL                 :: DIFFXTMP, DIFFYTMP
+      REAL, PARAMETER      :: ONETHIRD = 0.3333333333
+       
+!initialisation step      
+      COUNTER(:) = 0.
+      DIFFX(:,:) = 0.              
+      DIFFY(:,:) = 0. 
+!
+     IF (FLAGLL) THEN 
+       FACT=1./(DERA*RADIUS)
+     ELSE
+       FACT=1.
+       END IF
+     DO I = 1, NTRI
+       VERTICES(1) = TRIGP(I,1)
+       VERTICES(2) = TRIGP(I,2)
+       VERTICES(3) = TRIGP(I,3)
+!
+!   CLATIS is 1/COS(latitute) 
+!   this may give funny results close to the pole ... 
+!
+       LATMEAN = ONETHIRD * ( CLATIS(MAPFS(1,VERTICES(1)))  & 
+                             +CLATIS(MAPFS(1,VERTICES(2)))  &
+                             +CLATIS(MAPFS(1,VERTICES(3))) )
+ 
+       VAR(1) = PARAM(MAPFS(1,VERTICES(1)))* FACT
+       VAR(2) = PARAM(MAPFS(1,VERTICES(2)))* FACT
+       VAR(3) = PARAM(MAPFS(1,VERTICES(3)))* FACT
+     
+       TMP1(:)  = CROSSDIFF(1:3, I)
+       TMP2(:)  = CROSSDIFF(4:6, I)
+
+! Slopes in a triangle : 
+! denom=(x(1)-x(2))*(y(3)-y(2))-(y(2)-y(1))*(x(2)-x(3));
+! denom is 2*area
+!dz/dy= -((z(2)-z(1))*(x(2)-x(3))-(z(3)-z(2))*(x(1)-x(2)))/denom;
+!dz/dx=  ((z(2)-z(1))*(y(2)-y(3))+(z(3)-z(2))*(y(1)-y(2)))/denom;
+!dz/dx=  (z(1)*(y(3)-y(2))+z(2)*(y(1)-y(3))+z(3)*(y(2)-y(1)))/(2*area);
+!dz/dy= -(z(1)*(x(3)-x(2))+z(2)*(x(1)-x(3))+z(3)*(x(2)-x(1)))/(2*area);
+
+       DIFFXTMP = DOT_PRODUCT(VAR(:),TMP1(:)) * LATMEAN
+       DIFFYTMP = DOT_PRODUCT(VAR(:),TMP2(:)) 
+
+! calculate global gradients via all the connection contributions.
+       DIFFX(1,VERTICES(:)) = DIFFX(1,VERTICES(:)) + DIFFXTMP * ANGLE(I,:)
+       DIFFY(1,VERTICES(:)) = DIFFY(1,VERTICES(:)) + DIFFYTMP * ANGLE(I,:) 
+       END DO
+!
+! Sets gradient to 0 on the contour 
+!
+       DO IX = 1,NX
+         IF (IOBP(IX).EQ. 0 ) THEN
+           DIFFX(1,IX)  =  0.     
+           DIFFY(1,IX)  =  0.
+           END IF
+         END DO 
+!
+    END SUBROUTINE UG_GRADIENTS
+!/ ------------------------------------------------------------------- /    
+    SUBROUTINE W3NESTUG(DISTMIN,FLOK)
+    USE W3ODATMD, ONLY: NBI, NDSE, ISBPI, XBPI, YBPI
+    USE W3GDATMD, ONLY: NX, XYB, XGRD, YGRD, MAPSTA, MAPFS, MAPSF
+
+
+    REAL, INTENT(IN)         :: DISTMIN
+    LOGICAL, INTENT(INOUT)         :: FLOK
+
+    INTEGER                   :: I, J, JMEMO, IS, IX,  N, IX1(NBI)
+    REAL                      :: DIST, DIST0
+!
+    N = 0 
+!
+!1. look for input boundary point index
+! warning: if land points are included as boundary points to abide by the nest
+! file, their status should be -2.
+!
+    IX1 = 0
+    ISBPI = 1
+    DO IX = 1, NX
+      IF (ABS(MAPSTA (1,IX)) .EQ. 2) THEN
+        N = N + 1 
+        IF (N.GT.NBI) THEN
+          WRITE(NDSE,*) 'Error: boundary node index > NBI ... nest.ww3 file is not consistent with mod_def.ww3'
+          STOP
+        ENDIF
+        IX1(N) = IX
+!/T        WRITE(NDSE ,*)'ADDING BOUNDARY POINT:',N,IX
+        END IF
+      END DO
+!
+!2. Matches the model grid points (where MAPSTA = 2) with the points in nest.ww3
+!   For this, we use the nearest point in the nest file.
+!
+    DO I = 1, NBI 
+!FA: This will not work with FLAGLL=.F.  (XY grid)
+      DIST0 = 360**2
+      IS=1
+      DO J = 1, N
+        DIST=(XBPI(I)-XYB(IX1(J),1))**2+(YBPI(I)-XYB(IX1(J),2))**2
+        IF (DIST.LT.DIST0) THEN 
+          IS = MAPFS(1,IX1(J))
+          DIST0=DIST
+          JMEMO=J
+          END IF
+        END DO
+      DIST0=SQRT(DIST0)
+      IF (DIST0.LE.DISTMIN) THEN          
+        ISBPI(I)=IS
+!/T        WRITE(NDSE ,'(A,I6,A,I7,A,I6)') 'MATCHED BOUNDARY POINT:',I,'GRID POINT:', &
+!/T                                         MAPSF(IS,1),'INDEX IN nest.ww3:', JMEMO
+     ELSE
+        FLOK=.TRUE.
+        END IF
+      END DO  
+    IF ( N .NE. NBI) THEN 
+      WRITE(NDSE ,900) N, NBI
+      DO J=1,N
+        WRITE(6,*) 'THIS POINT HAS MAPSTA=2:',ISBPI(J)  
+        END DO
+      ISBPI(N+1:NBI)=ISBPI(1)
+      END IF
+      
+900 FORMAT (/' *** WAVEWATCH III ERROR IN W3IOBC : '/                &
+             '     NUMBER OF MAPSTA=2 DIFFERS FROM NUMBER IN nest.ww3    '/                &
+             '     CHECK nest.ww3 AND ww3_grid.inp ',2I8/)
+END SUBROUTINE
+
+
+!/ ------------------------------------------------------------------- /
+   SUBROUTINE SET_IOBP (MASK, STATUS)    
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |       Mathieu Dutour Sikiric      |
+!/                  |       Fabrice Ardhuin             |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         18-Apr-2016 |
+!/                  +-----------------------------------+
+!/
+!/    18-Apr-2016 : Origination.                        ( version 5.10 )
+!/
+!  1. Purpose :
+!
+!     Detects points on the model boundary. Status = 0 is a boundary node
+!
+!  2. Method :
+!
+!     
+!
+!  3. Parameters :
+!
+!     ----------------------------------------------------------------
+!
+!     Local variables.
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      WW3_GRID  Prog. WW3_GRID Grid preprocessor
+!      W3ULEV    Subr. W3UPDTMD Water level update
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!
+!  9. Switches :
+!
+!       !/S     Enable subroutine tracing.
+!
+!
+! 10. Source code :     
+!/ ------------------------------------------------------------------- /
+!/
+!
+      USE CONSTANTS
+!
+!
+      USE W3GDATMD, ONLY: NX, NTRI, TRIGP 
+
+
+      IMPLICIT NONE
+
+!/
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+      INTEGER, INTENT(IN)   :: MASK(NX)
+      INTEGER, INTENT(OUT)  :: STATUS(NX)
+!
+      INTEGER :: COLLECTED(NX), NEXTVERT(NX), PREVVERT(NX)
+      INTEGER          :: ISFINISHED !, INEXT, IPREV
+      INTEGER :: INEXT(3), IPREV(3)
+      INTEGER          :: ZNEXT, IP, I, IE, IPNEXT, IPPREV, COUNT
+      integer nb0, nb1, nbM1
+      STATUS(:) = -1
+      INEXT=(/ 2, 3, 1 /) !IPREV=1+MOD(I+1,3)
+      IPREV=(/ 3, 1, 2 /) !INEXT=1+MOD(I,3)
+      DO IE=1,NTRI 
+! If one of the points of the triangle is masked out (land) then do as if triangle does not exist... 
+        IF ((MASK(TRIGP(IE,1)).GT.0).AND.(MASK(TRIGP(IE,2)).GT.0).AND.(MASK(TRIGP(IE,3)).GT.0)) THEN 
+        DO I=1,3
+          IP=TRIGP(IE,I)
+          IPNEXT=TRIGP(IE,INEXT(I))
+          IPPREV=TRIGP(IE,IPREV(I))
+          IF (STATUS(IP).EQ.-1) THEN
+            STATUS(IP)=1
+            PREVVERT(IP)=IPPREV
+            NEXTVERT(IP)=IPNEXT
+            END IF
+          END DO
+        ENDIF
+        END DO
+      STATUS(:)=-1
+ !
+      COUNT = 0 
+      DO
+        COUNT = COUNT + 1
+        COLLECTED(:)=0
+        DO IE=1,NTRI
+        IF ((MASK(TRIGP(IE,1)).GT.0).AND.(MASK(TRIGP(IE,2)).GT.0).AND.(MASK(TRIGP(IE,3)).GT.0)) THEN 
+          DO I=1,3
+            IP=TRIGP(IE,I)
+            IPNEXT=TRIGP(IE,INEXT(I))
+            IPPREV=TRIGP(IE,IPREV(I))
+            IF (STATUS(IP).EQ.-1) THEN
+              ZNEXT=NEXTVERT(IP)
+              IF (ZNEXT.EQ.IPPREV) THEN
+                COLLECTED(IP)=1
+                NEXTVERT(IP)=IPNEXT 
+                IF (NEXTVERT(IP).EQ.PREVVERT(IP)) THEN
+                  STATUS(IP)=1
+                  END IF
+                END IF
+              END IF
+            END DO
+            END IF ! end of test on MASK
+          END DO
+!
+! Checks that all nodes have been treated ...
+!
+       ISFINISHED=1
+       DO IP=1,NX
+          IF (MASK(IP).LE.0) THEN 
+             STATUS(IP)=0
+          ELSE 
+            IF ((COLLECTED(IP).EQ.0).AND.(STATUS(IP).EQ.-1)) THEN
+              STATUS(IP)=0
+              END IF
+            IF (STATUS(IP).eq.-1) THEN
+              ISFINISHED=0
+              END IF
+            ENDIF
+        END DO
+        IF (ISFINISHED.EQ.1) THEN
+          EXIT
+        END IF
+      END DO
+!#ifdef MPI_PARALL_GRID
+!      CALL exchange_p2di(STATUS)
+!#endif
+      END SUBROUTINE SET_IOBP
+
+!/ ------------------------------------------------------------------- /
+   SUBROUTINE SETUGIOBP ( )    
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |        Fabrice Ardhuin            |
+!/                  |        Aron Roland                |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         17-Apr-2016 |
+!/                  +-----------------------------------+
+!/
+!/    23-Aug-2011 : Origination.                        ( version 4.04 )
+!/    17-Apr-2016 : Uses optimized boundary detection   ( version 5.10 )
+!/
+!  1. Purpose :
+!
+!     Redefines the values of the boundary points and angle pointers
+!     based on the MAPSTA array
+!
+!  2. Method :
+!
+!     Adapted boundary detection from A. Roland and M. Dutour (WWM code)
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!     Local variables.
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      WW3_GRID  Prog. WW3_GRID Grid preprocessor
+!      W3ULEV    Subr. W3UPDTMD Water level update
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!
+!  9. Switches :
+!
+!       !/S     Enable subroutine tracing.
+!
+!
+! 10. Source code :     
+!/ ------------------------------------------------------------------- /
+!/
+!
+      USE CONSTANTS
+!
+!
+      USE W3GDATMD, ONLY: NX, NY, NSEA, MAPFS,                        &
+                          NK, NTH, DTH, XFR, MAPSTA, COUNTRI,         &
+                          ECOS, ESIN, IEN, NTRI, TRIGP,               &
+                          IOBP,IOBPD, IOBPA,                          &
+                          ANGLE0, ANGLE, REFPARS, REFLC, REFLD
+
+      USE W3ODATMD, ONLY: TBPI0, TBPIN, FLBPI
+      USE W3ADATMD, ONLY: CG, CX, CY, ATRNX, ATRNY, ITIME, CFLXYMAX
+      USE W3IDATMD, ONLY: FLCUR
+!/S      USE W3SERVMD, ONLY: STRACE
+      
+      IMPLICIT NONE
+!/ ------------------------------------------------------------------- /
+!/ Parameter list
+!/
+!/
+!/ ------------------------------------------------------------------- /
+!/ Local parameters
+!/
+      INTEGER                 :: ITH, IX, I, J, IP, IE, NDIRSUM
+      REAL (KIND = 8)         :: COSSUM, SINSUM
+      REAL (KIND = 8)         :: DIRMIN, DIRMAX, SHIFT, TEMPO, DIRCOAST 
+      REAL (KIND = 8)         :: X1, X2, Y1, Y2, DXP1, DXP2, DXP3
+      REAL (KIND = 8)         :: DYP1, DYP2, DYP3, eDet1, eDet2, EVX, EVY
+      REAL(KIND=8), PARAMETER :: THR    = TINY(1.)
+      INTEGER                 :: I1, I2, I3
+      INTEGER                 :: TRILAND(NTRI)
+      REAL                    :: ANGLETOT(NX), ANGLETOTINV(NX)
+!/S      INTEGER, SAVE           :: IENT = 0
+!/ ------------------------------------------------------------------- /                                     
+!
+! 1.  Preparations --------------------------------------------------- *
+! 1.a Set constants
+!      
+      
+!/S      CALL STRACE (IENT, 'SETUGIOBP')    
+
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 2.  Searches for boundary points
+! 
+      CALL SET_IOBP (MAPSTA(1,:), IOBP) 
+
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 3. Defines directions pointing into land or sea 
+! 
+      IOBPD(:,:)=0
+      IOBPA(:)=0
+      DO IP=1,NX 
+        IF ((MAPSTA(1,IP).EQ.2).AND.(IOBP(IP).EQ.0)) IOBPA(IP)=1
+        END DO
+
+      DO IE=1,NTRI
+        I1   =   TRIGP(IE,1)
+        I2   =   TRIGP(IE,2)
+        I3   =   TRIGP(IE,3)
+        IF ((MAPSTA(1,I1).GE.1).AND.(MAPSTA(1,I2).GE.1).AND.(MAPSTA(1,I3).GE.1)) THEN 
+          DXP1 =   IEN(IE,6)
+          DYP1 = - IEN(IE,5)
+          DXP2 =   IEN(IE,2)
+          DYP2 = - IEN(IE,1)
+          DXP3 =   IEN(IE,4)
+          DYP3 = - IEN(IE,3)
+!AR: ... modifly wave direction by currents ...
+        DO ITH=1,NTH
+          EVX=ECOS(ITH)
+          EVY=ESIN(ITH)
+          DO I=1,3
+            IF (I.eq.1) THEN
+              x1=   DXP1
+              y1=   DYP1
+              x2= - DXP3
+              y2= - DYP3
+              IP=   I1
+            END IF
+            IF (I.eq.2) THEN
+              x1 =   DXP2
+              y1 =   DYP2
+              x2 = - DXP1
+              y2 = - DYP1
+              IP =   I2
+            END IF
+            IF (I.eq.3) THEN
+              x1 =   DXP3
+              y1 =   DYP3
+              x2 = - DXP2
+              y2 = - DYP2
+              IP =   I3
+            END IF
+!AR: MDS please check if the new thr can pose a problem ...
+            IF (IOBP(IP) .eq. 0) THEN
+              eDet1 = THR-x1*EVY+y1*EVX
+              eDet2 = THR+x2*EVY-y2*EVX
+              IF ((eDet1.gt.0.).and.(eDet2.gt.0.)) THEN
+                IOBPD(ITH,IP)=1
+              ENDIF 
+            ELSE ! land boundary ...
+              IOBPD(ITH,IP)=1
+            END IF
+          END DO
+        END DO
+        END IF 
+      END DO
+!      DO IP = 1, MNP
+!        IF ( (LBCWA .OR. LBCSP) ) THEN
+!          IF ( IOBP(IP) == 2 .OR. IOBP(IP) == 4) THEN
+!            IOBWB(IP) = 0
+!            IOBPD(:,IP) = 1
+!          ENDIF
+!        END IF
+!        IF ( IOBP(IP) == 3 .OR. IOBP(IP) == 4) THEN ! If Neumann boundary condition is given set IOBP to 3
+!          IOBPD(:,IP) = 1 ! Update Neumann nodes ...
+!        END IF
+!      END DO
+!2do: recode for mpi 
+!        IF (LBCWA .OR. LBCSP) THEN
+!          IF (.NOT. ANY(IOBP .EQ. 2)) THEN
+!            CALL WWM_ABORT('YOU IMPOSED BOUNDARY CONDITIONS BUT IN THE BOUNDARY FILE ARE NO NODES WITH FLAG = 2')
+!          ENDIF
+!        ENDIF
+!#ifdef MPI_PARALL_GRID
+!      CALL exchange_p2di(IOBWB)
+!      DO ID = 1, MDC
+!        iwild = IOBPD(ID,:)
+!        CALL exchange_p2di(iwild)
+!        IOBPD(ID,:) = iwild
+!      ENDDO
+!#endif
+
+
+!
+!--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! 3. Updates the reflection direction and sharp / flat shoreline angle
+!
+!/REF1 ! 
+!/REF1 ! Finds the shoreline direction from IOBPD
+!/REF1 !
+!/REF1          REFLC(1,:)= 0.
+!/REF1          REFLD(:,:)= 1
+!/REF1          DO IP=1,NX
+!/REF1            IF (IOBP(IP).EQ.0.AND.MAPSTA(1,IP).EQ.1) THEN 
+!/REF1              COSSUM=0.
+!/REF1              SINSUM=0.
+!/REF1              NDIRSUM=0.
+!/REF1              DO ITH=1,NTH
+!/REF1                COSSUM=COSSUM+IOBPD(ITH,IP)*ECOS(ITH)
+!/REF1                SINSUM=SINSUM+IOBPD(ITH,IP)*ESIN(ITH)
+!/REF1                NDIRSUM=NDIRSUM+IOBPD(ITH,IP)
+!/REF1                END DO
+!/REF1              DIRCOAST=ATAN2(SINSUM, COSSUM)
+!/REF1              REFLD(1,MAPFS(1,IP)) = 1+MOD(NTH+NINT(DIRCOAST/DTH),NTH)
+!/REF1              REFLD(2,MAPFS(1,IP)) = 4-MAX(2,NINT(4.*REAL(NDIRSUM)/REAL(NTH)))
+!/REF1              REFLC(1,MAPFS(1,IP))= REFPARS(1)
+!/REF1              END IF
+!/REF1            END DO
+          
+
+!DO IX=1,NX
+!DO ITH=1,NTH
+! IF (IOBP(IX).EQ.0) WRITE(996,*) IX,ITH,IOBP(IX),IOBPA(IX),IOBPD(ITH,IX) !,REFLD(1:2,MAPFS(1,IX))
+!ENDDO 
+!ENDDO
+!CLOSE(996)
+
+!
+! Recomputes the angles used in the gradients estimation 
+!
+
+!
+! MAP FOR LAND POINTS    
+! 
+       TRILAND(:) = 0
+       DO IE = 1, NTRI
+         I1 = TRIGP(IE,1)
+         I2 = TRIGP(IE,2)
+         I3 = TRIGP(IE,3)
+!
+!! MAP FOR TRIANGLE STATUS: 
+!     TRILAND=0     ->sea triangle
+!     TRILAND=1 , 2 -> contour
+!     TRILAND=3     -> land
+
+     
+          IF ((MAPSTA(1,I1).LE.0))  TRILAND(IE) = TRILAND(IE) + 1
+          IF ((MAPSTA(1,I2).LE.0))  TRILAND(IE) = TRILAND(IE) + 1
+          IF ((MAPSTA(1,I3).LE.0))  TRILAND(IE) = TRILAND(IE) + 1
+          END DO
+!
+! Now calculate the angle of action of a vertex (see gradients in w3updtmd.ftn)
+! If a triangle is connected to the contour, the angle of each vertex is not
+! taken into account when interpolating gradients.
+!
+        ANGLETOT(:) = 0. ! TPI
+        DO IE = 1, NTRI 
+          TRILAND(IE)=MIN(TRILAND(IE),1)
+          I1 = TRIGP(IE,1)
+          I2 = TRIGP(IE,2)
+          I3 = TRIGP(IE,3) 
+          IF (TRILAND(IE) .EQ. 0) THEN  
+            ANGLETOT(I1) = ANGLETOT(I1) + ANGLE0(IE,1)
+            ANGLETOT(I2) = ANGLETOT(I2) + ANGLE0(IE,2)
+            ANGLETOT(I3) = ANGLETOT(I3) + ANGLE0(IE,3)
+            END IF
+          END DO
+
+      DO IP = 1, NX
+        IF (ANGLETOT(IP) .NE. 0)  THEN 
+           ANGLETOTINV(IP) = 1./ANGLETOT(IP)
+        ELSE 
+          ANGLETOTINV(IP) = 0.
+          END IF
+        END DO
+!
+      DO IE = 1, NTRI
+        I1 = TRIGP(IE,1)
+        I2 = TRIGP(IE,2)
+        I3 = TRIGP(IE,3) 
+!
+! Angles for land triangles are set to zero
+!
+        ANGLE(IE,1) = ANGLE0(IE,1)*ANGLETOTINV(I1)*(1-TRILAND(IE))
+        ANGLE(IE,2) = ANGLE0(IE,2)*ANGLETOTINV(I2)*(1-TRILAND(IE))
+        ANGLE(IE,3) = ANGLE0(IE,3)*ANGLETOTINV(I3)*(1-TRILAND(IE))
+        !WRITE(998,*) 'IE, ANGLE:',IE,I1,I2,I3,ANGLE(IE,1:3),ANGLETOT(I1)*RADE,TRILAND(IE)
+
+        END DO
+
+!       END IF
+
+      CALL DIFFERENCE
+
+      RETURN    
+      END SUBROUTINE SETUGIOBP
+
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE LINE_ANGLE( x1, y1, x2, y2, angle )
+        implicit none
+        real (kind = 8) x1, y1, x2, y2
+        real (kind = 8) angle
+        real (kind = 8) dx, dy
+        
+        dx = x2 - x1
+        dy = y2 - y1
+        angle = atan2( dy, dx )
+        if ( angle < 0.0d0 ) angle = 8.0d0 * atan(1.0d0) + angle
+        
+        return
+      END SUBROUTINE
+!/ ------------------------------------------------------------------- /
+END MODULE W3TRIAMD

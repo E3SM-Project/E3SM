@@ -1,0 +1,33 @@
+$ -------------------------------------------------------------------- $
+$ WAVEWATCH III Grid integration input file                            $
+$ -------------------------------------------------------------------- $
+$ Time, time increment and number of outputs
+$
+  19680606 060000 10800. 1
+$
+$ Total number of grids (NGR). The code assumes that the first NGR-1  
+$ grids are the input grids and the last grid is the target grid in 
+$ which the output fields are to be interpolated. It also assumes
+$ that all the grids have the same output fields switched on 
+$
+$ NGR
+$
+ 4
+$
+$ Grid Ids
+$
+ 'grd1'
+ 'grd2'
+ 'grd3'
+ 'grd4'
+$
+$ In this example grd1, grd2 and grd3 are the input grids. For each
+$ of these grids a mod_def.grdN and an out_grd.grdN are available.
+$ The target grid is grd4, and a mod_def.grd4 is also made available.
+$ Upon execution of the code an out_grd.grd4 is generated via
+$ interpolation of output fields from the various out_grd.grdN
+$ (N varying from 1 to 3) files.
+$
+$ -------------------------------------------------------------------- $
+$ End of input file                                                    $
+$ -------------------------------------------------------------------- $ 
