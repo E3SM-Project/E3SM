@@ -68,12 +68,10 @@ grid map dataset.
 
 
 Important files:
-
-  regridbatch.sh ------- Script to run mkmapdata.sh for many resolutions
-  mvNimport.sh --------- Script to copy and import mapping files in for many resolutions
-  mkmapdata.sh --------- Script to create mapping datasets for a given resolution
-
-  mknoocnmap.pl -------- Script to create unity mapping dataset for single-point
-                         or regional studies over land-only (no ocean).
-  mkunitymap.ncl ------- NCL script to create a unity map -- ran by above script
-
+```
+regridbatch.sh  Script to run mkmapdata.sh for many resolutions 
+mvNimport.sh    Script to copy and import mapping files in for many resolutions
+mkmapdata.sh    Script to create mapping datasets for a given resolution
+mknoocnmap.pl   Script to create unity mapping dataset for single-point or regional studies over land-only (no ocean).
+mkunitymap.ncl  NCL script to create a unity map -- ran by above script
+```
