@@ -93,10 +93,8 @@ usage() {
   echo "[-o|--output-filetype <filetype>]"
   echo "    Specific type for output file [netcdf4, 64bit_offset]"
   echo "[-b|--batch]"
-  echo "    Toggles batch mode usage. If you want to run in batch mode"
-  echo "    you need to have a separate batch script for a supported machine"
-  echo "    that calls this script interactively - you cannot submit this"
-  echo "    script directory to the batch system"
+  echo "    Toggles batch mode usage (whether or not to use MPI). If this flag"
+  echo "    is not set, then MPIEXEC is ignored and ESMF will be called directly."
   echo "[-l|--list]"
   echo "    List mapping files required (use check_input_data to get them)"
   echo "    also writes data to $outfilelist"
@@ -476,9 +474,6 @@ esac
 #----------------------------------------------------------------------
  
 # Resolve interactive or batch mode command
-# NOTE - if you want to run in batch mode - you need to have a separate
-# batch file that calls this script interactively - you cannot submit
-# this script to the batch system
 # NOTE - we only need this here because the machine-specific settings above set
 # MPIEXEC depending on if we are on a certain machine, so we need to override
 # them if we want interactive mode. This bit of logic should go away in the
@@ -499,7 +494,7 @@ else
     echo "Running without MPI"
     mpirun=""
 fi
-  
+
 # Look for ESMF_RegridWeightGen. If ESMFBIN_PATH is set, then look for binary
 # there. Otherwise, assume it exists in PATH and use which to find command.
 if [ -z "${ESMFBIN_PATH}" ]; then
