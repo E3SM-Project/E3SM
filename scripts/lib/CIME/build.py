@@ -467,6 +467,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     os.environ["USE_MOAB"]             = stringify_bool(use_moab)
     os.environ["PIO_VERSION"]          = str(case.get_value("PIO_VERSION"))
     os.environ["COMPARE_TO_NUOPC"]     = stringify_bool(case.get_value("COMPARE_TO_NUOPC"))
+    os.environ["CIME_MODEL"]           = get_model()
 
     if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")

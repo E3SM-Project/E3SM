@@ -64,7 +64,7 @@
 
 /* Number of computation components. */
 #define COMPONENT_COUNT 1
-
+        
 /* Lengths of dimensions. */
 int dim_len[NDIM3] = {NC_UNLIMITED, DIM_LEN_X, DIM_LEN_Y};
 
@@ -139,7 +139,7 @@ int resultlen;
 /*     { */
 /*         char my_dim_name[NC_MAX_NAME]; */
 /*         PIO_Offset dimlen;  */
-
+        
 /*         if ((ret = PIOc_inq_dim(ncid, d, my_dim_name, &dimlen))) */
 /*             return ret; */
 /*         if (dimlen != (d ? dim_len[d] : NUM_TIMESTEPS) || strcmp(my_dim_name, dim_name[d])) */
@@ -161,7 +161,7 @@ int resultlen;
 /*     for (int t = 0; t < NUM_TIMESTEPS; t++) */
 /*     { */
 /*         int varid = 0; /\* There's only one var in sample file. *\/ */
-
+        
 /*         /\* This is the data we expect for this timestep. *\/ */
 /*         for (int i = 0; i < elements_per_pe; i++) */
 /*             buffer[i] = 100 * t + START_DATA_VAL + my_rank; */
@@ -232,7 +232,7 @@ int main(int argc, char* argv[])
     if ((ret = GPTLinitialize ()))
         return ret;
 #endif
-
+        
     /* Initialize MPI. */
     if ((ret = MPI_Init(&argc, &argv)))
         MPIERR(ret);
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
 
     /* Num procs for computation. */
     int num_procs2[COMPONENT_COUNT] = {4};
-
+        
     /* Is the current process a computation task? */
     int comp_task = my_rank < NUM_IO_TASKS ? 0 : 1;
 
@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
     {
         /* PIO_Offset elements_per_pe; /\* Array elements per processing unit. *\/ */
         /* int ioid;     /\* The I/O description ID. *\/ */
-
+            
         /* /\* How many elements on each computation task? *\/ */
         /* elements_per_pe = DIM_LEN_X * DIM_LEN_Y / NUM_COMP_TASKS; */
 
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 /*                 /\* Create some data for this timestep. *\/ */
 /*                 for (int i = 0; i < elements_per_pe; i++) */
 /*                     buffer[i] = 100 * t + START_DATA_VAL + my_rank; */
-
+                
 /*                 /\* Write data to the file. *\/ */
 /*                 printf("rank: %d Writing sample data...\n", my_rank); */
 /*                 if ((ret = PIOc_setframe(ncid, varid, t))) */

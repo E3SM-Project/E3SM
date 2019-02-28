@@ -88,7 +88,9 @@ endif
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
-ifneq ($(strip $(DEBUG)),TRUE)
+ifeq ($(strip $(DEBUG)),TRUE)
+   CPPDEFS += -DDEBUG
+else
    CPPDEFS += -DNDEBUG
 endif
 
@@ -178,9 +180,8 @@ ifdef CPRE
   CONTIGUOUS_FLAG := $(patsubst -D%,$(CPRE)%,$(CONTIGUOUS_FLAG))
 endif
 
-ifndef AR
-   AR := ar
-endif
+AR ?= ar
+ARFLAGS ?= -r
 
 ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
@@ -791,7 +792,7 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-ifeq ($(MODEL),cesm)
+ifeq ($(CIME_MODEL),cesm)
   ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
@@ -896,7 +897,7 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
 
 $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
+	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
