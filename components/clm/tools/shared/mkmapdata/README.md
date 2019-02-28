@@ -46,26 +46,28 @@ grid map dataset.
 
 1. cd to this directory 
 
-2. Create map dataset(s)
-   Option A.)  Use mkmapdata.sh directly
-   run script(e.g.): (see header of mkmapdata.sh for other environment that can be set)
+2. Create map dataset(s). This is done using the `mkmapdata.sh` script. Options and 
+   environment variables can be shown by passing the `--help` argument to the script.
+   Basic usage involves either passing the `-r` argument with a supported resolution,
+   or passing the `-f` argument with a user-defined SCRIP-formatted grid file to specify
+   the target grid.
 
-   Example for standard resolutions
+   Example for standard resolutions:
    ```
         ./mkmapdata.sh -r 10x15
    ```
-   Example for non-standard resolutions where you provide an input SCRIP grid file.
+   Example for non-standard resolutions where you provide an input SCRIP grid file:
    ```     
        ./mkmapdata.sh -f <SCRIP_gridfile>
    ```
-   Option B.) Alternatively, run `regridbatch.sh` to run `mkmapdata.sh` for a bunch of 
-        different resolutions.
-
-   Option C.) Alternatively, run `mknoocnmap.pl` to create a single-point/regional
-   map for an area without ocean.
+   
+   Alternatively, the `regridbatch.sh` can be run, which runs `mkmapdata.sh` for a bunch of 
+   different resolutions. The `mknoocnmap.pl` script can also be run to create a single-point/regional
+   map for an area without ocean:
    ```
       ./mknoocnmap.pl -help      # for help on this script
    ```
+   
 3. move (and rename if appropriate) generated map datasets
    to `$DIN_LOC_ROOT/lnd/clm/mappingdata/maps`, etc.
 
