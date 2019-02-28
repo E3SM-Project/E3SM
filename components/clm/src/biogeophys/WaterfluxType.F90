@@ -691,8 +691,8 @@ contains
          long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
          interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
 
-    call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
-    call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
+    !call this%qflx_liq_dynbal_dribbler%Restart(bounds, ncid, flag)
+    !call this%qflx_ice_dynbal_dribbler%Restart(bounds, ncid, flag)
 
   end subroutine Restart
 

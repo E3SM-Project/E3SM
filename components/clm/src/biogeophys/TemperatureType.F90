@@ -425,10 +425,10 @@ contains
          avgflag='A', long_name='post land cover change total heat content', &
          ptr_lnd=this%heat2_grc, default='inactive')  
 
-    this%liquid_water_temp1_grc(begg:endg) = spval
-    call hist_addfld1d (fname='LIQUID_WATER_TEMP1', units='K', &
-         avgflag='A', long_name='initial gridcell weighted average liquid water temperature', &
-         ptr_lnd=this%liquid_water_temp1_grc, default='inactive')
+    !this%liquid_water_temp1_grc(begg:endg) = spval
+    !call hist_addfld1d (fname='LIQUID_WATER_TEMP1', units='K', &
+    !     avgflag='A', long_name='initial gridcell weighted average liquid water temperature', &
+    !     ptr_lnd=this%liquid_water_temp1_grc, default='inactive')
 
     this%snot_top_col(begc:endc) = spval 
     call hist_addfld1d (fname='SNOTTOPL', units='K/m', &
