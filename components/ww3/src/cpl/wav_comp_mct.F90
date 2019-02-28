@@ -151,13 +151,13 @@
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg
       use w3wdatmd, only: time, w3ndat, w3setw
-      use w3adatmd, only: lamult, ussx, ussy, w3naux, w3seta
+      use w3adatmd, only: ussx, ussy, w3naux, w3seta, !SB, lamult
       use w3idatmd, only: flags, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
       USE W3IDATMD, ONLY: TIN, ICEI
       USE W3IDATMD, ONLY: TLN, WLEV
-      USE W3IDATMD, ONLY: HML   ! QL, 150525, mixing layer depth
+      USE W3IDATMD, ONLY: !SB, HML   ! QL, 150525, mixing layer depth
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
                           nogrd, idout, fnmpre, iostyp
 !/
@@ -864,9 +864,9 @@ CONTAINS
          endif
 
          ! QL, 150525, get mixing layer depth from coupler
-         if (flags(5)) then
-            HML(IX,IY) = max(x2w0%rattr(index_x2w_so_bldepth,gindex), 5.)
-         endif
+         ! SB, if (flags(5)) then
+         ! SB,    HML(IX,IY) = max(x2w0%rattr(index_x2w_so_bldepth,gindex), 5.)
+         ! SB, endif
 
       enddo
       enddo
@@ -891,11 +891,11 @@ CONTAINS
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
              ! QL, 160530, LAMULT now calculated in WW3 (w3iogomd.f90)
-             w2x_w%rattr(index_w2x_Sw_lamult,jsea) = LAMULT(ISEA)
+             ! SB, w2x_w%rattr(index_w2x_Sw_lamult,jsea) = LAMULT(ISEA)
              w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = USSX(ISEA)
              w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = USSY(ISEA)
           else
-             w2x_w%rattr(index_w2x_Sw_lamult,jsea) = 1.
+             !SB, w2x_w%rattr(index_w2x_Sw_lamult,jsea) = 1.
              w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.
              w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.
           endif
