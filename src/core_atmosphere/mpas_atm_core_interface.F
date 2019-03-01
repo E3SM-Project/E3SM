@@ -120,6 +120,7 @@ module atm_core_interface
       logical, pointer :: iauActive
       character(len=StrKIND), pointer :: config_iau_option
       logical, pointer :: config_jedi_da, jedi_daActive
+      integer :: local_ierr
 
       ierr = 0
 
@@ -155,10 +156,11 @@ module atm_core_interface
       !least one physics parameterization is called (using the logical moist_physics):
       call physics_namelist_check(configs)
 
-      ierr = atmphys_setup_packages(configs,packages,iocontext)
-      if(ierr /= 0) then
+      local_ierr = atmphys_setup_packages(configs, packages, iocontext)
+      if (local_ierr /= 0) then
+         ierr = ierr + 1
          call mpas_log_write('Package setup failed for atmphys in core_atmosphere', messageType=MPAS_LOG_ERR)
-      endif
+      end if
 #endif
 
    end function atm_setup_packages
