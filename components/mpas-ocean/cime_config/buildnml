@@ -197,11 +197,11 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
 
     #--------------------------------------------------------------------
-    # Set OCN_FORCING = core_forced_restoring if restoring file is available
+    # Set OCN_FORCING = datm_forced_restoring if restoring file is available
     #--------------------------------------------------------------------
-    if ocn_forcing == 'core_forced':
+    if ocn_forcing == 'datm_forced':
         if restoring_file != '':
-            ocn_forcing = 'core_forced_restoring'
+            ocn_forcing = 'datm_forced_restoring'
         else:
             logger.warning("WARNING: Should be running with salinity restoring on!")
             logger.warning("         But no file available for this grid.")
@@ -227,7 +227,7 @@ def buildnml(case, caseroot, compname):
         if analysis_mask_file != '':
             input_list.write("moc = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, analysis_mask_file))
 
-        if ocn_forcing == 'core_forced_restoring':
+        if ocn_forcing == 'datm_forced_restoring':
             input_list.write("sss = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, restoring_file))
 
         if eco_forcing_file != '':
@@ -453,7 +453,7 @@ def buildnml(case, caseroot, compname):
         lines.append('the analysis data.')
         lines.append('-->')
         lines.append('')
-        if ocn_forcing == 'core_forced_restoring':
+        if ocn_forcing == 'datm_forced_restoring':
             lines.append('<stream name="surface_salinity_monthly_data"')
             lines.append('       type="input"')
             lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, restoring_file))
@@ -866,6 +866,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityMeridionalSquared"/>')
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
         if ocn_iceberg == 'true':
             lines.append('    <var name="icebergHeatFlux"/>')
             lines.append('    <var name="icebergFreshWaterFlux"/>')
