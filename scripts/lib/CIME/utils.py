@@ -1815,3 +1815,26 @@ def model_log(model, arg_logger, msg, debug_others=True):
         arg_logger.info(msg)
     elif debug_others:
         arg_logger.debug(msg)
+
+def get_standard_makefile_args(case):
+    str = "CIME_MODEL={} ".format(case.get_value("MODEL"))
+    str += "COMP_INTERFACE={} ".format(case.get_value("COMP_INTERFACE"))
+    str += "EXEROOT={} ".format(case.get_value("EXEROOT"))
+    str += "SMP_PRESENT={} ".format(stringify_bool(case.get_value("SMP_PRESENT")))
+    str += "SMP={} ".format(case.get_value("SMP"))
+    str += "LIBROOT={} ".format(libroot = case.get_value("LIBROOT"))
+    str += "SHAREDLIBROOT={} ".format(case.get_value("SHAREDLIBROOT"))
+    str += "COMPILER={} ".format(case.get_value("COMPILER"))
+    str += "NINST_VALUE={} ".format(case.get_value("NINST_VALUE"))
+    str += "MPILIB={} ".format(case.get_value("MPILIB"))
+    str += "PIO_VERSION={} ".format(case.get_value("PIO_VERSION"))
+    compare_to_nuopc = case.get_value("COMPARE_TO_NUOPC")
+    homme_target = case.get_value("HOMME_TARGET")
+    
+    if compare_to_nuopc is not None:
+        str += "COMPARE_TO_NUOPC={} ".format(stringify_bool(compare_to_nuopc))
+    else
+        str += "COMPARE_TO_NUOPC=FALSE "
+    if homme_target is not None:
+        str += "HOMME_TARGET={} ".format(homme_target)
+    return str
