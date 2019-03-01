@@ -1822,7 +1822,7 @@ def get_standard_makefile_args(case):
     str += "EXEROOT={} ".format(case.get_value("EXEROOT"))
     str += "SMP_PRESENT={} ".format(stringify_bool(case.get_value("SMP_PRESENT")))
     str += "SMP={} ".format(case.get_value("SMP"))
-    str += "LIBROOT={} ".format(libroot = case.get_value("LIBROOT"))
+    str += "LIBROOT={} ".format(case.get_value("LIBROOT"))
     str += "SHAREDLIBROOT={} ".format(case.get_value("SHAREDLIBROOT"))
     str += "COMPILER={} ".format(case.get_value("COMPILER"))
     str += "NINST_VALUE={} ".format(case.get_value("NINST_VALUE"))
@@ -1830,10 +1830,10 @@ def get_standard_makefile_args(case):
     str += "PIO_VERSION={} ".format(case.get_value("PIO_VERSION"))
     compare_to_nuopc = case.get_value("COMPARE_TO_NUOPC")
     homme_target = case.get_value("HOMME_TARGET")
-    
+
     if compare_to_nuopc is not None:
         str += "COMPARE_TO_NUOPC={} ".format(stringify_bool(compare_to_nuopc))
-    else
+    else:
         str += "COMPARE_TO_NUOPC=FALSE "
     if homme_target is not None:
         str += "HOMME_TARGET={} ".format(homme_target)
