@@ -336,6 +336,12 @@
                      possible_values="Non-negative real values"/>
 	</nml_record>
 
+        <nml_record name="assimilation" in_defaults="false">
+                <nml_option name="config_jedi_da" type="logical" default_value="false"
+                     units="-"
+                     description="Whether this run is within the JEDI data assimilation framework; used to add temperature and specific humidity as diagnostics"
+                     possible_values=".true. or .false."/>
+        </nml_record>
 
 <!-- **************************************************************************************** -->
 <!-- **************************************  Packages  ************************************** -->
@@ -352,6 +358,7 @@
                 <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
 
                 <package name="iau" description="Incremental Analysis Update"/>
+                <package name="jedi_da" description="Data Assimilation in JEDI framework"/>
         </packages>
 
 
@@ -1439,8 +1446,16 @@
                 <var name="theta" type="real" dimensions="nVertLevels nCells Time" units="K"
                      description="Potential temperature"/>
 
+                <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="temperature"
+                     packages="jedi_da"/>
+
                 <var name="relhum" type="real" dimensions="nVertLevels nCells Time" units="percent"
                      description="Relative humidity"/>
+
+                <var name="spechum" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1}"
+                     description="Specific humidity"
+                     packages="jedi_da"/>
 
                 <var name="v" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
                      description="Horizontal tangential velocity at edges"/>
