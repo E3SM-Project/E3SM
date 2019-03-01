@@ -2,6 +2,7 @@
 from standard_script_setup import *
 from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging, expect
 from CIME.case import Case
+from CIME.build import get_standard_makefile_args
 import glob
 
 logger = logging.getLogger(__name__)
@@ -43,9 +44,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    caseroot = case.get_value("CASEROOT")
-    cimeroot = case.get_value("CIMEROOT")
+    gmake_args = get_standard_makefile_args(case)
     comp_interface = case.get_value("COMP_INTERFACE")
+    cimeroot = case.get_value("CIMEROOT")
+    caseroot = case.get_value("CASEROOT")
+
     filepath = [os.path.join(caseroot,"SourceMods","src.share"),
                 os.path.join(cimeroot,"src","drivers",comp_interface,"shr"),
                 os.path.join(cimeroot,"src","share","streams"),
@@ -56,23 +59,21 @@ def buildlib(bldroot, installpath, case):
                 os.path.join(cimeroot,"src","share","RandNum","src","mt19937")]
 
     # Append path for driver - currently only values of 'mct' and 'nuopc' are accepted
-    driver = case.get_value("COMP_INTERFACE")
-    if driver == "mct":
+
+    if comp_interface == "mct":
         filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
-    elif driver == "nuopc":
+    elif comp_interface == "nuopc":
         filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","shr"))
         filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","cime_flds_shr"))
     else:
-        expect(False, "driver value of {} not supported".format(driver))
+        expect(False, "driver value of {} not supported".format(comp_interface))
 
     if case.get_value("USE_ESMF_LIB"):
         use_esmf = "esmf"
     else:
         use_esmf = "noesmf"
         filepath.append(os.path.join(cimeroot, "src", "share", "esmf_wrf_timemgr"))
-
     ninst_value = case.get_value("NINST_VALUE")
-
     libdir = os.path.join(bldroot,comp_interface,use_esmf, ninst_value,"csm_share")
     if not os.path.isdir(libdir):
         os.makedirs(libdir)
@@ -116,9 +117,8 @@ def buildlib(bldroot, installpath, case):
     gmake_opts += "-j {} ".format(case.get_value("GMAKE_J"))
     gmake_opts += " COMPLIB=libcsm_share.a"
     gmake_opts += ' USER_CPPDEFS="{} -DTIMING" '.format(multiinst_cppdefs)
-    gmake_opts += " CASEROOT={} ".format(caseroot)
-    gmake_opts += " CIMEROOT={} ".format(cimeroot)
     gmake_opts += "INCLUDE_DIR={} ".format(os.path.join(installdir, "include"))
+    gmake_opts += gmake_args
     gmake_opts += " -C {}".format(libdir)
 
     gmake_cmd = case.get_value("GMAKE")

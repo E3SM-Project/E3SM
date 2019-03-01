@@ -106,7 +106,7 @@ def reset_file(version, srcpath, dstpath):
         run_cmd_no_fail("git rm -f {}".format(dstpath))
     else:
         if is_exe:
-            os.chmod(dstpath, os.stat(dstpath) | osstat.S_IXUSR | osstat.S_IXGRP | osstat.S_IXOTH)
+            os.chmod(dstpath, os.stat(dstpath).st_mode | osstat.S_IXUSR | osstat.S_IXGRP | osstat.S_IXOTH)
 
         run_cmd_no_fail("git add {}".format(dstpath))
 

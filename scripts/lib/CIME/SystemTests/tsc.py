@@ -12,6 +12,7 @@ from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.build import post_build
 from CIME.hist_utils import rename_all_hist_files
+from CIME.test_status import *
 #import CIME.utils
 #from CIME.check_lockedfiles import *
 
@@ -154,3 +155,7 @@ class TSC(SystemTestsCommon):
         # for testing new code or new computing environment.
         if self._case.get_value("GENERATE_BASELINE"):
             self._run_with_specified_dtime(dtime=1)
+    def _compare_baseline(self):
+        #currently faking it as PENDING
+        with self._test_status as ts:
+            ts.set_status(BASELINE_PHASE, TEST_PEND_STATUS)

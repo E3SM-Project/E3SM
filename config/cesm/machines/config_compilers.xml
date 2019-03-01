@@ -72,9 +72,13 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
     <append MODEL="fv3gfs"> -DSPMD </append>
   </CPPDEFS>
+  <SLIBS>
+    <append MODEL="mom"> -lfms </append>
+    <append MODEL="fv3gfs"> -lfms </append>
+  </SLIBS>
+
   <INCLDIR>
         <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
   </INCLDIR>
@@ -598,6 +602,13 @@ using a fortran linker.
   <SLIBS>
     <append> -llapack -lblas </append>
     <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="coeus" COMPILER="gnu">
+  <NETCDF_PATH>/vol/apps/hpc/stow/netcdf/4.4.1.1/gcc-6.3.0</NETCDF_PATH>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
   </SLIBS>
 </compiler>
 

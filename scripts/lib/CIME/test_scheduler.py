@@ -30,6 +30,7 @@ from CIME.provenance import get_recommended_test_time_based_on_past
 from CIME.locked_files import lock_file
 from CIME.cs_status_creator import create_cs_status
 from CIME.hist_utils import generate_teststatus
+from CIME.build import post_build
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,8 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False, non_local=False):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False,
+                 non_local=False, single_exe=False):
     ###########################################################################
         self._cime_root       = get_cime_root()
         self._cime_model      = get_model()
@@ -136,6 +138,8 @@ class TestScheduler(object):
         self._allow_baseline_overwrite = allow_baseline_overwrite
         self._allow_pnl       = allow_pnl
         self._non_local       = non_local
+        self._single_exe      = single_exe
+        self._single_exe_root = None
 
         self._mail_user = mail_user
         self._mail_type = mail_type
@@ -349,8 +353,10 @@ class TestScheduler(object):
         if phase is None or phase == curr_phase:
             return curr_status
         else:
-            expect(phase is None or self._phases.index(phase) < self._phases.index(curr_phase),
-                   "Tried to see the future")
+            # Assume all future phases are PEND
+            if phase is not None and self._phases.index(phase) > self._phases.index(curr_phase):
+                return TEST_PEND_STATUS
+
             # Assume all older phases PASSed
             return TEST_PASS_STATUS
 
@@ -479,7 +485,6 @@ class TestScheduler(object):
                 elif case_opt.startswith('V'):
                     self._cime_driver = case_opt[1:]
                     create_newcase_cmd += " --driver {}".format(self._cime_driver)
-
 
         # create_test mpilib option overrides default but not explicitly set case_opt mpilib
         if mpilib is None and self._mpilib is not None:
@@ -641,6 +646,16 @@ class TestScheduler(object):
             case.set_value("TEST", True)
             case.set_value("SAVE_TIMING", self._save_timing)
 
+            # handle single-exe here, all cases will use the EXEROOT from
+            # the first case.
+            first_test = self._tests.keys()[0]
+            if self._single_exe:
+                if test == first_test:
+                    self._single_exe_root = case.get_value("EXEROOT")
+                else:
+                    expect(self._single_exe_root is not None, "Programming error for single_exe, missing root")
+                    case.set_value("EXEROOT", self._single_exe_root)
+
             # Scale back build parallelism on systems with few cores
             if self._model_build_cost > self._proc_pool:
                 case.set_value("GMAKE_J", self._proc_pool)
@@ -664,6 +679,13 @@ class TestScheduler(object):
     ###########################################################################
     def _sharedlib_build_phase(self, test):
     ###########################################################################
+        first_test = self._tests.keys()[0]
+        if self._single_exe and test != first_test:
+            if self._get_test_status(first_test, phase=SHAREDLIB_BUILD_PHASE) == TEST_PASS_STATUS:
+                return True, ""
+            else:
+                return False, "Cannot use build for test {} because it failed".format(first_test)
+
         test_dir = self._get_test_dir(test)
         return self._shell_cmd_for_phase(test, "./case.build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
 
@@ -671,6 +693,17 @@ class TestScheduler(object):
     def _model_build_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
+
+        first_test = self._tests.keys()[0]
+        if self._single_exe and test != first_test:
+            if self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PASS_STATUS:
+                with Case(test_dir, read_only=False) as case:
+                    post_build(case, [], build_complete=True, save_build_provenance=False)
+
+                return True, ""
+            else:
+                return False, "Cannot use build for test {} because it failed".format(first_test)
+
         return self._shell_cmd_for_phase(test, "./case.build --model-only", MODEL_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
@@ -705,6 +738,13 @@ class TestScheduler(object):
     ###########################################################################
     def _get_procs_needed(self, test, phase, threads_in_flight=None, no_batch=False):
     ###########################################################################
+        # If in single_exe mode, we must wait for the first case to complete building
+        # before starting other cases.
+        first_test = self._tests.keys()[0]
+        if self._single_exe and test != first_test and \
+           self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PEND_STATUS:
+            return self._proc_pool + 1
+
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
             total_pes = EnvMachPes(test_dir, read_only=True).get_value("TOTALPES")
@@ -779,7 +819,8 @@ class TestScheduler(object):
 
         logger.info(status_str)
 
-        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
+        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE] or \
+           (self._single_exe and test != self._tests.keys()[0] and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)
