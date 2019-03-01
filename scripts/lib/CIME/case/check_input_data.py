@@ -24,7 +24,6 @@ def _download_checksum_file(server, rundir, chksum_file, user):
     success = False
     rel_path = chksum_file
     full_path = os.path.join(rundir, local_chksum_file)
-    lockfile = _check_permissions_and_lock_inputdata_file(rundir, user)
     new_file = full_path + '.raw'
     protocol = type(server).__name__
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, new_file, protocol))
@@ -49,8 +48,6 @@ def _download_checksum_file(server, rundir, chksum_file, user):
             else:
                 logger.warning("Could not automatically download file {}".
                                format(full_path))
-    if lockfile and os.path.isfile(lockfile):
-        os.remove(lockfile)
     return success
 
 def _reformat_chksum_file(chksum_file, server_file):
@@ -100,7 +97,6 @@ def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=Fa
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
-    lockfile = _check_permissions_and_lock_inputdata_file(full_path, user)
     logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, full_path, type(server).__name__))
     # Make sure local path exists, create if it does not
     if isdirectory or full_path.endswith(os.sep):
@@ -122,7 +118,6 @@ def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=Fa
             os.rename(full_path+".tmp",full_path)
         else:
             success = server.getfile(rel_path, full_path)
-    os.remove(lockfile)
     return success
 
 def check_all_input_data(self, protocol=None, address=None, input_data_root=None, data_list_dir="Buildconf",
@@ -355,45 +350,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                     logging.warning("Model {} no file specified for {}".format(model, description))
 
     return no_files_missing
-
-def _check_permissions_and_lock_inputdata_file(file_path, user):
-    """
-    Check that the user has write permission to the given file_path and
-    add a file_path.LOCK file to avoid any race condition, the file_path.LOCK file should
-    be removed after the download is completed
-    """
-    basedir = os.path.dirname(file_path)
-    if not os.path.exists(basedir):
-        try:
-            os.makedirs(basedir)
-        except IOError as x:
-            expect(False, "Write to directory {} failed with error {}: {}".
-                   format(basedir, x.errno, x.strerror))
-
-    # check for existing lock
-    if os.path.isdir(file_path):
-        return None
-    lock_file = file_path+".LOCK"
-    # if the file exists print it's contents and sleep a round or two then error out
-    line = None
-    cnt = 0
-    while os.path.isfile(lock_file) and cnt < 15:
-        if not line:
-            with open(lock_file) as f:
-                line = f.readline()
-        logger.warning("File {} is locked, waiting for download to complete".format(lock_file))
-        time.sleep(60)
-        cnt = cnt + 1
-    if os.path.isfile(lock_file):
-        expect(False,line)
-
-    # if it doesn't exist create it
-    with open(lock_file, "w") as f:
-        f.write("File {} locked by user {} on {} at {}".
-                format(file_path, user,
-                       time.strftime("%y%m%d"), time.strftime("%H%M%S")))
-
-    return lock_file
 
 def verify_chksum(input_data_root, rundir, filename, isdirectory):
     """
