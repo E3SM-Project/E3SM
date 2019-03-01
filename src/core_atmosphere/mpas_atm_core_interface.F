@@ -141,7 +141,14 @@ module atm_core_interface
       nullify(jedi_daActive)
       call mpas_pool_get_package(packages, 'jedi_daActive', jedi_daActive)
 
-      jedi_daActive = config_jedi_da
+      if (associated(config_jedi_da) .and. associated(jedi_daActive)) then
+         jedi_daActive = config_jedi_da
+      else
+         ierr = ierr + 1
+         call mpas_log_write('Package setup failed for ''jedi_da''. '// &
+              'Either ''jedi_da'' is not a package, or ''config_jedi_da'' is not a namelist option.', &
+              messageType=MPAS_LOG_ERR)
+      end if
 
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at
