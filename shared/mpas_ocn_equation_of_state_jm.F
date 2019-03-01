@@ -299,10 +299,11 @@ contains
       !*** compute modified T,S to account for displacement and
       !*** valid range
 
-      !$omp single
+      !$omp master
       allocate(tracerTemp(nVertLevels,nCells))
       allocate(tracerSalt(nVertLevels,nCells))
-      !$omp end single
+      !$omp end master
+      !$omp barrier
 
       if (displacementType == 'surfaceDisplaced') then
 
@@ -335,7 +336,7 @@ contains
       endif
 
 #ifdef MPAS_OPENACC
-      !$omp single
+      !$omp master
       !$acc enter data copyin(density, p, p2, tracerTemp, tracerSalt)
       !$acc parallel loop gang vector collapse(2) &
       !$acc&   present(density, p, p2, tracerTemp, tracerSalt)
@@ -392,17 +393,17 @@ contains
 #ifdef MPAS_OPENACC
       !$acc update host(density)
       !$acc exit data delete(density, p, p2, tracerTemp, tracerSalt)
-      !$omp end single
+      !$omp end master
+      !$omp barrier
 #else
       !$omp end do
 #endif
 
       deallocate(p,p2)
-      !$omp barrier
-      !$omp single
+      !$omp master
       deallocate(tracerTemp)
       deallocate(tracerSalt)
-      !$omp end single nowait
+      !$omp end master
 
    !--------------------------------------------------------------------
 
@@ -571,10 +572,11 @@ contains
       !*** compute modified T,S to account for displacement and
       !*** valid range
 
-      !$omp single
+      !$omp master
       allocate(tracerTemp(nVertLevels,nCells))
       allocate(tracerSalt(nVertLevels,nCells))
-      !$omp end single
+      !$omp end master
+      !$omp barrier
 
       if (displacementType == 'surfaceDisplaced') then
 
@@ -607,7 +609,7 @@ contains
       endif
 
 #ifdef MPAS_OPENACC
-      !$omp single
+      !$omp master
       !$acc enter data copyin(density, p, p2, tracerTemp, tracerSalt, &
       !$acc&                  thermalExpansionCoeff,  &
       !$acc&                  salineContractionCoeff)
@@ -718,17 +720,17 @@ contains
       !$acc exit data delete(density, p, p2, tracerTemp, tracerSalt, &
       !$acc&                 thermalExpansionCoeff,  &
       !$acc&                 salineContractionCoeff)
-      !$omp end single
+      !$omp end master
+      !$omp barrier
 #else
       !$omp end do
 #endif
 
       deallocate(p,p2)
-      !$omp barrier
-      !$omp single
+      !$omp master
       deallocate(tracerTemp)
       deallocate(tracerSalt)
-      !$omp end single nowait
+      !$omp end master
 
    !--------------------------------------------------------------------
 
