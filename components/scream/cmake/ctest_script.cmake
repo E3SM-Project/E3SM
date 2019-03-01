@@ -27,8 +27,6 @@ message("build error           = ${build_error}")
 message("build ctest error     = ${build_ctest_error}")
 
 if (NOT BUILD_ONLY)
-  execute_process(COMMAND make baseline WORKING_DIRECTORY "${CTEST_BINARY_DIRECTORY}")
-
   ctest_test(PARALLEL_LEVEL ${PARALLEL_LEVEL} CAPTURE_CMAKE_ERROR test_ctest_error RETURN_VALUE test_error)
   message("test error            = ${test_error}")
   message("test ctest error      = ${test_ctest_error}")
