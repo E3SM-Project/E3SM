@@ -6,14 +6,14 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib, time
+import glob, hashlib
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
 chksum_hash = dict()
 local_chksum_file = 'inputdata_checksum.dat'
 
-def _download_checksum_file(server, rundir, chksum_file, user):
+def _download_checksum_file(server, rundir, chksum_file):
     """
     Return True if successfully downloaded
     server is an object handle of type CIME.Servers
@@ -84,7 +84,7 @@ def _merge_chksum_files(new_file, old_file):
 
 
 
-def _download_if_in_repo(server, input_data_root, rel_path, user, isdirectory=False):
+def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     """
     Return True if successfully downloaded
     server is an object handle of type CIME.Servers
@@ -156,7 +156,7 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
 
 
                 success = _download_checksum_file(server, self.get_value("RUNDIR"),
-                                                  chksum_file, self.get_value("USER"))
+                                                  chksum_file)
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
                                         input_data_root=input_data_root, data_list_dir=data_list_dir)
@@ -275,7 +275,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
-    local_user = case.get_value('USER')
     if download:
         if protocol not in vars(CIME.Servers):
             logger.warning("Client protocol {} not enabled".format(protocol))
@@ -338,7 +337,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             if (download):
                                 no_files_missing = _download_if_in_repo(server,
                                                                         input_data_root, rel_path.strip(os.sep),
-                                                                        local_user, isdirectory=isdirectory)
+                                                                        isdirectory=isdirectory)
                                 if no_files_missing:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:
