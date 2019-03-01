@@ -301,7 +301,6 @@ contains
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: Qtens
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: dp,dp_star
   real(kind=real_kind), dimension(np,np  ,nlev,qsize,nets:nete) :: Qtens_biharmonic
-  real(kind=real_kind), dimension(np,np                       ) :: tmpsphere
   real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
   real(kind=real_kind) :: dp0(nlev)
   integer :: ie,q,i,j,k, kptr
@@ -419,16 +418,11 @@ OMP_SIMD
 #if (defined COLUMN_OPENMP_notB4B)
 !$omp parallel do private(k, q)
 #endif
-        tmpsphere(:,:) = 1.D0/elem(ie)%spheremp(:,:) !BSINGH (DM change by Milroy)
         do q = 1 , qsize
           do k = 1 , nlev    !  Loop inversion (AAM)
             ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
-            !qtens_biharmonic(:,:,k,q,ie) = &
-            !         -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
-
-            !DM mod
             qtens_biharmonic(:,:,k,q,ie) = &
-                      -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) * tmpsphere(:,:)
+                     -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
           enddo
         enddo
       enddo
