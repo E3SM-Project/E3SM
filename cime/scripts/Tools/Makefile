@@ -30,20 +30,6 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
-
-CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
-COMP_INTERFACE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_INTERFACE --value)
-EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
-SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
-SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
-LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
-SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
-COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
-PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
-COMPARE_TO_NUOPC ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPARE_TO_NUOPC --value)
-
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
@@ -83,11 +69,8 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
-
-HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
-ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
    USE_CXX = true
-   USE_KOKKOS = TRUE
 endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
@@ -306,13 +289,10 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 endif
 
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  ifdef KOKKOS_PATH
-    INC_KOKKOS:=$(KOKKOS_PATH)/include
-    LIB_KOKKOS:=$(KOKKOS_PATH)/lib
-  else
-    $(error $(HOMME_TARGET) requires env. variable KOKKOS_ROOT to be set)
-  endif
-	CPPDEFS += -DUSE_KOKKOS_KERNELS
+  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
+  SLIBS += $(KOKKOS_LIBS)
+  CFLAGS += $(KOKKOS_CXXFLAGS)
+  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
 # Set MOAB info if it is being used
@@ -463,9 +443,6 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
-ifdef INC_KOKKOS
-  INCLDIR += -I$(INC_KOKKOS)
-endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -527,7 +504,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS := $(CFLAGS)
+CXXFLAGS += $(CFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -601,10 +578,6 @@ ifdef LIB_MPI
    endif
 endif
 
-ifdef LIB_KOKKOS
-   SLIBS += -L$(LIB_KOKKOS) -lkokkos
-endif
-
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)
   SLIBS += ${PETSC_LIB}
@@ -638,6 +611,9 @@ ifeq ($(USE_CXX), true)
     LDFLAGS += $(CXX_LDFLAGS)
   endif
 endif
+
+# Remove arch flag if it exists
+F90_LDFLAGS := $(filter-out -arch%,$(LDFLAGS))
 
 # Machine stuff to appear last on the link step
 ifndef MLIBS
@@ -799,23 +775,23 @@ db_flags:
 #-------------------------------------------------------------------------------
 
 test_fc: test_fc.o
-	$(LD) -o $@ test_fc.o $(LDFLAGS)
+	$(LD) -o $@ test_fc.o $(F90_LDFLAGS)
 ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 else ifeq ($(NETCDF_SEPARATE), true)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 endif
 test_mpi: test_mpi.o
-	$(LD) -o $@ test_mpi.o $(LDFLAGS)
+	$(LD) -o $@ test_mpi.o $(F90_LDFLAGS)
 test_esmf: test_esmf.o
-	$(LD) -o $@ test_esmf.o $(LDFLAGS)
+	$(LD) -o $@ test_esmf.o $(F90_LDFLAGS)
 
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-ifeq ($(CIME_MODEL),cesm)
+ifeq ($(MODEL),cesm)
   ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
@@ -917,7 +893,7 @@ install_lib: $(COMPLIB)
 
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
-	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
+	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
 
 $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)

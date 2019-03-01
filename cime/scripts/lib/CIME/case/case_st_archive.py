@@ -52,6 +52,7 @@ def _datetime_str(_date):
     """
     Returns the standard format associated with filenames.
 
+    >>> from CIME.date import date
     >>> _datetime_str(date(5, 8, 22))
     '0005-08-22-00000'
     >>> _datetime_str(get_file_date("0011-12-09-00435"))
@@ -68,6 +69,7 @@ def _datetime_str_mpas(_date):
     """
     Returns the mpas format associated with filenames.
 
+    >>> from CIME.date import date
     >>> _datetime_str_mpas(date(5, 8, 22))
     '0005-08-22_00:00:00'
     >>> _datetime_str_mpas(get_file_date("0011-12-09-00435"))
