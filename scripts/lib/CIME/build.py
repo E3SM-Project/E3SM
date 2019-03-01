@@ -25,7 +25,7 @@ def get_standard_makefile_args(case):
     make_args += "USE_ESMF_LIB={} ".format(stringify_bool(case.get_value("USE_ESMF_LIB")))
     make_args += "CASEROOT={} ".format(case.get_value("CASEROOT"))
     make_args += "CASETOOLS={} ".format(case.get_value("CASETOOLS"))
-
+    make_args += "OS={} ".format(case.get_value("OS"))
     compare_to_nuopc = case.get_value("COMPARE_TO_NUOPC")
     homme_target = case.get_value("HOMME_TARGET")
 
