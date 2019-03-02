@@ -3,6 +3,7 @@
 # Common Makefile: a framework for building all CIME components and more
 #
 #===============================================================================
+include $(CASEROOT)/Macros.make
 
 # Set up special characters
 null  :=
@@ -127,8 +128,6 @@ ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
-
-include $(CASEROOT)/Macros.make
 
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
@@ -280,6 +279,10 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 
   # get the "ALBANY_LINK_LIBS" list as an env var
   include $(ALBANY_PATH)/export_albany.in
+endif
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
 endif
 
 ifeq ($(strip $(USE_KOKKOS)), TRUE)

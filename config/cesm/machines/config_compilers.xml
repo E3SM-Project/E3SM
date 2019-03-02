@@ -74,10 +74,6 @@ using a fortran linker.
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
     <append MODEL="fv3gfs"> -DSPMD </append>
   </CPPDEFS>
-  <SLIBS>
-    <append MODEL="mom"> -lfms </append>
-    <append MODEL="fv3gfs"> -lfms </append>
-  </SLIBS>
 
   <INCLDIR>
         <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
