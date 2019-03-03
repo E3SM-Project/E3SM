@@ -5,10 +5,12 @@ module restart_dynamics
   use pio,         only : var_desc_t
   use spmd_utils,  only : iam
   use cam_logfile, only : iulog
+  use control_mod, only : theta_hydrostatic_mode
 
   implicit none
 
-  type(var_desc_t) :: udesc, vdesc, tdesc, psdesc, phisdesc, timedesc
+  type(var_desc_t) :: udesc, vdesc, tdesc, psdesc, phisdesc, timedesc, &
+                      Wdesc, PHINHdesc
 
   type(var_desc_t) :: FQpsdesc, omegadesc
 
@@ -58,6 +60,10 @@ CONTAINS
     ierr = PIO_Def_Var(File, 'V', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Vdesc)
 #ifdef MODEL_THETA_L
     ierr = PIO_Def_Var(File, 'VTheta_dp', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Tdesc)
+    if( .not. theta_hydrostatic_mode ) then
+       ierr = PIO_Def_Var(File, 'W', pio_double, (/ncol_dimid, nlevp_dimid, timelevels_dimid/), Tdesc)
+       ierr = PIO_Def_Var(File, 'PHINH', pio_double, (/ncol_dimid, nlevp_dimid, timelevels_dimid/), Tdesc)
+    endif
 #else
     ierr = PIO_Def_Var(File, 'T', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Tdesc)
 #endif
@@ -99,11 +105,11 @@ CONTAINS
     type(file_desc_t) :: File
     type(dyn_export_t), intent(in)  :: dyn_out
 
-    type(io_desc_t) :: iodesc2d, iodesc3d
+    type(io_desc_t) :: iodesc2d, iodesc3d, iodesc3dp
     integer :: st, ie, k, en, tl, tlQdp, ierr, vsize3d, vsize2d, q
     integer(kind=pio_offset_kind), parameter :: t = 1
 
-    real(kind=r8),pointer :: vartmp(:,:,:), var3d(:,:,:,:), var2d(:,:,:)
+    real(kind=r8),pointer :: vartmp(:,:,:), var3d(:,:,:,:), var2d(:,:,:), var3dp(:,:,:)
     integer :: i, j
 
     type(element_t), pointer :: elem(:)
@@ -126,8 +132,17 @@ CONTAINS
     ldof => get_restart_decomp(elem, nlev)       
     call PIO_InitDecomp(pio_subsystem, pio_double, (/nelem*np*np,nlev/),ldof , iodesc3d)
     deallocate(ldof)
-    initialized = .true.
 
+#ifdef MODEL_THETA_L
+    if( .not. theta_hydrostatic_mode ) then
+!what does pio decomp do? do i need ifdef, if here?
+       ldof => get_restart_decomp(elem, nlevp)
+       call PIO_InitDecomp(pio_subsystem, pio_double, (/nelem*np*np,nlevp/),ldof , iodesc3dp)
+       deallocate(ldof)
+    endif
+#endif
+    initialized = .true.
+    
 
     call get_curr_time(ndcur, nscur)
 
@@ -142,6 +157,13 @@ CONTAINS
 
     allocate(var3d(np,np,nelemd,nlev))
     vsize3d=vsize2d*nlev
+
+#ifdef MODEL_THETA_L
+    if( .not. theta_hydrostatic_mode ) then
+       allocate(var3d(np,np,nelemd,nlevp))
+    endif
+    vsize3dp=vsize2d*nlevp
+#endif
 
 !$omp parallel do private(ie, j, i)
     do ie=1,nelemd
@@ -234,6 +256,38 @@ CONTAINS
     call PIO_Setframe(File,Tdesc, t)
     call PIO_Write_Darray(File,Tdesc,iodesc3d,var3d,ierr)
 
+#ifdef MODEL_THETA_L    
+    if( .not. theta_hydrostatic_mode )then
+    ! Write W
+!$omp parallel do private(ie, k, j, i)
+       do ie=1,nelemd
+          do k=1,nlevp
+             do j=1,np
+                do i=1,np
+                   var3dp(i,j,ie,k) = elem(ie)%state%w_i(i,j,k,tl)
+                end do
+             end do
+          end do
+       end do
+       call PIO_Setframe(File,Wdesc, t)
+       call PIO_Write_Darray(File,Wdesc,iodesc3dp,var3dp,ierr)
+
+    ! Write Phi
+!$omp parallel do private(ie, k, j, i)
+       do ie=1,nelemd
+          do k=1,nlevp
+             do j=1,np
+                do i=1,np
+                   var3dp(i,j,ie,k) = elem(ie)%state%phinh_i(i,j,k,tl)
+                end do
+             end do
+          end do
+       end do
+       call PIO_Setframe(File,DPHIdesc, t)
+       call PIO_Write_Darray(File,DPHIdesc,iodesc3dp,var3dp,ierr)
+    endif
+#endif
+
 
     do q=1,qsize_d
 
@@ -273,6 +327,13 @@ CONTAINS
     deallocate(qdesc, qdesc_dp)
     call pio_freedecomp(File, iodesc2d)
     call pio_freedecomp(File, iodesc3d)
+#ifdef MODEL_THETA_L
+    if( .not. theta_hydrostatic_mode ) then
+       deallocate(var3d)
+    endif
+    call pio_freedecomp(File, iodesc3dp)
+#endif
+
 
    if (par%dynproc) then
    else
@@ -339,8 +400,8 @@ CONTAINS
     type(dyn_export_t), intent(inout)  :: dyn_out
     character(len=*), intent(in) :: NLFileName
 
-    type(io_desc_t) :: iodesc2d, iodesc3d
-    real(r8), allocatable :: var3d(:), var2d(:)
+    type(io_desc_t) :: iodesc2d, iodesc3d, iodesc3dp
+    real(r8), allocatable :: var3d(:), var3dp(:), var2d(:)
     integer :: ie, ierr, fne, fnp, fnlev
     integer :: ncols
     integer, pointer :: ldof(:)
@@ -351,6 +412,10 @@ CONTAINS
     integer :: npes_se
 !    type(file_desc_t) :: ncid
 !    integer :: ncid
+
+
+!how to place a check so that someone does not restart nh from hy file?
+!is hy restart run from nh ok?
 
     call dyn_init1(file, NLFileName, dyn_in, dyn_out)
 
@@ -388,6 +453,7 @@ CONTAINS
     ldof => get_restart_decomp(elem, 1)
     s2d=size(ldof)
     allocate(var3d(s2d*nlev), var2d(s2d))
+
     var2d = 0._r8
     var3d = 0._r8
     call PIO_InitDecomp(pio_subsystem, pio_double, (/ncols/) , ldof , iodesc2d)
@@ -396,6 +462,18 @@ CONTAINS
     ldof => get_restart_decomp(elem, nlev)
     call PIO_InitDecomp(pio_subsystem, pio_double, (/ncols,nlev/),ldof , iodesc3d)
     deallocate(ldof)
+
+#ifdef MODEL_THETA_L
+    if ( .not. theta_hydrostatic_mode ) then
+       allocate(var3dp(s2d*nlevp))
+    endif
+    var3dp = 0.0
+
+    ldof => get_restart_decomp(elem, nlevp)
+    call PIO_InitDecomp(pio_subsystem, pio_double, (/ncols,nlevp/),ldof , iodesc3dp)
+    deallocate(ldof)
+#endif
+
 
     initialized = .true.
 
@@ -415,6 +493,12 @@ CONTAINS
 
     ierr = PIO_Inq_varid(File, 'PHIS', phisdesc)
 
+#ifdef MODEL_THETA_L
+    if ( .not. theta_hydrostatic_mode ) then
+       ierr = PIO_Inq_varid(File, 'W', Wdesc)
+       ierr = PIO_Inq_varid(File, 'PHINH', PHINHdesc)
+    endif
+#endif
 
     allocate(qdesc(qsize_d), qdesc_dp(qsize_d))
 
@@ -505,7 +589,6 @@ CONTAINS
        end do
     end do
 
-!with theta, assigning T should be moved after assigning Q
     call pio_setframe(File,tdesc, t)
     call pio_read_darray(File, tdesc, iodesc3d, var3d, ierr)
     cnt=0
@@ -523,6 +606,39 @@ CONTAINS
           end do
        end do
     end do
+
+#ifdef MODEL_THETA_L
+    if ( .not. theta_hydrostatis_mode )then
+       call pio_setframe(File,Wdesc, t)
+       call pio_read_darray(File, Wdesc, iodesc3dp, var3dp, ierr)
+       cnt=0
+       do k=1,nlevp
+          do ie=1,nelemd
+             do j=1,np
+                do i=1,np
+                   cnt=cnt+1
+                   elem(ie)%state%w_i(i,j,k,tl) = var3dp(cnt)
+                end do
+             end do
+          end do
+       end do
+
+       call pio_setframe(File,PHINHdesc, t)
+       call pio_read_darray(File, PHINHdesc, iodesc3dp, var3dp, ierr)
+       cnt=0
+       do k=1,nlevp
+          do ie=1,nelemd
+             do j=1,np
+                do i=1,np
+                   cnt=cnt+1
+                   elem(ie)%state%phinh_i(i,j,k,tl) = var3dp(cnt)
+                end do
+             end do
+          end do
+       end do
+
+    endif
+#endif
 
     do q=1,qsize_d
        call pio_setframe(File,qdesc(q), t)
@@ -556,6 +672,12 @@ CONTAINS
     end do
 
     deallocate(var3d,var2d)
+
+#ifdef MODEL_THETA_L
+    if ( .not. theta_hydrostatic_mode )then
+       deallocate(var3dp)
+    endif
+#endif
 
     deallocate(qdesc, qdesc_dp)
 
