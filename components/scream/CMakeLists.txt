@@ -27,16 +27,17 @@ endfunction ()
 enable_testing()
 include(CTest)
 
-# Bring in Kokkos
-set(SCREAM_KOKKOS_CONFIG --with-openmp --with-options=aggressive_vectorization CACHE STRING "How to configure kokkos (generate_makefile args)")
+# Build kokkos submodule if user did not specify Kokkos_DIR
+if (NOT DEFINED Kokkos_DIR)
+  # Bring in Kokkos
+  set(SCREAM_KOKKOS_CONFIG -D CMAKE_BUILD_TYPE=Release -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=ON -D KOKKOS_ENABLE_OPENMP=ON -D KOKKOS_ENABLE_PROFILING=OFF -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF -D KOKKOS_ENABLE_EXPLICIT_INSTANTIATION:BOOL=OFF CACHE STRING "How to configure kokkos (generate_makefile args)")
 
-set(KOKKOS_SRC    ${CMAKE_SOURCE_DIR}/../../externals/kokkos)
-set(KOKKOS_BINARY ${CMAKE_BINARY_DIR}/kokkos/install)
+  set(KOKKOS_SRC    ${CMAKE_SOURCE_DIR}/../../externals/kokkos)
+  set(KOKKOS_BINARY ${CMAKE_BINARY_DIR}/kokkos/install)
 
-if (NOT EXISTS ${KOKKOS_BINARY}/kokkos_generated_settings.cmake)
   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/kokkos)
   execute_process(
-    COMMAND ${KOKKOS_SRC}/generate_makefile.bash ${SCREAM_KOKKOS_CONFIG} --compiler=${CMAKE_CXX_COMPILER} --prefix=${KOKKOS_BINARY}
+    COMMAND cmake ${SCREAM_KOKKOS_CONFIG} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_INSTALL_PREFIX=${KOKKOS_BINARY} ${KOKKOS_SRC}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/kokkos
     ERROR_VARIABLE kokkos_config_ev
     RESULT_VARIABLE kokkos_config_res)
@@ -46,19 +47,19 @@ if (NOT EXISTS ${KOKKOS_BINARY}/kokkos_generated_settings.cmake)
 
   execute_process(COMMAND make -j8 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/kokkos ERROR_VARIABLE kokkos_build_ev RESULT_VARIABLE kokkos_build_res)
   if(NOT kokkos_build_res STREQUAL "0")
-    message(FATAL_ERROR "kokkos gen makefile failed: ${kokkos_build_ev}")
+    message(FATAL_ERROR "kokkos build failed: ${kokkos_build_ev}")
   endif()
 
   execute_process(COMMAND make install WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/kokkos ERROR_VARIABLE kokkos_install_ev RESULT_VARIABLE kokkos_install_res)
   if(NOT kokkos_install_res STREQUAL "0")
-    message(FATAL_ERROR "kokkos gen makefile failed: ${kokkos_install_ev}")
+    message(FATAL_ERROR "kokkos install failed: ${kokkos_install_ev}")
   endif()
 
+  set(Kokkos_DIR ${KOKKOS_BINARY})
 endif()
 
 # Find Kokkos, initialize some compiler/linke variable based on what we find in it,
 # then proceed with setting the rest of the compiler(s) flags
-set(Kokkos_DIR ${KOKKOS_BINARY})
 include(Kokkos)
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KOKKOS_CXXFLAGS_STR}")
