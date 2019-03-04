@@ -338,27 +338,27 @@ contains
           call addmap(fldListFr(compatm)%flds, 'Sa_v'   , compocn, mappatch, 'one', atm2ocn_vmap)
 
           call addfld(fldListFr(compatm)%flds, 'Sa_z')
-          call addmap(fldListFr(compatm)%flds, 'Sa_z'   , compocn, mapconsf, 'one', atm2ocn_smap)
+          call addmap(fldListFr(compatm)%flds, 'Sa_z'   , compocn, mapbilnr, 'one', atm2ocn_smap)
 
           call addfld(fldListFr(compatm)%flds, 'Sa_tbot')
-          call addmap(fldListFr(compatm)%flds, 'Sa_tbot', compocn, mapconsf, 'one', atm2ocn_smap)
+          call addmap(fldListFr(compatm)%flds, 'Sa_tbot', compocn, mapbilnr, 'one', atm2ocn_smap)
 
           call addfld(fldListFr(compatm)%flds, 'Sa_pbot')
-          call addmap(fldListFr(compatm)%flds, 'Sa_pbot', compocn, mapconsf, 'one', atm2ocn_smap)
+          call addmap(fldListFr(compatm)%flds, 'Sa_pbot', compocn, mapbilnr, 'one', atm2ocn_smap)
 
           do n = 1,size(iso)
              call addfld(fldListFr(compatm)%flds, 'Sa_shum'//iso(n))
-             call addmap(fldListFr(compatm)%flds, 'Sa_shum'//iso(n), compocn, mapconsf, 'one', atm2ocn_smap)
+             call addmap(fldListFr(compatm)%flds, 'Sa_shum'//iso(n), compocn, mapbilnr, 'one', atm2ocn_smap)
           end do
 
           if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Sa_ptem', rc=rc)) then
              call addfld(fldListFr(compatm)%flds, 'Sa_ptem')
-             call addmap(fldListFr(compatm)%flds, 'Sa_ptem', compocn, mapconsf, 'one', atm2ocn_smap)
+             call addmap(fldListFr(compatm)%flds, 'Sa_ptem', compocn, mapbilnr, 'one', atm2ocn_smap)
           end if
 
           if (fldchk(is_local%wrap%FBImp(compatm,compatm), 'Sa_dens', rc=rc)) then
              call addfld(fldListFr(compatm)%flds, 'Sa_dens')
-             call addmap(fldListFr(compatm)%flds, 'Sa_dens', compocn, mapconsf, 'one', atm2ocn_smap)
+             call addmap(fldListFr(compatm)%flds, 'Sa_dens', compocn, mapbilnr, 'one', atm2ocn_smap)
           end if
        end if
     end if
@@ -1500,9 +1500,9 @@ contains
           ! liquid from just rof to ocn
           else if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofl'//iso(n), rc=rc) .and. &
                     fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofl'//iso(n), rc=rc)) then
-             call addmap(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n), compocn, mapconsf, 'none', rof2ocn_liq_rmap)
+             call addmap(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n), compocn, mapfiler, 'none', rof2ocn_liq_rmap)
              call addmrg(fldListTo(compocn)%flds, 'Foxx_rofl'//iso(n), &
-                  mrg_from1=comprof, mrg_fld1='Forr_rofl:Flrr_flood', mrg_type1='sum')
+                  mrg_from1=comprof, mrg_fld1='Forr_rofl', mrg_type1='copy')
 
           ! liquid runoff from just glc to ocn
           else if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofl'//iso(n), rc=rc) .and. &
@@ -1563,7 +1563,6 @@ contains
        end if
     end do
     deallocate(flds)
-
 
     !=====================================================================
     ! FIELDS TO ICE (compice)
@@ -1693,9 +1692,9 @@ contains
           if ( fldchk(is_local%wrap%FBexp(compice)         , trim(fldname), rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm,compatm ), trim(fldname), rc=rc)) then
              if (trim(fldname) == 'Sa_u' .or. trim(fldname) == 'Sa_v') then
-                call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapconsf, 'one', atm2ice_vmap)
+                call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapbilnr, 'one', atm2ice_vmap)
              else
-                call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapconsf, 'one', atm2ice_smap)
+                call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapbilnr, 'one', atm2ice_smap)
              end if
              call addmrg(fldListTo(compice)%flds, trim(fldname), &
                   mrg_from1=compatm, mrg_fld1=trim(fldname), mrg_type1='copy')
@@ -1782,31 +1781,46 @@ contains
     ! to wav: fractional ice coverage wrt ocean from ice
     !----------------------------------------------------------
     if (phase == 'advertise') then
-       ! the following is computed in med_phases_prep_wav
        call addfld(fldListFr(compice)%flds, 'Si_ifrac')
        call addfld(fldListTo(compwav)%flds, 'Si_ifrac')
+    else
+       if ( fldchk(is_local%wrap%FBexp(compwav)         , 'Si_ifrac', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(compice,compice ), 'Si_ifrac', rc=rc)) then
+          call addmap(fldListFr(compice)%flds, 'Si_ifrac', compwav, mapfiler, 'one', ice2wav_smap)
+          call addmrg(fldListTo(compwav)%flds, 'Si_ifrac', &
+               mrg_from1=compice, mrg_fld1='Si_ifrac', mrg_type1='copy')
+       end if
     end if
 
     ! ---------------------------------------------------------------------
     ! to wav: ocean boundary layer depth from ocn
+    ! to wav: ocean currents from ocn
+    ! to wav: ocean surface temperature from ocn
     ! ---------------------------------------------------------------------
-    if (phase == 'advertise') then
-       call addfld(fldListFr(compocn)%flds, 'So_bldepth')
-       call addfld(fldListTo(compwav)%flds, 'So_bldepth')
-    else
-       if ( fldchk(is_local%wrap%FBImp(compocn, compocn), 'So_bldepth', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(compwav)         , 'So_bldepth', rc=rc)) then
-          call addmap(fldListFr(compocn)%flds, 'So_bldepth', compwav, mapbilnr, 'one', ocn2wav_smap)
-          call addmrg(fldListTo(compwav)%flds, 'So_bldepth', mrg_from1=compocn, mrg_fld1='So_bldepth', mrg_type1='copy')
+    allocate(flds(4))
+    flds = (/'So_t', 'So_u', 'So_v', 'So_bldepth'/)
+
+    do n = 1,size(flds)
+       fldname = trim(flds(n))
+       if (phase == 'advertise') then
+          call addfld(fldListFr(compocn)%flds, trim(fldname))
+          call addfld(fldListTo(compwav)%flds, trim(fldname))
+       else
+          if ( fldchk(is_local%wrap%FBImp(compocn, compocn), trim(fldname), rc=rc) .and. &
+               fldchk(is_local%wrap%FBExp(compwav)         , trim(fldname), rc=rc)) then
+             call addmap(fldListFr(compocn)%flds, trim(fldname), compwav, mapfiler, 'one', ocn2wav_smap)
+             call addmrg(fldListTo(compwav)%flds, trim(fldname), mrg_from1=compocn, mrg_fld1=trim(fldname), mrg_type1='copy')
+          end if
        end if
-    end if
+    end do
+    deallocate(flds)
 
     ! ---------------------------------------------------------------------
     ! to wav: zonal wind at the lowest model level from atm
     ! to wav: meridional wind at the lowest model level from atm
     ! ---------------------------------------------------------------------
-    allocate(flds(2))
-    flds = (/'Sa_u', 'Sa_v'/)
+    allocate(flds(3))
+    flds = (/'Sa_u', 'Sa_v', 'Sa_tbot'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))

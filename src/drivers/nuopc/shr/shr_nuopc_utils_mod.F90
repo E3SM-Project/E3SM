@@ -15,7 +15,10 @@ module shr_nuopc_utils_mod
   integer, parameter :: memdebug_level=1
   character(*),parameter :: u_FILE_u = __FILE__
 
+!===============================================================================
 contains
+!===============================================================================
+
   subroutine shr_nuopc_memcheck(string, level, mastertask)
     character(len=*), intent(in) :: string
     integer, intent(in) :: level
@@ -27,19 +30,27 @@ contains
     endif
   end subroutine shr_nuopc_memcheck
 
-  subroutine shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
-    use ESMF, only : ESMF_SUCCESS, ESMF_GridComp
-    use NUOPC, only : NUOPC_CompAttributeGet
+!===============================================================================
 
-    type(ESMF_GridComp) :: gcomp
+  subroutine shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
+
+    use ESMF  , only : ESMF_SUCCESS, ESMF_GridComp
+    use NUOPC , only : NUOPC_CompAttributeGet
+
+    ! input/output variables
+    type(ESMF_GridComp)           :: gcomp
     character(len=*), intent(out) :: inst_suffix
-    integer, intent(out) :: inst_index
-    integer :: rc
-    logical :: isPresent
-    character(len=4) :: cvalue
+    integer, intent(out)          :: inst_index
+
+    ! local variables
+    integer                       :: rc
+    logical                       :: isPresent
+    character(len=4)              :: cvalue
+    !-----------------------------------------------------------------------
 
     call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", isPresent=isPresent, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (isPresent) then
        call NUOPC_CompAttributeGet(gcomp, name="inst_suffix", value=inst_suffix, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -52,38 +63,53 @@ contains
 
   end subroutine shr_nuopc_get_component_instance
 
-  subroutine shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit, shrloglev)
-    use ESMF, only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
-    use NUOPC, only : NUOPC_CompAttributeGet
-    use med_constants_mod, only : shr_file_getunit, shr_file_getLogUnit, shr_file_getLogLevel
-    use med_constants_mod, only : shr_file_setLogLevel, CL, shr_file_setlogunit
+!===============================================================================
 
-    type(ESMF_GridComp) :: gcomp
-    logical, intent(in) :: mastertask
+  subroutine shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit, shrloglev)
+
+    use ESMF              , only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
+    use NUOPC             , only : NUOPC_CompAttributeGet
+    use med_constants_mod , only : shr_file_getunit, shr_file_getLogUnit, shr_file_getLogLevel
+    use med_constants_mod , only : shr_file_setLogLevel, CL, shr_file_setlogunit
+
+    ! input/output variables
+    type(ESMF_GridComp)  :: gcomp
+    logical, intent(in)  :: mastertask
     integer, intent(out) :: logunit
     integer, intent(out) :: shrlogunit
     integer, intent(out) :: shrloglev
 
+    ! local variables
     character(len=CL) :: diro
     character(len=CL) :: logfile
-    integer :: rc
+    integer           :: rc
+    !-----------------------------------------------------------------------
+
     shrlogunit = 6
+
     if (mastertask) then
        call NUOPC_CompAttributeGet(gcomp, name="diro", value=diro, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeGet(gcomp, name="logfile", value=logfile, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
        open(newunit=logunit,file=trim(diro)//"/"//trim(logfile))
     else
        logUnit = 6
     endif
+
     call shr_file_setLogUnit (logunit)
+
   end subroutine shr_nuopc_set_component_logging
 
+!===============================================================================
+
   logical function shr_nuopc_utils_ChkErr(rc, line, file, mpierr)
+
     use mpi , only : MPI_ERROR_STRING, MPI_MAX_ERROR_STRING, MPI_SUCCESS
     use ESMF, only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LOGMSG_INFO
     use ESMF, only : ESMF_FAILURE, ESMF_LogWrite
+
     integer, intent(in) :: rc
     integer, intent(in) :: line
 
@@ -108,7 +134,8 @@ contains
 
   end function shr_nuopc_utils_ChkErr
 
-  !-----------------------------------------------------------------------------
+!===============================================================================
+
   subroutine shr_nuopc_log_clock_advance(clock, component, logunit)
     use ESMF, only : ESMF_Clock, ESMF_ClockPrint
     use med_constants_mod, only : CL
@@ -132,6 +159,5 @@ contains
     write(logunit, *) trim(cvalue)
 
   end subroutine shr_nuopc_log_clock_advance
-
 
 end module shr_nuopc_utils_mod

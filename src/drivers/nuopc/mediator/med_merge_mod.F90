@@ -31,8 +31,7 @@ module med_merge_mod
 contains
 !-----------------------------------------------------------------------------
 
-  subroutine med_merge_auto(compout_name, FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, &
-       document, string, mastertask, rc)
+  subroutine med_merge_auto(compout_name, FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, rc)
 
     use ESMF                  , only : ESMF_FieldBundle
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
@@ -63,9 +62,6 @@ contains
     type(shr_nuopc_fldList_type) , intent(in)            :: fldListTo    ! Information for merging
     type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed1       ! mediator field bundle
     type(ESMF_FieldBundle)       , intent(in) , optional :: FBMed2       ! mediator field bundle
-    logical                      , intent(in)            :: document
-    character(len=*)             , intent(in)            :: string
-    logical                      , intent(in)            :: mastertask
     integer                      , intent(out)           :: rc
 
     ! local variables

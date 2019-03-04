@@ -1,7 +1,7 @@
 module med_phases_prep_atm_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Phase
+  ! Mediator phases for preparing atm export from mediator
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -9,7 +9,7 @@ module med_phases_prep_atm_mod
 
   public  :: med_phases_prep_atm
 
-  character(*)      , parameter :: u_FILE_u  = &
+  character(*), parameter :: u_FILE_u  = &
        __FILE__
 
 !-----------------------------------------------------------------------------
@@ -17,8 +17,6 @@ contains
 !-----------------------------------------------------------------------------
 
     subroutine med_phases_prep_atm(gcomp, rc)
-
-      ! Prepares the ATM import Fields.
 
       use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
       use ESMF                  , only : ESMF_FieldBundleGet, ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
@@ -53,15 +51,17 @@ contains
       type(InternalState)        :: is_local
       real(R8), pointer          :: dataPtr1(:),dataPtr2(:)
       integer                    :: i, j, n, n1, ncnt
-      logical,save               :: first_call = .true.
       integer                    :: dbrc
       character(len=*),parameter :: subname='(med_phases_prep_atm)'
       !-------------------------------------------------------------------------------
 
       call t_startf('MED:'//subname)
-      call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-      call shr_nuopc_memcheck(subname, 3, mastertask)
       rc = ESMF_SUCCESS
+
+      if (dbug_flag > 5) then
+         call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+      end if
+      call shr_nuopc_memcheck(subname, 3, mastertask)
 
       !---------------------------------------
       ! --- Get the internal state
@@ -153,21 +153,18 @@ contains
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
                  FBMed1=is_local%wrap%FBMed_ocnalb_a, &
-                 FBMed2=is_local%wrap%FBMed_aoflux_a, &
-                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
+                 FBMed2=is_local%wrap%FBMed_aoflux_a, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          else if (trim(coupling_mode) == 'nems_orig') then
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 FBMed1=is_local%wrap%FBMed_aoflux_a, &
-                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
+                 FBMed1=is_local%wrap%FBMed_aoflux_a, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          else if (trim(coupling_mode) == 'nems_frac') then
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
-                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
+                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          end if
 
@@ -217,10 +214,11 @@ contains
          !--- clean up
          !---------------------------------------
 
-         first_call = .false.
       endif
 
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      if (dbug_flag > 5) then
+         call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      end if
       call t_stopf('MED:'//subname)
 
     end subroutine med_phases_prep_atm

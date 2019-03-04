@@ -10,10 +10,9 @@ module med_phases_prep_rof_mod
   !   this will be done in med_phases_prep_rof_avg
   !-----------------------------------------------------------------------------
 
-  use ESMF                  , only : ESMF_FieldBundle, ESMF_MAXSTR
+  use ESMF                  , only : ESMF_FieldBundle
   use esmFlds               , only : ncomps, complnd, comprof, compname, mapconsf
   use med_constants_mod     , only : R8, CS
-  use med_constants_mod     , only : czero => med_constants_czero
   use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
   use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
   use perf_mod              , only : t_startf, t_stopf
@@ -141,6 +140,7 @@ contains
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
+    use med_constants_mod     , only : czero => med_constants_czero
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -152,7 +152,6 @@ contains
     integer                     :: dbrc
     logical                     :: connected
     real(r8), pointer           :: dataptr(:)
-    logical , save              :: first_call = .true.
     character(len=*),parameter  :: subname='(med_phases_prep_rof_mod: med_phases_prep_rof_avg)'
     !---------------------------------------
 
@@ -246,8 +245,7 @@ contains
             is_local%wrap%FBExp(comprof), &
             is_local%wrap%FBFrac(comprof), &
             is_local%wrap%FBImpAccum(:,comprof), &
-            fldListTo(comprof), &
-            document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
+            fldListTo(comprof), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
@@ -271,7 +269,6 @@ contains
        !--- clean up
        !---------------------------------------
 
-       first_call = .false.
     endif
 
     if (dbug_flag > 20) then

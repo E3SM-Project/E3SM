@@ -342,7 +342,10 @@ def _create_runseq(case, coupling_times):
                (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "cice") or
                (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == "cice")):
             # for C, G and D compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D')
+            if comp_wav == 'ww':
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_ww3')
+            else:
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_swav')
 
         elif (comp_atm == 'datm' and comp_lnd == "clm"):
             # for I compsets

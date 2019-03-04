@@ -42,7 +42,8 @@ module med_infodata_mod
 
      ! Set via components and may be time varying
      real(R8) :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
-     real(R8) :: precip_fact =  1.0_R8 ! precip factor
+     real(R8) :: precip_fact =  1.0_R8 ! precip factor (sent by ocean) and 
+                                       ! applied to med->ice and med->ocn fluxes
 
      ! Set by mediator and may be time varying
      logical  :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
@@ -178,7 +179,6 @@ CONTAINS
     type(ESMF_Field)          :: field
     type(ESMF_StateItem_Flag) :: ItemType
     real(R8), pointer         :: farrayptr(:,:)
-    real(R8)                  :: nextsw_cday, precip_fact
     integer                   :: dbrc
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
@@ -218,54 +218,49 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
+  subroutine med_infodata_GetData( infodata, ncomp, precip_fact, nx, ny, rc)
 
     ! Get values out of the infodata object.
 
-    use med_constants_mod     , only : CL, IN
     use med_internalstate_mod , only : logunit, loglevel
-    use shr_sys_mod           , only : shr_sys_abort
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LOGMSG_INFO
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(med_infodata_type) , intent(IN)  :: infodata       ! Input CCSM structure
-    integer(IN),   optional , intent(IN)  :: ncomp          ! Component ID
-    character(CL), optional , intent(IN)  :: flux_epbal     ! selects E,P,R adjustment technique
-    real(R8),      optional , intent(OUT) :: flux_epbalfact ! adjusted precip factor
-    integer(IN),   optional , intent(OUT) :: nx             ! nx
-    integer(IN),   optional , intent(OUT) :: ny             ! ny
+    type(med_infodata_type)    , intent(in)  :: infodata       ! Input scalar data structure
+    integer,          optional , intent(in)  :: ncomp          ! Component ID
+    real(R8),         optional , intent(out) :: precip_fact    ! adjusted precip factor
+    integer,          optional , intent(out) :: nx             ! nx
+    integer,          optional , intent(out) :: ny             ! ny
+    integer                    , intent(out) :: rc
 
     !----- local -----
     character(len=*), parameter :: subname = '(med_infodata_GetData) '
     !-------------------------------------------------------------------------------
 
-    if ( present(flux_epbalfact)) then
-       if (.not. present(flux_epbal)) then
-          call shr_sys_abort(subname // "Must provide flux_epbal as an input argument to determine infodata%precip_fact")
-       end if
+    rc = ESMF_Success
 
-       flux_epbalfact = 1.0_R8
-       if (trim(flux_epbal) == 'ocn') then
-          flux_epbalfact = infodata%precip_fact
-          if (flux_epbalfact <= 0.0_R8) then
-             if (loglevel > 0) then
-                write(logunit,'(2a,e16.6)') trim(subname),' WARNING: factor from ocn = ',flux_epbalfact
-                write(logunit,'(2a)') trim(subname),' WARNING: resetting flux_epbalfact to 1.0'
-             end if
-             flux_epbalfact = 1.0_R8
-          end if
+    if ( present(precip_fact)) then
+       precip_fact = infodata%precip_fact
+       if (precip_fact <= 0.0_R8) then
+          !write(logunit,'(2a,e16.6)') trim(subname),' WARNING: negative precip factor from ocn = ',precip_fact
+          write(logunit,'(2a)') trim(subname),' WARNING: resetting precip_fact to 1.0'
+          precip_fact = 1.0_R8
        end if
     endif
 
     if (present(nx)) then
        if (.not.present(ncomp)) then
-          call shr_sys_abort(subname // " Must provide nx")
+          call ESMF_LogWrite(trim(subname)//" Must provide nx", ESMF_LOGMSG_INFO, rc=rc)
+          rc = ESMF_FAILURE
+          return
        endif
        nx = infodata%nx(ncomp)
     endif
 
     if (present(ny)) then
        if (.not.present(ncomp)) then
-          call shr_sys_abort(subname // "Must provide ny")
+          call ESMF_LogWrite(trim(subname)//" Must provide ny", ESMF_LOGMSG_INFO, rc=rc)
+          rc = ESMF_FAILURE
        endif
        ny = infodata%ny(ncomp)
     endif

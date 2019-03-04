@@ -453,6 +453,7 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
+
     use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
@@ -467,11 +468,11 @@ contains
 
     ! local variables
     type(ESMF_VM)      :: vm
-    character(len=*),parameter :: subname='(module_MED:InitializeP0)'
-    character(len=128)         :: value
+    character(len=128) :: value
     integer            :: dbrc
     integer            :: localPet
-    character(len=CX):: msgString
+    character(len=CX)  :: msgString
+    character(len=*),parameter :: subname='(module_MED:InitializeP0)'
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -488,9 +489,9 @@ contains
 
     call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)
 
-!    dbug_flag = ESMF_UtilString2Int(value, &
-!         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
-!    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! dbug_flag = ESMF_UtilString2Int(value, &
+    !      specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
+    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -632,6 +633,7 @@ contains
              call NUOPC_Advertise(is_local%wrap%NStateExp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
                   TransferOfferGeomObject=transferOffer)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
@@ -670,9 +672,6 @@ contains
     type(InternalState)        :: is_local
     real(R8)                   :: intervalSec
     type(ESMF_TimeInterval)    :: timeStep
-    ! tcx XGrid
-    ! type(ESMF_Field)         :: fieldX, fieldA, fieldO
-    ! type(ESMF_XGrid)         :: xgrid
     type(ESMF_VM)              :: vm
     integer                    :: n, n1, n2
     character(CL)              :: cvalue

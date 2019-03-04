@@ -1,12 +1,12 @@
 module med_phases_prep_ocn_mod
 
+  !-----------------------------------------------------------------------------
+  ! Mediator phases for preparing ocn export from mediator
+  !-----------------------------------------------------------------------------
+
   use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
   use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
   use med_internalstate_mod , only : mastertask
-
-  !-----------------------------------------------------------------------------
-  ! Carry out fast accumulation for the ocean
-  !-----------------------------------------------------------------------------
 
   implicit none
   private
@@ -113,9 +113,10 @@ contains
     use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
-    use med_constants_mod     , only : R8
+    use med_constants_mod     , only : R8, CS
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto, med_merge_field
+    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
     use esmFlds               , only : fldListTo
     use esmFlds               , only : compocn, compname, compatm, compice
     use esmFlds               , only : coupling_mode
@@ -154,12 +155,14 @@ contains
     real(R8)            :: albvis_dir, albvis_dif
     real(R8)            :: albnir_dir, albnir_dif
     real(R8)            :: fswabsv, fswabsi
-    real(R8)            :: flux_epbalfact
     logical             :: export_swnet_by_bands
     logical             :: import_swpen_by_bands
-    logical             :: first_call = .true.
+    logical             :: export_swnet_afracr
+    logical             :: first_precip_fact_call = .true.
+    real(R8)            :: precip_fact
     integer             :: lsize
     integer             :: dbrc
+    character(CS)       :: cvalue
     ! NEMS-orig
     real(R8), pointer   :: ocnwgt1(:)
     real(R8), pointer   :: icewgt1(:)
@@ -205,14 +208,12 @@ contains
           call med_merge_auto(trim(compname(compocn)), &
                is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
                is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
-               FBMed1=is_local%wrap%FBMed_aoflux_o, &
-               document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+               FBMed1=is_local%wrap%FBMed_aoflux_o, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else if (trim(coupling_mode) == 'nems_frac') then
           call med_merge_auto(trim(compname(compocn)), &
                is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
-               is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
-               document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+               is_local%wrap%FBImp(:,compocn), fldListTo(compocn), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
@@ -306,6 +307,9 @@ contains
        if ( fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr',rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr', Foxx_swnet_afracr, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          export_swnet_afracr = .true.
+       else
+          export_swnet_afracr = .false.
        end if
 
        do n = 1,lsize
@@ -327,7 +331,10 @@ contains
           fswabsv  = Faxa_swvdr(n) * (1.0_R8 - albvis_dir) + Faxa_swvdf(n) * (1.0_R8 - albvis_dif)
           fswabsi  = Faxa_swndr(n) * (1.0_R8 - albnir_dir) + Faxa_swndf(n) * (1.0_R8 - albnir_dif)
           Foxx_swnet(n) = fswabsv + fswabsi
-          Foxx_swnet_afracr(n) = fswabsv + fswabsi
+
+          if (export_swnet_afracr) then
+             Foxx_swnet_afracr(n) = fswabsv + fswabsi
+          end if
 
           ! Add swpen from sea ice if sea ice is present
           if (is_local%wrap%comp_present(compice)) then
@@ -408,25 +415,25 @@ contains
        end if
 
        !-------------
-       ! custom calculation for cesm coupling
+       ! application of precipitation factor from ocean
        !-------------
-       if (trim(coupling_mode) == 'cesm') then
+       call med_infodata_GetData(med_infodata, precip_fact=precip_fact, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (precip_fact /= 1.0_R8) then
+          if (first_precip_fact_call .and. mastertask) then
+             write(logunit,'(a)')'(merge_to_ocn): Scaling rain, snow, liquid and ice runoff by precip_fact '
+             first_precip_fact_call = .false.
+          end if
+          write(cvalue,*) precip_fact
+          call ESMF_LogWrite(trim(subname)//" precip_fact is "//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
-          ! scale precipitation and runoff by epbalfact
-          ! TODO (mvertens, 2018-12-16): the calculation needs to be set
-          ! at run time based on receiving it from the ocean
-          flux_epbalfact = 1.0_r8
-
-          allocate(fldnames(5))
-          fldnames = (/'Foxx_rain',' Foxx_snow', 'Foxx_prec', 'Foxx_rofl', 'Foxx_rofi'/)
+          allocate(fldnames(4))
+          fldnames = (/'Faxa_rain',' Faxa_snow', 'Foxx_rofl', 'Foxx_rofi'/)
           do n = 1,size(fldnames)
              if (fldchk(is_local%wrap%FBExp(compocn), trim(fldnames(n)), rc=rc)) then
                 call FB_GetFldPtr(is_local%wrap%FBExp(compocn), trim(fldnames(n)) , dataptr, rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                dataptr(:) = dataptr(:) * flux_epbalfact
-                if (first_call .and. mastertask) then
-                   write(logunit,'(a)')'(merge_to_ocn): Scaling '//trim(fldnames(n))//' by flux_epbalfact '
-                end if
+                dataptr(:) = dataptr(:) * precip_fact
              end if
           end do
           deallocate(fldnames)
@@ -554,7 +561,6 @@ contains
        !--- clean up
        !---------------------------------------
 
-       first_call = .false.
     endif
 
     if (dbug_flag > 20) then

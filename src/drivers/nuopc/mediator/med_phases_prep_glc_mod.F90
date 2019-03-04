@@ -1,34 +1,38 @@
 module med_phases_prep_glc_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Phases
+  ! Mediator phases for preparing glc export from mediator
   !-----------------------------------------------------------------------------
 
   implicit none
   private
 
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-
   public  :: med_phases_prep_glc
+
+  character(*), parameter :: u_FILE_u  = &
+       __FILE__
 
 !-----------------------------------------------------------------------------
 contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_glc(gcomp, rc)
-    use ESMF, only : ESMF_GridComp, ESMF_Clock, ESMF_Time
-    use ESMF, only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF, only: ESMF_FieldBundleGet
-    use esmFlds                 , only : compglc, ncomps, compname
-    use esmFlds                 , only : fldListFr, fldListTo
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_diagnose
-    use med_constants_mod       , only : dbug_flag=>med_constants_dbug_flag
-    use med_merge_mod           , only : med_merge_auto
-    use med_map_mod             , only : med_map_FB_Regrid_Norm
-    use med_internalstate_mod   , only : InternalState, mastertask
-    use perf_mod                , only : t_startf, t_stopf
+
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
+    use ESMF                  , only: ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only: ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
+    use ESMF                  , only: ESMF_FieldBundleGet
+    use esmFlds               , only : compglc, ncomps, compname
+    use esmFlds               , only : fldListFr, fldListTo
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
+    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use med_merge_mod         , only : med_merge_auto
+    use med_map_mod           , only : med_map_FB_Regrid_Norm
+    use med_internalstate_mod , only : InternalState, mastertask
+    use perf_mod              , only : t_startf, t_stopf
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -40,12 +44,14 @@ contains
     character(len=64)           :: timestr
     type(InternalState)         :: is_local
     integer                     :: i,j,n,n1,ncnt
-    logical,save                :: first_call = .true.
+    integer                     :: dbrc
     character(len=*),parameter  :: subname='(med_phases_prep_glc)'
-    integer                       :: dbrc
     !---------------------------------------
+
     call t_startf('MED:'//subname)
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     rc = ESMF_SUCCESS
 
     !---------------------------------------
@@ -57,21 +63,16 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
-    !--- Count the number of fields outside of scalar data, if zero, then return
+    ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
 
     ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
     ! fieldCount is 0 and not 1 here
 
-    call ESMF_FieldBundleGet(is_local%wrap%FBExp(compglc), fieldCount=ncnt, rc=rc)
+    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compglc), trim(subname)//"FBexp(compglc)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt == 0) then
-       if (dbug_flag > 5) then
-          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compglc), returning", &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
-    else
+    if (ncnt > 0) then
 
        !---------------------------------------
        !--- Get the current time from the clock
@@ -95,7 +96,7 @@ contains
        end if
 
        !---------------------------------------
-       !--- mapping
+       !--- map to create FBimp(:,compglc)
        !---------------------------------------
 
        do n1 = 1,ncomps
@@ -113,19 +114,18 @@ contains
        enddo
 
        !---------------------------------------
-       !--- auto merges
+       !--- auto merges to create FBExp(compglc)
        !---------------------------------------
 
        call med_merge_auto(trim(compname(compglc)), &
-            is_local%wrap%FBExp(compglc), is_local%wrap%FBFrac(compglc), &
-            is_local%wrap%FBImp(:,compglc), fldListTo(compglc), &
-            document=first_call, string='(merge_to_lnd)', mastertask=mastertask, rc=rc)
+            is_local%wrap%FBExp(compglc), &
+            is_local%wrap%FBFrac(compglc), &
+            is_local%wrap%FBImp(:,compglc), &
+            fldListTo(compglc), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compglc), string=trim(subname)//' FBexp(compglc) ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compglc), string=trim(subname)//' FBexp(compglc) ', rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
        !--- custom calculations
@@ -141,9 +141,11 @@ contains
        !--- clean up
        !---------------------------------------
 
-       first_call = .false.
     endif
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    end if
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_prep_glc

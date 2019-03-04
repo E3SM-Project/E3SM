@@ -1,7 +1,7 @@
 module med_phases_prep_lnd_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Phases
+  ! Mediator phases for preparing wav export from mediator
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -17,8 +17,6 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine med_phases_prep_lnd(gcomp, rc)
-
-    ! Prepares the LND import Fields.
 
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
@@ -41,14 +39,10 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)    :: clock
-    type(ESMF_Time)     :: time
-    character(len=64)   :: timestr
     type(InternalState) :: is_local
     integer             :: i,j,n,n1,nf,compsrc
     integer             :: ncnt
     integer             :: dbrc
-    logical,save        :: first_call = .true.
     character(len=*),parameter :: subname='(med_phases_prep_lnd)'
     !---------------------------------------
     call t_startf('MED:'//subname)
@@ -74,29 +68,10 @@ contains
     call ESMF_FieldBundleGet(is_local%wrap%FBExp(complnd), fieldCount=ncnt, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt == 0) then
-       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(complnd), returning", &
-            ESMF_LOGMSG_INFO, rc=dbrc)
-    else
+    if (ncnt > 0) then
 
        !---------------------------------------
-       !--- Get the current time from the clock
-       !---------------------------------------
-       
-       if (mastertask) then
-          call ESMF_GridCompGet(gcomp, clock=clock)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_ClockGet(clock,currtime=time,rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_TimeGet(time,timestring=timestr)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
-          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-
-       !---------------------------------------
-       !--- Map import fields to the complnd grid
+       !--- map to create FBimp(:,complnd)
        !---------------------------------------
 
        do n1 = 1,ncomps
@@ -114,13 +89,14 @@ contains
        enddo
 
        !---------------------------------------
-       !--- Merge all required import fields on the complnd grid to create FBExp
+       !--- auto merges to create FBExp(complnd)
        !---------------------------------------
 
        call med_merge_auto(trim(compname(complnd)), &
-            is_local%wrap%FBExp(complnd), is_local%wrap%FBFrac(complnd), &
-            is_local%wrap%FBImp(:,complnd), fldListTo(complnd), &
-            document=first_call, string='(merge_to_lnd)', mastertask=mastertask, rc=rc)
+            is_local%wrap%FBExp(complnd), &
+            is_local%wrap%FBFrac(complnd), &
+            is_local%wrap%FBImp(:,complnd), &
+            fldListTo(complnd), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(complnd), string=trim(subname)//' FBexp(complnd) ', rc=rc)
@@ -140,7 +116,6 @@ contains
        !--- clean up
        !---------------------------------------
 
-       first_call = .false.
     end if
 
     call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)

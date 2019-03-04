@@ -3469,7 +3469,6 @@ module shr_nuopc_methods_mod
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_FieldGet(lfields(nfld), dimCount=dimCounts(nfld), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       write(6,*)'DEBUG: fieldname,dimcount = ',trim(fieldNameList(nfld)),dimCounts(nfld)
     end do
 
     ! Determine local size of field
@@ -3478,7 +3477,6 @@ module shr_nuopc_methods_mod
           call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr1d, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           lsize = size(dataPtr1d)
-          write(6,*)'DEBUG: lsize = ',lsize
           exit
        end if
     end do
