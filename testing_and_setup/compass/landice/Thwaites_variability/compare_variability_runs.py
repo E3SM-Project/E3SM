@@ -641,6 +641,7 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
           steadyIndForThisVAF = np.nonzero(runData['steady'].VAFsmooth <= thisRun.VAFsmooth[t])[0][0]
           #steadyIndForThisVAF = np.nonzero(runData['steady'].GAsmooth <= thisRun.GAsmooth[t])[0][0]
           delayGroup[runNumber, t] = runData['steady'].resampYrs[steadyIndForThisVAF] - thisRun.resampYrs[t]
+
       #ax3delay.plot(thisRun.resampYrs, delayGroup[runNumber, :], color=colors[groupNumber])
       # Calculate delay-adjusted melt
       effectiveTimeGroup[runNumber,:] = thisRun.resampYrs[:] - delayGroup[runNumber, :]
@@ -665,6 +666,9 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
 
       runNumber += 1
    
+   # get index to final time that is meaningful after adjusting for delay
+   finalIndex = np.nonzero(yrsGroup < (yrsGroup[-1] + delayGroup.mean(0)[-1]))[0][-1]
+
    # melt plot
    ax3MeanMelt.plot(yrsGroup[windowLength:], meltGroup.mean(0)[windowLength:], '-', color = colors[groupNumber], label=groupName)
    ax3MeanMelt.plot(yrsGroup[windowLength:], meltGroup.max(0)[windowLength:], '--', color = colors[groupNumber], linewidth=0.5)
@@ -686,9 +690,9 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.min(0)[windowLength-1:], '--', color = colors[groupNumber], linewidth=0.5)
    # delay adj VAF rate difference
    delayAdjVAFrate = np.interp(effectiveTimeGroup.mean(0)[1:], yrsGroup[1:], VAFrateGroup.mean(0))
-   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
+   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:finalIndex], delayAdjVAFrate[windowLength-1:finalIndex-1] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
 #   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:], '-', color=colors[groupNumber], linewidth=0.5) # absolute diff
-   ax9delayAdjVAFrateDiff.plot(yrsGroup[windowLength:], (delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:]) / runData['steady'].VAFsmoothrate[windowLength-1:] * 100.0, '-', color=colors[groupNumber], linewidth=0.5)  # as pct
+   ax9delayAdjVAFrateDiff.plot(yrsGroup[windowLength:finalIndex], (delayAdjVAFrate[windowLength-1:finalIndex-1] - runData['steady'].VAFsmoothrate[windowLength-1:finalIndex-1]) / runData['steady'].VAFsmoothrate[windowLength-1:finalIndex-1] * 100.0, '-', color=colors[groupNumber], linewidth=0.5)  # as pct
    # delay as fn of time
    ax3delay.plot(yrsGroup, delayGroup.mean(0), color=colors[groupNumber])
    ax3delay.plot(yrsGroup, delayGroup.max(0), '--', color=colors[groupNumber], linewidth=0.5)
@@ -700,13 +704,13 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    # delay adj melt
    #ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltGroup.mean(0), '-', color=colors[groupNumber], linewidth=0.5)
    delayAdjMelt = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.mean(0)) # generate y values for each x
-   ax9delayAdjMelt.plot(yrsGroup, delayAdjMelt, '-', color=colors[groupNumber], linewidth=0.5)
-   ax9delayAdjMeltDiff.plot(yrsGroup,1* (delayAdjMelt - runData['steady'].resampMelt), '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady
+   ax9delayAdjMelt.plot(yrsGroup[:finalIndex], delayAdjMelt[:finalIndex], '-', color=colors[groupNumber], linewidth=0.5)
+   ax9delayAdjMeltDiff.plot(yrsGroup[:finalIndex], 1* (delayAdjMelt - runData['steady'].resampMelt)[:finalIndex], '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady
    # optionally plot min/max adjusted
    delayAdjMeltMin = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.min(0)) # generate y values for each x
-   ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltMin, '--', color=colors[groupNumber], linewidth=0.5)
+   ax9delayAdjMelt.plot(yrsGroup[:finalIndex], delayAdjMeltMin[:finalIndex], '--', color=colors[groupNumber], linewidth=0.5)
    delayAdjMeltMax = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.max(0)) # generate y values for each x
-   ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltMax, '--', color=colors[groupNumber], linewidth=0.5)
+   ax9delayAdjMelt.plot(yrsGroup[:finalIndex], delayAdjMeltMax[:finalIndex], '--', color=colors[groupNumber], linewidth=0.5)
    # plot diff in half range
 #   ax9delayAdjMelt.plot(yrsGroup, 10*((delayAdjMeltMax-delayAdjMelt) - (delayAdjMelt-delayAdjMeltMin)), '--', color=colors[groupNumber], linewidth=0.5)  # asymmetry of min and max from the mean
 
