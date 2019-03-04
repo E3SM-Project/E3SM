@@ -13,7 +13,7 @@ import scipy.signal
 from matplotlib import cm
 
 outfname = 'globalStats.nc'
-runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and os.path.isfile(os.path.join(adir, outfname)))]
+runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and 'amp'in adir and os.path.isfile(os.path.join(adir, outfname)))]
 print "Original run list:", runs
 
 
@@ -21,7 +21,7 @@ print "Original run list:", runs
 #runs[:] = [r for r in runs if 'pha0.00' in r]
 # get all the phase for one amp/per
 #runs[:] = [r for r in runs if 'amp300_per70' in r]
-#runs.append('steady')
+runs.append('steady')
 
 # reorder to put the 'control' runs at the beginning
 special_runs = ('steady', 'no-melt')
@@ -31,9 +31,10 @@ for r in special_runs:
       runs.insert(0, r)
 
 # optionally exclude some subset
-#runs[:] = [r for r in runs if not 'amp300_per02' in r]
+#runs[:] = [r for r in runs if not 'amp0.6_per20_pha0.17' in r]
 
 print "Will process the following directories: ", runs
+print "  total of {} runs".format(len(runs))
 
 # --- Define some needed parameters
 rhoi = 910.0  # ice density
@@ -332,6 +333,8 @@ n150 = sum("amp150" in r for r in runs)
 colors.extend( [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n150) ])
 n300 = sum("amp300" in r for r in runs)
 colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n300) ] )
+n05 = sum("amp0." in r for r in runs)
+colors.extend( [ cm.spring(x) for x in np.linspace(0.0, 1.0, n05) ])
 color_index = 0
 
 
@@ -518,35 +521,35 @@ nrow=5
 ncol=1
 
 # delay rate
-ax3delayrate = fig9.add_subplot(nrow, ncol, 1)
+ax9delayrate = fig9.add_subplot(nrow, ncol, 1)
 #plt.xlabel('Year')
-plt.ylabel('delay rate\n(yr century$^{-1}$)')
+plt.ylabel('delay adjusted\ndelay rate\n(yr century$^{-1}$)')
 plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # delay-adjusted VAF rate
-ax30delayAdjVAFrate = fig9.add_subplot(nrow, ncol, 2, sharex=ax3delayrate)
+ax9delayAdjVAFrate = fig9.add_subplot(nrow, ncol, 2, sharex=ax9delayrate)
 #plt.xlabel('Year')
 plt.ylabel('delay adjusted\nVAF rate\n(Gt yr$^{-1}$)')
 plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # delay-adjusted VAF rate diff
-ax30delayAdjVAFrateDiff = fig9.add_subplot(nrow, ncol, 3, sharex=ax3delayrate)
+ax9delayAdjVAFrateDiff = fig9.add_subplot(nrow, ncol, 3, sharex=ax9delayrate)
 #plt.xlabel('Year')
 plt.ylabel('delay adjusted\nVAF rate\ndifference (%)')
 plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # delay-adjusted melt rate
-ax3delayAdjMelt = fig9.add_subplot(nrow, ncol, 4, sharex=ax3delayrate)
+ax9delayAdjMelt = fig9.add_subplot(nrow, ncol, 4, sharex=ax9delayrate)
 #plt.xlabel('Year')
 plt.ylabel('delay adjusted\nmelt rate\n(m yr$^{-1}$)')
 plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
 
 # delay-adjusted melt rate diff
-ax30delayAdjMeltDiff = fig9.add_subplot(nrow, ncol, 5, sharex=ax3delayrate)
+ax9delayAdjMeltDiff = fig9.add_subplot(nrow, ncol, 5, sharex=ax9delayrate)
 plt.xlabel('Year')
 plt.ylabel('delay adjusted\nmelt rate difference\n(m yr$^{-1}$)')
 plt.xticks(np.arange(30)*xtickSpacing)
@@ -564,6 +567,8 @@ n150 = sum(1 for g in groups if 'amp150' in g)
 colors = [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n150) ]
 n300 = sum(1 for g in groups if 'amp300' in g)
 colors.extend( [ cm.winter(x) for x in np.linspace(0.0, 1.0, n300) ] )
+n05 = sum(1 for g in groups if 'amp0.' in g)
+colors.extend( [ cm.spring(x) for x in np.linspace(0.0, 1.0, n05) ] )
 
 
 # ref value
@@ -582,9 +587,9 @@ if 'steady' in runData:
 
    ax4VAFrate.plot(GTtoSL(runData['steady'].VAFeven) - GTtoSL(runData['steady'].VAF[0]), runData['steady'].VAFrateOnVAFeven, 'k')
 
-   ax3delayAdjMelt.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].resampMelt[windowLength:], 'k', linewidth=0.5)
+   ax9delayAdjMelt.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].resampMelt[windowLength:], 'k', linewidth=0.5)
 
-   ax30delayAdjVAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:] , '-', color='k', linewidth=0.5)  # delay adj vaf rate
+   ax9delayAdjVAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:] , '-', color='k', linewidth=0.5)  # delay adj vaf rate
 groupNumber = 0
 for groupName in sorted(groups):  # sorted puts them in alpha order
    print "Plotting group: " + groupName
@@ -634,13 +639,14 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
       # calculate delay in time-space
       for t in range(len(thisRun.resampYrs)):
           steadyIndForThisVAF = np.nonzero(runData['steady'].VAFsmooth <= thisRun.VAFsmooth[t])[0][0]
+          #steadyIndForThisVAF = np.nonzero(runData['steady'].GAsmooth <= thisRun.GAsmooth[t])[0][0]
           delayGroup[runNumber, t] = runData['steady'].resampYrs[steadyIndForThisVAF] - thisRun.resampYrs[t]
       #ax3delay.plot(thisRun.resampYrs, delayGroup[runNumber, :], color=colors[groupNumber])
       # Calculate delay-adjusted melt
       effectiveTimeGroup[runNumber,:] = thisRun.resampYrs[:] - delayGroup[runNumber, :]
       delayAdjMeltGroup[runNumber, :] = np.interp(effectiveTimeGroup[runNumber,:], thisRun.resampYrs, thisRun.resampMelt) # generate y values for each x
       #if runNumber % 3 == 0:
-         #ax3delayAdjMelt.plot(thisRun.resampYrs, delayAdjMeltGroup[runNumber, :], color=colors[groupNumber], lineWidth=0.2)
+         #ax9delayAdjMelt.plot(thisRun.resampYrs, delayAdjMeltGroup[runNumber, :], color=colors[groupNumber], lineWidth=0.2)
 
 
       #VAFevenGroup = thisRun.VAFeven # only need this once)
@@ -680,28 +686,29 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.min(0)[windowLength-1:], '--', color = colors[groupNumber], linewidth=0.5)
    # delay adj VAF rate difference
    delayAdjVAFrate = np.interp(effectiveTimeGroup.mean(0)[1:], yrsGroup[1:], VAFrateGroup.mean(0))
-   ax30delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
-#   ax30delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:], '-', color=colors[groupNumber], linewidth=0.5) # absolute diff
-   ax30delayAdjVAFrateDiff.plot(yrsGroup[windowLength:], (delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:]) / runData['steady'].VAFsmoothrate[windowLength-1:] * 100.0, '-', color=colors[groupNumber], linewidth=0.5)  # as pct
+   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
+#   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:], '-', color=colors[groupNumber], linewidth=0.5) # absolute diff
+   ax9delayAdjVAFrateDiff.plot(yrsGroup[windowLength:], (delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:]) / runData['steady'].VAFsmoothrate[windowLength-1:] * 100.0, '-', color=colors[groupNumber], linewidth=0.5)  # as pct
    # delay as fn of time
    ax3delay.plot(yrsGroup, delayGroup.mean(0), color=colors[groupNumber])
    ax3delay.plot(yrsGroup, delayGroup.max(0), '--', color=colors[groupNumber], linewidth=0.5)
    ax3delay.plot(yrsGroup, delayGroup.min(0), '--', color=colors[groupNumber], linewidth=0.5)
    # delay rate as fn of time
-   step=420
-   ax3delayrate.plot(yrsGroup[step/2:-1*step/2], (delayGroup.mean(0)[:-1*step]-delayGroup.mean(0)[step:])/(yrsGroup[:-1*step]-yrsGroup[step:])*100, '-',color=colors[groupNumber], lineWidth=0.4)
+   step=220
+   #ax9delayrate.plot(yrsGroup[step/2:-1*step/2], (delayGroup.mean(0)[:-1*step]-delayGroup.mean(0)[step:])/(yrsGroup[:-1*step]-yrsGroup[step:])*100, '-',color=colors[groupNumber], lineWidth=0.4)
+   ax9delayrate.plot(yrsGroup[step/2:-1*step/2] - - delayGroup.mean(0)[step/2:-1*step/2], (delayGroup.mean(0)[:-1*step]-delayGroup.mean(0)[step:])/(yrsGroup[:-1*step]-yrsGroup[step:])*100, '-',color=colors[groupNumber], lineWidth=0.4)  # delay-adjusted delay rate!
    # delay adj melt
-   #ax3delayAdjMelt.plot(yrsGroup, delayAdjMeltGroup.mean(0), '-', color=colors[groupNumber], linewidth=0.5)
+   #ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltGroup.mean(0), '-', color=colors[groupNumber], linewidth=0.5)
    delayAdjMelt = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.mean(0)) # generate y values for each x
-   ax3delayAdjMelt.plot(yrsGroup, delayAdjMelt, '-', color=colors[groupNumber], linewidth=0.5)
-   ax30delayAdjMeltDiff.plot(yrsGroup,1* (delayAdjMelt - runData['steady'].resampMelt), '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady
+   ax9delayAdjMelt.plot(yrsGroup, delayAdjMelt, '-', color=colors[groupNumber], linewidth=0.5)
+   ax9delayAdjMeltDiff.plot(yrsGroup,1* (delayAdjMelt - runData['steady'].resampMelt), '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady
    # optionally plot min/max adjusted
    delayAdjMeltMin = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.min(0)) # generate y values for each x
-   ax3delayAdjMelt.plot(yrsGroup, delayAdjMeltMin, '--', color=colors[groupNumber], linewidth=0.5)
+   ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltMin, '--', color=colors[groupNumber], linewidth=0.5)
    delayAdjMeltMax = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.max(0)) # generate y values for each x
-   ax3delayAdjMelt.plot(yrsGroup, delayAdjMeltMax, '--', color=colors[groupNumber], linewidth=0.5)
+   ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltMax, '--', color=colors[groupNumber], linewidth=0.5)
    # plot diff in half range
-#   ax3delayAdjMelt.plot(yrsGroup, 10*((delayAdjMeltMax-delayAdjMelt) - (delayAdjMelt-delayAdjMeltMin)), '--', color=colors[groupNumber], linewidth=0.5)  # asymmetry of min and max from the mean
+#   ax9delayAdjMelt.plot(yrsGroup, 10*((delayAdjMeltMax-delayAdjMelt) - (delayAdjMelt-delayAdjMeltMin)), '--', color=colors[groupNumber], linewidth=0.5)  # asymmetry of min and max from the mean
 
 
    # plot DELAY
