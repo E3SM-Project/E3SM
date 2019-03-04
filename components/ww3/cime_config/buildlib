@@ -16,14 +16,21 @@ my $LIBROOT		= `./xmlquery LIBROOT        --value`;
 my $GMAKE_J		= `./xmlquery GMAKE_J        --value`;
 my $GMAKE		= `./xmlquery GMAKE          --value`;
 
-chdir "$OBJROOT/wav/obj";
 
+chdir "$SRCROOT/components/ww3/src/source/ww3/bin";
+my $sysmod = `export WWATCH3_NETCDF="NC4"`;
+my $sysmod = `export NETCDF_CONFIG="/usr/projects/climate/SHARED_CLIMATE/software/grizzly/netcdf/4.4.1/gcc-5.3.0/bin/nc-config"`;
+$ENV{WWATCH3_NETCDF}='NC4';
+$ENV{NETCDF_CONFIG}='/usr/projects/climate/SHARED_CLIMATE/software/grizzly/netcdf/4.4.1/gcc-5.3.0/bin/nc-config';
+my $sysmod = "./w3_new";
+my $sysmod = "./w3_make";
+
+chdir "$OBJROOT/wav/obj";
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.ww3\n";
-print file "${SRCROOT}/components/ww3/src/source\n";
+print file "${SRCROOT}/components/ww3/src/source/ww3/tmp\n";
 print file "${SRCROOT}/components/ww3/src/cpl\n";
 close(file);
-
 my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
