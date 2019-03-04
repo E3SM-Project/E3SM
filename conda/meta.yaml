@@ -8,24 +8,26 @@ source:
 
 build:
     number: 1
-    script: python setup.py install
+    noarch: python
+    script: "{{ PYTHON }} -m pip install . --no-deps -vv"
 
 requirements:
-  build:
-    - python {{ python }}
+  host:
+    - python
     - setuptools
+    - pip
 
   run:
-    - python {{ python }}
-    - cdp 1.4.2
-    - vcs 8.0
-    - vtk-cdat 8.0.1.8.0
-    - vcsaddons 8.0
-    - dv3d 8.0
-    - cdms2 3.1.2
-    - cdutil 8.0
-    - genutil 8.1.np1.14
-    - cdtime 3.1.2
+    - python
+    - cdp >=1.4.2
+    - vcs >=8.0
+    - vtk-cdat 8.2.0rc2.8.1
+    - vcsaddons >=8.0
+    - dv3d >=8.0
+    - cdms2 >=3.1.2
+    - cdutil >=8.0
+    - genutil >=8.1
+    - cdtime >=3.1.2
     - numpy
     - matplotlib
     - cartopy
