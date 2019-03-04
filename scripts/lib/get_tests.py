@@ -14,78 +14,168 @@ try:
 except ImportError:
     pass
 
-# Here are the tests belonging to e3sm suites. Format is
-# <test>.<grid>.<compset>.
-# suite_name -> (inherits_from, timelimit, [test [, mods[, machines]]])
-#   To elaborate, if no mods are needed, a string representing the testname is all that is needed.
-#   If testmods are needed, a 2-ple must be provided  (test, mods)
-#   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
+# Here are the tests belonging to cime suites. Format for individual tests is
+# <test>.<grid>.<compset>[.<testmod>]
+#
+# suite_name : {
+#     "inherit" : (suite1, suite2, ...), # Optional. Suites to inherit tests from. Default is None. Tuple, list, or str.
+#     "time"    : "HH:MM:SS",            # Optional. Recommended upper-limit on test time.
+#     "share"   : True|False,            # Optional. If True, all tests in this suite share a build. Default is False.
+#     "tests"   : (test1, test2, ...)    # Optional. The list of tests for this suite. See above for format. Tuple, list, or str.
+# }
 
 _CIME_TESTS = {
 
-    "cime_tiny" : (None, "0:10:00",
-                   ("ERS.f19_g16_rx1.A",
-                    "NCK.f19_g16_rx1.A")
-                   ),
+    "cime_tiny" : {
+        "time"  : "0:10:00",
+        "tests" : (
+            "ERS.f19_g16_rx1.A",
+            "NCK.f19_g16_rx1.A",
+            )
+        },
 
-    "cime_test_only_pass" : (None, "0:10:00",
-                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNPASS_P1.f45_g37_rx1.A")
-                   ),
+    "cime_test_only_pass" : {
+        "time"  : "0:10:00",
+        "tests" : (
+            "TESTRUNPASS_P1.f19_g16_rx1.A",
+            "TESTRUNPASS_P1.ne30_g16_rx1.A",
+            "TESTRUNPASS_P1.f45_g37_rx1.A",
+            )
+        },
 
-    "cime_test_only_slow_pass" : (None, "0:10:00",
-                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
-                   ),
+    "cime_test_only_slow_pass" : {
+        "time"  : "0:10:00",
+        "tests" : (
+            "TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
+            "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
+            "TESTRUNSLOWPASS_P1.f45_g37_rx1.A",
+            )
+        },
 
-    "cime_test_only" : (None, "0:10:00",
-                   ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
-                    "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
-                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
-                    "TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
-                    "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTTESTDIFF_P1.f19_g16_rx1.A",
-                    "TESTMEMLEAKFAIL_P1.f09_g16.X",
-                    "TESTMEMLEAKPASS_P1.f09_g16.X")
-                   ),
+    "cime_test_only" : {
+        "time"  : "0:10:00",
+        "tests" : (
+            "TESTBUILDFAIL_P1.f19_g16_rx1.A",
+            "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
+            "TESTRUNFAIL_P1.f19_g16_rx1.A",
+            "TESTRUNSTARCFAIL_P1.f19_g16_rx1.A",
+            "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
+            "TESTRUNPASS_P1.f19_g16_rx1.A",
+            "TESTTESTDIFF_P1.f19_g16_rx1.A",
+            "TESTMEMLEAKFAIL_P1.f09_g16.X",
+            "TESTMEMLEAKPASS_P1.f09_g16.X",
+            )
+        },
 
-    "cime_test_all" : ("cime_test_only", "0:10:00",
-                       ("TESTRUNDIFF_P1.f19_g16_rx1.A", )),
+    "cime_test_all" : {
+        "inherit" : "cime_test_only",
+        "time"    : "0:10:00",
+        "tests"   : "TESTRUNDIFF_P1.f19_g16_rx1.A"
+        },
 
-    "cime_developer" : (None, "0:15:00",
-                            ("NCK_Ld3.f45_g37_rx1.A",
-                             "ERI.f09_g16.X",
-                             "ERIO.f09_g16.X",
-                             "SEQ_Ln9.f19_g16_rx1.A",
-                             ("ERS.ne30_g16_rx1.A","drv-y100k"),
-                             "IRT_N2.f19_g16_rx1.A",
-                             "ERR.f45_g37_rx1.A",
-                             "ERP.f45_g37_rx1.A",
-                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A",
-                             "DAE.ww3a.ADWAV",
-                             "PET_P4.f19_f19.A",
-                             "PEM_P4.f19_f19.A",
-                             "SMS.T42_T42.S",
-                             "PRE.f19_f19.ADESP",
-                             "PRE.f19_f19.ADESP_TEST",
-                             "MCC_P1.f19_g16_rx1.A",
-                             "LDSTA.f45_g37_rx1.A")
-                            ),
+    "cime_test_share" : {
+        "time"  : "0:10:00",
+        "share" : True,
+        "tests" : (
+            "SMS_P2.f19_g16_rx1.A",
+            "SMS_P4.f19_g16_rx1.A",
+            "SMS_P8.f19_g16_rx1.A",
+            "SMS_P16.f19_g16_rx1.A",
+            )
+        },
+
+    "cime_test_repeat" : {
+        "tests" : (
+            "TESTRUNPASS_P1.f19_g16_rx1.A",
+            "TESTRUNPASS_P2.ne30_g16_rx1.A",
+            "TESTRUNPASS_P4.f45_g37_rx1.A",
+            )
+        },
+
+    "cime_test_time" : {
+        "time"    : "0:13:00",
+        "tests" : (
+            "TESTRUNPASS_P69.f19_g16_rx1.A.testmod",
+            )
+        },
+
+    "cime_test_multi_inherit" : {
+        "inherit" : ("cime_test_repeat", "cime_test_only_pass", "cime_test_all")
+        },
+
+    "cime_developer" : {
+        "time"  : "0:15:00",
+        "tests" : (
+            "NCK_Ld3.f45_g37_rx1.A",
+            "ERI.f09_g16.X",
+            "ERIO.f09_g16.X",
+            "SEQ_Ln9.f19_g16_rx1.A",
+            "ERS.ne30_g16_rx1.A.drv-y100k",
+            "IRT_N2.f19_g16_rx1.A",
+            "ERR.f45_g37_rx1.A",
+            "ERP.f45_g37_rx1.A",
+            "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A",
+            "DAE.ww3a.ADWAV",
+            "PET_P4.f19_f19.A",
+            "PEM_P4.f19_f19.A",
+            "SMS.T42_T42.S",
+            "PRE.f19_f19.ADESP",
+            "PRE.f19_f19.ADESP_TEST",
+            "MCC_P1.f19_g16_rx1.A",
+            "LDSTA.f45_g37_rx1.A",
+            )
+        },
 
 }
 
 _ALL_TESTS.update(_CIME_TESTS)
 
 ###############################################################################
-def get_test_suite(suite, machine=None, compiler=None):
+def _get_key_data(raw_dict, key, the_type):
+###############################################################################
+    if key not in raw_dict:
+        if the_type is tuple:
+            return ()
+        elif the_type is str:
+            return None
+        elif the_type is bool:
+            return False
+        else:
+            expect(False, "Unsupported type {}".format(the_type))
+    else:
+        val = raw_dict[key]
+        if the_type is tuple and isinstance(val, six.string_types):
+            val = (val, )
+
+        expect(isinstance(val, the_type),
+               "Wrong type for {}, {} is a {} but expected {}".format(key, val, type(val), the_type))
+
+        return val
+
+###############################################################################
+def get_test_data(suite):
+###############################################################################
+    """
+    For a given suite, returns (inherit, time, share, tests)
+    """
+    raw_dict = _ALL_TESTS[suite]
+    for key in raw_dict.keys():
+        expect(key in ["inherit", "time", "share", "tests"], "Unexpected test key '{}'".format(key))
+
+    return _get_key_data(raw_dict, "inherit", tuple), _get_key_data(raw_dict, "time", str), _get_key_data(raw_dict, "share", bool), _get_key_data(raw_dict, "tests", tuple)
+
+###############################################################################
+def get_test_suites():
+###############################################################################
+    return list(_ALL_TESTS.keys())
+
+###############################################################################
+def get_test_suite(suite, machine=None, compiler=None, skip_inherit=False):
 ###############################################################################
     """
     Return a list of FULL test names for a suite.
     """
-    expect(suite in _ALL_TESTS, "Unknown test suite: '{}'".format(suite))
+    expect(suite in get_test_suites(), "Unknown test suite: '{}'".format(suite))
     machobj = Machines(machine=machine)
     machine = machobj.get_machine_name()
 
@@ -93,44 +183,32 @@ def get_test_suite(suite, machine=None, compiler=None):
         compiler = machobj.get_default_compiler()
     expect(machobj.is_valid_compiler(compiler),"Compiler {} not valid for machine {}".format(compiler,machine))
 
-    inherits_from, _, tests_raw = _ALL_TESTS[suite]
+    inherits_from, _, _, tests_raw = get_test_data(suite)
     tests = []
     for item in tests_raw:
-        test_mod = None
-        if (isinstance(item, six.string_types)):
-            test_name = item
-        else:
-            expect(isinstance(item, tuple), "Bad item type for item '{}'".format(str(item)))
-            expect(len(item) in [2, 3], "Expected two or three items in item '{}'".format(str(item)))
-            expect(isinstance(item[0], six.string_types), "Expected string in first field of item '{}'".format(str(item)))
-            expect(isinstance(item[1], six.string_types), "Expected string in second field of item '{}'".format(str(item)))
+        expect(isinstance(item, six.string_types), "Bad type of test {}, expected string".format(item))
 
-            test_name = item[0]
-            if (len(item) == 2):
-                test_mod = item[1]
-            else:
-                expect(type(item[2]) in [six.string_types, tuple], "Expected string or tuple for third field of item '{}'".format(str(item)))
-                test_mod_machines = [item[2]] if isinstance(item[2], six.string_types) else item[2]
-                if (machine in test_mod_machines):
-                    test_mod = item[1]
+        test_mod = None
+        test_components = item.split(".")
+        expect(len(test_components) in [3, 4], "Bad test name {}".format(item))
+
+        if (len(test_components) == 4):
+            test_name = ".".join(test_components[:-1])
+            test_mod = test_components[-1]
+        else:
+            test_name = item
 
         tests.append(CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler, testmod=test_mod))
 
-    if (inherits_from is not None):
-        inherits_from = [inherits_from] if isinstance(inherits_from, six.string_types) else inherits_from
+    if not skip_inherit:
         for inherits in inherits_from:
             inherited_tests = get_test_suite(inherits, machine, compiler)
 
-            expect(len(set(tests) & set(inherited_tests)) == 0,
-                   "Tests {} defined in multiple suites".format(", ".join(set(tests) & set(inherited_tests))))
-            tests.extend(inherited_tests)
+            for inherited_test in inherited_tests:
+                if inherited_test not in tests:
+                    tests.append(inherited_test)
 
     return tests
-
-###############################################################################
-def get_test_suites():
-###############################################################################
-    return list(_ALL_TESTS.keys())
 
 ###############################################################################
 def infer_machine_name_from_tests(testargs):
@@ -183,6 +261,9 @@ def get_full_test_names(testargs, machine, compiler):
 
     >>> get_full_test_names(["cime_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
+
+    >>> get_full_test_names(["cime_test_multi_inherit"], "melvin", "gnu")
+    ['TESTBUILDFAILEXC_P1.f19_g16_rx1.A.melvin_gnu', 'TESTBUILDFAIL_P1.f19_g16_rx1.A.melvin_gnu', 'TESTMEMLEAKFAIL_P1.f09_g16.X.melvin_gnu', 'TESTMEMLEAKPASS_P1.f09_g16.X.melvin_gnu', 'TESTRUNDIFF_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNFAILEXC_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNFAIL_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P1.f19_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P1.f45_g37_rx1.A.melvin_gnu', 'TESTRUNPASS_P1.ne30_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P2.ne30_g16_rx1.A.melvin_gnu', 'TESTRUNPASS_P4.f45_g37_rx1.A.melvin_gnu', 'TESTRUNSTARCFAIL_P1.f19_g16_rx1.A.melvin_gnu', 'TESTTESTDIFF_P1.f19_g16_rx1.A.melvin_gnu']
     """
     expect(machine is not None, "Must define a machine")
     expect(compiler is not None, "Must define a compiler")
@@ -224,11 +305,8 @@ def get_recommended_test_time(test_full_name):
     >>> get_recommended_test_time("ERS.f19_g16_rx1.A.melvin_gnu")
     '0:10:00'
 
-    >>> get_recommended_test_time("ERP_Ln9.ne30_ne30.FC5.melvin_gun.cam-outfrq9s")
-    '0:45:00'
-
-    >>> get_recommended_test_time("PET_Ln9.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
-    '03:00:00'
+    >>> get_recommended_test_time("TESTRUNPASS_P69.f19_g16_rx1.A.melvin_gnu.testmod")
+    '0:13:00'
 
     >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
     >>>
@@ -239,26 +317,11 @@ def get_recommended_test_time(test_full_name):
     best_time = None
     suites = get_test_suites()
     for suite in suites:
-        _, rec_time, tests_raw = _ALL_TESTS[suite]
-        for item in tests_raw:
-            test_mod = None
-            if (isinstance(item, six.string_types)):
-                test_name = item
-            else:
-                test_name = item[0]
-                if (len(item) == 2):
-                    test_mod = item[1]
-                else:
-                    test_mod_machines = [item[2]] if isinstance(item[2], six.string_types) else item[2]
-                    if (machine in test_mod_machines):
-                        test_mod = item[1]
-
-            full_test = CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler, testmod=test_mod)
-
-            if full_test == test_full_name and rec_time is not None:
-                if best_time is None or \
-                        convert_to_seconds(rec_time) < convert_to_seconds(best_time):
-                    best_time = rec_time
+        tests    = get_test_suite(suite, machine=machine, compiler=compiler, skip_inherit=True)
+        rec_time = get_test_data(suite)[1]
+        if test_full_name in tests and rec_time is not None and \
+           (best_time is None or convert_to_seconds(rec_time) < convert_to_seconds(best_time)):
+            best_time = rec_time
 
     return best_time
 
