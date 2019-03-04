@@ -151,15 +151,15 @@
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg
       use w3wdatmd, only: time, w3ndat, w3setw
-      use w3adatmd, only: ussx, ussy, w3naux, w3seta, !SB, lamult
-      use w3idatmd, only: flags, w3seti, w3ninp
+      use w3adatmd, only: ussx, ussy, w3naux, w3seta !SB, lamult
+      use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
       USE W3IDATMD, ONLY: TIN, ICEI
       USE W3IDATMD, ONLY: TLN, WLEV
       USE W3IDATMD, ONLY: !SB, HML   ! QL, 150525, mixing layer depth
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
-                          nogrd, idout, fnmpre, iostyp
+                          nogrp, ngrpp, noge, idout, fnmpre, iostyp
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave 
@@ -258,13 +258,15 @@ CONTAINS
 
       integer             :: unitn            ! namelist unit number
       integer             :: ndso, ndse, nds(13), ntrace(2), time0(2)
-      integer             :: timen(2), odat(30), nh(4), iprt(6)
+      integer             :: timen(2), odat(35), nh(4), iprt(6)
       integer             :: i,j,npts
       integer             :: ierr
       integer             :: jsea,isea
       real                :: a(nhmax,4)
       real, allocatable   :: x(:), y(:)
-      logical             :: flgrd(nogrd), prtfrm, flt
+      logical             :: flogrd(nogrp,ngrpp), flogrd2(nogrp,ngrpp)
+      logical             :: flogd(nogrp), flogd2(nogrp)
+      logical             :: prtfrm, flt
       character(len=*),parameter :: subname = '(wav_init_mct)'
 
       character(len=3)    :: idstr(8), idtst
@@ -415,12 +417,12 @@ CONTAINS
       ! Define input fields
       !--------------------------------------------------------------------
 
-      flags = .false.
+      inflags1 = .false.
       ! QL, 150525, flags for passing variables from coupler to ww3,
       !             lev, curr, wind, ice and mixing layer depth on
-      flags(1:5) = .true.
-!      flags(1:4) = .true.   !changed by Adrean (lev,curr,wind,ice on)
-!      flags(3:4) = .true.   !changed by Adrean (wind,ice on)
+      inflags1(1:5) = .true.
+!      inflags1(1:4) = .true.   !changed by Adrean (lev,curr,wind,ice on)
+!      inflags1(3:4) = .true.   !changed by Adrean (wind,ice on)
 
       !--------------------------------------------------------------------
       ! Set time frame
@@ -494,7 +496,7 @@ CONTAINS
       allocate ( x(1), y(1), pnames(1) )
       pnames(1) = ' '
 
-      do j=1, 6
+      do j=1, 7
          odat(5*(j-1)+3) = 0
       end do
 
@@ -527,62 +529,125 @@ CONTAINS
       !DEBUG
 
       ! Output Type 1: fields of mean wave parameters gridded output
+      flogrd2 = .false.
+      flogd2  = .false.
 
-      flgrd( 1) = .false. !   1. depth (m)
-      flgrd( 2) = .false. !   2. mean current vel (vec, m/s)
-      flgrd( 3) = .true.  !   3. mean wind vel (vec, m/s)
-      flgrd( 4) = .false. !   4. air-sea temp diff (deg C)
-      flgrd( 5) = .false. !   5. skin friction vel (scalar, m/s)
-      flgrd( 6) = .true.  !   6. significant wave height (m)
-      flgrd( 7) = .false. !   7. mean wave length (m)
-      flgrd( 8) = .false. !   8. mean wave period (Tn1, s)
-      flgrd( 9) = .false. !   9. mean wave dir (deg: met conv)
-      flgrd(10) = .false. !  10. mean dir spread (deg: )
-      flgrd(11) = .true.  !  11. peak freq (Hz)
-      flgrd(12) = .true.  !  12. peak dir (deg: )
-      flgrd(13) = .false. !  13. peak freq of wind-sea part
-      flgrd(14) = .false. !  14. wind-sea dir (deg: met conv)
-      flgrd(15) = .false. !  15. wave height of partitions
-      flgrd(16) = .false. !  16. peak periods of partitions
-      flgrd(17) = .false. !  17. peak wave length of partitions
-      flgrd(18) = .false. !  18. mean dir of partitions
-      flgrd(19) = .false. !  19. dir spread of partitions
-      flgrd(20) = .false. !  20. wind-sea frac of partitions
-      flgrd(21) = .false. !  21. wind-sea frac of entire spec
-      flgrd(22) = .false. !  22. number of partitions
-      flgrd(23) = .false. !  23. average time step (s)
-      flgrd(24) = .false. !  24. cut-off freq (Hz)
-      flgrd(25) = .false. !  25. ice concentration (frac)
-      flgrd(26) = .false. !  26. water level (m?)
-      flgrd(27) = .false. !  27. near-bottom rms exclusion amp
-      flgrd(28) = .false. !  28. near-bottom rms orbital vel
-      flgrd(29) = .false. !  29. radiation stresses
-      flgrd(30) = .false. !  30. user defined (1)
-      flgrd(31) = .false. !  31. user defined (2)
-      ! QL, 150525, new output
-      flgrd(32) = .false.  !  32. Stokes drift at z=0
-      flgrd(33) = .false.  !  33. Turbulent Langmuir number (La_t)
-      flgrd(34) = .false.  !  34. Langmuir number (La_Proj)
-      flgrd(35) = .false.  !  35. Angle between wind and LC direction
-      flgrd(36) = .false.  !  36. Depth averaged Stokes drift (0-H_0.2ML)
-      flgrd(37) = .false.  !  37. Langmuir number (La_SL)
-      flgrd(38) = .false.  !  38. Langmuir number (La_SL,Proj)
-      flgrd(39) = .false.  !  39. Enhancement factor with La_SL,Proj
+      ! 1) Forcing fields
+      flogrd(1,1)  = .false. ! Water depth         
+      flogrd(1,2)  = .false. ! Current vel.        
+      flogrd(1,3)  = .true.  ! Wind speed          
+      flogrd(1,4)  = .false. ! Air-sea temp. dif.  
+      flogrd(1,5)  = .false. ! Water level         
+      flogrd(1,6)  = .false. ! Ice concentration   
+      flogrd(1,7)  = .false. ! Iceberg damp coeffic
+
+      ! 2) Standard mean wave parameters
+      flogrd(2,1)  = .true.  ! Wave height         
+      flogrd(2,2)  = .false. ! Mean wave length    
+      flogrd(2,3)  = .false. ! Mean wave period(+2)
+      flogrd(2,4)  = .false. ! Mean wave period(-1)
+      flogrd(2,5)  = .false. ! Mean wave period(+1)
+      flogrd(2,6)  = .true.  ! Peak frequency      
+      flogrd(2,7)  = .false. ! Mean wave dir. a1b1 
+      flogrd(2,8)  = .false. ! Mean dir. spr. a1b1 
+      flogrd(2,9)  = .true.  ! Peak direction      
+      flogrd(2,10) = .false. ! Infragravity height
+      flogrd(2,11) = .false. ! Space-Time Max E   
+      flogrd(2,12) = .false. ! Space-Time Max Std 
+      flogrd(2,13) = .false. ! Space-Time Hmax    
+      flogrd(2,14) = .false. ! Spc-Time Hmax^crest
+      flogrd(2,15) = .false. ! STD Space-Time Hmax
+      flogrd(2,16) = .false. ! STD ST Hmax^crest  
+
+      ! 3) Frequency-dependent standard parameters
+      flogrd(3,1)  = .false. ! 1D Freq. Spectrum   
+      flogrd(3,2)  = .false. ! Mean wave dir. a1b1 
+      flogrd(3,3)  = .false. ! Mean dir. spr. a1b1 
+      flogrd(3,4)  = .false. ! Mean wave dir. a2b2 
+      flogrd(3,5)  = .false. ! Mean dir. spr. a2b2 
+      flogrd(3,6)  = .false. ! Wavenumber array    
+
+      ! 4) Spectral Partitions parameters
+      flogrd(4,1) = .false. ! Part. wave heigt    
+      flogrd(4,2) = .false. ! Part. peak period   
+      flogrd(4,3) = .false. ! Part. peak wave l.  
+      flogrd(4,4) = .false. ! Part. mean direction
+      flogrd(4,5) = .false. ! Part. dir. spread   
+      flogrd(4,6) = .false. ! Part. wind sea frac.
+      flogrd(4,7) = .false. ! Total wind sea frac.
+      flogrd(4,8) = .false. ! Number of partitions
+
+      ! 5) Atmosphere-waves layer
+      flogrd(5,1) = .false. ! Friction velocity   
+      flogrd(5,2) = .false. ! Charnock parameter  
+      flogrd(5,3) = .false. ! Energy flux         
+      flogrd(5,4) = .false. ! Wind-wave enrgy flux
+      flogrd(5,5) = .false. ! Wind-wave net mom. f
+      flogrd(5,6) = .false. ! Wind-wave neg.mom.f.
+      flogrd(5,7) = .false. ! Whitecap coverage   
+      flogrd(5,8) = .false. ! Whitecap mean thick.
+      flogrd(5,9) = .false. ! Mean breaking height
+      flogrd(5,10) = .false. ! Dominant break prob 
+
+      ! 6) Wave-ocean layer
+      flogrd(6,1) = .false. ! Radiation stresses  
+      flogrd(6,2) = .false. ! Wave-ocean mom. flux
+      flogrd(6,3) = .false. ! wave ind p Bern Head
+      flogrd(6,4) = .false. ! Wave-ocean TKE  flux
+      flogrd(6,5) = .false. ! Stokes transport    
+      flogrd(6,6) = .false. ! Stokes drift at z=0 
+      flogrd(6,7) = .false. ! 2nd order pressure  
+      flogrd(6,8) = .false. ! Stokes drft spectrum
+      flogrd(6,9) = .false. ! 2nd ord press spectr
+      flogrd(6,10) = .false. ! Wave-ice mom. flux  
+      flogrd(6,11) = .false. ! Wave-ice energy flux
+
+      ! 7) Wave-bottom layer
+      flogrd(7,1) = .false. ! Bottom rms ampl.    
+      flogrd(7,2) = .false. ! Bottom rms velocity 
+      flogrd(7,3) = .false. ! Bedform parameters  
+      flogrd(7,4) = .false. ! Energy diss. in WBBL
+      flogrd(7,5) = .false. ! Moment. loss in WBBL
+
+      ! 8) Spectrum parameters
+      flogrd(8,1) = .false. ! Mean square slopes  
+      flogrd(8,2) = .false. ! Phillips tail const
+      flogrd(8,3) = .false. ! Lx-Ly mean wvlength
+      flogrd(8,4) = .false. ! Surf grad correl XT
+      flogrd(8,5) = .false. ! Surf grad correl YT
+      flogrd(8,6) = .false. ! Surf grad correl XY
+      flogrd(8,7) = .false. ! Surface crest param
+
+      ! 9) Numerical diagnostics
+      flogrd(9,1) = .false. ! Avg. time step.     
+      flogrd(9,2) = .false. ! Cut-off freq.       
+      flogrd(9,3) = .false. ! Maximum spatial CFL 
+      flogrd(9,4) = .false. ! Maximum angular CFL 
+      flogrd(9,5) = .false. ! Maximum k advect CFL
+
+      do i = 1, nogrp
+        if(any(flogrd(i,:))) then
+          flogd(i) = .true.
+        end if
+      end do
 
       if ( iaproc .eq. napout ) then
          flt = .true.
-         do i=1, nogrd
-            if ( flgrd(i) ) then
-               if ( flt ) then
-                  write (ndso,1945) idout(i)
-                  flt    = .false.
-               else
-                  write (ndso,1946) idout(i)
-               end if
-            end if
+         do i=1, nogrp
+            do j = 1, noge(i)
+              if ( flogrd(i,j) ) then
+                 if ( flt ) then
+                    write (ndso,1945) idout(i,j)
+                    flt    = .false.
+                 else
+                    write (ndso,1946) idout(i,j)
+                 end if
+              end if
+            end do
          end do
          if ( flt ) write (ndso,1945) 'no fields defined'
       end if
+
       call shr_sys_flush(ndso)
 
       !--------------------------------------------------------------------
@@ -628,7 +693,7 @@ CONTAINS
       ! - reads either the initfile if the run is startup or branch
       ! - constructs the filename from the casename variable and the time(:) array
       !   which is set above
-      call w3init ( 1, 'ww3', nds, ntrace, odat, flgrd, npts, x, y,   &
+      call w3init ( 1, 'ww3', nds, ntrace, odat, flogrd, flogrd2, flogd, flogd2, npts, x, y,   &
            pnames, iprt, prtfrm, mpi_comm )
       call shr_sys_flush(ndso)
 
@@ -792,12 +857,12 @@ CONTAINS
       ! def_value = -1.0e36
       def_value = 0.0
 
-      if (flags(1)) then
+      if (inflags1(1)) then
          TLN  = timen
          WLEV = def_value   ! ssh
       endif
 
-      if (flags(2)) then
+      if (inflags1(2)) then
          TC0  = time0
          TCN  = timen
          CX0  = def_value   ! ocn u current
@@ -806,7 +871,7 @@ CONTAINS
          CYN  = def_value
       endif
 
-      if (flags(3)) then
+      if (inflags1(3)) then
          TW0  = time0
          TWN  = timen
          WX0  = def_value   ! atm u wind
@@ -817,7 +882,7 @@ CONTAINS
          DTN  = def_value
       endif
 
-      if (flags(4)) then
+      if (inflags1(4)) then
          TIN  = timen
          ICEI = def_value   ! ice frac
       endif
@@ -839,18 +904,18 @@ CONTAINS
          !         IY  = MAPSF(ISEA,2)
          !         gindex = ix + (iy-1)*nx
 
-         if (flags(1)) then
+         if (inflags1(1)) then
             WLEV(IX,IY) = 0.0
          endif
 
-         if (flags(2)) then
+         if (inflags1(2)) then
             CX0(IX,IY)  = x2w0%rattr(index_x2w_so_u,gindex)
             CXN(IX,IY)  = CX0(IX,IY)
             CY0(IX,IY)  = x2w0%rattr(index_x2w_so_v,gindex)
             CYN(IX,IY)  = CY0(IX,IY)
          endif
 
-         if (flags(3)) then
+         if (inflags1(3)) then
             WX0(IX,IY)  = x2w0%rattr(index_x2w_sa_u,gindex)
             WXN(IX,IY)  = WX0(IX,IY)
             WY0(IX,IY)  = x2w0%rattr(index_x2w_sa_v,gindex)
@@ -859,12 +924,12 @@ CONTAINS
             DTN(IX,IY)  = DT0(IX,IY)
          endif
 
-         if (flags(4)) then
+         if (inflags1(4)) then
             ICEI(IX,IY) = x2w0%rattr(index_x2w_si_ifrac,gindex)
          endif
 
          ! QL, 150525, get mixing layer depth from coupler
-         ! SB, if (flags(5)) then
+         ! SB, if (inflags1(5)) then
          ! SB,    HML(IX,IY) = max(x2w0%rattr(index_x2w_so_bldepth,gindex), 5.)
          ! SB, endif
 
