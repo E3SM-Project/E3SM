@@ -463,7 +463,7 @@ class Dataset():
         """
         # Since there's only one set of vars, we get the first
         # and only set of vars from the dictionary.
-        vars_to_get = vars_to_func_dict.keys()[0]
+        vars_to_get = list(vars_to_func_dict.keys())[0]
 
         variables = [data_file(var)(squeeze=1) for var in vars_to_get]
 
