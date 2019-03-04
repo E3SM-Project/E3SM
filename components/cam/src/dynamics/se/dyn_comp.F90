@@ -121,9 +121,6 @@ CONTAINS
             frontga_idx)
     end if
 
-    ! Initialize dynamics grid
-    call dyn_grid_init()
-
     ! Read in the number of tasks to be assigned to SE (needed by initmp)
     call spmd_readnl(NLFileName, npes_se, npes_se_stride)
     ! Initialize the SE structure that holds the MPI decomposition information
@@ -181,7 +178,6 @@ CONTAINS
        endif
     endif
 
-
     !
     ! This subroutine creates mapping files using SE basis functions if requested
     !
@@ -205,6 +201,9 @@ CONTAINS
        tstep = dtime/real(se_nsplit*qsplit*rsplit,r8)
        TimeLevel%nstep = get_nstep()*se_nsplit*qsplit*rsplit
     endif
+
+    ! Initialize dynamics grid variables
+    call dyn_grid_init()
 
     ! Define the CAM grids (this has to be after dycore spinup).
     ! Physics-grid will be defined later by phys_grid_init
