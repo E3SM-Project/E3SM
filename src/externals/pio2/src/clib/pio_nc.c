@@ -997,7 +997,8 @@ int PIOc_inq_varnatts(int ncid, int varid, int *nattsp)
  * please read about this function in the NetCDF documentation at:
  * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  *
- * @param ncid the ncid of the open file.
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
  * @param varid the variable ID.
  * @param varidp a pointer that will get the variable id
  * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
@@ -1106,6 +1107,7 @@ int PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
     if ((ierr = pio_get_file(ncid, &file)))
         return pio_err(NULL, NULL, ierr, __FILE__, __LINE__);
     ios = file->iosystem;
+
     /* User must provide name shorter than NC_MAX_NAME +1. */
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
@@ -2043,7 +2045,7 @@ int PIOc_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         /* Get the MPI type corresponding with the PIO type. */
         if ((ierr = find_mpi_type(xtype, &mpi_type, NULL)))
             return pio_err(ios, NULL, ierr, __FILE__, __LINE__);
-
+        
         /* Get the size of the MPI type. */
         if ((mpierr = MPI_Type_size(mpi_type, &mpi_type_size)))
             return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
