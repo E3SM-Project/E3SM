@@ -713,7 +713,7 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%btran2_patch) 
 
-    call this%eflx_dynbal_dribbler%Restart(bounds, ncid, flag)
+    !call this%eflx_dynbal_dribbler%Restart(bounds, ncid, flag)
 
   end subroutine Restart
 
