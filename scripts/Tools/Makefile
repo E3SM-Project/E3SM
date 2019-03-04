@@ -3,7 +3,6 @@
 # Common Makefile: a framework for building all CIME components and more
 #
 #===============================================================================
-include $(CASEROOT)/Macros.make
 
 # Set up special characters
 null  :=
@@ -84,6 +83,8 @@ endif
 
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
+include $(CASEROOT)/Macros.make
+
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
    CPPDEFS += -DDEBUG
@@ -98,14 +99,6 @@ endif
 
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
-   CPPDEFS += -DESMFUSE_$(COMP_ATM)
-   CPPDEFS += -DESMFUSE_$(COMP_LND)
-   CPPDEFS += -DESMFUSE_$(COMP_OCN)
-   CPPDEFS += -DESMFUSE_$(COMP_ICE)
-   CPPDEFS += -DESMFUSE_$(COMP_ROF)
-   CPPDEFS += -DESMFUSE_$(COMP_WAV)
-   CPPDEFS += -DESMFUSE_$(COMP_GLC)
-   CPPDEFS += -DESMFUSE_$(COMP_ESP)
 else
    CPPDEFS += -DMCT_INTERFACE
 endif
