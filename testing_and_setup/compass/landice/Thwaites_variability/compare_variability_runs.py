@@ -638,8 +638,8 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
 
       # calculate delay in time-space
       for t in range(len(thisRun.resampYrs)):
-          steadyIndForThisVAF = np.nonzero(runData['steady'].VAFsmooth <= thisRun.VAFsmooth[t])[0][0]
-          #steadyIndForThisVAF = np.nonzero(runData['steady'].GAsmooth <= thisRun.GAsmooth[t])[0][0]
+          #steadyIndForThisVAF = np.nonzero(runData['steady'].VAFsmooth <= thisRun.VAFsmooth[t])[0][0]
+          steadyIndForThisVAF = np.nonzero(runData['steady'].GAsmooth <= thisRun.GAsmooth[t])[0][0]
           delayGroup[runNumber, t] = runData['steady'].resampYrs[steadyIndForThisVAF] - thisRun.resampYrs[t]
 
       #ax3delay.plot(thisRun.resampYrs, delayGroup[runNumber, :], color=colors[groupNumber])
