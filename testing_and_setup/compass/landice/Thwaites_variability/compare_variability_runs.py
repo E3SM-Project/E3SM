@@ -533,6 +533,7 @@ ax9delayAdjVAFrate = fig9.add_subplot(nrow, ncol, 2, sharex=ax9delayrate)
 plt.ylabel('delay adjusted\nVAF rate\n(Gt yr$^{-1}$)')
 plt.xticks(np.arange(30)*xtickSpacing)
 plt.grid()
+ax9delayAdjVAFrate.set_yscale("log", nonposy='clip')
 
 # delay-adjusted VAF rate diff
 ax9delayAdjVAFrateDiff = fig9.add_subplot(nrow, ncol, 3, sharex=ax9delayrate)
@@ -589,7 +590,13 @@ if 'steady' in runData:
 
    ax9delayAdjMelt.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].resampMelt[windowLength:], 'k', linewidth=0.5)
 
-   ax9delayAdjVAFrate.plot(runData['steady'].resampYrs[windowLength:], runData['steady'].VAFsmoothrate[windowLength-1:] , '-', color='k', linewidth=0.5)  # delay adj vaf rate
+   ax9delayAdjVAFrate.plot(runData['steady'].resampYrs[windowLength:], -1*runData['steady'].VAFsmoothrate[windowLength-1:] , '-', color='k', linewidth=0.5)  # delay adj vaf rate
+
+   # try plotting acceleration - pretty noisy and hard to interpret!
+#   filterLen = 401
+#   ddy = np.gradient(np.gradient(np.convolve(np.ones(filterLen,'d')/filterLen,  runData['steady'].VAFsmooth, mode='same')))
+#   ax9delayAdjVAFrate.plot(runData['steady'].resampYrs, ddy, '-', color='k', linewidth=0.5)
+
 groupNumber = 0
 for groupName in sorted(groups):  # sorted puts them in alpha order
    print "Plotting group: " + groupName
@@ -668,6 +675,8 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    
    # get index to final time that is meaningful after adjusting for delay
    finalIndex = np.nonzero(yrsGroup < (yrsGroup[-1] + delayGroup.mean(0)[-1]))[0][-1]
+   indexPerYr = len(yrsGroup) / (yrsGroup[-1]-yrsGroup[0])
+
 
    # melt plot
    ax3MeanMelt.plot(yrsGroup[windowLength:], meltGroup.mean(0)[windowLength:], '-', color = colors[groupNumber], label=groupName)
@@ -690,7 +699,11 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    ax3VAFrate.plot(yrsGroup[windowLength:], VAFrateGroup.min(0)[windowLength-1:], '--', color = colors[groupNumber], linewidth=0.5)
    # delay adj VAF rate difference
    delayAdjVAFrate = np.interp(effectiveTimeGroup.mean(0)[1:], yrsGroup[1:], VAFrateGroup.mean(0))
-   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:finalIndex], delayAdjVAFrate[windowLength-1:finalIndex-1] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
+   delayAdjVAF = np.interp(effectiveTimeGroup.mean(0), yrsGroup, VAFgroup.mean(0))
+   #ax9delayAdjVAFrate.plot(yrsGroup[windowLength:finalIndex], delayAdjVAFrate[windowLength-1:finalIndex-1] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
+   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:finalIndex], -1*delayAdjVAFrate[windowLength-1:finalIndex-1] , '-', color=colors[groupNumber], linewidth=0.5)  # delay adj vaf rate
+#   ddy = np.gradient(np.gradient(delayAdjVAF))
+#   ax9delayAdjVAFrate.plot(yrsGroup, ddy, '-', color=colors[groupNumber], linewidth=0.5)
 #   ax9delayAdjVAFrate.plot(yrsGroup[windowLength:], delayAdjVAFrate[windowLength-1:] - runData['steady'].VAFsmoothrate[windowLength-1:], '-', color=colors[groupNumber], linewidth=0.5) # absolute diff
    ax9delayAdjVAFrateDiff.plot(yrsGroup[windowLength:finalIndex], (delayAdjVAFrate[windowLength-1:finalIndex-1] - runData['steady'].VAFsmoothrate[windowLength-1:finalIndex-1]) / runData['steady'].VAFsmoothrate[windowLength-1:finalIndex-1] * 100.0, '-', color=colors[groupNumber], linewidth=0.5)  # as pct
    # delay as fn of time
@@ -698,14 +711,19 @@ for groupName in sorted(groups):  # sorted puts them in alpha order
    ax3delay.plot(yrsGroup, delayGroup.max(0), '--', color=colors[groupNumber], linewidth=0.5)
    ax3delay.plot(yrsGroup, delayGroup.min(0), '--', color=colors[groupNumber], linewidth=0.5)
    # delay rate as fn of time
-   step=220
+   filterYr=5.0; step=int(np.round(filterYr*indexPerYr))
+   filterLen = step
+   print "Using filter length of {} years = {} indices".format(filterYr, step)
    #ax9delayrate.plot(yrsGroup[step/2:-1*step/2], (delayGroup.mean(0)[:-1*step]-delayGroup.mean(0)[step:])/(yrsGroup[:-1*step]-yrsGroup[step:])*100, '-',color=colors[groupNumber], lineWidth=0.4)
    ax9delayrate.plot(yrsGroup[step/2:-1*step/2] - - delayGroup.mean(0)[step/2:-1*step/2], (delayGroup.mean(0)[:-1*step]-delayGroup.mean(0)[step:])/(yrsGroup[:-1*step]-yrsGroup[step:])*100, '-',color=colors[groupNumber], lineWidth=0.4)  # delay-adjusted delay rate!
+#   delaySmooth = np.convolve(np.ones(filterLen,'d')/filterLen, delayGroup.mean(0), mode='same')
+#   ax9delayrate.plot(yrsGroup[step/2:-1*step/2] - - delaySmooth[step/2:-1*step/2], (delaySmooth[:-1*step]-delaySmooth[step:])/(yrsGroup[:-1*step]-yrsGroup[step:])*100, '-',color=colors[groupNumber], lineWidth=0.4)  # delay-adjusted delay rate!
    # delay adj melt
    #ax9delayAdjMelt.plot(yrsGroup, delayAdjMeltGroup.mean(0), '-', color=colors[groupNumber], linewidth=0.5)
    delayAdjMelt = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.mean(0)) # generate y values for each x
    ax9delayAdjMelt.plot(yrsGroup[:finalIndex], delayAdjMelt[:finalIndex], '-', color=colors[groupNumber], linewidth=0.5)
-   ax9delayAdjMeltDiff.plot(yrsGroup[:finalIndex], 1* (delayAdjMelt - runData['steady'].resampMelt)[:finalIndex], '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady
+   #ax9delayAdjMeltDiff.plot(yrsGroup[:finalIndex], 1* (delayAdjMelt - runData['steady'].resampMelt)[:finalIndex], '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady
+   ax9delayAdjMeltDiff.plot(yrsGroup[:finalIndex], np.convolve(np.ones(filterLen,'d')/filterLen, 1* (delayAdjMelt - runData['steady'].resampMelt)[:finalIndex], mode='same'), '-', color=colors[groupNumber], linewidth=1.5)  #also plot diff from steady  (WITH SMOOTHING)
    # optionally plot min/max adjusted
    delayAdjMeltMin = np.interp(effectiveTimeGroup.mean(0), yrsGroup, meltGroup.min(0)) # generate y values for each x
    ax9delayAdjMelt.plot(yrsGroup[:finalIndex], delayAdjMeltMin[:finalIndex], '--', color=colors[groupNumber], linewidth=0.5)
@@ -796,5 +814,8 @@ axSLR.set_xlim(x1, x2)
 #axSLR.set_xlim(x1, x2)
 
 
-
+plt.close(1)
+plt.close(2)
+plt.close(4)
+plt.close(30)
 plt.show()
