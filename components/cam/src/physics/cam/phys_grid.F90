@@ -1112,7 +1112,6 @@ contains
            'degrees_east', 1, size(lonvals), lonvals, map=coord_map)
 
       ! Create a lat coord map which only writes from one of each unique lat
-      allocate(coord_map(size(grid_map, 2)))
       where(lonvals == lonmin)
         coord_map(:) = grid_map(4, :)
       elsewhere
