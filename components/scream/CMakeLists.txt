@@ -27,11 +27,9 @@ endfunction ()
 enable_testing()
 include(CTest)
 
-# Find Kokkos, initialize some compiler/linke variable based on what we find in it,
-# then proceed with setting the rest of the compiler(s) flags
 include(Kokkos)
+
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KOKKOS_CXXFLAGS_STR}")
 
 # Determine if this is a Cuda build.
 string(FIND "${KOKKOS_GMAKE_DEVICES}" "Cuda" cuda_str_pos)
@@ -74,7 +72,6 @@ if (CMAKE_BUILD_TYPE_ci STREQUAL "debug" AND ${SCREAM_PACK_SIZE} EQUAL 1 AND NOT
   set(DEFAULT_FPE TRUE)
 endif()
 set(SCREAM_FPE ${DEFAULT_FPE} CACHE LOGICAL "Enable floating point error exception")
-
 
 # Check for valid pack sizes
 math(EXPR PACK_MODULO "${SCREAM_PACK_SIZE} % ${SCREAM_SMALL_PACK_SIZE}")
