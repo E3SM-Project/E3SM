@@ -25,13 +25,16 @@ import pickle
 outfname = 'output.nc'
 runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and os.path.isfile(os.path.join(adir, outfname)))]
 print "Original run list:", runs
-
+#runs = [ 'steady', 'amp300_per20_pha0.00','amp300_per20_pha0.25', 'amp300_per20_pha0.50', 'amp300_per20_pha0.75']
+runs = ['steady','amp300_per20_pha0.00']
+runs = ['steady']
+runs = ['amp300_per20_pha0.00']
 # reorder to put the 'control' runs at the beginning
 special_runs = ('steady', 'no-melt')
 for r in special_runs:
    if r in runs:
       runs.remove(r)
-#      runs.insert(0, r)
+      runs.insert(0, r)
 print "Will process the following directories: ", runs
 
 # ----- needed functions ----
@@ -86,6 +89,8 @@ class modelRun:
 
       xCell = f.variables['xCell'][:]
       yCell = f.variables['yCell'][:]
+      xEdge  = f.variables['xEdge'][:]
+      yEdge  = f.variables['yEdge'][:]
       conc= f.variables['cellsOnCell'][:,:]
       cone= f.variables['cellsOnEdge'][:,:]
       dcEdge = f.variables['dcEdge'][:]
@@ -94,40 +99,73 @@ class modelRun:
 
       nt = len(f.dimensions['Time'])
 
+      self.time = np.zeros((nt,))
       self.mnGLslope = np.zeros((nt,))
       self.GA = np.zeros((nt,))
       self.mnGLmelt = np.zeros((nt,))
       self.mnGLdepthMPASMethod = np.zeros((nt,))
       self.mnGLdepth = np.zeros((nt,))
-      self.time = np.zeros((nt,))
+      self.mnCFmelt = np.zeros((nt,))
+      self.mnGLbedslope = np.zeros((nt,))
+      self.mnGLxpos = np.zeros((nt,))
+
+      spdThresh = 100.0/3.14e7
+      spdThresh = 900.0/3.14e7
       for t in range(nt):
-      #for t in np.arange(0,nt,10):
+#      for t in np.arange(0,nt,10):
+#      for t in np.arange(0,284,1):
          print t
          usrf = f.variables['upperSurface'][t,:]
          edgeMask = f.variables['edgeMask'][t,:]
          cellMask = f.variables['cellMask'][t,:]
          thk = f.variables['thickness'][t,:]
+         speed = f.variables['surfaceSpeed'][t,:]
          melt = f.variables['floatingBasalMassBal'][t,:]
+
          ind = np.where(edgeMask&256>0)[0]
+         skipped = 0
+         kept = 0
          for i in range(len(ind)):
              c1 = cone[ind[i]-1,0]-1 # in python 0-based 
              c2 = cone[ind[i]-1,1]-1 # in python 0-based
+             if thk[c1] <= 0.0 or thk[c2] <= 0.0 or c1 <= 0 or c2 <= 0 or speed[c1]<spdThresh or speed[c2]<spdThresh:
+                skipped += 1
+                pass
+             kept += 1
              slp = np.absolute( (usrf[c1] - usrf[c2]) / dcEdge[ind[i]-1] )
              self.mnGLslope[t] += slp # accumulate for mean calc below
              self.mnGLmelt[t] += -1.0 * min(melt[c1], melt[c2]) # get the melt rate on the floating side of the GL (the grounded side will be 0)
              self.mnGLdepth[t] += (topg[c1] + topg[c2])/2.0 # approx GL depth here by avg of two neighboring cells TODO: improve this
-         self.mnGLslope[t] /= len(ind)  # calc mean
-         self.mnGLmelt[t] /= len(ind)
-         self.mnGLdepth[t] /= len(ind)
+
+             self.mnGLxpos[t] += xEdge[i]
+             # bed slope at GL
+             if (cellMask[c1] & 256 > 0):
+                sign = 1.0
+             else:
+                sign = -1.0
+             self.mnGLbedslope[t] += sign*(topg[c1] - topg[c2])/dcEdge[ind[i]-1]
+         #print "skipped {} of {} edges".format(skipped, len(ind))
+         self.mnGLslope[t] /= kept  # calc mean
+         self.mnGLmelt[t] /= kept
+         self.mnGLdepth[t] /= kept
+         self.mnGLbedslope[t] /= kept
+         self.mnGLxpos[t] /= kept
          self.GA[t] = (areaCell[:] * (910.0/1028.0 * thk > -1.0 * topg)).sum()
 
+         ind = np.where(np.logical_and(edgeMask&256>0, np.logical_and(yEdge<-400.0e3, yEdge>-500.0e3)))[0]
+         self.mnGLxpos[t] = xEdge[ind].mean()
          # calc GL depth using MPAS method
          ind = np.where(cellMask&256>0)[0]
          frac = 0.25
+         frac = 0.5
          GLdepths = np.sort(topg[ind])
          #print GLdepths
          fracIdx = int(round(len(GLdepths) * frac))  # get the index that represents the deepest x% of entries
          self.mnGLdepthMPASMethod[t] = GLdepths[0:fracIdx].mean()
+
+         # CF melt
+         ind = np.where(xCell<-1.56e6)
+         self.mnCFmelt[t] = melt[ind].mean()
 
 # ================
 # Loop over runs and collect needed data
@@ -207,10 +245,33 @@ plt.xlabel('time (yr)')
 plt.ylabel('mean depth at GL')
 plt.grid()
 
+axGAvsGLmelt = fig.add_subplot(nrow, ncol, 4)
+plt.xlabel('change in GA from initial')
+plt.ylabel('melt at GL')
+plt.grid()
+
+
+fig = plt.figure(4, facecolor='w')
+nrow = 2; ncol = 2
+axCFmelt = fig.add_subplot(nrow, ncol, 1)
+plt.xlabel('time (yr)')
+plt.ylabel('mean melt of CF')
+plt.grid()
+
+axBedslope = fig.add_subplot(nrow, ncol, 2)
+plt.xlabel('time (yr)')
+plt.ylabel('mean bed slope at GL')
+plt.grid()
+
+axGLrate= fig.add_subplot(nrow, ncol, 3)
+plt.xlabel('time (yr)')
+plt.ylabel('GL xpos retreat rate (m/yr)')
+plt.grid()
+
 
 # --- Define colors for lines ---
 colors = []
-colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
+#colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
 n150 = sum("amp150" in r for r in runs)
 colors.extend( [ cm.autumn(x) for x in np.linspace(0.0, 1.0, n150) ])
 n300 = sum("amp300" in r for r in runs)
@@ -250,5 +311,17 @@ for run in runs:
    axGLmelt.plot(thisRun.yrs, thisRun.mnGLmelt, color=color)
    axGLdepth.plot(thisRun.yrs, thisRun.mnGLdepth, color=color)
    axGLdepth.plot(thisRun.yrs, thisRun.mnGLdepthMPASMethod[:], '.', color=color)
+   step = 40
+   axGLdepth.plot(thisRun.yrs[step/2:-1*step/2], 20.0*(thisRun.mnGLdepthMPASMethod[:-1*step]-thisRun.mnGLdepthMPASMethod[step:]) / (thisRun.yrs[:-1*step]-thisRun.yrs[step:]), color='g', lineWidth=1.5)
+   step = 50
+   axGLdepth.plot(thisRun.yrs[step/2:-1*step/2], 80.0*(thisRun.mnGLdepth[:-1*step]-thisRun.mnGLdepth[step:]) / (thisRun.yrs[:-1*step]-thisRun.yrs[step:]), color='m', lineWidth=1.5)
+
+   axGAvsGLmelt.plot(thisRun.GA[0]-thisRun.GA, thisRun.mnGLmelt, '.', color=color, markersize=1)
+   axCFmelt.plot(thisRun.yrs, thisRun.mnCFmelt, color=color)
+   axBedslope.plot(thisRun.yrs, thisRun.mnGLbedslope, color=color)
+   #axGLrate.plot(thisRun.yrs[1:], -1*(thisRun.mnGLxpos[1:]-thisRun.mnGLxpos[:-1]), color=color, lineWidth=0.5)
+   step=30
+   axGLrate.plot(thisRun.yrs[step/2:-1*step/2], -1.0*(thisRun.mnGLxpos[:-1*step]-thisRun.mnGLxpos[step:]) / (thisRun.yrs[:-1*step]-thisRun.yrs[step:]), color=color, lineWidth=1.5)
+
 
 plt.show()
