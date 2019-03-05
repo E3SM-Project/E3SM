@@ -273,9 +273,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"/>
       </modules>
       <modules compiler="gnu">
-	<command name="load">compiler/gnu/7.2.0</command>
-	<command name="load">mpi/gcc/mpich-3.2</command>
-	<command name="load">tool/netcdf/4.4.1.1/gcc</command>
+	<command name="load">compiler/gnu/8.2.0</command>
       </modules>
     </module_system>
     <environment_variables>

@@ -555,7 +555,7 @@ using a fortran linker.
 </compiler>
 <compiler MACH="centos7-linux">
   <SLIBS>
-    <append> -Wl,-rpath,$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
+    <append>-L$(NETCDF_PATH)/lib -Wl,-rpath,$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
 </compiler>
 
