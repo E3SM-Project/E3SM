@@ -72,7 +72,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   rcldm = Array2("Rain cloud fraction", ncol, nlev);
   lcldm = Array2("Liquid cloud fraction", ncol, nlev);
   icldm = Array2("Ice cloud fraction", ncol, nlev);
-  p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 35);
+  p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 41);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {

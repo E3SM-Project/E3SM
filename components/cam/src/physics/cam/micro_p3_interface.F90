@@ -780,6 +780,13 @@ end subroutine micro_p3_readnl
    call addfld('P3_qcshd',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding')
    call addfld('P3_qcmul',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)')
    call addfld('P3_ncshdc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)')
+   ! Sedimentation 
+   call addfld('P3_sed_CLDLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud content due to sedimentation')
+   call addfld('P3_sed_NUMLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud number due to sedimentation')
+   call addfld('P3_sed_CLDRAIN',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud content due to sedimentation')
+   call addfld('P3_sed_NUMRAIN',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud number due to sedimentation')
+   call addfld('P3_sed_CLDICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud content due to sedimentation')
+   call addfld('P3_sed_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to sedimentation')
 
 
    ! determine the add_default fields
@@ -854,6 +861,13 @@ end subroutine micro_p3_readnl
       call add_default('P3_qcshd',  1, ' ')
       call add_default('P3_qcmul',  1, ' ')
       call add_default('P3_ncshdc', 1, ' ')
+      ! Sedimentation
+      call add_default('P3_sed_CLDLIQ',  1, ' ')
+      call add_default('P3_sed_NUMLIQ',  1, ' ')
+      call add_default('P3_sed_CLDRAIN', 1, ' ')
+      call add_default('P3_sed_NUMRAIN', 1, ' ')
+      call add_default('P3_sed_CLDICE',  1, ' ')
+      call add_default('P3_sed_NUMICE',  1, ' ')
    end if
 
   end subroutine micro_p3_init
@@ -916,7 +930,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: rcldm(pcols,pver)      !rain cloud fraction
     real(rtype) :: lcldm(pcols,pver)      !liquid cloud fraction
     real(rtype) :: icldm(pcols,pver)      !ice cloud fraction
-    real(rtype) :: tend_out(pcols,pver,35) !microphysical tendencies
+    real(rtype) :: tend_out(pcols,pver,41) !microphysical tendencies
 
     ! PBUF Variables
     real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
@@ -1673,7 +1687,14 @@ end subroutine micro_p3_readnl
    call outfld('P3_nrshdr', tend_out(:,:,32), pcols, lchnk) 
    call outfld('P3_qcshd',  tend_out(:,:,33), pcols, lchnk) 
    call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) 
-   call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk) 
+   call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk)
+   ! sedimentation 
+   call outfld('P3_sed_CLDLIQ', tend_out(:,:,36), pcols, lchnk)
+   call outfld('P3_sed_NUMLIQ', tend_out(:,:,37), pcols, lchnk)
+   call outfld('P3_sed_CLDRAIN', tend_out(:,:,38), pcols, lchnk)
+   call outfld('P3_sed_NUMRAIN', tend_out(:,:,39), pcols, lchnk)
+   call outfld('P3_sed_CLDICE', tend_out(:,:,40), pcols, lchnk)
+   call outfld('P3_sed_NUMICE', tend_out(:,:,41), pcols, lchnk)
     
     !call outfld('P3_QCAUT',   qcaut,  pcols, lchnk)
 
