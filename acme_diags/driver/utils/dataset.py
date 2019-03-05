@@ -433,7 +433,7 @@ class Dataset():
         If none of the derived variables work, we try to just get this from the data_file.
         """
         vars_in_file = set(data_file.variables)
-        possible_vars = vars_to_func_dict.keys()  # ex: [('pr',), ('PRECC', 'PRECL')]
+        possible_vars = list(vars_to_func_dict.keys())  # ex: [('pr',), ('PRECC', 'PRECL')]
 
         for list_of_vars in possible_vars:
             if vars_in_file.issuperset(list_of_vars):
@@ -521,7 +521,7 @@ class Dataset():
             # from the 'first' original var.
             # Ex: We have {('PRECC', 'PRECL'): func} for PRECT.
             #     Any extra variables must come from PRECC_{start_yr}01_{end_yr}12.nc.
-            first_orig_var = vars_to_func_dict.keys()[0][0]
+            first_orig_var = list(vars_to_func_dict.keys())[0][0]
             for extra_var in self.extra_vars:
                 v = self._get_var_from_timeseries_file(first_orig_var, data_path, var_to_get=extra_var)
                 return_variables.append(v)
@@ -562,7 +562,7 @@ class Dataset():
             {self.var}_{start_yr}01_{end_yr}12.nc
         located in data_path.
         """
-        possible_vars = vars_to_func_dict.keys()  # ex: [('pr',), ('PRECC', 'PRECL')]
+        possible_vars = list(vars_to_func_dict.keys())  # ex: [('pr',), ('PRECC', 'PRECL')]
 
         for list_of_vars in possible_vars:
             # Check that there are files in data_path that exist for all variables in list_of_vars.
@@ -646,7 +646,7 @@ class Dataset():
         """
         # Since there's only one set of vars, we get the first
         # and only set of vars from the dictionary.
-        vars_to_get = vars_to_func_dict.keys()[0]
+        vars_to_get = list(vars_to_func_dict.keys())[0]
 
         variables = []
         for var in vars_to_get:
