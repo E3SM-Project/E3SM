@@ -2,6 +2,8 @@
 
 import numpy
 import matplotlib.pyplot as plt
+import os.path
+import netCDF4
 
 # constants
 
@@ -17,10 +19,6 @@ alpha = 1e-2
 # thickness of the plume (m)
 D = 30.
 
-
-D=15.0
-Kappa=11.0
-
 print "Kappa={}, D={}, alpha={}".format(Kappa, D, alpha)
 # Entrainment parameter (Jenkins 1991)
 E0 = 0.036
@@ -31,29 +29,40 @@ St = 5.9e-4
 
 iDepth=-1
 
-zUppers =  numpy.linspace(-0.,-600., 25)
+# use a list to see how the melt rate changes with different profiles.
+# use a list with one entry to just plot up a single case.
+#zUppers =  numpy.linspace(-0.,-600., 25)
 #zUppers =  numpy.array([-200., -400.])
-#zUppers =  numpy.array([-300.])
 #zUppers =  numpy.array([-500.])
+zUppers =  numpy.array([-300.]) # "standard" value for Pine Island Bay
+
+# Set depth of grounding line here
+#    zGL = -1500.
+##    zGL =-688.
+##    zGL =-644.
+zGL =-693. # value MALI gets for initial condition of Thwaites domain
+
+zSill = -663. # estimate used for Thwaites
+
+zCF = -173.  # calving front depth from Thwaites initial condition
+
+# idealized Pine Island Bay temperatures
+TUpper = -1.
+TLower = 1.2
+
+
+# =============
+
 meanMeltRates = numpy.zeros((len(zUppers),))
 GLMeltRates = numpy.zeros((len(zUppers),))
+
 for zUpper in zUppers:
     iDepth = iDepth+1
     print "iDepth={}, zUpper={}".format(iDepth, zUpper)
 
-    zGL = -1500.
-##    zGL =-688.
-#    zGL =-662.
-##    zGL =-644.
-
     z = numpy.linspace(0., zGL-100, 1001)
 
     zLower = zUpper - 400.
-
-    zSill = -663.
-
-    TUpper = -1.
-    TLower = 1.2
 
     TRegional = numpy.zeros(z.shape)
 
@@ -95,7 +104,8 @@ for zUpper in zUppers:
 
     ThermalForcing = TPlume - TFreeze
 
-    TFMean = numpy.mean(ThermalForcing)
+    ind = numpy.where(numpy.logical_and(z>zGL, z<zCF))[0]
+    TFMean = numpy.mean(ThermalForcing[ind])
 
     print "TFmean=", TFMean
 
@@ -113,6 +123,74 @@ for zUpper in zUppers:
     print "integrated melt rate=", meanMeltRates[iDepth]
 
     GLMeltRates[iDepth] = meltRate[numpy.argmin(numpy.absolute((z-zGL))).min()]
+
+    if len(zUppers) == 1:
+        # If only one plot was requested, also do a 'clean' version for the paper
+        #plt.rc('text', usetex=True)
+        fig = plt.figure(101, facecolor='w', figsize=(12, 5))
+        nrow = 1; ncol = 3;
+
+        # temperature plot
+        axT = fig.add_subplot(nrow, ncol, 1)
+        plt.xlabel('ocean temperature ($^{\circ}$C)')
+        plt.ylabel('depth (m)')
+        plt.grid()
+
+        plt.plot(TRegional, z, label='$T_{regional}$')
+        plt.plot(TCavity, z, label='$T_{cavity}$')
+        plt.plot(TFreeze, z, label='$T_{freeze}$')
+        plt.plot(TInfinity, z, label='$T_{infinity}$')
+        plt.plot(TPlume, z, label='$T_{plume}$')
+        plt.plot([TFreeze.min(), TRegional.max()], zGL*numpy.array([1.0, 1.0]), '--k', label='$z_{GL}$')
+        plt.plot([TFreeze.min(), TRegional.max()], zCF*numpy.array([1.0, 1.0]), ':k', label='$z_{CF}$')
+        plt.plot([TFreeze.min(), TRegional.max()], zSill*numpy.array([1.0, 1.0]), '-.k', label='$z_{sill}$')
+        plt.legend()
+
+        # TF plot
+        axTF = fig.add_subplot(nrow, ncol, 2)
+        plt.xlabel('thermal forcing ($^{\circ}$C)')
+        plt.ylabel('depth (m)')
+        plt.grid()
+        plt.plot(ThermalForcing, z, label='$TF_{local}$')
+        plt.plot(TFMean*numpy.array([1.0, 1.0]), [zGL, zCF], label='$TF_{mean}$', linewidth=3)
+        plt.plot([0.0, ThermalForcing.max()], zGL*numpy.array([1.0, 1.0]), '--k', label='$z_{GL}$')
+        plt.plot([0.0, ThermalForcing.max()], zCF*numpy.array([1.0, 1.0]), ':k', label='$z_{CF}$')
+        plt.legend()
+
+
+        # melt plot
+        axMelt = fig.add_subplot(nrow, ncol, 3)
+        plt.xlabel('melt rate (m yr$^{-1}$)')
+        plt.ylabel('depth (m)')
+        plt.grid()
+        # plot Rignot obs if available
+        obsFile = '/Users/mhoffman/Documents/PAPERS_PRESENTATIONS/2017_Thwaites_variability/melt_param_testing/iceshelf_melt_param_test/thwaites_1-8km_resolution.cleaned.withRignotMelt.nc'
+        if os.path.isfile(obsFile):
+            f = netCDF4.Dataset(obsFile, 'r')
+            meltObs = f.variables['floatingBasalMassBal'][0,:] / 910.0 * 3600.0 * 24.0 * 365.0
+            #ind = numpy.nonzero(meltObs != 0.0)
+            lowerSurface = f.variables['lowerSurface'][0,:]
+            xCell = f.variables['xCell'][:]
+            yCell = f.variables['yCell'][:]
+            # divide into east and west shelf regions
+            x1=-1590948.400363433; y1=-459735.6052551331;
+            x2=-1531877.338559778; y2=-440731.18578141753;
+            m = (y2-y1)/(x2-x1); b = y1-m*x1
+            ind1 = numpy.nonzero(numpy.logical_and(meltObs!=0.0, yCell>=m*xCell+b))
+            ind2 = numpy.nonzero(numpy.logical_and(meltObs!=0.0, yCell< m*xCell+b))
+
+            plt.plot(meltObs[ind1], lowerSurface[ind1], '.', label='$obs_{east}$', markersize = 1)
+            plt.plot(meltObs[ind2], lowerSurface[ind2], '.', label='$obs_{west}$', markersize = 1)
+        # now plot param.
+        plt.plot(meltRate, z, label='model')
+        plt.plot([0.0, meltRate.max()], zGL*numpy.array([1.0, 1.0]), '--k', label='$z_{GL}$')
+        plt.plot([0.0, meltRate.max()], zCF*numpy.array([1.0, 1.0]), ':k', label='$z_{CF}$')
+        plt.legend()
+        axMelt.set_ylim(axTF.get_ylim())
+
+        plt.tight_layout()
+
+
 if len(zUppers) > 1:
   # plot summarizing everything for mean melt rate
   plt.figure(200)
