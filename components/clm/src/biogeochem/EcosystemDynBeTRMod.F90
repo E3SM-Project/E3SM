@@ -545,6 +545,7 @@ module EcosystemDynBeTRMod
     use SoilLittDecompMod                 , only : SoilLittDecompAlloc2
     use BeTRSimulationALM                 , only : betr_simulation_alm_type
     use SoilWaterRetentionCurveMod        , only : soil_water_retention_curve_type
+    use subgridAveMod                     , only: p2c
     implicit none
 
 
@@ -634,6 +635,15 @@ module EcosystemDynBeTRMod
         c14_carbonstate_vars, c14_carbonflux_vars, &
         nitrogenstate_vars, nitrogenflux_vars, &
         phosphorusstate_vars, phosphorusflux_vars)
+
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+         nitrogenflux_vars%sminn_to_plant_patch(bounds%begp:bounds%endp), &
+         nitrogenflux_vars%sminn_to_plant_col(bounds%begc:bounds%endc))
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+         phosphorusflux_vars%sminp_to_plant_patch(bounds%begp:bounds%endp), &
+         phosphorusflux_vars%sminp_to_plant_col(bounds%begc:bounds%endc))
  !     call t_stopf('betr type1 soil bgc')
  !     call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'afbetrbgc') 
  !     call carbonflux_vars%summary_sinksource(bounds, num_soilc, filter_soilc, 'afberbbgc') 

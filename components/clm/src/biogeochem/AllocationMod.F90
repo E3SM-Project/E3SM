@@ -4355,6 +4355,9 @@ contains
     ivt                  => veg_pp%itype                   , &
     km_nit               => veg_vp%km_nit                  , &
     km_den               => veg_vp%km_den                  , &
+    km_decomp_nh4        => veg_vp%km_decomp_nh4           , &
+    km_decomp_no3        => veg_vp%km_decomp_no3           , &
+    km_decomp_p          => veg_vp%km_decomp_p             , &
     vmax_plant_nh4       => veg_vp%vmax_plant_nh4          , &
     vmax_plant_no3       => veg_vp%vmax_plant_no3          , &
     vmax_plant_p         => veg_vp%vmax_plant_p            , &
@@ -4387,6 +4390,9 @@ contains
     km_den_no3_vr_col => PlantMicKinetics_vars%km_den_no3_vr_col, &
     km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
     vmax_minsurf_p_vr_col => PlantMicKinetics_vars%vmax_minsurf_p_vr_col, &
+    km_decomp_no3_vr_col  => PlantMicKinetics_vars%km_decomp_no3_vr_col, &
+    km_decomp_nh4_vr_col  => PlantMicKinetics_vars%km_decomp_nh4_vr_col, &
+    km_decomp_p_vr_col    =>  PlantMicKinetics_vars%km_decomp_p_vr_col, &
     dsolutionp_dt_vr_col => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
     dlabp_dt_vr_col      => PlantMicKinetics_vars%dlabp_dt_vr_col, &
     pdep_to_sminp        => phosphorusflux_vars%pdep_to_sminp_col    , &
@@ -4403,19 +4409,19 @@ contains
 
          do p = col_pp%pfti(c), col_pp%pftf(c)
            if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-             plant_eff_ncompet_b_vr_patch(p,j)=e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)
+             plant_eff_ncompet_b_vr_patch(p,j)=e_plant_scalar * frootc(p) * froot_prof(p,j) * veg_pp%wtcol(p)
 
-             plant_eff_pcompet_b_vr_patch(p,j)=e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)
+             plant_eff_pcompet_b_vr_patch(p,j)=e_plant_scalar * frootc(p) * froot_prof(p,j) * veg_pp%wtcol(p)
 
-             decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
+             decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j) * veg_pp%wtcol(p)
 
              plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * &
-                             froot_prof(p,j) * cn_scalar(p) * t_scalar(c,j)
+                             froot_prof(p,j) * cn_scalar(p) * t_scalar(c,j) * veg_pp%wtcol(p)
 
              plant_no3_vmax_vr_patch(p,j) =  vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j)
+                             cn_scalar(p) * t_scalar(c,j) * veg_pp%wtcol(p)
              plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cp_scalar(p) * t_scalar(c,j)
+                             cp_scalar(p) * t_scalar(c,j) * veg_pp%wtcol(p)
 
              plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))
 
@@ -4436,6 +4442,9 @@ contains
          den_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
          km_nit_nh4_vr_col(c,j)=km_nit
          km_den_no3_vr_col(c,j)=km_den
+         km_decomp_nh4_vr_col(c,j)=km_decomp_nh4
+         km_decomp_no3_vr_col(c,j) = km_decomp_no3
+         km_decomp_p_vr_col(c,j) = km_decomp_p
          !watch out how sorption-desorption is done
          km_minsurf_p_vr_col(c,j)=km_minsurf_p_vr(isoilorder(c),j)
          vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
