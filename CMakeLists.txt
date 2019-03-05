@@ -70,8 +70,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mct)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
 if (USE_MPI_SERIAL)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
-  link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
+  # We need to list the mpi-serial include directory before system-level
+  # directories so that we're sure to use mpi-serial's mpif.h instead of
+  # an mpif.h from a system path.
+  include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
+  link_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
 endif()
 
 # ------------------------------------------------------------------------

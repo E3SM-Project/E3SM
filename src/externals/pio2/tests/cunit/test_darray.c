@@ -76,11 +76,14 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
     int ncid;      /* The ncid of the netCDF file. */
     int ncid2;     /* The ncid of the re-opened netCDF file. */
     int varid;     /* The ID of the netCDF varable. */
-    int varid2;    /* The ID of a varable of different type. */
+    int varid2;     /* The ID of a netCDF varable of different type. */
     int wrong_varid = TEST_VAL_42;  /* A wrong ID. */
     int ret;       /* Return code. */
+    MPI_Datatype mpi_type;
+    int type_size; /* size of a variable of type pio_type */
+    int other_type; /* another variable of the same size but different type */
     PIO_Offset arraylen = 4;
-    void *fillvalue;
+    void *fillvalue, *ofillvalue;
     void *test_data;
     void *test_data_in;
     int fillvalue_int = NC_FILL_INT;
@@ -116,7 +119,6 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 /* Create the filename. */
                 sprintf(filename, "data_%s_iotype_%d_pio_type_%d_test_multi_%d_provide_fill_%d.nc", TEST_NAME,
                         flavor[fmt], pio_type, test_multi, provide_fill);
-
                 /* Select the fill value and data. */
                 switch (pio_type)
                 {
@@ -152,9 +154,27 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 if ((ret = PIOc_def_var(ncid, VAR_NAME, pio_type, NDIM, dimids, &varid)))
                     ERR(ret);
 
-                /* Define a variable with a different type. */
-                int other_type = pio_type == PIO_INT ? PIO_FLOAT : PIO_INT;
-                if ((ret = PIOc_def_var(ncid, VAR_NAME2, other_type, NDIM, dimids, &varid2)))
+                /* Define a variable with a different type but same size. */
+		if ((ret = find_mpi_type(pio_type, &mpi_type, &type_size)))
+		    ERR(ret);
+		if (type_size == NETCDF_INT_FLOAT_SIZE)
+		    other_type = pio_type == PIO_INT ? PIO_FLOAT : PIO_INT;
+//		else if(type_size == NETCDF_DOUBLE_INT64_SIZE)
+//		    other_type = pio_type == PIO_INT64 ? PIO_DOUBLE : PIO_INT64;
+		else
+		    other_type = 0; /* skip the test */
+                switch (other_type)
+                {
+                case PIO_INT:
+                    ofillvalue = provide_fill ? &fillvalue_int : NULL;
+                    break;
+                case PIO_FLOAT:
+                    ofillvalue = provide_fill ? &fillvalue_float : NULL;
+                    break;
+                default:
+		    break;
+                }
+                if (other_type && (ret = PIOc_def_var(ncid, VAR_NAME2, other_type, NDIM, dimids, &varid2)))
                     ERR(ret);
 
                 /* End define mode. */
@@ -163,6 +183,8 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
 
                 /* Set the value of the record dimension. */
                 if ((ret = PIOc_setframe(ncid, varid, 0)))
+                    ERR(ret);
+                if (other_type && (ret = PIOc_setframe(ncid, varid2, 0)))
                     ERR(ret);
 
                 int frame = 0;
@@ -178,12 +200,15 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                         ERR(ERR_WRONG);
                     if (PIOc_write_darray(ncid, TEST_VAL_42, ioid, arraylen, test_data, fillvalue) != PIO_ENOTVAR)
                         ERR(ERR_WRONG);
-                    if (PIOc_write_darray(ncid, varid2, ioid, arraylen, test_data, fillvalue) != PIO_EINVAL)
-                        ERR(ERR_WRONG);
+
+		    /* This should work - library type conversion */
+		    if (other_type && (ret = PIOc_write_darray(ncid, varid2, ioid, arraylen, test_data, ofillvalue)))
+                        ERR(ret);
 
                     /* Write the data. */
                     if ((ret = PIOc_write_darray(ncid, varid, ioid, arraylen, test_data, fillvalue)))
                         ERR(ret);
+
                 }
                 else
                 {
@@ -205,9 +230,16 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                     if (PIOc_write_darray_multi(ncid, &varid_big, ioid, 1, arraylen, test_data, &frame,
                                                 fillvalue, flushtodisk) != PIO_ENOTVAR)
                         ERR(ERR_WRONG);
+//		    pio_setloglevel(3);
                     if (PIOc_write_darray_multi(ncid, &wrong_varid, ioid, 1, arraylen, test_data, &frame,
                                                 fillvalue, flushtodisk) != PIO_ENOTVAR)
                         ERR(ERR_WRONG);
+//		    pio_setloglevel(0);
+
+		    /* This should work - library type conversion */
+		    if (other_type && (ret = PIOc_write_darray_multi(ncid, &varid2, ioid, 1, arraylen, test_data, &frame,
+						       fillvalue, flushtodisk)))
+                        ERR(ret);
 
                     /* Write the data with the _multi function. */
                     if ((ret = PIOc_write_darray_multi(ncid, &varid, ioid, 1, arraylen, test_data, &frame,
@@ -219,9 +251,17 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                 if ((ret = PIOc_closefile(ncid)))
                     ERR(ret);
 
+
                 /* Reopen the file. */
                 if ((ret = PIOc_openfile(iosysid, &ncid2, &flavor[fmt], filename, PIO_NOWRITE)))
                     ERR(ret);
+
+		PIO_Offset dimlen;
+		/* check the unlimited dim size - it should be 1 */
+		if ((ret = PIOc_inq_dimlen(ncid2, dimids[0], &dimlen)))
+		    ERR(ret);
+		if (dimlen != 1)
+		    ERR(ERR_WRONG);
 
                 /* These should not work. */
                 if (PIOc_read_darray(ncid2 + TEST_VAL_42, varid, ioid, arraylen,
@@ -273,7 +313,6 @@ int test_darray(int iosysid, int ioid, int num_flavors, int *flavor, int my_rank
                                                 fillvalue, flushtodisk) != PIO_EPERM)
                         ERR(ERR_WRONG);
                 }
-
                 /* Close the netCDF file. */
                 if ((ret = PIOc_closefile(ncid2)))
                     ERR(ret);

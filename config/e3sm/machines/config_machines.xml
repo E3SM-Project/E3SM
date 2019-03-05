@@ -676,7 +676,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread:overload-allowed</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="false">
@@ -708,8 +708,8 @@
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/1.8.7</command>
-        <command name="load">sems-netcdf/4.4.1/exo_parallel</command>
+        <command name="load">acme-openmpi/2.1.5/acme</command>
+        <command name="load">acme-netcdf/4.4.1/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1835,10 +1835,10 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="python">/opt/lmod/7.3.28/init/env_modules_python.py</init_path>
+      <init_path lang="python">/opt/lmod/7.8.4/init/env_modules_python.py</init_path>
       <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-      <cmd_path lang="python">/opt/lmod/7.3.28/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/opt/lmod/7.8.4/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
