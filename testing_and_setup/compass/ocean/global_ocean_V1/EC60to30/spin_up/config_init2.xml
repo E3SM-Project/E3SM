@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <config case="init_step2">
 
-	<get_file dest_path="initial_condition_database" file_name="PTemp.Jan_p3.filled.mpas100levs.160127.nc">
+	<get_file dest_path="initial_condition_database" file_name="PotentialTemperature.01.filled.60levels.PHC.151106.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest_path="initial_condition_database" file_name="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc">
+	<get_file dest_path="initial_condition_database" file_name="Salinity.01.filled.60levels.PHC.151106.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
@@ -26,8 +26,8 @@
 	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
 	<add_link source="../init_step1/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
-	<add_link source_path="initial_condition_database" source="PTemp.Jan_p3.filled.mpas100levs.160127.nc" dest="temperature.nc"/>
-	<add_link source_path="initial_condition_database" source="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc" dest="salinity.nc"/>
+	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
+	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="salinity.nc"/>
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
 	<add_link source_path="initial_condition_database" source="ETOPO2v2c_f4_151106.nc" dest="topography.nc"/>
 	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
@@ -35,6 +35,7 @@
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_configuration_dir"/>
+        <option name="config_global_ocean_depth_conversion_factor">0.01</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
