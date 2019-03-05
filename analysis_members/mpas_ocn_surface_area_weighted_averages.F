@@ -350,9 +350,10 @@ contains
          ! copy data into work array
          ! Note: Order of indices must match the ordering of vars in var_arrays in Registry_surface_area_weighted_averages.xml
          !       (and all var_arrays in Registry_surface_area_weighted_averages.xml must have same ordering!)
+
+         !initialize workArray to zeros
+         workArray(:,:) = 0.0_RKIND
          n = 1
-         workArray(n,:) = 0.0_RKIND
-         n = n + 1
          workArray(n,:) = workMask(:)
          n = n + 1
          workArray(n,:) = areaCell(:)
