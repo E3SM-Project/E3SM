@@ -4787,6 +4787,10 @@ module mpas_stream_manager
 
         implicit none
 
+        integer, parameter :: UNUSED_CELL = 0
+        integer, parameter :: UNUSED_EDGE = 0
+        integer, parameter :: UNUSED_VERTEX = 0
+
         type (mpas_pool_type), pointer :: allFields
         type (mpas_pool_type), pointer :: streamFields
 
@@ -4909,7 +4913,7 @@ module mpas_stream_manager
                            cellsOnCell % array(j,i) = indexToCellID % array(cellsOnCell_ptr % array(j,i))
                        end do
 
-                       cellsOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nCells+1
+                       cellsOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = UNUSED_CELL
                    end do
 
                    cellsOnCell => cellsOnCell % next
@@ -4929,7 +4933,7 @@ module mpas_stream_manager
                            edgesOnCell % array(j,i) = indexToEdgeID % array(edgesOnCell_ptr % array(j,i))
                        end do
 
-                       edgesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nEdges+1
+                       edgesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = UNUSED_EDGE
                    end do
 
                    edgesOnCell => edgesOnCell % next
@@ -4949,7 +4953,7 @@ module mpas_stream_manager
                            verticesOnCell % array(j,i) = indexToVertexID % array(verticesOnCell_ptr % array(j,i))
                        end do
 
-                       verticesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nVertices+1
+                       verticesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = UNUSED_VERTEX
                    end do
 
                    verticesOnCell => verticesOnCell % next
@@ -5003,7 +5007,7 @@ module mpas_stream_manager
                            edgesOnEdge % array(j,i) = indexToEdgeID % array(edgesOnEdge_ptr % array(j,i))
                        end do
 
-                       edgesOnEdge % array(nEdgesOnEdge%array(i)+1:maxEdges2,i) = nEdges+1
+                       edgesOnEdge % array(nEdgesOnEdge%array(i)+1:maxEdges2,i) = UNUSED_EDGE
                    end do
 
                    edgesOnEdge => edgesOnEdge % next
