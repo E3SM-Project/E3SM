@@ -955,6 +955,11 @@ contains
          avgflag='A', long_name='retranslocated N pool mortality', &
          ptr_patch=this%m_retransn_to_litter_patch, default='inactive')
 
+    this%m_npool_to_litter_fire_patch(begp:endp) = spval
+    call hist_addfld1d (fname='M_NPOOL_TO_LITTER_FIRE', units='gN/m^2/s', &
+         avgflag='A', long_name='N pool mortality due to fire', &
+         ptr_patch=this%m_npool_to_litter_fire_patch, default='inactive')
+
     this%m_npool_to_litter_patch(begp:endp) = spval
     call hist_addfld1d (fname='M_NPOOL_TO_LITTER', units='gN/m^2/s', &
          avgflag='A', long_name='retranslocated N pool mortality', &
@@ -1279,6 +1284,11 @@ contains
     call hist_addfld1d (fname='NDEP_TO_SMINN', units='gN/m^2/s', &
          avgflag='A', long_name='atmospheric N deposition to soil mineral N', &
          ptr_col=this%ndep_to_sminn_col)
+
+    this%nfix_to_ecosysn_col(begc:endc) = spval
+    call hist_addfld1d (fname='NFIX_TO_ECOSYSN', units='gN/m^2/s', &
+         avgflag='A', long_name='symbiotic/asymbiotic N fixation to the whole ecosystem', &
+         ptr_col=this%nfix_to_ecosysn_col,default='inactive')
 
     this%nfix_to_sminn_col(begc:endc) = spval
     call hist_addfld1d (fname='NFIX_TO_SMINN', units='gN/m^2/s', &

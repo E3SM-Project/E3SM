@@ -827,6 +827,11 @@ contains
          avgflag='A', long_name='retranslocated P pool mortality', &
          ptr_patch=this%m_retransp_to_litter_patch, default='inactive')
 
+    this%m_ppool_to_litter_fire_patch(begp:endp) = spval
+    call hist_addfld1d (fname='M_PPOOL_TO_LITTER_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='P pool mortality due to fire', &
+         ptr_patch=this%m_ppool_to_litter_fire_patch, default='inactive')
+
     this%m_ppool_to_litter_patch(begp:endp) = spval
     call hist_addfld1d (fname='M_PPOOL_TO_LITTER', units='gP/m^2/s', &
          avgflag='A', long_name='Storage P pool mortality', &
