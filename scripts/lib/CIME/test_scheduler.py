@@ -698,7 +698,7 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        first_test = self.first_test()
+        first_test = self._first_test()
         if self._single_exe and test != first_test:
             if self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PASS_STATUS:
                 with Case(test_dir, read_only=False) as case:
