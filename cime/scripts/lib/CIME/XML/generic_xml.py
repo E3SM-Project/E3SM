@@ -485,7 +485,7 @@ class GenericXML(object):
                 cimeroot = get_cime_root()
                 item_data = item_data.replace(m.group(), cimeroot)
             elif var == "SRCROOT":
-                srcroot = os.path.join(get_cime_root(),"..")
+                srcroot = os.path.normpath(os.path.join(get_cime_root(),".."))
                 item_data = item_data.replace(m.group(), srcroot)
             elif var == "USER":
                 item_data = item_data.replace(m.group(), getpass.getuser())

@@ -1098,6 +1098,57 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="cori-knl" COMPILER="intel19">
+  <CFLAGS>
+    <base> -O2 -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
+  </CPPDEFS>
+  <CXX_LDFLAGS>
+    <base> -cxxlib </base>
+  </CXX_LDFLAGS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml -fimf-use-svml=false:asin </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <append compile_threaded="true"> -qopenmp </append>
+  </LDFLAGS>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SLIBS>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+    <append> -mkl -lpthread </append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler MACH="eastwind" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -1367,6 +1418,7 @@ for mct, etc.
 
 <compiler MACH="melvin" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <KOKKOS_OPTIONS> --with-openmp --with-options=aggressive_vectorization </KOKKOS_OPTIONS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1374,7 +1426,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1410,14 +1462,19 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="snl-white">
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
-  <MPICXX>${KOKKOS_ROOT}/bin/nvcc_wrapper</MPICXX>
+  <SCXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</SCXX>
+  <MPICXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</MPICXX>
+  <KOKKOS_OPTIONS> --arch=Pascal60 --with-cuda=$ENV{CUDA_ROOT} --with-cuda-options=enable_lambda </KOKKOS_OPTIONS>
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
   <LDFLAGS>
     <append> -lstdc++ -lcudart </append>
   </LDFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+  </SLIBS>
 </compiler>
 
 <compiler COMPILER="intel18" MACH="snl-blake">
@@ -1468,7 +1525,6 @@ for mct, etc.
     <base> -cxxlib </base>
   </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
 </compiler>
 
 <compiler MACH="mesabi" COMPILER="intel">
@@ -1607,7 +1663,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>

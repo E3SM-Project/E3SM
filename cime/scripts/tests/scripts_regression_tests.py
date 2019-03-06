@@ -115,13 +115,20 @@ class A_RunUnitTests(unittest.TestCase):
 
         self.assertTrue(results.wasSuccessful())
 
-    def test_CIME_doctests(self):
-        # Find and run all the doctests in the CIME directory tree
-        run_cmd_assert_result(self, "PYTHONPATH=%s:$PYTHONPATH python -m doctest *.py 2>&1" % LIB_DIR, from_dir=os.path.join(LIB_DIR,"CIME"))
-
-    def test_CIMEXML_doctests(self):
-        # Find and run all the doctests in the XML directory tree
-        run_cmd_assert_result(self, "PYTHONPATH=%s:$PYTHONPATH python -m doctest *.py 2>&1" % LIB_DIR, from_dir=os.path.join(LIB_DIR,"CIME","XML"))
+    def test_lib_doctests(self):
+        # Find and run all the doctests in the lib directory tree
+        skip_list = ["six.py", "CIME/SystemTests/mvk.py", "CIME/SystemTests/pgn.py"]
+        for root, _, files in os.walk(LIB_DIR):
+            for file_ in files:
+                filepath = os.path.join(root, file_)[len(LIB_DIR)+1:]
+                if filepath.endswith(".py") and filepath not in skip_list:
+                    with open(os.path.join(root, file_)) as fd:
+                        content = fd.read()
+                    if '>>>' in content:
+                        print("Running doctests for {}".format(filepath))
+                        run_cmd_assert_result(self, 'PYTHONPATH={}:$PYTHONPATH python -m doctest {} 2>&1'.format(LIB_DIR, filepath), from_dir=LIB_DIR)
+                    else:
+                        print("{} has no doctests".format(filepath))
 
 ###############################################################################
 def make_fake_teststatus(path, testname, status, phase):
