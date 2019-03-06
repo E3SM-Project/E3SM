@@ -2100,7 +2100,7 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>cli115,cli127,cli106,csc190</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>cli106,cli115,cli127,cli133,csc190</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -2342,11 +2342,11 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mvapich,openmpi</MPILIBS>
     <PROJECT>climateacme</PROJECT>
-    <CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -2379,18 +2379,17 @@
     <module_system type="module">
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="sh">/etc/profile.d/z00_lmod.sh</init_path>
       <init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
       <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-
       <modules>
         <command name="purge"/>
         <command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/all</command>
         <command name="load">python/anaconda-2.7-climate</command>
       </modules>
-
       <modules compiler="gnu">
         <command name="load">gcc/5.3.0</command>
       </modules>
@@ -2409,42 +2408,41 @@
       <modules>
         <command name="load">parallel-netcdf/1.5.0</command>
       </modules>
+      <modules>
+        <command name="load">mkl</command>
+      </modules>
     </module_system>
-    <RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+    <RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
+    <EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
     <environment_variables>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
     </environment_variables>
-
+    <environment_variables compiler="gnu">
+      <env name="MKLROOT">/opt/intel/17.0/mkl</env>
+    </environment_variables>
   </machine>
 
-  <machine MACH="wolf">
-    <DESC>LANL Linux Cluster, 16 pes/node, batch system slurm</DESC>
-    <NODENAME_REGEX>wf-fe.*.lanl.gov</NODENAME_REGEX>
+  <machine MACH="badger">
+    <DESC>LANL Linux Cluster, 36 pes/node, batch system slurm</DESC>
+    <NODENAME_REGEX>ba-fe.*.lanl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>openmpi,mvapich</MPILIBS>
+    <COMPILERS>gnu,intel</COMPILERS>
+    <MPILIBS>mvapich,openmpi</MPILIBS>
     <PROJECT>climateacme</PROJECT>
-    <CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>jonbob -at- lanl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -n {{ total_tasks }}</arg>
@@ -2456,48 +2454,58 @@
         <arg name="num_tasks"> -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable/>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <init_path lang="sh">/etc/profile.d/z00_lmod.sh</init_path>
+      <init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
         <command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/all</command>
-        <command name="load">friendly-testing</command>
         <command name="load">python/anaconda-2.7-climate</command>
       </modules>
-      <modules compiler="intel">
-        <command name="load">intel/15.0.5</command>
-        <command name="load">mkl/11.3.3</command>
-      </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/4.8.2</command>
+        <command name="load">gcc/6.4.0</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">intel/17.0.4</command>
       </modules>
       <modules mpilib="openmpi">
-        <command name="load">openmpi/1.6.5</command>
+        <command name="load">openmpi/2.1.2</command>
       </modules>
       <modules mpilib="mvapich">
-        <command name="load">mvapich2/1.8</command>
+        <command name="load">mvapich2/2.2</command>
       </modules>
       <modules>
-        <command name="load">netcdf/4.4.0</command>
+        <command name="load">netcdf/4.4.1.1</command>
       </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">parallel-netcdf/1.5.0</command>
+      <modules>
+        <command name="load">parallel-netcdf/1.8.1</command>
+      </modules>
+      <modules>
+        <command name="load">mkl</command>
       </modules>
     </module_system>
-    <RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+    <RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/run</RUNDIR>
+    <EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/cases/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$ENV{NETCDF_ROOT}/lib</env>
+      <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="MKLROOT">/opt/intel/17.0/mkl</env>
     </environment_variables>
   </machine>
 
@@ -3080,6 +3088,7 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+      <env name="NETCDF_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
     </environment_variables>
