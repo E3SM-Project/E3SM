@@ -122,6 +122,7 @@ module ocn_core_interface
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
+      logical, pointer :: timeVaryingAtmosphericForcingPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -145,6 +146,8 @@ module ocn_core_interface
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_use_frazil_ice_formation
       logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_time_varying_atmospheric_forcing
+
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -287,6 +290,16 @@ module ocn_core_interface
       if (config_use_standardGM) then
          gmActive = .true.
       end if
+
+      ! test for time-varying forcing
+      !
+      call mpas_pool_get_package(packagePool, 'timeVaryingAtmosphericForcingPKGActive', timeVaryingAtmosphericForcingPKGActive)
+      call mpas_pool_get_config(configPool, &
+                               'config_use_time_varying_atmospheric_forcing', &
+                                config_use_time_varying_atmospheric_forcing)
+      if (config_use_time_varying_atmospheric_forcing) then
+         timeVaryingAtmosphericForcingPKGActive = .true.
+      endif
 
       !
       ! call into analysis member driver to set analysis member packages

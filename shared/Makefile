@@ -64,7 +64,8 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_forcing_restoring.o \
 	   mpas_ocn_time_average_coupled.o \
 	   mpas_ocn_sea_ice.o \
-	   mpas_ocn_framework_forcing.o
+	   mpas_ocn_framework_forcing.o \
+           mpas_ocn_time_varying_forcing.o
 
 all: $(OBJS)
 
@@ -193,6 +194,8 @@ mpas_ocn_tracer_surface_flux_to_tend.o: mpas_ocn_constants.o
 mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o
 
 mpas_ocn_framework_forcing.o:
+
+mpas_ocn_time_varying_forcing.o:  
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
