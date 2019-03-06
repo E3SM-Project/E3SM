@@ -124,6 +124,13 @@ module phys_grid
                                        ! dimensions of rectangular horizontal grid
                                        ! data structure, If 1D data structure, then
                                        ! hdim2_d == 1.
+   logical, private :: use_cost_d
+                                       ! flag indicating that nontrivial colum cost 
+                                       ! estimates are available for use in load 
+                                       ! balancing
+   real(r8), dimension(:), allocatable, private :: cost_d
+                                       ! normalized estimated column computational 
+                                       ! cost (from dynamics)
 
 ! physics field data structures
    integer         :: ngcols           ! global column count in physics grid (all)
@@ -460,6 +467,16 @@ contains
     endif
     latmin = MINVAL(ABS(lat_d))
     lonmin = MINVAL(ABS(lon_d))
+
+    ! Get estimated computational cost weight for each column (only from SE dynamics currently)
+    allocate( cost_d (1:ngcols) )
+    cost_d(:) = 1.0_r8
+    use_cost_d = .false.
+    if ((.not. single_column) .and. dycore_is('SE')) then
+      call get_horiz_grid_d(ngcols, cost_d_out=cost_d)
+      if (minval(cost_d) .ne. maxval(cost_d)) use_cost_d = .true.
+    endif
+
 !!XXgoldyXX: To do: replace collection above with local physics points
 
     ! count number of "real" column indices
@@ -689,7 +706,7 @@ contains
                 chunks(cid)%gcol(ncols) = curgcol_d
                 chunks(cid)%lat(ncols) = lat_p(curgcol_d)
                 chunks(cid)%lon(ncols) = lon_p(curgcol_d)		
-                chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
+                chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol_d)
              endif
           enddo
           chunks(cid)%ncols = ncols
@@ -760,7 +777,9 @@ contains
           enddo
        endif
 
+       call t_startf("create_chunks")
        call create_chunks(lbal_opt, chunks_per_thread)
+       call t_stopf("create_chunks")
 
        ! Early clean-up, to minimize memory high water mark
        deallocate( lat_p )
@@ -790,10 +809,15 @@ contains
           enddo
        enddo
     endif
+
+    !
+    ! Deallocate unneeded work space
+    !
+    deallocate( cost_d )
+
     !
     ! Allocate and initialize data structures for gather/scatter
     !  
-
     allocate( pgcols(1:ngcols_p) )
     allocate( gs_col_offset(0:npes) )
     allocate( pchunkid(0:npes) )
@@ -4083,12 +4107,14 @@ logical function phys_grid_initialized ()
    integer :: jb, ib                     ! global block and columns indices
    integer :: blksiz                     ! current block size
    integer :: ntmp1, ntmp2, nlchunks     ! work variables
+   integer :: lcol                       ! chunk column index
    integer :: max_ncols                  ! upper bound on number of columns in a block
    integer :: ncols                      ! number of columns in current chunk
+
    logical :: error                      ! error flag 
 
    ! indices for dynamics columns in given block
-   integer, dimension(:), allocatable :: cols
+   integer, dimension(:), allocatable :: cols_d
 
    ! number of MPI processes per virtual SMP node (0:nsmpx-1)
    integer, dimension(:), allocatable :: nsmpprocs      
@@ -4127,6 +4153,19 @@ logical function phys_grid_initialized ()
 
    ! process-local chunk id (0:nsmpx-1)
    integer, dimension(:), allocatable :: local_cid
+
+   ! permutation array used to sort columns by their computation cost
+   integer, dimension(:), allocatable :: cdex
+
+   ! array used to mark whether a column has been assigned when sorting
+   ! by dynamics block
+   logical, dimension(:), allocatable :: udex
+
+   ! min heap array used to maintain chunks sorted by assigned computational
+   ! cost. A separate heap is created for each virtual smp, but all
+   ! heaps are implemented in this one 1-D array
+   integer, dimension(:), allocatable :: heap
+   integer, dimension(:), allocatable :: heap_len
 
 #if ( defined _OPENMP )
    integer omp_get_max_threads
@@ -4354,8 +4393,6 @@ logical function phys_grid_initialized ()
                      "column ", curgcol
       call endrun()
    endif
-!
-   deallocate( col_smp_mapx )
 
 !
 !  Allocate other work space
@@ -4366,7 +4403,8 @@ logical function phys_grid_initialized ()
    allocate( maxcol_chks(0:nsmpx-1) )
    allocate( cid_offset (0:nsmpx-1) )
    allocate( local_cid  (0:nsmpx-1) )
-   allocate( cols     (1:maxblksiz) )
+   allocate( cols_d   (1:maxblksiz) )
+
 !
 ! Options 0-3: split local dynamics blocks into chunks,
 !              using wrap-map assignment of columns and
@@ -4451,23 +4489,97 @@ logical function phys_grid_initialized ()
          cid_offset(smp) = cid_offset(smp-1) + nsmpchunks(smp-1)
          local_cid(smp) = 0
       enddo    
+
+!
+! Determine order in which to traverse columns for assignment to chunks
+!
+      allocate( cdex(1:ngcols) )
+
+      if ((use_cost_d) .and. (opt < 4)) then
+! If load balancing using column cost, then sort columns by cost first,
+! maximum to minimum
+         call IndexSet(ngcols,cdex)
+         call IndexSort(ngcols,cdex,cost_d,descend=.true.)
+      else
+! If not using column cost, then sort columns by block ordering,
+! as done in the original algorithm
+         allocate( udex(1:ngcols) )
+         udex(:) = .false.
+         i = 0
+         do jb=firstblock,lastblock
+            blksiz = get_block_gcol_cnt_d(jb)
+            call get_block_gcol_d(jb,blksiz,cols_d)
+!
+            do ib = 1,blksiz
+               curgcol = cols_d(ib)
+!
+! Record column in cdex in block order if not already recorded
+               if (.not. udex(curgcol)) then
+                  i=i+1
+                  if (i > ngcols) then
+                     if (masterproc) then
+                        write(iulog,*) &
+                           "PHYS_GRID_INIT error: more dynamics ", &
+                           "columns found in block traversal ", &
+                           "than expected."
+                     endif
+                     call endrun()
+                  endif
+                  cdex(i) = curgcol
+                  udex(curgcol) = .true.
+               endif
+!
+            enddo
+!
+         enddo
+         deallocate( udex )
+      endif
+
+!
+! Allocate and initialize min heap data structure, for use in 
+! maintaining list of chunks sorted by the assigned computional
+! cost (sum of estimated cost for assigned columns)
+!
+      allocate( heap(1:nchunks) )
+      do cid=1,nchunks
+         heap(cid) = cid
+      enddo
+
+      allocate( heap_len(0:nsmpx-1) )
+      do smp=0,nsmpx-1
+         heap_len(smp) = nsmpchunks(smp)
+      enddo
+
 !
 ! Assign columns to chunks
 !
-      do jb=firstblock,lastblock
-         p = get_block_owner_d(jb)
-         smp = proc_smp_mapx(p)
-         blksiz = get_block_gcol_cnt_d(jb)
-         call get_block_gcol_d(jb,blksiz,cols)
-         do ib = 1,blksiz
+      do i=1,ngcols
+         curgcol = cdex(i)
+         smp = col_smp_mapx(i)
 !
 ! Assign column to a chunk if not already assigned
-            curgcol = cols(ib)
-            if ((dyn_to_latlon_gcol_map(curgcol) .ne. -1) .and. &
-                (knuhcs(curgcol)%chunkid == -1)) then
+         if ((dyn_to_latlon_gcol_map(curgcol) .ne. -1) .and. &
+             (knuhcs(curgcol)%chunkid == -1)) then
 !
-! Find next chunk with space
-! (maxcol_chks > 0 test necessary for opt=4 block map)
+            if ((use_cost_d) .and. (opt < 4)) then
+!
+! For opt==0,1,2,3 and when using column cost estimates, add column 
+! to chunk with lowest estimated cost chunk (and with space), 
+! i.e. to chunk at root of heap for current SMP
+               if (heap_len(smp) > 0) then
+                  cid = heap(cid_offset(smp))
+               else
+                  if (masterproc) then
+                     write(iulog,*) &
+                        "PHYS_GRID_INIT error: not enough chunks ", &
+                        "or too many columns assigned to current SMP"
+                  endif
+                  call endrun()
+               endif
+
+            else
+! For opt==4, find next chunk with space
+! (maxcol_chks > 0 test necessary for opt==4 block map)
                cid = cid_offset(smp) + local_cid(smp)
                if (maxcol_chks(smp) > 0) then
                   do while (chunks(cid)%ncols >=  maxcol_chk(smp))
@@ -4480,42 +4592,57 @@ logical function phys_grid_initialized ()
                      cid = cid_offset(smp) + local_cid(smp)
                   enddo
                endif
-               chunks(cid)%ncols = chunks(cid)%ncols + 1
-               if (chunks(cid)%ncols .eq. maxcol_chk(smp)) &
-                  maxcol_chks(smp) = maxcol_chks(smp) - 1
+
+            endif
+
 !
-               i = chunks(cid)%ncols
-               chunks(cid)%gcol(i) = curgcol
-               chunks(cid)%lon(i)  = lon_p(curgcol)
-               chunks(cid)%lat(i)  = lat_p(curgcol)
-               chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
-               knuhcs(curgcol)%chunkid = cid
-               knuhcs(curgcol)%col = i
+! Update chunk with new column
+            chunks(cid)%ncols = chunks(cid)%ncols + 1
+            if (chunks(cid)%ncols .eq. maxcol_chk(smp)) &
+               maxcol_chks(smp) = maxcol_chks(smp) - 1
 !
-               if (opt < 4) then
+            lcol = chunks(cid)%ncols
+            chunks(cid)%gcol(lcol) = curgcol
+            chunks(cid)%lon(lcol)  = lon_p(curgcol)
+            chunks(cid)%lat(lcol)  = lat_p(curgcol)
+            chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol)
+            knuhcs(curgcol)%chunkid = cid
+            knuhcs(curgcol)%col = lcol
+!
+            if (opt < 4) then
 !
 ! If space available, look to assign a load-balancing "twin" to same chunk
-                  if ( (chunks(cid)%ncols <  maxcol_chk(smp)) .and. &
-                       (maxcol_chks(smp) > 0) .and. (twin_alg > 0)) then
+               if ( (chunks(cid)%ncols <  maxcol_chk(smp)) .and. &
+                    (maxcol_chks(smp) > 0) .and. (twin_alg > 0)) then
 
-                     call find_twin(curgcol, smp, &
-                                    proc_smp_mapx, twingcol)
+                  call find_twin(curgcol, smp, &
+                                 proc_smp_mapx, twingcol)
 
-                     if (twingcol > 0) then
-                        chunks(cid)%ncols = chunks(cid)%ncols + 1
-                        if (chunks(cid)%ncols .eq. maxcol_chk(smp)) &
-                           maxcol_chks(smp) = maxcol_chks(smp) - 1
+                  if (twingcol > 0) then
 !
-                        i = chunks(cid)%ncols
-                        chunks(cid)%gcol(i) = twingcol
-                        chunks(cid)%lon(i) = lon_p(twingcol)
-                        chunks(cid)%lat(i) = lat_p(twingcol)
-                        chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
-                        knuhcs(twingcol)%chunkid = cid
-                        knuhcs(twingcol)%col = i
-                     endif
+! Update chunk with twin column
+                     chunks(cid)%ncols = chunks(cid)%ncols + 1
+                     if (chunks(cid)%ncols .eq. maxcol_chk(smp)) &
+                        maxcol_chks(smp) = maxcol_chks(smp) - 1
 !
+                      lcol = chunks(cid)%ncols
+                      chunks(cid)%gcol(lcol) = twingcol
+                      chunks(cid)%lon(lcol) = lon_p(twingcol)
+                      chunks(cid)%lat(lcol) = lat_p(twingcol)
+                      chunks(cid)%estcost = chunks(cid)%estcost + cost_d(twingcol)
+                      knuhcs(twingcol)%chunkid = cid
+                      knuhcs(twingcol)%col = lcol
                   endif
+!
+               endif
+!
+               if (use_cost_d) then
+!
+! Re-heapify the min heap
+                  call adjust_heap(nchunks, maxcol_chk(smp), &
+                                   cid_offset(smp), heap_len(smp), heap)
+!
+               else
 !
 ! Move on to next chunk (wrap map)
                   local_cid(smp) = mod(local_cid(smp)+1,nsmpchunks(smp))
@@ -4523,9 +4650,18 @@ logical function phys_grid_initialized ()
                endif
 !
             endif
-         enddo
-      enddo
 !
+         endif
+
+      enddo
+
+!
+! Opt-specific clean up
+!
+      deallocate( heap_len )
+      deallocate( heap     )
+      deallocate( cdex     )
+
    else
 !
 ! Option 5: split individual dynamics blocks into chunks,
@@ -4572,7 +4708,7 @@ logical function phys_grid_initialized ()
          p = get_block_owner_d(jb)
          smp = proc_smp_mapx(p)
          blksiz = get_block_gcol_cnt_d(jb)
-         call get_block_gcol_d(jb,blksiz,cols)
+         call get_block_gcol_d(jb,blksiz,cols_d)
 
          ib = 0
          do while (ib < blksiz)
@@ -4585,14 +4721,14 @@ logical function phys_grid_initialized ()
                ib = ib + 1
                ! check whether global index is for a column that dynamics
                ! intends to pass to the physics
-               curgcol = cols(ib)
+               curgcol = cols_d(ib)
                if (dyn_to_latlon_gcol_map(curgcol) .ne. -1) then
                   ! yes - then save the information
                   ncols = ncols + 1
                   chunks(cid)%gcol(ncols) = curgcol
                   chunks(cid)%lon(ncols)  = lon_p(curgcol)
                   chunks(cid)%lat(ncols)  = lat_p(curgcol)
-                  chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
+                  chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol)
                   knuhcs(curgcol)%chunkid = cid
                   knuhcs(curgcol)%col = ncols
                endif
@@ -4618,15 +4754,16 @@ logical function phys_grid_initialized ()
 !
 ! Clean up
 !
-   deallocate( nsmpcolumns )
-   deallocate( nsmpthreads )
-   deallocate( nsmpchunks  )
-   deallocate( maxcol_chk  )
-   deallocate( maxcol_chks )
-   deallocate( cid_offset  )
-   deallocate( local_cid   )
-   deallocate( cols )
-   !deallocate( knuhcs ) !do not deallocate as it is being used in RRTMG radiation.F90
+   deallocate( col_smp_mapx )
+   deallocate( nsmpcolumns  )
+   deallocate( nsmpthreads  )
+   deallocate( nsmpchunks   )
+   deallocate( maxcol_chk   )
+   deallocate( maxcol_chks  )
+   deallocate( cid_offset   )
+   deallocate( local_cid    )
+   deallocate( cols_d       )
+  !deallocate( knuhcs ) !do not deallocate as it is being used in RRTMG radiation.F90
 
    return
    end subroutine create_chunks
@@ -5000,6 +5137,140 @@ logical function phys_grid_initialized ()
 !
    return
    end subroutine find_twin
+!
+!========================================================================
+
+   subroutine adjust_heap(nchunks, maxcol_chk, &
+                          cid_offset, heap_len, heap)
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Adjust heap after adding columns (and updating the associated
+!          computational cost) to the current root, restoring the min 
+!          heap property
+! 
+! Method: Percolate the root down through the heap until find a legal
+!         new location.
+! 
+! Author: Patrick Worley (slight 
+! 
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+
+   ! size of min heap array (for all virtual SMPs)
+   integer, intent(in)    :: nchunks
+
+   ! maximum number of columns assigned to a chunk in current
+   ! virtual SMP node
+   integer, intent(in)    :: maxcol_chk
+
+   ! beginning of min heap for current virtual SMP in heap array
+   integer, intent(in)    :: cid_offset
+
+   ! size of min heap for current virtual SMP (including only chunks
+   ! that still have space to be assigned more columns)
+   integer, intent(inout) :: heap_len
+
+   ! min heap array used to maintain chunks sorted by assigned 
+   ! computational cost
+   integer, intent(inout) :: heap(1:nchunks)
+
+!---------------------------Local workspace-----------------------------
+   integer :: root                     ! first chunk id in heap (root)
+   integer :: heap_last                ! index for last chunk id in heap
+   integer :: last_nonleaf             ! index for last non-leaf in heap
+   integer :: heap_i, heap_il, heap_ir ! indices used in navigating the 
+                                       !  heap
+   integer :: parent, lchild, rchild   ! column ids used in maintaining 
+                                       !  the heap 
+   logical :: done                     ! flag indicating whether heap
+                                       !  adjustment is done or not
+   real(r8):: min_cost                 ! minimum of two chunk estimated
+                                       !  costs
+!-----------------------------------------------------------------------
+!
+   root = heap(cid_offset)
+!
+   if (chunks(root)%ncols .eq. maxcol_chk) then
+! Move chunk to the end of the heap (bringing end to the root)
+! and decrement heap length by 1
+      heap_last = cid_offset + heap_len - 1
+      heap(cid_offset) = heap(heap_last)
+      heap(heap_last) = root
+      heap_len = heap_len - 1
+!
+   endif
+
+! Percolate new or updated root to its proper location in the min heap.
+! Swapping parent with child if chunk estimated cost is greater than or equal, 
+! not just greater than (as in usual heap operations), so that increase
+! likelihood of cycling through all chunks
+   last_nonleaf = heap_len/2
+   heap_i  = 1
+   done = .false.
+!
+   do while (.not. done)
+      if (heap_i > last_nonleaf) then
+! If no children (a leaf), then done.
+         done = .true.
+!
+      else if (2*heap_i == heap_len) then
+! If only a left child, then only a single test.
+         heap_il = 2*heap_i
+         parent = heap(cid_offset+heap_i-1)
+         lchild = heap(cid_offset+heap_il-1)
+!
+         if (chunks(parent)%estcost >= chunks(lchild)%estcost) then
+! If larger or equal, then swap. 
+            heap(cid_offset+heap_i-1)  = lchild
+            heap(cid_offset+heap_il-1) = parent
+            heap_i = heap_il
+!
+         else
+! If smaller, then done.
+            done = .true.
+!
+         endif
+!
+      else
+! If both left and right children, then a number of different possibilities.
+         heap_il = 2*heap_i
+         heap_ir = heap_il+1
+         parent = heap(cid_offset+heap_i-1)
+         lchild = heap(cid_offset+heap_il-1)
+         rchild = heap(cid_offset+heap_ir-1)
+         min_cost = min(chunks(lchild)%estcost,chunks(rchild)%estcost)
+!
+         if (chunks(parent)%estcost < min_cost) then
+! If smaller than both, then done.
+            done = .true.
+!
+         else
+            if (chunks(rchild)%estcost > chunks(lchild)%estcost) then
+! If rchild has the larger cost, then parent cost must be larger than
+! or equal to lchild, so swap with lchild. (For equal lchild and
+! rchild values, go with right child since more likely to be a leaf,
+! so a little less expensive.)
+               heap(cid_offset+heap_i-1)  = lchild
+               heap(cid_offset+heap_il-1) = parent
+               heap_i = heap_il
+!
+            else
+! If lchild has the larger or equal cost, then parent cost must be 
+! larger than or equal to rchild, so swap with rchild. 
+               heap(cid_offset+heap_i-1)  = rchild
+               heap(cid_offset+heap_ir-1) = parent
+               heap_i = heap_ir
+!
+            endif
+!
+         endif
+!
+      endif
+!
+   enddo
+
+   return
+   end subroutine adjust_heap
 !
 !========================================================================
 
