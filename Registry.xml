@@ -713,6 +713,40 @@
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
+	<nml_record name="time_varying_forcing" mode="init;forward">
+		<nml_option name="config_use_time_varying_atmospheric_forcing" type="logical" default_value=".false." units="unitless"
+			description="If true calculate input forcing fields."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_type" type="character" default_value="WINDPRES" units="unitless"
+			description="Atmospheric forcing type."
+			possible_values="'WINDPRES'"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Forcing time to use at the simulation start time"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Reference time for the forcing"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_cycle_start" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Start time for the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
+			description="Duration of the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_interval" type="character" default_value="01:00:00" units="unitless"
+			description="Time between forcing inputs"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_ramp" type="real" default_value="10.0" units="days"
+			description="Number of days to ramp up time varying forcing"
+			possible_values="Any positive real number"
+		/>
+	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
 		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
 					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
@@ -1207,6 +1241,7 @@
 		/>
 	</nml_record>
 	<packages>
+		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
@@ -1601,6 +1636,17 @@
 			<var name="shortWaveHeatFlux"/>
 			<var name="evaporationFlux"/>
 			<var name="rainFlux"/>
+		</stream>
+		<stream name="atmospheric_forcing"
+				type="input"
+				filename_template="atmospheric_forcing.nc"
+				filename_interval="none"
+				input_interval="none"
+				packages="timeVaryingAtmosphericForcingPKG"
+				immutable="true">
+			<var name="atmosPressure"/>
+			<var name="windSpeedU"/>
+			<var name="windSpeedV"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
@@ -2975,6 +3021,24 @@
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
 			 packages="frazilIce"
+		/>
+	</var_struct>
+	<var_struct name="timeVaryingForcing" time_levs="1">
+		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m/s"
+			description="Zonal (eastward) component of wind speed at cell centers from coupler. Positive easthward."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="windSpeedV" type="real" dimensions="nCells Time" units="m/s"
+			description="Meridional (northward) component of wind speed at cell centers from coupler. Positive northward."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="windSpeedMagnitude" type="real" dimensions="nCells Time" units="m/s"
+			description="Magnitude of wind speed at cell centers from coupler."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="atmosPressure" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure at the sea surface due to the atmosphere."
+			packages="timeVaryingAtmosphericForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
