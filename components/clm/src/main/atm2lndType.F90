@@ -11,7 +11,7 @@ module atm2lndType
   use shr_megan_mod , only : shr_megan_mechcomps_n
   use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_cndv, use_fates
+  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
@@ -313,46 +313,46 @@ contains
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
 
-    this%forc_wind_grc(begg:endg) = spval
-    call hist_addfld1d (fname='WIND', units='m/s',  &
-         avgflag='A', long_name='atmospheric wind velocity magnitude', &
-         ptr_lnd=this%forc_wind_grc)
+!    this%forc_wind_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='WIND', units='m/s',  &
+!         avgflag='A', long_name='atmospheric wind velocity magnitude', &
+!         ptr_lnd=this%forc_wind_grc)
     ! Rename of WIND for Urban intercomparision project
     call hist_addfld1d (fname='Wind', units='m/s',  &
          avgflag='A', long_name='atmospheric wind velocity magnitude', &
          ptr_gcell=this%forc_wind_grc, default = 'inactive')
 
-    this%forc_hgt_grc(begg:endg) = spval
-    call hist_addfld1d (fname='ZBOT', units='m',  &
-         avgflag='A', long_name='atmospheric reference height', &
-         ptr_lnd=this%forc_hgt_grc)
+!    this%forc_hgt_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='ZBOT', units='m',  &
+!         avgflag='A', long_name='atmospheric reference height', &
+!         ptr_lnd=this%forc_hgt_grc)
 
-    this%forc_solar_grc(begg:endg) = spval
-    call hist_addfld1d (fname='FSDS', units='W/m^2',  &
-         avgflag='A', long_name='atmospheric incident solar radiation', &
-         ptr_lnd=this%forc_solar_grc)
+!    this%forc_solar_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='FSDS', units='W/m^2',  &
+!         avgflag='A', long_name='atmospheric incident solar radiation', &
+!         ptr_lnd=this%forc_solar_grc)
 
-    this%forc_pco2_grc(begg:endg) = spval
-    call hist_addfld1d (fname='PCO2', units='Pa',  &
-         avgflag='A', long_name='atmospheric partial pressure of CO2', &
-         ptr_lnd=this%forc_pco2_grc)
+!    this%forc_pco2_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='PCO2', units='Pa',  &
+!         avgflag='A', long_name='atmospheric partial pressure of CO2', &
+!         ptr_lnd=this%forc_pco2_grc)
 
     this%forc_solar_grc(begg:endg) = spval
     call hist_addfld1d (fname='SWdown', units='W/m^2',  &
          avgflag='A', long_name='atmospheric incident solar radiation', &
          ptr_gcell=this%forc_solar_grc, default='inactive')
 
-    this%forc_rh_grc(begg:endg) = spval
-    call hist_addfld1d (fname='RH', units='%',  &
-         avgflag='A', long_name='atmospheric relative humidity', &
-         ptr_gcell=this%forc_rh_grc, default='inactive')
+!    this%forc_rh_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='RH', units='%',  &
+!         avgflag='A', long_name='atmospheric relative humidity', &
+!         ptr_gcell=this%forc_rh_grc, default='inactive')
 
-    if (use_lch4) then
-       this%forc_pch4_grc(begg:endg) = spval
-       call hist_addfld1d (fname='PCH4', units='Pa',  &
-            avgflag='A', long_name='atmospheric partial pressure of CH4', &
-            ptr_lnd=this%forc_pch4_grc)
-    end if
+!    if (use_lch4) then
+!       this%forc_pch4_grc(begg:endg) = spval
+!       call hist_addfld1d (fname='PCH4', units='Pa',  &
+!            avgflag='A', long_name='atmospheric partial pressure of CH4', &
+!            ptr_lnd=this%forc_pch4_grc)
+!    end if
 
     this%forc_t_not_downscaled_grc(begg:endg) = spval
     call hist_addfld1d (fname='Tair', units='K',  &
@@ -374,45 +374,45 @@ contains
          avgflag='A', long_name='atmospheric longwave radiation', &
          ptr_gcell=this%forc_lwrad_not_downscaled_grc, default='inactive')
 
-    this%forc_rain_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='RAIN', units='mm/s',  &
-         avgflag='A', long_name='atmospheric rain', &
-         ptr_lnd=this%forc_rain_not_downscaled_grc)
+!    this%forc_rain_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='RAIN', units='mm/s',  &
+!         avgflag='A', long_name='atmospheric rain', &
+!         ptr_lnd=this%forc_rain_not_downscaled_grc)
 
-    this%forc_snow_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='SNOW', units='mm/s',  &
-         avgflag='A', long_name='atmospheric snow', &
-         ptr_lnd=this%forc_snow_not_downscaled_grc)
+!    this%forc_snow_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='SNOW', units='mm/s',  &
+!         avgflag='A', long_name='atmospheric snow', &
+!         ptr_lnd=this%forc_snow_not_downscaled_grc)
 
-    this%forc_t_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='TBOT', units='K',  &
-         avgflag='A', long_name='atmospheric air temperature', &
-         ptr_lnd=this%forc_t_not_downscaled_grc)
+!   this%forc_t_not_downscaled_grc(begg:endg) = spval
+!   call hist_addfld1d (fname='TBOT', units='K',  &
+!        avgflag='A', long_name='atmospheric air temperature', &
+!        ptr_lnd=this%forc_t_not_downscaled_grc)
 
-    this%forc_th_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='THBOT', units='K',  &
-         avgflag='A', long_name='atmospheric air potential temperature', &
-         ptr_lnd=this%forc_th_not_downscaled_grc)
+!    this%forc_th_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='THBOT', units='K',  &
+!         avgflag='A', long_name='atmospheric air potential temperature', &
+!         ptr_lnd=this%forc_th_not_downscaled_grc)
 
-    this%forc_q_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='QBOT', units='kg/kg',  &
-         avgflag='A', long_name='atmospheric specific humidity', &
-         ptr_lnd=this%forc_q_not_downscaled_grc)
+!    this%forc_q_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='QBOT', units='kg/kg',  &
+!         avgflag='A', long_name='atmospheric specific humidity', &
+!         ptr_lnd=this%forc_q_not_downscaled_grc)
     ! Rename of QBOT for Urban intercomparision project
     this%forc_q_not_downscaled_grc(begg:endg) = spval
     call hist_addfld1d (fname='Qair', units='kg/kg',  &
          avgflag='A', long_name='atmospheric specific humidity', &
          ptr_lnd=this%forc_q_not_downscaled_grc, default='inactive')
 
-    this%forc_lwrad_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='FLDS', units='W/m^2',  &
-         avgflag='A', long_name='atmospheric longwave radiation', &
-         ptr_lnd=this%forc_lwrad_not_downscaled_grc)
+!    this%forc_lwrad_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='FLDS', units='W/m^2',  &
+!         avgflag='A', long_name='atmospheric longwave radiation', &
+!         ptr_lnd=this%forc_lwrad_not_downscaled_grc)
 
-    this%forc_pbot_not_downscaled_grc(begg:endg) = spval
-    call hist_addfld1d (fname='PBOT', units='Pa',  &
-         avgflag='A', long_name='atmospheric pressure', &
-         ptr_lnd=this%forc_pbot_not_downscaled_grc)
+!    this%forc_pbot_not_downscaled_grc(begg:endg) = spval
+!    call hist_addfld1d (fname='PBOT', units='Pa',  &
+!         avgflag='A', long_name='atmospheric pressure', &
+!         ptr_lnd=this%forc_pbot_not_downscaled_grc)
 
 #ifdef CPL_BYPASS
    call hist_addfld1d (fname='HDM', units='counts/km^2',      &
@@ -444,12 +444,6 @@ contains
     call hist_addfld1d (fname='FSD240', units='K',  &
          avgflag='A', long_name='direct radiation (last 240hrs)', &
          ptr_patch=this%fsd240_patch, default='inactive')
-
-    if (use_cndv) then
-       call hist_addfld1d (fname='TDA', units='K',  &
-            avgflag='A', long_name='daily average 2-m temperature', &
-            ptr_patch=this%t_mo_patch)
-    end if
 
   end subroutine InitHistory
 
@@ -497,13 +491,6 @@ contains
 
        call init_accum_field (name='PREC60', units='MM H2O/S', &
             desc='60-day running mean of total precipitation', accum_type='runmean', accum_period=-60, &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-    end if
-
-    if (use_cndv) then
-       ! The following is a running mean with the accumulation period is set to -365 for a 365-day running mean.
-       call init_accum_field (name='PREC365', units='MM H2O/S', &
-            desc='365-day running mean of total precipitation', accum_type='runmean', accum_period=-365, &
             subgrid_type='pft', numlev=1, init_value=0._r8)
     end if
 
@@ -579,14 +566,6 @@ contains
 
        call extract_accum_field ('PREC60', rbufslp, nstep)
        this%prec60_patch(begp:endp) = rbufslp(begp:endp)
-    end if
-
-    if (use_cndv) then
-       call extract_accum_field ('PREC365' , rbufslp, nstep) 
-       this%prec365_patch(begp:endp) = rbufslp(begp:endp)
-
-       call extract_accum_field ('TDA', rbufslp, nstep) 
-       this%t_mo_patch(begp:endp) = rbufslp(begp:endp)
     end if
 
     if (use_fates) then
@@ -671,27 +650,6 @@ contains
        call extract_accum_field ('PREC10', this%prec10_patch, nstep)
     end if
 
-    if (use_cndv) then
-       ! Accumulate and extract PREC365 (accumulates total precipitation as 365-day running mean)
-       call update_accum_field  ('PREC365', rbufslp, nstep)
-       call extract_accum_field ('PREC365', this%prec365_patch, nstep)
-
-       ! Accumulate and extract TDA (accumulates TBOT as 30-day average) and 
-       ! also determines t_mo_min
-       
-       do p = begp,endp
-          c = veg_pp%column(p)
-          rbufslp(p) = this%forc_t_downscaled_col(c)
-       end do
-       call update_accum_field  ('TDA', rbufslp, nstep)
-       call extract_accum_field ('TDA', rbufslp, nstep)
-       do p = begp,endp
-          this%t_mo_patch(p) = rbufslp(p)
-          this%t_mo_min_patch(p) = min(this%t_mo_min_patch(p), rbufslp(p))
-       end do
-
-    end if
-
     if (use_fates) then
        call update_accum_field  ('PREC24', rbufslp, nstep)
        call extract_accum_field ('PREC24', this%prec24_patch, nstep)
@@ -742,12 +700,6 @@ contains
        ! initial run, readvar=readvar, not restart: initialize flood to zero
        this%forc_flood_grc = 0._r8
     endif
-
-    if (use_cndv) then
-       call restartvar(ncid=ncid, flag=flag, varname='T_MO_MIN', xtype=ncd_double,  &
-            dim1name='pft', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%t_mo_min_patch)
-    end if
 
   end subroutine Restart
 

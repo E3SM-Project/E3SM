@@ -7,6 +7,7 @@ module EMI_WaterStateType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use WaterStateType                        , only : waterstate_type
+  use ColumnDataType                        , only : col_ws
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -55,21 +56,21 @@ contains
     integer                             :: count
 
     associate(& 
-         h2osoi_liq    => waterstate_vars%h2osoi_liq_col    , &
-         h2osoi_ice    => waterstate_vars%h2osoi_ice_col    , &
-         soilp         => waterstate_vars%soilp_col         , &
-         frac_h2osfc   => waterstate_vars%frac_h2osfc_col   , &
-         finundated    => waterstate_vars%finundated_col    , &
-         h2osoi_liqvol => waterstate_vars%h2osoi_liqvol_col , &
-         h2osoi_icevol => waterstate_vars%h2osoi_icevol_col , &
-         h2osoi_vol    => waterstate_vars%h2osoi_vol_col    , &
-         air_vol       => waterstate_vars%air_vol_col       , &
+         h2osoi_liq    => col_ws%h2osoi_liq    , &
+         h2osoi_ice    => col_ws%h2osoi_ice    , &
+         soilp         => col_ws%soilp         , &
+         frac_h2osfc   => col_ws%frac_h2osfc   , &
+         finundated    => col_ws%finundated    , &
+         h2osoi_liqvol => col_ws%h2osoi_liqvol , &
+         h2osoi_icevol => col_ws%h2osoi_icevol , &
+         h2osoi_vol    => col_ws%h2osoi_vol    , &
+         air_vol       => col_ws%air_vol       , &
          rho_vap       => waterstate_vars%rho_vap_col       , &
          rhvap_soi     => waterstate_vars%rhvap_soi_col     , &
-         smp_l         => waterstate_vars%smp_l_col         , &
-         h2osno        => waterstate_vars%h2osno_col        , &
-         h2osfc        => waterstate_vars%h2osfc_col        , &
-         frac_sno_eff  => waterstate_vars%frac_sno_eff_col    &
+         smp_l         => col_ws%smp_l         , &
+         h2osno        => col_ws%h2osno        , &
+         h2osfc        => col_ws%h2osfc        , &
+         frac_sno_eff  => col_ws%frac_sno_eff    &
          )
 
     count = 0
@@ -289,9 +290,9 @@ contains
     integer                             :: count
 
     associate(& 
-         h2osoi_liq => waterstate_vars%h2osoi_liq_col , &
-         h2osoi_ice => waterstate_vars%h2osoi_ice_col , &
-         soilp      => waterstate_vars%soilp_col        &
+         h2osoi_liq => col_ws%h2osoi_liq , &
+         h2osoi_ice => col_ws%h2osoi_ice , &
+         soilp      => col_ws%soilp        &
          )
 
     count = 0
