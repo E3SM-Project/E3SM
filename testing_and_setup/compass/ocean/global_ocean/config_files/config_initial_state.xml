@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <config case="initial_state">
-	<get_file dest_path="initial_condition_database" file_name="salinity.80Layer.180619.nc">
+	<get_file dest_path="initial_condition_database" file_name="layer_depth.80Layer.180619.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
@@ -29,7 +29,7 @@
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
 	<add_link source="../culled_mesh/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
-	<add_link source_path="initial_condition_database" source="salinity.80Layer.180619.nc" dest="layer_depth.nc"/>
+	<add_link source_path="initial_condition_database" source="layer_depth.80Layer.180619.nc" dest="layer_depth.nc"/>
 	<add_link source_path="initial_condition_database" source="PTemp.Jan_p3.filled.mpas100levs.160127.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc" dest="salinity.nc"/>
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
