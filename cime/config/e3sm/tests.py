@@ -176,4 +176,28 @@ _TESTS = {
             )
         },
 
+    #atmopheric tests for ftypes with 2 builds only
+    #ftype2 is a default and tested in other suites, here
+    #1st: preqx ftype0
+    #2nd: preqx ftype4
+    #3rd: theta-l hy ftype0
+    #4th: theta-l hy ftype2
+    #5th: theta-l hy ftype4
+    #6th: theta-l nh ftype0
+    #7th: theta-l nh ftype2
+    #8th: theta-l nh ftype4
+    "eam_ftypes" : {
+        "time"     : "02:00:00",
+        "tests"    : (
+                 "ERP.ne4_ne4.FC5AV1C-H01A.preqx-ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.preqx-ftype2",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.thetahy-ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.thetahy-ftype2",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.thetahy-ftype4",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.thetanh-ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.thetanh-ftype2",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.thetanh-ftype4",
+                 )
+        },
+
 }
