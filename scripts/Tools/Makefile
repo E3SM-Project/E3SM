@@ -69,8 +69,12 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-   USE_CXX = true
+ifeq ($(CIME_MODEL),e3sm)
+  HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+  ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+     USE_CXX = true
+     USE_KOKKOS = TRUE
+  endif
 endif
 
 ifndef MOD_SUFFIX
