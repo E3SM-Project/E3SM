@@ -16,6 +16,14 @@ use perf_mod,          only: t_startf, t_stopf
 use cam_logfile,       only: iulog
 use cam_abortutils,        only: endrun
 use radconstants,      only: nlwbands
+#ifdef FIVE
+use five_intr,      only: pver_five, pverp_five, &
+                          five_syncronize_e3sm, &
+                          compute_five_grids, &
+                          compute_five_heights, &
+                          masswgt_vert_avg, linear_interp, &
+                          find_level_match_index
+#endif
 
 implicit none
 
@@ -31,14 +39,24 @@ public ::&
 ! Private data
 integer :: ntoplw    ! top level to solve for longwave cooling
 logical :: pergro_mods = .false.
+#ifdef FIVE
+   integer, parameter :: pverp_rad = pverp_five
+   integer, parameter :: pver_rad = pver_five
+#else
+   integer, parameter :: pverp_rad = pverp
+   integer, parameter :: pver_rad = pver
+#endif 
 !===============================================================================
 CONTAINS
 !===============================================================================
 
-subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
-                        pmid    ,aer_lw_abs,cld       ,tauc_lw,       &
-                        qrl     ,qrlc      ,                          &
-                        flns    ,flnt      ,flnsc     ,flntc  ,flwds, &
+subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state, pmid,  &
+#ifdef FIVE
+                        pint    ,pint_host ,                           &
+#endif
+                        aer_lw_abs,cld       ,tauc_lw,                 &
+                        qrl     ,qrlc      ,                           &
+                        flns    ,flnt      ,flnsc     ,flntc  ,flwds,  &
                         flut    ,flutc     ,fnl       ,fcnl   ,fldsc,clm_rand_seed, &
                         lu      ,ld        )
 
@@ -59,21 +77,24 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 !
 ! Input arguments which are only passed to other routines
 !
-    type(rrtmg_state_t), intent(in) :: r_state
+   type(rrtmg_state_t), intent(in) :: r_state
 
-   real(r8), intent(in) :: pmid(pcols,pver)     ! Level pressure (Pascals)
+   real(r8), intent(in) :: pmid(pcols,pver_rad)     ! Level pressure (Pascals)
+#ifdef FIVE
+   real(r8), intent(in) :: pint(pcols,pverp_rad)     ! Level pressure (Pascals)
+   real(r8), intent(in) :: pint_host(pcols,pverp)     ! Level pressure (Pascals)
+#endif
+   real(r8), intent(in) :: aer_lw_abs (pcols,pver_rad,nbndlw) ! aerosol absorption optics depth (LW)
 
-   real(r8), intent(in) :: aer_lw_abs (pcols,pver,nbndlw) ! aerosol absorption optics depth (LW)
-
-   real(r8), intent(in) :: cld(pcols,pver)      ! Cloud cover
-   real(r8), intent(in) :: tauc_lw(nbndlw,pcols,pver)   ! Cloud longwave optical depth by band
+   real(r8), intent(in) :: cld(pcols,pver_rad)      ! Cloud cover
+   real(r8), intent(in) :: tauc_lw(nbndlw,pcols,pver_rad)   ! Cloud longwave optical depth by band
    integer,  intent(inout) :: clm_rand_seed(pcols,4)            ! rand # seeds for lw
 
 !
 ! Output arguments
 !
-   real(r8), intent(out) :: qrl (pcols,pver)     ! Longwave heating rate
-   real(r8), intent(out) :: qrlc(pcols,pver)     ! Clearsky longwave heating rate
+   real(r8), intent(out) :: qrl (pcols,pver_rad)     ! Longwave heating rate
+   real(r8), intent(out) :: qrlc(pcols,pver_rad)     ! Clearsky longwave heating rate
    real(r8), intent(out) :: flns(pcols)          ! Surface cooling flux
    real(r8), intent(out) :: flnt(pcols)          ! Net outgoing flux
    real(r8), intent(out) :: flut(pcols)          ! Upward flux at top of model
@@ -82,8 +103,8 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    real(r8), intent(out) :: flutc(pcols)         ! Upward clear-sky flux at top of model
    real(r8), intent(out) :: flwds(pcols)         ! Down longwave flux at surface
    real(r8), intent(out) :: fldsc(pcols)         ! Down longwave clear flux at surface
-   real(r8), intent(out) :: fcnl(pcols,pverp)    ! clear sky net flux at interfaces
-   real(r8), intent(out) :: fnl(pcols,pverp)     ! net flux at interfaces
+   real(r8), intent(out) :: fcnl(pcols,pverp_rad)    ! clear sky net flux at interfaces
+   real(r8), intent(out) :: fnl(pcols,pverp_rad)     ! net flux at interfaces
 
    real(r8), pointer, dimension(:,:,:) :: lu ! longwave spectral flux up
    real(r8), pointer, dimension(:,:,:) :: ld ! longwave spectral flux down
@@ -93,10 +114,10 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 !
    integer :: i, k, kk, nbnd         ! indices
 
-   real(r8) :: ful(pcols,pverp)     ! Total upwards longwave flux
-   real(r8) :: fsul(pcols,pverp)    ! Clear sky upwards longwave flux
-   real(r8) :: fdl(pcols,pverp)     ! Total downwards longwave flux
-   real(r8) :: fsdl(pcols,pverp)    ! Clear sky downwards longwv flux
+   real(r8) :: ful(pcols,pverp_rad)     ! Total upwards longwave flux
+   real(r8) :: fsul(pcols,pverp_rad)    ! Clear sky upwards longwave flux
+   real(r8) :: fdl(pcols,pverp_rad)     ! Total downwards longwave flux
+   real(r8) :: fsdl(pcols,pverp_rad)    ! Clear sky downwards longwv flux
 
    integer :: inflglw               ! Flag for cloud parameterization method
    integer :: iceflglw              ! Flag for ice cloud param method
@@ -134,8 +155,26 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    real(r8) :: dflxc(pcols,rrtmg_levs+1) ! Clear sky downwards longwv flux
    real(r8) :: hr(pcols,rrtmg_levs)      ! Longwave heating rate (K/d)
    real(r8) :: hrc(pcols,rrtmg_levs)     ! Clear sky longwave heating rate (K/d)
-   real(r8) lwuflxs(nbndlw,pcols,pverp+1)  ! Longwave spectral flux up
-   real(r8) lwdflxs(nbndlw,pcols,pverp+1)  ! Longwave spectral flux down
+   real(r8) lwuflxs(nbndlw,pcols,pverp_rad+1)  ! Longwave spectral flux up
+   real(r8) lwdflxs(nbndlw,pcols,pverp_rad+1)  ! Longwave spectral flux down
+
+#ifdef FIVE
+   real(r8) :: pmidmb_five(pcols,rrtmg_levs)   ! Level pressure (hPa)
+   real(r8) :: pintmb_five(pcols,rrtmg_levs+1) ! Model interface pressure (hPa)
+   real(r8) :: tlay_five(pcols,rrtmg_levs)     ! mid point temperature
+   real(r8) :: tlev_five(pcols,rrtmg_levs+1)   ! interface temperature
+   real(r8) :: h2ovmr_five(pcols,rrtmg_levs)   ! h2o volume mixing ratio
+   real(r8) :: o3vmr_five(pcols,rrtmg_levs)    ! o3 volume mixing ratio
+   real(r8) :: co2vmr_five(pcols,rrtmg_levs)   ! co2 volume mixing ratio 
+   real(r8) :: ch4vmr_five(pcols,rrtmg_levs)   ! ch4 volume mixing ratio 
+   real(r8) :: o2vmr_five(pcols,rrtmg_levs)    ! o2  volume mixing ratio 
+   real(r8) :: n2ovmr_five(pcols,rrtmg_levs)   ! n2o volume mixing ratio 
+   real(r8) :: cfc11vmr_five(pcols,rrtmg_levs) ! cfc11 volume mixing ratio 
+   real(r8) :: cfc12vmr_five(pcols,rrtmg_levs) ! cfc12 volume mixing ratio 
+   real(r8) :: cfc22vmr_five(pcols,rrtmg_levs) ! cfc22 volume mixing ratio 
+   real(r8) :: ccl4vmr_five(pcols,rrtmg_levs)  ! ccl4 volume mixing ratio 
+#endif
+
    !-----------------------------------------------------------------------
 
    ! mji/rrtmg
@@ -169,8 +208,8 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    rei = 0.0_r8
    rel = 0.0_r8
 
-   call mcica_subcol_lw(lchnk, ncol, rrtmg_levs-1, icld, permuteseed, pmid(:, pverp-rrtmg_levs+1:pverp-1), &
-      cld(:, pverp-rrtmg_levs+1:pverp-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), &
+   call mcica_subcol_lw(lchnk, ncol, rrtmg_levs-1, icld, permuteseed, pmid(:, pverp_rad-rrtmg_levs+1:pverp_rad-1), &
+      cld(:, pverp_rad-rrtmg_levs+1:pverp_rad-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp_rad-rrtmg_levs+1:pverp_rad-1), &
       cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, clm_rand_seed, pergro_mods)
 
    call t_stopf('mcica_subcol_lw')
@@ -213,12 +252,70 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    ! Set aerosol optical depth to zero for now
 
    emis(:ncol,:nbndlw) = 1._r8
+#ifdef FIVE
+   tsfc(:ncol) = r_state%tlev(:ncol,pverp+1)
+#else
    tsfc(:ncol) = r_state%tlev(:ncol,rrtmg_levs+1)
-   taua_lw(:ncol, 1:rrtmg_levs-1, :nbndlw) = aer_lw_abs(:ncol,pverp-rrtmg_levs+1:pverp-1,:nbndlw)
+#endif
+   taua_lw(:ncol, 1:rrtmg_levs-1, :nbndlw) = aer_lw_abs(:ncol,pverp_rad-rrtmg_levs+1:pverp_rad-1,:nbndlw)
 
    if (associated(lu)) lu(1:ncol,:,:) = 0.0_r8
    if (associated(ld)) ld(1:ncol,:,:) = 0.0_r8
 
+#ifdef FIVE
+   do i = 1, ncol
+      pintmb_five(i,1) = r_state%pintmb(i,1)
+      pintmb_five(i,2:rrtmg_levs+1) = pint(i,1:pverp_five) * 1.e-2_r8 ! mbar
+
+      pmidmb_five(i,1) = r_state%pmidmb(i,1)
+      pmidmb_five(i,2:rrtmg_levs) = pmid(i,1:pver_five) * 1.e-2_r8 ! mbar
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%h2ovmr(i,1:pverp),h2ovmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%o3vmr(i,1:pverp),o3vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%co2vmr(i,1:pverp),co2vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%tlev(i,1:pverp),tlev_five(i,1:rrtmg_levs),pverp,pverp_five)
+      tlev_five(i,rrtmg_levs+1) = r_state%tlev(i,pverp+1)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%tlay(i,1:pverp),tlay_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%ch4vmr(i,1:pverp),ch4vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%o2vmr(i,1:pverp),o2vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%n2ovmr(i,1:pverp),n2ovmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%cfc11vmr(i,1:pverp),cfc11vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%cfc12vmr(i,1:pverp),cfc12vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%cfc22vmr(i,1:pverp),cfc22vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),pint(i,:), &
+                    r_state%ccl4vmr(i,1:pverp),ccl4vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+   end do
+
+   call rrtmg_lw(lchnk  ,ncol ,rrtmg_levs    ,icld    ,                 &
+        pmidmb_five  ,pintmb_five  ,tlay_five    ,tlev_five    ,tsfc    ,h2ovmr_five, &
+        o3vmr_five   ,co2vmr_five  ,ch4vmr_five  ,o2vmr_five  ,n2ovmr_five  ,cfc11vmr_five,cfc12vmr_five, &
+        cfc22vmr_five,ccl4vmr_five ,emis    ,inflglw ,iceflglw,liqflglw, &
+        cld_stolw,tauc_stolw,cicewp_stolw,cliqwp_stolw ,rei, rel, &
+        taua_lw, uflx    ,dflx    ,hr      ,uflxc   ,dflxc   ,hrc, &
+        lwuflxs, lwdflxs)
+#else
    call rrtmg_lw(lchnk  ,ncol ,rrtmg_levs    ,icld    ,                 &
         r_state%pmidmb  ,r_state%pintmb  ,r_state%tlay    ,r_state%tlev    ,tsfc    ,r_state%h2ovmr, &
         r_state%o3vmr   ,r_state%co2vmr  ,r_state%ch4vmr  ,r_state%o2vmr   ,r_state%n2ovmr  ,r_state%cfc11vmr,r_state%cfc12vmr, &
@@ -227,7 +324,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
         taua_lw, &
         uflx    ,dflx    ,hr      ,uflxc   ,dflxc   ,hrc, &
         lwuflxs, lwdflxs)
-
+#endif
    !
    !----------------------------------------------------------------------
    ! All longitudes: store history tape quantities
@@ -253,10 +350,10 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    fdl = 0._r8
    fsul = 0._r8
    fsdl = 0._r8
-   ful (:ncol,pverp-rrtmg_levs+1:pverp)= uflx(:ncol,rrtmg_levs:1:-1)
-   fdl (:ncol,pverp-rrtmg_levs+1:pverp)= dflx(:ncol,rrtmg_levs:1:-1)
-   fsul(:ncol,pverp-rrtmg_levs+1:pverp)=uflxc(:ncol,rrtmg_levs:1:-1)
-   fsdl(:ncol,pverp-rrtmg_levs+1:pverp)=dflxc(:ncol,rrtmg_levs:1:-1)
+   ful (:ncol,pverp_rad-rrtmg_levs+1:pverp_rad)= uflx(:ncol,rrtmg_levs:1:-1)
+   fdl (:ncol,pverp_rad-rrtmg_levs+1:pverp_rad)= dflx(:ncol,rrtmg_levs:1:-1)
+   fsul(:ncol,pverp_rad-rrtmg_levs+1:pverp_rad)=uflxc(:ncol,rrtmg_levs:1:-1)
+   fsdl(:ncol,pverp_rad-rrtmg_levs+1:pverp_rad)=dflxc(:ncol,rrtmg_levs:1:-1)
 
    if (single_column.and.scm_crm_mode) then
       call outfld('FUL     ',ful,pcols,lchnk)
@@ -272,8 +369,8 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    ! Pass longwave heating to CAM arrays and convert from K/d to J/kg/s
    qrl = 0._r8
    qrlc = 0._r8
-   qrl (:ncol,pverp-rrtmg_levs+1:pver)=hr (:ncol,rrtmg_levs-1:1:-1)*cpair*dps
-   qrlc(:ncol,pverp-rrtmg_levs+1:pver)=hrc(:ncol,rrtmg_levs-1:1:-1)*cpair*dps
+   qrl (:ncol,pverp_rad-rrtmg_levs+1:pver_rad)=hr (:ncol,rrtmg_levs-1:1:-1)*cpair*dps
+   qrlc(:ncol,pverp_rad-rrtmg_levs+1:pver_rad)=hrc(:ncol,rrtmg_levs-1:1:-1)*cpair*dps
 
    ! Return 0 above solution domain
    if ( ntoplw > 1 )then
@@ -284,12 +381,12 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    ! Pass spectral fluxes, reverse layering
    ! order=(/3,1,2/) maps the first index of lwuflxs to the third index of lu.
    if (associated(lu)) then
-      lu(:ncol,pverp-rrtmg_levs+1:pverp,:) = reshape(lwuflxs(:,:ncol,rrtmg_levs:1:-1), &
+      lu(:ncol,pverp_rad-rrtmg_levs+1:pverp_rad,:) = reshape(lwuflxs(:,:ncol,rrtmg_levs:1:-1), &
            (/ncol,rrtmg_levs,nbndlw/), order=(/3,1,2/))
    end if
    
    if (associated(ld)) then
-      ld(:ncol,pverp-rrtmg_levs+1:pverp,:) = reshape(lwdflxs(:,:ncol,rrtmg_levs:1:-1), &
+      ld(:ncol,pverp_rad-rrtmg_levs+1:pverp_rad,:) = reshape(lwdflxs(:,:ncol,rrtmg_levs:1:-1), &
            (/ncol,rrtmg_levs,nbndlw/), order=(/3,1,2/))
    end if
    
@@ -317,7 +414,7 @@ subroutine radlw_init()
    ! If the top model level is above ~90 km (0.1 Pa), set the top level to compute
    ! longwave cooling to about 80 km (1 Pa)
    if (pref_mid(1) .lt. 0.1_r8) then
-      do k = 1, pver
+      do k = 1, pver_rad
          if (pref_mid(k) .lt. 1._r8) ntoplw  = k
       end do
    else

@@ -12,6 +12,7 @@ module radiation
 ! Feb  2005, B. Eaton,       Add namelist variables and control of when calcs are done.
 ! May  2008, Mike Iacono     Initial version for RRTMG
 ! Nov  2010, J. Kay          Add COSP simulator calls
+! Feb  2019, H.-H. Lee       Implement FIVE 
 !---------------------------------------------------------------------------------
 
 use shr_kind_mod,    only: r8=>shr_kind_r8
@@ -31,6 +32,16 @@ use cam_logfile,     only: iulog
 
 use rad_constituents, only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
 use radconstants,     only: rrtmg_sw_cloudsim_band, rrtmg_lw_cloudsim_band, nswbands, nlwbands
+
+#ifdef FIVE
+use constituents,   only: pcnst
+use five_intr,      only: pver_five, pverp_five, &
+                          five_syncronize_e3sm, &
+                          compute_five_grids, &
+                          compute_five_heights, &
+                          masswgt_vert_avg, linear_interp, &
+                          find_level_match_index
+#endif
 
 implicit none
 private
@@ -64,6 +75,14 @@ integer :: cldfsnow_idx = 0
 integer :: cld_idx      = 0 
 integer :: concld_idx   = 0
 
+#ifdef FIVE
+integer :: t_five_idx, &
+           q_five_idx, &
+           u_five_idx, &
+           v_five_idx, &
+           pmid_five_idx, &
+           pint_five_idx
+#endif
 ! Default values for namelist variables
 
 integer :: iradsw = -1     ! freq. of shortwave radiation calc in time steps (positive)
@@ -93,6 +112,14 @@ real(r8) :: dt_avg=0.0_r8  ! time step to use for the shr_orb_cosz calculation, 
 
 logical :: pergro_mods = .false. ! for activating pergro mods
 integer :: firstblock, lastblock      ! global block indices
+
+#ifdef FIVE
+   integer, parameter :: pverp_rad = pverp_five
+   integer, parameter :: pver_rad = pver_five
+#else
+   integer, parameter :: pverp_rad = pverp
+   integer, parameter :: pver_rad = pver
+#endif   
 
 !===============================================================================
 contains
@@ -519,7 +546,17 @@ end function radiation_nextsw_cday
 
 
     ! Shortwave radiation
+#ifdef FIVE
+    call addfld('TOT_CLD_VISTAU', (/ 'lev_five' /), 'A',   '1', 'Total gbx cloud extinction visible sw optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+    call addfld('TOT_ICLD_VISTAU', (/ 'lev_five' /), 'A',  '1', 'Total in-cloud extinction visible sw optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+    call addfld('LIQ_ICLD_VISTAU', (/ 'lev_five' /), 'A',  '1', 'Liquid in-cloud extinction visible sw optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+    call addfld('ICE_ICLD_VISTAU', (/ 'lev_five' /), 'A',  '1', 'Ice in-cloud extinction visible sw optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
+#else
     call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', 'Total gbx cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
     call addfld('TOT_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', 'Total in-cloud extinction visible sw optical depth', &
@@ -528,7 +565,7 @@ end function radiation_nextsw_cday
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
     call addfld('ICE_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', 'Ice in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
-
+#endif
     ! get list of active radiation calls
     call rad_cnst_get_call_list(active_calls)
 
@@ -572,16 +609,23 @@ end function radiation_nextsw_cday
                                                                                  sampling_seq='rad_lwsw')
           call addfld('FSDS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Downwelling solar flux at surface', &
                                                                                  sampling_seq='rad_lwsw')
+#ifdef FIVE
+          call addfld('FUS'//diag(icall),  (/ 'ilev_five' /), 'I',     'W/m2', 'Shortwave upward flux')
+          call addfld('FDS'//diag(icall),  (/ 'ilev_five' /), 'I',     'W/m2', 'Shortwave downward flux')
+          call addfld('FUSC'//diag(icall),  (/ 'ilev_five' /), 'I',    'W/m2', 'Shortwave clear-sky upward flux')
+          call addfld('FDSC'//diag(icall),  (/ 'ilev_five' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux')
+#else
           call addfld('FUS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave upward flux')
           call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux')
           call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky upward flux')
           call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux')
+#endif
           call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2',&
-	   'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+          'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld('FSNRTOAC'//diag(icall),  horiz_only,     'A','W/m2', &
                       'Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld('FSNRTOAS'//diag(icall),  horiz_only,     'A','W/m2', &
-	  'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
+          'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', sampling_seq='rad_lwsw')
 
           if (history_amwg) then
@@ -617,7 +661,6 @@ end function radiation_nextsw_cday
     do icall = 0, N_DIAG
 
        if (active_calls(icall)) then
-
           call addfld('QRL'//diag(icall),  (/ 'lev' /), 'A',     'K/s', 'Longwave heating rate', sampling_seq='rad_lwsw')
           call addfld('QRLC'//diag(icall),  (/ 'lev' /), 'A',    'K/s', 'Clearsky longwave heating rate', &
                                                                            sampling_seq='rad_lwsw')
@@ -642,10 +685,17 @@ end function radiation_nextsw_cday
                                                                            sampling_seq='rad_lwsw')
           call addfld('FLNSC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky net longwave flux at surface', &
                                                                            sampling_seq='rad_lwsw')
+#ifdef FIVE
+          call addfld('FUL'//diag(icall), (/ 'ilev_five' /),'I',     'W/m2', 'Longwave upward flux')
+          call addfld('FDL'//diag(icall), (/ 'ilev_five' /),'I',     'W/m2', 'Longwave downward flux')
+          call addfld('FULC'//diag(icall), (/ 'ilev_five' /),'I',    'W/m2', 'Longwave clear-sky upward flux')
+          call addfld('FDLC'//diag(icall), (/ 'ilev_five' /),'I',    'W/m2', 'Longwave clear-sky downward flux')
+#else
           call addfld('FUL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave upward flux')
           call addfld('FDL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave downward flux')
           call addfld('FULC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky upward flux')
           call addfld('FDLC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky downward flux')
+#endif
 
           if (history_amwg) then
              call add_default('QRL'//diag(icall),   1, ' ')
@@ -662,7 +712,11 @@ end function radiation_nextsw_cday
        end if
     end do
 
+#ifdef FIVE
+    call addfld('EMIS', (/ 'lev_five' /), 'A', '1', 'Cloud longwave emissivity')
+#else
     call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
+#endif
 
     if (single_column.and.scm_crm_mode) then
        call add_default ('FUL     ', 1, ' ')
@@ -713,11 +767,25 @@ end function radiation_nextsw_cday
     cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
     cld_idx      = pbuf_get_index('CLD')
     concld_idx   = pbuf_get_index('CONCLD')
+#ifdef FIVE
+    t_five_idx = pbuf_get_index('T_FIVE')
+    q_five_idx = pbuf_get_index('Q_FIVE')
+    u_five_idx = pbuf_get_index('U_FIVE')
+    v_five_idx = pbuf_get_index('V_FIVE')
+    pmid_five_idx = pbuf_get_index('PMID_FIVE')
+    pint_five_idx = pbuf_get_index('PINT_FIVE')
+#endif   
 
     if (cldfsnow_idx > 0) then
+#ifdef FIVE
+       call addfld ('CLDFSNOW',(/ 'lev_five' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
+       call addfld('SNOW_ICLD_VISTAU', (/ 'lev_five' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+#else
        call addfld ('CLDFSNOW',(/ 'lev' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
        call addfld('SNOW_ICLD_VISTAU', (/ 'lev' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+#endif
     endif
 
   end subroutine radiation_init
@@ -803,6 +871,15 @@ end function radiation_nextsw_cday
     type(cam_out_t),     intent(inout)      :: cam_out
     type(cam_in_t),      intent(in)         :: cam_in
 
+#ifdef FIVE
+   ! Define the pointer arrays needed for FIVE
+   real(r8), pointer, dimension(:,:) :: t_five
+   real(r8), pointer, dimension(:,:) :: u_five
+   real(r8), pointer, dimension(:,:) :: v_five
+   real(r8), pointer, dimension(:,:,:) :: q_five
+   real(r8), pointer, dimension(:,:) :: pmid_five
+   real(r8), pointer, dimension(:,:) :: pint_five
+#endif 
     ! Local variables
 
     logical :: dosw, dolw
@@ -819,68 +896,84 @@ end function radiation_nextsw_cday
                                                !    0->pmxrgn(i,1) is range of pressure for
                                                !    1st region,pmxrgn(i,1)->pmxrgn(i,2) for
                                                !    2nd region, etc
-    real(r8) emis(pcols,pver)                  ! Cloud longwave emissivity
-    real(r8) :: cldtau(pcols,pver)             ! Cloud longwave optical depth
-    real(r8) :: cicewp(pcols,pver)             ! in-cloud cloud ice water path
-    real(r8) :: cliqwp(pcols,pver)             ! in-cloud cloud liquid water path
+    real(r8) emis(pcols,pver_rad)              ! Cloud longwave emissivity
+    real(r8) :: cldtau(pcols,pver_rad)         ! Cloud longwave optical depth
+    real(r8) :: cicewp(pcols,pver_rad)         ! in-cloud cloud ice water path
+    real(r8) :: cliqwp(pcols,pver_rad)         ! in-cloud cloud liquid water path
     real(r8) cltot(pcols)                      ! Diagnostic total cloud cover
     real(r8) cllow(pcols)                      !       "     low  cloud cover
     real(r8) clmed(pcols)                      !       "     mid  cloud cover
     real(r8) clhgh(pcols)                      !       "     hgh  cloud cover
-    real(r8) :: ftem(pcols,pver)              ! Temporary workspace for outfld variables
+    real(r8) :: ftem(pcols,pver)               ! Temporary workspace for outfld variables
+#ifdef FIVE
+    real(r8) :: emis_low(pcols,pver)           ! Cloud longwave emissivity
+    real(r8) :: cld_tau_low(nbndsw,pcols,pver) ! cloud extinction optical depth
+#endif
 
     ! combined cloud radiative parameters are "in cloud" not "in cell"
-    real(r8) :: c_cld_tau    (nbndsw,pcols,pver) ! cloud extinction optical depth
-    real(r8) :: c_cld_tau_w  (nbndsw,pcols,pver) ! cloud single scattering albedo * tau
-    real(r8) :: c_cld_tau_w_g(nbndsw,pcols,pver) ! cloud assymetry parameter * w * tau
-    real(r8) :: c_cld_tau_w_f(nbndsw,pcols,pver) ! cloud forward scattered fraction * w * tau
-    real(r8) :: c_cld_lw_abs (nbndlw,pcols,pver) ! cloud absorption optics depth (LW)
+    real(r8) :: c_cld_tau    (nbndsw,pcols,pver_rad) ! cloud extinction optical depth
+    real(r8) :: c_cld_tau_w  (nbndsw,pcols,pver_rad) ! cloud single scattering albedo * tau
+    real(r8) :: c_cld_tau_w_g(nbndsw,pcols,pver_rad) ! cloud assymetry parameter * w * tau
+    real(r8) :: c_cld_tau_w_f(nbndsw,pcols,pver_rad) ! cloud forward scattered fraction * w * tau
+    real(r8) :: c_cld_lw_abs (nbndlw,pcols,pver_rad) ! cloud absorption optics depth (LW)
 
     ! cloud radiative parameters are "in cloud" not "in cell"
-    real(r8) :: cld_tau    (nbndsw,pcols,pver) ! cloud extinction optical depth
-    real(r8) :: cld_tau_w  (nbndsw,pcols,pver) ! cloud single scattering albedo * tau
-    real(r8) :: cld_tau_w_g(nbndsw,pcols,pver) ! cloud assymetry parameter * w * tau
-    real(r8) :: cld_tau_w_f(nbndsw,pcols,pver) ! cloud forward scattered fraction * w * tau
-    real(r8) :: cld_lw_abs (nbndlw,pcols,pver) ! cloud absorption optics depth (LW)
+    real(r8) :: cld_tau    (nbndsw,pcols,pver_rad) ! cloud extinction optical depth
+    real(r8) :: cld_tau_w  (nbndsw,pcols,pver_rad) ! cloud single scattering albedo * tau
+    real(r8) :: cld_tau_w_g(nbndsw,pcols,pver_rad) ! cloud assymetry parameter * w * tau
+    real(r8) :: cld_tau_w_f(nbndsw,pcols,pver_rad) ! cloud forward scattered fraction * w * tau
+    real(r8) :: cld_lw_abs (nbndlw,pcols,pver_rad) ! cloud absorption optics depth (LW)
 
     ! cloud radiative parameters are "in cloud" not "in cell"
-    real(r8) :: ice_tau    (nbndsw,pcols,pver) ! ice extinction optical depth
-    real(r8) :: ice_tau_w  (nbndsw,pcols,pver) ! ice single scattering albedo * tau
-    real(r8) :: ice_tau_w_g(nbndsw,pcols,pver) ! ice assymetry parameter * tau * w
-    real(r8) :: ice_tau_w_f(nbndsw,pcols,pver) ! ice forward scattered fraction * tau * w
-    real(r8) :: ice_lw_abs (nbndlw,pcols,pver)   ! ice absorption optics depth (LW)
+    real(r8) :: ice_tau    (nbndsw,pcols,pver_rad) ! ice extinction optical depth
+    real(r8) :: ice_tau_w  (nbndsw,pcols,pver_rad) ! ice single scattering albedo * tau
+    real(r8) :: ice_tau_w_g(nbndsw,pcols,pver_rad) ! ice assymetry parameter * tau * w
+    real(r8) :: ice_tau_w_f(nbndsw,pcols,pver_rad) ! ice forward scattered fraction * tau * w
+    real(r8) :: ice_lw_abs (nbndlw,pcols,pver_rad)   ! ice absorption optics depth (LW)
 
     ! cloud radiative parameters are "in cloud" not "in cell"
-    real(r8) :: snow_tau    (nbndsw,pcols,pver) ! snow extinction optical depth
-    real(r8) :: snow_tau_w  (nbndsw,pcols,pver) ! snow single scattering albedo * tau
-    real(r8) :: snow_tau_w_g(nbndsw,pcols,pver) ! snow assymetry parameter * tau * w
-    real(r8) :: snow_tau_w_f(nbndsw,pcols,pver) ! snow forward scattered fraction * tau * w
-    real(r8) :: snow_lw_abs (nbndlw,pcols,pver)   ! snow absorption optics depth (LW)
-    real(r8) :: gb_snow_tau        (pcols,pver) ! grid-box mean snow_tau for COSP only
-    real(r8) :: gb_snow_lw         (pcols,pver) ! grid-box mean LW snow optical depth for COSP only
+    real(r8) :: snow_tau    (nbndsw,pcols,pver_rad) ! snow extinction optical depth
+    real(r8) :: snow_tau_w  (nbndsw,pcols,pver_rad) ! snow single scattering albedo * tau
+    real(r8) :: snow_tau_w_g(nbndsw,pcols,pver_rad) ! snow assymetry parameter * tau * w
+    real(r8) :: snow_tau_w_f(nbndsw,pcols,pver_rad) ! snow forward scattered fraction * tau * w
+    real(r8) :: snow_lw_abs (nbndlw,pcols,pver_rad) ! snow absorption optics depth (LW)
+    real(r8) :: gb_snow_tau        (pcols,pver)     ! grid-box mean snow_tau for COSP only
+    real(r8) :: gb_snow_lw         (pcols,pver)     ! grid-box mean LW snow optical depth for COSP only
+#ifdef FIVE
+    real(r8) :: gb_snow_tau_five  (pcols,pver_rad)  ! grid-box mean snow_tau for COSP only
+    real(r8) :: gb_snow_lw_five   (pcols,pver_rad)  ! grid-box mean LW snow optical depth for COSP only
+#endif
 
     ! cloud radiative parameters are "in cloud" not "in cell"
-    real(r8) :: liq_tau    (nbndsw,pcols,pver) ! liquid extinction optical depth
-    real(r8) :: liq_tau_w  (nbndsw,pcols,pver) ! liquid single scattering albedo * tau
-    real(r8) :: liq_tau_w_g(nbndsw,pcols,pver) ! liquid assymetry parameter * tau * w
-    real(r8) :: liq_tau_w_f(nbndsw,pcols,pver) ! liquid forward scattered fraction * tau * w
-    real(r8) :: liq_lw_abs (nbndlw,pcols,pver) ! liquid absorption optics depth (LW)
+    real(r8) :: liq_tau    (nbndsw,pcols,pver_rad) ! liquid extinction optical depth
+    real(r8) :: liq_tau_w  (nbndsw,pcols,pver_rad) ! liquid single scattering albedo * tau
+    real(r8) :: liq_tau_w_g(nbndsw,pcols,pver_rad) ! liquid assymetry parameter * tau * w
+    real(r8) :: liq_tau_w_f(nbndsw,pcols,pver_rad) ! liquid forward scattered fraction * tau * w
+    real(r8) :: liq_lw_abs (nbndlw,pcols,pver_rad) ! liquid absorption optics depth (LW)
 
-    real(r8) :: tot_cld_vistau(pcols,pver)  ! tot gbx cloud visible sw optical depth for output on history files
-    real(r8) :: tot_icld_vistau(pcols,pver) ! tot in-cloud visible sw optical depth for output on history files
-    real(r8) :: liq_icld_vistau(pcols,pver) ! liq in-cloud visible sw optical depth for output on history files
-    real(r8) :: ice_icld_vistau(pcols,pver) ! ice in-cloud visible sw optical depth for output on history files
-    real(r8) :: snow_icld_vistau(pcols,pver) ! snow in-cloud visible sw optical depth for output on history files
+    real(r8) :: tot_cld_vistau(pcols,pver_rad)  ! tot gbx cloud visible sw optical depth for output on history files
+    real(r8) :: tot_icld_vistau(pcols,pver_rad) ! tot in-cloud visible sw optical depth for output on history files
+    real(r8) :: liq_icld_vistau(pcols,pver_rad) ! liq in-cloud visible sw optical depth for output on history files
+    real(r8) :: ice_icld_vistau(pcols,pver_rad) ! ice in-cloud visible sw optical depth for output on history files
+    real(r8) :: snow_icld_vistau(pcols,pver_rad) ! snow in-cloud visible sw optical depth for output on history files
 
     integer itim_old, ifld
     real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction
     real(r8), pointer, dimension(:,:) :: cldfsnow ! cloud fraction of just "snow clouds- whatever they are"
-    real(r8) :: cldfprime(pcols,pver)             ! combined cloud fraction (snow plus regular)
+    real(r8) :: cldfprime(pcols,pver_rad)         ! combined cloud fraction (snow plus regular)
     real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction
     real(r8), pointer, dimension(:,:) :: qrs      ! shortwave radiative heating rate 
     real(r8), pointer, dimension(:,:) :: qrl      ! longwave  radiative heating rate 
     real(r8) :: qrsc(pcols,pver)                  ! clearsky shortwave radiative heating rate 
     real(r8) :: qrlc(pcols,pver)                  ! clearsky longwave  radiative heating rate 
+#ifdef FIVE
+    real(r8) :: cld_five(pcols,pver_rad)          ! cloud fraction
+    real(r8) :: cldfsnow_five(pcols,pver_rad)     ! cloud fraction of just "snow clouds- whatever they are"
+    real(r8) :: qrs_five(pcols,pver_rad)          ! shortwave radiative heating rate 
+    real(r8) :: qrl_five(pcols,pver_rad)          !  longwave  radiative heating rate 
+    real(r8) :: qrsc_five(pcols,pver_rad)         ! clearsky shortwave radiative heating rate 
+    real(r8) :: qrlc_five(pcols,pver_rad)         ! clearsky longwave  radiative heating rate 
+#endif
 
     integer lchnk, ncol, lw
     real(r8) :: calday                        ! current calendar day
@@ -913,15 +1006,15 @@ end function radiation_nextsw_cday
     real(r8) fldsc(pcols)         ! Clear sky lw flux at srf (down)
     real(r8) fln200(pcols)        ! net longwave flux interpolated to 200 mb
     real(r8) fln200c(pcols)       ! net clearsky longwave flux interpolated to 200 mb
-    real(r8) fns(pcols,pverp)     ! net shortwave flux
-    real(r8) fcns(pcols,pverp)    ! net clear-sky shortwave flux
+    real(r8) fns(pcols,pverp_rad)     ! net shortwave flux
+    real(r8) fcns(pcols,pverp_rad)    ! net clear-sky shortwave flux
     real(r8) fsn200(pcols)        ! fns interpolated to 200 mb
     real(r8) fsn200c(pcols)       ! fcns interpolated to 200 mb
-    real(r8) fnl(pcols,pverp)     ! net longwave flux
-    real(r8) fcnl(pcols,pverp)    ! net clear-sky longwave flux
+    real(r8) fnl(pcols,pverp_rad)     ! net longwave flux
+    real(r8) fcnl(pcols,pverp_rad)    ! net clear-sky longwave flux
 
-    real(r8) pbr(pcols,pver)      ! Model mid-level pressures (dynes/cm2)
-    real(r8) pnm(pcols,pverp)     ! Model interface pressures (dynes/cm2)
+    real(r8) pbr(pcols,pver_rad)      ! Model mid-level pressures (dynes/cm2)
+    real(r8) pnm(pcols,pverp_rad)     ! Model interface pressures (dynes/cm2)
     real(r8) eccf                 ! Earth/sun distance factor
     real(r8) lwupcgs(pcols)       ! Upward longwave flux in cgs units
 
@@ -945,6 +1038,13 @@ end function radiation_nextsw_cday
     real(r8) :: aer_tau_w_g(pcols,0:pver,nbndsw) ! aerosol assymetry parameter * w * tau
     real(r8) :: aer_tau_w_f(pcols,0:pver,nbndsw) ! aerosol forward scattered fraction * w * tau
     real(r8) :: aer_lw_abs (pcols,pver,nbndlw)   ! aerosol absorption optics depth (LW)
+#ifdef FIVE    
+    real(r8) :: aer_tau_five    (pcols,0:pver_rad,nbndsw) ! aerosol extinction optical depth
+    real(r8) :: aer_tau_w_five  (pcols,0:pver_rad,nbndsw) ! aerosol single scattering albedo * tau
+    real(r8) :: aer_tau_w_g_five(pcols,0:pver_rad,nbndsw) ! aerosol assymetry parameter * w * tau
+    real(r8) :: aer_tau_w_f_five(pcols,0:pver_rad,nbndsw) ! aerosol forward scattered fraction * w * tau
+    real(r8) :: aer_lw_abs_five (pcols,pver_rad,nbndlw)   ! aerosol absorption optics depth (LW)
+#endif
 
     ! Gathered indicies of day and night columns 
     !  chunk_column_index = IdxDay(daylight_column_index)
@@ -965,6 +1065,15 @@ end function radiation_nextsw_cday
     real(r8) ::  aerindex(pcols)      ! Aerosol index
     integer aod400_idx, aod700_idx, cld_tau_idx
 
+#ifdef FIVE
+    Integer  :: nb
+    real(r8) :: pdel_five(pcols,pver_five)
+    real(r8) :: dz_five(pver_five)
+    real(r8) :: rho_five(pver_five)
+    real(r8) :: dz_e3sm(pver)
+    real(r8) :: rho_e3sm(pver)
+    real(r8), parameter :: p0_five_ref = 100000._r8
+#endif
 
     character(*), parameter :: name = 'radiation_tend'
 !----------------------------------------------------------------------
@@ -1029,6 +1138,27 @@ end function radiation_nextsw_cday
     endif    
 
     call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
+#ifdef FIVE
+   call pbuf_get_field(pbuf, t_five_idx,    t_five,  start=(/1,1,itim_old/),   kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, q_five_idx,    q_five,  start=(/1,1,1,itim_old/), kount=(/pcols,pver_rad,pcnst,1/))
+   call pbuf_get_field(pbuf, u_five_idx,    u_five,  start=(/1,1,itim_old/),   kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, v_five_idx,    v_five,  start=(/1,1,itim_old/),   kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,    start=(/1,1,1/),  kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,    start=(/1,1,1/),  kount=(/pcols,pverp_rad,1/))
+
+   ! Syncronize FIVE variables to E3SM state
+   !  This is a crucial component to using FIVE within E3SM
+! HHLEE 
+!   call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
+!                             t_five,u_five,v_five,q_five)
+
+   ! Define pressue differences
+   do k=1,pver_five
+     do i=1,ncol
+       pdel_five(i,k) = pint_five(i,k+1) - pint_five(i,k)
+     enddo
+   enddo
+#endif
 
     ! Gather night/day column indices.
     Nday = 0
@@ -1063,6 +1193,18 @@ end function radiation_nextsw_cday
 
        call t_startf('cldoptics')
 
+#ifdef FIVE 
+        do  i = 1, ncol
+            call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                    cld(i,1:pver), cld_five(i,1:pver_five),pver,pver_five)
+
+            call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                    cldfsnow(i,1:pver), cldfsnow_five(i,1:pver_five),pver,pver_five)
+        end do
+#endif
+! HHLEE 20190131
+! current default options for cloud optical thickness are mitchell (ice) and
+! gammadist (liquid)
        if (dosw) then
           if(oldcldoptics) then
              call ec_ice_optics_sw(state, pbuf, ice_tau, ice_tau_w, ice_tau_w_g, ice_tau_w_f, oldicewp=.false.)
@@ -1089,12 +1231,24 @@ end function radiation_nextsw_cday
           cld_tau_w  (:,1:ncol,:) =  liq_tau_w  (:,1:ncol,:) + ice_tau_w  (:,1:ncol,:)
           cld_tau_w_g(:,1:ncol,:) =  liq_tau_w_g(:,1:ncol,:) + ice_tau_w_g(:,1:ncol,:)
           cld_tau_w_f(:,1:ncol,:) =  liq_tau_w_f(:,1:ncol,:) + ice_tau_w_f(:,1:ncol,:)
- 
+
           if (cldfsnow_idx > 0) then
             ! add in snow
              call get_snow_optics_sw(state, pbuf, snow_tau, snow_tau_w, snow_tau_w_g, snow_tau_w_f)
              do i=1,ncol
-                do k=1,pver
+                do k=1,pver_rad
+#ifdef FIVE
+                   cldfprime(i,k)=max(cld_five(i,k),cldfsnow_five(i,k))
+                   if(cldfprime(i,k) > 0.)then
+                      c_cld_tau    (1:nbndsw,i,k)= &
+                           (cldfsnow_five(i,k)*snow_tau    (1:nbndsw,i,k) + cld_five(i,k)*cld_tau    (1:nbndsw,i,k))/cldfprime(i,k)
+                      c_cld_tau_w  (1:nbndsw,i,k)= &
+                           (cldfsnow_five(i,k)*snow_tau_w  (1:nbndsw,i,k) + cld_five(i,k)*cld_tau_w  (1:nbndsw,i,k))/cldfprime(i,k)
+                      c_cld_tau_w_g(1:nbndsw,i,k)= &
+                           (cldfsnow_five(i,k)*snow_tau_w_g(1:nbndsw,i,k) + cld_five(i,k)*cld_tau_w_g(1:nbndsw,i,k))/cldfprime(i,k)
+                      c_cld_tau_w_f(1:nbndsw,i,k)= &
+                           (cldfsnow_five(i,k)*snow_tau_w_f(1:nbndsw,i,k) + cld_five(i,k)*cld_tau_w_f(1:nbndsw,i,k))/cldfprime(i,k)
+#else
                    cldfprime(i,k)=max(cld(i,k),cldfsnow(i,k))
                    if(cldfprime(i,k) > 0.)then
                       c_cld_tau    (1:nbndsw,i,k)= &
@@ -1105,6 +1259,7 @@ end function radiation_nextsw_cday
                            (cldfsnow(i,k)*snow_tau_w_g(1:nbndsw,i,k) + cld(i,k)*cld_tau_w_g(1:nbndsw,i,k))/cldfprime(i,k)
                       c_cld_tau_w_f(1:nbndsw,i,k)= &
                            (cldfsnow(i,k)*snow_tau_w_f(1:nbndsw,i,k) + cld(i,k)*cld_tau_w_f(1:nbndsw,i,k))/cldfprime(i,k)
+#endif
                    else
                       c_cld_tau    (1:nbndsw,i,k)= 0._r8
                       c_cld_tau_w  (1:nbndsw,i,k)= 0._r8
@@ -1151,12 +1306,36 @@ end function radiation_nextsw_cday
           !call cloud_rad_props_get_lw(state,  pbuf, cld_lw_abs, oldliq=.true., oldice=.true.)
           !call cloud_rad_props_get_lw(state,  pbuf, cld_lw_abs, oldcloud=.true.)
           !call cloud_rad_props_get_lw(state,  pbuf, cld_lw_abs, oldliq=.true., oldice=.true.)
+#ifdef FIVE
 
           if (cldfsnow_idx > 0) then
             ! add in snow
              call snow_cloud_get_rad_props_lw(state, pbuf, snow_lw_abs)
              do i=1,ncol
-                do k=1,pver
+                do k=1,pver_rad
+                   cldfprime(i,k)=max(cld_five(i,k),cldfsnow_five(i,k))
+                   if(cldfprime(i,k) > 0.)then
+                      c_cld_lw_abs(1:nbndlw,i,k)= &
+                           (cldfsnow_five(i,k)*snow_lw_abs(1:nbndlw,i,k) + cld_five(i,k)*cld_lw_abs(1:nbndlw,i,k))/cldfprime(i,k)
+                   else
+                      c_cld_lw_abs(1:nbndlw,i,k)= 0._r8
+                   endif
+                enddo
+             enddo
+          else
+             c_cld_lw_abs(1:nbndlw,1:ncol,:)=cld_lw_abs(:,1:ncol,:)
+          endif
+       endif
+
+       if (.not.(cldfsnow_idx > 0)) then
+          cldfprime(1:ncol,:)=cld_five(1:ncol,:)
+       endif
+#else
+          if (cldfsnow_idx > 0) then
+            ! add in snow
+             call snow_cloud_get_rad_props_lw(state, pbuf, snow_lw_abs)
+             do i=1,ncol
+                do k=1,pver_rad
                    cldfprime(i,k)=max(cld(i,k),cldfsnow(i,k))
                    if(cldfprime(i,k) > 0.)then
                       c_cld_lw_abs(1:nbndlw,i,k)= &
@@ -1174,15 +1353,21 @@ end function radiation_nextsw_cday
        if (.not.(cldfsnow_idx > 0)) then
           cldfprime(1:ncol,:)=cld(1:ncol,:)
        endif
+#endif
 
        call t_stopf('cldoptics')
 
        ! construct cgs unit reps of pmid and pint and get "eccf" - earthsundistancefactor
+#ifdef FIVE
+       call radinp(ncol, pmid_five, pint_five, pbr, pnm, eccf)
+#else
        call radinp(ncol, state%pmid, state%pint, pbr, pnm, eccf)
-
+#endif
        ! Calculate interface temperatures (following method
        ! used in radtpl for the longwave), using surface upward flux and
        ! stebol constant in mks units
+! HHLEE 20190131
+! Won't change tint calculation because it will not be used later 
        do i = 1,ncol
           tint(i,1) = state%t(i,1)
           tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
@@ -1213,8 +1398,45 @@ end function radiation_nextsw_cday
 
                   call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                          aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
+#ifdef FIVE
+                ! compute aer_tau_five in FIVE vertical resolution
+                do i = 1, ncol
+                  do nb = 1, nbndsw 
+                    call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                         aer_tau(i,1:pver,nb),aer_tau_five(i,1:pver_five,nb),pver,pver_five)
+                    aer_tau_five(i,0,nb) = aer_tau(i,0,nb)
 
+                    call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                         aer_tau_w(i,1:pver,nb),aer_tau_w_five(i,1:pver_five,nb),pver,pver_five)
+                    aer_tau_w_five(i,0,nb) = aer_tau_w(i,0,nb)
+
+                    call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                         aer_tau_w_g(i,1:pver,nb),aer_tau_w_g_five(i,1:pver_five,nb),pver,pver_five)
+                    aer_tau_w_g_five(i,0,nb) = aer_tau_w_g(i,0,nb)
+
+                    call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                         aer_tau(i,1:pver,nb),aer_tau_five(i,1:pver_five,nb),pver,pver_five)
+                    aer_tau_w_f_five(i,0,nb) = aer_tau_w_f(i,0,nb)
+                  end do 
+                end do
+#endif 
                   call t_startf ('rad_rrtmg_sw')
+#ifdef FIVE
+                  call rad_rrtmg_sw( &
+                       lchnk,        ncol,         pverp_five,     r_state,                    &
+                       pmid_five,    pint_five,    state%pint,    cldfprime,                   &
+                       aer_tau_five, aer_tau_w_five, aer_tau_w_g_five,  aer_tau_w_f_five,      &
+                       eccf,         coszrs,       solin,        sfac,                         &
+                       cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
+                       qrs_five,     qrsc_five,    fsnt,         fsntc,        fsntoa, fsutoa, &
+                       fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
+                       fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
+                       cam_out%solsd,cam_out%solld,fns,          fcns,                         &
+                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
+                       su,           sd,                                                       &
+                       E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
+                       old_convert = .false.)
+#else
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
                        state%pmid,   cldfprime,                                                &
@@ -1229,11 +1451,29 @@ end function radiation_nextsw_cday
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
+#endif
                   call t_stopf ('rad_rrtmg_sw')
+#ifdef FIVE
+                  do i = 1, ncol ! loop over columns Compute temperature on host model grid for density calculation
+                    call compute_five_grids(state%t(i,:),state%pdel(i,:),state%pmid(i,:),pver,&
+                         dz_e3sm(:),rho_e3sm(:))
+                    call compute_five_grids(t_five(i,:),pdel_five(i,:),pmid_five(i,:),pver_five,&
+                         dz_five(:),rho_five(:))
 
+                    call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                         state%pint(i,:),pmid_five(i,:),state%pmid(i,:),qrs_five(i,1:pver_five),qrs(i,1:pver))
+                    call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                         state%pint(i,:),pmid_five(i,:),state%pmid(i,:),qrsc_five(i,1:pver_five),qrsc(i,1:pver))
+                  end do
+#endif
                   !  Output net fluxes at 200 mb
+#ifdef FIVE
+                  call vertinterp(ncol, pcols, pverp_five, pint_five, 20000._r8, fcns, fsn200c)
+                  call vertinterp(ncol, pcols, pverp_five, pint_five, 20000._r8, fns, fsn200)
+#else
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fns, fsn200)
+#endif
 
                   do i=1,ncol
                      swcf(i)=fsntoa(i) - fsntoac(i)
@@ -1312,10 +1552,10 @@ end function radiation_nextsw_cday
           if (cldfsnow_idx > 0) then
              snow_icld_vistau(:ncol,:) = snow_tau(idx_sw_diag,:ncol,:)
           endif
-	  ! multiply by total cloud fraction to get gridbox value
-	  tot_cld_vistau(:ncol,:) = c_cld_tau(idx_sw_diag,:ncol,:)*cldfprime(:ncol,:)
+          ! multiply by total cloud fraction to get gridbox value
+          tot_cld_vistau(:ncol,:) = c_cld_tau(idx_sw_diag,:ncol,:)*cldfprime(:ncol,:)
 
-	  ! add fillvalue for night columns
+          ! add fillvalue for night columns
           do i = 1, Nnite
               tot_cld_vistau(IdxNite(i),:)   = fillvalue
               tot_icld_vistau(IdxNite(i),:)  = fillvalue
@@ -1365,8 +1605,26 @@ end function radiation_nextsw_cday
                   call  rrtmg_state_update( state, pbuf, icall, r_state)
 
                   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs)
-                  
+#ifdef FIVE
+               ! compute aer_lw_abs_five in FIVE vertical resolution
+                do i = 1, ncol
+                  do nb = 1, nbndsw
+                    call linear_interp(state%pmid(i,:),pmid_five(i,:), &
+                         aer_lw_abs(i,1:pver,nb),aer_lw_abs_five(i,1:pver_five,nb),pver,pver_five)
+                  end do
+                end do
+#endif
                   call t_startf ('rad_rrtmg_lw')
+#ifdef FIVE
+                  call rad_rrtmg_lw( &
+                       lchnk,        ncol,         pverp_five,      r_state,      pmid_five,     &
+                       pint_five,    state%pint,                                                 &
+                       aer_lw_abs_five,   cldfprime,       c_cld_lw_abs,                         &
+                       qrl_five,     qrlc_five,                                                  &
+                       flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
+                       flut,         flutc,        fnl,             fcnl,         fldsc,         &
+                       clm_seed,     lu,           ld                                            )
+#else
                   call rad_rrtmg_lw( &
                        lchnk,        ncol,         num_rrtmg_levs,  r_state,                     &
                        state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
@@ -1374,7 +1632,16 @@ end function radiation_nextsw_cday
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc,         &
                        clm_seed,     lu,           ld                                            )
+#endif
                   call t_stopf ('rad_rrtmg_lw')
+#ifdef FIVE
+                  do i = 1, ncol ! loop over columns Compute temperature on host model grid for density calculation
+                    call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                         state%pint(i,:),pmid_five(i,:),state%pmid(i,:),qrl_five(i,1:pver_five),qrl(i,1:pver))
+                    call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                         state%pint(i,:),pmid_five(i,:),state%pmid(i,:),qrlc_five(i,1:pver_five),qrlc(i,1:pver))
+                  end do
+#endif
 
                   if (lwrad_off) then
                      qrl(:,:) = 0._r8
@@ -1396,8 +1663,13 @@ end function radiation_nextsw_cday
                   end do
 
                   !  Output fluxes at 200 mb
+#ifdef FIVE
+                  call vertinterp(ncol, pcols, pverp_five, pint_five, 20000._r8, fnl, fln200)
+                  call vertinterp(ncol, pcols, pverp_five, pint_five, 20000._r8, fcnl, fln200c)
+#else
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fnl, fln200)
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcnl, fln200c)
+#endif
                   ! Dump longwave radiation information to history tape buffer (diagnostics)
                   call outfld('QRL'//diag(icall),qrl (:ncol,:)/cpair,ncol,lchnk)
                   call outfld('QRLC'//diag(icall),qrlc(:ncol,:)/cpair,ncol,lchnk)
@@ -1480,18 +1752,56 @@ end function radiation_nextsw_cday
        emis(:ncol,:) = 1._r8 - exp(-cld_lw_abs(rrtmg_lw_cloudsim_band,:ncol,:))
        call outfld('EMIS', emis, pcols, lchnk)
 
+#ifdef FIVE
+       do i = 1, ncol 
+            call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                 state%pint(i,:),pmid_five(i,:),state%pmid(i,:),emis(i,1:pver_five),emis_low(i,1:pver))
+       end do
+#endif
        !! compute grid-box mean SW and LW snow optical depth for use by COSP
        gb_snow_tau(:,:) = 0._r8
        gb_snow_lw(:,:) = 0._r8
+#ifdef FIVE
+       gb_snow_tau_five(:,:) = 0._r8
+       gb_snow_lw_five(:,:) = 0._r8
+#endif
+
        if (cldfsnow_idx > 0) then
+#ifdef FIVE
           do i=1,ncol
-             do k=1,pver
+             do k=1,pver_rad
+                if(cldfsnow_five(i,k) > 0.)then
+                   gb_snow_tau_five(i,k) = snow_tau(rrtmg_sw_cloudsim_band,i,k)*cldfsnow_five(i,k)
+                   gb_snow_lw_five(i,k) = snow_lw_abs(rrtmg_lw_cloudsim_band,i,k)*cldfsnow_five(i,k)
+                end if
+             enddo
+          enddo
+
+          do i=1,ncol
+             call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                  state%pint(i,:),pmid_five(i,:),state%pmid(i,:),gb_snow_tau_five(i,1:pver_five),&
+                  gb_snow_tau(i,1:pver))
+             call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                  state%pint(i,:),pmid_five(i,:),state%pmid(i,:),gb_snow_lw_five(i,1:pver_five),&
+                  gb_snow_lw(i,1:pver))
+
+             do nb=1,rrtmg_sw_cloudsim_band
+                call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
+                     state%pint(i,:),pmid_five(i,:),state%pmid(i,:),cld_tau(nb,i,1:pver_five),&
+                     cld_tau_low(nb,i,1:pver))
+             enddo
+
+          enddo
+#else
+          do i=1,ncol
+             do k=1,pver_rad
                 if(cldfsnow(i,k) > 0.)then
                    gb_snow_tau(i,k) = snow_tau(rrtmg_sw_cloudsim_band,i,k)*cldfsnow(i,k)
                    gb_snow_lw(i,k) = snow_lw_abs(rrtmg_lw_cloudsim_band,i,k)*cldfsnow(i,k)
                 end if
              enddo
           enddo
+#endif
        end if
 
        if (docosp) then
@@ -1504,9 +1814,15 @@ end function radiation_nextsw_cday
               !call should be compatible with camrt radiation.F90 interface too, should be with (in),optional
               ! N.B.: For snow optical properties, the GRID-BOX MEAN shortwave and longwave optical depths are passed.
               call t_startf ('cosp_run')
-	      call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
+#ifdef FIVE
+              call cospsimulator_intr_run(state,  pbuf, cam_in, emis_low, coszrs, &
+                   cld_swtau_in=cld_tau_low(rrtmg_sw_cloudsim_band,:,:),&
+                   snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
+#else
+              call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
                    cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
                    snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
+#endif
               cosp_cnt(lchnk) = 0  !! reset counter
               call t_stopf ('cosp_run')
            end if

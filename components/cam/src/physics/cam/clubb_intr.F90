@@ -1260,7 +1260,7 @@ end subroutine clubb_init_cnst
    integer                               :: time_elapsed                ! time keep track of stats          [s]
    real(r8), dimension(nparams)          :: clubb_params                ! These adjustable CLUBB parameters (C1, C2 ...)
    real(r8), dimension(sclr_dim)         :: sclr_tol                    ! Tolerance on passive scalar       [units vary]
-   type(pdf_parameter), dimension(pverp) :: pdf_params                  ! PDF parameters                    [units vary]
+   type(pdf_parameter), dimension(pverp_clubb) :: pdf_params                  ! PDF parameters                    [units vary]
    character(len=200)                    :: temp1, sub                  ! Strings needed for CLUBB output
    logical                               :: l_Lscale_plume_centered, l_use_ice_latent
 

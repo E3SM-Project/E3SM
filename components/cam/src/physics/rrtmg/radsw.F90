@@ -18,6 +18,14 @@ use rrtmg_sw_init,   only: rrtmg_sw_ini
 use rrtmg_sw_rad,    only: rrtmg_sw
 use perf_mod,        only: t_startf, t_stopf
 use radconstants,    only: idx_sw_diag
+#ifdef FIVE
+use five_intr,      only: pver_five, pverp_five, &
+                          five_syncronize_e3sm, &
+                          compute_five_grids, &
+                          compute_five_heights, &
+                          masswgt_vert_avg, linear_interp, &
+                          find_level_match_index
+#endif
 
 implicit none
 
@@ -35,12 +43,23 @@ public ::&
    radsw_init,      &! initialize constants
    rad_rrtmg_sw      ! driver for solar radiation code
 
+#ifdef FIVE
+   integer, parameter :: pverp_rad = pverp_five
+   integer, parameter :: pver_rad = pver_five
+#else
+   integer, parameter :: pverp_rad = pverp
+   integer, parameter :: pver_rad = pver
+#endif   
+
 !===============================================================================
 CONTAINS
 !===============================================================================
 
-subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
-                    E_pmid   ,E_cld      ,                             &
+subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , E_pmid, &
+#ifdef FIVE
+                    E_pint   ,pint_host  ,                             &
+#endif                    
+                    E_cld    ,                                         &
                     E_aer_tau,E_aer_tau_w,E_aer_tau_w_g,E_aer_tau_w_f, &
                     eccf     ,E_coszrs   ,solin        ,sfac         , &
                     E_asdir  ,E_asdif    ,E_aldir      ,E_aldif      , &
@@ -83,7 +102,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
 ! absorbed flux is also done for cloud forcing diagnostics.
 ! 
 !-----------------------------------------------------------------------
-
    use cmparray_mod,        only: CmpDayNite, ExpDayNite
    use phys_control,        only: phys_getopts
    use mcica_subcol_gen_sw, only: mcica_subcol_sw
@@ -110,13 +128,17 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    integer, intent(in), dimension(pcols) :: IdxDay  ! Indicies of daylight coumns
    integer, intent(in), dimension(pcols) :: IdxNite ! Indicies of night coumns
 
-   real(r8), intent(in) :: E_pmid(pcols,pver)  ! Level pressure (Pascals)
-   real(r8), intent(in) :: E_cld(pcols,pver)    ! Fractional cloud cover
+   real(r8), intent(in) :: E_pmid(pcols,pver_rad)   ! Level pressure (Pascals)
+#ifdef FIVE
+   real(r8), intent(in) :: E_pint(pcols,pverp_rad)  ! Level pressure (Pascals)
+   real(r8), intent(in) :: pint_host(pcols,pverp)    ! Level pressure (Pascals)
+#endif
+   real(r8), intent(in) :: E_cld(pcols,pver_rad)    ! Fractional cloud cover
 
-   real(r8), intent(in) :: E_aer_tau    (pcols, 0:pver, nbndsw)      ! aerosol optical depth
-   real(r8), intent(in) :: E_aer_tau_w  (pcols, 0:pver, nbndsw)      ! aerosol OD * ssa
-   real(r8), intent(in) :: E_aer_tau_w_g(pcols, 0:pver, nbndsw)      ! aerosol OD * ssa * asm
-   real(r8), intent(in) :: E_aer_tau_w_f(pcols, 0:pver, nbndsw)      ! aerosol OD * ssa * fwd
+   real(r8), intent(in) :: E_aer_tau    (pcols, 0:pver_rad, nbndsw)      ! aerosol optical depth
+   real(r8), intent(in) :: E_aer_tau_w  (pcols, 0:pver_rad, nbndsw)      ! aerosol OD * ssa
+   real(r8), intent(in) :: E_aer_tau_w_g(pcols, 0:pver_rad, nbndsw)      ! aerosol OD * ssa * asm
+   real(r8), intent(in) :: E_aer_tau_w_f(pcols, 0:pver_rad, nbndsw)      ! aerosol OD * ssa * fwd
 
    real(r8), intent(in) :: eccf               ! Eccentricity factor (1./earth-sun dist^2)
    real(r8), intent(in) :: E_coszrs(pcols)    ! Cosine solar zenith angle
@@ -127,17 +149,17 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(in) :: sfac(nbndsw)            ! factor to account for solar variability in each band 
    integer,  intent(inout) :: clm_rand_seed(pcols,4)            ! rand # seeds for sw
 
-   real(r8), optional, intent(in) :: E_cld_tau    (nbndsw, pcols, pver)      ! cloud optical depth
-   real(r8), optional, intent(in) :: E_cld_tau_w  (nbndsw, pcols, pver)      ! cloud optical 
-   real(r8), optional, intent(in) :: E_cld_tau_w_g(nbndsw, pcols, pver)      ! cloud optical 
-   real(r8), optional, intent(in) :: E_cld_tau_w_f(nbndsw, pcols, pver)      ! cloud optical 
+   real(r8), optional, intent(in) :: E_cld_tau    (nbndsw, pcols, pver_rad)      ! cloud optical depth
+   real(r8), optional, intent(in) :: E_cld_tau_w  (nbndsw, pcols, pver_rad)      ! cloud optical 
+   real(r8), optional, intent(in) :: E_cld_tau_w_g(nbndsw, pcols, pver_rad)      ! cloud optical 
+   real(r8), optional, intent(in) :: E_cld_tau_w_f(nbndsw, pcols, pver_rad)      ! cloud optical 
    logical, optional, intent(in) :: old_convert
 
    ! Output arguments
 
    real(r8), intent(out) :: solin(pcols)     ! Incident solar flux
-   real(r8), intent(out) :: qrs (pcols,pver) ! Solar heating rate
-   real(r8), intent(out) :: qrsc(pcols,pver) ! Clearsky solar heating rate
+   real(r8), intent(out) :: qrs (pcols,pver_rad) ! Solar heating rate
+   real(r8), intent(out) :: qrsc(pcols,pver_rad) ! Clearsky solar heating rate
    real(r8), intent(out) :: fsns(pcols)      ! Surface absorbed solar flux
    real(r8), intent(out) :: fsnt(pcols)      ! Total column absorbed solar flux
    real(r8), intent(out) :: fsntoa(pcols)    ! Net solar flux at TOA
@@ -156,8 +178,8 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(out) :: fsnrtoac(pcols)  ! Clear sky near-IR flux absorbed at toa
    real(r8), intent(out) :: fsnrtoaq(pcols)  ! Net near-IR flux at toa >= 0.7 microns
 
-   real(r8), intent(out) :: fns(pcols,pverp)   ! net flux at interfaces
-   real(r8), intent(out) :: fcns(pcols,pverp)  ! net clear-sky flux at interfaces
+   real(r8), intent(out) :: fns(pcols,pverp_rad)   ! net flux at interfaces
+   real(r8), intent(out) :: fcns(pcols,pverp_rad)  ! net clear-sky flux at interfaces
 
    real(r8), pointer, dimension(:,:,:) :: su ! shortwave spectral flux up
    real(r8), pointer, dimension(:,:,:) :: sd ! shortwave spectral flux down
@@ -166,7 +188,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
 
    ! Local and reordered copies of the intent(in) variables
 
-   real(r8) :: pmid(pcols,pver)    ! Level pressure (Pascals)
+   real(r8) :: pmid(pcols,pver_rad)    ! Level pressure (Pascals)
 
    real(r8) :: cld(pcols,rrtmg_levs-1)    ! Fractional cloud cover
    real(r8) :: cicewp(pcols,rrtmg_levs-1) ! in-cloud cloud ice water path
@@ -201,7 +223,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    integer, parameter :: nsubcsw = ngptsw           ! rrtmg_sw g-point (quadrature point) dimension
    integer :: permuteseed                           ! permute seed for sub-column generator
 
-   real(r8) :: diagnostic_od(pcols, pver)           ! cloud optical depth - diagnostic temp variable
+   real(r8) :: diagnostic_od(pcols, pver_rad)           ! cloud optical depth - diagnostic temp variable
 
    real(r8) :: tauc_sw(nbndsw, pcols, rrtmg_levs-1)         ! cloud optical depth
    real(r8) :: ssac_sw(nbndsw, pcols, rrtmg_levs-1)         ! cloud single scat. albedo
@@ -247,26 +269,26 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    integer :: i, k, ns       ! indices
 
    ! Cloud radiative property arrays
-   real(r8) :: tauxcl(pcols,0:pver) ! water cloud extinction optical depth
-   real(r8) :: tauxci(pcols,0:pver) ! ice cloud extinction optical depth
-   real(r8) :: wcl(pcols,0:pver) ! liquid cloud single scattering albedo
-   real(r8) :: gcl(pcols,0:pver) ! liquid cloud asymmetry parameter
-   real(r8) :: fcl(pcols,0:pver) ! liquid cloud forward scattered fraction
-   real(r8) :: wci(pcols,0:pver) ! ice cloud single scattering albedo
-   real(r8) :: gci(pcols,0:pver) ! ice cloud asymmetry parameter
-   real(r8) :: fci(pcols,0:pver) ! ice cloud forward scattered fraction
+   real(r8) :: tauxcl(pcols,0:pver_rad) ! water cloud extinction optical depth
+   real(r8) :: tauxci(pcols,0:pver_rad) ! ice cloud extinction optical depth
+   real(r8) :: wcl(pcols,0:pver_rad) ! liquid cloud single scattering albedo
+   real(r8) :: gcl(pcols,0:pver_rad) ! liquid cloud asymmetry parameter
+   real(r8) :: fcl(pcols,0:pver_rad) ! liquid cloud forward scattered fraction
+   real(r8) :: wci(pcols,0:pver_rad) ! ice cloud single scattering albedo
+   real(r8) :: gci(pcols,0:pver_rad) ! ice cloud asymmetry parameter
+   real(r8) :: fci(pcols,0:pver_rad) ! ice cloud forward scattered fraction
 
    ! Aerosol radiative property arrays
-   real(r8) :: tauxar(pcols,0:pver) ! aerosol extinction optical depth
-   real(r8) :: wa(pcols,0:pver) ! aerosol single scattering albedo
-   real(r8) :: ga(pcols,0:pver) ! aerosol assymetry parameter
-   real(r8) :: fa(pcols,0:pver) ! aerosol forward scattered fraction
+   real(r8) :: tauxar(pcols,0:pver_rad) ! aerosol extinction optical depth
+   real(r8) :: wa(pcols,0:pver_rad) ! aerosol single scattering albedo
+   real(r8) :: ga(pcols,0:pver_rad) ! aerosol assymetry parameter
+   real(r8) :: fa(pcols,0:pver_rad) ! aerosol forward scattered fraction
 
    ! CRM
-   real(r8) :: fus(pcols,pverp)   ! Upward flux (added for CRM)
-   real(r8) :: fds(pcols,pverp)   ! Downward flux (added for CRM)
-   real(r8) :: fusc(pcols,pverp)  ! Upward clear-sky flux (added for CRM)
-   real(r8) :: fdsc(pcols,pverp)  ! Downward clear-sky flux (added for CRM)
+   real(r8) :: fus(pcols,pverp_rad)   ! Upward flux (added for CRM)
+   real(r8) :: fds(pcols,pverp_rad)   ! Downward flux (added for CRM)
+   real(r8) :: fusc(pcols,pverp_rad)  ! Upward clear-sky flux (added for CRM)
+   real(r8) :: fdsc(pcols,pverp_rad)  ! Downward clear-sky flux (added for CRM)
 
    integer :: kk
 
@@ -275,6 +297,18 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8) :: tlay(pcols,rrtmg_levs)     ! mid point temperature
    real(r8) :: tlev(pcols,rrtmg_levs+1)   ! interface temperature
 
+#ifdef FIVE
+   real(r8) :: pmidmb_five(pcols,rrtmg_levs)   ! Level pressure (hPa)
+   real(r8) :: pintmb_five(pcols,rrtmg_levs+1) ! Model interface pressure (hPa)
+   real(r8) :: tlay_five(pcols,rrtmg_levs)     ! mid point temperature
+   real(r8) :: tlev_five(pcols,rrtmg_levs+1)   ! interface temperature
+   real(r8) :: h2ovmr_five(pcols,rrtmg_levs)   ! h2o volume mixing ratio
+   real(r8) :: o3vmr_five(pcols,rrtmg_levs)    ! o3 volume mixing ratio
+   real(r8) :: co2vmr_five(pcols,rrtmg_levs)   ! co2 volume mixing ratio 
+   real(r8) :: ch4vmr_five(pcols,rrtmg_levs)   ! ch4 volume mixing ratio 
+   real(r8) :: o2vmr_five(pcols,rrtmg_levs)    ! o2  volume mixing ratio 
+   real(r8) :: n2ovmr_five(pcols,rrtmg_levs)   ! n2o volume mixing ratio 
+#endif
    !-----------------------------------------------------------------------
    ! START OF CALCULATION
    !-----------------------------------------------------------------------
@@ -304,15 +338,15 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    solsd(1:ncol)    = 0.0_r8
    solld(1:ncol)    = 0.0_r8
 
-   qrs (1:ncol,1:pver) = 0.0_r8
-   qrsc(1:ncol,1:pver) = 0.0_r8
-   fns(1:ncol,1:pverp) = 0.0_r8
-   fcns(1:ncol,1:pverp) = 0.0_r8
+   qrs (1:ncol,1:pver_rad) = 0.0_r8
+   qrsc(1:ncol,1:pver_rad) = 0.0_r8
+   fns(1:ncol,1:pverp_rad) = 0.0_r8
+   fcns(1:ncol,1:pverp_rad) = 0.0_r8
    if (single_column.and.scm_crm_mode) then 
-      fus(1:ncol,1:pverp) = 0.0_r8
-      fds(1:ncol,1:pverp) = 0.0_r8
-      fusc(:ncol,:pverp) = 0.0_r8
-      fdsc(:ncol,:pverp) = 0.0_r8
+      fus(1:ncol,1:pverp_rad) = 0.0_r8
+      fds(1:ncol,1:pverp_rad) = 0.0_r8
+      fusc(:ncol,:pverp_rad) = 0.0_r8
+      fdsc(:ncol,:pverp_rad) = 0.0_r8
    endif
 
    if (associated(su)) su(1:ncol,:,:) = 0.0_r8
@@ -324,16 +358,40 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    endif
 
    ! Rearrange input arrays
-   call CmpDayNite(E_pmid(:,pverp-rrtmg_levs+1:pver), pmid(:,1:rrtmg_levs-1), &
+   call CmpDayNite(E_pmid(:,pverp_rad-rrtmg_levs+1:pver_rad), pmid(:,1:rrtmg_levs-1), &
         Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs-1)
-   call CmpDayNite(E_cld(:,pverp-rrtmg_levs+1:pver),  cld(:,1:rrtmg_levs-1), &
+   call CmpDayNite(E_cld(:,pverp_rad-rrtmg_levs+1:pver_rad),  cld(:,1:rrtmg_levs-1), &
         Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs-1)
+#ifdef FIVE
+   do i = 1, ncol
+      pintmb_five(i,1) = r_state%pintmb(i,1)
+      pintmb_five(i,2:rrtmg_levs+1) = E_pint(i,1:pverp_five) * 1.e-2_r8 ! mbar
 
+      pmidmb_five(i,1) = r_state%pmidmb(i,1)
+      pmidmb_five(i,2:rrtmg_levs) = E_pmid(i,1:pver_five) * 1.e-2_r8 ! mbar
+      
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%h2ovmr(i,1:pverp), h2ovmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%o3vmr(i,1:pverp), o3vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%co2vmr(i,1:pverp), co2vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+   end do
+
+   call CmpDayNite(pintmb_five, pintmb, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs+1)
+   call CmpDayNite(pmidmb_five, pmidmb, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+   call CmpDayNite(h2ovmr_five, h2ovmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+   call CmpDayNite(o3vmr_five,  o3vmr,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+   call CmpDayNite(co2vmr_five, co2vmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+#else
    call CmpDayNite(r_state%pintmb, pintmb, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs+1)
    call CmpDayNite(r_state%pmidmb, pmidmb, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%h2ovmr, h2ovmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%o3vmr,  o3vmr,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%co2vmr, co2vmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+#endif
 
    call CmpDayNite(E_coszrs, coszrs,    Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call CmpDayNite(E_asdir,  asdir,     Nday, IdxDay, Nnite, IdxNite, 1, pcols)
@@ -341,11 +399,37 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call CmpDayNite(E_asdif,  asdif,     Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call CmpDayNite(E_aldif,  aldif,     Nday, IdxDay, Nnite, IdxNite, 1, pcols)
 
+#ifdef FIVE
+   do i = 1, ncol
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%tlev(i,1:pverp), tlev_five(i,1:rrtmg_levs),pverp,pverp_five)
+      tlev_five(i,rrtmg_levs+1) = r_state%tlev(i,pverp+1)
+      
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%tlay(i,1:pverp), tlay_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%ch4vmr(i,1:pverp), ch4vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%o2vmr(i,1:pverp), o2vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+
+      call linear_interp(pint_host(i,:),E_pint(i,:), &
+                    r_state%n2ovmr(i,1:pverp), n2ovmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+   end do
+
+   call CmpDayNite(tlay_five,   tlay,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+   call CmpDayNite(tlev_five,   tlev,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs+1)
+   call CmpDayNite(ch4vmr_five, ch4vmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+   call CmpDayNite(o2vmr_five,  o2vmr,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+   call CmpDayNite(n2ovmr_five, n2ovmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+#else
    call CmpDayNite(r_state%tlay,   tlay,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%tlev,   tlev,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs+1)
    call CmpDayNite(r_state%ch4vmr, ch4vmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%o2vmr,  o2vmr,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
    call CmpDayNite(r_state%n2ovmr, n2ovmr, Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, rrtmg_levs)
+#endif
 
    if (pergro_mods) then
       !BSINGH - rearrange random numbers, only needs to be done for pergro mods
@@ -365,7 +449,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    ! Other ways might allow for better optimization
    do ns = 1, nbndsw
       do k  = 1, rrtmg_levs-1
-         kk=(pverp-rrtmg_levs) + k
+         kk=(pverp_rad-rrtmg_levs) + k
          do i  = 1, Nday
             if(E_aer_tau_w(IdxDay(i),kk,ns) > 1.e-80_r8) then
                asm_aer_sw(i,k,ns) = E_aer_tau_w_g(IdxDay(i),kk,ns)/E_aer_tau_w(IdxDay(i),kk,ns)
@@ -414,7 +498,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
       if (old_convert)then ! convert without limits
          do i = 1, Nday
          do k = 1, rrtmg_levs-1
-         kk=(pverp-rrtmg_levs) + k
+         kk=(pverp_rad-rrtmg_levs) + k
          do ns = 1, nbndsw
            if (E_cld_tau_w(ns,IdxDay(i),kk) > 0._r8) then
               fsfc_sw(ns,i,k)=E_cld_tau_w_f(ns,IdxDay(i),kk)/E_cld_tau_w(ns,IdxDay(i),kk)
@@ -440,7 +524,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
          ! eventually, when we are done with archaic versions, This set of code will become the default.
          do i = 1, Nday
          do k = 1, rrtmg_levs-1
-         kk=(pverp-rrtmg_levs) + k
+         kk=(pverp_rad-rrtmg_levs) + k
          do ns = 1, nbndsw
            if (E_cld_tau_w(ns,IdxDay(i),kk) > 0._r8) then
               fsfc_sw(ns,i,k)=E_cld_tau_w_f(ns,IdxDay(i),kk)/max(E_cld_tau_w(ns,IdxDay(i),kk), 1.e-80_r8)
@@ -466,7 +550,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    else
       do i = 1, Nday
       do k = 1, rrtmg_levs-1
-      kk=(pverp-rrtmg_levs) + k
+      kk=(pverp_rad-rrtmg_levs) + k
       do ns = 1, nbndsw
         if (E_cld_tau_w(ns,IdxDay(i),kk) > 0._r8) then
            fsfc_sw(ns,i,k)=E_cld_tau_w_f(ns,IdxDay(i),kk)/max(E_cld_tau_w(ns,IdxDay(i),kk), 1.e-80_r8)
@@ -585,27 +669,27 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
 
 
    ! Set the net, up and down fluxes at model interfaces
-   fns (1:Nday,pverp-rrtmg_levs+1:pverp) =  swdflx(1:Nday,rrtmg_levs:1:-1) -  swuflx(1:Nday,rrtmg_levs:1:-1)
-   fcns(1:Nday,pverp-rrtmg_levs+1:pverp) = swdflxc(1:Nday,rrtmg_levs:1:-1) - swuflxc(1:Nday,rrtmg_levs:1:-1)
-   fus (1:Nday,pverp-rrtmg_levs+1:pverp) =  swuflx(1:Nday,rrtmg_levs:1:-1)
-   fusc(1:Nday,pverp-rrtmg_levs+1:pverp) = swuflxc(1:Nday,rrtmg_levs:1:-1)
-   fds (1:Nday,pverp-rrtmg_levs+1:pverp) =  swdflx(1:Nday,rrtmg_levs:1:-1)
-   fdsc(1:Nday,pverp-rrtmg_levs+1:pverp) = swdflxc(1:Nday,rrtmg_levs:1:-1)
+   fns (1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad) =  swdflx(1:Nday,rrtmg_levs:1:-1) -  swuflx(1:Nday,rrtmg_levs:1:-1)
+   fcns(1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad) = swdflxc(1:Nday,rrtmg_levs:1:-1) - swuflxc(1:Nday,rrtmg_levs:1:-1)
+   fus (1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad) =  swuflx(1:Nday,rrtmg_levs:1:-1)
+   fusc(1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad) = swuflxc(1:Nday,rrtmg_levs:1:-1)
+   fds (1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad) =  swdflx(1:Nday,rrtmg_levs:1:-1)
+   fdsc(1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad) = swdflxc(1:Nday,rrtmg_levs:1:-1)
 
    ! Set solar heating, reverse layering
    ! Pass shortwave heating to CAM arrays and convert from K/d to J/kg/s
-   qrs (1:Nday,pverp-rrtmg_levs+1:pver) = swhr (1:Nday,rrtmg_levs-1:1:-1)*cpair*dps
-   qrsc(1:Nday,pverp-rrtmg_levs+1:pver) = swhrc(1:Nday,rrtmg_levs-1:1:-1)*cpair*dps
+   qrs (1:Nday,pverp_rad-rrtmg_levs+1:pver_rad) = swhr (1:Nday,rrtmg_levs-1:1:-1)*cpair*dps
+   qrsc(1:Nday,pverp_rad-rrtmg_levs+1:pver_rad) = swhrc(1:Nday,rrtmg_levs-1:1:-1)*cpair*dps
 
    ! Set spectral fluxes, reverse layering
    ! order=(/3,1,2/) maps the first index of swuflxs to the third index of su.
    if (associated(su)) then
-      su(1:Nday,pverp-rrtmg_levs+1:pverp,:) = reshape(swuflxs(:,1:Nday,rrtmg_levs:1:-1), &
+      su(1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad,:) = reshape(swuflxs(:,1:Nday,rrtmg_levs:1:-1), &
            (/Nday,rrtmg_levs,nbndsw/), order=(/3,1,2/))
    end if
 
    if (associated(sd)) then
-      sd(1:Nday,pverp-rrtmg_levs+1:pverp,:) = reshape(swdflxs(:,1:Nday,rrtmg_levs:1:-1), &
+      sd(1:Nday,pverp_rad-rrtmg_levs+1:pverp_rad,:) = reshape(swdflxs(:,1:Nday,rrtmg_levs:1:-1), &
            (/Nday,rrtmg_levs,nbndsw/), order=(/3,1,2/))
    end if
 
@@ -616,10 +700,10 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    ! intent(out)
 
    call ExpDayNite(solin,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
-   call ExpDayNite(qrs,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver)
-   call ExpDayNite(qrsc,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver)
-   call ExpDayNite(fns,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-   call ExpDayNite(fcns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(qrs,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver_rad)
+   call ExpDayNite(qrsc,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver_rad)
+   call ExpDayNite(fns,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad)
+   call ExpDayNite(fcns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad)
    call ExpDayNite(fsns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnt,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsntoa,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
@@ -641,20 +725,20 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    endif
 
    if (associated(su)) then
-      call ExpDayNite(su,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp, 1, nbndsw)
+      call ExpDayNite(su,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad, 1, nbndsw)
    end if
 
    if (associated(sd)) then
-      call ExpDayNite(sd,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp, 1, nbndsw)
+      call ExpDayNite(sd,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad, 1, nbndsw)
    end if
 
    !  these outfld calls don't work for spmd only outfield in scm mode (nonspmd)
    if (single_column .and. scm_crm_mode) then 
       ! Following outputs added for CRM
-      call ExpDayNite(fus,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fds,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fusc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fdsc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+      call ExpDayNite(fus,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad)
+      call ExpDayNite(fds,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad)
+      call ExpDayNite(fusc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad)
+      call ExpDayNite(fdsc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp_rad)
       call outfld('FUS     ',fus * 1.e-3_r8 ,pcols,lchnk)
       call outfld('FDS     ',fds * 1.e-3_r8 ,pcols,lchnk)
       call outfld('FUSC    ',fusc,pcols,lchnk)
