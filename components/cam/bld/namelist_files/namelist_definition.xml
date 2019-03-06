@@ -509,6 +509,12 @@ processes, otherwise use option 0 (approx.).
 Default: -1
 </entry>
 
+<entry id="phys_chnk_cost_write" type="logical"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+Enable/disable output of measured physics cost per chunk.
+Default: .false.
+</entry>
+
 <entry id="phys_chnk_per_thd" type="integer"  category="perf_dp_coup"
        group="cam_inparm" valid_values="">
 Select target number of chunks per thread.  Must be positive.

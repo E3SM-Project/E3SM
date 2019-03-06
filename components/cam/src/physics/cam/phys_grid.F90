@@ -30,6 +30,9 @@ module phys_grid
 !       rlon               for longitude coordinate (in radians)
 !       wght               for column integration weight
 !
+!      print_cost_p        print measured cost (for all chunks)
+!      update_cost_p       add walltime to chunk cost for a given chunk
+!
 !      scatter_field_to_chunk
 !                          distribute field
 !                          to decomposed chunk data structure
@@ -101,8 +104,8 @@ module phys_grid
    use cam_logfile,      only: iulog
    use scamMod,          only: single_column, scmlat, scmlon
    use shr_const_mod,    only: SHR_CONST_PI
-   use dyn_grid,         only: dyn_grid_find_gcols
    use dycore,           only: dycore_is
+   use units,            only: getunit, freeunit
 
    implicit none
    save
@@ -164,6 +167,7 @@ module phys_grid
      integer  :: lat(pcols)            ! global latitude indices
      integer  :: owner                 ! id of process where chunk assigned
      integer  :: lcid                  ! local chunk index
+     real(r8) :: estcost               ! estimated computational cost (normalized)
    end type chunk
 
    integer :: nchunks                  ! global chunk count
@@ -182,6 +186,7 @@ module phys_grid
      integer  :: gcol(pcols)           ! global physics column indices
      real(r8) :: area(pcols)           ! column surface area (from dynamics)
      real(r8) :: wght(pcols)           ! column integration weight (from dynamics)
+     real(r8) :: cost                  ! measured computational cost (seconds)
    end type lchunk
 
    integer, private :: nlchunks        ! local chunk count
@@ -280,6 +285,12 @@ module phys_grid
    integer, private, parameter :: def_twin_alg_lonlat = 1         ! default
    integer, private, parameter :: def_twin_alg_unstructured = 0
    integer, private :: twin_alg = def_twin_alg_lonlat
+
+! Physics grid load balancing output options:  
+!  T: write out both estimated (normalized) and actual (seconds) cost per chunk
+!  F: do not write out costs
+   logical, private, parameter :: def_output_chunk_costs = .false.
+   logical, private :: output_chunk_costs = def_output_chunk_costs
 
 ! target number of chunks per thread
    integer, private, parameter :: min_chunks_per_thread = 1
@@ -528,8 +539,8 @@ contains
        clat_p_idx(j) = clat_p_idx(j-1) + clat_p_cnt(j-1)
     enddo
 
-    deallocate(lat_d)
-    deallocate(lon_d)
+    deallocate( lat_d )
+    deallocate( lon_d )
 
     ! sort by longitude within latitudes
     end_dex = 0
@@ -655,6 +666,7 @@ contains
        !
        allocate( cdex(1:maxblksiz) )
        allocate( chunks(1:nchunks) )
+       chunks(:)%estcost = 0.0_r8
 
        do cid=1,nchunks
           ! get number of global column indices in block
@@ -677,6 +689,7 @@ contains
                 chunks(cid)%gcol(ncols) = curgcol_d
                 chunks(cid)%lat(ncols) = lat_p(curgcol_d)
                 chunks(cid)%lon(ncols) = lon_p(curgcol_d)		
+                chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
              endif
           enddo
           chunks(cid)%ncols = ncols
@@ -830,6 +843,7 @@ contains
     endchunk = pchunkid(iam+1) + lastblock - 1
     !
     allocate( lchunks(begchunk:endchunk) )
+    lchunks(:)%cost = 0.0_r8
     do cid=1,nchunks
        if (chunks(cid)%owner == iam) then
           lcid = chunks(cid)%lcid
@@ -1314,7 +1328,8 @@ logical function phys_grid_initialized ()
    subroutine phys_grid_defaultopts(phys_loadbalance_out, &
                                     phys_twin_algorithm_out, &
                                     phys_alltoall_out, &
-                                    phys_chnk_per_thd_out )
+                                    phys_chnk_per_thd_out, &
+                                    phys_chnk_cost_write_out )
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 ! Author: Tom Henderson
@@ -1329,6 +1344,8 @@ logical function phys_grid_initialized ()
      integer, intent(out), optional :: phys_alltoall_out
      ! number of chunks per thread
      integer, intent(out), optional :: phys_chnk_per_thd_out
+     ! flag whether to write out estimated and actual cost per chunk
+     logical, intent(out), optional :: phys_chnk_cost_write_out
 !-----------------------------------------------------------------------
      if ( present(phys_loadbalance_out) ) then
        phys_loadbalance_out = def_lbal_opt
@@ -1346,6 +1363,9 @@ logical function phys_grid_initialized ()
      if ( present(phys_chnk_per_thd_out) ) then
        phys_chnk_per_thd_out = def_chunks_per_thread
      endif
+     if ( present(phys_chnk_cost_write_out) ) then
+       phys_chnk_cost_write_out = def_output_chunk_costs
+     endif
    end subroutine phys_grid_defaultopts
 !
 !========================================================================
@@ -1353,7 +1373,8 @@ logical function phys_grid_initialized ()
    subroutine phys_grid_setopts(phys_loadbalance_in, &
                                 phys_twin_algorithm_in, &
                                 phys_alltoall_in,    &
-                                phys_chnk_per_thd_in )
+                                phys_chnk_per_thd_in, &
+                                phys_chnk_cost_write_in )
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
 ! Author: Tom Henderson
@@ -1371,6 +1392,8 @@ logical function phys_grid_initialized ()
      integer, intent(in), optional :: phys_alltoall_in
      ! number of chunks per thread
      integer, intent(in), optional :: phys_chnk_per_thd_in
+     ! flag whether to write out estimated and actual cost per chunk
+     logical, intent(in), optional :: phys_chnk_cost_write_in
 !-----------------------------------------------------------------------
      if ( present(phys_loadbalance_in) ) then
         lbal_opt = phys_loadbalance_in
@@ -1443,6 +1466,10 @@ logical function phys_grid_initialized ()
            endif
            call endrun
         endif
+     endif
+!
+     if ( present(phys_chnk_cost_write_in) ) then
+        output_chunk_costs = phys_chnk_cost_write_in
      endif
    end subroutine phys_grid_setopts
 !
@@ -2087,6 +2114,128 @@ logical function phys_grid_initialized ()
 
    return
    end function get_rlon_p
+!
+!========================================================================
+
+   subroutine print_cost_p()
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Print walltime cost for all chunks.
+! 
+! Method: 
+! 
+! Author: P. Worley
+! 
+!-----------------------------------------------------------------------
+!---------------------------Local workspace-----------------------------
+   integer  :: unitn                  ! file unit number
+   integer  :: signal                 ! handshake variable
+   integer  :: lcid                   ! local chunk id
+   integer  :: cid                    ! global chunk id
+   integer  :: owner                  ! chunk owner
+   integer  :: ncols                  ! number of columns in chunk
+   integer  :: ierr                   ! error return
+
+   real(r8) :: cost_lsum, cost_gsum   ! local and global sums of 
+                                      !  chunk costs
+   real(r8) :: avg_cost               ! average chunk cost
+   real(r8) :: avg_estcost            ! average estimated chunk cost
+   real(r8) :: cost                   ! chunk cost
+   real(r8) :: norm_cost              ! normalized chunk cost
+   real(r8) :: norm_est_cost          ! normalized estimated chunk cost
+
+   character(len=*), parameter :: fname = 'atm_chunk_costs.txt'
+
+!-----------------------------------------------------------------------
+   if (output_chunk_costs) then
+      unitn = getunit()
+
+      ! Calculate normalized measured cost
+      cost_gsum = 0.0_r8
+      cost_lsum = 0.0_r8
+      do lcid = begchunk, endchunk
+         cost_lsum = cost_lsum + lchunks(lcid)%cost
+      enddo
+      call MPI_ALLREDUCE(cost_lsum, cost_gsum, 1, MPI_REAL8, MPI_SUM, &
+                         mpicom, ierr)
+      if (abs(cost_gsum) > 0.000001_r8) then
+         avg_cost = cost_gsum/nchunks
+      else
+         avg_cost = 1.0_r8
+      endif
+
+      ! Calculate normalized estimated cost
+      cost_gsum = 0.0_r8
+      do cid = 1,nchunks
+         cost_gsum = cost_gsum + chunks(cid)%estcost
+      enddo
+      if (abs(cost_gsum) > 0.0000001_r8) then
+         avg_estcost = cost_gsum/nchunks
+      else
+         avg_estcost = 1.0_r8
+      endif
+
+      ! Take turns writing to fname.
+      if (iam == 0) then
+         open( unitn, file=trim(fname), status='REPLACE', &
+                      form='FORMATTED', access='SEQUENTIAL' )
+
+         write(unitn,'(a)') "ATM CHUNK COST"
+         write(unitn,'(a)') &
+            " owner   lcid    cid  ncols  estcost (norm)  cost (norm)  cost (seconds)"
+
+         signal = 1
+      else
+         call mpirecv(signal, 1, mpiint, iam-1, iam, mpicom) 
+         open( unitn, file=trim(fname), status='OLD', &
+                      form='FORMATTED', access='SEQUENTIAL', position='APPEND' )
+      endif
+
+      do lcid = begchunk, endchunk
+         cid   = lchunks(lcid)%cid
+         owner = chunks(cid)%owner
+         ncols = lchunks(lcid)%ncols
+         cost  = lchunks(lcid)%cost
+         norm_cost = cost/avg_cost
+         norm_est_cost = chunks(cid)%estcost/avg_estcost
+         write(unitn,'(i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
+               owner, lcid, cid, ncols, norm_est_cost, norm_cost, cost
+      enddo
+
+      close(unitn)
+
+      if (iam+1 < npes) then
+         call mpisend(signal, 1, mpiint, iam+1, iam+1, mpicom)
+      endif
+
+      call freeunit(unitn)
+   endif
+
+   return
+   end subroutine print_cost_p
+!
+!========================================================================
+
+   subroutine update_cost_p(lcid, cost_increment)
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Add cost_increment to walltime cost for chunk given the local
+!          chunk id.
+! 
+! Method: 
+! 
+! Author: P. Worley
+! 
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+   integer, intent(in)  :: lcid          ! local chunk id
+   real(r8), intent(in) :: cost_increment! increment to running walltime
+
+!-----------------------------------------------------------------------
+   lchunks(lcid)%cost = lchunks(lcid)%cost + cost_increment
+
+   return
+   end subroutine update_cost_p
 !
 !========================================================================
 !
@@ -4290,6 +4439,7 @@ logical function phys_grid_initialized ()
 ! Initialize chunks and knuhcs data structures
 !
       chunks(:)%ncols = 0
+      chunks(:)%estcost = 0.0_r8
       knuhcs(:)%chunkid = -1
       knuhcs(:)%col = -1
 !
@@ -4338,6 +4488,7 @@ logical function phys_grid_initialized ()
                chunks(cid)%gcol(i) = curgcol
                chunks(cid)%lon(i)  = lon_p(curgcol)
                chunks(cid)%lat(i)  = lat_p(curgcol)
+               chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
                knuhcs(curgcol)%chunkid = cid
                knuhcs(curgcol)%col = i
 !
@@ -4359,6 +4510,7 @@ logical function phys_grid_initialized ()
                         chunks(cid)%gcol(i) = twingcol
                         chunks(cid)%lon(i) = lon_p(twingcol)
                         chunks(cid)%lat(i) = lat_p(twingcol)
+                        chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
                         knuhcs(twingcol)%chunkid = cid
                         knuhcs(twingcol)%col = i
                      endif
@@ -4411,6 +4563,8 @@ logical function phys_grid_initialized ()
 !
 ! Initialize chunks and knuhcs data structures
 !
+      chunks(:)%ncols = 0
+      chunks(:)%estcost = 0.0_r8
       knuhcs(:)%chunkid = -1
       knuhcs(:)%col = -1
       cid = 0
@@ -4438,6 +4592,7 @@ logical function phys_grid_initialized ()
                   chunks(cid)%gcol(ncols) = curgcol
                   chunks(cid)%lon(ncols)  = lon_p(curgcol)
                   chunks(cid)%lat(ncols)  = lat_p(curgcol)
+                  chunks(cid)%estcost = chunks(cid)%estcost + 1.0_r8
                   knuhcs(curgcol)%chunkid = cid
                   knuhcs(curgcol)%col = ncols
                endif
