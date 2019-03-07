@@ -188,7 +188,7 @@ _TESTS = {
     #7th: theta-l nh ftype2
     #8th: theta-l nh ftype4
     "eam_preqx_ftypes" : {
-        "share"    : "true",
+        "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype0",
@@ -196,7 +196,7 @@ _TESTS = {
                  )
         },
     "eam_theta_ftypes" : {
-        "share"    : "true",
+        "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype0",
