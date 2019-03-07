@@ -14,6 +14,7 @@ module dynSubgridAdjustmentsMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
   use clm_varpar             , only : ndecomp_pools, nlevdecomp
