@@ -25,17 +25,16 @@ branches:
   - master
 
 before_script:
+- /bin/rm -rf scream-scripts-mirror
+- git clone https://github.com/jgfouca/scream-scripts-mirror.git
 - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
 - gfortran --version
 
 script:
 - git config submodule.externals/kokkos.url https://github.com/kokkos/kokkos.git
 - git submodule update --init externals/kokkos
-- cmake -DSCREAM_TEST_MAX_THREADS=4 -D CMAKE_CXX_COMPILER=mpicxx -D CMAKE_BUILD_TYPE=Debug -D CMAKE_Fortran_COMPILER=mpif90 -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -C components/scream/cmake/machine-files/generic-desktop.cmake components/scream
-- make -j 2 VERBOSE=1
-- echo WARNING In Travis CI, baseline-based tests are NOT RUN.
-- echo WARNING Please run these manually against established baseline files before merging your PR.
-- ctest -VV -E p3_regression
+- cd components/scream
+- ../../scream-scripts-mirror/test-all-scream mpicxx -m generic-desktop-debug -c '-DSCREAM_TEST_MAX_THREADS=4 -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"'
 
 after_success:
 # Source: https://github.com/codecov/example-cpp11-cmake
