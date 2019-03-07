@@ -2100,9 +2100,9 @@
       </modules>
       <modules>
         <command name="load">mkl/2017</command>
-        <command name="load">cmake/3.6.1</command>
-        <command name="load">python/2.7.12</command>
-        <command name="load">nco/4.6.4</command>
+        <command name="load">cmake/3.11.0</command>
+        <command name="load">python/2.7.13</command>
+        <command name="load">nco/4.6.9</command>
         <command name="load">hdf5-parallel/1.8.17</command>
         <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
         <command name="load">pnetcdf/1.9.0</command>
@@ -2115,9 +2115,10 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
-      <!-- the following is PETSc v.3.8.x or above -->
       <environment_variables compiler="gnu" mpilib="openmpi">
+        <!-- the following is for pflotran with PETSc v.3.7.x -->
         <!-- env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env> --> <!-- PETSc v3.7.x -->
+        <!-- the following is for pflotran with PETSc v.3.8.x or above -->
         <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env> <!-- PETSc v3.8.x or above -->
       </environment_variables>
       
@@ -2138,7 +2139,7 @@
          
         <!-- by blanking the following 2 names, PETSC libs excluded in e3sm.exe when NOT coupling with PFLOTRAN -->
         <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_DIR}/include</env>
-        <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lmetis -lparmetis</env>
+        <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis</env>
       </environment_variables>
       
 </machine>
