@@ -29,7 +29,7 @@ before_script:
 - gfortran --version
 
 script:
-- git submodule update --init kokkos
+- git submodule update --init externals/kokkos
 - cmake -DSCREAM_TEST_MAX_THREADS=4 -D CMAKE_CXX_COMPILER=mpicxx -D CMAKE_BUILD_TYPE=Debug -D CMAKE_Fortran_COMPILER=mpif90 -D CMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -C components/scream/cmake/machine-files/generic-desktop.cmake components/scream
 - make -j 2 VERBOSE=1
 - echo WARNING In Travis CI, baseline-based tests are NOT RUN.
