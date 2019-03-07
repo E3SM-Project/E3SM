@@ -232,7 +232,7 @@ This allows using a different mpirun command to launch unit tests
       <executable>mpiexec_mpt</executable>
       <arguments>
 	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-	<arg name="labelstdout">-p "%g:"</arg>
+<!--	<arg name="labelstdout">-p "%g:"</arg>-->
 	<!-- the omplace argument needs to be last -->
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
@@ -299,9 +299,9 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf-mpi/4.6.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.5.0</command>
-	<command name="load">pnetcdf/1.9.0</command>
+	<command name="load">mpt/2.19</command>
+	<command name="load">netcdf-mpi/4.6.1</command>
+	<command name="load">pnetcdf/1.11.0</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.15f</command>

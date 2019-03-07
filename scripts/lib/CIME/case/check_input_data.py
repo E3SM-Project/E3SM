@@ -131,7 +131,7 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
     success = False
     if protocol is not None and address is not None:
         success = self.check_input_data(protocol=protocol, address=address, download=download,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
     else:
         if chksum or download:
             inputdata = Inputdata()
@@ -159,7 +159,7 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                                                   chksum_file)
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
         if download and not success:
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
@@ -256,7 +256,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
     return True
 
 def check_input_data(case, protocol="svn", address=None, input_data_root=None, data_list_dir="Buildconf",
-                     download=False, user=None, passwd=None):
+                     download=False, user=None, passwd=None, chksum=False):
     """
     For a given case check for the relevant input data as specified in data_list_dir/*.input_data_list
     in the directory input_data_root, if not found optionally download it using the servers specified
@@ -341,8 +341,9 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                                 if no_files_missing:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:
-                            verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
-                            logger.info("Chksum passed for file {}".format(os.path.join(input_data_root,rel_path)))
+                            if chksum:
+                                verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
+                                logger.info("Chksum passed for file {}".format(os.path.join(input_data_root,rel_path)))
                             logging.debug("  Already had input file: '{}'".format(full_path))
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
@@ -373,6 +374,8 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     else:
         filenames = [filename]
     for fname in filenames:
+        if not os.sep in fname:
+            continue
         chksum = md5(os.path.join(input_data_root, fname))
         if chksum_hash:
             if not fname in chksum_hash:
