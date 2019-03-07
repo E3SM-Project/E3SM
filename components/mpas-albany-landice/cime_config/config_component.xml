@@ -43,6 +43,18 @@
       Albany.</desc>
   </entry>
 
+  <entry id="MALI_DYNAMIC">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <values>
+       <value compset="_MALI%.*STATIC">FALSE</value>
+    </values>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>FALSE implies MALI will be run in a static mode </desc>
+  </entry>
+
   <entry id="GLC_SMB">
     <type>logical</type>
     <valid_values>true,false</valid_values>
