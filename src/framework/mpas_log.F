@@ -461,7 +461,7 @@ module mpas_log
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_log_write(message, messageType, masterOnly, flushNow, &
+   recursive subroutine mpas_log_write(message, messageType, masterOnly, flushNow, &
                  intArgs, realArgs, logicArgs, err)
 
       use mpas_threading
