@@ -453,7 +453,8 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_wi
         flann.build_index(
             coast_pts_xyz,
             algorithm='kdtree',
-            target_precision=1.0)
+            target_precision=1.0,
+            random_seed=0)
 
     # Convert  backgound grid coordinates to x,y,z and put in a nx_grd x 3 array for kd-tree query
     Lon_grd, Lat_grd = np.meshgrid(lon_grd, lat_grd)
@@ -466,7 +467,7 @@ def distance_to_coast(coastlines, lon_grd, lat_grd, origin, nn_search, smooth_wi
     if nn_search == "kdtree":
         d, idx = tree.query(pts)
     elif nn_search == "flann":
-        idx, d = flann.nn_index(pts, checks=2000)
+        idx, d = flann.nn_index(pts, checks=2000, random_seed=0)
         d = np.sqrt(d)
     end = timeit.default_timer()
     print "   Done"
