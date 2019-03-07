@@ -783,10 +783,19 @@ end subroutine micro_p3_readnl
    ! Sedimentation 
    call addfld('P3_sed_CLDLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud content due to sedimentation')
    call addfld('P3_sed_NUMLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud number due to sedimentation')
-   call addfld('P3_sed_CLDRAIN',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud content due to sedimentation')
-   call addfld('P3_sed_NUMRAIN',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud number due to sedimentation')
+   call addfld('P3_sed_CLDRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud content due to sedimentation')
+   call addfld('P3_sed_NUMRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud number due to sedimentation')
    call addfld('P3_sed_CLDICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud content due to sedimentation')
    call addfld('P3_sed_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to sedimentation')
+   ! Microphysics Processes
+   call addfld('P3_mtend_CLDLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud content due to micro processes')
+   call addfld('P3_mtend_NUMLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud number due to micro processes')
+   call addfld('P3_mtend_CLDRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud content due to micro processes')
+   call addfld('P3_mtend_NUMRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud number due to micro processes')
+   call addfld('P3_mtend_CLDICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud content due to micro processes')
+   call addfld('P3_mtend_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to micro processes')
+   call addfld('P3_mtend_Q',       (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for water vapor due to micro processes')
+   call addfld('P3_mtend_TH',      (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for potential temp. number due to micro processes')
 
 
    ! determine the add_default fields
@@ -868,6 +877,15 @@ end subroutine micro_p3_readnl
       call add_default('P3_sed_NUMRAIN', 1, ' ')
       call add_default('P3_sed_CLDICE',  1, ' ')
       call add_default('P3_sed_NUMICE',  1, ' ')
+      ! Microphysics Processes
+      call add_default('P3_mtend_CLDLIQ',  1, ' ')
+      call add_default('P3_mtend_NUMLIQ',  1, ' ')
+      call add_default('P3_mtend_CLDRAIN', 1, ' ')
+      call add_default('P3_mtend_NUMRAIN', 1, ' ')
+      call add_default('P3_mtend_CLDICE',  1, ' ')
+      call add_default('P3_mtend_NUMICE',  1, ' ')
+      call add_default('P3_mtend_Q',       1, ' ')
+      call add_default('P3_mtend_TH',      1, ' ')
    end if
 
   end subroutine micro_p3_init
@@ -930,7 +948,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: rcldm(pcols,pver)      !rain cloud fraction
     real(rtype) :: lcldm(pcols,pver)      !liquid cloud fraction
     real(rtype) :: icldm(pcols,pver)      !ice cloud fraction
-    real(rtype) :: tend_out(pcols,pver,41) !microphysical tendencies
+    real(rtype) :: tend_out(pcols,pver,49) !microphysical tendencies
 
     ! PBUF Variables
     real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
@@ -1689,12 +1707,21 @@ end subroutine micro_p3_readnl
    call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) 
    call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk)
    ! sedimentation 
-   call outfld('P3_sed_CLDLIQ', tend_out(:,:,36), pcols, lchnk)
-   call outfld('P3_sed_NUMLIQ', tend_out(:,:,37), pcols, lchnk)
+   call outfld('P3_sed_CLDLIQ',  tend_out(:,:,36), pcols, lchnk)
+   call outfld('P3_sed_NUMLIQ',  tend_out(:,:,37), pcols, lchnk)
    call outfld('P3_sed_CLDRAIN', tend_out(:,:,38), pcols, lchnk)
    call outfld('P3_sed_NUMRAIN', tend_out(:,:,39), pcols, lchnk)
-   call outfld('P3_sed_CLDICE', tend_out(:,:,40), pcols, lchnk)
-   call outfld('P3_sed_NUMICE', tend_out(:,:,41), pcols, lchnk)
+   call outfld('P3_sed_CLDICE',  tend_out(:,:,40), pcols, lchnk)
+   call outfld('P3_sed_NUMICE',  tend_out(:,:,41), pcols, lchnk)
+   ! microphysics processes 
+   call outfld('P3_mtend_CLDLIQ',  tend_out(:,:,42), pcols, lchnk)
+   call outfld('P3_mtend_NUMLIQ',  tend_out(:,:,43), pcols, lchnk)
+   call outfld('P3_mtend_CLDRAIN', tend_out(:,:,44), pcols, lchnk)
+   call outfld('P3_mtend_NUMRAIN', tend_out(:,:,45), pcols, lchnk)
+   call outfld('P3_mtend_CLDICE',  tend_out(:,:,46), pcols, lchnk)
+   call outfld('P3_mtend_NUMICE',  tend_out(:,:,47), pcols, lchnk)
+   call outfld('P3_mtend_Q',       tend_out(:,:,48), pcols, lchnk)
+   call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
     
     !call outfld('P3_QCAUT',   qcaut,  pcols, lchnk)
 
