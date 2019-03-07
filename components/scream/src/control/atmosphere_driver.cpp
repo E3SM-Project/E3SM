@@ -1,14 +1,11 @@
 #include "atmosphere_driver.hpp"
 
-#include <control/atmosphere_process_group.hpp>
-#include <share/scream_assert.hpp>
-#include <share/util/string_utils.hpp>
-
-#include "control/surface_coupling.hpp"
-
-#include "dynamics/atmosphere_dynamics.hpp"
+#include "share/atmosphere_process_group.hpp"
+#include "share/scream_assert.hpp"
+#include "share/util/string_utils.hpp"
 
 namespace scream {
+
 namespace control {
 
 void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params /* inputs? */ ) {

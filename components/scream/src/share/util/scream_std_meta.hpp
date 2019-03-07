@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include <share/scream_assert.hpp>
+#include "share/scream_assert.hpp"
 
 namespace scream {
 

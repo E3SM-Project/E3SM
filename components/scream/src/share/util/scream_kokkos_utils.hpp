@@ -1,9 +1,9 @@
 #ifndef SCREAM_KOKKOS_UTILS_HPP
 #define SCREAM_KOKKOS_UTILS_HPP
 
-#include <share/scream_kokkos_meta.hpp>
-#include <share/scream_types.hpp>
-#include <share/util/scream_std_meta.hpp>
+#include "share/scream_kokkos_meta.hpp"
+#include "share/scream_types.hpp"
+#include "share/util/scream_std_meta.hpp"
 
 #include <Kokkos_Core.hpp>
 

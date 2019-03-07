@@ -1,10 +1,10 @@
-#include "catch2/catch.hpp"
+#include <catch2/catch.hpp>
 
-#include <share/field/field_identifier.hpp>
-#include <share/field/field_header.hpp>
-#include <share/field/field.hpp>
-#include <share/field/field_repository.hpp>
-#include <share/scream_pack.hpp>
+#include "share/field/field_identifier.hpp"
+#include "share/field/field_header.hpp"
+#include "share/field/field.hpp"
+#include "share/field/field_repository.hpp"
+#include "share/scream_pack.hpp"
 
 namespace {
 

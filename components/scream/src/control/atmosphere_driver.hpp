@@ -1,11 +1,10 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
-#include <share/scream_types.hpp>
-#include <share/field/field_repository.hpp>
-#include <share/mpi/scream_comm.hpp>
-
-#include <share/parameter_list.hpp>
+#include "share/scream_types.hpp"
+#include "share/field/field_repository.hpp"
+#include "share/mpi/scream_comm.hpp"
+#include "share/parameter_list.hpp"
 
 #include <memory>
 
@@ -56,7 +55,7 @@ public:
 
 protected:
 
-  FieldRepository<Real,device_type>          m_device_field_repo;
+  FieldRepository<Real,device_type>           m_device_field_repo;
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 
