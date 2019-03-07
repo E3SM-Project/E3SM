@@ -50,6 +50,7 @@ set code_root_dir               = default
 set e3sm_simulations_dir        = default
 set case_build_dir              = default
 set case_run_dir                = default
+set case_scripts_dir		= ${e3sm_simulations_dir}/${case_name}/case_scripts
 set short_term_archive_root_dir = default
 
 ### LENGTH OF SIMULATION, RESTARTS, AND ARCHIVING
@@ -415,8 +416,6 @@ endif
 ###       If something goes wrong, this temporary directory is sometimes left behind, so we need to delete it too.
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
-
-set case_scripts_dir = ${e3sm_simulations_dir}/${case_name}/case_scripts
 
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
