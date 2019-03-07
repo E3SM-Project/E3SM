@@ -1,5 +1,4 @@
 #include <catch2/catch.hpp>
-#include "dynamics/atmosphere_dynamics.hpp"
 
 namespace {
 
