@@ -4,7 +4,7 @@ This script performs the first step of initializing the global ocean.  This
 includes:
 1. combining Natural Earth land coverage north of 60S with Antarctic
    ice coverage or grounded ice coverage from Bedmap2.
-2. combining transects defining cricial passages.*
+2. combining transects defining critical passages.*
 3. combining points used to seed a flood fill of the global ocean.
 4. create masks from land coverage.
 5. add land-locked cells to land coverage mask.
