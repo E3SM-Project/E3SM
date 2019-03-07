@@ -1,12 +1,3 @@
-!=================================================================================================================
-!module_sf_sfclay.F was originally copied from ./phys/module_sf_sfclay.F from WRF version 3.8.1.
-!Laura D. Fowler (laura@ucar.edu) / 2016-10-26.
-
-!modifications to sourcecode for MPAS:
-!   * added the actual size of each cell in the calculation of the Mahrt and Sun low-resolution correction.
-!     Laura D. Fowler (laura@ucar.edu) / 2016-10-26. 
-
-!=================================================================================================================
 !WRF:MODEL_LAYER:PHYSICS
 !
 MODULE module_sf_sfclay
@@ -267,7 +258,7 @@ CONTAINS
                 ids,ide, jds,jde, kds,kde,                         &
                 ims,ime, jms,jme, kms,kme,                         &
                 its,ite, jts,jte, kts,kte                          &
-#if ( EM_CORE == 1 )
+#if ( ( EM_CORE == 1 ) || ( defined(mpas) ) )
                 ,isftcflx,iz0tlnd,scm_force_flux,                  &
                 USTM(ims,j),CK(ims,j),CKA(ims,j),                  &
                 CD(ims,j),CDA(ims,j)                               &
