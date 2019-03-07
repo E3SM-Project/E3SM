@@ -30,18 +30,6 @@ CP    := cp
 exec_se: $(EXEC_SE)  Depends
 complib: $(COMPLIB)  Depends
 
-
-CIME_MODEL ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MODEL --value)
-EXEROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) EXEROOT --value)
-SMP_PRESENT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP_PRESENT --value)
-SMP ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SMP --value)
-LIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) LIBROOT --value)
-SHAREDLIBROOT ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) SHAREDLIBROOT --value)
-COMPILER ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-NINST_VALUE ?=  $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMPILER --value)
-MPILIB ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) MPILIB --value)
-PIO_VERSION ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) PIO_VERSION --value)
-
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
@@ -81,6 +69,13 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
+   USE_CXX = true
+endif
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
 
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
@@ -93,13 +88,33 @@ endif
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
-ifneq ($(strip $(DEBUG)),TRUE)
+ifeq ($(strip $(DEBUG)),TRUE)
+   CPPDEFS += -DDEBUG
+else
    CPPDEFS += -DNDEBUG
 endif
 
 # USE_ESMF_LIB is currently only defined in env_build.xml
 ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
+endif
+
+ifeq ($(COMP_INTERFACE), nuopc)
+   CPPDEFS += -DNUOPC_INTERFACE
+   CPPDEFS += -DESMFUSE_$(COMP_ATM)
+   CPPDEFS += -DESMFUSE_$(COMP_LND)
+   CPPDEFS += -DESMFUSE_$(COMP_OCN)
+   CPPDEFS += -DESMFUSE_$(COMP_ICE)
+   CPPDEFS += -DESMFUSE_$(COMP_ROF)
+   CPPDEFS += -DESMFUSE_$(COMP_WAV)
+   CPPDEFS += -DESMFUSE_$(COMP_GLC)
+   CPPDEFS += -DESMFUSE_$(COMP_ESP)
+else
+   CPPDEFS += -DMCT_INTERFACE
+endif
+
+ifeq ($(COMPARE_TO_NUOPC), TRUE)
+   CPPDEFS += -DCOMPARE_TO_NUOPC
 endif
 
 ifeq ($(strip $(MPILIB)),mpi-serial)
@@ -113,11 +128,15 @@ ifeq ($(strip $(PIO_VERSION)),1)
 endif
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
 include $(CASEROOT)/Macros.make
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
@@ -161,9 +180,8 @@ ifdef CPRE
   CONTIGUOUS_FLAG := $(patsubst -D%,$(CPRE)%,$(CONTIGUOUS_FLAG))
 endif
 
-ifndef AR
-   AR := ar
-endif
+AR ?= ar
+ARFLAGS ?= -r
 
 ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
@@ -180,7 +198,7 @@ ifdef NETCDF_C_PATH
     LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
   endif
   ifndef LIB_NETCDF_FORTRAN
-    LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
+    LIB_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/lib
   endif
  else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
@@ -205,9 +223,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-	ifdef PNETCDF_PATH
-		undefine PNETCDF_PATH
-	endif
+  ifdef PNETCDF_PATH
+    undefine PNETCDF_PATH
+  endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)
@@ -271,6 +289,13 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
+  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
+  SLIBS += $(KOKKOS_LIBS)
+  CFLAGS += $(KOKKOS_CXXFLAGS)
+  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
+endif
+
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -311,6 +336,27 @@ endif
 ifdef LIB_PNETCDF
    CPPDEFS += -D_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
+endif
+
+# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+CIME_ESMFMKFILE := undefined_ESMFMKFILE
+ifdef ESMFMKFILE
+   CIME_ESMFMKFILE := $(ESMFMKFILE)
+endif
+ifdef ESMF_LIBDIR
+   CIME_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
+endif
+# For compiling and linking with external ESMF.
+# If linking to external ESMF library then include esmf.mk
+# ESMF_F90COMPILEPATHS
+# ESMF_F90LINKPATHS
+# ESMF_F90LINKRPATHS
+# ESMF_F90ESMFLINKLIBS
+ifeq ($(USE_ESMF_LIB), TRUE)
+  -include $(CIME_ESMFMKFILE)
+  CPPDEFS += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR) -DESMF_VERSION_MINOR=$(ESMF_VERSION_MINOR)
+  FFLAGS += $(ESMF_F90COMPILEPATHS)
+  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
 ifdef CPRE
@@ -459,8 +505,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS := $(CFLAGS)
-
+CXXFLAGS += $(CFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -513,15 +558,6 @@ endif
 
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
-CCSM_ESMFMKFILE := undefined_CCSM_ESMFMKFILE
-ifdef ESMFMKFILE
-   CCSM_ESMFMKFILE := $(ESMFMKFILE)
-endif
-ifdef ESMF_LIBDIR
-   CCSM_ESMFMKFILE := $(ESMF_LIBDIR)/esmf.mk
-endif
-
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
@@ -541,18 +577,6 @@ ifdef LIB_MPI
    else
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
-endif
-
-# For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk
-# ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
-# ESMF_F90LINKRPATHS
-# ESMF_F90ESMFLINKLIBS
-ifeq ($(USE_ESMF_LIB), TRUE)
-  -include $(CCSM_ESMFMKFILE)
-  FFLAGS += $(ESMF_F90COMPILEPATHS)
-  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
 # Add PETSc libraries
@@ -588,6 +612,9 @@ ifeq ($(USE_CXX), true)
     LDFLAGS += $(CXX_LDFLAGS)
   endif
 endif
+
+# Remove arch flag if it exists
+F90_LDFLAGS := $(filter-out -arch%,$(LDFLAGS))
 
 # Machine stuff to appear last on the link step
 ifndef MLIBS
@@ -749,25 +776,24 @@ db_flags:
 #-------------------------------------------------------------------------------
 
 test_fc: test_fc.o
-	$(LD) -o $@ test_fc.o $(LDFLAGS)
+	$(LD) -o $@ test_fc.o $(F90_LDFLAGS)
 ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 else ifeq ($(NETCDF_SEPARATE), true)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 endif
 test_mpi: test_mpi.o
-	$(LD) -o $@ test_mpi.o $(LDFLAGS)
+	$(LD) -o $@ test_mpi.o $(F90_LDFLAGS)
 test_esmf: test_esmf.o
-	$(LD) -o $@ test_esmf.o $(LDFLAGS)
+	$(LD) -o $@ test_esmf.o $(F90_LDFLAGS)
 
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
 ifeq ($(CIME_MODEL),cesm)
-  ifneq ($(CLMVER),$(null))
+  ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
     USE_SHARED_CLM=FALSE
@@ -778,10 +804,10 @@ endif
 ifeq ($(USE_SHARED_CLM),FALSE)
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
-  ifeq ($(CLMVER),$(null))
-    LNDLIB := liblnd.a
-  else
+  ifeq ($(COMP_LND),clm)
     LNDLIB := libclm.a
+  else
+    LNDLIB := liblnd.a
   endif
   INCLDIR += -I$(LNDOBJDIR)
 else
@@ -868,10 +894,10 @@ install_lib: $(COMPLIB)
 
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
-	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
+	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
 
 $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
+	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

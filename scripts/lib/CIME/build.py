@@ -10,7 +10,7 @@ from CIME.locked_files          import lock_file, unlock_file
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+def _build_model(build_threaded, exeroot, incroot, complist,
                  lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
 ###############################################################################
     logs = []
@@ -30,14 +30,10 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             continue
 
         # special case for clm
-        # clm 4_0 is not a shared (as in sharedlibs, shared by all tests) library and must be built here
-        # clm 4_5 and newer is a shared library (but not in E3SM) and should be built in build_libraries
-        if get_model() != "e3sm":
-            if comp == "clm":
-                if "clm4_0" in clm_config_opts:
-                    logger.info("         - Building clm4_0 Library ")
-                else:
-                    continue
+        # clm 4_5 and newer is a shared (as in sharedlibs, shared by all tests) library
+        # (but not in E3SM) and should be built in build_libraries
+        if get_model() != "e3sm" and comp == "clm":
+            continue
         else:
             logger.info("         - Building {} Library ".format(model))
 
@@ -112,8 +108,8 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
-    expect(comp_interface == "mct", "Only supporting mct comp_interface at this time")
-
+    expect(comp_interface in ("mct", "moab", "nuopc"),
+           "Only supporting mct nuopc, or moab comp_interfaces at this time, found {}".format(comp_interface))
     smpstr = ""
     inststr = ""
     for model, _, nthrds, ninst, _ in complist:
@@ -129,15 +125,16 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
         os.environ["SMP"] = "TRUE"
     else:
         os.environ["SMP"] = "FALSE"
+
     case.set_value("SMP_VALUE", smpstr)
     os.environ["SMP_VALUE"] = smpstr
     case.set_value("NINST_VALUE", inststr)
     os.environ["NINST_VALUE"] = inststr
-
+    os.environ["SMP_PRESENT"] = stringify_bool(case.get_value("SMP_PRESENT"))
 
     debugdir = "debug" if debug else "nodebug"
     threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded) else "nothreads"
-    sharedpath = os.path.join(compiler, mpilib, debugdir, threaddir)
+    sharedpath = os.path.join(compiler, mpilib, debugdir, threaddir, comp_interface)
 
     logger.debug("compiler={} mpilib={} debugdir={} threaddir={}"
                  .format(compiler,mpilib,debugdir,threaddir))
@@ -214,10 +211,16 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     for shared_item in [shared_lib, shared_inc]:
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
+
     mpilib = case.get_value("MPILIB")
-    libs = ["gptl", comp_interface, "pio", "csm_share"]
+    cam_target = case.get_value("CAM_TARGET")
+    libs = ["gptl", "mct", "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
+
+    if cam_target == "preqx_kokkos":
+        libs.append("kokkos")
+
     logs = []
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
     for lib in libs:
@@ -228,7 +231,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             # csm_share adds its own dir name
             full_lib_path = os.path.join(sharedlibroot, sharedpath)
         elif lib == "mpi-serial":
-            full_lib_path = os.path.join(sharedlibroot, sharedpath, comp_interface, lib)
+            full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory
@@ -240,7 +243,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         logger.info("Building {} with output to file {}".format(lib,file_build))
 
         run_sub_or_cmd(my_file, [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], 'buildlib',
-                       [full_lib_path, os.path.join(exeroot, sharedpath), caseroot], logfile=file_build)
+                       [full_lib_path, os.path.join(exeroot, sharedpath), case], logfile=file_build)
 
         analyze_build_log(lib, file_build, compiler)
         logs.append(file_build)
@@ -253,9 +256,8 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     # clm not a shared lib for E3SM
     if get_model() != "e3sm" and (buildlist is None or "lnd" in buildlist):
         comp_lnd = case.get_value("COMP_LND")
-        clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
-        if comp_lnd == "clm" and "clm4_0" not in clm_config_opts:
-            logging.info("         - Building clm4_5/clm5_0 Library ")
+        if comp_lnd == "clm":
+            logging.info("         - Building clm library ")
             esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
             bldroot = os.path.join(sharedlibroot, sharedpath, comp_interface, esmfdir, "clm","obj" )
             libroot = os.path.join(exeroot, sharedpath, comp_interface, esmfdir, "lib")
@@ -276,6 +278,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
+    case.flush() # python sharedlib subs may have made XML modifications
     return logs
 
 ###############################################################################
@@ -331,7 +334,6 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         gmake           = case.get_value("GMAKE")
         caseroot        = os.path.abspath(case.get_value("CASEROOT"))
         casetools       = case.get_value("CASETOOLS")
-        clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
 
         os.environ["DEBUG"]           = stringify_bool(debug)
         os.environ["USE_ESMF_LIB"]    = stringify_bool(use_esmf_lib)
@@ -339,7 +341,6 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         os.environ["CASEROOT"]        = caseroot
         os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
         os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
-        os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
 
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
         if cleanlist is not None:
@@ -433,12 +434,12 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mali_use_albany     = case.get_value("MALI_USE_ALBANY")
     use_moab            = case.get_value("USE_MOAB")
-    clm_config_opts     = case.get_value("CLM_CONFIG_OPTS")
     cam_config_opts     = case.get_value("CAM_CONFIG_OPTS")
     pio_config_opts     = case.get_value("PIO_CONFIG_OPTS")
     ninst_value         = case.get_value("NINST_VALUE")
     mach                = case.get_value("MACH")
     os_                 = case.get_value("OS")
+
     # Load some params into env
     os.environ["CIMEROOT"]             = cimeroot
     os.environ["CASETOOLS"]            = casetools
@@ -456,7 +457,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     os.environ["MPILIB"]               = mpilib
     os.environ["DEBUG"]                = stringify_bool(debug)
     os.environ["OS"]                   = os_
-    os.environ["CLM_CONFIG_OPTS"]      = clm_config_opts     if clm_config_opts     is not None else ""
     os.environ["CAM_CONFIG_OPTS"]      = cam_config_opts     if cam_config_opts     is not None else ""
     os.environ["PIO_CONFIG_OPTS"]      = pio_config_opts     if pio_config_opts     is not None else ""
     os.environ["OCN_SUBMODEL"]         = ocn_submodel        if ocn_submodel        is not None else ""
@@ -465,9 +465,14 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
     os.environ["MALI_USE_ALBANY"]      = stringify_bool(mali_use_albany)
     os.environ["USE_MOAB"]             = stringify_bool(use_moab)
+    os.environ["PIO_VERSION"]          = str(case.get_value("PIO_VERSION"))
+    os.environ["COMPARE_TO_NUOPC"]     = stringify_bool(case.get_value("COMPARE_TO_NUOPC"))
+    os.environ["CIME_MODEL"]           = get_model()
 
     if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
+
+    cam_target = case.get_value("CAM_TARGET")
 
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
@@ -521,7 +526,11 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-        logs.extend(_build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
+        # Set USE_KOKKOS to true if cam is preqx_kokkos
+        if cam_target == "preqx_kokkos":
+            os.environ["USE_KOKKOS"] = "TRUE"
+
+        logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
                                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
 
         if not buildlist:
@@ -557,10 +566,10 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         case.set_value("BUILD_STATUS", 0)
         if "SMP_VALUE" in os.environ:
             case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
-            case.flush()
 
-        lock_file("env_build.xml")
+        case.flush()
 
+        lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
 def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):

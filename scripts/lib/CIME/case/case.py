@@ -12,7 +12,7 @@ from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model
 from CIME.utils                     import get_project, get_charge_account, check_name
-from CIME.utils                     import get_current_commit, safe_copy
+from CIME.utils                     import get_current_commit, safe_copy, get_cime_default_driver
 from CIME.locked_files              import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -194,18 +194,21 @@ class Case(object):
         return False
 
     def read_xml(self):
+        for env_file in self._files:
+            expect(not env_file.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file.filename))
+
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None, read_only=self._force_read_only))
         components = self._env_entryid_files[0].get_values("COMP_CLASSES")
-        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(self._caseroot))
-        self._env_generic_files.append(EnvArchive(self._caseroot))
+        self._env_generic_files.append(EnvMachSpecific(self._caseroot, read_only=self._force_read_only))
+        self._env_generic_files.append(EnvArchive(self._caseroot, read_only=self._force_read_only))
         self._files = self._env_entryid_files + self._env_generic_files
 
     def get_case_root(self):
@@ -238,6 +241,12 @@ class Case(object):
         newcase.set_value("CASEROOT",newcaseroot)
         newcase.set_value("CONTINUE_RUN","FALSE")
         newcase.set_value("RESUBMIT",0)
+
+        # Important, and subtle: Writability should NOT be copied because
+        # this allows the copy to be modified without needing a "with" statement
+        # which opens the door to tricky errors such as unflushed writes.
+        newcase._read_only_mode = True # pylint: disable=protected-access
+
         return newcase
 
     def flush(self, flushall=False):
@@ -362,12 +371,16 @@ class Case(object):
 
         return item
 
-    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False, allow_undefined=False, return_file=False):
         """
         If a file has been defined, and the variable is in the file,
-        then that value will be set in the file object and the file
-        name is returned
+        then that value will be set in the file object and the resovled value
+        is returned unless return_file is True, in which case (resolved_value, filename)
+        is returned where filename is the name of the modified file.
         """
+        expect(not self._read_only_mode, "Cannot modify case, read_only. "
+               "Case must be opened with read_only=False and can only be modified within a context manager")
+
         if item == "CASEROOT":
             self._caseroot = value
         result = None
@@ -376,7 +389,7 @@ class Case(object):
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file {} {}".format(env_file.filename, item))
-                return result
+                return (result, env_file.filename) if return_file else result
 
         if len(self._files) == 1:
             expect(allow_undefined or result is not None,
@@ -389,6 +402,9 @@ class Case(object):
         """
         Update or create a valid_values entry for item and populate it
         """
+        expect(not self._read_only_mode, "Cannot modify case, read_only. "
+               "Case must be opened with read_only=False and can only be modified within a context manager")
+
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_valid_values(item, valid_values)
@@ -411,7 +427,7 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def _set_compset(self, compset_name, files):
+    def _set_compset(self, compset_name, files, driver="mct"):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -427,6 +443,11 @@ class Case(object):
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
+
+        self.set_lookup_value("COMP_INTERFACE", driver)
+        if self._cime_model == 'cesm':
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
+            self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
@@ -466,9 +487,7 @@ class Case(object):
         progcomps = {}
         spec = {}
         primary_component = None
-
         for comp in self._component_classes:
-
             if comp == "CPL":
                 continue
             spec[comp] = self.get_value("COMP_{}".format(comp))
@@ -518,7 +537,6 @@ class Case(object):
 
         Assumes that self._primary_component has already been set.
         """
-
         component = self.get_primary_component()
 
         compset_spec_file = files.get_value("COMPSETS_SPEC_FILE",
@@ -560,7 +578,7 @@ class Case(object):
                 continue
             else:
                 element_component = element.split('%')[0].lower()
-                if "ww" not in element_component:
+                if "ww" not in element_component and "fv3" not in element_component:
                     element_component = re.sub(r'[0-9]*',"",element_component)
                 components.append(element_component)
         return components
@@ -579,7 +597,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.set_components(comp_classes)
 
-    def _get_component_config_data(self, files):
+    def _get_component_config_data(self, files, driver=None):
         # attributes used for multi valued defaults
         # attlist is a dictionary used to determine the value element that has the most matches
         attlist = {"compset":self._compsetname, "grid":self._gridname, "cime_model":self._cime_model}
@@ -597,6 +615,8 @@ class Case(object):
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
+        expect(os.path.isfile(drv_config_file_model_specific),
+               "No {} specific file found for driver {}".format(get_model(),driver))
         drv_comp_model_specific = Component(drv_config_file_model_specific, 'CPL')
 
         self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)
@@ -608,6 +628,7 @@ class Case(object):
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
         self.clean_up_lookups(allow_undefined=True)
+
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
         self.set_comp_classes(drv_comp.get_valid_model_components())
@@ -617,11 +638,10 @@ class Case(object):
 
         # will need a change here for new cpl components
         root_dir_node_name = 'COMP_ROOT_DIR_CPL'
-        comp_root_dir = files.get_value(root_dir_node_name,
-                                        {"component":"drv"}, resolved=False)
+        comp_root_dir = files.get_value(root_dir_node_name, {"component":driver}, resolved=False)
+
         if comp_root_dir is not None:
             self.set_value(root_dir_node_name, comp_root_dir)
-
 
         for i in range(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
@@ -644,7 +664,8 @@ class Case(object):
             # For files following version 3 schema this also checks the compsetname validity
 
             self._component_description[comp_class] = compobj.get_description(self._compsetname)
-            expect(self._component_description[comp_class] is not None,"No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
+            expect(self._component_description[comp_class] is not None,
+                   "No description found in file {} for component {} in comp_class {}".format(comp_config_file, comp_name, comp_class))
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
@@ -662,7 +683,7 @@ class Case(object):
         expect(ftype == "env_mach_pes.xml" or ftype == "config_pes", " Do not recognize {} as a valid CIME pes file {}".format(self._pesfile, ftype))
         if ftype == "env_mach_pes.xml":
             new_mach_pes_obj = EnvMachPes(infile=self._pesfile, components=self._component_classes)
-            self.update_env(new_mach_pes_obj, "mach_pes")
+            self.update_env(new_mach_pes_obj, "mach_pes", blow_away=True)
             return new_mach_pes_obj.get_value("TOTALPES")
 
         pesobj = Pes(self._pesfile)
@@ -758,19 +779,16 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None):
+                  input_dir=None, driver=None, non_local=False):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
-
-        if driver:
-            self.set_lookup_value("COMP_INTERFACE", driver)
 
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
-        files = Files()
-        compset_alias, science_support = self._set_compset(
-            compset_name, files)
+        files = Files(comp_interface=driver)
+
+        compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
         self._components = self.get_compset_components()
 
@@ -779,7 +797,7 @@ class Case(object):
         #--------------------------------------------
         grids = Grids(gridfile)
 
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname, driver=driver)
 
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
@@ -789,7 +807,7 @@ class Case(object):
         #--------------------------------------------
         # component config data
         #--------------------------------------------
-        self._get_component_config_data(files)
+        self._get_component_config_data(files, driver=driver)
 
         # This needs to be called after self.set_comp_classes, which is called
         # from self._get_component_config_data
@@ -799,7 +817,7 @@ class Case(object):
 
         self.clean_up_lookups(allow_undefined=True)
 
-        self.get_compset_var_settings()
+        self.get_compset_var_settings(files)
 
         self.clean_up_lookups(allow_undefined=True)
 
@@ -817,9 +835,9 @@ class Case(object):
             logger.info("Machine is {}".format(machine_name))
 
         nodenames = machobj.get_node_names()
-        nodenames =  [x for x in nodenames if
-                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                      'COMPILER' not in x and 'MPILIB' not in x]
+        nodenames = [x for x in nodenames if
+                     '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
+                     'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -889,7 +907,7 @@ class Case(object):
         elif machobj.get_value("PROJECT_REQUIRED"):
             expect(project is not None, "PROJECT_REQUIRED is true but no project found")
         # Get charge_account id if it exists
-        charge_account = get_charge_account(machobj)
+        charge_account = get_charge_account(machobj, project)
         if charge_account is not None:
             self.set_value("CHARGE_ACCOUNT", charge_account)
 
@@ -898,6 +916,10 @@ class Case(object):
         if output_root is None:
             output_root = self.get_value("CIME_OUTPUT_ROOT")
         self.set_value("CIME_OUTPUT_ROOT", output_root)
+        if non_local:
+            self.set_value("EXEROOT", os.path.join(output_root, self.get_value("CASE"), "bld"))
+            self.set_value("RUNDIR", os.path.join(output_root, self.get_value("CASE"), "run"))
+            self.set_value("NONLOCAL", True)
 
         # Overwriting an existing exeroot or rundir can cause problems
         exeroot = self.get_value("EXEROOT")
@@ -963,8 +985,10 @@ class Case(object):
         if input_dir is not None:
             self.set_value("DIN_LOC_ROOT", os.path.abspath(input_dir))
 
-    def get_compset_var_settings(self):
-        compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
+    def get_compset_var_settings(self, files):
+        infile=files.get_value("COMPSETS_SPEC_FILE",
+                              attribute={"component":self._primary_component})
+        compset_obj = Compsets(infile=infile, files=files)
         matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
         for name, value in matches:
             if len(value) > 0:
@@ -1051,7 +1075,6 @@ class Case(object):
                 os.symlink(exefile, destfile)
             except Exception as e:
                 logger.warning("FAILED to set up exefiles: {}".format(str(e)))
-
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -1176,6 +1199,10 @@ directory, NOT in this subdirectory."""
                 user_mods_path = os.path.join(user_mods_path, user_mods)
             apply_user_mods(self._caseroot, user_mods_path)
 
+        # User mods may have modified underlying XML files
+        if all_user_mods:
+            self.read_xml()
+
     def _get_comp_user_mods(self, component):
         """
         For a component 'foo', gets the value of FOO_USER_MODS.
@@ -1247,7 +1274,7 @@ directory, NOT in this subdirectory."""
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
-            return mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix
+            return self.get_resolved_value(mpirun_cmd_override + " " + run_exe + " " + run_misc_suffix)
 
         # Things that will have to be matched against mpirun element attributes
         mpi_attribs = {
@@ -1316,7 +1343,7 @@ directory, NOT in this subdirectory."""
             tests_spec_file = self.get_value("TESTS_SPEC_FILE")
 
         testcnt = 0
-        if compset_alias is not None:
+        if os.path.isfile(tests_spec_file) and compset_alias is not None:
             # It's important that we not try to find matching tests if
             # compset_alias is None, since compset=None tells get_tests to find
             # tests of all compsets!
@@ -1325,7 +1352,10 @@ directory, NOT in this subdirectory."""
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
             for test in testlist:
-                if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                if test["category"] == "prealpha" \
+                   or test["category"] == "prebeta" \
+                   or "aux_" in test["category"] \
+                   or get_cime_default_driver() in test["category"]:
                     testcnt += 1
         if testcnt > 0:
             logger.warning("\n*********************************************************************************************************************************")
@@ -1351,7 +1381,7 @@ directory, NOT in this subdirectory."""
         logger.warning("setting case file to {}".format(xmlfile))
         components = self.get_value("COMP_CLASSES")
         new_env_file = None
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             if os.path.basename(env_file.filename) == ftype:
                 if ftype == "env_run.xml":
                     new_env_file = EnvRun(infile=xmlfile, components=components)
@@ -1365,33 +1395,34 @@ directory, NOT in this subdirectory."""
                     new_env_file = EnvBatch(infile=xmlfile)
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
+                elif ftype == "env_archive.xml":
+                    new_env_file = EnvArchive(infile=xmlfile)
+                elif ftype == "env_mach_specific.xml":
+                    new_env_file = EnvMachSpecific(infile=xmlfile)
+                else:
+                    expect(False, "No match found for file type {}".format(ftype))
+
             if new_env_file is not None:
                 self._env_entryid_files = []
                 self._env_generic_files = []
-                self._env_entryid_files.append(new_env_file)
+                if ftype in ["env_archive.xml", "env_mach_specific.xml"]:
+                    self._env_generic_files = [new_env_file]
+                else:
+                    self._env_entryid_files = [new_env_file]
+
                 break
-        if new_env_file is None:
-            for env_file in self._env_generic_files:
-                if os.path.basename(env_file.filename) == ftype:
-                    if ftype == "env_archive.xml":
-                        new_env_file = EnvArchive(infile=xmlfile)
-                    elif ftype == "env_mach_specific.xml":
-                        new_env_file = EnvMachSpecific(infile=xmlfile)
-                    else:
-                        expect(False, "No match found for file type {}".format(ftype))
-                if new_env_file is not None:
-                    self._env_entryid_files = []
-                    self._env_generic_files = []
-                    self._env_generic_files.append(new_env_file)
-                    break
 
-        self._files = self._env_entryid_files + self._env_generic_files
+        expect(new_env_file is not None, "No match found for file type {}".format(ftype))
+        self._files = [new_env_file]
 
-    def update_env(self, new_object, env_file):
+    def update_env(self, new_object, env_file, blow_away=False):
         """
         Replace a case env object file
         """
         old_object = self.get_env(env_file)
+        if not blow_away:
+            expect(not old_object.needsrewrite, "Potential loss of unflushed changes in {}".format(env_file))
+
         new_object.filename = old_object.filename
         if old_object in self._env_entryid_files:
             self._env_entryid_files.remove(old_object)
@@ -1402,7 +1433,7 @@ directory, NOT in this subdirectory."""
         self._files.remove(old_object)
         self._files.append(new_object)
 
-    def get_latest_cpl_log(self, coupler_log_path=None):
+    def get_latest_cpl_log(self, coupler_log_path=None, cplname="cpl"):
         """
         find and return the latest cpl log file in the
         coupler_log_path directory
@@ -1410,7 +1441,7 @@ directory, NOT in this subdirectory."""
         if coupler_log_path is None:
             coupler_log_path = self.get_value("RUNDIR")
         cpllog = None
-        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
+        cpllogs = glob.glob(os.path.join(coupler_log_path, '{}.log.*'.format(cplname)))
         if cpllogs:
             cpllog = max(cpllogs, key=os.path.getctime)
             return cpllog
@@ -1424,7 +1455,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None):
+               input_dir=None, driver=None, non_local=False):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1440,7 +1471,7 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver)
+                           input_dir=input_dir, driver=driver, non_local=non_local)
 
             self.create_caseroot()
 
@@ -1450,7 +1481,7 @@ directory, NOT in this subdirectory."""
 
             # Lock env_case.xml
             lock_file("env_case.xml", self._caseroot)
-        except:
+        except Exception:
             if os.path.exists(self._caseroot):
                 if not logger.isEnabledFor(logging.DEBUG) and not test:
                     logger.warning("Failed to setup case, removing {}\nUse --debug to force me to keep caseroot".format(self._caseroot))

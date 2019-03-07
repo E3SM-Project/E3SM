@@ -18,6 +18,12 @@ def _normalize_string_value(value, case):
     if ("/" in value):
         # File path, just return the basename
         return os.path.basename(value)
+    elif ("username" in value):
+        return ''
+    elif (".log." in value):
+        # Remove the part that's prone to diff
+        components = value.split(".")
+        return os.path.basename(".".join(components[0:-1]))
     else:
         return value
 
@@ -147,3 +153,84 @@ def compare_files(gold_file, compare_file, case=None):
             comments = comments2
 
     return comments == "", comments
+
+###############################################################################
+def compare_runconfigfiles(gold_file, compare_file, case=None):
+###############################################################################
+    """
+    Returns true if files are the same, comments are returned too:
+    (success, comments)
+    """
+    expect(os.path.exists(gold_file), "File not found: {}".format(gold_file))
+    expect(os.path.exists(compare_file), "File not found: {}".format(compare_file))
+
+    #create dictionary's of the runconfig files and compare them
+    gold_dict = _parse_runconfig(gold_file)
+    compare_dict = _parse_runconfig(compare_file)
+
+    comments = findDiff(gold_dict, compare_dict, case=case)
+    comments = comments.replace(" d1", " " + gold_file)
+    comments = comments.replace(" d2", " " + compare_file)
+    # this picks up the case that an entry in compare is not in gold
+    if comments == "":
+        comments = findDiff(compare_dict, gold_dict, case=case)
+        comments = comments.replace(" d2", " " + gold_file)
+        comments = comments.replace(" d1", " " + compare_file)
+
+    return comments == "", comments
+
+def _parse_runconfig(filename):
+    runconfig = {}
+    inrunseq = False
+    insubsection = None
+    subsection_re = re.compile(r'\s*(\S+)::')
+    group_re = re.compile(r'\s*(\S+)\s*:\s*(\S+)')
+    var_re = re.compile(r'\s*(\S+)\s*=\s*(\S+)')
+    with open(filename, "r") as fd:
+        for line in fd:
+            # remove comments
+            line = line.split('#')[0]
+            subsection_match = subsection_re.match(line)
+            group_match = group_re.match(line)
+            var_match = var_re.match(line)
+            if re.match(r'\s*runSeq\s*::', line):
+                runconfig['runSeq'] = []
+                inrunseq = True
+            elif re.match(r'\s*::\s*', line):
+                inrunseq = False
+            elif inrunseq:
+                runconfig['runSeq'].append(line)
+            elif subsection_match:
+                insubsection = subsection_match.group(1)
+                runconfig[insubsection] = {}
+            elif group_match:
+                runconfig[group_match.group(1)] = group_match.group(2)
+            elif insubsection and var_match:
+                runconfig[insubsection][var_match.group(1)] = var_match.group(2)
+    return runconfig
+
+def findDiff(d1, d2, path="", case=None):
+    comment = ""
+    for k in d1.keys():
+        if not d2.has_key(k):
+            comment += path + ":\n"
+            comment +=  k + " as key not in d2\n"
+        else:
+            if type(d1[k]) is dict:
+                if path == "":
+                    path = k
+                else:
+                    path = path + "->" + k
+                comment += findDiff(d1[k],d2[k], path=path, case=case)
+            else:
+                if case in d1[k]:
+                    pass
+                elif "username" in k:
+                    pass
+                elif "logfile" in k:
+                    pass
+                elif d1[k] != d2[k]:
+                    comment += path+":\n"
+                    comment += " - "+ k +" : "+ d1[k] + "\n"
+                    comment += " + "+ k +" : "+ d2[k] + "\n"
+    return comment

@@ -17,6 +17,11 @@ The files here are:
 
 - diffs_in_vals.nc: one variable has differences in values
 
+- diffs_in_vals_and_extra_and_missing.nc: one variable has differences in
+  values; also, one variable is missing and there is an extra variable. Purpose
+  of this test is to make sure that this cas is reported as a DIFFERENCE rather
+  than just a warning due to the missing fields.
+
 - diffs_in_fill.nc: one variable has differences in fill pattern
 
 - diffs_in_vals_and_diffs_in_fill.nc: one variable has differences in
@@ -25,7 +30,11 @@ The files here are:
 - diffs_in_vals_and_fill.nc: a single variable has differences in both
   values and fill pattern
 
+- extra_variables.nc: has two extra variables beyond those in copy.nc
+
 - lon_differs.nc: number of longitude points differs
+
+- missing_variables.nc: missing two variables that are present in copy.nc
 
 - vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
   in the control file. This is useful for testing the relative
@@ -133,3 +142,18 @@ times.
   variables, identical & different real-valued variables, and
   variables with different spatial dimensions (e.g., landunit, pft,
   and lat x lon).
+
+--- FILES COMPARED AGAINST control_attributes.nc ---
+
+Note: This file is like control.nc, but contains some global attributes
+
+- diffs_in_attribute.nc: one global attribute is the same, one differs; in
+  addition, one global attribute is missing, and there is a new one on this file
+  that is not present on the control.nc file
+
+--- FILES COMPARED AGAINST control_char.nc ---
+
+Note: This file just has a character variable, in order to test what is output
+for character variables (which cannot be analyzed).
+
+- copy_char.nc: identical to control_char.nc
