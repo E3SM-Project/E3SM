@@ -15,7 +15,7 @@ addons:
     - lcov
     - libopenmpi-dev
     - openmpi-bin
-    - python3.6
+    - python3
 
 git:
   submodules: false
