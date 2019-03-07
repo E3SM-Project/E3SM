@@ -4,6 +4,7 @@ import numpy
 import matplotlib.pyplot as plt
 import os.path
 import netCDF4
+from matplotlib import cm
 
 # constants
 
@@ -31,20 +32,24 @@ iDepth=-1
 
 # use a list to see how the melt rate changes with different profiles.
 # use a list with one entry to just plot up a single case.
-#zUppers =  numpy.linspace(-0.,-600., 25)
+zUppers =  numpy.linspace(-0.,-600., 13)
+zUppers =  numpy.linspace(-0.,-600., 5)
 #zUppers =  numpy.array([-200., -400.])
 #zUppers =  numpy.array([-500.])
-zUppers =  numpy.array([-300.]) # "standard" value for Pine Island Bay
+#zUppers =  numpy.array([-300.]) # "standard" value for Pine Island Bay
+
+zSill = -663. # estimate used for Thwaites
 
 # Set depth of grounding line here
 #    zGL = -1500.
 ##    zGL =-688.
 ##    zGL =-644.
 zGL =-693. # value MALI gets for initial condition of Thwaites domain
-
-zSill = -663. # estimate used for Thwaites
-
 zCF = -173.  # calving front depth from Thwaites initial condition
+
+#zGL=-1453.0; zCF=-202.0  # TG sim at yr 325
+#zGL=-1107.0; zCF=-101.0  # TG sim at yr 225
+#zGL=-1235.0; zCF=-125.0  # TG sim approx at both 285 & 430
 
 # idealized Pine Island Bay temperatures
 TUpper = -1.
@@ -56,11 +61,38 @@ TLower = 1.2
 meanMeltRates = numpy.zeros((len(zUppers),))
 GLMeltRates = numpy.zeros((len(zUppers),))
 
+figVar = plt.figure(150, facecolor='w', figsize=(14, 4))
+nrow = 1; ncol = 3;
+
+# temperature plot
+axTvar = figVar.add_subplot(nrow, ncol, 1)
+plt.xlabel('ocean temperature ($^{\circ}$C)')
+plt.ylabel('depth (m)')
+plt.grid()
+
+# melt plot
+axMeltvar = figVar.add_subplot(nrow, ncol, 2)
+plt.xlabel('melt rate (m yr$^{-1}$)')
+plt.ylabel('depth (m)')
+plt.grid()
+
+# histogram
+axHist = figVar.add_subplot(nrow, ncol, 3)
+#plt.xlabel('ice shelf area (km$^2$)')
+plt.xlabel('fraction of ice shelf area')
+plt.ylabel('depth (m)')
+
+
+nOneSide = (len(zUppers)-1)/2
+colorsOneSide = numpy.array( [ cm.cool(x) for x in numpy.linspace(0.0, 1.0, nOneSide) ])
+#print colorsOneSide
+colors = numpy.vstack( (colorsOneSide, [0,0,0,1], numpy.flip(colorsOneSide,0)))
+
 for zUpper in zUppers:
     iDepth = iDepth+1
     print "iDepth={}, zUpper={}".format(iDepth, zUpper)
 
-    z = numpy.linspace(0., zGL-100, 1001)
+    z = numpy.linspace(0., zGL-400, 1001)
 
     zLower = zUpper - 400.
 
@@ -124,6 +156,10 @@ for zUpper in zUppers:
 
     GLMeltRates[iDepth] = meltRate[numpy.argmin(numpy.absolute((z-zGL))).min()]
 
+    # plot onto temp/melt var plot
+    axTvar.plot(TRegional, z, label='$T_{regional}$', color=colors[iDepth,:])
+    axMeltvar.plot(meltRate, z, color=colors[iDepth,:])
+
     if len(zUppers) == 1:
         # If only one plot was requested, also do a 'clean' version for the paper
         #plt.rc('text', usetex=True)
@@ -172,6 +208,7 @@ for zUpper in zUppers:
             lowerSurface = f.variables['lowerSurface'][0,:]
             xCell = f.variables['xCell'][:]
             yCell = f.variables['yCell'][:]
+            f.close()
             # divide into east and west shelf regions
             x1=-1590948.400363433; y1=-459735.6052551331;
             x2=-1531877.338559778; y2=-440731.18578141753;
@@ -189,6 +226,41 @@ for zUpper in zUppers:
         axMelt.set_ylim(axTF.get_ylim())
 
         plt.tight_layout()
+
+
+# clean up temp/melt var plot
+xmin=-1.0; xmax=1.2;
+axTvar.plot([xmin, xmax], zGL*numpy.array([1.0, 1.0]), '--k', label='$z_{GL}$')
+axTvar.plot([xmin, xmax], zCF*numpy.array([1.0, 1.0]), ':k', label='$z_{CF}$')
+axTvar.plot([xmin, xmax], zSill*numpy.array([1.0, 1.0]), '-.k', label='$z_{sill}$')
+
+axMeltvar.set_ylim(axTvar.get_ylim())
+xmax=72.0
+axMeltvar.plot([0.0, xmax], zGL*numpy.array([1.0, 1.0]), '--k', label='$z_{GL}$')
+axMeltvar.plot([0.0, xmax], zCF*numpy.array([1.0, 1.0]), ':k', label='$z_{CF}$')
+axMeltvar.plot([0.0, xmax], zSill*numpy.array([1.0, 1.0]), '-.k', label='$z_{sill}$')
+
+# plot histogram data
+outFile = '/Users/mhoffman/Documents/PAPERS_PRESENTATIONS/2017_Thwaites_variability/2018_OUTPUT/D30_control/output.nc'
+if os.path.isfile(outFile):
+    f = netCDF4.Dataset(outFile, 'r')
+    areaCell = f.variables['areaCell'][:] / 1000.0/1000.0
+    lsrf285 = f.variables['lowerSurface'][285,:]
+    mask285 = f.variables['cellMask'][285,:]
+    ind285 = numpy.nonzero(mask285&4>0)
+    bins = numpy.linspace(-1400.0, 0.0, 31)
+    axHist.hist(lsrf285[ind285], bins=bins, weights=areaCell[ind285]/areaCell[ind285].sum(), orientation="horizontal", alpha=0.5, label='year 285')
+
+    lsrf430 = f.variables['lowerSurface'][430,:]
+    mask430 = f.variables['cellMask'][430,:]
+    ind430 = numpy.nonzero(mask430&4>0)
+    axHist.hist(lsrf430[ind430], bins=bins, weights=areaCell[ind430]/areaCell[ind430].sum(), orientation="horizontal", alpha=0.5, label='year 430')
+    axHist.legend()
+
+
+
+figVar.tight_layout()
+
 
 
 if len(zUppers) > 1:
