@@ -542,6 +542,11 @@
      <lname>20TR_DATM%QIA_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
+   <compset>
+     <alias>IM20TRNLDASCNPECACNTBC</alias>
+     <lname>20TR_DATM%NLDAS_CLM45%CNPECACNTBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
    <!---I CRUNCEP compsets -->
 
   <compset>

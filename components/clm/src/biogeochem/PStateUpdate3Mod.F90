@@ -12,6 +12,7 @@ module PStateUpdate3Mod
   use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use clm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -35,7 +36,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars,phosphorusflux_vars, phosphorusstate_vars)
+       cnstate_vars, phosphorusflux_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic phosphorus state
@@ -244,6 +245,21 @@ contains
       end do
 
     endif !is_active_betr_bgc
+
+    ! SOM P loss due to soil erosion
+    if ( use_erosion .and. ero_ccycle ) then
+      do l = 1, ndecomp_pools
+         if ( decomp_cascade_con%is_soil(l) ) then
+            do j = 1, nlevdecomp
+               do fc = 1, num_soilc
+                  c = filter_soilc(fc)
+                  ps%decomp_ppools_vr_col(c,j,l) = ps%decomp_ppools_vr_col(c,j,l) - pf%decomp_ppools_yield_vr_col(c,j,l) * dt
+               end do
+            end do
+         end if
+      end do
+    end if
+
       ! patch-level phosphorus fluxes 
 
       do fp = 1,num_soilp

@@ -25,6 +25,8 @@ module CNBalanceCheckMod
   use subgridAveMod       , only : p2c
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  ! soil erosion
+  use clm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
@@ -194,6 +196,7 @@ contains
          dwt_closs               =>    carbonflux_vars%dwt_closs_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total carbon loss from product pools and conversion
          product_closs           =>    carbonflux_vars%product_closs_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total wood product carbon loss
          som_c_leached           =>    carbonflux_vars%som_c_leached_col       , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport 
+         som_c_yield             =>    carbonflux_vars%somc_yield_col          , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from soil erosion
          col_decompc_delta       =>    carbonflux_vars%externalc_to_decomp_delta_col, & ! Input: [real(r8) (:) ] (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          
          col_begcb               =>    carbonstate_vars%begcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
@@ -221,6 +224,11 @@ contains
 
          ! subtract leaching flux
          col_coutputs = col_coutputs - som_c_leached(c)
+
+         ! add erosion flux
+         if (use_erosion .and. ero_ccycle) then
+            col_coutputs = col_coutputs + som_c_yield(c)
+         end if
 
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
@@ -254,6 +262,9 @@ contains
             write(iulog,*)'product=',product_closs(c)*dt
             write(iulog,*)'hrv=',col_hrv_xsmrpool_to_atm(c)*dt
             write(iulog,*)'leach=',som_c_leached(c)*dt
+            if (use_erosion .and. ero_ccycle) then
+               write(iulog,*)'erosion=',som_c_yield(c)*dt
+            end if
             write(iulog,*)'begcb       = ',col_begcb(c)
             write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
@@ -315,6 +326,7 @@ contains
          dwt_nloss           =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
          product_nloss       =>    nitrogenflux_vars%product_nloss_col       , & ! Input:  [real(r8) (:)]  (gN/m2/s) total wood product nitrogen loss
          som_n_leached       =>    nitrogenflux_vars%som_n_leached_col       , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
+         som_n_yield         =>    nitrogenflux_vars%somn_yield_col          , & ! Input:  [real(r8) (:)]  total SOM N loss from soil erosion
          ! pflotran:
          col_decompn_delta   =>    nitrogenflux_vars%externaln_to_decomp_delta_col  , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
 
@@ -378,6 +390,11 @@ contains
 
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
+         ! subtracted erosion flux
+         if (use_erosion .and. ero_ccycle) then
+            col_noutputs(c) = col_noutputs(c) + som_n_yield(c) 
+         end if
+
          ! calculate the total column-level nitrogen balance error for this time step
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
@@ -420,7 +437,9 @@ contains
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
          write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt 
          write(iulog,*)'prod                  = ',product_nloss(c)*dt
-
+         if (use_erosion .and. ero_ccycle) then
+            write(iulog,*)'erosion               = ',som_n_yield(c)*dt
+         end if
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
@@ -491,6 +510,7 @@ contains
          sminp                 =>  phosphorusstate_vars%sminp_col              , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          leafp_to_litter       =>  phosphorusflux_vars%leafp_to_litter_patch   , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          frootp_to_litter      =>  phosphorusflux_vars%frootp_to_litter_patch  , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         som_p_yield           =>  phosphorusflux_vars%somp_yield_col          , & ! Input:  [real(r8) (:)]  SOM P pool loss from soil erosion (gP/m^2/s) 
          sminp_to_plant        =>  phosphorusflux_vars%sminp_to_plant_col      , &
          cascade_receiver_pool =>  decomp_cascade_con%cascade_receiver_pool    , &
          pf                    =>  phosphorusflux_vars                           &
@@ -576,6 +596,11 @@ contains
 !         col_poutputs(c) =  flux_mineralization_col(c)/dt
 !          col_poutputs(c) = sminp_to_plant(c)
 
+         ! soil erosion
+         if (use_erosion .and. ero_ccycle) then
+            col_poutputs(c) = col_poutputs(c) + som_p_yield(c)
+         end if
+
          ! calculate the total column-level phosphorus balance error for this time step
          col_endpb(c) = (col_pinputs(c) - col_poutputs(c))*dt + col_begpb(c)
 
@@ -599,6 +624,9 @@ contains
          write(iulog,*)'delta store = ',col_endpb(c)-col_begpb(c)
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
+         if (use_erosion .and. ero_ccycle) then
+            write(iulog,*)'erosion = ',som_p_yield(c)*dt
+         end if
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if

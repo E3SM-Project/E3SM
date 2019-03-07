@@ -16,6 +16,7 @@ module restFileMod
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_ed, use_betr
+  use clm_varctl           , only : use_erosion
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
@@ -38,6 +39,7 @@ module restFileMod
   use FrictionVelocityType , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
   use PhotosynthesisType   , only : photosyns_type
+  use SedFluxType          , only : sedflux_type
   use SoilHydrologyType    , only : soilhydrology_type  
   use SoilStateType        , only : soilstate_type
   use SolarAbsorbedType    , only : solarabs_type
@@ -98,7 +100,7 @@ contains
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars,                                               &
+       waterflux_vars, waterstate_vars, sedflux_vars,                                 &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        ep_betr,                                                                       &
        alm_fates,                                                                     &
@@ -133,6 +135,7 @@ contains
     type(temperature_type)         , intent(in)    :: temperature_vars
     type(waterstate_type)          , intent(inout) :: waterstate_vars  ! due to EDrest call
     type(waterflux_type)           , intent(in)    :: waterflux_vars
+    type(sedflux_type)             , intent(in)    :: sedflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
     class(betr_simulation_alm_type), intent(inout):: ep_betr
@@ -196,6 +199,10 @@ contains
 
     call waterstate_vars%restart (bounds, ncid, flag='define', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:)) 
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='define')
+    end if
 
     call aerosol_vars%restart (bounds, ncid,  flag='define', &
          h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
@@ -303,6 +310,10 @@ contains
     call waterstate_vars%restart (bounds, ncid, flag='write',  &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='write')
+    end if
+
     call aerosol_vars%restart (bounds, ncid,  flag='write', &
          h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
          h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) )
@@ -400,7 +411,7 @@ contains
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars,                                               &
+       waterflux_vars, waterstate_vars, sedflux_vars,                                 &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        ep_betr,                                                                       &
        alm_fates)
@@ -439,6 +450,7 @@ contains
     type(surfalb_type)             , intent(inout) :: surfalb_vars
     type(waterstate_type)          , intent(inout) :: waterstate_vars
     type(waterflux_type)           , intent(inout) :: waterflux_vars
+    type(sedflux_type)             , intent(inout) :: sedflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
     class(betr_simulation_alm_type), intent(inout) :: ep_betr
@@ -485,6 +497,10 @@ contains
 
     call waterstate_vars%restart (bounds, ncid,  flag='read', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='read')
+    end if
 
     call aerosol_vars%restart (bounds, ncid, flag='read', &
          h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &

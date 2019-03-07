@@ -13,6 +13,7 @@ module PhosphorusFluxType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
+  use clm_varctl             , only : use_erosion
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
@@ -271,6 +272,15 @@ module PhosphorusFluxType
      real(r8), pointer :: prod100p_loss_col                         (:)     ! col (gP/m2/s) decomposition loss from 100-yr wood product pool
      real(r8), pointer :: product_ploss_col                         (:)     ! col (gP/m2/s) total wood product phosphorus loss
 
+     ! column-level soil erosion fluxes
+     real(r8), pointer :: somp_erode_col                            (:)     ! total SOM P detachment (gP/m^2/s)
+     real(r8), pointer :: somp_deposit_col                          (:)     ! total SOM P hillslope redeposition (gP/m^2/s)
+     real(r8), pointer :: somp_yield_col                            (:)     ! total SOM P loss to inland waters (gP/m^2/s)
+     real(r8), pointer :: decomp_ppools_erode_col                   (:,:)   ! vertically-integrated decomposing P detachment (gP/m^2/s)
+     real(r8), pointer :: decomp_ppools_deposit_col                 (:,:)   ! vertically-integrated decomposing P hillslope redeposition (gP/m^2/s)
+     real(r8), pointer :: decomp_ppools_yield_col                   (:,:)   ! vertically-integrated decomposing P loss to inland waters (gP/m^2/s)
+     real(r8), pointer :: decomp_ppools_yield_vr_col                (:,:,:) ! vertically-resolved decomposing P loss (gP/m^3/s)
+
 
      ! summary (diagnostic) flux variables, not involved in mass balance
      real(r8), pointer :: pinputs_col                               (:)     ! col column-level P inputs (gP/m2/s)
@@ -526,6 +536,9 @@ contains
     allocate(this%fire_decomp_ploss_col         (begc:endc))    ; this%fire_decomp_ploss_col         (:) = nan
     allocate(this%fire_ploss_p2c_col            (begc:endc))    ; this%fire_ploss_p2c_col            (:) = nan
     allocate(this%som_p_leached_col             (begc:endc))    ; this%som_p_leached_col     (:) = nan
+    allocate(this%somp_erode_col                (begc:endc))    ; this%somp_erode_col        (:) = nan
+    allocate(this%somp_deposit_col              (begc:endc))    ; this%somp_deposit_col      (:) = nan
+    allocate(this%somp_yield_col                (begc:endc))    ; this%somp_yield_col        (:) = nan
 
     allocate(this%m_p_to_litr_met_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_met_fire_col   (:,:) = nan
     allocate(this%m_p_to_litr_cel_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_cel_fire_col   (:,:) = nan
@@ -630,6 +643,18 @@ contains
     this%sminp_leached_col                    (:)     = nan
     this%decomp_ppools_leached_col            (:,:)   = nan
     this%decomp_ppools_transport_tendency_col (:,:,:) = nan  
+
+    allocate(this%decomp_ppools_erode_col(begc:endc,1:ndecomp_pools))
+    this%decomp_ppools_erode_col(:,:)= nan
+
+    allocate(this%decomp_ppools_deposit_col(begc:endc,1:ndecomp_pools))
+    this%decomp_ppools_deposit_col(:,:)= nan
+
+    allocate(this%decomp_ppools_yield_col(begc:endc,1:ndecomp_pools))
+    this%decomp_ppools_yield_col(:,:)= nan
+
+    allocate(this%decomp_ppools_yield_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
+    this%decomp_ppools_yield_vr_col(:,:,:) = nan
 
     allocate(this%decomp_ppools_sourcesink_col (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
     this%decomp_ppools_sourcesink_col (:,:,:) = nan
@@ -1261,6 +1286,50 @@ contains
                avgflag='A', long_name=longname, &
                ptr_col=data2dptr)
        end if
+    end do
+
+    ! Z. Tan
+    this%somp_erode_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOMP_ERO', units='gP/m^2/s', &
+         avgflag='A', long_name='P detachment due to erosion', &
+         ptr_col=this%somp_erode_col, default='inactive')
+
+    this%somp_deposit_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOMP_DEP', units='gP/m^2/s', &
+         avgflag='A', long_name='P hillslope redeposition', &
+         ptr_col=this%somp_deposit_col, default='inactive')
+
+    this%somp_yield_col(begc:endc) = spval
+    call hist_addfld1d (fname='SOMP_YLD', units='gP/m^2/s', &
+         avgflag='A', long_name='P loss to inland waters', &
+         ptr_col=this%somp_yield_col, default='inactive')
+
+    this%decomp_ppools_erode_col(begc:endc,:) = spval
+    this%decomp_ppools_deposit_col(begc:endc,:) = spval
+    this%decomp_ppools_yield_col(begc:endc,:) = spval
+    do k = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_soil(k) ) then
+          data1dptr => this%decomp_ppools_erode_col(:,k)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_ERO'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P detachment'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2/s',  &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+
+          data1dptr => this%decomp_ppools_deposit_col(:,k)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_DEP'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P hillslope redeposition'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2/s',  &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+
+          data1dptr => this%decomp_ppools_yield_col(:,k)
+          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_YLD'
+          longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P loss to inland waters'
+          call hist_addfld1d (fname=fieldname, units='gP/m^2/s',  &
+               avgflag='A', long_name=longname, &
+               ptr_col=data1dptr, default='inactive')
+       endif
     end do
 
     this%primp_to_labilep_col(begc:endc) = spval
@@ -2019,6 +2088,9 @@ contains
        this%poutputs_col(i)                  = value_column
        this%fire_ploss_col(i)                = value_column
        this%som_p_leached_col(i)             = value_column
+       this%somp_erode_col(i)                = value_column
+       this%somp_deposit_col(i)              = value_column
+       this%somp_yield_col(i)                = value_column
 
        ! Zero p2c column fluxes
        this%fire_ploss_col(i) = value_column
@@ -2039,6 +2111,9 @@ contains
        do fi = 1,num_column
           i = filter_column(fi)
           this%decomp_ppools_leached_col(i,k) = value_column
+          this%decomp_ppools_erode_col(i,k) = value_column
+          this%decomp_ppools_deposit_col(i,k) = value_column
+          this%decomp_ppools_yield_col(i,k) = value_column
           this%m_decomp_ppools_to_fire_col(i,k) = value_column
        end do
     end do
@@ -2049,6 +2124,7 @@ contains
              i = filter_column(fi)
              this%m_decomp_ppools_to_fire_vr_col(i,j,k) = value_column
              this%decomp_ppools_transport_tendency_col(i,j,k) = value_column
+             this%decomp_ppools_yield_vr_col(i,j,k) = value_column
           end do
        end do
     end do
@@ -2231,6 +2307,9 @@ contains
        c = filter_soilc(fc)
        this%supplement_to_sminp_col(c) = 0._r8
        this%som_p_leached_col(c)       = 0._r8
+       this%somp_erode_col(c)          = 0._r8
+       this%somp_deposit_col(c)        = 0._r8
+       this%somp_yield_col(c)          = 0._r8
     end do
 
     ! pflotran
@@ -2315,6 +2394,18 @@ contains
        end do
     end do
 
+    ! vertically integrate column-level P erosion flux
+    do l = 1, ndecomp_pools
+       do j = 1, nlevdecomp
+          do fc = 1, num_soilc
+             c = filter_soilc(fc)
+             this%decomp_ppools_yield_col(c,l) = &
+                  this%decomp_ppools_yield_col(c,l) + &
+                  this%decomp_ppools_yield_vr_col(c,j,l) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
     ! total column-level fire P losses
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -2328,6 +2419,23 @@ contains
                this%m_decomp_ppools_to_fire_col(c,k)
        end do
     end do
+
+    ! total column-level soil erosion P losses
+    if ( use_erosion ) then
+       do k = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_soil(k) ) then
+             do fc = 1, num_soilc
+                c = filter_soilc(fc)
+                this%somp_erode_col(c) = this%somp_erode_col(c) + &
+                     this%decomp_ppools_erode_col(c,k)
+                this%somp_deposit_col(c) = this%somp_deposit_col(c) + &
+                     this%decomp_ppools_deposit_col(c,k)
+                this%somp_yield_col(c) = this%somp_yield_col(c) + &
+                     this%decomp_ppools_yield_col(c,k)
+             end do
+          end if
+       end do
+    end if
 
     ! supplementary P supplement_to_sminp
     do j = 1, nlevdecomp

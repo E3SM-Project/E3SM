@@ -13,6 +13,7 @@ module clm_driver
   use clm_varpar             , only : nlevtrc_soil, nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
+  use clm_varctl             , only : use_erosion, ero_lndsld
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
@@ -31,6 +32,7 @@ module clm_driver
   !
   use BareGroundFluxesMod    , only : BareGroundFluxes
   use CanopyFluxesMod        , only : CanopyFluxes
+  use SedYieldMod            , only : SoilErosion, Landslide
   use SoilFluxesMod          , only : SoilFluxes ! (formerly Biogeophysics2Mod)
   use UrbanFluxesMod         , only : UrbanFluxes 
   use LakeFluxesMod          , only : LakeFluxes
@@ -47,6 +49,8 @@ module clm_driver
   !
   use SurfaceRadiationMod    , only : SurfaceRadiation, CanopySunShadeFractions
   use UrbanRadiationMod      , only : UrbanRadiation
+  !
+  use SedFluxType            , only : sedflux_type
   !clm_interface
   use CNEcosystemDynMod      , only : CNEcosystemDynNoLeaching1, CNEcosystemDynNoLeaching2
 
@@ -98,6 +102,7 @@ module clm_driver
   use clm_instMod            , only : frictionvel_vars
   use clm_instMod            , only : lakestate_vars
   use clm_instMod            , only : photosyns_vars
+  use clm_instMod            , only : sedflux_vars
   use clm_instMod            , only : soilstate_vars
   use clm_instMod            , only : soilhydrology_vars
   use clm_instMod            , only : solarabs_vars
@@ -736,6 +741,22 @@ contains
        call t_stopf('snow_init')
 
        ! ============================================================================
+       ! Update sediment fluxes from land unit 
+       ! ============================================================================
+
+       if (use_erosion) then
+          call t_startf('erosion')
+          call SoilErosion(bounds_clump, filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
+               atm2lnd_vars, canopystate_vars, soilstate_vars, waterstate_vars, &
+               waterflux_vars, sedflux_vars)
+          if (ero_lndsld) then
+             call Landslide(bounds_clump, filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
+                  soilstate_vars, waterstate_vars, sedflux_vars)
+          end if
+          call t_stopf('erosion')
+       end if
+
+       ! ============================================================================
        ! Ecosystem dynamics: Uses CN, CNDV, or static parameterizations
        ! ============================================================================
 
@@ -871,7 +892,7 @@ contains
                    atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
                    canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
                    dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-                   phosphorusflux_vars,phosphorusstate_vars)
+                   phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
 
              !===========================================================================================
              ! clm_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
@@ -1311,7 +1332,7 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars,                                               &
+               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr, alm_fates, rdate=rdate )
 
@@ -1570,6 +1591,14 @@ contains
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_prec_grnd_patch(bounds%begp:bounds%endp), &
          waterflux_vars%qflx_prec_grnd_col(bounds%begc:bounds%endc))
+
+    call p2c (bounds, num_nolakec, filter_nolakec, &
+         waterflux_vars%qflx_dirct_rain_patch(bounds%begp:bounds%endp), &
+         waterflux_vars%qflx_dirct_rain_col(bounds%begc:bounds%endc))
+
+    call p2c (bounds, num_nolakec, filter_nolakec, &
+         waterflux_vars%qflx_leafdrip_patch(bounds%begp:bounds%endp), &
+         waterflux_vars%qflx_leafdrip_col(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          waterflux_vars%qflx_dew_grnd_patch(bounds%begp:bounds%endp), &
