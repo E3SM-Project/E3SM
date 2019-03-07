@@ -2059,37 +2059,6 @@
 	 </environment_variables>
 </machine>
 
-
-<machine MACH="oic5">
-         <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
-         <NODENAME_REGEX>oic5</NODENAME_REGEX>
-         <TESTS>e3sm_developer</TESTS>
-         <COMPILERS>gnu</COMPILERS>
-         <MPILIBS>mpich,openmpi</MPILIBS>
-         <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
-         <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
-         <OS>LINUX</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-         <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
-         <GMAKE_J>32</GMAKE_J>
-	 <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-         <mpirun mpilib="mpich">
-              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
-	      <arguments>
-			<arg name="num_tasks"> -np {{ total_tasks }}</arg>
-                        <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
-	      </arguments>
-         </mpirun>
-         <mpirun mpilib = "mpi-serial">
-              <executable> </executable>
-         </mpirun>
-</machine>
-
 <machine MACH="cades">
    <!-- customize these fields as appropriate for your system (max tasks) and
                               desired layout (change '${group}/${USER}' to your
@@ -2142,9 +2111,9 @@
         </modules>
         <modules>
           <command name="load">mkl/2017</command>
-          <command name="load">cmake/3.6.1</command>
-          <command name="load">python/2.7.12</command>
-          <command name="load">nco/4.6.4</command>
+          <command name="load">cmake/3.11.0</command>
+          <command name="load">python/2.7.13</command>
+          <command name="load">nco/4.6.9</command>
           <command name="load">hdf5-parallel/1.8.17</command>
           <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
           <command name="load">pnetcdf/1.9.0</command>
@@ -2153,8 +2122,10 @@
      
       <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
       <environment_variables compiler="gnu" mpilib="openmpi">
-          <!-- env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env> --> <!-- PETSc v3.7.x -->
-          <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env> <!-- PETSc v3.8.x or above -->
+           <!-- The following is for pflotran compiled with PETSc-v3.7.x on CADES-->
+           <!-- env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env> --> <!-- PETSc v3.7.x -->
+           <!-- The following is for pflotran compiled with PETSc-v3.8.x AND above on CADES-->
+           <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env> <!-- PETSc v3.8.x or above -->
       </environment_variables>
       
       <!-- hack for PFLOTRAN coupling to build ELM model.
@@ -2169,12 +2140,12 @@
           <env name="CLM_PFLOTRAN_COLMODE">FALSE</env>
           <!-- The following pflotran is with PETSc-v3.7.x on CADES-->
           <!--  env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface/src/clm-pflotran</env> -->
-          <!-- The following pflotran is with PETSc-v3.8.x or above on CADES-->
+          <!-- The following pflotran is with PETSc-v3.8.x AND above on CADES-->
           <env name="CLM_PFLOTRAN_SOURCE_DIR">/lustre/or-hydra/cades-ccsi/proj-shared/models/pflotran-interface-v3.8x/src/clm-pflotran</env>
           
           <!-- by blanking the following 2 names, PETSC libs excluded in e3sm.exe when NOT coupling with PFLOTRAN
           <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_PATH}/include</env>
-          <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_PATH}/lib -lpetsc -lmetis -lparmetis</env> -->
+          <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_PATH}/lib -lpetsc -lparmetis -lmetis</env> -->
       </environment_variables>
 
       
