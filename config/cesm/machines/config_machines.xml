@@ -231,8 +231,9 @@ This allows using a different mpirun command to launch unit tests
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="anum_tasks"> -np {{ total_tasks }}</arg>
-<!--	<arg name="labelstdout">-p "%g:"</arg>-->
+	<!-- for mpt/2.19 the -p needs to preceed -np -->
+	<arg name="labelstdout">-p "%g:"</arg>
+	<arg name="num_tasks"> -np {{ total_tasks }}</arg>
 	<!-- the omplace argument needs to be last -->
 	<arg name="zthreadplacement"> omplace -tm open64 </arg>
       </arguments>
