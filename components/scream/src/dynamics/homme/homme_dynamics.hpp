@@ -1,8 +1,8 @@
-#ifndef SCREAM_ATMOSPHERE_DYNAMICS_HPP
-#define SCREAM_ATMOSPHERE_DYNAMICS_HPP
+#ifndef SCREAM_HOMME_DYNAMICS_HPP
+#define SCREAM_HOMME_DYNAMICS_HPP
 
-#include <share/atmosphere_process.hpp>
-#include <share/parameter_list.hpp>
+#include "share/atmosphere_process.hpp"
+#include "share/parameter_list.hpp"
 
 #include <string>
 
@@ -19,12 +19,12 @@ namespace scream
  *  dycore.
  */
 
-class AtmosphereDynamics : public AtmosphereProcess
+class HommeDynamics : public AtmosphereProcess
 {
 public:
 
   // Constructor(s)
-  explicit AtmosphereDynamics (const ParameterList& params);
+  explicit HommeDynamics (const ParameterList& params);
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
@@ -60,6 +60,10 @@ protected:
 
 };
 
+inline AtmosphereProcess* create_homme_dynamics(const ParameterList& p) {
+  return new HommeDynamics(p);
+}
+
 } // namespace scream
 
-#endif // SCREAM_ATMOSPHERE_DYNAMICS_HPP
+#endif // SCREAM_HOMME_DYNAMICS_HPP
