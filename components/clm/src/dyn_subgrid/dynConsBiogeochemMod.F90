@@ -435,6 +435,9 @@ contains
     do p = bounds%begp, bounds%endp
        g = veg_pp%gridcell(p)
 
+       dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
+       if (dwt /= 0.0_r8) then
+
        ! C fluxes
        cf%dwt_seedc_to_leaf_patch(p) = dwt_leafc_seed(p)/dt
        cf%dwt_seedc_to_leaf_grc(g)   = &
@@ -504,11 +507,16 @@ contains
             pf%dwt_seedp_to_ppool_grc(g) + &
             pf%dwt_seedp_to_ppool_patch(p)
 
+       endif !(dwt /= 0.0_r8)
+
     end do
     
     ! calculate patch-to-column slash fluxes into litter and CWD pools
     do p = bounds%begp, bounds%endp
        c = veg_pp%column(p)
+
+       dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
+       if (dwt /= 0.0_r8) then
 
        ! fine and coarse root to litter and CWD slash carbon fluxes
        cf%dwt_slash_cflux_col(c) =            &
@@ -545,6 +553,9 @@ contains
             dwt_livecrootp_to_litter(p) /dt + &
             dwt_deadcrootp_to_litter(p) /dt
 
+       endif ! (veg_pp%wtcol(p)-prior_weights%pwtcol(p) /= 0.0_r8)
+
+
     end do
 
     ! calculate pft-to-column for fluxes into litter and CWD pools
@@ -553,6 +564,9 @@ contains
           do c = bounds%begc, bounds%endc
              if ( pi <=  col_pp%npfts(c) ) then
                 p = col_pp%pfti(c) + pi - 1
+
+                dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
+                if (dwt /= 0.0_r8) then
 
                 froot   = cnstate_vars%froot_prof_patch(p,j)
                 croot   = cnstate_vars%croot_prof_patch(p,j)
@@ -679,6 +693,8 @@ contains
                         (dwt_deadcrootc14_to_litter(p))/dt * croot
                 endif
                 
+                end if ! end of if (dwt /= 0.0_r8)
+
              end if
           end do
        end do
@@ -689,6 +705,9 @@ contains
           if (pi <= col_pp%npfts(c)) then
              p = col_pp%pfti(c) + pi - 1
              g = veg_pp%gridcell(p)
+
+             dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
+             if (dwt /= 0.0_r8) then
              
              ! column-level fluxes are accumulated as positive fluxes.
              ! column-level C flux updates
@@ -754,6 +773,9 @@ contains
              pf%dwt_prod100p_gain_grc(g)  = pf%dwt_prod100p_gain_grc(g) + pf%dwt_prod100p_gain_patch(p)
 
           end if
+
+          endif !(dwt /= 0.0_r8)
+
        end do
     end do
     
@@ -763,6 +785,9 @@ contains
        ! Note that patch-level fluxes are stored per unit GRIDCELL area - thus, we don't
        ! need to multiply by the patch's gridcell weight when translating patch-level
        ! fluxes into gridcell-level fluxes.
+
+       dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
+       if (dwt /= 0.0_r8) then
 
        cf%dwt_conv_cflux_patch(p) = -conv_cflux(p)/dt
        cf%dwt_conv_cflux_grc(g) = &
@@ -794,6 +819,8 @@ contains
        pf%dwt_conv_pflux_grc(g) = &
             pf%dwt_conv_pflux_grc(g) + &
             pf%dwt_conv_pflux_patch(p)
+
+       endif !(dwt /= 0.0_r8)
 
     end do
 
