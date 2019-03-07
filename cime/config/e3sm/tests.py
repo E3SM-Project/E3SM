@@ -192,6 +192,7 @@ _TESTS = {
         "time"     : "01:00:00",
         "tests"    : (
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype1",
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype4",
                  )
         },
@@ -200,9 +201,11 @@ _TESTS = {
         "time"     : "02:00:00",
         "tests"    : (
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype1",
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype2",
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype4",
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype1",
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype2",
                  "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype4",
                  )
