@@ -1,10 +1,11 @@
 set(SHARE_SRC
+  atmosphere_process_group.cpp
   scream_assert.cpp
+  scream_session.cpp
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
   field/field_tracking.cpp
-  scream_session.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
   util/scream_arch.cpp
@@ -12,8 +13,10 @@ set(SHARE_SRC
   util/array_io_mod.f90
 )
 
+# So far this is pointless, since we are not installing the library
 set(SHARE_HEADERS
   atmosphere_process.hpp
+  atmosphere_process_group.hpp
   scream_assert.hpp
   field/field.hpp
   field/field_alloc_prop.hpp
