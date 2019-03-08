@@ -156,6 +156,7 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(tiedke_add,        1, mpir8,  0, mpicom)
    call mpibcast(num_cin,           1, mpiint, 0, mpicom)
    call mpibcast(mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
+   call mpibcast(tp_fac,       1, mpir8,  0, mpicom)
 #endif
 
 end subroutine zmconv_readnl
