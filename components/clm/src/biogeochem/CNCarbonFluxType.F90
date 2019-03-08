@@ -1286,10 +1286,15 @@ contains
             avgflag='A', long_name='growth respiration transfer fire mortality to litter', &
             ptr_patch=this%m_gresp_xfer_to_litter_fire_patch, default='inactive')   
 
-      this%m_cpool_to_litter_fire_patch(begp:endp) = spval
+       this%m_cpool_to_litter_fire_patch(begp:endp) = spval
        call hist_addfld1d (fname='M_CPOOL_TO_LITTER_FIRE', units='gC/m^2/s', &
             avgflag='A', long_name='cpool fire mortality to litter', &
             ptr_patch=this%m_cpool_to_litter_fire_patch, default='inactive')
+
+       this%m_cpool_to_litter_patch(begp:endp) = spval
+       call hist_addfld1d (fname='M_CPOOL_TO_LITTER', units='gC/m^2/s', &
+            avgflag='A', long_name='cpool mortality to litter', &
+            ptr_patch=this%m_cpool_to_litter_patch, default='inactive')
 
        this%leafc_xfer_to_leafc_patch(begp:endp) = spval
        call hist_addfld1d (fname='LEAFC_XFER_TO_LEAFC', units='gC/m^2/s', &
