@@ -5,40 +5,48 @@ RM = rm
 .SUFFIXES:
 .SUFFIXES: .F90 .o
 
-FC = lf95
+# Set the compiler; note that on some platforms, FC may be defined as an
+# environment variable, and we should not need to do anything here. If this
+# is the case, skip setting FC, but if FC is null then set to a default.
+ifeq ($(FC),$(null))
+    FC = gfortran
+endif
 DEBUG = FALSE
-
 
 # Check for the NetCDF library and include directories 
 ifeq ($(LIB_NETCDF),$(null))
-LIB_NETCDF := /usr/local/lib
+    LIB_NETCDF := /usr/local/lib
 endif
 
 ifeq ($(INC_NETCDF),$(null))
-INC_NETCDF := /usr/local/include
+    INC_NETCDF := /usr/local/include
 endif
+
+# Set default compile and link flags
+FFLAGS  = -L$(LIB_NETCDF) -I$(INC_NETCDF)
+#LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl -lhdf5 -lhdf5_hl -mcmodel=medium 
+LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl
 
 # Determine platform 
 UNAMES := $(shell uname -s)
 UNAMEM := $(findstring CRAY,$(shell uname -m))
 
 #------------------------------------------------------------------------
-# LF95
+# Special flags for LF95
 #------------------------------------------------------------------------
 #
-# setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
-#
 ifeq ($(FC),lf95)
-#
-# Tramhill
-#
+  #
+  # Tramhill
+  #
   INC_NETCDF :=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/include
   LIB_NETCDF :=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
 
-  LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl -lhdf5 -lhdf5_hl -mcmodel=medium 
+  LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl -lhdf5 -lhdf5_hl
+-mcmodel=medium 
   FFLAGS   := -c --trace --trap --wide -CcdRR8 -I$(INC_NETCDF)
   ifeq ($(DEBUG),TRUE)
-#   FFLAGS += --chk aesu  -Cpp --trace
+    #FFLAGS += --chk aesu  -Cpp --trace
     FFLAGS += -g --chk a,e,s,u --pca
   else
     FFLAGS += -O
@@ -46,10 +54,8 @@ ifeq ($(FC),lf95)
 
 endif
 
-
-
 .F90.o:
-	$(FC) $(FFLAGS) $<
+	$(FC) -c $(FFLAGS) $<
 
 #------------------------------------------------------------------------
 # Default rules and macros
@@ -66,4 +72,3 @@ clean:
 cube_to_target.o: shr_kind_mod.o remap.o reconstruct.o
 remap.o: 
 reconstruct.o: remap.o
-#reconstruct.o : shr_kind_mod.o
