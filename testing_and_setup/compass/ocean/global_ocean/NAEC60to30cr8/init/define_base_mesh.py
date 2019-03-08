@@ -16,6 +16,7 @@ def cellWidthVsLatLon():
 
     #params["plot_box"] = np.array([-80,-30,30,90]) 
     params["plot_box"] = ct.Entire_Globe
+    params["plot_option"] = False
 
     print "***Gulf Coast***"
     params["region_box"] = ct.US_Gulf_Coast
@@ -49,8 +50,8 @@ def cellWidthVsLatLon():
 
     print "***Aleutian Islands (West)***"
     params["region_box"] = ct.Aleutian_Islands_W
-    params["lon_wrap"]  = True
     params["n_longest"] = 100
+    params["trans_start"] = 200.0*km
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print "****Aleutian Islands (East)***"
@@ -87,7 +88,6 @@ def cellWidthVsLatLon():
     params["restrict_box"] = ct.Empty
     params["trans_width"] = 600.0*km
     params["trans_start"] = 400.0*km
-    params["lon_wrap"] = False
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print "***Greenland***"
