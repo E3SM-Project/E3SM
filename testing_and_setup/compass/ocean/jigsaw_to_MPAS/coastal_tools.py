@@ -85,13 +85,13 @@ Alaska = {"include": [np.array([-170.0, -141.0, 49.0, 63.0]),
 Bering_Sea_E = {"include": [np.array([-180.0, -168.5, 56.00, 64.0])],
                 "exclude": []}
 
-Bering_Sea_W = {"include": [np.array([161.83, 180.0, 51.13, 66.63])],
+Bering_Sea_W = {"include": [np.array([161.90, 180.0, 57.85, 66.63])],
                 "exclude": []}
 
 Aleutian_Islands_E = {"include": [np.array([-180.0, -151.79, 49.54, 58.83])],
                       "exclude": [np.array([-173.16, -164.37, 55.81, 57.55])]}
 
-Aleutian_Islands_W = {"include": [np.array([171.8, 180.0, 49.54, 58.83])],
+Aleutian_Islands_W = {"include": [np.array([164.9, 180.0, 50.77, 56.31])],
                       "exclude": [np.array([178.5, 179.5, 51.25, 51.75])]}
 
 
@@ -161,10 +161,10 @@ East_Coast_restrict = {"include": [],
                                              [-63.47, 53.76]])]}
 Bering_Sea_restrict = {"include": [],
                        "exclude": [np.array([[143.46, 51.79],
-                                             [156.55, 51.97],
-                                             [165.97, 62.99],
+                                             [155.65, 50.13],
+                                             [166.23, 63.78],
                                              [148.63, 62.30]]),
-                                   np.array([[161.14, 68.41],
+                                   np.array([[154.36, 68.22],
                                              [-173.80, 65.94],
                                              [-161.81, 72.02],
                                              [163.64, 73.70]])]}
@@ -195,7 +195,6 @@ default_params = {
     "mesh_type": 'EC',
     "dx_max_global": 30.0 * km,
     "dx_min_global": 10.0 * km,
-    "lon_wrap": False,
 
     # Coastal mesh parameters
     "dx_min_coastal": 10.0 * km,
