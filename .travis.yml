@@ -24,13 +24,11 @@ branches:
   only:
   - master
 
-before_script:
-- /bin/rm -rf scream-scripts-mirror
+script:
+- git clean -fd
 - git clone https://github.com/jgfouca/scream-scripts-mirror.git
 - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
 - gfortran --version
-
-script:
 - git config submodule.externals/kokkos.url https://github.com/kokkos/kokkos.git
 - git submodule update --init externals/kokkos
 - cd components/scream
