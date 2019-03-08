@@ -2040,7 +2040,7 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="openmpi" compiler="gnu">
       <executable>mpirun</executable>
@@ -2069,9 +2069,9 @@
       </modules>
       <modules>
         <command name="load">mkl/2017</command>
-        <command name="load">cmake/3.6.1</command>
+        <command name="load">/lustre/or-hydra/cades-ccsi/proj-shared/tools/cmake/3.6.1</command>
         <command name="load">python/2.7.12</command>
-        <command name="load">nco/4.6.4</command>
+        <command name="load">/lustre/or-hydra/cades-ccsi/proj-shared/tools/nco/4.6.4</command>
         <command name="load">hdf5-parallel/1.8.17</command>
         <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
         <command name="load">pnetcdf/1.9.0</command>
