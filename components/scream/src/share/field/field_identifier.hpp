@@ -1,8 +1,8 @@
 #ifndef SCREAM_FIELD_IDENTIFIER_HPP
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
-#include "field_tag.hpp"
-#include <share/scream_assert.hpp>
+#include "share/field/field_tag.hpp"
+#include "share/scream_assert.hpp"
 
 #include <string>
 #include <vector>

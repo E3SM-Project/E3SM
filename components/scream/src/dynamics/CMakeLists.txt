@@ -1,13 +1,8 @@
-set(SCREAM_DYNAMICS_SOURCES
-  atmosphere_dynamics.cpp
-)
-
-set(SCREAM_DYNAMICS_HEADERS
-  atmosphere_dynamics.hpp
-)
-
-link_directories(${SCREAM_LIBRARY_DIRS} ${SCREAM_TPL_LIBRARY_DIRS})
-
-add_library(scream_dynamics ${SCREAM_DYNAMICS_SOURCES})
-target_include_directories(scream_dynamics PUBLIC ${SCREAM_SRC_DIR})
-target_link_libraries(scream_dynamics scream_share ${SCREAM_TPL_LIBRARIES})
+IF ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
+  ADD_SUBDIRECTORY(homme)
+ELSEIF("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "NONE")
+  MESSAGE ("SCREAM_DYNAMICS_DYCORE set to 'NONE'. Scream won't enable any test/code that needs dynamics.\n")
+ELSE()
+  MESSAGE (FATAL_ERROR "The dynamics dycore '${SCREAM_DYNAMICS_DYCORE}' is currently not supported."
+                       "If you wish to disable dynamics, do not specify anything for SCREAM_DYNAMICS_DYCORE, or set it to 'NONE'.")
+ENDIF()

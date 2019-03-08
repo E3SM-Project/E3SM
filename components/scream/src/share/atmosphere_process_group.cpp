@@ -1,7 +1,6 @@
 #include "atmosphere_process_group.hpp"
-#include "atmosphere_process_factory.hpp"
 
-#include <share/util/string_utils.hpp>
+#include "share/util/string_utils.hpp"
 
 namespace scream {
 
@@ -10,11 +9,11 @@ AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
   m_group_size = params.get<int>("Number of Entries");
 
   // Create the individual atmosphere processes
-  using factory = AtmosphereProcessFactory;
+  using Factory = AtmosphereProcessFactory;
   for (int i=0; i<m_group_size; ++i) {
     const auto& params_i = params.sublist(util::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
-    m_atm_processes.emplace_back(factory::create(process_name,params_i));
+    m_atm_processes.emplace_back(Factory::instance().create(process_name,params_i));
   }
 
   if (params.get<std::string>("Schedule Type") == "Sequential") {
@@ -53,7 +52,7 @@ void AtmosphereProcessGroup::initialize (const Comm& comm) {
       // In order to figure out what atm process this rank should handle,
       // we need to know how many ranks are assigned to each atm process
     }
-  
+
     m_atm_processes[i]->initialize(proc_comm);
 
     // Add inputs/outputs to the list of inputs/outputs of this group

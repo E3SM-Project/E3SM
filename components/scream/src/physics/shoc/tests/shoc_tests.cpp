@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 
 #include "catch2/catch.hpp"
-#include "shoc.hpp"
+#include "physics/shoc/shoc.hpp"
 
 namespace {
 

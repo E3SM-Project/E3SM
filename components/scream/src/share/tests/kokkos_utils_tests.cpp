@@ -1,4 +1,4 @@
-#include "catch2/catch.hpp"
+#include <catch2/catch.hpp>
 
 #include "share/util/scream_kokkos_utils.hpp"
 #include "share/util/scream_arch.hpp"

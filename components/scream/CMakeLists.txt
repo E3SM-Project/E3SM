@@ -100,7 +100,7 @@ if (${SCREAM_DOUBLE_PRECISION})
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64 ")
   else()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 ")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
   endif()
 endif()
 
@@ -124,6 +124,9 @@ CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_BINAR
 # Run sed to change '/*...*/' comments into '!/*...*/'
 EXECUTE_PROCESS(COMMAND sed -i "s;^/;!/;g" ${CMAKE_BINARY_DIR}/src/scream_config.f)
 
+SET (SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
+STRING(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
+print_var(SCREAM_DYNAMICS_DYCORE)
 
 set (SCREAM_F90_MODULES ${CMAKE_BINARY_DIR}/modules)
 set (SCREAM_DATA_DIR ${CMAKE_SOURCE_DIR}/data)

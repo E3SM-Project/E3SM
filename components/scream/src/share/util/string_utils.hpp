@@ -30,6 +30,25 @@ inline std::string strint (const std::string& s, const int i) {
   return ss.str();
 }
 
+class CaseInsensitiveString : public std::string
+{
+public:
+  CaseInsensitiveString (const std::string& s) :
+    std::string(lower_case(s))
+  {}
+  CaseInsensitiveString (const char* s) :
+    CaseInsensitiveString(std::string(s))
+  {}
+
+  std::string& operator= (const std::string& s) {
+    return std::string::operator=(lower_case(s));
+  }
+
+  std::string& operator+= (const std::string& s) {
+    return std::string::operator+=(lower_case(s));
+  }
+};
+
 } // namespace util
 } // namespace scream
 

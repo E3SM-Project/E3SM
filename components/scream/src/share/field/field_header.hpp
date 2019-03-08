@@ -1,12 +1,12 @@
 #ifndef SCREAM_FIELD_HEADER_HPP
 #define SCREAM_FIELD_HEADER_HPP
 
-#include "field_identifier.hpp"
-#include "field_tracking.hpp"
-#include "field_tag.hpp"
-#include "field_alloc_prop.hpp"
-#include <share/scream_types.hpp>
-#include <share/util/time_stamp.hpp>
+#include "share/field/field_identifier.hpp"
+#include "share/field/field_tracking.hpp"
+#include "share/field/field_tag.hpp"
+#include "share/field/field_alloc_prop.hpp"
+#include "share/scream_types.hpp"
+#include "share/util/time_stamp.hpp"
 
 #include <vector>
 #include <memory>   // For std::shared_ptr and std::weak_ptr

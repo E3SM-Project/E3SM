@@ -5,7 +5,7 @@ set(SHOC_TEST_SRCS
 
 add_executable(shoc_tests ${SHOC_TEST_SRCS})
 
-target_include_directories(shoc_tests PUBLIC ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(shoc_tests PUBLIC ${SCREAM_INCLUDE_DIRS} ${CATCH_INCLUDE_DIR})
 
 target_link_libraries(shoc_tests shoc)
 

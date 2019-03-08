@@ -1,4 +1,4 @@
-#include "catch2/catch.hpp"
+#include <catch2/catch.hpp>
 
 #include "share/util/scream_utils.hpp"
 #include "share/scream_pack.hpp"
