@@ -2193,7 +2193,7 @@ logical function phys_grid_initialized ()
       do cid = 1,nchunks
          cost_gsum = cost_gsum + chunks(cid)%estcost
       enddo
-      if (abs(cost_gsum) > 0.0000001_r8) then
+      if (abs(cost_gsum) > 0.000001_r8) then
          avg_estcost = cost_gsum/nchunks
       else
          avg_estcost = 1.0_r8
