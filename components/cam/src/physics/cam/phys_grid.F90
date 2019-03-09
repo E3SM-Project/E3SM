@@ -5149,9 +5149,12 @@ logical function phys_grid_initialized ()
 !          heap property
 ! 
 ! Method: Percolate the root down through the heap until find a legal
-!         new location.
+!         new location. This is a modified version of an algorithm 
+!         described in Aho, Hopcroft and Ullman ("The Design and 
+!         Analysis of Computer Algorithms") used in sorting. Here it
+!         is customized for this slightly different application.
 ! 
-! Author: Patrick Worley (slight 
+! Author: Patrick Worley
 ! 
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
